@@ -66,34 +66,29 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
 const comments = ref<any[]>([])
 const postsMap = ref<Map<number, string>>(new Map())
 
 async function fetchComments() {
-  comments.value = await prisma.comment.findMany({
-    orderBy: { create_time: 'desc' }
-  })
+  const data = await $fetch('/api/admin/comments') as any[]
+  comments.value = data
 
   // 获取文章标题映射
-  const posts = await prisma.post.findMany({
-    select: { cid: true, title: true }
-  })
+  const posts = await $fetch('/api/admin/posts') as any[]
   postsMap.value = new Map(posts.map(p => [p.cid, p.title]))
 }
 
 async function approveComment(coid: number) {
-  await prisma.comment.update({
-    where: { coid },
-    data: { status: 1 }
+  await $fetch(`/api/admin/comments/${coid}`, {
+    method: 'PATCH',
+    body: { status: 1 }
   })
   await fetchComments()
 }
 
 async function deleteComment(coid: number) {
   if (confirm('确定要删除这条评论吗？')) {
-    await prisma.comment.delete({ where: { coid } })
+    await $fetch(`/api/admin/comments/${coid}`, { method: 'DELETE' })
     await fetchComments()
   }
 }
@@ -102,7 +97,7 @@ function getPostTitle(cid: number) {
   return postsMap.value.get(cid) || '未知'
 }
 
-function formatDate(date: Date) {
+function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 

@@ -145,8 +145,6 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
 const settings = ref({
   siteName: '',
   siteDesc: '',
@@ -165,52 +163,27 @@ const newChangelog = ref({ class: 'feature', desc: '' })
 
 // 加载设置
 async function loadSettings() {
-  const metas = await prisma.meta.findMany()
-
-  metas.forEach((meta: any) => {
-    if (meta.key === 'siteName') settings.value.siteName = meta.value
-    if (meta.key === 'siteDesc') settings.value.siteDesc = meta.value
-    if (meta.key === 'siteKeywords') settings.value.siteKeywords = meta.value
-    if (meta.key === 'siteIcp') settings.value.siteIcp = meta.value
-    if (meta.key === 'commentEnabled') settings.value.commentEnabled = meta.value === 'true'
-    if (meta.key === 'commentModeration') settings.value.commentModeration = meta.value === 'true'
-  })
+  settings.value = await $fetch('/api/admin/settings') as any
 }
 
 // 保存设置
 async function saveSettings() {
-  const updates = [
-    { key: 'siteName', value: settings.value.siteName },
-    { key: 'siteDesc', value: settings.value.siteDesc },
-    { key: 'siteKeywords', value: settings.value.siteKeywords },
-    { key: 'siteIcp', value: settings.value.siteIcp },
-    { key: 'commentEnabled', value: String(settings.value.commentEnabled) },
-    { key: 'commentModeration', value: String(settings.value.commentModeration) }
-  ]
-
-  for (const update of updates) {
-    await prisma.meta.upsert({
-      where: { key: update.key },
-      create: { key: update.key, value: update.value },
-      update: { value: update.value }
-    })
-  }
-
+  await $fetch('/api/admin/settings', {
+    method: 'POST',
+    body: settings.value
+  })
   alert('设置已保存')
 }
 
 // 加载订阅列表
 async function loadSubscribes() {
-  subscribes.value = await prisma.subscribe.findMany()
+  subscribes.value = await $fetch('/api/admin/subscribes') as any[]
 }
 
 async function addSubscribe() {
-  await prisma.subscribe.create({
-    data: {
-      name: newSubscribe.value.name,
-      url: newSubscribe.value.url,
-      avatar: newSubscribe.value.avatar || null
-    }
+  await $fetch('/api/admin/subscribes', {
+    method: 'POST',
+    body: newSubscribe.value
   })
   newSubscribe.value = { name: '', url: '', avatar: '' }
   await loadSubscribes()
@@ -218,31 +191,27 @@ async function addSubscribe() {
 
 async function deleteSubscribe(id: number) {
   if (confirm('确定要删除这个订阅吗？')) {
-    await prisma.subscribe.delete({ where: { id } })
+    await $fetch(`/api/admin/subscribes/${id}`, { method: 'DELETE' })
     await loadSubscribes()
   }
 }
 
 // 加载更新日志
 async function loadChangelogs() {
-  changelogs.value = await prisma.changelog.findMany({
-    orderBy: { create_time: 'desc' }
-  })
+  changelogs.value = await $fetch('/api/admin/changelogs') as any[]
 }
 
 async function addChangelog() {
-  await prisma.changelog.create({
-    data: {
-      class: newChangelog.value.class,
-      desc: newChangelog.value.desc
-    }
+  await $fetch('/api/admin/changelogs', {
+    method: 'POST',
+    body: newChangelog.value
   })
   newChangelog.value = { class: 'feature', desc: '' }
   showChangelogModal.value = false
   await loadChangelogs()
 }
 
-function formatDate(date: Date) {
+function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 

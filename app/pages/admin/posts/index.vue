@@ -69,24 +69,20 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
 const posts = ref<any[]>([])
 
 async function fetchPosts() {
-  posts.value = await prisma.post.findMany({
-    orderBy: { create_time: 'desc' }
-  })
+  posts.value = await $fetch('/api/admin/posts') as any[]
 }
 
 async function deletePost(cid: number) {
   if (confirm('确定要删除这篇文章吗？')) {
-    await prisma.post.delete({ where: { cid } })
+    await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
     await fetchPosts()
   }
 }
 
-function formatDate(date: Date) {
+function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 

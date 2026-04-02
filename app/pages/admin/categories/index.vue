@@ -85,23 +85,18 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
 const categories = ref<any[]>([])
 const showAddModal = ref(false)
 const newCategory = ref({ name: '', desc: '', class: '' })
 
 async function fetchCategories() {
-  categories.value = await prisma.category.findMany()
+  categories.value = await $fetch('/api/admin/categories') as any[]
 }
 
 async function addCategory() {
-  await prisma.category.create({
-    data: {
-      name: newCategory.value.name,
-      desc: newCategory.value.desc || null,
-      class: newCategory.value.class || null
-    }
+  await $fetch('/api/admin/categories', {
+    method: 'POST',
+    body: newCategory.value
   })
   newCategory.value = { name: '', desc: '', class: '' }
   showAddModal.value = false
@@ -110,7 +105,7 @@ async function addCategory() {
 
 async function deleteCategory(mid: number) {
   if (confirm('确定要删除这个分类吗？')) {
-    await prisma.category.delete({ where: { mid } })
+    await $fetch(`/api/admin/categories/${mid}`, { method: 'DELETE' })
     await fetchCategories()
   }
 }

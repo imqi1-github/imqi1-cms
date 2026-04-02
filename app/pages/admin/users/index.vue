@@ -107,25 +107,18 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
 const users = ref<any[]>([])
 const showAddModal = ref(false)
 const newUser = ref({ name: '', mail: '', password: '', role: 0 })
 
 async function fetchUsers() {
-  users.value = await prisma.user.findMany()
+  users.value = await $fetch('/api/admin/users') as any[]
 }
 
 async function addUser() {
-  // 注意：实际项目中应该对密码进行哈希处理
-  await prisma.user.create({
-    data: {
-      name: newUser.value.name,
-      mail: newUser.value.mail,
-      password: newUser.value.password, // TODO: 使用 bcrypt 等库进行哈希
-      role: newUser.value.role
-    }
+  await $fetch('/api/admin/users', {
+    method: 'POST',
+    body: newUser.value
   })
   newUser.value = { name: '', mail: '', password: '', role: 0 }
   showAddModal.value = false
@@ -134,12 +127,12 @@ async function addUser() {
 
 async function deleteUser(id: number) {
   if (confirm('确定要删除这个用户吗？')) {
-    await prisma.user.delete({ where: { id } })
+    await $fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
     await fetchUsers()
   }
 }
 
-function formatDate(date: Date) {
+function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 

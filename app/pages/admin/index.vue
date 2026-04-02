@@ -78,9 +78,6 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
-// 获取统计数据
 const stats = ref({
   posts: 0,
   comments: 0,
@@ -90,33 +87,31 @@ const stats = ref({
 
 const recentPosts = ref<any[]>([])
 
-onMounted(async () => {
+async function fetchData() {
   try {
-    const [postsCount, commentsCount, categoriesCount, usersCount, posts] = await Promise.all([
-      prisma.post.count(),
-      prisma.comment.count(),
-      prisma.category.count(),
-      prisma.user.count(),
-      prisma.post.findMany({
-        take: 5,
-        orderBy: { create_time: 'desc' }
-      })
+    const [statsRes, postsRes] = await Promise.all([
+      $fetch('/api/admin/stats'),
+      $fetch('/api/admin/recent-posts')
     ])
-
-    stats.value = {
-      posts: postsCount,
-      comments: commentsCount,
-      categories: categoriesCount,
-      users: usersCount
-    }
-
-    recentPosts.value = posts
+    stats.value = statsRes as any
+    recentPosts.value = postsRes as any[]
   } catch (error) {
     console.error('获取数据失败:', error)
   }
-})
+}
 
-function formatDate(date: Date) {
+async function deletePost(cid: number) {
+  if (confirm('确定要删除这篇文章吗？')) {
+    await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
+    await fetchData()
+  }
+}
+
+function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
+
+onMounted(() => {
+  fetchData()
+})
 </script>

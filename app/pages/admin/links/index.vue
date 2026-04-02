@@ -107,24 +107,18 @@
 </template>
 
 <script setup lang="ts">
-import { prisma } from '~/lib/prisma'
-
 const links = ref<any[]>([])
 const showAddModal = ref(false)
 const newLink = ref({ name: '', link: '', desc: '', avatar: '' })
 
 async function fetchLinks() {
-  links.value = await prisma.link.findMany()
+  links.value = await $fetch('/api/admin/links') as any[]
 }
 
 async function addLink() {
-  await prisma.link.create({
-    data: {
-      name: newLink.value.name,
-      link: newLink.value.link,
-      desc: newLink.value.desc || null,
-      avatar: newLink.value.avatar || null
-    }
+  await $fetch('/api/admin/links', {
+    method: 'POST',
+    body: newLink.value
   })
   newLink.value = { name: '', link: '', desc: '', avatar: '' }
   showAddModal.value = false
@@ -132,16 +126,13 @@ async function addLink() {
 }
 
 async function toggleEnabled(link: any) {
-  await prisma.link.update({
-    where: { id: link.id },
-    data: { enabled: !link.enabled }
-  })
+  await $fetch(`/api/admin/links/${link.id}/toggle`, { method: 'PATCH' })
   await fetchLinks()
 }
 
 async function deleteLink(id: number) {
   if (confirm('确定要删除这个链接吗？')) {
-    await prisma.link.delete({ where: { id } })
+    await $fetch(`/api/admin/links/${id}`, { method: 'DELETE' })
     await fetchLinks()
   }
 }
