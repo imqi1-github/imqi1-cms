@@ -27,7 +27,6 @@ export function setSession(event: any, user: SessionUser) {
   sessions.set(sessionId, { userId: user.id, expires });
 
   setCookie(event, SESSION_COOKIE_NAME, sessionId, {
-    httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: SESSION_MAX_AGE,
