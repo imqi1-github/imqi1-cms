@@ -1,15 +1,13 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from "~/server/utils/prisma.ts";
 
 export default defineEventHandler(async () => {
   try {
-    const categories = await prisma.category.findMany()
-    return categories
+    const categories = await prisma.category.findMany();
+    return categories;
   } catch (error) {
     throw createError({
       statusCode: 500,
-      message: '获取分类列表失败',
-    })
+      message: "获取分类列表失败",
+    });
   }
-})
+});
