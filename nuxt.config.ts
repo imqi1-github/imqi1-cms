@@ -7,11 +7,11 @@ export default defineNuxtConfig({
     port: 4000,
   },
 
-  modules: ["shadcn-nuxt"],
+  modules: ["shadcn-nuxt", "@nuxt/icon"],
 
   shadcn: {
     prefix: "",
-    componentDir: "./components/ui",
+    componentDir: "./app/components/ui",
   },
 
   css: ["~/assets/css/main.css"],
@@ -25,7 +25,16 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: ["@vue/devtools-core", "@vue/devtools-kit"],
+      include: [
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+        "class-variance-authority",
+        "@vueuse/core",
+        "clsx",
+        "tailwind-merge",
+        "reka-ui",
+        "lucide-vue-next",
+      ],
     },
   },
 });

@@ -1,84 +1,24 @@
-<template>
-  <div class="min-h-screen bg-background">
-    <div class="flex">
-      <!-- 侧边栏 -->
-      <aside class="w-64 border-r bg-card min-h-screen p-4">
-        <h1 class="text-xl font-bold mb-6">后台管理</h1>
-        <nav class="space-y-2">
-          <NuxtLink to="/admin" class="block px-4 py-2 rounded hover:bg-accent">仪表盘</NuxtLink>
-          <NuxtLink to="/admin/posts" class="block px-4 py-2 rounded bg-accent">文章管理</NuxtLink>
-          <NuxtLink to="/admin/comments" class="block px-4 py-2 rounded hover:bg-accent">评论管理</NuxtLink>
-          <NuxtLink to="/admin/categories" class="block px-4 py-2 rounded hover:bg-accent">分类管理</NuxtLink>
-          <NuxtLink to="/admin/users" class="block px-4 py-2 rounded hover:bg-accent">用户管理</NuxtLink>
-          <NuxtLink to="/admin/links" class="block px-4 py-2 rounded hover:bg-accent">友情链接</NuxtLink>
-          <NuxtLink to="/admin/settings" class="block px-4 py-2 rounded hover:bg-accent">系统设置</NuxtLink>
-        </nav>
-      </aside>
-
-      <!-- 主内容区 -->
-      <main class="flex-1 p-8">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold">文章管理</h2>
-          <button class="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90">
-            新建文章
-          </button>
-        </div>
-
-        <!-- 文章列表 -->
-        <div class="bg-card border rounded-lg">
-          <table class="w-full">
-            <thead class="bg-muted">
-              <tr>
-                <th class="text-left p-4">标题</th>
-                <th class="text-left p-4">状态</th>
-                <th class="text-left p-4">评论数</th>
-                <th class="text-left p-4">创建时间</th>
-                <th class="text-left p-4">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="post in posts" :key="post.cid" class="border-t">
-                <td class="p-4">{{ post.title }}</td>
-                <td class="p-4">
-                  <span :class="{
-                    'px-2 py-1 rounded text-sm': true,
-                    'bg-green-100 text-green-800': post.status === 1,
-                    'bg-yellow-100 text-yellow-800': post.status === 0
-                  }">
-                    {{ post.status === 1 ? '已发布' : '草稿' }}
-                  </span>
-                </td>
-                <td class="p-4">{{ post.comment_num }}</td>
-                <td class="p-4">{{ formatDate(post.create_time) }}</td>
-                <td class="p-4">
-                  <div class="flex gap-2">
-                    <button class="px-3 py-1 text-sm bg-secondary rounded hover:bg-accent">编辑</button>
-                    <button @click="deletePost(post.cid)" class="px-3 py-1 text-sm bg-destructive text-destructive-foreground rounded hover:opacity-80">删除</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-if="posts.length === 0" class="text-center p-8 text-muted-foreground">
-            暂无文章
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 const posts = ref<any[]>([])
 
 async function fetchPosts() {
-  posts.value = await $fetch('/api/admin/posts') as any[]
+  try {
+    posts.value = await $fetch('/api/admin/posts') as any[]
+  } catch (error) {
+    console.error('获取文章失败:', error)
+    posts.value = []
+  }
 }
 
 async function deletePost(cid: number) {
-  if (confirm('确定要删除这篇文章吗？')) {
-    await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
-    await fetchPosts()
+  const confirmed = confirm('确定要删除这篇文章吗？')
+  if (confirmed) {
+    try {
+      await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
+      await fetchPosts()
+    } catch (error) {
+      console.error('删除失败:', error)
+    }
   }
 }
 
@@ -86,7 +26,79 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 
+function getStatusBadge(status: number) {
+  return status === 1
+    ? { label: '已发布', variant: 'default' as const }
+    : { label: '草稿', variant: 'secondary' as const }
+}
+
 onMounted(() => {
   fetchPosts()
 })
 </script>
+
+<template>
+  <AdminLayout>
+    <!-- 页面标题 -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold">文章管理</h2>
+        <p class="text-sm text-muted-foreground mt-1">管理所有文章内容</p>
+      </div>
+      <Button>
+        <Icon name="lucide:plus" class="mr-2 size-4" />
+        新建文章
+      </Button>
+    </div>
+
+    <!-- 文章列表 -->
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>标题</TableHead>
+            <TableHead>状态</TableHead>
+            <TableHead>评论数</TableHead>
+            <TableHead>创建时间</TableHead>
+            <TableHead class="text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-for="post in posts" :key="post.cid">
+            <TableCell class="font-medium">{{ post.title }}</TableCell>
+            <TableCell>
+              <Badge :variant="getStatusBadge(post.status).variant">
+                {{ getStatusBadge(post.status).label }}
+              </Badge>
+            </TableCell>
+            <TableCell>{{ post.comment_num || 0 }}</TableCell>
+            <TableCell>{{ formatDate(post.create_time) }}</TableCell>
+            <TableCell class="text-right">
+              <div class="flex items-center justify-end gap-2">
+                <Button variant="ghost" size="icon" class="size-8">
+                  <Icon name="lucide:pencil" class="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="size-8 text-destructive hover:text-destructive"
+                  @click="deletePost(post.cid)"
+                >
+                  <Icon name="lucide:trash-2" class="size-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <div v-if="posts.length === 0" class="text-center py-12">
+        <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
+        <p class="text-muted-foreground">暂无文章</p>
+        <Button variant="outline" class="mt-4">
+          <Icon name="lucide:plus" class="mr-2 size-4" />
+          创建第一篇文章
+        </Button>
+      </div>
+    </Card>
+  </AdminLayout>
+</template>

@@ -1,149 +1,3 @@
-<template>
-  <div class="min-h-screen bg-background">
-    <div class="flex">
-      <aside class="w-64 border-r bg-card min-h-screen p-4">
-        <h1 class="text-xl font-bold mb-6">后台管理</h1>
-        <nav class="space-y-2">
-          <NuxtLink to="/admin" class="block px-4 py-2 rounded hover:bg-accent">仪表盘</NuxtLink>
-          <NuxtLink to="/admin/posts" class="block px-4 py-2 rounded hover:bg-accent">文章管理</NuxtLink>
-          <NuxtLink to="/admin/comments" class="block px-4 py-2 rounded hover:bg-accent">评论管理</NuxtLink>
-          <NuxtLink to="/admin/categories" class="block px-4 py-2 rounded hover:bg-accent">分类管理</NuxtLink>
-          <NuxtLink to="/admin/users" class="block px-4 py-2 rounded hover:bg-accent">用户管理</NuxtLink>
-          <NuxtLink to="/admin/links" class="block px-4 py-2 rounded hover:bg-accent">友情链接</NuxtLink>
-          <NuxtLink to="/admin/settings" class="block px-4 py-2 rounded bg-accent">系统设置</NuxtLink>
-        </nav>
-      </aside>
-
-      <main class="flex-1 p-8">
-        <h2 class="text-2xl font-bold mb-6">系统设置</h2>
-
-        <div class="space-y-6">
-          <!-- 基本信息 -->
-          <div class="bg-card border rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-4">基本信息</h3>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium mb-1">网站名称</label>
-                <input v-model="settings.siteName" type="text" class="w-full px-3 py-2 border rounded bg-background" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium mb-1">网站描述</label>
-                <input v-model="settings.siteDesc" type="text" class="w-full px-3 py-2 border rounded bg-background" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium mb-1">网站关键词</label>
-                <input v-model="settings.siteKeywords" type="text" class="w-full px-3 py-2 border rounded bg-background" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium mb-1">备案号</label>
-                <input v-model="settings.siteIcp" type="text" class="w-full px-3 py-2 border rounded bg-background" />
-              </div>
-            </div>
-          </div>
-
-          <!-- 评论设置 -->
-          <div class="bg-card border rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-4">评论设置</h3>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-medium">开启评论</div>
-                  <div class="text-sm text-muted-foreground">是否允许用户发表评论</div>
-                </div>
-                <input v-model="settings.commentEnabled" type="checkbox" class="w-5 h-5" />
-              </div>
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-medium">评论审核</div>
-                  <div class="text-sm text-muted-foreground">新评论需要审核后才能显示</div>
-                </div>
-                <input v-model="settings.commentModeration" type="checkbox" class="w-5 h-5" />
-              </div>
-            </div>
-          </div>
-
-          <!-- 订阅列表 -->
-          <div class="bg-card border rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-4">订阅列表</h3>
-            <div class="space-y-4">
-              <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded">
-                <img v-if="sub.avatar" :src="sub.avatar" class="w-12 h-12 rounded" />
-                <div class="flex-1">
-                  <div class="font-medium">{{ sub.name }}</div>
-                  <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline">{{ sub.url }}</a>
-                </div>
-                <button @click="deleteSubscribe(sub.id)" class="px-3 py-1 text-sm bg-destructive text-destructive-foreground rounded hover:opacity-80">删除</button>
-              </div>
-              <div class="border-t pt-4">
-                <h4 class="font-medium mb-3">添加订阅</h4>
-                <div class="grid grid-cols-4 gap-4">
-                  <input v-model="newSubscribe.name" type="text" placeholder="名称" class="px-3 py-2 border rounded bg-background" />
-                  <input v-model="newSubscribe.url" type="url" placeholder="RSS URL" class="px-3 py-2 border rounded bg-background" />
-                  <input v-model="newSubscribe.avatar" type="url" placeholder="头像 URL" class="px-3 py-2 border rounded bg-background" />
-                  <button @click="addSubscribe" class="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90">添加</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 更新日志 -->
-          <div class="bg-card border rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-lg font-semibold">更新日志</h3>
-              <button @click="showChangelogModal = true" class="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 text-sm">
-                添加日志
-              </button>
-            </div>
-            <div class="space-y-4">
-              <div v-for="log in changelogs" :key="log.id" class="p-4 border rounded">
-                <div class="flex justify-between items-start mb-2">
-                  <span class="px-2 py-1 bg-secondary rounded text-sm">{{ log.class }}</span>
-                  <span class="text-sm text-muted-foreground">{{ formatDate(log.create_time) }}</span>
-                </div>
-                <p class="text-foreground">{{ log.desc }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 保存按钮 -->
-          <div class="flex justify-end">
-            <button @click="saveSettings" class="px-6 py-2 bg-primary text-primary-foreground rounded hover:opacity-90">
-              保存设置
-            </button>
-          </div>
-        </div>
-      </main>
-    </div>
-
-    <!-- 添加更新日志弹窗 -->
-    <div v-if="showChangelogModal" class="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div class="bg-card rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-bold mb-4">添加更新日志</h3>
-        <form @submit.prevent="addChangelog">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium mb-1">类型</label>
-              <select v-model="newChangelog.class" class="w-full px-3 py-2 border rounded bg-background">
-                <option value="feature">新功能</option>
-                <option value="fix">修复</option>
-                <option value="improvement">优化</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1">描述</label>
-              <textarea v-model="newChangelog.desc" required class="w-full px-3 py-2 border rounded bg-background" rows="4"></textarea>
-            </div>
-          </div>
-          <div class="flex justify-end gap-2 mt-6">
-            <button type="button" @click="showChangelogModal = false" class="px-4 py-2 bg-secondary rounded hover:bg-accent">取消</button>
-            <button type="submit" class="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90">确定</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 const settings = ref({
   siteName: '',
@@ -151,7 +5,7 @@ const settings = ref({
   siteKeywords: '',
   siteIcp: '',
   commentEnabled: true,
-  commentModeration: false
+  commentModeration: false,
 })
 
 const subscribes = ref<any[]>([])
@@ -163,52 +17,84 @@ const newChangelog = ref({ class: 'feature', desc: '' })
 
 // 加载设置
 async function loadSettings() {
-  settings.value = await $fetch('/api/admin/settings') as any
+  try {
+    settings.value = await $fetch('/api/admin/settings') as any
+  } catch (error) {
+    console.error('获取设置失败:', error)
+  }
 }
 
 // 保存设置
 async function saveSettings() {
-  await $fetch('/api/admin/settings', {
-    method: 'POST',
-    body: settings.value
-  })
-  alert('设置已保存')
+  try {
+    await $fetch('/api/admin/settings', {
+      method: 'POST',
+      body: settings.value,
+    })
+    // TODO: 使用 shadcn 的 Toast 组件替代 alert
+    alert('设置已保存')
+  } catch (error) {
+    console.error('保存失败:', error)
+  }
 }
 
 // 加载订阅列表
 async function loadSubscribes() {
-  subscribes.value = await $fetch('/api/admin/subscribes') as any[]
+  try {
+    subscribes.value = await $fetch('/api/admin/subscribes') as any[]
+  } catch (error) {
+    console.error('获取订阅失败:', error)
+    subscribes.value = []
+  }
 }
 
 async function addSubscribe() {
-  await $fetch('/api/admin/subscribes', {
-    method: 'POST',
-    body: newSubscribe.value
-  })
-  newSubscribe.value = { name: '', url: '', avatar: '' }
-  await loadSubscribes()
+  try {
+    await $fetch('/api/admin/subscribes', {
+      method: 'POST',
+      body: newSubscribe.value,
+    })
+    newSubscribe.value = { name: '', url: '', avatar: '' }
+    await loadSubscribes()
+  } catch (error) {
+    console.error('添加失败:', error)
+  }
 }
 
 async function deleteSubscribe(id: number) {
-  if (confirm('确定要删除这个订阅吗？')) {
-    await $fetch(`/api/admin/subscribes/${id}`, { method: 'DELETE' })
-    await loadSubscribes()
+  const confirmed = confirm('确定要删除这个订阅吗？')
+  if (confirmed) {
+    try {
+      await $fetch(`/api/admin/subscribes/${id}`, { method: 'DELETE' })
+      await loadSubscribes()
+    } catch (error) {
+      console.error('删除失败:', error)
+    }
   }
 }
 
 // 加载更新日志
 async function loadChangelogs() {
-  changelogs.value = await $fetch('/api/admin/changelogs') as any[]
+  try {
+    changelogs.value = await $fetch('/api/admin/changelogs') as any[]
+  } catch (error) {
+    console.error('获取更新日志失败:', error)
+    changelogs.value = []
+  }
 }
 
 async function addChangelog() {
-  await $fetch('/api/admin/changelogs', {
-    method: 'POST',
-    body: newChangelog.value
-  })
-  newChangelog.value = { class: 'feature', desc: '' }
-  showChangelogModal.value = false
-  await loadChangelogs()
+  try {
+    await $fetch('/api/admin/changelogs', {
+      method: 'POST',
+      body: newChangelog.value,
+    })
+    newChangelog.value = { class: 'feature', desc: '' }
+    showChangelogModal.value = false
+    await loadChangelogs()
+  } catch (error) {
+    console.error('添加失败:', error)
+  }
 }
 
 function formatDate(date: string) {
@@ -221,3 +107,180 @@ onMounted(() => {
   loadChangelogs()
 })
 </script>
+
+<template>
+  <AdminLayout>
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">系统设置</h2>
+      <p class="text-sm text-muted-foreground mt-1">管理系统配置和参数</p>
+    </div>
+
+    <div class="space-y-6">
+      <!-- 基本信息 -->
+      <Card>
+        <CardHeader>
+          <CardTitle>基本信息</CardTitle>
+          <CardDescription>配置网站的基本信息</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="siteName">网站名称</Label>
+              <Input id="siteName" v-model="settings.siteName" placeholder="我的网站" />
+            </div>
+            <div class="space-y-2">
+              <Label for="siteDesc">网站描述</Label>
+              <Input id="siteDesc" v-model="settings.siteDesc" placeholder="网站描述" />
+            </div>
+            <div class="space-y-2">
+              <Label for="siteKeywords">网站关键词</Label>
+              <Input id="siteKeywords" v-model="settings.siteKeywords" placeholder="关键词" />
+            </div>
+            <div class="space-y-2">
+              <Label for="siteIcp">备案号</Label>
+              <Input id="siteIcp" v-model="settings.siteIcp" placeholder="备案号" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- 评论设置 -->
+      <Card>
+        <CardHeader>
+          <CardTitle>评论设置</CardTitle>
+          <CardDescription>配置评论功能</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="space-y-0.5">
+              <Label for="commentEnabled">开启评论</Label>
+              <p class="text-sm text-muted-foreground">是否允许用户发表评论</p>
+            </div>
+            <Switch id="commentEnabled" v-model:checked="settings.commentEnabled" />
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="space-y-0.5">
+              <Label for="commentModeration">评论审核</Label>
+              <p class="text-sm text-muted-foreground">新评论需要审核后才能显示</p>
+            </div>
+            <Switch id="commentModeration" v-model:checked="settings.commentModeration" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- 订阅列表 -->
+      <Card>
+        <CardHeader>
+          <CardTitle>订阅列表</CardTitle>
+          <CardDescription>管理 RSS 订阅源</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="space-y-4">
+            <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded-lg">
+              <Avatar class="size-12">
+                <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
+                <AvatarFallback>{{ sub.name?.charAt(0) || '?' }}</AvatarFallback>
+              </Avatar>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium">{{ sub.name }}</p>
+                <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
+                  {{ sub.url }}
+                </a>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 text-destructive hover:text-destructive"
+                @click="deleteSubscribe(sub.id)"
+              >
+                <Icon name="lucide:trash-2" class="size-4" />
+              </Button>
+            </div>
+            <Separator />
+            <div>
+              <h4 class="font-medium mb-3">添加订阅</h4>
+              <form @submit.prevent="addSubscribe" class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <Input v-model="newSubscribe.name" placeholder="名称" required />
+                <Input v-model="newSubscribe.url" type="url" placeholder="RSS URL" required />
+                <Input v-model="newSubscribe.avatar" type="url" placeholder="头像 URL" />
+                <Button type="submit">添加</Button>
+              </form>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- 更新日志 -->
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle>更新日志</CardTitle>
+              <CardDescription>记录系统更新历史</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" @click="showChangelogModal = true">
+              <Icon name="lucide:plus" class="mr-2 size-4" />
+              添加日志
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="space-y-4">
+            <div v-for="log in changelogs" :key="log.id" class="p-4 border rounded-lg">
+              <div class="flex justify-between items-start mb-2">
+                <Badge variant="outline">{{ log.class }}</Badge>
+                <span class="text-sm text-muted-foreground">{{ formatDate(log.create_time) }}</span>
+              </div>
+              <p class="text-foreground">{{ log.desc }}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- 保存按钮 -->
+      <div class="flex justify-end">
+        <Button size="lg" @click="saveSettings">
+          <Icon name="lucide:save" class="mr-2 size-4" />
+          保存设置
+        </Button>
+      </div>
+    </div>
+
+    <!-- 添加更新日志弹窗 -->
+    <Dialog v-model:open="showChangelogModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>添加更新日志</DialogTitle>
+          <DialogDescription>记录一次系统更新</DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="addChangelog">
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label for="logClass">类型</Label>
+              <Select v-model="newChangelog.class">
+                <SelectTrigger id="logClass">
+                  <SelectValue placeholder="选择类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="feature">新功能</SelectItem>
+                  <SelectItem value="fix">修复</SelectItem>
+                  <SelectItem value="improvement">优化</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-2">
+              <Label for="logDesc">描述</Label>
+              <Textarea id="logDesc" v-model="newChangelog.desc" placeholder="更新内容描述" rows="4" required />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="showChangelogModal = false">
+              取消
+            </Button>
+            <Button type="submit">确定</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  </AdminLayout>
+</template>
