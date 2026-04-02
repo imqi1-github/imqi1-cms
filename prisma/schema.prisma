@@ -59,6 +59,7 @@ model Comment {
   coid        Int      @id @default(autoincrement())
   cid         Int
   name        String
+  mail        String?
   link        String?
   avatar      String?
   content     String   @db.Text
