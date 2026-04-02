@@ -47,9 +47,14 @@ const isActive = (href: string) => {
   return route.path.startsWith(href)
 }
 
-const handleLogout = () => {
-  // TODO: 实现登出逻辑
-  router.push('/login')
+const handleLogout = async () => {
+  try {
+    await $fetch('/api/auth/logout', { method: 'POST' })
+  } catch (e) {
+    // 忽略错误
+  } finally {
+    await navigateTo('/login')
+  }
 }
 </script>
 

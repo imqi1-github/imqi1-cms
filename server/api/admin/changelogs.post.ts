@@ -1,7 +1,7 @@
-import prisma from '~/server/utils/prisma'
+import prisma from "#server/utils/prisma";
 
-export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+export default defineEventHandler(async event => {
+  const body = await readBody(event);
 
   try {
     const changelog = await prisma.changelog.create({
@@ -9,12 +9,12 @@ export default defineEventHandler(async (event) => {
         class: body.class,
         desc: body.desc,
       },
-    })
-    return changelog
+    });
+    return changelog;
   } catch (error) {
     throw createError({
       statusCode: 500,
-      message: '创建更新日志失败',
-    })
+      message: "创建更新日志失败",
+    });
   }
-})
+});

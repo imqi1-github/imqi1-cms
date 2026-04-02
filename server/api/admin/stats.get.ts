@@ -1,4 +1,4 @@
-import prisma from '~/server/utils/prisma'
+import prisma from "#server/utils/prisma";
 
 export default defineEventHandler(async () => {
   try {
@@ -7,18 +7,18 @@ export default defineEventHandler(async () => {
       prisma.comment.count(),
       prisma.category.count(),
       prisma.user.count(),
-    ])
+    ]);
 
     return {
       posts: postsCount,
       comments: commentsCount,
       categories: categoriesCount,
       users: usersCount,
-    }
+    };
   } catch (error) {
     throw createError({
       statusCode: 500,
-      message: '获取统计数据失败',
-    })
+      message: "获取统计数据失败",
+    });
   }
-})
+});

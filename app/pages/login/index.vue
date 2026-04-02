@@ -19,6 +19,7 @@
             type="password"
             v-model="form.password"
             placeholder="请输入密码"
+            @keyup.enter="handleLogin"
           />
         </div>
 
@@ -35,6 +36,10 @@
 </template>
 
 <script setup lang="ts">
+// 获取目标跳转地址
+const route = useRoute()
+const redirectTo = computed(() => route.query.to as string || '/admin')
+
 const form = reactive({
   username: '',
   password: '',
@@ -59,8 +64,8 @@ const handleLogin = async () => {
       body: form,
     })
 
-    // 登录成功跳转
-    await navigateTo('/admin')
+    // 登录成功，跳转到目标页面
+    await navigateTo(redirectTo.value)
   } catch (e: any) {
     error.value = e?.data?.message || '登录失败'
   } finally {

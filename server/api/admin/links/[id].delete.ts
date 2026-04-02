@@ -1,23 +1,23 @@
-import prisma from '~/server/utils/prisma'
+import prisma from "#server/utils/prisma";
 
-export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
+export default defineEventHandler(async event => {
+  const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: '缺少链接 ID',
-    })
+      message: "缺少链接 ID",
+    });
   }
 
   try {
     await prisma.link.delete({
       where: { id: Number(id) },
-    })
-    return { success: true }
+    });
+    return { success: true };
   } catch (error) {
     throw createError({
       statusCode: 500,
-      message: '删除链接失败',
-    })
+      message: "删除链接失败",
+    });
   }
-})
+});

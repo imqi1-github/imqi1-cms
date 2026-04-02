@@ -1,7 +1,7 @@
-import prisma from '~/server/utils/prisma'
+import prisma from "#server/utils/prisma";
 
-export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+export default defineEventHandler(async event => {
+  const body = await readBody(event);
   try {
     const user = await prisma.user.create({
       data: {
@@ -10,12 +10,12 @@ export default defineEventHandler(async (event) => {
         password: body.password, // TODO: 使用 bcrypt 等库进行哈希
         role: body.role || 0,
       },
-    })
-    return user
+    });
+    return user;
   } catch (error) {
     throw createError({
       statusCode: 500,
-      message: '创建用户失败',
-    })
+      message: "创建用户失败",
+    });
   }
-})
+});
