@@ -10,12 +10,14 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@vueuse/core": "^14.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^4.4.2",
+    "pg": "^8.20.0",
     "radix-vue": "^1.9.17",
     "shadcn-nuxt": "^2.4.3",
     "tailwind-merge": "^3.5.0",
@@ -25,6 +27,7 @@
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.5.0",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
     "prisma": "^7.6.0",
