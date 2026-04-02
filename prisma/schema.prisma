@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 友情链接类
+model Link {
+  id       Int      @id @default(autoincrement())
+  name     String
+  desc     String?
+  link     String
+  avatar   String?
+  enabled  Boolean  @default(true)
+}
+
+// 订阅列表类
+model Subscribe {
+  id      Int     @id @default(autoincrement())
+  url     String
+  name    String
+  avatar  String?
+}
+
+// 更新日志类
+model Changelog {
+  id          Int      @id @default(autoincrement())
+  class       String
+  desc        String   @db.Text
+  create_time DateTime @default(now())
+}
+
+// 文章类
+model Post {
+  cid          Int       @id @default(autoincrement())
+  title        String
+  desc         String?   @db.Text
+  content      String?   @db.Text
+  create_time  DateTime  @default(now())
+  update_time  DateTime  @updatedAt
+  status       Int       @default(0)
+  comment_num  Int       @default(0)
+  many_covers  Boolean   @default(false)
+  covers       String?
+  show_toc     Boolean   @default(true)
+
+  // 关联
+  comments     Comment[]
+  relations    PostRelation[]
+}
+
+// 评论类
+model Comment {
+  coid        Int      @id @default(autoincrement())
+  cid         Int
+  name        String
+  link        String?
+  avatar      String?
+  content     String   @db.Text
+  create_time DateTime @default(now())
+  status      Int      @default(0)
+  parent_id   Int?
+  agent       String?
+  ip          String?
+
+  // 关联
+  post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
+}
+
+// 分类/话题类
+model Category {
+  mid    Int             @id @default(autoincrement())
+  name   String          @unique
+  desc   String?         @db.Text
+  class  String?
+
+  // 关联
+  relations PostRelation[]
+}
+
+// 关系类 (文章-分类 多对多)
+model PostRelation {
+  id    Int      @id @default(autoincrement())
+  cid   Int
+  mid   Int
+
+  // 关联
+  post  Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
+  category Category @relation(fields: [mid], references: [mid], onDelete: Cascade)
+
+  @@unique([cid, mid])
+}
+
+// 用户类
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  avatar     String?
+  mail       String   @unique
+  password   String
+  create     DateTime @default(now())
+  auth_code  String?
+  role       Int      @default(0)
+}
+
+// 元数据类
+model Meta {
+  id    Int     @id @default(autoincrement())
+  key   String  @unique
+  value String  @db.Text
+}
