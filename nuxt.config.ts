@@ -1,7 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  rootDir: '.',
+  rootDir: ".",
 
   devServer: {
     port: 4000,
@@ -20,6 +20,12 @@ export default defineNuxtConfig({
     plugins: {
       "@tailwindcss/postcss": {},
       autoprefixer: {},
+    },
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: ["@vue/devtools-core", "@vue/devtools-kit"],
     },
   },
 });
