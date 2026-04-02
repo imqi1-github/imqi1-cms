@@ -26,10 +26,6 @@
         <Button class="w-full" @click="handleLogin" :disabled="loading">
           {{ loading ? '登录中...' : '登录' }}
         </Button>
-
-        <p v-if="error" class="text-sm text-red-500">
-          {{ error }}
-        </p>
       </CardContent>
     </Card>
   </div>
@@ -40,34 +36,43 @@
 const route = useRoute()
 const redirectTo = computed(() => route.query.to as string || '/admin')
 
+const toast = useToast()
+
 const form = reactive({
   username: '',
   password: '',
 })
 
 const loading = ref(false)
-const error = ref('')
 
 const handleLogin = async () => {
-  error.value = ''
-
   if (!form.username || !form.password) {
-    error.value = '请填写完整信息'
+    toast.error({ message: '请填写完整信息' })
     return
   }
 
   loading.value = true
 
   try {
-    await $fetch('/api/auth/login', {
+    const res: any = await $fetch('/api/auth/login', {
       method: 'POST',
       body: form,
     })
 
-    // 登录成功，跳转到目标页面
+    // 登录成功，显示欢迎消息
+    toast.success({
+      message: `欢迎回来，${res.user?.name || '管理员'}！`,
+      description: '登录成功，正在跳转...',
+    })
+
+    // 延迟跳转，让用户看到 toast
+    await new Promise(resolve => setTimeout(resolve, 500))
     await navigateTo(redirectTo.value)
   } catch (e: any) {
-    error.value = e?.data?.message || '登录失败'
+    toast.error({
+      message: '登录失败',
+      description: e?.data?.message || '请检查用户名和密码',
+    })
   } finally {
     loading.value = false
   }
