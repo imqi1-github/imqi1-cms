@@ -8,7 +8,7 @@
 
     <div class="about-bold-main p-16 md:p-24 max-sm:p-4 relative z-10">
       <!-- 头部区域 -->
-      <div class="about-bold-header grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32">
+      <div class="about-bold-header ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32">
         <div class="about-bold-header-left pl-8">
           <div class="about-bold-avatar w-48 h-48 rounded-full border-6 border-slate-100 shadow-lg overflow-hidden mb-8">
             <img src="@/assets/imgs/avatar.webp" alt="Qi1" class="w-full h-full object-cover" />
@@ -31,7 +31,7 @@
       </div>
 
       <!-- 游山玩水 -->
-      <div class="about-bold-section about-bold-section-left ml-5% mb-24">
+      <div class="about-bold-section about-bold-section-left ready ml-5% mb-24">
         <div class="about-bold-number text-blue-600 text-xs font-bold mb-2">01</div>
         <h2 class="about-bold-section-title text-slate-900 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8">
           游山玩水
@@ -71,7 +71,7 @@
       </div>
 
       <!-- 技多不压身 -->
-      <div class="about-bold-section about-bold-section-right ml-50% mb-24">
+      <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
         <div class="about-bold-number text-blue-600 text-xs font-bold mb-2">02</div>
         <h2 class="about-bold-section-title text-slate-900 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8">
           技多不压身
@@ -225,7 +225,7 @@
       </div>
 
       <!-- 兴趣广泛 -->
-      <div class="about-bold-section about-bold-section-left ml-[5%] mb-24">
+      <div class="about-bold-section about-bold-section-left ready ml-5% mb-24">
         <div class="about-bold-number text-blue-600 text-xs font-bold mb-2">03</div>
         <h2 class="about-bold-section-title text-slate-900 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8">
           兴趣广泛
@@ -259,7 +259,7 @@
       </div>
 
       <!-- 16 Personality -->
-      <div class="about-bold-section about-bold-section-right ml-50% mb-24">
+      <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
         <div class="about-bold-number text-blue-600 text-xs font-bold mb-2">04</div>
         <h2 class="about-bold-section-title text-slate-900 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8">
           16 Personality
@@ -284,37 +284,47 @@
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 text-sm w-16">外向</div>
               <div class="about-bold-mbti-bar-track bg-slate-200 rounded-full flex-1 h-2 overflow-hidden">
-                <div class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000" style="width: 78%"></div>
+                <div
+                  class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000"
+                  :style="{ width: animatedMbtiData.extroversion + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">78%</div>
+              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">{{ animatedMbtiData.extroversion }}%</div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 text-sm w-16">直觉</div>
               <div class="about-bold-mbti-bar-track bg-slate-200 rounded-full flex-1 h-2 overflow-hidden">
-                <div class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000" style="width: 64%"></div>
+                <div
+                  class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000"
+                  :style="{ width: animatedMbtiData.intuition + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">64%</div>
+              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">{{ animatedMbtiData.intuition }}%</div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 text-sm w-16">思维</div>
               <div class="about-bold-mbti-bar-track bg-slate-200 rounded-full flex-1 h-2 overflow-hidden">
-                <div class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000" style="width: 71%"></div>
+                <div
+                  class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000"
+                  :style="{ width: animatedMbtiData.thinking + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">71%</div>
+              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">{{ animatedMbtiData.thinking }}%</div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 text-sm w-16">展望</div>
               <div class="about-bold-mbti-bar-track bg-slate-200 rounded-full flex-1 h-2 overflow-hidden">
-                <div class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000" style="width: 76%"></div>
+                <div
+                  class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000"
+                  :style="{ width: animatedMbtiData.prospecting + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">76%</div>
+              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">{{ animatedMbtiData.prospecting }}%</div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 text-sm w-16">坚决</div>
               <div class="about-bold-mbti-bar-track bg-slate-200 rounded-full flex-1 h-2 overflow-hidden">
-                <div class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000" style="width: 69%"></div>
+                <div
+                  class="about-bold-mbti-bar-fill bg-blue-600 rounded-full h-full transition-all duration-1000"
+                  :style="{ width: animatedMbtiData.assertive + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">69%</div>
+              <div class="about-bold-mbti-bar-value text-slate-800 text-sm font-semibold text-right w-12">{{ animatedMbtiData.assertive }}%</div>
             </div>
           </div>
           <a
@@ -327,7 +337,7 @@
       </div>
 
       <!-- 站点统计 -->
-      <div class="about-bold-section about-bold-section-left ml-5% mb-24">
+      <div class="about-bold-section about-bold-section-left ready ml-5% mb-24">
         <div class="about-bold-number text-blue-600 text-xs font-bold mb-2">05</div>
         <h2 class="about-bold-section-title text-slate-900 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8">
           站点统计
@@ -338,22 +348,22 @@
             <div class="about-bold-stat-label text-slate-600 text-xs tracking-widest uppercase">建站年份</div>
           </div>
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 text-3xl font-black leading-none mb-2">{{ stats.publishedPostsNum }}</div>
+            <div class="about-bold-stat-number text-blue-600 text-3xl font-black leading-none mb-2">{{ animatedStats.publishedPostsNum }}</div>
             <div class="about-bold-stat-label text-slate-600 text-xs tracking-widest uppercase">篇文章</div>
           </div>
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 text-3xl font-black leading-none mb-2">{{ stats.publishedCommentsNum }}</div>
+            <div class="about-bold-stat-number text-blue-600 text-3xl font-black leading-none mb-2">{{ animatedStats.publishedCommentsNum }}</div>
             <div class="about-bold-stat-label text-slate-600 text-xs tracking-widest uppercase">评论</div>
           </div>
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 text-3xl font-black leading-none mb-2">30</div>
+            <div class="about-bold-stat-number text-blue-600 text-3xl font-black leading-none mb-2">{{ animatedStats.techStack }}</div>
             <div class="about-bold-stat-label text-slate-600 text-xs tracking-widest uppercase">技术栈</div>
           </div>
         </div>
       </div>
 
       <!-- 交个朋友 -->
-      <div class="about-bold-section about-bold-section-right ml-50% mb-24">
+      <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
         <div class="about-bold-number text-blue-600 text-xs font-bold mb-2">06</div>
         <h2 class="about-bold-section-title text-slate-900 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8">
           交个朋友
@@ -384,7 +394,7 @@
       </div>
 
       <!-- 引言 -->
-      <div class="about-bold-quote my-24 py-16 relative">
+      <div class="about-bold-quote ready my-24 py-16 relative">
         <div class="about-bold-quote-text text-slate-900 text-2xl font-bold leading-relaxed max-w-2xl pl-12 relative">
           <div class="absolute -top-36 left-0 text-[12em] text-slate-200 size-fit -z-1 opacity-55">"</div>
           山海寻梦，不觉其远<br />前路迢迢，阔步而行
@@ -393,7 +403,7 @@
       </div>
 
       <!-- 导航 -->
-      <div class="about-bold-section mb-24">
+      <div class="about-bold-section ready mb-24">
         <div class="about-bold-nav grid grid-cols-1 md:grid-cols-3 gap-6">
           <a
             href="/archiving"
@@ -435,7 +445,7 @@
       </div>
 
       <!-- 更多故事 -->
-      <div class="about-bold-content-section border-t-2 border-slate-200 mt-32 pt-12">
+      <div class="about-bold-content-section ready border-t-2 border-slate-200 mt-32 pt-12">
         <h2 class="about-bold-content-title text-slate-900 text-[clamp(2.5rem,6vw,4rem)] font-black tracking-tight leading-none mb-12">更多故事</h2>
         <div class="about-bold-content text-slate-800 text-lg leading-relaxed max-w-2xl space-y-8">
           <!-- 第一节：关于本站 -->
@@ -450,7 +460,9 @@
             <h3 class="text-2xl font-bold text-slate-900 mb-4">框架？主题？</h3>
             <p class="mb-4">你所看到的这一版网站是我制作的第二款主题，第一款框架，整体采用 Nuxt 4 编写，我给这个 CMS 取名为 Glass。</p>
             <p class="mb-4"></p>
-            <p class="mb-4">这款主题从 2026 年 4 月 1 日开始制作，保留了之前 Typecho 版本的绝大多数功能，可以让我在更改技术栈的同时，继续使用之前的功能。</p>
+            <p class="mb-4">
+              这款主题从 2026 年 4 月 1 日开始制作，保留了之前 Typecho 版本的绝大多数功能，可以让我在更改技术栈的同时，继续使用之前的功能。
+            </p>
             <p>本主题不开源。</p>
           </div>
         </div>
@@ -471,16 +483,138 @@ const stats = ref({
   publishedCommentsNum: 500,
 });
 
+// 动画用的统计数据
+const animatedStats = ref({
+  publishedPostsNum: 0,
+  publishedCommentsNum: 0,
+  techStack: 0,
+});
+
 // 模拟内容
 const content = ref("");
 
+// MBTI数据
+const mbtiData = ref({
+  extroversion: 78,
+  intuition: 64,
+  thinking: 71,
+  prospecting: 76,
+  assertive: 69,
+});
+
+// MBTI动画数据
+const animatedMbtiData = ref({
+  extroversion: 0,
+  intuition: 0,
+  thinking: 0,
+  prospecting: 0,
+  assertive: 0,
+});
+
+// 数字动画函数
+const animateNumber = (from, to, duration, callback) => {
+  let start = performance.now();
+  let current = from;
+  const range = to - from;
+
+  const updateNumber = timestamp => {
+    const elapsed = timestamp - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // 使用缓动函数
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    current = Math.floor(from + range * easeProgress);
+    callback(current);
+
+    if (progress < 1) {
+      requestAnimationFrame(updateNumber);
+    }
+  };
+
+  requestAnimationFrame(updateNumber);
+};
+
 // 滚动动画
 onMounted(() => {
+  // 立即检查首屏元素
+  const checkInitialElements = () => {
+    const elements = document.querySelectorAll(".ready");
+    elements.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      // 检查元素是否在视口内
+      const isInViewport =
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+
+      if (isInViewport) {
+        el.classList.add("fadeIn");
+        // 立即移除ready类，避免透明度为0的问题
+        setTimeout(() => {
+          el.classList.remove("ready");
+        }, 50);
+
+        // 站点统计数字动画
+        if (el.querySelector(".about-bold-stats")) {
+          animateNumber(0, stats.value.publishedPostsNum, 2000, value => {
+            animatedStats.value.publishedPostsNum = value;
+          });
+          animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
+            animatedStats.value.publishedCommentsNum = value;
+          });
+          animateNumber(0, 30, 2000, value => {
+            animatedStats.value.techStack = value;
+          });
+        }
+
+        // MBTI进度条动画
+        if (el.querySelector(".about-bold-mbti-bars")) {
+          setTimeout(() => {
+            animatedMbtiData.value = { ...mbtiData.value };
+          }, 300);
+        }
+      }
+    });
+  };
+
+  // 立即执行首屏检查
+  checkInitialElements();
+
+  // 继续使用IntersectionObserver监听滚动
   const observer = new IntersectionObserver(
     entries => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && entry.target.classList.contains("ready")) {
           entry.target.classList.add("fadeIn");
+
+          // 监听动画完成事件，移除ready类
+          entry.target.addEventListener(
+            "animationend",
+            () => {
+              entry.target.classList.remove("ready");
+            },
+            { once: true },
+          );
+
+          // 站点统计数字动画
+          if (entry.target.querySelector(".about-bold-stats")) {
+            animateNumber(0, stats.value.publishedPostsNum, 2000, value => {
+              animatedStats.value.publishedPostsNum = value;
+            });
+            animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
+              animatedStats.value.publishedCommentsNum = value;
+            });
+            animateNumber(0, 30, 2000, value => {
+              animatedStats.value.techStack = value;
+            });
+          }
+
+          // MBTI进度条动画
+          if (entry.target.querySelector(".about-bold-mbti-bars")) {
+            setTimeout(() => {
+              animatedMbtiData.value = { ...mbtiData.value };
+            }, 300);
+          }
         }
       });
     },
