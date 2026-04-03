@@ -1,7 +1,12 @@
 @import "tailwindcss";
 @import "./vue-sonner.css";
+@import "@/assets/fonts/font.css";
 
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-serif: "Noto Serif SC", serif;
+}
 
 @layer base {
   :root {
