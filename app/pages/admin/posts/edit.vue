@@ -136,7 +136,7 @@ onMounted(() => {
 
           <!-- 文章内容 Tab -->
           <TabsContent value="content" class="mt-6">
-            <Card class="overflow-hidden pt-0">
+            <Card class="overflow-hidden px-0 pt-0">
               <CardContent class="p-0">
                 <MarkdownEditor v-model="content" />
               </CardContent>

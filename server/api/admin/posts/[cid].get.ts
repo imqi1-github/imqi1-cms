@@ -12,6 +12,15 @@ export default defineEventHandler(async event => {
 
   const post = await prisma.post.findUnique({
     where: { cid },
+    include: {
+      user: {
+        select: {
+          uid: true,
+          name: true,
+          avatar: true,
+        },
+      },
+    },
   });
 
   if (!post) {

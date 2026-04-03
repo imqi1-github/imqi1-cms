@@ -11,6 +11,15 @@ export default defineEventHandler(async event => {
         orderBy: { create_time: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: {
+          user: {
+            select: {
+              uid: true,
+              name: true,
+              avatar: true,
+            },
+          },
+        },
       }),
       prisma.post.count(),
     ]);

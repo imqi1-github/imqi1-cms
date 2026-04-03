@@ -1,7 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 
 export interface SessionUser {
-  id: number;
+  uid: number;
   name: string;
   mail: string;
   avatar: string | null;
@@ -42,14 +42,14 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
 
   // 更新数据库中的 auth_code，实现单端登录
   await prisma.user.update({
-    where: { id: user.id },
+    where: { uid: user.uid },
     data: { auth_code: authCode },
   });
 
   // 清除该用户的所有旧 session
-  clearUserSessions(user.id);
+  clearUserSessions(user.uid);
 
-  sessions.set(sessionId, { userId: user.id, authCode, expires });
+  sessions.set(sessionId, { userId: user.uid, authCode, expires });
 
   setCookie(event, SESSION_COOKIE_NAME, sessionId, {
     secure: process.env.NODE_ENV === "production",
@@ -82,9 +82,9 @@ export async function getUser(event: any): Promise<SessionUser | null> {
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: session.userId },
+    where: { uid: session.userId },
     select: {
-      id: true,
+      uid: true,
       name: true,
       mail: true,
       avatar: true,
@@ -107,7 +107,7 @@ export async function getUser(event: any): Promise<SessionUser | null> {
   }
 
   return {
-    id: user.id,
+    uid: user.uid,
     name: user.name,
     mail: user.mail,
     avatar: user.avatar,

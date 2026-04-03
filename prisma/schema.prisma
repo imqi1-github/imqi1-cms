@@ -49,11 +49,13 @@ model Post {
   many_covers  Boolean   @default(false)
   covers       String?
   show_toc     Boolean   @default(true)
+  uid          Int       @default(1)
 
   // 关联
   comments     Comment[]
   relations    PostRelation[]
   attachments  Attachment[]
+  user         User      @relation(fields: [uid], references: [uid])
 }
 
 // 评论类
@@ -114,7 +116,7 @@ model PostRelation {
 
 // 用户类
 model User {
-  id         Int      @id @default(autoincrement())
+  uid         Int      @id @default(autoincrement())
   name       String   @unique
   avatar     String?
   mail       String   @unique
@@ -122,6 +124,9 @@ model User {
   create     DateTime @default(now())
   auth_code  String?
   role       Int      @default(0)
+
+  // 关联
+  posts      Post[]
 }
 
 // 元数据类

@@ -374,6 +374,7 @@ async function main() {
         status: 1, // 已发布
         comment_num: Math.floor(Math.random() * 10),
         show_toc: true,
+        uid: admin.uid, // 设置文章作者
       },
     })
     posts.push(post)

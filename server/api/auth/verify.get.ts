@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
   return {
     valid: true,
     user: {
-      id: user.id,
+      uid: user.uid,
       name: user.name,
       mail: user.mail,
       avatar: user.avatar,

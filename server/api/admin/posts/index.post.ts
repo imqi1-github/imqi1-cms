@@ -1,6 +1,16 @@
 import { prisma } from "#server/utils/prisma";
+import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
+  const user = await getUser(event);
+
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: "请先登录",
+    });
+  }
+
   const body = await readBody(event);
 
   const {
@@ -40,6 +50,7 @@ export default defineEventHandler(async event => {
       covers,
       show_toc: showToc,
       create_time: createTime,
+      uid: user.uid, // 设置文章作者为当前登录用户
     },
   });
 
