@@ -52,6 +52,7 @@ model Post {
   // 关联
   comments     Comment[]
   relations    PostRelation[]
+  attachments  Attachment[]
 }
 
 // 评论类
@@ -68,6 +69,19 @@ model Comment {
   parent_id   Int?
   agent       String?
   ip          String?
+
+  // 关联
+  post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
+}
+
+// 附件类
+model Attachment {
+  aid         Int      @id @default(autoincrement())
+  cid         Int
+  type        String
+  title       String
+  url         String
+  create_time DateTime @default(now())
 
   // 关联
   post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)

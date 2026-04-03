@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 // 验证会话是否有效（检查是否在其他设备登录）
 onMounted(async () => {
@@ -8,7 +9,10 @@ onMounted(async () => {
     const res = await $fetch('/api/auth/verify')
     if (!(res as any).valid) {
       // 会话已失效，跳转到登录页
-      await navigateTo('/login?message=' + encodeURIComponent('您的账号已在其他设备登录'))
+      toast.error({
+        message: '您的账号已在其他设备登录',  
+      });
+      await navigateTo('/login')
     }
   } catch {
     // 验证失败，跳转到登录页

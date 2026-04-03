@@ -34,6 +34,7 @@ export default defineNuxtConfig({
         "tailwind-merge",
         "reka-ui",
         "lucide-vue-next",
+        'vue-sonner',
       ],
     },
   },
