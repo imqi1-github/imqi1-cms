@@ -2,6 +2,8 @@
 const subscribes = ref<any[]>([]);
 const loading = ref(false);
 const showAddForm = ref(false);
+const updating = ref(false);
+const updateResult = ref<{ success: number; failed: number; total: number } | null>(null);
 
 const newSubscribe = ref({ name: "", url: "", avatar: "" });
 
@@ -33,20 +35,55 @@ async function addSubscribe() {
 }
 
 async function deleteSubscribe(id: number) {
-  const confirmed = confirm("确定要删除这个订阅吗？");
-  if (confirmed) {
-    try {
-      await $fetch(`/api/admin/subscribes/${id}`, { method: "DELETE" });
-      await loadSubscribes();
-    } catch (error) {
-      console.error("删除失败:", error);
-    }
+  try {
+    await $fetch(`/api/admin/subscribes/${id}`, { method: "DELETE" });
+    await loadSubscribes();
+  } catch (error) {
+    console.error("删除失败:", error);
+  }
+}
+
+async function updateSubscribes() {
+  updating.value = true;
+  updateResult.value = null;
+  try {
+    const response = await $fetch("/api/admin/subscribes/update", {
+      method: "POST",
+    }) as any;
+    updateResult.value = response.data;
+    await loadSubscribes();
+  } catch (error) {
+    console.error("更新失败:", error);
+  } finally {
+    updating.value = false;
+    setTimeout(() => {
+      updateResult.value = null;
+    }, 5000);
   }
 }
 
 function cancelAdd() {
   newSubscribe.value = { name: "", url: "", avatar: "" };
   showAddForm.value = false;
+}
+
+function formatDate(date: string | null) {
+  if (!date) return "从未更新";
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+
+  if (hours < 1) {
+    return "刚刚更新";
+  } else if (hours < 24) {
+    return `${hours}小时前更新`;
+  } else if (days < 7) {
+    return `${days}天前更新`;
+  } else {
+    return d.toLocaleDateString("zh-CN");
+  }
 }
 
 onMounted(() => {
@@ -58,8 +95,22 @@ onMounted(() => {
   <AdminLayout>
     <div class="mb-6">
       <h2 class="text-2xl font-bold">订阅列表</h2>
-      <p class="text-sm text-muted-foreground mt-1">管理 RSS 订阅源</p>
+      <p class="text-sm text-muted-foreground mt-1">管理 RSS 订阅源，每8小时自动更新</p>
     </div>
+
+    <!-- 更新结果提示 -->
+    <Card v-if="updateResult" class="mb-6 border-primary/50 bg-primary/5">
+      <CardContent class="p-4">
+        <div class="flex items-center gap-2">
+          <Icon name="lucide:check-circle" class="size-5 text-primary" />
+          <span class="font-medium">更新完成</span>
+          <span class="text-muted-foreground">
+            成功 {{ updateResult.success }}/{{ updateResult.total }} 个订阅源
+            <span v-if="updateResult.failed > 0">，失败 {{ updateResult.failed }} 个</span>
+          </span>
+        </div>
+      </CardContent>
+    </Card>
 
     <Card>
       <CardHeader>
@@ -68,10 +119,24 @@ onMounted(() => {
             <CardTitle>订阅源</CardTitle>
             <CardDescription>管理和配置 RSS 订阅源</CardDescription>
           </div>
-          <Button @click="showAddForm = true">
-            <Icon name="lucide:plus" class="mr-2 size-4" />
-            添加订阅
-          </Button>
+          <div class="flex gap-2">
+            <Button
+              variant="outline"
+              :disabled="updating"
+              @click="updateSubscribes"
+            >
+              <Icon
+                :name="updating ? 'lucide:loader-2' : 'lucide:refresh-cw'"
+                :class="{ 'animate-spin': updating }"
+                class="mr-2 size-4"
+              />
+              {{ updating ? '更新中...' : '手动更新' }}
+            </Button>
+            <Button @click="showAddForm = true">
+              <Icon name="lucide:plus" class="mr-2 size-4" />
+              添加订阅
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -97,6 +162,7 @@ onMounted(() => {
               <div class="h-4 bg-muted rounded w-32 animate-pulse mb-2" />
               <div class="h-4 bg-muted rounded w-48 animate-pulse" />
             </div>
+            <div class="h-4 bg-muted rounded w-24 animate-pulse" />
             <div class="size-8 bg-muted rounded-lg animate-pulse" />
           </div>
         </div>
@@ -112,6 +178,9 @@ onMounted(() => {
               <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
                 {{ sub.url }}
               </a>
+            </div>
+            <div class="text-sm text-muted-foreground min-w-[100px] text-right">
+              {{ formatDate(sub.lastUpdated) }}
             </div>
             <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
               <Icon name="lucide:trash-2" class="size-4" />

@@ -21,10 +21,28 @@ model Link {
 
 // 订阅列表类
 model Subscribe {
-  id      Int     @id @default(autoincrement())
-  url     String
-  name    String
-  avatar  String?
+  id           Int            @id @default(autoincrement())
+  url          String
+  name         String
+  avatar       String?
+  lastUpdated  DateTime?
+  posts        SubscribePost[]
+}
+
+// 订阅文章类
+model SubscribePost {
+  id           Int       @id @default(autoincrement())
+  subscribeId  Int
+  title        String
+  link         String     @unique
+  description  String?    @db.Text
+  content      String?    @db.Text
+  author       String?
+  pubDate      DateTime?
+  create_time  DateTime  @default(now())
+
+  // 关联
+  subscribe    Subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade)
 }
 
 // 更新日志类

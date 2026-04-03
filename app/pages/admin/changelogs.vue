@@ -39,14 +39,11 @@ async function addChangelog() {
 }
 
 async function deleteChangelog(id: number) {
-  const confirmed = confirm("确定要删除这条日志吗？");
-  if (confirmed) {
-    try {
-      await $fetch(`/api/admin/changelogs/${id}`, { method: "DELETE" });
-      await loadChangelogs();
-    } catch (error) {
-      console.error("删除失败:", error);
-    }
+  try {
+    await $fetch(`/api/admin/changelogs/${id}`, { method: "DELETE" });
+    await loadChangelogs();
+  } catch (error) {
+    console.error("删除失败:", error);
   }
 }
 
