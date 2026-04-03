@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const toast = useToast()
+const loading = ref(true)
 const comments = ref<any[]>([])
 const pagination = ref({
   page: 1,
@@ -26,6 +27,7 @@ const statusOptions = [
 ]
 
 async function fetchComments(page: number = 1) {
+  loading.value = true
   try {
     const res = await $fetch(`/api/admin/comments?page=${page}&pageSize=10`) as any
     comments.value = res.data || []
@@ -33,6 +35,8 @@ async function fetchComments(page: number = 1) {
   } catch (error) {
     console.error('获取评论失败:', error)
     comments.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -136,7 +140,52 @@ onMounted(() => {
     </div>
 
     <Card>
-      <Table>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>评论者</TableHead>
+              <TableHead>内容</TableHead>
+              <TableHead>文章</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead>时间</TableHead>
+              <TableHead class="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="flex items-center gap-3">
+                  <div class="size-8 bg-muted rounded-full animate-pulse" />
+                  <div class="space-y-1">
+                    <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+                    <div class="h-3 bg-muted rounded w-32 animate-pulse" />
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-full max-w-md animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-6 bg-muted rounded w-16 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-32 animate-pulse" />
+              </TableCell>
+              <TableCell class="text-right">
+                <div class="size-8 bg-muted rounded-lg animate-pulse ms-auto" />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <!-- 数据列表 -->
+      <Table v-else>
         <TableHeader>
           <TableRow>
             <TableHead>评论者</TableHead>
@@ -217,13 +266,13 @@ onMounted(() => {
       </Table>
 
       <!-- 空状态 -->
-      <div v-if="comments.length === 0" class="text-center py-12">
+      <div v-if="!loading && comments.length === 0" class="text-center py-12">
         <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无评论</p>
       </div>
 
       <!-- 分页 -->
-      <div v-if="pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
+      <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground">
           共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
         </p>

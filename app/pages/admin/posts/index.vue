@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const router = useRouter()
+const loading = ref(true)
 const posts = ref<any[]>([])
 const pagination = ref({
   page: 1,
@@ -9,6 +10,7 @@ const pagination = ref({
 })
 
 async function fetchPosts(page: number = 1) {
+  loading.value = true
   try {
     const res = await $fetch(`/api/admin/posts?page=${page}&pageSize=5`) as any
     posts.value = res.data || []
@@ -16,6 +18,8 @@ async function fetchPosts(page: number = 1) {
   } catch (error) {
     console.error('获取文章失败:', error)
     posts.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -76,7 +80,45 @@ onMounted(() => {
 
     <!-- 文章列表 -->
     <Card>
-      <Table>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>标题</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead>评论数</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead class="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-6 bg-muted rounded w-12 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+              </TableCell>
+              <TableCell class="text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <!-- 数据列表 -->
+      <Table v-else>
         <TableHeader>
           <TableRow>
             <TableHead>标题</TableHead>
@@ -116,7 +158,7 @@ onMounted(() => {
       </Table>
 
       <!-- 空状态 -->
-      <div v-if="posts.length === 0" class="text-center py-12">
+      <div v-if="!loading && posts.length === 0" class="text-center py-12">
         <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无文章</p>
         <Button variant="outline" class="mt-4" @click="createPost">
@@ -126,7 +168,7 @@ onMounted(() => {
       </div>
 
       <!-- 分页 -->
-      <div v-if="pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
+      <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground">
           共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
         </p>

@@ -1,14 +1,18 @@
 <script setup lang="ts">
+const loading = ref(true)
 const categories = ref<any[]>([])
 const showAddModal = ref(false)
 const newCategory = ref({ name: '', desc: '', class: '' })
 
 async function fetchCategories() {
+  loading.value = true
   try {
     categories.value = await $fetch('/api/admin/categories') as any[]
   } catch (error) {
     console.error('获取分类失败:', error)
     categories.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -57,7 +61,41 @@ onMounted(() => {
     </div>
 
     <Card>
-      <Table>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名称</TableHead>
+              <TableHead>描述</TableHead>
+              <TableHead>类型</TableHead>
+              <TableHead class="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-48 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-6 bg-muted rounded w-16 animate-pulse" />
+              </TableCell>
+              <TableCell class="text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <!-- 数据列表 -->
+      <Table v-else>
         <TableHeader>
           <TableRow>
             <TableHead>名称</TableHead>
@@ -91,7 +129,9 @@ onMounted(() => {
           </TableRow>
         </TableBody>
       </Table>
-      <div v-if="categories.length === 0" class="text-center py-12">
+
+      <!-- 空状态 -->
+      <div v-if="!loading && categories.length === 0" class="text-center py-12">
         <Icon name="lucide:folder" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无分类</p>
         <Button variant="outline" class="mt-4" @click="showAddModal = true">

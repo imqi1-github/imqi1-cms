@@ -1,14 +1,18 @@
 <script setup lang="ts">
+const loading = ref(true)
 const links = ref<any[]>([])
 const showAddModal = ref(false)
 const newLink = ref({ name: '', link: '', desc: '', avatar: '' })
 
 async function fetchLinks() {
+  loading.value = true
   try {
     links.value = await $fetch('/api/admin/links') as any[]
   } catch (error) {
     console.error('获取友情链接失败:', error)
     links.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -66,7 +70,49 @@ onMounted(() => {
     </div>
 
     <Card>
-      <Table>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名称</TableHead>
+              <TableHead>链接</TableHead>
+              <TableHead>描述</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead class="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="flex items-center gap-3">
+                  <div class="size-8 bg-muted rounded-full animate-pulse" />
+                  <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-36 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-48 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-6 bg-muted rounded w-12 animate-pulse" />
+              </TableCell>
+              <TableCell class="text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <div class="h-8 bg-muted rounded w-12 animate-pulse" />
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <!-- 数据列表 -->
+      <Table v-else>
         <TableHeader>
           <TableRow>
             <TableHead>名称</TableHead>

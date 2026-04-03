@@ -1,70 +1,70 @@
 <script setup lang="ts">
-const changelogs = ref<any[]>([])
-const loading = ref(false)
-const showAddModal = ref(false)
+const changelogs = ref<any[]>([]);
+const loading = ref(false);
+const showAddModal = ref(false);
 
-const newChangelog = ref({ class: 'feature', desc: '' })
+const newChangelog = ref({ class: "feature", desc: "" });
 
 const typeOptions = [
-  { value: 'feature', label: '新功能', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
-  { value: 'improvement', label: '优化', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-  { value: 'fix', label: '修复', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
-]
+  { value: "feature", label: "新功能", color: "bg-green-500/10 text-green-600 border-green-500/20" },
+  { value: "improvement", label: "优化", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  { value: "fix", label: "修复", color: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
+];
 
 // 加载更新日志
 async function loadChangelogs() {
-  loading.value = true
+  loading.value = true;
   try {
-    changelogs.value = await $fetch('/api/admin/changelogs') as any[]
+    changelogs.value = (await $fetch("/api/admin/changelogs")) as any[];
   } catch (error) {
-    console.error('获取更新日志失败:', error)
-    changelogs.value = []
+    console.error("获取更新日志失败:", error);
+    changelogs.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function addChangelog() {
   try {
-    await $fetch('/api/admin/changelogs', {
-      method: 'POST',
+    await $fetch("/api/admin/changelogs", {
+      method: "POST",
       body: newChangelog.value,
-    })
-    newChangelog.value = { class: 'feature', desc: '' }
-    showAddModal.value = false
-    await loadChangelogs()
+    });
+    newChangelog.value = { class: "feature", desc: "" };
+    showAddModal.value = false;
+    await loadChangelogs();
   } catch (error) {
-    console.error('添加失败:', error)
+    console.error("添加失败:", error);
   }
 }
 
 async function deleteChangelog(id: number) {
-  const confirmed = confirm('确定要删除这条日志吗？')
+  const confirmed = confirm("确定要删除这条日志吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/changelogs/${id}`, { method: 'DELETE' })
-      await loadChangelogs()
+      await $fetch(`/api/admin/changelogs/${id}`, { method: "DELETE" });
+      await loadChangelogs();
     } catch (error) {
-      console.error('删除失败:', error)
+      console.error("删除失败:", error);
     }
   }
 }
 
 function getTypeLabel(type: string) {
-  return typeOptions.find(t => t.value === type)?.label || type
+  return typeOptions.find(t => t.value === type)?.label || type;
 }
 
 function getTypeColor(type: string) {
-  return typeOptions.find(t => t.value === type)?.color || ''
+  return typeOptions.find(t => t.value === type)?.color || "";
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('zh-CN')
+  return new Date(date).toLocaleDateString("zh-CN");
 }
 
 onMounted(() => {
-  loadChangelogs()
-})
+  loadChangelogs();
+});
 </script>
 
 <template>
@@ -89,18 +89,23 @@ onMounted(() => {
       </CardHeader>
       <CardContent>
         <!-- 加载状态 -->
-        <div v-if="loading" class="text-center py-8">
-          <Icon name="lucide:loader-2" class="size-8 animate-spin mx-auto text-muted-foreground" />
-          <p class="text-sm text-muted-foreground mt-2">加载中...</p>
+        <div v-if="loading" class="space-y-4">
+          <div v-for="i in 5" :key="i" class="flex items-start gap-4 p-4 border rounded-lg">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="h-6 bg-muted rounded w-16 animate-pulse" />
+                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+              </div>
+              <div class="h-4 bg-muted rounded w-full animate-pulse" />
+              <div class="h-4 bg-muted rounded w-3/4 mt-2 animate-pulse" />
+            </div>
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
+          </div>
         </div>
 
         <!-- 日志列表 -->
         <div v-else-if="changelogs.length > 0" class="space-y-4">
-          <div
-            v-for="log in changelogs"
-            :key="log.id"
-            class="group flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
+          <div v-for="log in changelogs" :key="log.id" class="group flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
                 <Badge :class="getTypeColor(log.class)">
@@ -114,8 +119,7 @@ onMounted(() => {
               variant="ghost"
               size="icon"
               class="size-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-              @click="deleteChangelog(log.id)"
-            >
+              @click="deleteChangelog(log.id)">
               <Icon name="lucide:trash-2" class="size-4" />
             </Button>
           </div>
@@ -157,19 +161,11 @@ onMounted(() => {
             </div>
             <div class="space-y-2">
               <Label for="logDesc">描述</Label>
-              <Textarea
-                id="logDesc"
-                v-model="newChangelog.desc"
-                placeholder="更新内容描述"
-                rows="4"
-                required
-              />
+              <Textarea id="logDesc" v-model="newChangelog.desc" placeholder="更新内容描述" rows="4" required />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showAddModal = false">
-              取消
-            </Button>
+            <Button type="button" variant="outline" @click="showAddModal = false"> 取消 </Button>
             <Button type="submit">确定</Button>
           </DialogFooter>
         </form>

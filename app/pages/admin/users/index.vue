@@ -1,14 +1,18 @@
 <script setup lang="ts">
+const loading = ref(true)
 const users = ref<any[]>([])
 const showAddModal = ref(false)
 const newUser = ref({ name: '', mail: '', password: '', role: 0 })
 
 async function fetchUsers() {
+  loading.value = true
   try {
     users.value = await $fetch('/api/admin/users') as any[]
   } catch (error) {
     console.error('获取用户失败:', error)
     users.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -67,7 +71,48 @@ onMounted(() => {
     </div>
 
     <Card>
-      <Table>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>用户名</TableHead>
+              <TableHead>邮箱</TableHead>
+              <TableHead>角色</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead class="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="flex items-center gap-3">
+                  <div class="size-8 bg-muted rounded-full animate-pulse" />
+                  <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-36 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-6 bg-muted rounded w-16 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+              </TableCell>
+              <TableCell class="text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <!-- 数据列表 -->
+      <Table v-else>
         <TableHeader>
           <TableRow>
             <TableHead>用户名</TableHead>
@@ -112,7 +157,9 @@ onMounted(() => {
           </TableRow>
         </TableBody>
       </Table>
-      <div v-if="users.length === 0" class="text-center py-12">
+
+      <!-- 空状态 -->
+      <div v-if="!loading && users.length === 0" class="text-center py-12">
         <Icon name="lucide:users" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无用户</p>
         <Button variant="outline" class="mt-4" @click="showAddModal = true">

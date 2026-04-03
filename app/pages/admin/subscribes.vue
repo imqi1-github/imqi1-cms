@@ -1,57 +1,57 @@
 <script setup lang="ts">
-const subscribes = ref<any[]>([])
-const loading = ref(false)
-const showAddForm = ref(false)
+const subscribes = ref<any[]>([]);
+const loading = ref(false);
+const showAddForm = ref(false);
 
-const newSubscribe = ref({ name: '', url: '', avatar: '' })
+const newSubscribe = ref({ name: "", url: "", avatar: "" });
 
 // 加载订阅列表
 async function loadSubscribes() {
-  loading.value = true
+  loading.value = true;
   try {
-    subscribes.value = await $fetch('/api/admin/subscribes') as any[]
+    subscribes.value = (await $fetch("/api/admin/subscribes")) as any[];
   } catch (error) {
-    console.error('获取订阅失败:', error)
-    subscribes.value = []
+    console.error("获取订阅失败:", error);
+    subscribes.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function addSubscribe() {
   try {
-    await $fetch('/api/admin/subscribes', {
-      method: 'POST',
+    await $fetch("/api/admin/subscribes", {
+      method: "POST",
       body: newSubscribe.value,
-    })
-    newSubscribe.value = { name: '', url: '', avatar: '' }
-    showAddForm.value = false
-    await loadSubscribes()
+    });
+    newSubscribe.value = { name: "", url: "", avatar: "" };
+    showAddForm.value = false;
+    await loadSubscribes();
   } catch (error) {
-    console.error('添加失败:', error)
+    console.error("添加失败:", error);
   }
 }
 
 async function deleteSubscribe(id: number) {
-  const confirmed = confirm('确定要删除这个订阅吗？')
+  const confirmed = confirm("确定要删除这个订阅吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/subscribes/${id}`, { method: 'DELETE' })
-      await loadSubscribes()
+      await $fetch(`/api/admin/subscribes/${id}`, { method: "DELETE" });
+      await loadSubscribes();
     } catch (error) {
-      console.error('删除失败:', error)
+      console.error("删除失败:", error);
     }
   }
 }
 
 function cancelAdd() {
-  newSubscribe.value = { name: '', url: '', avatar: '' }
-  showAddForm.value = false
+  newSubscribe.value = { name: "", url: "", avatar: "" };
+  showAddForm.value = false;
 }
 
 onMounted(() => {
-  loadSubscribes()
-})
+  loadSubscribes();
+});
 </script>
 
 <template>
@@ -90,20 +90,22 @@ onMounted(() => {
         </div>
 
         <!-- 订阅列表 -->
-        <div v-if="loading" class="text-center py-8">
-          <Icon name="lucide:loader-2" class="size-8 animate-spin mx-auto text-muted-foreground" />
-          <p class="text-sm text-muted-foreground mt-2">加载中...</p>
+        <div v-if="loading" class="space-y-4">
+          <div v-for="i in 5" :key="i" class="flex items-center gap-4 p-4 border rounded-lg">
+            <div class="size-12 bg-muted rounded-full animate-pulse" />
+            <div class="flex-1 min-w-0">
+              <div class="h-4 bg-muted rounded w-32 animate-pulse mb-2" />
+              <div class="h-4 bg-muted rounded w-48 animate-pulse" />
+            </div>
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
+          </div>
         </div>
 
         <div v-else-if="subscribes.length > 0" class="space-y-4">
-          <div
-            v-for="sub in subscribes"
-            :key="sub.id"
-            class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-          >
+          <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <Avatar class="size-12">
               <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
-              <AvatarFallback>{{ sub.name?.charAt(0) || '?' }}</AvatarFallback>
+              <AvatarFallback>{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
             <div class="flex-1 min-w-0">
               <p class="font-medium">{{ sub.name }}</p>
@@ -111,12 +113,7 @@ onMounted(() => {
                 {{ sub.url }}
               </a>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-8 text-destructive hover:text-destructive"
-              @click="deleteSubscribe(sub.id)"
-            >
+            <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
               <Icon name="lucide:trash-2" class="size-4" />
             </Button>
           </div>
