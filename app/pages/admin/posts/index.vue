@@ -1,67 +1,120 @@
 <script setup lang="ts">
-const router = useRouter()
-const loading = ref(true)
-const posts = ref<any[]>([])
+const router = useRouter();
+const route = useRoute();
+const loading = ref(true);
+const posts = ref<any[]>([]);
+const categories = ref<any[]>([]);
+const selectedCategory = ref<number | null>(null);
+const selectedStatus = ref<number | null>(null);
 const pagination = ref({
   page: 1,
   pageSize: 5,
   total: 0,
   totalPages: 0,
-})
+});
 
-async function fetchPosts(page: number = 1) {
-  loading.value = true
+const statusOptions = [
+  { value: null, label: "全部状态" },
+  { value: 1, label: "已发布" },
+  { value: 0, label: "草稿" },
+];
+
+async function fetchCategories() {
   try {
-    const res = await $fetch(`/api/admin/posts?page=${page}&pageSize=5`) as any
-    posts.value = res.data || []
-    pagination.value = res.pagination || pagination.value
+    categories.value = (await $fetch("/api/admin/categories")) as any[];
   } catch (error) {
-    console.error('获取文章失败:', error)
-    posts.value = []
-  } finally {
-    loading.value = false
+    console.error("获取分类失败:", error);
+    categories.value = [];
   }
 }
 
+async function fetchPosts(page: number = 1) {
+  loading.value = true;
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: "5",
+    });
+
+    if (selectedCategory.value) {
+      params.append("category", selectedCategory.value.toString());
+    }
+
+    if (selectedStatus.value !== null) {
+      params.append("status", selectedStatus.value.toString());
+    }
+
+    const res = (await $fetch(`/api/admin/posts?${params.toString()}`)) as any;
+    posts.value = res.data || [];
+    pagination.value = res.pagination || pagination.value;
+  } catch (error) {
+    console.error("获取文章失败:", error);
+    posts.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+function filterByCategory(categoryId: number | null) {
+  selectedCategory.value = categoryId;
+  fetchPosts(1);
+}
+
+function filterByStatus(status: number | null) {
+  selectedStatus.value = status;
+  fetchPosts(1);
+}
+
+function clearFilters() {
+  selectedCategory.value = null;
+  selectedStatus.value = null;
+  fetchPosts(1);
+}
+
 async function deletePost(cid: number) {
-  const confirmed = confirm('确定要删除这篇文章吗？')
+  const confirmed = confirm("确定要删除这篇文章吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
-      await fetchPosts(pagination.value.page)
+      await $fetch(`/api/admin/posts/${cid}`, { method: "DELETE" });
+      await fetchPosts(pagination.value.page);
     } catch (error) {
-      console.error('删除失败:', error)
+      console.error("删除失败:", error);
     }
   }
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('zh-CN')
+  return new Date(date).toLocaleDateString("zh-CN");
 }
 
 function getStatusBadge(status: number) {
-  return status === 1
-    ? { label: '已发布', variant: 'default' as const }
-    : { label: '草稿', variant: 'secondary' as const }
+  return status === 1 ? { label: "已发布", variant: "default" as const } : { label: "草稿", variant: "secondary" as const };
 }
 
 function editPost(cid: number) {
-  router.push(`/admin/posts/edit?cid=${cid}`)
+  router.push(`/admin/posts/edit?cid=${cid}`);
 }
 
 function createPost() {
-  router.push('/admin/posts/edit')
+  router.push("/admin/posts/edit");
 }
 
 function goToPage(page: number) {
   if (page >= 1 && page <= pagination.value.totalPages) {
-    fetchPosts(page)
+    fetchPosts(page);
   }
 }
 
 onMounted(() => {
-  fetchPosts()
-})
+  fetchCategories();
+
+  const categoryId = route.query.category ? Number(route.query.category) : null;
+  if (categoryId) {
+    selectedCategory.value = categoryId;
+  }
+
+  fetchPosts();
+});
 </script>
 
 <template>
@@ -77,6 +130,45 @@ onMounted(() => {
         新建文章
       </Button>
     </div>
+
+    <!-- 筛选栏 -->
+    <Card class="mb-6">
+      <CardContent class="pt-0">
+        <div class="flex flex-wrap gap-4">
+          <div class="flex items-center gap-2">
+            <Label for="category-filter">分类:</Label>
+            <Select id="category-filter" v-model="selectedCategory" @update:model-value="filterByCategory">
+              <SelectTrigger class="w-[180px]">
+                <SelectValue placeholder="全部分类" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">全部分类</SelectItem>
+                <SelectItem v-for="category in categories" :key="category.mid" :value="category.mid">
+                  {{ category.name }} ({{ category.postCount }})
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="flex items-center gap-2">
+            <Label for="status-filter">状态:</Label>
+            <Select id="status-filter" v-model="selectedStatus" @update:model-value="filterByStatus">
+              <SelectTrigger class="w-[140px]">
+                <SelectValue placeholder="全部状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" @click="clearFilters">
+            <Icon name="lucide:x" class="mr-2 size-4" />
+            清除筛选
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- 文章列表 -->
     <Card>
@@ -143,12 +235,7 @@ onMounted(() => {
                 <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-8 text-destructive hover:text-destructive"
-                  @click="deletePost(post.cid)"
-                >
+                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deletePost(post.cid)">
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
               </div>
@@ -169,16 +256,9 @@ onMounted(() => {
 
       <!-- 分页 -->
       <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
-        <p class="text-sm text-muted-foreground">
-          共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
-        </p>
+        <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
         <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="pagination.page <= 1"
-            @click="goToPage(pagination.page - 1)"
-          >
+          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
             <Icon name="lucide:chevron-left" class="size-4" />
             上一页
           </Button>
@@ -189,18 +269,12 @@ onMounted(() => {
               variant="outline"
               size="sm"
               :class="{ 'bg-primary text-primary-foreground': page === pagination.page }"
-              @click="goToPage(page)"
-            >
+              @click="goToPage(page)">
               {{ page }}
             </Button>
             <span v-if="pagination.totalPages > 5" class="px-2 text-muted-foreground">...</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="pagination.page >= pagination.totalPages"
-            @click="goToPage(pagination.page + 1)"
-          >
+          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             下一页
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>

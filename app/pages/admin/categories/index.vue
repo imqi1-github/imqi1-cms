@@ -1,50 +1,96 @@
 <script setup lang="ts">
-const loading = ref(true)
-const categories = ref<any[]>([])
-const showAddModal = ref(false)
-const newCategory = ref({ name: '', desc: '', class: '' })
+const router = useRouter();
+const toast = useToast();
+
+const loading = ref(true);
+const categories = ref<any[]>([]);
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const newCategory = ref({ name: "", desc: "", class: "" });
+const editingCategory = ref<any>(null);
 
 async function fetchCategories() {
-  loading.value = true
+  loading.value = true;
   try {
-    categories.value = await $fetch('/api/admin/categories') as any[]
+    categories.value = (await $fetch("/api/admin/categories")) as any[];
   } catch (error) {
-    console.error('获取分类失败:', error)
-    categories.value = []
+    console.error("获取分类失败:", error);
+    categories.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function addCategory() {
   try {
-    await $fetch('/api/admin/categories', {
-      method: 'POST',
+    await $fetch("/api/admin/categories", {
+      method: "POST",
       body: newCategory.value,
-    })
-    newCategory.value = { name: '', desc: '', class: '' }
-    showAddModal.value = false
-    await fetchCategories()
-  } catch (error) {
-    console.error('添加失败:', error)
+    });
+    newCategory.value = { name: "", desc: "", class: "" };
+    showAddModal.value = false;
+    toast.success({ message: "分类创建成功" });
+    await fetchCategories();
+  } catch (error: any) {
+    toast.error({
+      message: "添加失败",
+      description: error?.data?.message || "请稍后重试",
+    });
+  }
+}
+
+function openEditModal(category: any) {
+  editingCategory.value = { ...category };
+  showEditModal.value = true;
+}
+
+async function updateCategory() {
+  if (!editingCategory.value) return;
+
+  try {
+    await $fetch(`/api/admin/categories/${editingCategory.value.mid}`, {
+      method: "PUT",
+      body: {
+        name: editingCategory.value.name,
+        desc: editingCategory.value.desc,
+        class: editingCategory.value.class,
+      },
+    });
+    showEditModal.value = false;
+    editingCategory.value = null;
+    toast.success({ message: "分类更新成功" });
+    await fetchCategories();
+  } catch (error: any) {
+    toast.error({
+      message: "更新失败",
+      description: error?.data?.message || "请稍后重试",
+    });
   }
 }
 
 async function deleteCategory(mid: number) {
-  const confirmed = confirm('确定要删除这个分类吗？')
+  const confirmed = confirm("确定要删除这个分类吗？删除后文章将不再关联此分类。");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/categories/${mid}`, { method: 'DELETE' })
-      await fetchCategories()
-    } catch (error) {
-      console.error('删除失败:', error)
+      await $fetch(`/api/admin/categories/${mid}`, { method: "DELETE" });
+      toast.success({ message: "分类删除成功" });
+      await fetchCategories();
+    } catch (error: any) {
+      toast.error({
+        message: "删除失败",
+        description: error?.data?.message || "请稍后重试",
+      });
     }
   }
 }
 
+function viewCategoryPosts(category: any) {
+  router.push(`/admin/posts?category=${category.mid}`);
+}
+
 onMounted(() => {
-  fetchCategories()
-})
+  fetchCategories();
+});
 </script>
 
 <template>
@@ -69,6 +115,7 @@ onMounted(() => {
               <TableHead>名称</TableHead>
               <TableHead>描述</TableHead>
               <TableHead>类型</TableHead>
+              <TableHead>文章数</TableHead>
               <TableHead class="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -83,8 +130,12 @@ onMounted(() => {
               <TableCell>
                 <div class="h-6 bg-muted rounded w-16 animate-pulse" />
               </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+              </TableCell>
               <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-2">
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
                   <div class="size-8 bg-muted rounded-lg animate-pulse" />
                   <div class="size-8 bg-muted rounded-lg animate-pulse" />
                 </div>
@@ -101,27 +152,47 @@ onMounted(() => {
             <TableHead>名称</TableHead>
             <TableHead>描述</TableHead>
             <TableHead>类型</TableHead>
+            <TableHead>文章数</TableHead>
             <TableHead class="text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow v-for="category in categories" :key="category.mid">
             <TableCell class="font-medium">{{ category.name }}</TableCell>
-            <TableCell class="text-muted-foreground">{{ category.desc || '-' }}</TableCell>
+            <TableCell class="text-muted-foreground">{{ category.desc || "-" }}</TableCell>
             <TableCell>
-              <Badge variant="outline">{{ category.class || '默认' }}</Badge>
+              <Badge variant="outline">{{ category.class || "默认" }}</Badge>
+            </TableCell>
+            <TableCell>
+              <button
+                class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
+                :class="{ 'text-muted-foreground': category.postCount === 0 }"
+                :disabled="category.postCount === 0"
+                @click="viewCategoryPosts(category)">
+                <Icon name="lucide:file-text" class="size-4" />
+                <span>{{ category.postCount }}</span>
+              </button>
             </TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="icon" class="size-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="size-8"
+                  title="查看文章"
+                  :disabled="category.postCount === 0"
+                  @click="viewCategoryPosts(category)">
+                  <Icon name="lucide:list" class="size-4" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="openEditModal(category)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   class="size-8 text-destructive hover:text-destructive"
-                  @click="deleteCategory(category.mid)"
-                >
+                  title="删除"
+                  @click="deleteCategory(category.mid)">
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
               </div>
@@ -164,10 +235,38 @@ onMounted(() => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showAddModal = false">
-              取消
-            </Button>
+            <Button type="button" variant="outline" @click="showAddModal = false"> 取消 </Button>
             <Button type="submit">确定</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 编辑分类弹窗 -->
+    <Dialog v-model:open="showEditModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>编辑分类</DialogTitle>
+          <DialogDescription>修改分类信息</DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="updateCategory">
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label for="edit-name">名称</Label>
+              <Input id="edit-name" v-model="editingCategory.name" placeholder="分类名称" required />
+            </div>
+            <div class="space-y-2">
+              <Label for="edit-desc">描述</Label>
+              <Textarea id="edit-desc" v-model="editingCategory.desc" placeholder="分类描述" rows="3" />
+            </div>
+            <div class="space-y-2">
+              <Label for="edit-class">类型</Label>
+              <Input id="edit-class" v-model="editingCategory.class" placeholder="分类类型" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="showEditModal = false"> 取消 </Button>
+            <Button type="submit">保存</Button>
           </DialogFooter>
         </form>
       </DialogContent>

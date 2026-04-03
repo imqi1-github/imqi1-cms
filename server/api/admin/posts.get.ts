@@ -5,9 +5,26 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
     const page = Number(query.page) || 1;
     const pageSize = Number(query.pageSize) || 5;
+    const categoryId = query.category ? Number(query.category) : undefined;
+    const status = query.status ? Number(query.status) : undefined;
+
+    const where: any = {};
+
+    if (categoryId) {
+      where.relations = {
+        some: {
+          mid: categoryId,
+        },
+      };
+    }
+
+    if (status !== undefined) {
+      where.status = status;
+    }
 
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
+        where,
         orderBy: { create_time: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -21,7 +38,7 @@ export default defineEventHandler(async event => {
           },
         },
       }),
-      prisma.post.count(),
+      prisma.post.count({ where }),
     ]);
 
     return {

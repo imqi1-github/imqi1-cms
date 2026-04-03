@@ -19,6 +19,65 @@ const showToc = ref(true);
 const manyCovers = ref(false);
 const status = ref("draft"); // draft | published
 
+// 分类相关
+const categories = ref<any[]>([]);
+const selectedCategoryIds = ref<number[]>([]);
+
+// 获取分类列表
+const fetchCategories = async () => {
+  try {
+    const res = (await $fetch("/api/admin/categories")) as any[];
+    categories.value = res || [];
+  } catch (error) {
+    console.error("获取分类失败:", error);
+  }
+};
+
+// 获取文章的分类
+const fetchPostCategories = async () => {
+  if (!postId.value) return;
+
+  try {
+    const res = (await $fetch(`/api/admin/posts/${postId.value}/categories`)) as any;
+    if (res?.success) {
+      selectedCategoryIds.value = res.data.map((c: any) => c.mid);
+    }
+  } catch (error) {
+    console.error("获取文章分类失败:", error);
+  }
+};
+
+// 保存文章分类
+const savePostCategories = async () => {
+  if (!postId.value) return;
+
+  try {
+    await $fetch(`/api/admin/posts/${postId.value}/categories`, {
+      method: "PUT",
+      body: { categoryIds: selectedCategoryIds.value },
+    });
+  } catch (error) {
+    console.error("保存分类失败:", error);
+  }
+};
+
+// 切换分类选择
+const toggleCategory = (categoryId: number, checked: boolean) => {
+  const index = selectedCategoryIds.value.indexOf(categoryId);
+  if (checked && index === -1) {
+    selectedCategoryIds.value.push(categoryId);
+  } else if (!checked && index > -1) {
+    selectedCategoryIds.value.splice(index, 1);
+  }
+};
+
+// 获取已选分类名称
+const selectedCategoriesLabel = computed(() => {
+  if (selectedCategoryIds.value.length === 0) return "选择分类";
+  const names = categories.value.filter(c => selectedCategoryIds.value.includes(c.mid)).map(c => c.name);
+  return names.join(", ");
+});
+
 // 附件相关
 const attachments = ref<any[]>([]);
 const showUploadDialog = ref(false);
@@ -32,12 +91,12 @@ const fetchAttachments = async () => {
   if (!postId.value) return;
 
   try {
-    const res = await $fetch(`/api/attachments/list?cid=${postId.value}`) as any;
+    const res = (await $fetch(`/api/attachments/list?cid=${postId.value}`)) as any;
     if (res?.success) {
       attachments.value = res.data || [];
     }
   } catch (error) {
-    console.error('获取附件失败:', error);
+    console.error("获取附件失败:", error);
   }
 };
 
@@ -54,7 +113,7 @@ const handleFileChange = async (event: Event) => {
     await uploadFiles(Array.from(files));
   }
   // 重置 input
-  target.value = '';
+  target.value = "";
 };
 
 // 处理拖放
@@ -72,8 +131,8 @@ const handleDrop = async (event: DragEvent) => {
 const uploadFiles = async (files: File[]) => {
   if (!postId.value) {
     toast.error({
-      message: '请先保存文章',
-      description: '需要先保存文章后才能上传附件',
+      message: "请先保存文章",
+      description: "需要先保存文章后才能上传附件",
     });
     return;
   }
@@ -86,10 +145,10 @@ const uploadFiles = async (files: File[]) => {
       const file = files[i];
 
       // 验证文件类型
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
       if (!allowedTypes.includes(file.type)) {
         toast.error({
-          message: '不支持的文件类型',
+          message: "不支持的文件类型",
           description: file.name,
         });
         continue;
@@ -98,31 +157,31 @@ const uploadFiles = async (files: File[]) => {
       // 验证文件大小 (10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast.error({
-          message: '文件过大',
+          message: "文件过大",
           description: `${file.name} 超过 10MB 限制`,
         });
         continue;
       }
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
       try {
-        const res = await $fetch(`/api/attachments/upload?cid=${postId.value}`, {
-          method: 'POST',
+        const res = (await $fetch(`/api/attachments/upload?cid=${postId.value}`, {
+          method: "POST",
           body: formData,
-        }) as any;
+        })) as any;
 
         if (res?.success) {
           attachments.value.push(res.data);
           toast.success({
-            message: '上传成功',
+            message: "上传成功",
             description: file.name,
           });
         }
       } catch (error) {
         toast.error({
-          message: '上传失败',
+          message: "上传失败",
           description: file.name,
         });
       }
@@ -142,16 +201,16 @@ const deleteAttachment = async (attachment: any) => {
 
   try {
     await $fetch(`/api/attachments/${attachment.id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
 
     attachments.value = attachments.value.filter(a => a.id !== attachment.id);
     toast.success({
-      message: '删除成功',
+      message: "删除成功",
     });
   } catch (error) {
     toast.error({
-      message: '删除失败',
+      message: "删除失败",
     });
   }
 };
@@ -162,12 +221,12 @@ const copyLink = async (url: string) => {
   try {
     await navigator.clipboard.writeText(fullUrl);
     toast.success({
-      message: '已复制链接',
+      message: "已复制链接",
       description: fullUrl,
     });
   } catch {
     toast.error({
-      message: '复制失败',
+      message: "复制失败",
     });
   }
 };
@@ -194,8 +253,8 @@ const fetchPost = async () => {
         publishDate.value = date.toISOString().slice(0, 16);
       }
 
-      // 同时获取附件列表
-      await fetchAttachments();
+      // 同时获取附件列表和分类
+      await Promise.all([fetchAttachments(), fetchPostCategories()]);
     }
   } catch (e: any) {
     toast.error({
@@ -259,6 +318,9 @@ const savePost = async () => {
         await fetchAttachments();
         await router.push(`/admin/posts/edit?cid=${newCid}`);
       }
+
+      // 保存分类
+      await savePostCategories();
     }
   } catch (e: any) {
     toast.error({
@@ -272,6 +334,7 @@ const savePost = async () => {
 
 // 页面加载时获取文章数据
 onMounted(() => {
+  fetchCategories();
   if (isEdit.value) {
     fetchPost();
   }
@@ -464,14 +527,7 @@ onMounted(() => {
           <!-- 附件管理 Tab -->
           <TabsContent value="attachments" class="mt-6">
             <!-- 隐藏的文件输入 -->
-            <input
-              ref="fileInputRef"
-              type="file"
-              class="hidden"
-              accept="image/*,video/*"
-              multiple
-              @change="handleFileChange"
-            >
+            <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" />
 
             <Card>
               <CardHeader>
@@ -482,7 +538,7 @@ onMounted(() => {
                   </div>
                   <Button :disabled="uploading" @click="handleFileSelect">
                     <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:upload'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
-                    {{ uploading ? `上传中 ${uploadProgress}%` : '上传附件' }}
+                    {{ uploading ? `上传中 ${uploadProgress}%` : "上传附件" }}
                   </Button>
                 </div>
               </CardHeader>
@@ -495,8 +551,7 @@ onMounted(() => {
                   @dragover.prevent="dragOver = true"
                   @dragleave.prevent="dragOver = false"
                   @drop.prevent="handleDrop"
-                  @click="handleFileSelect"
-                >
+                  @click="handleFileSelect">
                   <Icon name="lucide:paperclip" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
                   <p class="text-muted-foreground text-lg mb-2">拖拽文件到此处</p>
                   <p class="text-sm text-muted-foreground mb-4">或点击选择文件</p>
@@ -512,8 +567,7 @@ onMounted(() => {
                     @dragover.prevent="dragOver = true"
                     @dragleave.prevent="dragOver = false"
                     @drop.prevent="handleDrop"
-                    @click="handleFileSelect"
-                  >
+                    @click="handleFileSelect">
                     <Icon name="lucide:plus" class="size-6 text-muted-foreground/30 mx-auto mb-2" />
                     <p class="text-sm text-muted-foreground">点击或拖拽上传更多附件</p>
                   </div>
@@ -533,16 +587,14 @@ onMounted(() => {
                     <div
                       v-for="item in attachments"
                       :key="item.id"
-                      class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                    >
+                      class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                       <!-- 预览图 -->
                       <div class="aspect-square bg-muted flex items-center justify-center overflow-hidden">
                         <img
                           v-if="item.type === 'image'"
                           :src="item.url"
                           :alt="item.name"
-                          class="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         <div v-else class="flex flex-col items-center text-muted-foreground">
                           <Icon name="lucide:film" class="size-12 mb-2" />
                           <span class="text-xs">视频预览</span>
@@ -550,7 +602,8 @@ onMounted(() => {
                       </div>
 
                       <!-- 操作遮罩 -->
-                      <div class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
+                      <div
+                        class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
                         <Button variant="secondary" size="sm" class="h-7" @click.stop="copyLink(item.url)" title="复制链接">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>
@@ -642,11 +695,20 @@ onMounted(() => {
           <CardContent class="space-y-4">
             <div class="space-y-2">
               <Label>文章分类</Label>
-              <div class="flex gap-2">
-                <Input placeholder="选择分类" class="flex-1" />
-                <Button variant="outline" size="icon">
-                  <Icon name="lucide:plus" class="size-4" />
-                </Button>
+              <div class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                <div v-if="categories.length === 0" class="text-sm text-muted-foreground text-center py-4">暂无分类</div>
+                <div v-else class="space-y-2">
+                  <div v-for="category in categories" :key="category.mid" class="flex items-center space-x-2">
+                    <Checkbox
+                      :id="`category-${category.mid}`"
+                      :checked="selectedCategoryIds.includes(category.mid)"
+                      @update:checked="() => toggleCategory(category.mid)" />
+                    <Label :for="`category-${category.mid}`" class="text-sm font-normal cursor-pointer flex-1">
+                      {{ category.name }}
+                      <span class="text-xs text-muted-foreground">({{ category.postCount }})</span>
+                    </Label>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="space-y-2">
