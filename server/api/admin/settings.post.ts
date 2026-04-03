@@ -50,6 +50,7 @@ export default defineEventHandler(async event => {
       { key: "upyunImageProcess", value: String(body.upyunImageProcess ?? false) },
       { key: "upyunThumbnailVersion", value: body.upyunThumbnailVersion ?? "" },
       { key: "upyunOutputMode", value: body.upyunOutputMode ?? "" },
+      { key: "upyunTokenEnabled", value: String(body.upyunTokenEnabled ?? false) },
       { key: "upyunTokenKey", value: body.upyunTokenKey ?? "" },
       { key: "upyunTokenExpire", value: String(body.upyunTokenExpire ?? 1800) },
     ];

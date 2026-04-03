@@ -1,5 +1,6 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
+import { deleteFromUpYun } from '#server/utils/upyun'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -34,13 +35,22 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // 删除物理文件
-    const filePath = path.join(process.cwd(), 'public', attachment.url)
-    if (fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath)
-      } catch (err) {
-        console.error('删除文件失败:', err)
+    // 根据存储位置删除文件
+    if (attachment.storage === 'upyun') {
+      // 删除又拍云文件
+      const deleted = await deleteFromUpYun(attachment.url)
+      if (!deleted) {
+        console.error('删除又拍云文件失败:', attachment.url)
+      }
+    } else {
+      // 删除本地文件
+      const filePath = path.join(process.cwd(), 'public', attachment.url)
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath)
+        } catch (err) {
+          console.error('删除本地文件失败:', err)
+        }
       }
     }
 

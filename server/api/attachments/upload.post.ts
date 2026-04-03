@@ -1,5 +1,6 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
+import { uploadToUpYun } from '#server/utils/upyun'
 import * as fs from 'fs'
 import * as path from 'path'
 import { randomUUID } from 'crypto'
@@ -35,6 +36,14 @@ function getFileCategory(mimeType: string): 'image' | 'video' {
   if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return 'image'
   if (ALLOWED_VIDEO_TYPES.includes(mimeType)) return 'video'
   return 'image' // 默认
+}
+
+// 本地存储上传
+async function uploadToLocal(fileBuffer: Buffer, fileName: string): Promise<string> {
+  ensureUploadDir()
+  const filePath = path.join(UPLOAD_DIR, fileName)
+  fs.writeFileSync(filePath, fileBuffer)
+  return `/uploads/${fileName}`
 }
 
 export default defineEventHandler(async event => {
@@ -101,15 +110,32 @@ export default defineEventHandler(async event => {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // 生成文件名并保存
-    ensureUploadDir()
+    // 生成文件名
     const fileName = generateFileName(file.name)
-    const filePath = path.join(UPLOAD_DIR, fileName)
 
-    fs.writeFileSync(filePath, buffer)
+    // 获取上传位置配置
+    const uploadLocationMeta = await prisma.meta.findUnique({
+      where: { key: 'uploadLocation' },
+    })
+    const uploadLocation = uploadLocationMeta?.value || 'local'
 
-    // 生成访问 URL
-    const fileUrl = `/uploads/${fileName}`
+    let fileUrl: string
+
+    // 根据配置选择上传方式
+    if (uploadLocation === 'upyun') {
+      // 又拍云上传
+      const result = await uploadToUpYun(buffer, fileName, file.type)
+      if (!result.success) {
+        throw createError({
+          statusCode: 500,
+          message: result.error || '又拍云上传失败',
+        })
+      }
+      fileUrl = result.url!
+    } else {
+      // 本地存储
+      fileUrl = await uploadToLocal(buffer, fileName)
+    }
 
     // 保存到数据库
     const category = getFileCategory(file.type)
@@ -119,6 +145,7 @@ export default defineEventHandler(async event => {
         type: category,
         title: file.name,
         url: fileUrl,
+        storage: uploadLocation,
       },
     })
 
@@ -131,6 +158,7 @@ export default defineEventHandler(async event => {
         url: attachment.url,
         size: formatFileSize(file.size),
         create_time: attachment.create_time,
+        storage: uploadLocation,
       },
     }
   } catch (error: any) {

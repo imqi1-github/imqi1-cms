@@ -84,6 +84,7 @@ model Attachment {
   type        String
   title       String
   url         String
+  storage     String   @default("local") // 存储位置: local 或 upyun
   create_time DateTime @default(now())
 
   // 关联

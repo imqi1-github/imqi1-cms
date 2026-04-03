@@ -51,6 +51,7 @@ export default defineEventHandler(async () => {
       upyunImageProcess: false,
       upyunThumbnailVersion: "",
       upyunOutputMode: "",
+      upyunTokenEnabled: false,
       upyunTokenKey: "",
       upyunTokenExpire: 1800,
     };

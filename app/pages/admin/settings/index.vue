@@ -49,6 +49,7 @@ const settings = ref({
   upyunImageProcess: false,
   upyunThumbnailVersion: "",
   upyunOutputMode: "",
+  upyunTokenEnabled: false,
   upyunTokenKey: "",
   upyunTokenExpire: 1800,
 });
@@ -156,6 +157,7 @@ const defaultSettings = {
   upyunImageProcess: false,
   upyunThumbnailVersion: "",
   upyunOutputMode: "",
+  upyunTokenEnabled: false,
   upyunTokenKey: "",
   upyunTokenExpire: 1800,
 };
@@ -179,9 +181,14 @@ async function saveSettings() {
       method: "POST",
       body: settings.value,
     });
-    alert("设置已保存");
+    toast.success({
+      message: "设置已保存",
+    });
   } catch (error) {
     console.error("保存失败:", error);
+    toast.error({
+      message: "保存失败",
+    });
   }
 }
 
@@ -194,9 +201,14 @@ async function resetToDefaults() {
       method: "POST",
       body: defaultSettings,
     });
-    alert("已重置为默认值");
+    toast.success({
+      message: "已重置为默认值",
+    });
   } catch (error) {
     console.error("重置失败:", error);
+    toast.error({
+      message: "重置失败",
+    });
   }
 }
 
@@ -775,7 +787,14 @@ onMounted(() => {
                     <Icon name="lucide:shield-check" class="size-4 text-primary" />
                     <h4 class="text-sm font-medium">Token 防盗链</h4>
                   </div>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="flex items-center justify-between">
+                    <div class="space-y-0.5">
+                      <Label for="upyunTokenEnabled">开启 Token 防盗链</Label>
+                      <p class="text-sm text-muted-foreground">启用后资源链接将包含 Token 验证</p>
+                    </div>
+                    <Switch id="upyunTokenEnabled" v-model:checked="settings.upyunTokenEnabled" />
+                  </div>
+                  <div v-if="settings.upyunTokenEnabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
                       <Label for="upyunTokenKey">密钥</Label>
                       <Input id="upyunTokenKey" v-model="settings.upyunTokenKey" type="password" placeholder="输入防盗链密钥" />
