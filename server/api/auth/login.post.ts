@@ -35,8 +35,8 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 设置 session
-  const sessionUser = setSession(event, {
+  // 设置 session（生成新的 authCode 实现单端登录）
+  const sessionUser = await setSession(event, {
     id: user.id,
     name: user.name,
     mail: user.mail,

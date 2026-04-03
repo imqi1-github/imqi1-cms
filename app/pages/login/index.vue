@@ -38,6 +38,21 @@ const redirectTo = computed(() => route.query.to as string || '/admin')
 
 const toast = useToast()
 
+// 如果已登录，跳转到 admin（避免 SSR 水合不匹配）
+onMounted(async () => {
+  const sessionCookie = useCookie('session')
+  if (sessionCookie.value) {
+    try {
+      const res = await $fetch('/api/auth/verify')
+      if ((res as any).valid) {
+        await navigateTo(redirectTo.value)
+      }
+    } catch {
+      // 忽略错误，继续显示登录页
+    }
+  }
+})
+
 const form = reactive({
   username: '',
   password: '',

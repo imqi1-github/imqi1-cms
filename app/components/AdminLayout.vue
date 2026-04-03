@@ -2,6 +2,20 @@
 const route = useRoute()
 const router = useRouter()
 
+// 验证会话是否有效（检查是否在其他设备登录）
+onMounted(async () => {
+  try {
+    const res = await $fetch('/api/auth/verify')
+    if (!(res as any).valid) {
+      // 会话已失效，跳转到登录页
+      await navigateTo('/login?message=' + encodeURIComponent('您的账号已在其他设备登录'))
+    }
+  } catch {
+    // 验证失败，跳转到登录页
+    await navigateTo('/login?to=' + encodeURIComponent(route.path))
+  }
+})
+
 const navItems = [
   {
     title: '仪表盘',
