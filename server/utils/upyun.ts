@@ -72,11 +72,19 @@ function md5Password(password: string): string {
   return crypto.createHash('md5').update(password, 'utf-8').digest('hex')
 }
 
+// 图片处理配置接口
+export interface ImageProcessOptions {
+  enabled: boolean
+  thumbnailVersion?: string
+  outputMode?: string
+}
+
 // 上传文件到又拍云
 export async function uploadToUpYun(
   fileBuffer: Buffer,
   fileName: string,
-  contentType: string
+  contentType: string,
+  imageProcess?: ImageProcessOptions
 ): Promise<UploadResult> {
   const config = await getUpYunConfig()
 
@@ -104,15 +112,41 @@ export async function uploadToUpYun(
   const signature = generateSignature('PUT', uri, date, passwordMd5)
 
   try {
+    // 构建请求头
+    const headers: Record<string, string> = {
+      'Authorization': `UPYUN ${operator}:${signature}`,
+      'Date': date,
+      'Content-Type': contentType,
+      'Content-Length': String(fileBuffer.length),
+      'Mkdir': 'true', // 自动创建目录
+    }
+
+    // 添加图片处理参数（仅对图片类型生效）
+    if (imageProcess?.enabled && contentType.startsWith('image/')) {
+      const processParams: string[] = []
+
+      // 添加缩略图版本
+      if (imageProcess.thumbnailVersion) {
+        processParams.push(imageProcess.thumbnailVersion)
+      }
+
+      // 添加输出格式转换
+      if (imageProcess.outputMode) {
+        processParams.push(`/format/${imageProcess.outputMode}`)
+      }
+
+      // 如果有处理参数，添加到请求头
+      if (processParams.length > 0) {
+        headers['x-gmkerl-thumb'] = processParams.join('')
+        console.log('[UpYun] 图片处理已启用，参数:', headers['x-gmkerl-thumb'])
+      } else {
+        console.log('[UpYun] 图片处理已开启，但未配置处理参数')
+      }
+    }
+
     const response = await fetch(`https://${UPYUN_API_ENDPOINT}${uri}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `UPYUN ${operator}:${signature}`,
-        'Date': date,
-        'Content-Type': contentType,
-        'Content-Length': String(fileBuffer.length),
-        'Mkdir': 'true', // 自动创建目录
-      },
+      headers,
       body: fileBuffer,
     })
 

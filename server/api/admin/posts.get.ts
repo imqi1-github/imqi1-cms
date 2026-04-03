@@ -1,6 +1,17 @@
 import { prisma } from "#server/utils/prisma";
+import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
+  // 验证用户登录
+  const user = await getUser(event);
+
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: "请先登录",
+    });
+  }
+
   try {
     const query = getQuery(event);
     const page = Number(query.page) || 1;
@@ -25,7 +36,7 @@ export default defineEventHandler(async event => {
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         where,
-        orderBy: { create_time: "desc" },
+        orderBy: { cid: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {
@@ -34,6 +45,16 @@ export default defineEventHandler(async event => {
               uid: true,
               name: true,
               avatar: true,
+            },
+          },
+          relations: {
+            include: {
+              category: {
+                select: {
+                  mid: true,
+                  name: true,
+                },
+              },
             },
           },
         },

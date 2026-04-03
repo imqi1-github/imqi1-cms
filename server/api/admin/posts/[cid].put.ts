@@ -1,6 +1,17 @@
 import { prisma } from "#server/utils/prisma";
+import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
+  // 验证用户登录
+  const user = await getUser(event);
+
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: "请先登录",
+    });
+  }
+
   const cid = Number(getRouterParam(event, 'cid'));
   const body = await readBody(event);
 
@@ -21,6 +32,7 @@ export default defineEventHandler(async event => {
     covers,
     showToc,
     publishDate,
+    tags,
   } = body;
 
   if (!title) {
@@ -51,6 +63,7 @@ export default defineEventHandler(async event => {
     many_covers: manyCovers,
     covers,
     show_toc: showToc,
+    tags,
     // 如果提供了 publishDate，更新 create_time
     ...(publishDate ? { create_time: new Date(publishDate) } : {}),
   };

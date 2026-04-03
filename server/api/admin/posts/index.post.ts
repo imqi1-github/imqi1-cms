@@ -23,6 +23,7 @@ export default defineEventHandler(async event => {
     covers,
     showToc = true,
     publishDate,
+    tags,
   } = body;
 
   if (!title) {
@@ -50,6 +51,7 @@ export default defineEventHandler(async event => {
       covers,
       show_toc: showToc,
       create_time: createTime,
+      tags,
       uid: user.uid, // 设置文章作者为当前登录用户
     },
   });

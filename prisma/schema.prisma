@@ -49,6 +49,7 @@ model Post {
   many_covers  Boolean   @default(false)
   covers       String?
   show_toc     Boolean   @default(true)
+  tags         String?   @db.Text
   uid          Int       @default(1)
 
   // 关联
@@ -95,6 +96,7 @@ model Attachment {
 model Category {
   mid    Int             @id @default(autoincrement())
   name   String          @unique
+  slug   String?         @unique
   desc   String?         @db.Text
   class  String?
 

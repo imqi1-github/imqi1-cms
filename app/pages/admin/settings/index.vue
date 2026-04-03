@@ -3,6 +3,7 @@ const loading = ref(true);
 const activeTab = ref("basic");
 const showResetDialog = ref(false);
 const toast = useToast();
+
 const settings = ref({
   siteName: "ImQi1",
   siteUrl: "https://imqi1.com",
@@ -355,21 +356,21 @@ onMounted(() => {
                     <Label for="commentEnabled">开启评论</Label>
                     <p class="text-sm text-muted-foreground">是否允许用户发表评论</p>
                   </div>
-                  <Switch id="commentEnabled" v-model:checked="settings.commentEnabled" />
+                  <Switch id="commentEnabled" v-model="settings.commentEnabled" />
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="space-y-0.5">
                     <Label for="commentModeration">评论审核</Label>
                     <p class="text-sm text-muted-foreground">新评论需要审核后才能显示</p>
                   </div>
-                  <Switch id="commentModeration" v-model:checked="settings.commentModeration" />
+                  <Switch id="commentModeration" v-model="settings.commentModeration" />
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="space-y-0.5">
                     <Label for="commentMarkdown">Markdown 支持</Label>
                     <p class="text-sm text-muted-foreground">允许在评论中使用 Markdown 语法</p>
                   </div>
-                  <Switch id="commentMarkdown" v-model:checked="settings.commentMarkdown" />
+                  <Switch id="commentMarkdown" v-model="settings.commentMarkdown" />
                 </div>
               </div>
 
@@ -424,14 +425,14 @@ onMounted(() => {
                     <Label for="commentRequireMail">必填邮箱</Label>
                     <p class="text-sm text-muted-foreground">发表评论时必须填写邮箱</p>
                   </div>
-                  <Switch id="commentRequireMail" v-model:checked="settings.commentRequireMail" />
+                  <Switch id="commentRequireMail" v-model="settings.commentRequireMail" />
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="space-y-0.5">
                     <Label for="commentRequireLink">必填链接</Label>
                     <p class="text-sm text-muted-foreground">发表评论时必须填写个人链接</p>
                   </div>
-                  <Switch id="commentRequireLink" v-model:checked="settings.commentRequireLink" />
+                  <Switch id="commentRequireLink" v-model="settings.commentRequireLink" />
                 </div>
               </div>
 
@@ -480,7 +481,7 @@ onMounted(() => {
                       <Label for="baiduCheckAdmin">验证管理员评论</Label>
                       <p class="text-sm text-muted-foreground">是否也审核管理员发表的评论</p>
                     </div>
-                    <Switch id="baiduCheckAdmin" v-model:checked="settings.baiduCheckAdmin" />
+                    <Switch id="baiduCheckAdmin" v-model="settings.baiduCheckAdmin" />
                   </div>
                 </div>
 
@@ -591,7 +592,7 @@ onMounted(() => {
                     <Label for="emailLogEnabled">记录邮件日志</Label>
                     <p class="text-sm text-muted-foreground">是否记录邮件发送日志到数据库</p>
                   </div>
-                  <Switch id="emailLogEnabled" v-model:checked="settings.emailLogEnabled" />
+                  <Switch id="emailLogEnabled" v-model="settings.emailLogEnabled" />
                 </div>
                 <div class="space-y-2">
                   <Label for="emailPushType">邮件推送方式</Label>
@@ -681,7 +682,7 @@ onMounted(() => {
                       <Label for="notifyAdmin">通知站长</Label>
                       <p class="text-sm text-muted-foreground">新评论或通知时是否发送邮件给站长</p>
                     </div>
-                    <Switch id="notifyAdmin" v-model:checked="settings.notifyAdmin" />
+                    <Switch id="notifyAdmin" v-model="settings.notifyAdmin" />
                   </div>
                 </div>
               </div>
@@ -763,7 +764,7 @@ onMounted(() => {
                       <Label for="upyunImageProcess">开启图片处理</Label>
                       <p class="text-sm text-muted-foreground">启用又拍云图片处理功能</p>
                     </div>
-                    <Switch id="upyunImageProcess" v-model:checked="settings.upyunImageProcess" />
+                    <Switch id="upyunImageProcess" v-model="settings.upyunImageProcess" />
                   </div>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
@@ -792,7 +793,7 @@ onMounted(() => {
                       <Label for="upyunTokenEnabled">开启 Token 防盗链</Label>
                       <p class="text-sm text-muted-foreground">启用后资源链接将包含 Token 验证</p>
                     </div>
-                    <Switch id="upyunTokenEnabled" v-model:checked="settings.upyunTokenEnabled" />
+                    <Switch id="upyunTokenEnabled" v-model="settings.upyunTokenEnabled" />
                   </div>
                   <div v-if="settings.upyunTokenEnabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">

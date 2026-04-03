@@ -18,6 +18,8 @@ const publishDate = ref("");
 const showToc = ref(true);
 const manyCovers = ref(false);
 const status = ref("draft"); // draft | published
+const tags = ref(""); // 标签
+const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
 // 分类相关
 const categories = ref<any[]>([]);
@@ -38,7 +40,7 @@ const fetchPostCategories = async () => {
   if (!postId.value) return;
 
   try {
-    const res = (await $fetch(`/api/admin/posts/${postId.value}/categories`)) as any;
+    const res = (await $fetch(`/api/admin/post-categories/${postId.value}`)) as any;
     if (res?.success) {
       selectedCategoryIds.value = res.data.map((c: any) => c.mid);
     }
@@ -52,7 +54,7 @@ const savePostCategories = async () => {
   if (!postId.value) return;
 
   try {
-    await $fetch(`/api/admin/posts/${postId.value}/categories`, {
+    await $fetch(`/api/admin/post-categories/${postId.value}`, {
       method: "PUT",
       body: { categoryIds: selectedCategoryIds.value },
     });
@@ -246,7 +248,22 @@ const fetchPost = async () => {
       content.value = post.content || "";
       manyCovers.value = post.many_covers || false;
       showToc.value = post.show_toc !== false;
+      tags.value = post.tags || "";
       status.value = post.status === 1 ? "published" : "draft";
+
+      // 解析封面数据：从 JSON 格式转为输入框格式
+      if (post.covers) {
+        try {
+          const coversArray = JSON.parse(post.covers);
+          coversInput.value = coversArray
+            .map((c: any) => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ''}`)
+            .join('\n');
+        } catch {
+          coversInput.value = "";
+        }
+      } else {
+        coversInput.value = "";
+      }
       // 格式化发布日期为 datetime-local 输入格式
       if (post.create_time) {
         const date = new Date(post.create_time);
@@ -278,6 +295,28 @@ const savePost = async () => {
   loading.value = true;
 
   try {
+    // 处理封面数据：从输入框格式转为 JSON
+    let coversValue = null;
+    if (coversInput.value.trim()) {
+      const lines = coversInput.value.trim().split('\n');
+      const coversArray = lines
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+          const parts = line.split('||');
+          if (parts.length === 2) {
+            return { url: parts[0].trim(), title: parts[1].trim() };
+          } else if (parts.length === 1 && parts[0].trim()) {
+            return { url: parts[0].trim(), title: '' };
+          }
+          return null;
+        })
+        .filter(c => c !== null);
+      if (coversArray.length > 0) {
+        coversValue = JSON.stringify(coversArray);
+      }
+    }
+
     const body = {
       title: title.value,
       desc: description.value,
@@ -285,9 +324,10 @@ const savePost = async () => {
       content: content.value,
       status: status.value === "published" ? 1 : 0,
       manyCovers: manyCovers.value,
-      covers: null,
+      covers: coversValue,
       showToc: showToc.value,
       publishDate: publishDate.value,
+      tags: tags.value,
     };
 
     let res;
@@ -496,7 +536,7 @@ onMounted(() => {
             <Card>
               <CardHeader>
                 <CardTitle>封面设置</CardTitle>
-                <CardDescription>设置文章封面图片</CardDescription>
+                <CardDescription>设置文章封面图片，每行一个封面</CardDescription>
               </CardHeader>
               <CardContent class="space-y-4">
                 <!-- 多封面开关 -->
@@ -505,20 +545,22 @@ onMounted(() => {
                     <Label>启用多封面</Label>
                     <p class="text-xs text-muted-foreground">开启后可以设置多张封面轮播显示</p>
                   </div>
-                  <Switch v-model:checked="manyCovers" />
+                  <Switch v-model="manyCovers" />
                 </div>
 
-                <!-- 封面列表 -->
-                <div class="space-y-3">
-                  <Label>封面列表</Label>
-                  <div class="border-2 border-dashed rounded-md p-8 text-center">
-                    <Icon name="lucide:image-plus" class="size-12 text-muted-foreground/30 mx-auto mb-3" />
-                    <p class="text-sm text-muted-foreground mb-2">拖拽图片到此处，或点击上传</p>
-                    <Button variant="outline" size="sm">
-                      <Icon name="lucide:upload" class="mr-2 size-4" />
-                      选择图片
-                    </Button>
-                  </div>
+                <!-- 封面输入 -->
+                <div class="space-y-2">
+                  <Label for="coversInput">封面列表</Label>
+                  <Textarea
+                    id="coversInput"
+                    v-model="coversInput"
+                    :rows="4"
+                    placeholder="每行一个封面，格式：&#10;封面图片地址 || 标题&#10;&#10;示例：&#10;/uploads/cover1.jpg || 文章封面1&#10;/uploads/cover2.jpg || 文章封面2"
+                    class="font-mono text-sm"
+                  />
+                  <p class="text-xs text-muted-foreground">
+                    一行一个封面，使用 || 分隔图片地址和标题。如只有图片地址则不显示标题。
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -682,7 +724,7 @@ onMounted(() => {
                 <Label>展示目录</Label>
                 <p class="text-xs text-muted-foreground">在文章侧边栏显示目录导航</p>
               </div>
-              <Switch v-model:checked="showToc" />
+              <Switch v-model="showToc" />
             </div>
           </CardContent>
         </Card>
@@ -701,8 +743,8 @@ onMounted(() => {
                   <div v-for="category in categories" :key="category.mid" class="flex items-center space-x-2">
                     <Checkbox
                       :id="`category-${category.mid}`"
-                      :checked="selectedCategoryIds.includes(category.mid)"
-                      @update:checked="() => toggleCategory(category.mid)" />
+                      :model-value="selectedCategoryIds.includes(category.mid)"
+                      @update:model-value="(checked) => toggleCategory(category.mid, checked)" />
                     <Label :for="`category-${category.mid}`" class="text-sm font-normal cursor-pointer flex-1">
                       {{ category.name }}
                       <span class="text-xs text-muted-foreground">({{ category.postCount }})</span>
@@ -713,7 +755,7 @@ onMounted(() => {
             </div>
             <div class="space-y-2">
               <Label>文章标签</Label>
-              <Input placeholder="输入标签，用逗号分隔" />
+              <Input v-model="tags" placeholder="输入标签，用逗号分隔" />
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,16 @@
-import prisma from "#server/utils/prisma";
+import { prisma } from "#server/utils/prisma";
+import { getUser } from "#server/lib/auth";
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async event => {
+  // 验证用户登录
+  const user = await getUser(event);
+
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: "请先登录",
+    });
+  }
   try {
     const [postsCount, commentsCount, categoriesCount, usersCount] = await Promise.all([
       prisma.post.count(),

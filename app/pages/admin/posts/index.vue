@@ -178,6 +178,8 @@ onMounted(() => {
           <TableHeader>
             <TableRow>
               <TableHead>标题</TableHead>
+              <TableHead>Slug</TableHead>
+              <TableHead>分类</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>评论数</TableHead>
               <TableHead>创建时间</TableHead>
@@ -188,6 +190,12 @@ onMounted(() => {
             <TableRow v-for="i in 5" :key="i">
               <TableCell>
                 <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-4 bg-muted rounded w-16 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="h-6 bg-muted rounded w-12 animate-pulse" />
               </TableCell>
               <TableCell>
                 <div class="h-6 bg-muted rounded w-12 animate-pulse" />
@@ -214,6 +222,8 @@ onMounted(() => {
         <TableHeader>
           <TableRow>
             <TableHead>标题</TableHead>
+            <TableHead>Slug</TableHead>
+            <TableHead>分类</TableHead>
             <TableHead>状态</TableHead>
             <TableHead>评论数</TableHead>
             <TableHead>创建时间</TableHead>
@@ -223,6 +233,15 @@ onMounted(() => {
         <TableBody>
           <TableRow v-for="post in posts" :key="post.cid">
             <TableCell class="font-medium">{{ post.title }}</TableCell>
+            <TableCell class="text-muted-foreground font-mono text-sm">{{ post.slug || '-' }}</TableCell>
+            <TableCell>
+              <div v-if="post.relations && post.relations.length > 0" class="flex flex-wrap gap-1">
+                <Badge v-for="rel in post.relations" :key="rel.category.mid" variant="outline" class="text-xs">
+                  {{ rel.category.name }}
+                </Badge>
+              </div>
+              <span v-else class="text-muted-foreground text-sm">-</span>
+            </TableCell>
             <TableCell>
               <Badge :variant="getStatusBadge(post.status).variant">
                 {{ getStatusBadge(post.status).label }}

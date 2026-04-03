@@ -1,6 +1,6 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
-import { uploadToUpYun } from '#server/utils/upyun'
+import { uploadToUpYun, type ImageProcessOptions } from '#server/utils/upyun'
 import * as fs from 'fs'
 import * as path from 'path'
 import { randomUUID } from 'crypto'
@@ -123,8 +123,34 @@ export default defineEventHandler(async event => {
 
     // 根据配置选择上传方式
     if (uploadLocation === 'upyun') {
+      // 获取图片处理配置
+      const imageProcessMetas = await prisma.meta.findMany({
+        where: {
+          key: {
+            in: ['upyunImageProcess', 'upyunThumbnailVersion', 'upyunOutputMode'],
+          },
+        },
+      })
+
+      const imageProcessConfig: Record<string, string> = {}
+      imageProcessMetas.forEach((meta) => {
+        imageProcessConfig[meta.key] = meta.value
+      })
+
+      // 构建图片处理参数
+      const imageProcess: ImageProcessOptions = {
+        enabled: imageProcessConfig.upyunImageProcess === 'true',
+        thumbnailVersion: imageProcessConfig.upyunThumbnailVersion || undefined,
+        outputMode: imageProcessConfig.upyunOutputMode || undefined,
+      }
+
+      console.log('[上传] 图片处理配置:', {
+        原始值: imageProcessConfig,
+        解析后: imageProcess,
+      })
+
       // 又拍云上传
-      const result = await uploadToUpYun(buffer, fileName, file.type)
+      const result = await uploadToUpYun(buffer, fileName, file.type, imageProcess)
       if (!result.success) {
         throw createError({
           statusCode: 500,
