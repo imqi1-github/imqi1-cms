@@ -312,12 +312,20 @@ const topics = [
 
 // 示例元数据
 const metaItems = [
-  { key: 'site_name', value: '我的技术博客' },
-  { key: 'site_desc', value: '分享技术文章和开发心得' },
-  { key: 'site_keywords', value: 'Vue,React,TypeScript,Node.js,前端开发' },
-  { key: 'site_icp', value: '京ICP备12345678号' },
-  { key: 'comment_enabled', value: 'true' },
-  { key: 'comment_moderation', value: 'false' },
+  { key: 'siteName', value: 'ImQi1' },
+  { key: 'siteUrl', value: 'https://imqi1.com' },
+  { key: 'siteDesc', value: '做技术的分享者、生活的摄影师、时事的评论员。' },
+  { key: 'siteKeywords', value: '棋,ImQi1,棋的小站,生活,科技,编程,学习' },
+  { key: 'siteIcp', value: '' },
+  { key: 'commentEnabled', value: 'true' },
+  { key: 'commentModeration', value: 'false' },
+  { key: 'commentMarkdown', value: 'false' },
+  { key: 'commentAvatarService', value: 'gravatar' },
+  { key: 'commentPageSize', value: '10' },
+  { key: 'commentMaxLevel', value: '4' },
+  { key: 'commentRequireMail', value: 'true' },
+  { key: 'commentRequireLink', value: 'false' },
+  { key: 'commentInterval', value: '60' },
 ]
 
 async function main() {

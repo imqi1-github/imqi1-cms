@@ -49,6 +49,16 @@ const navItems = [
     icon: 'lucide:link',
   },
   {
+    title: '订阅列表',
+    href: '/admin/subscribes',
+    icon: 'lucide:rss',
+  },
+  {
+    title: '更新日志',
+    href: '/admin/changelogs',
+    icon: 'lucide:scroll-text',
+  },
+  {
     title: '系统设置',
     href: '/admin/settings',
     icon: 'lucide:settings',
@@ -59,7 +69,15 @@ const isActive = (href: string) => {
   if (href === '/admin') {
     return route.path === '/admin'
   }
-  return route.path.startsWith(href)
+  // 精确匹配或子路由匹配（但不匹配兄弟路由）
+  if (route.path === href) {
+    return true
+  }
+  // 对于有子路由的页面，检查是否以该路径开头且后面跟着 /
+  if (route.path.startsWith(href + '/')) {
+    return true
+  }
+  return false
 }
 
 const handleLogout = async () => {

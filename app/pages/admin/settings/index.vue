@@ -1,19 +1,26 @@
 <script setup lang="ts">
 const settings = ref({
-  siteName: '',
-  siteDesc: '',
-  siteKeywords: '',
+  siteName: 'ImQi1',
+  siteUrl: 'https://imqi1.com',
+  siteDesc: '做技术的分享者、生活的摄影师、时事的评论员。',
+  siteKeywords: '棋,ImQi1,棋的小站,生活,科技,编程,学习',
   siteIcp: '',
   commentEnabled: true,
   commentModeration: false,
+  commentMarkdown: false,
+  commentAvatarService: 'gravatar',
+  commentPageSize: 10,
+  commentMaxLevel: 4,
+  commentRequireMail: true,
+  commentRequireLink: false,
+  commentInterval: 60,
 })
 
-const subscribes = ref<any[]>([])
-const changelogs = ref<any[]>([])
-const showChangelogModal = ref(false)
-
-const newSubscribe = ref({ name: '', url: '', avatar: '' })
-const newChangelog = ref({ class: 'feature', desc: '' })
+const avatarServices = [
+  { value: 'gravatar', label: 'Gravatar' },
+  { value: 'cravatar', label: 'Cravatar' },
+  { value: 'weavatar', label: 'WeAvatar' },
+]
 
 // 加载设置
 async function loadSettings() {
@@ -31,80 +38,14 @@ async function saveSettings() {
       method: 'POST',
       body: settings.value,
     })
-    // TODO: 使用 shadcn 的 Toast 组件替代 alert
     alert('设置已保存')
   } catch (error) {
     console.error('保存失败:', error)
   }
 }
 
-// 加载订阅列表
-async function loadSubscribes() {
-  try {
-    subscribes.value = await $fetch('/api/admin/subscribes') as any[]
-  } catch (error) {
-    console.error('获取订阅失败:', error)
-    subscribes.value = []
-  }
-}
-
-async function addSubscribe() {
-  try {
-    await $fetch('/api/admin/subscribes', {
-      method: 'POST',
-      body: newSubscribe.value,
-    })
-    newSubscribe.value = { name: '', url: '', avatar: '' }
-    await loadSubscribes()
-  } catch (error) {
-    console.error('添加失败:', error)
-  }
-}
-
-async function deleteSubscribe(id: number) {
-  const confirmed = confirm('确定要删除这个订阅吗？')
-  if (confirmed) {
-    try {
-      await $fetch(`/api/admin/subscribes/${id}`, { method: 'DELETE' })
-      await loadSubscribes()
-    } catch (error) {
-      console.error('删除失败:', error)
-    }
-  }
-}
-
-// 加载更新日志
-async function loadChangelogs() {
-  try {
-    changelogs.value = await $fetch('/api/admin/changelogs') as any[]
-  } catch (error) {
-    console.error('获取更新日志失败:', error)
-    changelogs.value = []
-  }
-}
-
-async function addChangelog() {
-  try {
-    await $fetch('/api/admin/changelogs', {
-      method: 'POST',
-      body: newChangelog.value,
-    })
-    newChangelog.value = { class: 'feature', desc: '' }
-    showChangelogModal.value = false
-    await loadChangelogs()
-  } catch (error) {
-    console.error('添加失败:', error)
-  }
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('zh-CN')
-}
-
 onMounted(() => {
   loadSettings()
-  loadSubscribes()
-  loadChangelogs()
 })
 </script>
 
@@ -125,16 +66,20 @@ onMounted(() => {
         <CardContent>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2">
-              <Label for="siteName">网站名称</Label>
-              <Input id="siteName" v-model="settings.siteName" placeholder="我的网站" />
+              <Label for="siteName">站点名称</Label>
+              <Input id="siteName" v-model="settings.siteName" placeholder="ImQi1" />
             </div>
             <div class="space-y-2">
-              <Label for="siteDesc">网站描述</Label>
-              <Input id="siteDesc" v-model="settings.siteDesc" placeholder="网站描述" />
+              <Label for="siteUrl">站点地址</Label>
+              <Input id="siteUrl" v-model="settings.siteUrl" placeholder="https://imqi1.com" />
             </div>
-            <div class="space-y-2">
-              <Label for="siteKeywords">网站关键词</Label>
-              <Input id="siteKeywords" v-model="settings.siteKeywords" placeholder="关键词" />
+            <div class="space-y-2 md:col-span-2">
+              <Label for="siteDesc">站点描述</Label>
+              <Input id="siteDesc" v-model="settings.siteDesc" placeholder="做技术的分享者、生活的摄影师、时事的评论员。" />
+            </div>
+            <div class="space-y-2 md:col-span-2">
+              <Label for="siteKeywords">关键词</Label>
+              <Input id="siteKeywords" v-model="settings.siteKeywords" placeholder="棋,ImQi1,棋的小站,生活,科技,编程,学习" />
             </div>
             <div class="space-y-2">
               <Label for="siteIcp">备案号</Label>
@@ -148,90 +93,116 @@ onMounted(() => {
       <Card>
         <CardHeader>
           <CardTitle>评论设置</CardTitle>
-          <CardDescription>配置评论功能</CardDescription>
+          <CardDescription>配置评论功能和显示规则</CardDescription>
         </CardHeader>
-        <CardContent class="space-y-4">
-          <div class="flex items-center justify-between">
-            <div class="space-y-0.5">
-              <Label for="commentEnabled">开启评论</Label>
-              <p class="text-sm text-muted-foreground">是否允许用户发表评论</p>
-            </div>
-            <Switch id="commentEnabled" v-model:checked="settings.commentEnabled" />
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="space-y-0.5">
-              <Label for="commentModeration">评论审核</Label>
-              <p class="text-sm text-muted-foreground">新评论需要审核后才能显示</p>
-            </div>
-            <Switch id="commentModeration" v-model:checked="settings.commentModeration" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- 订阅列表 -->
-      <Card>
-        <CardHeader>
-          <CardTitle>订阅列表</CardTitle>
-          <CardDescription>管理 RSS 订阅源</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent class="space-y-6">
+          <!-- 基础设置 -->
           <div class="space-y-4">
-            <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded-lg">
-              <Avatar class="size-12">
-                <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
-                <AvatarFallback>{{ sub.name?.charAt(0) || '?' }}</AvatarFallback>
-              </Avatar>
-              <div class="flex-1 min-w-0">
-                <p class="font-medium">{{ sub.name }}</p>
-                <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
-                  {{ sub.url }}
-                </a>
+            <h4 class="text-sm font-medium">基础设置</h4>
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <Label for="commentEnabled">开启评论</Label>
+                <p class="text-sm text-muted-foreground">是否允许用户发表评论</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="size-8 text-destructive hover:text-destructive"
-                @click="deleteSubscribe(sub.id)"
-              >
-                <Icon name="lucide:trash-2" class="size-4" />
-              </Button>
+              <Switch id="commentEnabled" v-model:checked="settings.commentEnabled" />
             </div>
-            <Separator />
-            <div>
-              <h4 class="font-medium mb-3">添加订阅</h4>
-              <form @submit.prevent="addSubscribe" class="grid grid-cols-1 md:grid-cols-4 gap-2">
-                <Input v-model="newSubscribe.name" placeholder="名称" required />
-                <Input v-model="newSubscribe.url" type="url" placeholder="RSS URL" required />
-                <Input v-model="newSubscribe.avatar" type="url" placeholder="头像 URL" />
-                <Button type="submit">添加</Button>
-              </form>
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <Label for="commentModeration">评论审核</Label>
+                <p class="text-sm text-muted-foreground">新评论需要审核后才能显示</p>
+              </div>
+              <Switch id="commentModeration" v-model:checked="settings.commentModeration" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <Label for="commentMarkdown">Markdown 支持</Label>
+                <p class="text-sm text-muted-foreground">允许在评论中使用 Markdown 语法</p>
+              </div>
+              <Switch id="commentMarkdown" v-model:checked="settings.commentMarkdown" />
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <!-- 更新日志 -->
-      <Card>
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <div>
-              <CardTitle>更新日志</CardTitle>
-              <CardDescription>记录系统更新历史</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" @click="showChangelogModal = true">
-              <Icon name="lucide:plus" class="mr-2 size-4" />
-              添加日志
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+          <Separator />
+
+          <!-- 头像和显示设置 -->
           <div class="space-y-4">
-            <div v-for="log in changelogs" :key="log.id" class="p-4 border rounded-lg">
-              <div class="flex justify-between items-start mb-2">
-                <Badge variant="outline">{{ log.class }}</Badge>
-                <span class="text-sm text-muted-foreground">{{ formatDate(log.create_time) }}</span>
+            <h4 class="text-sm font-medium">头像和显示</h4>
+            <div class="space-y-2">
+              <Label for="commentAvatarService">头像服务</Label>
+              <Select v-model="settings.commentAvatarService">
+                <SelectTrigger id="commentAvatarService">
+                  <SelectValue placeholder="选择头像服务" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="service in avatarServices" :key="service.value" :value="service.value">
+                    {{ service.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-2">
+              <Label for="commentPageSize">每页显示评论数</Label>
+              <Input
+                id="commentPageSize"
+                v-model.number="settings.commentPageSize"
+                type="number"
+                min="1"
+                max="100"
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          <!-- 回复和限制设置 -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-medium">回复和限制</h4>
+            <div class="space-y-2">
+              <Label for="commentMaxLevel">最大回复层级</Label>
+              <Input
+                id="commentMaxLevel"
+                v-model.number="settings.commentMaxLevel"
+                type="number"
+                min="0"
+                max="10"
+              />
+              <p class="text-xs text-muted-foreground">
+                设置为 0 时不允许回复评论，默认为 4 层
+              </p>
+            </div>
+            <div class="space-y-2">
+              <Label for="commentInterval">发布间隔（秒）</Label>
+              <Input
+                id="commentInterval"
+                v-model.number="settings.commentInterval"
+                type="number"
+                min="0"
+                max="3600"
+              />
+              <p class="text-xs text-muted-foreground">
+                同一 IP 发布评论的最小间隔时间，默认为 60 秒
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          <!-- 必填设置 -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-medium">必填项</h4>
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <Label for="commentRequireMail">必填邮箱</Label>
+                <p class="text-sm text-muted-foreground">发表评论时必须填写邮箱</p>
               </div>
-              <p class="text-foreground">{{ log.desc }}</p>
+              <Switch id="commentRequireMail" v-model:checked="settings.commentRequireMail" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <Label for="commentRequireLink">必填链接</Label>
+                <p class="text-sm text-muted-foreground">发表评论时必须填写个人链接</p>
+              </div>
+              <Switch id="commentRequireLink" v-model:checked="settings.commentRequireLink" />
             </div>
           </div>
         </CardContent>
@@ -245,42 +216,5 @@ onMounted(() => {
         </Button>
       </div>
     </div>
-
-    <!-- 添加更新日志弹窗 -->
-    <Dialog v-model:open="showChangelogModal">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>添加更新日志</DialogTitle>
-          <DialogDescription>记录一次系统更新</DialogDescription>
-        </DialogHeader>
-        <form @submit.prevent="addChangelog">
-          <div class="space-y-4 py-4">
-            <div class="space-y-2">
-              <Label for="logClass">类型</Label>
-              <Select v-model="newChangelog.class">
-                <SelectTrigger id="logClass">
-                  <SelectValue placeholder="选择类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="feature">新功能</SelectItem>
-                  <SelectItem value="fix">修复</SelectItem>
-                  <SelectItem value="improvement">优化</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="space-y-2">
-              <Label for="logDesc">描述</Label>
-              <Textarea id="logDesc" v-model="newChangelog.desc" placeholder="更新内容描述" rows="4" required />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" @click="showChangelogModal = false">
-              取消
-            </Button>
-            <Button type="submit">确定</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   </AdminLayout>
 </template>
