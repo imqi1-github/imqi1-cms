@@ -1,59 +1,56 @@
 <script setup lang="ts">
+import {
+  RiRssFill,
+  RiCopyrightLine,
+  RiCreativeCommonsByLine,
+  RiCreativeCommonsNcLine,
+  RiCreativeCommonsNdLine,
+  RiSubwayFill,
+  RiEarthFill,
+} from "@remixicon/vue";
+
 const currentYear = new Date().getFullYear();
+
+// 获取站点设置
+const { data } = await useFetch("/api/site");
+const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+const siteIcp = computed(() => data.value?.data?.siteIcp || "");
 </script>
 
 <template>
-  <footer class="bg-gray-50 border-t border-gray-200 mt-auto">
-    <div class="max-w-6xl mx-auto px-5 py-10 pb-5 flex flex-wrap gap-10">
-      <!-- 左侧信息 -->
-      <div class="flex-1 min-w-48">
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">ImQi1</h3>
-        <p class="text-sm text-gray-600 leading-relaxed">做技术的分享者、生活的摄影师、时事的评论员。</p>
+  <div class="bg-slate-50">
+    <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600">
+      <div class="flex items-center gap-2">
+        <span>{{ currentYear }} &copy; {{ siteName }}</span>
+        <span v-if="siteIcp">│ {{ siteIcp }}</span>
       </div>
-
-      <!-- 链接 -->
-      <div class="flex gap-10 flex-wrap">
-        <div class="min-w-30">
-          <h4 class="text-sm font-semibold text-gray-700 mb-3">快速链接</h4>
-          <ul class="list-none p-0 m-0">
-            <li class="mb-2"><a href="/" class="text-sm text-gray-600 hover:text-blue-500 transition-colors no-underline">首页</a></li>
-            <li class="mb-2"><a href="/subscribes" class="text-sm text-gray-600 hover:text-blue-500 transition-colors no-underline">订阅</a></li>
-          </ul>
+      <div class="**:fill-slate-600 flex gap-2 items-center">
+        <RiRssFill class="size-4.5" />
+        <div class="flex items-center **:size-4.5 **:fill-state-600">
+          <RiCopyrightLine />
+          <RiCreativeCommonsByLine />
+          <RiCreativeCommonsNcLine />
+          <RiCreativeCommonsNdLine />
         </div>
-
-        <div class="min-w-30">
-          <h4 class="text-sm font-semibold text-gray-700 mb-3">友情链接</h4>
-          <ul class="list-none p-0 m-0">
-            <li class="mb-2"><a href="https://vuejs.org" target="_blank" rel="noopener" class="text-sm text-gray-600 hover:text-blue-500 transition-colors no-underline">Vue.js</a></li>
-            <li class="mb-2"><a href="https://nuxt.com" target="_blank" rel="noopener" class="text-sm text-gray-600 hover:text-blue-500 transition-colors no-underline">Nuxt</a></li>
-            <li class="mb-2"><a href="https://www.prisma.io" target="_blank" rel="noopener" class="text-sm text-gray-600 hover:text-blue-500 transition-colors no-underline">Prisma</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- 社交图标 -->
-      <div class="flex gap-3">
-        <a href="https://github.com" target="_blank" rel="noopener" class="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-500 hover:-translate-y-0.5 transition-all" title="GitHub">
-          <Icon name="lucide:github" class="w-[18px] h-[18px]" />
-        </a>
-        <a href="https://twitter.com" target="_blank" rel="noopener" class="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-500 hover:-translate-y-0.5 transition-all" title="Twitter">
-          <Icon name="lucide:twitter" class="w-[18px] h-[18px]" />
-        </a>
-        <a href="mailto:hi@imqi1.com" class="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-500 hover:-translate-y-0.5 transition-all" title="Email">
-          <Icon name="lucide:mail" class="w-[18px] h-[18px]" />
-        </a>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          t="1755579480924"
+          class="icon"
+          viewBox="0 0 1024 1024"
+          version="1.1"
+          p-id="4927"
+          width="16"
+          height="16">
+          <path
+            d="M512 1024C132.647 1024 0 891.313 0 512S132.647 0 512 0s512 132.687 512 512-132.647 512-512 512zM236.308 354.462h551.384v-78.77H236.308v78.77z m0 196.923h393.846v-78.77H236.308v78.77z m0 196.923h472.615v-78.77H236.308v78.77z"
+            p-id="4928"
+            fill="currentColor"></path>
+        </svg>
+        <RiSubwayFill class="size-4.5" />
+        <RiEarthFill class="size-4.5" />
       </div>
     </div>
-
-    <!-- 底部版权 -->
-    <div class="max-w-6xl mx-auto px-5 py-5 border-t border-gray-200 text-center">
-      <p class="text-sm text-gray-400 m-0">&copy; {{ currentYear }} ImQi1. All rights reserved.</p>
-    </div>
-  </footer>
+  </div>
 </template>
 
-<style scoped>
-.no-underline {
-  text-decoration: none;
-}
-</style>
+<style scoped></style>

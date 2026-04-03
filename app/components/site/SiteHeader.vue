@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const route = useRoute();
 
+// 获取站点设置
+const { data } = await useFetch('/api/site');
+const siteName = computed(() => data.value?.data?.siteName || 'ImQi1');
+
 const navItems = [
   { name: '首页', path: '/' },
   { name: '订阅', path: '/subscribes' },
@@ -16,7 +20,7 @@ const isCurrentPath = (path: string) => {
     <div class="max-w-6xl mx-auto px-5 h-16 flex items-center gap-10">
       <!-- Logo -->
       <a href="/" class="no-underline">
-        <span class="text-2xl font-bold text-gray-800 tracking-tight">ImQi1</span>
+        <span class="text-2xl font-bold text-gray-800 tracking-tight">{{ siteName }}</span>
       </a>
 
       <!-- Navigation -->
