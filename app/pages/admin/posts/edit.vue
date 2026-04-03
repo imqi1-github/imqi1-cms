@@ -32,7 +32,7 @@ const fetchAttachments = async () => {
   if (!postId.value) return;
 
   try {
-    const res = await $fetch(`/api/admin/attachments/list?cid=${postId.value}`) as any;
+    const res = await $fetch(`/api/attachments/list?cid=${postId.value}`) as any;
     if (res?.success) {
       attachments.value = res.data || [];
     }
@@ -108,7 +108,7 @@ const uploadFiles = async (files: File[]) => {
       formData.append('file', file);
 
       try {
-        const res = await $fetch(`/api/admin/attachments/upload?cid=${postId.value}`, {
+        const res = await $fetch(`/api/attachments/upload?cid=${postId.value}`, {
           method: 'POST',
           body: formData,
         }) as any;
@@ -141,7 +141,7 @@ const deleteAttachment = async (attachment: any) => {
   if (!confirmed) return;
 
   try {
-    await $fetch(`/api/admin/attachments/${attachment.id}`, {
+    await $fetch(`/api/attachments/${attachment.id}`, {
       method: 'DELETE',
     });
 
@@ -490,7 +490,7 @@ onMounted(() => {
                 <!-- 拖拽上传区域 -->
                 <div
                   v-if="attachments.length === 0"
-                  class="border-2 border-dashed rounded-lg p-12 text-center transition-colors"
+                  class="border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer"
                   :class="dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'"
                   @dragover.prevent="dragOver = true"
                   @dragleave.prevent="dragOver = false"

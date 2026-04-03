@@ -13,9 +13,9 @@ export default defineEventHandler(async event => {
       })
     }
 
-    const attachmentId = Number(getRouterParam(event, 'id'))
+    const id = Number(getRouterParam(event, 'id'))
 
-    if (!attachmentId) {
+    if (!id) {
       throw createError({
         statusCode: 400,
         message: '无效的附件 ID',
@@ -24,7 +24,7 @@ export default defineEventHandler(async event => {
 
     // 获取附件信息
     const attachment = await prisma.attachment.findUnique({
-      where: { aid: attachmentId },
+      where: { aid: id },
     })
 
     if (!attachment) {
@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
 
     // 删除数据库记录
     await prisma.attachment.delete({
-      where: { aid: attachmentId },
+      where: { aid: id },
     })
 
     return {

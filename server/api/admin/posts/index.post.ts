@@ -43,7 +43,7 @@ export default defineEventHandler(async event => {
     data: {
       title,
       desc,
-      slug,
+      slug: slug || undefined, // 如果没有提供 slug，设为 undefined 让数据库使用默认值
       content,
       status,
       many_covers: manyCovers,
@@ -53,6 +53,15 @@ export default defineEventHandler(async event => {
       uid: user.uid, // 设置文章作者为当前登录用户
     },
   });
+
+  // 如果没有提供 slug，使用 cid 作为 slug
+  if (!slug) {
+    await prisma.post.update({
+      where: { cid: post.cid },
+      data: { slug: String(post.cid) },
+    });
+    post.slug = String(post.cid);
+  }
 
   return {
     success: true,

@@ -49,7 +49,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取文章 ID
-    const cid = Number(getRouterParam(event, 'cid') || getQuery(event).cid)
+    const cid = Number(getQuery(event).cid)
 
     if (!cid) {
       throw createError({

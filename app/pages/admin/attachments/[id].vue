@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
+const toast = useToast()
 const loading = ref(true)
 const saving = ref(false)
 
@@ -7,8 +8,6 @@ const attachment = ref<any>(null)
 
 const form = ref({
   name: '',
-  alt: '',
-  desc: '',
 })
 
 const getTypeLabel = (type: string) => {
@@ -28,6 +27,7 @@ const getTypeIcon = (type: string) => {
 }
 
 const formatFileSize = (bytes: number) => {
+  if (!bytes || bytes === 0) return '-'
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
@@ -40,11 +40,16 @@ const formatDate = (date: string) => {
 async function fetchAttachment() {
   loading.value = true
   try {
-    // TODO: 实际 API 调用
-    // attachment.value = await $fetch(`/api/admin/attachments/${route.params.id}`)
-    console.log('获取附件:', route.params.id)
-  } catch (error) {
+    const res = await $fetch(`/api/admin/attachments/${route.params.id}`) as any
+    if (res?.success) {
+      attachment.value = res.data
+      form.value.name = res.data.name
+    }
+  } catch (error: any) {
     console.error('获取附件失败:', error)
+    toast.error({
+      message: error.message || '获取附件失败',
+    })
   } finally {
     loading.value = false
   }
@@ -53,14 +58,24 @@ async function fetchAttachment() {
 async function saveAttachment() {
   saving.value = true
   try {
-    // TODO: 实际 API 调用
-    await $fetch(`/api/admin/attachments/${route.params.id}`, {
+    const res = await $fetch(`/api/admin/attachments/${route.params.id}`, {
       method: 'PATCH',
-      body: form.value,
-    })
-    // await fetchAttachment()
-  } catch (error) {
+      body: {
+        name: form.value.name,
+      },
+    }) as any
+
+    if (res?.success) {
+      toast.success({
+        message: '保存成功',
+      })
+      await fetchAttachment()
+    }
+  } catch (error: any) {
     console.error('保存失败:', error)
+    toast.error({
+      message: error.message || '保存失败',
+    })
   } finally {
     saving.value = false
   }
@@ -68,16 +83,38 @@ async function saveAttachment() {
 
 async function deleteAttachment() {
   const confirmed = confirm('确定要删除这个附件吗？此操作不可恢复！')
-  if (confirmed) {
-    try {
-      // TODO: 实际 API 调用
-      await $fetch(`/api/admin/attachments/${route.params.id}`, {
-        method: 'DELETE',
-      })
-      await navigateTo('/admin/attachments')
-    } catch (error) {
-      console.error('删除失败:', error)
-    }
+  if (!confirmed) return
+
+  try {
+    await $fetch(`/api/attachments/${route.params.id}`, {
+      method: 'DELETE',
+    })
+    toast.success({
+      message: '删除成功',
+    })
+    await navigateTo('/admin/attachments')
+  } catch (error: any) {
+    console.error('删除失败:', error)
+    toast.error({
+      message: error.message || '删除失败',
+    })
+  }
+}
+
+// 复制链接
+const copyLink = async () => {
+  if (!attachment.value?.url) return
+  const fullUrl = `${window.location.origin}${attachment.value.url}`
+  try {
+    await navigator.clipboard.writeText(fullUrl)
+    toast.success({
+      message: '已复制链接',
+      description: fullUrl,
+    })
+  } catch {
+    toast.error({
+      message: '复制失败',
+    })
   }
 }
 
@@ -103,8 +140,8 @@ onMounted(() => {
           <Icon name="lucide:trash-2" class="mr-2 size-4" />
           删除
         </Button>
-        <Button @click="saveAttachment" :disabled="saving">
-          <Icon name="lucide:save" class="mr-2 size-4" />
+        <Button @click="saveAttachment" :disabled="saving || loading">
+          <Icon :name="saving ? 'lucide:loader-2' : 'lucide:save'" :class="{ 'animate-spin': saving }" class="mr-2 size-4" />
           {{ saving ? '保存中...' : '保存' }}
         </Button>
       </div>
@@ -125,7 +162,7 @@ onMounted(() => {
               <div v-if="attachment.type === 'image'" class="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
                 <img
                   :src="attachment.url"
-                  :alt="attachment.alt || attachment.name"
+                  :alt="attachment.name"
                   class="max-w-full max-h-full object-contain"
                 />
               </div>
@@ -144,7 +181,7 @@ onMounted(() => {
                   readonly
                   class="flex-1 bg-background"
                 />
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" @click="copyLink">
                   <Icon name="lucide:copy" class="size-4" />
                 </Button>
               </div>
@@ -156,34 +193,16 @@ onMounted(() => {
         <Card>
           <CardHeader>
             <CardTitle>附件信息</CardTitle>
-            <CardDescription>编辑附件的名称、描述等信息</CardDescription>
+            <CardDescription>编辑附件的名称</CardDescription>
           </CardHeader>
           <CardContent>
             <div v-if="loading" class="space-y-4">
               <div class="h-10 bg-muted rounded animate-pulse" />
-              <div class="h-10 bg-muted rounded animate-pulse" />
-              <div class="h-32 bg-muted rounded animate-pulse" />
             </div>
             <form v-else class="space-y-4">
               <div class="space-y-2">
                 <Label for="fileName">文件名</Label>
                 <Input id="fileName" v-model="form.name" placeholder="附件名称" />
-              </div>
-              <div class="space-y-2">
-                <Label for="altText">替代文本</Label>
-                <Input id="altText" v-model="form.alt" placeholder="图片的替代文本，用于辅助访问" />
-                <p class="text-xs text-muted-foreground">
-                  用于图片无法显示时的替代文本，也有助于 SEO 和无障碍访问
-                </p>
-              </div>
-              <div class="space-y-2">
-                <Label for="desc">描述</Label>
-                <Textarea
-                  id="desc"
-                  v-model="form.desc"
-                  placeholder="附件描述..."
-                  rows="4"
-                />
               </div>
             </form>
           </CardContent>
@@ -217,14 +236,6 @@ onMounted(() => {
                 <dd>{{ formatFileSize(attachment.size) }}</dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-muted-foreground">宽度</dt>
-                <dd>{{ attachment.width || '-' }} px</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-muted-foreground">高度</dt>
-                <dd>{{ attachment.height || '-' }} px</dd>
-              </div>
-              <div class="flex justify-between">
                 <dt class="text-muted-foreground">格式</dt>
                 <dd class="uppercase">{{ attachment.format || '-' }}</dd>
               </div>
@@ -233,40 +244,35 @@ onMounted(() => {
                 <dt class="text-muted-foreground">上传时间</dt>
                 <dd>{{ formatDate(attachment.createdAt) }}</dd>
               </div>
-              <div class="flex justify-between">
-                <dt class="text-muted-foreground">上传者</dt>
-                <dd>{{ attachment.uploader || '-' }}</dd>
-              </div>
             </dl>
           </CardContent>
         </Card>
 
-        <!-- 使用统计卡片 -->
+        <!-- 关联文章卡片 -->
         <Card>
           <CardHeader>
-            <CardTitle>使用统计</CardTitle>
+            <CardTitle>关联文章</CardTitle>
           </CardHeader>
           <CardContent>
             <div v-if="loading" class="space-y-4">
-              <div v-for="i in 3" :key="i" class="flex justify-between">
-                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
-                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
-              </div>
+              <div class="h-4 bg-muted rounded w-full animate-pulse" />
             </div>
-            <dl v-else class="space-y-4 text-sm">
-              <div class="flex justify-between">
-                <dt class="text-muted-foreground">被引用</dt>
-                <dd class="font-medium">{{ attachment?.usageCount || 0 }} 次</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-muted-foreground">所属文章</dt>
-                <dd>{{ attachment?.postCount || 0 }} 篇</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-muted-foreground">最后使用</dt>
-                <dd>{{ attachment?.lastUsed ? formatDate(attachment.lastUsed) : '从未' }}</dd>
-              </div>
-            </dl>
+            <div v-else-if="attachment?.post" class="text-sm">
+              <NuxtLink
+                :to="`/admin/posts/edit?cid=${attachment.post.cid}`"
+                class="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
+              >
+                <Icon name="lucide:file-text" class="size-4 text-muted-foreground" />
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium truncate">{{ attachment.post.title }}</p>
+                  <p class="text-xs text-muted-foreground"> Slug: {{ attachment.post.slug }}</p>
+                </div>
+                <Icon name="lucide:chevron-right" class="size-4 text-muted-foreground" />
+              </NuxtLink>
+            </div>
+            <div v-else class="text-sm text-muted-foreground text-center py-4">
+              未关联文章
+            </div>
           </CardContent>
         </Card>
       </div>

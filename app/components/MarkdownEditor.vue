@@ -110,7 +110,7 @@ const handlePaste = async (event: ClipboardEvent) => {
       formData.append('file', file)
 
       try {
-        const res = await $fetch(`/api/admin/attachments/upload?cid=${props.postId}`, {
+        const res = await $fetch(`/api/attachments/upload?cid=${props.postId}`, {
           method: 'POST',
           body: formData,
         }) as any
