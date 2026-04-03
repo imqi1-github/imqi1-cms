@@ -2,6 +2,7 @@
 const loading = ref(true);
 const activeTab = ref("basic");
 const showResetDialog = ref(false);
+const toast = useToast();
 const settings = ref({
   siteName: "ImQi1",
   siteUrl: "https://imqi1.com",
@@ -24,6 +25,32 @@ const settings = ref({
   photoCategorySlug: "shot",
   photoCoverSuffix: "!600px.width",
   postCoverSuffix: "!1000px",
+  moderationApiType: "1",
+  baiduAppId: "",
+  baiduApiKey: "",
+  baiduSecretKey: "",
+  baiduCheckAdmin: false,
+  emailLogEnabled: true,
+  emailPushType: "none",
+  smtpHost: "",
+  smtpUser: "",
+  smtpAddress: "",
+  smtpPassword: "",
+  smtpSecureMode: "tls",
+  smtpPort: 465,
+  smtpFromName: "",
+  adminEmail: "",
+  notifyAdmin: false,
+  uploadLocation: "local",
+  upyunDomain: "https://cdn.imqi1.com",
+  upyunService: "",
+  upyunOperator: "",
+  upyunPassword: "",
+  upyunImageProcess: false,
+  upyunThumbnailVersion: "",
+  upyunOutputMode: "",
+  upyunTokenKey: "",
+  upyunTokenExpire: 1800,
 });
 
 const avatarServices = [
@@ -31,6 +58,57 @@ const avatarServices = [
   { value: "cravatar", label: "Cravatar" },
   { value: "weavatar", label: "WeAvatar" },
 ];
+
+const moderationApiTypes = [
+  { value: "1", label: "不使用" },
+  { value: "2", label: "百度内容审核平台" },
+];
+
+const emailPushTypes = [
+  { value: "none", label: "不推送" },
+  { value: "smtp", label: "使用 SMTP" },
+];
+
+const smtpSecureModes = [
+  { value: "none", label: "不加密" },
+  { value: "ssl", label: "SSL" },
+  { value: "tls", label: "TLS" },
+];
+
+const uploadLocations = [
+  { value: "local", label: "本地" },
+  { value: "upyun", label: "又拍云" },
+];
+
+const testingEmail = ref(false);
+
+async function testEmail() {
+  testingEmail.value = true;
+  try {
+    const result = await $fetch('/api/admin/mail/test', {
+      method: 'POST',
+      body: {
+        to: settings.value.adminEmail || settings.value.smtpAddress || settings.value.smtpUser,
+      },
+    }) as any;
+
+    if (result.success) {
+      toast.success({
+        message: result.message,
+      });
+    } else {
+      toast.error({
+        message: result.message,
+      });
+    }
+  } catch (error) {
+    toast.error({
+      message: error instanceof Error ? error.message : '未知错误',
+    });
+  } finally {
+    testingEmail.value = false;
+  }
+}
 
 const defaultSettings = {
   siteName: "ImQi1",
@@ -54,6 +132,32 @@ const defaultSettings = {
   photoCategorySlug: "shot",
   photoCoverSuffix: "!600px.width",
   postCoverSuffix: "!1000px",
+  moderationApiType: "1",
+  baiduAppId: "",
+  baiduApiKey: "",
+  baiduSecretKey: "",
+  baiduCheckAdmin: false,
+  emailLogEnabled: true,
+  emailPushType: "none",
+  smtpHost: "",
+  smtpUser: "",
+  smtpAddress: "",
+  smtpPassword: "",
+  smtpSecureMode: "tls",
+  smtpPort: 465,
+  smtpFromName: "",
+  adminEmail: "",
+  notifyAdmin: false,
+  uploadLocation: "local",
+  upyunDomain: "https://cdn.imqi1.com",
+  upyunService: "",
+  upyunOperator: "",
+  upyunPassword: "",
+  upyunImageProcess: false,
+  upyunThumbnailVersion: "",
+  upyunOutputMode: "",
+  upyunTokenKey: "",
+  upyunTokenExpire: 1800,
 };
 
 // 加载设置
@@ -123,6 +227,8 @@ onMounted(() => {
             <div class="h-10 bg-muted rounded w-24 animate-pulse" />
             <div class="h-10 bg-muted rounded w-24 animate-pulse" />
             <div class="h-10 bg-muted rounded w-24 animate-pulse" />
+            <div class="h-10 bg-muted rounded w-24 animate-pulse" />
+            <div class="h-10 bg-muted rounded w-24 animate-pulse" />
           </div>
         </CardContent>
       </Card>
@@ -160,7 +266,7 @@ onMounted(() => {
     <div v-else class="space-y-6">
       <!-- Tab 导航 -->
       <Tabs v-model="activeTab" default-value="basic">
-        <TabsList class="grid w-full max-w-xl grid-cols-4">
+        <TabsList class="grid w-full max-w-3xl grid-cols-6">
           <TabsTrigger value="basic">
             <Icon name="lucide:settings" class="mr-2 size-4" />
             基本信息
@@ -176,6 +282,14 @@ onMounted(() => {
           <TabsTrigger value="appearance">
             <Icon name="lucide:palette" class="mr-2 size-4" />
             外观设置
+          </TabsTrigger>
+          <TabsTrigger value="email">
+            <Icon name="lucide:mail" class="mr-2 size-4" />
+            邮件配置
+          </TabsTrigger>
+          <TabsTrigger value="upload">
+            <Icon name="lucide:upload-cloud" class="mr-2 size-4" />
+            附件上传
           </TabsTrigger>
         </TabsList>
 
@@ -308,6 +422,61 @@ onMounted(() => {
                   <Switch id="commentRequireLink" v-model:checked="settings.commentRequireLink" />
                 </div>
               </div>
+
+              <Separator />
+
+              <!-- 审核平台设置 -->
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">审核平台</h4>
+                <div class="space-y-2">
+                  <Label for="moderationApiType">评论审核 API</Label>
+                  <Select v-model="settings.moderationApiType">
+                    <SelectTrigger id="moderationApiType">
+                      <SelectValue placeholder="选择审核平台" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="type in moderationApiTypes" :key="type.value" :value="type.value">
+                        {{ type.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p class="text-xs text-muted-foreground">选择第三方内容审核平台，自动检测违规评论</p>
+                </div>
+
+                <!-- 百度内容审核平台配置 -->
+                <div v-if="settings.moderationApiType === '2'" class="space-y-4 mt-4 p-4 bg-muted/30 rounded-lg">
+                  <div class="flex items-center gap-2 mb-3">
+                    <Icon name="lucide:shield" class="size-4 text-primary" />
+                    <span class="text-sm font-medium">百度内容审核平台配置</span>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                      <Label for="baiduAppId">AppID</Label>
+                      <Input id="baiduAppId" v-model="settings.baiduAppId" placeholder="输入 AppID" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="baiduApiKey">API Key</Label>
+                      <Input id="baiduApiKey" v-model="settings.baiduApiKey" placeholder="输入 API Key" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="baiduSecretKey">Secret Key</Label>
+                      <Input id="baiduSecretKey" v-model="settings.baiduSecretKey" type="password" placeholder="输入 Secret Key" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between pt-2">
+                    <div class="space-y-0.5">
+                      <Label for="baiduCheckAdmin">验证管理员评论</Label>
+                      <p class="text-sm text-muted-foreground">是否也审核管理员发表的评论</p>
+                    </div>
+                    <Switch id="baiduCheckAdmin" v-model:checked="settings.baiduCheckAdmin" />
+                  </div>
+                </div>
+
+                <!-- 不使用时的提示 -->
+                <div v-if="settings.moderationApiType === '1'" class="p-4 bg-muted/30 rounded-lg text-center text-sm text-muted-foreground">
+                  未启用第三方审核平台，评论将由人工审核
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -389,6 +558,241 @@ onMounted(() => {
                   <Input id="postCoverSuffix" v-model="settings.postCoverSuffix" placeholder="!1000px" />
                   <p class="text-xs text-muted-foreground">文章封面图的处理参数后缀，用于控制显示尺寸</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- 邮件配置 Tab -->
+        <TabsContent value="email" class="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>邮件配置</CardTitle>
+              <CardDescription>配置邮件发送和通知功能</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+              <!-- 基础设置 -->
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">基础设置</h4>
+                <div class="flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <Label for="emailLogEnabled">记录邮件日志</Label>
+                    <p class="text-sm text-muted-foreground">是否记录邮件发送日志到数据库</p>
+                  </div>
+                  <Switch id="emailLogEnabled" v-model:checked="settings.emailLogEnabled" />
+                </div>
+                <div class="space-y-2">
+                  <Label for="emailPushType">邮件推送方式</Label>
+                  <Select v-model="settings.emailPushType">
+                    <SelectTrigger id="emailPushType">
+                      <SelectValue placeholder="选择推送方式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="type in emailPushTypes" :key="type.value" :value="type.value">
+                        {{ type.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p class="text-xs text-muted-foreground">选择邮件发送方式，SMTP 支持自定义邮件服务器</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <!-- SMTP 配置 -->
+              <div v-if="settings.emailPushType === 'smtp'" class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-medium">SMTP 服务器配置</h4>
+                  <Button variant="outline" size="sm" :disabled="testingEmail" @click="testEmail">
+                    <Icon name="lucide:send" class="mr-2 size-4" />
+                    {{ testingEmail ? '发送中...' : '发送测试邮件' }}
+                  </Button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <Label for="smtpHost">SMTP 服务器地址</Label>
+                    <Input id="smtpHost" v-model="settings.smtpHost" placeholder="smtp.example.com" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="smtpPort">SMTP 服务端口</Label>
+                    <Input id="smtpPort" v-model.number="settings.smtpPort" type="number" min="1" max="65535" placeholder="465" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="smtpUser">SMTP 登录用户</Label>
+                    <Input id="smtpUser" v-model="settings.smtpUser" placeholder="username@example.com" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="smtpPassword">SMTP 登录密码</Label>
+                    <Input id="smtpPassword" v-model="settings.smtpPassword" type="password" placeholder="••••••••" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="space-y-2">
+                    <Label for="smtpSecureMode">SMTP 加密模式</Label>
+                    <Select v-model="settings.smtpSecureMode">
+                      <SelectTrigger id="smtpSecureMode">
+                        <SelectValue placeholder="选择加密模式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="mode in smtpSecureModes" :key="mode.value" :value="mode.value">
+                          {{ mode.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div class="space-y-2 md:col-span-2">
+                    <Label for="smtpAddress">SMTP 邮箱地址</Label>
+                    <Input id="smtpAddress" v-model="settings.smtpAddress" placeholder="noreply@example.com" />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <!-- 发件人设置 -->
+                <div class="space-y-4">
+                  <h4 class="text-sm font-medium">发件人设置</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <Label for="smtpFromName">发件人昵称</Label>
+                      <Input id="smtpFromName" v-model="settings.smtpFromName" placeholder="ImQi1 博客" />
+                      <p class="text-xs text-muted-foreground">邮件接收人看到的发件人名称</p>
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="adminEmail">站长收件邮箱</Label>
+                      <Input id="adminEmail" v-model="settings.adminEmail" placeholder="admin@example.com" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="space-y-0.5">
+                      <Label for="notifyAdmin">通知站长</Label>
+                      <p class="text-sm text-muted-foreground">新评论或通知时是否发送邮件给站长</p>
+                    </div>
+                    <Switch id="notifyAdmin" v-model:checked="settings.notifyAdmin" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 不使用 SMTP 时的提示 -->
+              <div v-if="settings.emailPushType === 'none'" class="p-8 bg-muted/30 rounded-lg text-center">
+                <Icon name="lucide:mail-off" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p class="text-muted-foreground">未启用邮件推送功能，系统将不发送任何通知邮件</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- 附件上传 Tab -->
+        <TabsContent value="upload" class="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>附件上传设置</CardTitle>
+              <CardDescription>配置附件存储位置和云服务参数</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+              <!-- 存储位置 -->
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">存储位置</h4>
+                <div class="space-y-2">
+                  <Label for="uploadLocation">默认位置</Label>
+                  <Select v-model="settings.uploadLocation">
+                    <SelectTrigger id="uploadLocation">
+                      <SelectValue placeholder="选择存储位置" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="location in uploadLocations" :key="location.value" :value="location.value">
+                        {{ location.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p class="text-xs text-muted-foreground">选择附件上传的默认存储位置</p>
+                </div>
+              </div>
+
+              <!-- 又拍云配置 -->
+              <div v-if="settings.uploadLocation === 'upyun'" class="space-y-4">
+                <Separator />
+
+                <!-- 基本配置 -->
+                <div class="space-y-4">
+                  <div class="flex items-center gap-2">
+                    <Icon name="lucide:cloud" class="size-4 text-primary" />
+                    <h4 class="text-sm font-medium">又拍云配置</h4>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                      <Label for="upyunService">服务名称</Label>
+                      <Input id="upyunService" v-model="settings.upyunService" placeholder="输入服务名称" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="upyunOperator">操作员</Label>
+                      <Input id="upyunOperator" v-model="settings.upyunOperator" placeholder="输入操作员名称" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="upyunPassword">密码</Label>
+                      <Input id="upyunPassword" v-model="settings.upyunPassword" type="password" placeholder="输入密码" />
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="upyunDomain">绑定域名</Label>
+                    <Input id="upyunDomain" v-model="settings.upyunDomain" placeholder="https://cdn.imqi1.com" />
+                    <p class="text-xs text-muted-foreground">又拍云绑定的 CDN 域名，用于访问上传的文件</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <!-- 图片处理 -->
+                <div class="space-y-4">
+                  <h4 class="text-sm font-medium">图片处理</h4>
+                  <div class="flex items-center justify-between">
+                    <div class="space-y-0.5">
+                      <Label for="upyunImageProcess">开启图片处理</Label>
+                      <p class="text-sm text-muted-foreground">启用又拍云图片处理功能</p>
+                    </div>
+                    <Switch id="upyunImageProcess" v-model:checked="settings.upyunImageProcess" />
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <Label for="upyunThumbnailVersion">缩略图版本名称</Label>
+                      <Input id="upyunThumbnailVersion" v-model="settings.upyunThumbnailVersion" placeholder="如: thumbnail" />
+                      <p class="text-xs text-muted-foreground">用于生成缩略图的版本标识</p>
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="upyunOutputMode">转码输出模式</Label>
+                      <Input id="upyunOutputMode" v-model="settings.upyunOutputMode" placeholder="如: avif" />
+                      <p class="text-xs text-muted-foreground">图片转码后的输出格式</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <!-- Token 防盗链 -->
+                <div class="space-y-4">
+                  <div class="flex items-center gap-2">
+                    <Icon name="lucide:shield-check" class="size-4 text-primary" />
+                    <h4 class="text-sm font-medium">Token 防盗链</h4>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <Label for="upyunTokenKey">密钥</Label>
+                      <Input id="upyunTokenKey" v-model="settings.upyunTokenKey" type="password" placeholder="输入防盗链密钥" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="upyunTokenExpire">过期时间（秒）</Label>
+                      <Input id="upyunTokenExpire" v-model.number="settings.upyunTokenExpire" type="number" min="0" placeholder="1800" />
+                      <p class="text-xs text-muted-foreground">Token 有效期，默认 1800 秒（30分钟）</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 本地存储提示 -->
+              <div v-if="settings.uploadLocation === 'local'" class="p-8 bg-muted/30 rounded-lg text-center">
+                <Icon name="lucide:hard-drive" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p class="text-muted-foreground">使用本地存储，附件将保存在服务器本地磁盘</p>
               </div>
             </CardContent>
           </Card>

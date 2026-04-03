@@ -3,7 +3,9 @@ import prisma from "#server/utils/prisma";
 export default defineEventHandler(async () => {
   try {
     const metas = await prisma.meta.findMany();
-    const settings: Record<string, any> = {
+
+    // 默认值
+    const defaults: Record<string, any> = {
       siteName: "ImQi1",
       siteUrl: "https://imqi1.com",
       siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
@@ -18,23 +20,61 @@ export default defineEventHandler(async () => {
       commentRequireMail: true,
       commentRequireLink: false,
       commentInterval: 60,
+      postPageSize: 12,
+      homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
+      staticFilePath: "https://cdn.imqi1.com/static",
+      musicPlaylistId: "9255074836 || netease",
+      photoCategorySlug: "shot",
+      photoCoverSuffix: "!600px.width",
+      postCoverSuffix: "!1000px",
+      moderationApiType: "1",
+      baiduAppId: "",
+      baiduApiKey: "",
+      baiduSecretKey: "",
+      baiduCheckAdmin: false,
+      emailLogEnabled: true,
+      emailPushType: "none",
+      smtpHost: "",
+      smtpUser: "",
+      smtpAddress: "",
+      smtpPassword: "",
+      smtpSecureMode: "tls",
+      smtpPort: 465,
+      smtpFromName: "",
+      adminEmail: "",
+      notifyAdmin: false,
+      uploadLocation: "local",
+      upyunDomain: "https://cdn.imqi1.com",
+      upyunService: "",
+      upyunOperator: "",
+      upyunPassword: "",
+      upyunImageProcess: false,
+      upyunThumbnailVersion: "",
+      upyunOutputMode: "",
+      upyunTokenKey: "",
+      upyunTokenExpire: 1800,
     };
 
+    const settings: Record<string, any> = { ...defaults };
+
+    // 从数据库覆盖值
     metas.forEach((meta: any) => {
-      if (meta.key === "siteName") settings.siteName = meta.value;
-      if (meta.key === "siteUrl") settings.siteUrl = meta.value;
-      if (meta.key === "siteDesc") settings.siteDesc = meta.value;
-      if (meta.key === "siteKeywords") settings.siteKeywords = meta.value;
-      if (meta.key === "siteIcp") settings.siteIcp = meta.value;
-      if (meta.key === "commentEnabled") settings.commentEnabled = meta.value === "true";
-      if (meta.key === "commentModeration") settings.commentModeration = meta.value === "true";
-      if (meta.key === "commentMarkdown") settings.commentMarkdown = meta.value === "true";
-      if (meta.key === "commentAvatarService") settings.commentAvatarService = meta.value;
-      if (meta.key === "commentPageSize") settings.commentPageSize = Number(meta.value) || 10;
-      if (meta.key === "commentMaxLevel") settings.commentMaxLevel = Number(meta.value) || 4;
-      if (meta.key === "commentRequireMail") settings.commentRequireMail = meta.value === "true";
-      if (meta.key === "commentRequireLink") settings.commentRequireLink = meta.value === "true";
-      if (meta.key === "commentInterval") settings.commentInterval = Number(meta.value) || 60;
+      if (!settings.hasOwnProperty(meta.key)) return;
+
+      const value = meta.value;
+
+      // 布尔值转换
+      if (typeof defaults[meta.key] === "boolean") {
+        settings[meta.key] = value === "true";
+      }
+      // 数字值转换
+      else if (typeof defaults[meta.key] === "number") {
+        settings[meta.key] = Number(value) || defaults[meta.key];
+      }
+      // 其他类型直接使用
+      else {
+        settings[meta.key] = value;
+      }
     });
 
     return settings;

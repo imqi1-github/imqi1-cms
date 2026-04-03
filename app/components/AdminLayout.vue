@@ -49,6 +49,11 @@ const navItems = [
     icon: 'lucide:link',
   },
   {
+    title: '附件管理',
+    href: '/admin/attachments',
+    icon: 'lucide:paperclip',
+  },
+  {
     title: '订阅列表',
     href: '/admin/subscribes',
     icon: 'lucide:rss',
