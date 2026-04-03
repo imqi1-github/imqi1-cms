@@ -7,6 +7,12 @@ export default defineNuxtConfig({
     port: 4000,
   },
 
+  app: {
+    head: {
+      link: [{ rel: "stylesheet", href: "/fonts/font.css" }],
+    },
+  },
+
   modules: ["shadcn-nuxt", "@nuxt/icon"],
 
   shadcn: {
@@ -34,7 +40,7 @@ export default defineNuxtConfig({
         "tailwind-merge",
         "reka-ui",
         "lucide-vue-next",
-        'vue-sonner',
+        "vue-sonner",
       ],
     },
   },
