@@ -1,4 +1,4 @@
-import prisma from "#server/utils/prisma";
+import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   const id = getRouterParam(event, "id");
@@ -16,6 +16,7 @@ export default defineEventHandler(async event => {
     });
     return { success: true };
   } catch (error) {
+    console.error("删除评论失败:", error);
     throw createError({
       statusCode: 500,
       message: "删除评论失败",

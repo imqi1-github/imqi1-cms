@@ -2,7 +2,6 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   const id = getRouterParam(event, "id");
-  const body = await readBody(event);
 
   if (!id) {
     throw createError({
@@ -11,27 +10,35 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const { name, mail, content, status } = body;
-
   try {
-    const comment = await prisma.comment.update({
+    const comment = await prisma.comment.findUnique({
       where: { coid: Number(id) },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(mail !== undefined && { mail }),
-        ...(content !== undefined && { content }),
-        ...(status !== undefined && { status }),
+      include: {
+        post: {
+          select: {
+            cid: true,
+            title: true,
+          },
+        },
       },
     });
+
+    if (!comment) {
+      throw createError({
+        statusCode: 404,
+        message: "评论不存在",
+      });
+    }
+
     return {
       success: true,
       data: comment,
     };
   } catch (error) {
-    console.error("更新评论失败:", error);
+    console.error("获取评论失败:", error);
     throw createError({
       statusCode: 500,
-      message: "更新评论失败",
+      message: "获取评论失败",
     });
   }
 });

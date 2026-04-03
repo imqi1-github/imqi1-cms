@@ -1,10 +1,18 @@
 <script setup lang="ts">
 const router = useRouter()
 const posts = ref<any[]>([])
+const pagination = ref({
+  page: 1,
+  pageSize: 5,
+  total: 0,
+  totalPages: 0,
+})
 
-async function fetchPosts() {
+async function fetchPosts(page: number = 1) {
   try {
-    posts.value = await $fetch('/api/admin/posts') as any[]
+    const res = await $fetch(`/api/admin/posts?page=${page}&pageSize=5`) as any
+    posts.value = res.data || []
+    pagination.value = res.pagination || pagination.value
   } catch (error) {
     console.error('获取文章失败:', error)
     posts.value = []
@@ -16,7 +24,7 @@ async function deletePost(cid: number) {
   if (confirmed) {
     try {
       await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
-      await fetchPosts()
+      await fetchPosts(pagination.value.page)
     } catch (error) {
       console.error('删除失败:', error)
     }
@@ -39,6 +47,12 @@ function editPost(cid: number) {
 
 function createPost() {
   router.push('/admin/posts/edit')
+}
+
+function goToPage(page: number) {
+  if (page >= 1 && page <= pagination.value.totalPages) {
+    fetchPosts(page)
+  }
 }
 
 onMounted(() => {
@@ -100,6 +114,8 @@ onMounted(() => {
           </TableRow>
         </TableBody>
       </Table>
+
+      <!-- 空状态 -->
       <div v-if="posts.length === 0" class="text-center py-12">
         <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无文章</p>
@@ -107,6 +123,46 @@ onMounted(() => {
           <Icon name="lucide:plus" class="mr-2 size-4" />
           创建第一篇文章
         </Button>
+      </div>
+
+      <!-- 分页 -->
+      <div v-if="pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
+        <p class="text-sm text-muted-foreground">
+          共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
+        </p>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="pagination.page <= 1"
+            @click="goToPage(pagination.page - 1)"
+          >
+            <Icon name="lucide:chevron-left" class="size-4" />
+            上一页
+          </Button>
+          <div class="flex items-center gap-1">
+            <Button
+              v-for="page in Math.min(pagination.totalPages, 5)"
+              :key="page"
+              variant="outline"
+              size="sm"
+              :class="{ 'bg-primary text-primary-foreground': page === pagination.page }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </Button>
+            <span v-if="pagination.totalPages > 5" class="px-2 text-muted-foreground">...</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="pagination.page >= pagination.totalPages"
+            @click="goToPage(pagination.page + 1)"
+          >
+            下一页
+            <Icon name="lucide:chevron-right" class="size-4" />
+          </Button>
+        </div>
       </div>
     </Card>
   </AdminLayout>
