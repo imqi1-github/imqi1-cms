@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const router = useRouter()
 const posts = ref<any[]>([])
 
 async function fetchPosts() {
@@ -32,6 +33,14 @@ function getStatusBadge(status: number) {
     : { label: '草稿', variant: 'secondary' as const }
 }
 
+function editPost(cid: number) {
+  router.push(`/admin/posts/edit?cid=${cid}`)
+}
+
+function createPost() {
+  router.push('/admin/posts/edit')
+}
+
 onMounted(() => {
   fetchPosts()
 })
@@ -45,7 +54,7 @@ onMounted(() => {
         <h2 class="text-2xl font-bold">文章管理</h2>
         <p class="text-sm text-muted-foreground mt-1">管理所有文章内容</p>
       </div>
-      <Button>
+      <Button @click="createPost">
         <Icon name="lucide:plus" class="mr-2 size-4" />
         新建文章
       </Button>
@@ -75,7 +84,7 @@ onMounted(() => {
             <TableCell>{{ formatDate(post.create_time) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="icon" class="size-8">
+                <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button
@@ -94,7 +103,7 @@ onMounted(() => {
       <div v-if="posts.length === 0" class="text-center py-12">
         <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无文章</p>
-        <Button variant="outline" class="mt-4">
+        <Button variant="outline" class="mt-4" @click="createPost">
           <Icon name="lucide:plus" class="mr-2 size-4" />
           创建第一篇文章
         </Button>

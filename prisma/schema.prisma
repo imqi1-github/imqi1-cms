@@ -39,6 +39,7 @@ model Changelog {
 model Post {
   cid          Int       @id @default(autoincrement())
   title        String
+  slug         String?   @unique
   desc         String?   @db.Text
   content      String?   @db.Text
   create_time  DateTime  @default(now())

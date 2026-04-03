@@ -1,5 +1,14 @@
 <script setup lang="ts">
+const route = useRoute()
+const router = useRouter()
+const toast = useToast()
+
+// 判断是新建还是编辑
+const isEdit = computed(() => !!route.query.cid)
+const postId = computed(() => route.query.cid ? Number(route.query.cid) : null)
+
 const activeTab = ref('content')
+const loading = ref(false)
 
 const title = ref('')
 const description = ref('')
@@ -7,9 +16,104 @@ const slug = ref('')
 const content = ref('')
 const publishDate = ref('')
 const showToc = ref(true)
-const allowComments = ref(true)
 const manyCovers = ref(false)
 const status = ref('draft') // draft | published
+
+// 获取文章数据
+const fetchPost = async () => {
+  if (!postId.value) return
+
+  try {
+    const res = await $fetch(`/api/admin/posts/${postId.value}`)
+    if ((res as any).success) {
+      const post = (res as any).data
+      title.value = post.title || ''
+      description.value = post.desc || ''
+      slug.value = post.slug || ''
+      content.value = post.content || ''
+      manyCovers.value = post.many_covers || false
+      showToc.value = post.show_toc !== false
+      status.value = post.status === 1 ? 'published' : 'draft'
+      // 格式化发布日期为 datetime-local 输入格式
+      if (post.create_time) {
+        const date = new Date(post.create_time)
+        publishDate.value = date.toISOString().slice(0, 16)
+      }
+    }
+  } catch (e: any) {
+    toast.error({
+      message: '获取文章失败',
+      description: e?.data?.message || '请稍后重试',
+    })
+  }
+}
+
+// 保存文章
+const savePost = async () => {
+  if (!title.value) {
+    toast.error({
+      message: '标题不能为空',
+    })
+    return
+  }
+
+  loading.value = true
+
+  try {
+    const body = {
+      title: title.value,
+      desc: description.value,
+      slug: slug.value,
+      content: content.value,
+      status: status.value === 'published' ? 1 : 0,
+      manyCovers: manyCovers.value,
+      covers: null,
+      showToc: showToc.value,
+      publishDate: publishDate.value,
+    }
+
+    let res
+    if (isEdit.value && postId.value) {
+      // 更新文章
+      res = await $fetch(`/api/admin/posts/${postId.value}`, {
+        method: 'PUT',
+        body,
+      })
+    } else {
+      // 创建文章
+      res = await $fetch('/api/admin/posts', {
+        method: 'POST',
+        body,
+      })
+    }
+
+    if ((res as any).success) {
+      toast.success({
+        message: isEdit.value ? '文章更新成功' : '文章创建成功',
+      })
+
+      // 如果是新建，跳转到编辑页面
+      if (!isEdit.value) {
+        const newCid = (res as any).data.cid
+        await router.push(`/admin/posts/edit?cid=${newCid}`)
+      }
+    }
+  } catch (e: any) {
+    toast.error({
+      message: '保存失败',
+      description: e?.data?.message || '请稍后重试',
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+// 页面加载时获取文章数据
+onMounted(() => {
+  if (isEdit.value) {
+    fetchPost()
+  }
+})
 </script>
 
 <template>
@@ -202,9 +306,9 @@ const status = ref('draft') // draft | published
         <!-- 操作按钮 -->
         <Card>
           <CardContent class="pt-6 space-y-2">
-            <Button class="w-full" size="lg">
+            <Button class="w-full" size="lg" :disabled="loading" @click="savePost">
               <Icon name="lucide:save" class="mr-2 size-4" />
-              保存文章
+              {{ loading ? '保存中...' : '保存文章' }}
             </Button>
             <Button variant="outline" class="w-full" size="lg">
               <Icon name="lucide:eye" class="mr-2 size-4" />

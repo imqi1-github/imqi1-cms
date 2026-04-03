@@ -9,9 +9,6 @@ onMounted(async () => {
     const res = await $fetch('/api/auth/verify')
     if (!(res as any).valid) {
       // 会话已失效，跳转到登录页
-      toast.error({
-        message: '您的账号已在其他设备登录',  
-      });
       await navigateTo('/login')
     }
   } catch {
