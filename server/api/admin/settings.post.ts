@@ -19,6 +19,13 @@ export default defineEventHandler(async event => {
       { key: "commentRequireMail", value: String(body.commentRequireMail ?? true) },
       { key: "commentRequireLink", value: String(body.commentRequireLink ?? false) },
       { key: "commentInterval", value: String(body.commentInterval ?? 60) },
+      { key: "postPageSize", value: String(body.postPageSize ?? 12) },
+      { key: "homeCustomText", value: body.homeCustomText ?? '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' },
+      { key: "staticFilePath", value: body.staticFilePath ?? "https://cdn.imqi1.com/static" },
+      { key: "musicPlaylistId", value: body.musicPlaylistId ?? "9255074836 || netease" },
+      { key: "photoCategorySlug", value: body.photoCategorySlug ?? "shot" },
+      { key: "photoCoverSuffix", value: body.photoCoverSuffix ?? "!600px.width" },
+      { key: "postCoverSuffix", value: body.postCoverSuffix ?? "!1000px" },
     ];
 
     for (const update of updates) {
