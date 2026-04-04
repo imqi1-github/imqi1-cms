@@ -13,5 +13,5 @@ export function withoutTokenize (grammar) {
 }
 
 /**
- * @typedef {import('../types.d.ts').Grammar} Grammar
+ * @typedef {import('../types').Grammar} Grammar
  */

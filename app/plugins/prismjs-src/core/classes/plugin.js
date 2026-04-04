@@ -57,4 +57,4 @@ export default class Plugin extends EventTarget {
 	}
 }
 
-/** @import {ComponentProto, PluginProto, PluginRegistry} from '../../types.d.ts'; */
+/** @import {ComponentProto, PluginProto, PluginRegistry} from '../../types'; */

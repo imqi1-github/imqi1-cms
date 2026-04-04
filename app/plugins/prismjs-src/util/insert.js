@@ -86,7 +86,7 @@ export function insert (grammar, atKey, insert, position = 'after') {
 }
 
 /**
- * @typedef {import('../types.d.ts').Grammar} Grammar
- * @typedef {import('../types.d.ts').GrammarToken} GrammarToken
- * @typedef {import('../types.d.ts').GrammarTokens} GrammarTokens
+ * @typedef {import('../types').Grammar} Grammar
+ * @typedef {import('../types').GrammarToken} GrammarToken
+ * @typedef {import('../types').GrammarTokens} GrammarTokens
  */

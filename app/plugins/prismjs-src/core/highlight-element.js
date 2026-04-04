@@ -101,7 +101,7 @@ export function highlightElement (element, options = {}) {
 
 /**
  * @import { Prism } from './prism.js';
- * @import { HookEnv, Grammar } from '../types.d.ts';
+ * @import { HookEnv, Grammar } from '../types';
  */
 
 /**

@@ -146,7 +146,7 @@ export function embeddedIn (hostGrammar) {
 
 /**
  * @import { Prism, Token } from '../../core.js';
- * @import { TokenStream, TokenStack, Grammar, LanguageRegistry} from '../../types.d.ts';
+ * @import { TokenStream, TokenStack, Grammar, LanguageRegistry} from '../../types';
  */
 
 /**

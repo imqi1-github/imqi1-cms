@@ -193,4 +193,4 @@ export default class Language extends EventTarget {
 	}
 }
 
-/** @import { LanguageGrammars, LanguageProto, LanguageRegistry, Grammar } from '../../types.d.ts' */
+/** @import { LanguageGrammars, LanguageProto, LanguageRegistry, Grammar } from '../../types' */

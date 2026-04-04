@@ -90,6 +90,6 @@ export function getTextContent (token) {
 }
 
 /**
- * @typedef {import('../../types.d.ts').TokenName} TokenName
- * @typedef {import('../../types.d.ts').TokenStream} TokenStream
+ * @typedef {import('../../types').TokenName} TokenName
+ * @typedef {import('../../types').TokenStream} TokenStream
  */

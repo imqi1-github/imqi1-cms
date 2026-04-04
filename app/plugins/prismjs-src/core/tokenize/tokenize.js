@@ -48,6 +48,6 @@ export function tokenize (text, grammar) {
 }
 
 /**
- * @import { TokenStream, Grammar, GrammarTokens } from '../../types.d.ts';
+ * @import { TokenStream, Grammar, GrammarTokens } from '../../types';
  * @import { Prism } from '../prism.js';
  */

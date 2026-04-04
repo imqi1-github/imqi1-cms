@@ -55,4 +55,4 @@ export default class PluginRegistry extends ComponentRegistry {
 	}
 }
 
-/** @import { PluginProto, Plugins } from '../../types.d.ts'; */
+/** @import { PluginProto, Plugins } from '../../types'; */

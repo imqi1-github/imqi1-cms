@@ -88,6 +88,6 @@ export function grammarPatch (grammar, patch = grammar) {
 }
 
 /**
- * @typedef {import('../types.d.ts').Grammar} Grammar
- * @typedef {import('../types.d.ts').GrammarTokens} GrammarTokens
+ * @typedef {import('../types').Grammar} Grammar
+ * @typedef {import('../types').GrammarTokens} GrammarTokens
  */

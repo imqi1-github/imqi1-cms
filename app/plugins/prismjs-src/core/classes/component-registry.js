@@ -218,7 +218,7 @@ export default class ComponentRegistry extends EventTarget {
 
 /**
  * @import {Prism} from '../prism.js'
- * @import {ComponentProto} from '../../types.d.ts'
+ * @import {ComponentProto} from '../../types'
  */
 
 /**

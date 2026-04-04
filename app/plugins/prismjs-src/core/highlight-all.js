@@ -39,7 +39,7 @@ export function highlightAll (options = {}) {
 
 /**
  * @import { Prism } from './prism.js';
- * @import { HookEnv } from '../types.d.ts';
+ * @import { HookEnv } from '../types';
  * @import { AsyncHighlighter } from './highlight-element.js';
  */
 

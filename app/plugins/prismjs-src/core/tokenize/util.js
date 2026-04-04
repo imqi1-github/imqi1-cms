@@ -27,5 +27,5 @@ export function resolve (reference) {
 
 /**
  * @import { Prism } from '../prism.js';
- * @import { Grammar, LanguageRegistry } from '../../types.d.ts';
+ * @import { Grammar, LanguageRegistry } from '../../types';
  */

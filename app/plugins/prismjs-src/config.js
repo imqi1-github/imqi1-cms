@@ -76,5 +76,5 @@ export const globalDefaults = {
 export default globalDefaults;
 
 /**
- * @import { PrismConfig, GlobalConfig } from './types.d.ts';
+ * @import { PrismConfig, GlobalConfig } from './types';
  */

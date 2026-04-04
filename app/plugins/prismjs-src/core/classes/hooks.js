@@ -107,9 +107,9 @@ export class Hooks {
 }
 
 /**
- * @typedef {import('../../types.d.ts').HookCallback} HookCallback
- * @typedef {import('../../types.d.ts').HooksAll} HooksAll
- * @typedef {import('../../types.d.ts').HooksAdd} HooksAdd
- * @typedef {import('../../types.d.ts').HooksRemove} HooksRemove
- * @typedef {import('../../types.d.ts').HooksRun} HooksRun
+ * @typedef {import('../../types').HookCallback} HookCallback
+ * @typedef {import('../../types').HooksAll} HooksAll
+ * @typedef {import('../../types').HooksAdd} HooksAdd
+ * @typedef {import('../../types').HooksRemove} HooksRemove
+ * @typedef {import('../../types').HooksRun} HooksRun
  */

@@ -1,10 +1,10 @@
 import globalDefaults from '../../config.js';
-import {allSettled, documentReady, nextTick} from '../../util/async.js';
-import {highlightAll} from '../highlight-all.js';
-import {highlightElement} from '../highlight-element.js';
-import {highlight} from '../highlight.js';
-import {tokenize} from '../tokenize/tokenize.js';
-import {Hooks} from './hooks.js';
+import { allSettled, documentReady, nextTick } from '../../util/async.js';
+import { highlightAll } from '../highlight-all.js';
+import { highlightElement } from '../highlight-element.js';
+import { highlight } from '../highlight.js';
+import { tokenize } from '../tokenize/tokenize.js';
+import { Hooks } from './hooks.js';
 import LanguageRegistry from './language-registry.js';
 import PluginRegistry from './plugin-registry.js';
 
@@ -183,5 +183,5 @@ export default class Prism {
  * @import { HighlightAllOptions } from '../highlight-all.js';
  * @import { HighlightElementOptions } from '../highlight-element.js';
  * @import { HighlightOptions } from '../highlight.js';
- * @import { PrismConfig, PluginProto, Language, LanguageProto, Grammar, TokenStream } from '../../types.d.ts';
+ * @import { PrismConfig, PluginProto, Language, LanguageProto, Grammar, TokenStream } from '../../types';
  */

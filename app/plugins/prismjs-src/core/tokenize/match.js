@@ -216,25 +216,25 @@ function toGrammarToken (pattern) {
 
 /**
  * @import { Prism } from '../prism.js';
- * @import { Grammar, GrammarToken, GrammarTokens, RegExpLike } from '../../types.d.ts';
+ * @import { Grammar, GrammarToken, GrammarTokens, RegExpLike } from '../../types';
  */
 
 /**
  * @template T
- * @typedef {import('../../core/linked-list.js').LinkedList<T>} LinkedList
+ * @typedef {import('../linked-list.js').LinkedList<T>} LinkedList
  */
 
 /**
  * @template T
- * @typedef {import('../../core/linked-list.js').LinkedListHeadNode<T>} LinkedListHeadNode
+ * @typedef {import('../linked-list.js').LinkedListHeadNode<T>} LinkedListHeadNode
  */
 
 /**
  * @template T
- * @typedef {import('../../core/linked-list.js').LinkedListMiddleNode<T>} LinkedListMiddleNode
+ * @typedef {import('../linked-list.js').LinkedListMiddleNode<T>} LinkedListMiddleNode
  */
 
 /**
  * @template T
- * @typedef {import('../../core/linked-list.js').LinkedListTailNode<T>} LinkedListTailNode
+ * @typedef {import('../linked-list.js').LinkedListTailNode<T>} LinkedListTailNode
  */

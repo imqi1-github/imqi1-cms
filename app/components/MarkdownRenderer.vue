@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MarkdownIt from "markdown-it";
+import highlightAll from "~/plugins/prism-v2/prism.js";
 
 const props = defineProps<{
   content: string;
@@ -14,6 +15,31 @@ const md = new MarkdownIt({
   typographer: true,
   breaks: true,
 });
+
+// 自定义代码块渲染，添加 language-xxx 类
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const token = tokens[idx];
+  const info = token.info ? md.utils.unescapeAll(token.info).trim() : "";
+
+  // 提取语言名称
+  let lang = "";
+  if (info) {
+    // 获取第一个单词作为语言
+    lang = info.split(/\s+/g)[0];
+  }
+
+  // 获取代码内容
+  let content = token.content;
+
+  // 转义 HTML
+  content = content.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+  // 构建 pre code 结构，prism 需要 <pre><code class="language-xxx">
+  const className = lang ? `language-${lang}` : "";
+  return `<pre class="line-numbers"><code class="${className}">${content}</code></pre>`;
+};
 
 // 自定义链接渲染规则（新窗口打开）
 md.renderer.rules.link_open = (tokens: any[], idx: number, options: any, env: any, self: any) => {
@@ -47,6 +73,18 @@ function renderMarkdown() {
 
   try {
     renderedHtml.value = md.render(props.content);
+
+    // 渲染后调用 prism 高亮
+    nextTick(() => {
+      highlightAll(
+        (el: Element, type: string, handler: any, options: any) => {
+          el.addEventListener(type, handler, options);
+        },
+        () => {
+          // forEach 回调，在高亮前执行
+        }
+      );
+    });
   } catch (error) {
     console.error("Markdown渲染错误:", error);
     renderedHtml.value = `<p class="text-red-500">Markdown渲染错误</p>`;
@@ -181,7 +219,7 @@ watch(
 }
 
 /* 行内代码样式 */
-.markdown-body code {
+.markdown-body code:not(pre code) {
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
@@ -190,27 +228,128 @@ watch(
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.dark .markdown-body code {
+.dark .markdown-body code:not(pre code) {
   background: rgb(55 65 81);
 }
 
-/* 代码块样式 */
+/* 代码块样式 - prism 容器 */
 .markdown-body pre {
-  padding: 16px;
+  margin: 1em 0;
+  padding: 0;
   overflow: auto;
   font-size: 0.875em;
   line-height: 1.5;
-  background: rgb(30 30 30);
-  color: rgb(229 231 235);
+  background: transparent;
   border-radius: 8px;
-  margin: 1em 0;
 }
 
 .markdown-body pre code {
-  padding: 0;
+  padding: 16px;
+  background: rgb(30 30 30);
+  color: rgb(229 231 235);
+  border-radius: 8px;
+  display: block;
+  overflow-x: auto;
+}
+
+.dark .markdown-body pre code {
+  background: rgb(15 15 15);
+}
+
+/* Prism 工具栏样式 */
+.markdown-body .code-toolbar {
+  position: relative;
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.markdown-body .code-toolbar pre {
+  margin: 0;
+}
+
+.markdown-body .toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background: rgb(40 40 40);
+  border-bottom: 1px solid rgb(51 51 51);
+  font-size: 0.875em;
+}
+
+.markdown-body .toolbar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.markdown-body .copy-to-clipboard-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
   background: transparent;
-  color: inherit;
-  font-size: 100%;
+  color: rgb(156 163 175);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.875em;
+  transition: all 0.2s;
+}
+
+.markdown-body .copy-to-clipboard-button:hover {
+  background: rgb(51 51 51);
+  color: rgb(255 255 255);
+}
+
+.markdown-body .copy-to-clipboard-button[data-copy-state="copy-success"] {
+  color: rgb(34 197 94);
+}
+
+.markdown-body .prism-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.markdown-body .prism-language {
+  color: rgb(156 163 175);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  text-transform: lowercase;
+}
+
+/* Prism 行号样式 */
+.markdown-body .line-numbers-rows {
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: -3.8em;
+  width: 3em;
+  letter-spacing: -1px;
+  border-right: 1px solid rgb(51 51 51);
+  user-select: none;
+  padding-right: 8px;
+  padding-top: 16px;
+}
+
+.markdown-body .line-numbers-rows > span {
+  counter-increment: linenumber;
+}
+
+.markdown-body .line-numbers-rows > span:before {
+  content: counter(linenumber);
+  color: rgb(107 114 128);
+  display: block;
+  text-align: right;
+}
+
+.markdown-body .line-numbers .line-numbers-rows {
+  border-right: 1px solid rgb(75 85 99);
+}
+
+.dark .markdown-body .line-numbers-rows > span:before {
+  color: rgb(75 85 99);
 }
 
 /* 图片样式 */

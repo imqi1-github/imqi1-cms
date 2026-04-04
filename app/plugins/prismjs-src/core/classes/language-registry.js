@@ -134,4 +134,4 @@ export default class LanguageRegistry extends ComponentRegistry {
 	}
 }
 
-/** @import { LanguageProto, Languages } from '../../types.d.ts' */
+/** @import { LanguageProto, Languages } from '../../types' */
