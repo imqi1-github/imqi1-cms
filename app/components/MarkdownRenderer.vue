@@ -22,7 +22,7 @@ onMounted(async () => {
   try {
     md.use(await Shiki({
       themes: {
-        light: 'vitesse-light',
+        light: 'min-light',
         dark: 'vitesse-dark',
       },
       transformers: [
@@ -86,15 +86,22 @@ function addCopyButtons() {
     // 如果已经有复制按钮，跳过
     if (pre.querySelector(".copy-button")) return;
 
+    // 从 code 元素的 class 获取语言
+    const code = pre.querySelector("code");
+    const codeClass = code?.className || "";
+    const langMatch = codeClass.match(/language-(\w+)/);
+    const lang = langMatch ? langMatch[1] : "";
+    if (lang) {
+      pre.setAttribute("data-lang", lang);
+    }
+
     const button = document.createElement("button");
     button.className = "copy-button";
-    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4V2H17V4H20.0066C20.5552 4 21 4.44495 21 4.9934V21.0066C21 21.5552 20.5551 22 20.0066 22H3.9934C3.44476 22 3 21.5551 3 21.0066V4.9934C3 4.44476 3.44495 4 3.9934 4H7ZM7 6H5V20H19V6H17V8H7V6ZM9 4V6H15V4H9Z"></path></svg>`;
     button.ariaLabel = "复制代码";
 
     button.addEventListener("click", async () => {
-      const code = pre.querySelector("code");
       if (!code) return;
-
       const text = code.textContent || "";
       try {
         await navigator.clipboard.writeText(text);
@@ -102,7 +109,7 @@ function addCopyButtons() {
         button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
         setTimeout(() => {
           button.classList.remove("copied");
-          button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+          button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4V2H17V4H20.0066C20.5552 4 21 4.44495 21 4.9934V21.0066C21 21.5552 20.5551 22 20.0066 22H3.9934C3.44476 22 3 21.5551 3 21.0066V4.9934C3 4.44476 3.44495 4 3.9934 4H7ZM7 6H5V20H19V6H17V8H7V6ZM9 4V6H15V4H9Z"></path></svg>`;
         }, 2000);
       } catch (err) {
         console.error("复制失败:", err);
@@ -260,9 +267,14 @@ watch(
   padding: 16px;
   overflow: auto;
   font-size: 0.875em;
-  line-height: 1.7;
+  line-height: 0.8;
   border-radius: 8px;
   position: relative;
+  border: 1px solid rgb(229 231 235);
+}
+
+.dark .markdown-body pre.shiki {
+  border-color: rgb(55 65 81);
 }
 
 /* 行号样式 - 使用 CSS 计数器 */
@@ -318,47 +330,36 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 10px;
+  width: 20px;
+  height: 20px;
   border: none;
-  background: rgb(243 244 246);
-  color: rgb(75 85 99);
+  background: none;
   cursor: pointer;
-  border-radius: 6px;
-  font-size: 0.875em;
-  transition: all 0.2s;
-  opacity: 0;
+  padding: 0;
+  opacity: 0.5;
+  transition: opacity 0.2s;
 }
 
 .markdown-body pre.shiki:hover .copy-button {
   opacity: 1;
 }
 
-.markdown-body .copy-button:hover {
-  background: rgb(229 231 235);
-}
-
-.dark .markdown-body .copy-button {
-  background: rgb(55 65 81);
-  color: rgb(209 213 219);
-}
-
-.dark .markdown-body .copy-button:hover {
-  background: rgb(75 85 99);
-}
-
-.markdown-body .copy-button.copied {
-  background: rgb(34 197 94);
-  color: white;
-}
-
-.dark .markdown-body .copy-button.copied {
-  background: rgb(22 163 74);
-}
-
 .markdown-body .copy-button svg {
   width: 16px;
   height: 16px;
+}
+
+/* 语言标签 - CSS方式 */
+.markdown-body pre.shiki::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 14px;
+  right: 35px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgb(156 163 175);
+  font-weight: 500;
 }
 
 /* 图片样式 */
