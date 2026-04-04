@@ -45,8 +45,8 @@ onMounted(() => {
     rootMargin: "0px 0px -50px 0px",
   };
 
-  const fadeInObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
+  const fadeInObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.remove("opacity-0", "translate-y-8");
         entry.target.classList.add("opacity-100", "translate-y-0");
@@ -55,7 +55,7 @@ onMounted(() => {
     });
   }, observerOptions);
 
-  document.querySelectorAll(".animate-fade-in").forEach((el) => {
+  document.querySelectorAll(".animate-fade-in").forEach(el => {
     fadeInObserver.observe(el);
   });
 });
@@ -77,11 +77,7 @@ onMounted(() => {
       <!-- 标题区域 -->
       <header :class="['mb-5', !hasCover ? 'flex flex-col items-center' : '']">
         <!-- 多封面轮播 -->
-        <CoverSwiper
-          v-if="hasManyCovers"
-          :covers="covers"
-          class="animate-fade-in opacity-0 translate-y-8 duration-600 ease-out"
-        />
+        <CoverSwiper v-if="hasManyCovers" :covers="covers" class="animate-fade-in opacity-0 translate-y-8 duration-600 ease-out" />
 
         <!-- 单封面 -->
         <img
@@ -89,21 +85,25 @@ onMounted(() => {
           :src="firstCover"
           alt="封面"
           class="w-full h-auto max-h-37.5 object-cover border border-gray-200 mb-5 cursor-zoom-in animate-fade-in opacity-0 translate-y-8 duration-600 ease-out"
-          loading="lazy"
-        />
+          loading="lazy" />
 
         <!-- 标题 -->
-        <h1 id="article-title" class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 break-words animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-100">
+        <h1
+          id="article-title"
+          class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 break-words animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-100">
           {{ post.title }}
         </h1>
 
         <!-- 描述/摘要 -->
-        <div v-if="post.desc" class="text-[1.1em] text-slate-600 dark:text-slate-400 leading-relaxed mb-5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-150">
+        <div
+          v-if="post.desc"
+          class="text-[1.1em] text-slate-600 dark:text-slate-400 leading-relaxed mb-5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-150">
           {{ post.desc }}
         </div>
 
         <!-- 元信息 -->
-        <div class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-200">
+        <div
+          class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-200">
           <span class="inline-flex items-center gap-1">
             <Icon name="ri:user-line" class="size-4" />
             <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
@@ -136,8 +136,7 @@ onMounted(() => {
 
       <!-- 评论区 -->
       <section class="mt-10 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-300">
-        <CommentInput :post-id="post.cid" />
-        <CommentList />
+        <CommentList :post-id="post.cid" />
       </section>
     </article>
   </div>
@@ -146,7 +145,9 @@ onMounted(() => {
 <style scoped>
 /* 渐入动画基础类 */
 .animate-fade-in {
-  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .opacity-0 {

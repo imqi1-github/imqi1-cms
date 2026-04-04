@@ -1,29 +1,43 @@
 <script setup lang="ts">
 const props = defineProps<{
-  postId: number
-}>()
+  postId: number;
+  isReply?: boolean;
+  replyTo?: {
+    id: number;
+    name: string;
+  };
+}>();
 
-const submitting = ref(false)
-const showEmoji = ref(false)
+const emit = defineEmits<{
+  (e: "cancel-reply"): void;
+}>();
+
+const submitting = ref(false);
+const showEmoji = ref(false);
 
 // 表单数据
 const formData = ref({
-  content: '',
-  name: '',
-  mail: '',
-  link: '',
-})
+  content: "",
+  name: "",
+  mail: "",
+  link: "",
+});
+
+// 取消回复
+function cancelReply() {
+  emit("cancel-reply");
+}
 
 // 提交评论
 async function submitComment() {
   if (!formData.value.content.trim()) {
-    return
+    return;
   }
 
-  submitting.value = true
+  submitting.value = true;
   try {
-    await $fetch('/api/comments', {
-      method: 'POST',
+    await $fetch("/api/comments", {
+      method: "POST",
       body: {
         cid: props.postId,
         content: formData.value.content,
@@ -31,75 +45,53 @@ async function submitComment() {
         mail: formData.value.mail,
         link: formData.value.link,
       },
-    })
-    formData.value.content = ''
+    });
+    formData.value.content = "";
     // 刷新评论列表的事件可以通过 emit 或者刷新页面
-    window.location.reload()
+    window.location.reload();
   } catch (error) {
-    console.error('评论失败:', error)
+    console.error("评论失败:", error);
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
 // 简单的表情列表
-const emojis = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+const emojis = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
 
 function insertEmoji(emoji: string) {
-  formData.value.content += emoji
-  showEmoji.value = false
+  formData.value.content += emoji;
+  showEmoji.value = false;
 }
 </script>
 
 <template>
   <div class="comment-input-box">
-    <h2 class="comment-box-title">评论</h2>
-    <div class="comment-box-description">
-      评论即代表你已阅读并同意<a href="/agreement" class="comment-link" target="_blank">评论协议</a>。
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="comment-box-title">
+        {{ isReply ? `回复 ${replyTo?.name}` : "评论" }}
+      </h2>
+      <button v-if="isReply" type="button" @click="cancelReply" class="cancel-reply-button">取消回复</button>
     </div>
+    <div class="comment-box-description">评论即代表你已阅读并同意<a href="/agreement" class="comment-link" target="_blank">评论协议</a>。</div>
 
     <div class="comment-input-row">
       <label for="comment-content-input" class="sr-only">评论内容</label>
-      <textarea
-        id="comment-content-input"
-        v-model="formData.content"
-        placeholder="评论内容 *"
-        class="comment-textarea"
-        required
-      />
+      <textarea id="comment-content-input" v-model="formData.content" placeholder="评论内容 *" class="comment-textarea" required />
     </div>
 
     <div class="comment-input-row">
       <div class="comment-input-group">
         <label for="comment-input-name" class="sr-only">昵称</label>
-        <input
-          id="comment-input-name"
-          v-model="formData.name"
-          type="text"
-          placeholder="昵称 *"
-          class="comment-input"
-          required
-        />
+        <input id="comment-input-name" v-model="formData.name" type="text" placeholder="昵称 *" class="comment-input" required />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-mail" class="sr-only">邮箱</label>
-        <input
-          id="comment-input-mail"
-          v-model="formData.mail"
-          type="email"
-          placeholder="邮箱"
-          class="comment-input"
-        />
+        <input id="comment-input-mail" v-model="formData.mail" type="email" placeholder="邮箱" class="comment-input" />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-link" class="sr-only">链接</label>
-        <input
-          id="comment-input-link"
-          v-model="formData.link"
-          type="url"
-          placeholder="链接"
-          class="comment-input"
-        />
+        <input id="comment-input-link" v-model="formData.link" type="url" placeholder="链接" class="comment-input" />
       </div>
 
       <div class="comment-buttons">
@@ -107,7 +99,7 @@ function insertEmoji(emoji: string) {
           <Icon name="ri:emoji-sticker-line" class="size-4" />
         </button>
         <button type="button" class="submit-button" @click="submitComment" :disabled="submitting">
-          {{ submitting ? '提交中...' : '提交评论' }}
+          {{ submitting ? "提交中..." : "提交评论" }}
         </button>
       </div>
     </div>
@@ -116,12 +108,7 @@ function insertEmoji(emoji: string) {
     <Transition name="emoji">
       <div v-if="showEmoji" class="emoji-box">
         <div class="emoji-list">
-          <span
-            v-for="emoji in emojis"
-            :key="emoji"
-            class="emoji-item"
-            @click="insertEmoji(emoji)"
-          >
+          <span v-for="emoji in emojis" :key="emoji" class="emoji-item" @click="insertEmoji(emoji)">
             {{ emoji }}
           </span>
         </div>
@@ -187,7 +174,9 @@ function insertEmoji(emoji: string) {
   background: rgb(255 255 255);
   line-height: 1.5;
   resize: vertical;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .dark .comment-textarea {
@@ -214,7 +203,9 @@ function insertEmoji(emoji: string) {
   border-radius: 4px;
   background: rgb(255 255 255);
   font-size: 0.875em;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .dark .comment-input {
@@ -328,13 +319,38 @@ function insertEmoji(emoji: string) {
 /* 表情面板动画 */
 .emoji-enter-active,
 .emoji-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
 
 .emoji-enter-from,
 .emoji-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.cancel-reply-button {
+  background: none;
+  border: none;
+  color: rgb(100 116 139);
+  font-size: 0.875em;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.dark .cancel-reply-button {
+  color: rgb(148 163 184);
+}
+
+.cancel-reply-button:hover {
+  background: rgb(241 245 249);
+}
+
+.dark .cancel-reply-button:hover {
+  background: rgb(30 41 59);
 }
 
 /* 响应式 */
