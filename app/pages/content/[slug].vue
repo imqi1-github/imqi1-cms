@@ -130,8 +130,8 @@ onMounted(() => {
       </header>
 
       <!-- 文章内容 -->
-      <div class="mt-8 prose prose-slate max-w-none dark:prose-invert animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-300">
-        <div v-html="post.content" class="content-body"></div>
+      <div class="mt-8 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-300">
+        <MarkdownRenderer :content="post.content" />
       </div>
 
       <!-- 评论区 -->
