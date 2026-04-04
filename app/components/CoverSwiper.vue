@@ -94,7 +94,7 @@ watch(
   <div ref="swiperContainer" class="swiper-container">
     <div :class="['swiper-wrapper', !isPhotoCategory && 'noneed']">
       <div v-for="(cover, index) in covers" :key="index" class="swiper-slide">
-        <img :src="cover.url" :alt="cover.desc || '封面'" data-fancybox="cover" class="swiper-img" loading="lazy" />
+        <img :src="cover.url" :alt="cover.desc || '封面'" data-fancybox="cover" :data-caption="cover.desc || '封面'" class="swiper-img" loading="lazy" />
         <div v-if="cover.desc" class="swiper-slide-title">
           {{ cover.desc }}
         </div>

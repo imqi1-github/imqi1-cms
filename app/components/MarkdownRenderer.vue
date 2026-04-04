@@ -60,6 +60,11 @@ md.renderer.rules.image = (tokens: any[], idx: number, options: any, env: any, s
   token.attrSet("loading", "lazy");
   token.attrSet("class", "markdown-image");
   token.attrSet("data-fancybox", "gallery");
+  // 获取图片的 alt 作为 caption
+  const alt = token.attrGet("alt") || "";
+  if (alt) {
+    token.attrSet("data-caption", alt);
+  }
   return self.renderToken(tokens, idx, options);
 };
 

@@ -119,6 +119,7 @@ onUnmounted(() => {
           :src="firstCover"
           alt="封面"
           data-fancybox="cover"
+          data-caption="封面"
           class="w-full h-auto max-h-37.5 object-cover border border-gray-200 mb-5 cursor-zoom-in"
           loading="lazy" />
 
