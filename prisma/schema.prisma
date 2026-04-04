@@ -139,6 +139,7 @@ model PostRelation {
 model User {
   uid         Int      @id @default(autoincrement())
   name       String   @unique
+  nickname   String?
   avatar     String?
   mail       String   @unique
   password   String

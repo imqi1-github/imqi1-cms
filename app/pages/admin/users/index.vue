@@ -1,8 +1,9 @@
 <script setup lang="ts">
+const router = useRouter()
 const loading = ref(true)
 const users = ref<any[]>([])
 const showAddModal = ref(false)
-const newUser = ref({ name: '', mail: '', password: '', role: 0 })
+const newUser = ref({ name: '', nickname: '', mail: '', password: '', role: 0 })
 
 async function fetchUsers() {
   loading.value = true
@@ -22,7 +23,7 @@ async function addUser() {
       method: 'POST',
       body: newUser.value,
     })
-    newUser.value = { name: '', mail: '', password: '', role: 0 }
+    newUser.value = { name: '', nickname: '', mail: '', password: '', role: 0 }
     showAddModal.value = false
     await fetchUsers()
   } catch (error) {
@@ -123,7 +124,7 @@ onMounted(() => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="user in users" :key="user.id">
+          <TableRow v-for="user in users" :key="user.uid">
             <TableCell>
               <div class="flex items-center gap-3">
                 <Avatar class="size-8">
@@ -141,14 +142,19 @@ onMounted(() => {
             <TableCell>{{ formatDate(user.create) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="icon" class="size-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="size-8"
+                  @click="router.push(`/admin/users/${user.uid}`)"
+                >
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   class="size-8 text-destructive hover:text-destructive"
-                  @click="deleteUser(user.id)"
+                  @click="deleteUser(user.uid)"
                 >
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
@@ -181,6 +187,10 @@ onMounted(() => {
             <div class="space-y-2">
               <Label for="userName">用户名</Label>
               <Input id="userName" v-model="newUser.name" placeholder="用户名" required />
+            </div>
+            <div class="space-y-2">
+              <Label for="userNickname">昵称</Label>
+              <Input id="userNickname" v-model="newUser.nickname" placeholder="显示名称" />
             </div>
             <div class="space-y-2">
               <Label for="userMail">邮箱</Label>
