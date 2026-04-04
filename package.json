@@ -20,6 +20,7 @@
     "@prisma/client": "^7.6.0",
     "@remixicon/vue": "^4.9.0",
     "@shikijs/markdown-it": "^4.0.2",
+    "@shikijs/transformers": "^4.0.2",
     "@tanstack/vue-table": "^8.21.3",
     "@types/nodemailer": "^7.0.11",
     "@vueuse/core": "^14.2.1",
