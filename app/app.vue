@@ -10,11 +10,11 @@ const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
-        <SiteHeader class="font-serif" />
+        <SiteHeader class="font-serif font-[450]" />
         <main class="bg-white pt-20 px-5 pb-10 grow">
-          <NuxtPage class="font-serif" />
+          <NuxtPage class="font-serif font-[450]" />
         </main>
-        <SiteFooter class="font-serif" />
+        <SiteFooter class="font-serif font-[450]" />
       </div>
     </template>
 

@@ -6,6 +6,7 @@
 
 @theme {
   --font-serif: "Noto Serif SC", serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 @layer base {
