@@ -2,6 +2,9 @@
 import MarkdownIt from "markdown-it";
 import Shiki from "@shikijs/markdown-it";
 import { transformerNotationHighlight, transformerNotationDiff } from "@shikijs/transformers";
+import { Fancybox } from "@fancyapps/ui";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import "@/assets/css/fancybox.css";
 
 const props = defineProps<{
   content: string;
@@ -20,16 +23,15 @@ const md = MarkdownIt({
 // 初始化 Shiki
 onMounted(async () => {
   try {
-    md.use(await Shiki({
-      themes: {
-        light: 'min-light',
-        dark: 'vitesse-dark',
-      },
-      transformers: [
-        transformerNotationHighlight(),
-        transformerNotationDiff(),
-      ],
-    }));
+    md.use(
+      await Shiki({
+        themes: {
+          light: "min-light",
+          dark: "vitesse-dark",
+        },
+        transformers: [transformerNotationHighlight(), transformerNotationDiff()],
+      }),
+    );
 
     renderMarkdown();
   } catch (error) {
@@ -52,11 +54,12 @@ md.renderer.rules.link_open = (tokens: any[], idx: number, options: any, env: an
   return self.renderToken(tokens, idx, options);
 };
 
-// 自定义图片渲染规则（懒加载）
+// 自定义图片渲染规则（懒加载 + Fancybox）
 md.renderer.rules.image = (tokens: any[], idx: number, options: any, env: any, self: any) => {
   const token = tokens[idx];
   token.attrSet("loading", "lazy");
   token.attrSet("class", "markdown-image");
+  token.attrSet("data-fancybox", "gallery");
   return self.renderToken(tokens, idx, options);
 };
 
@@ -70,19 +73,48 @@ async function renderMarkdown() {
   try {
     renderedHtml.value = md.render(props.content);
 
-    // 渲染后添加复制按钮
+    // 渲染后添加复制按钮和初始化 Fancybox
     await nextTick();
     addCopyButtons();
+    initFancybox();
   } catch (error) {
     console.error("Markdown渲染错误:", error);
     renderedHtml.value = `<p class="text-red-500">Markdown渲染错误</p>`;
   }
 }
 
+// 初始化 Fancybox（参照友情链接页面）
+function initFancybox() {
+  Fancybox.bind("[data-fancybox]", {
+    l10n: zh_CN,
+    placeFocusBack: false,
+    Hash: false,
+    trapFocus: false,
+    closeExisting: false,
+    zoomEffect: true,
+    Carousel: {
+      Panzoom: {
+        maxScale: 2,
+      },
+      Toolbar: {
+        display: {
+          left: ["infobar"],
+          middle: ["zoomIn", "zoomOut", "toggle1to1"],
+          right: ["thumbs", "close"],
+        },
+      },
+      Autoplay: false,
+    },
+    idle: false,
+    autoFocus: false,
+  });
+}
+
 // 添加复制按钮
 function addCopyButtons() {
   const preBlocks = document.querySelectorAll(".markdown-body pre.shiki");
-  preBlocks.forEach((pre) => {
+  if (preBlocks.length === 0) return;
+  preBlocks.forEach(pre => {
     // 如果已经有复制按钮，跳过
     if (pre.querySelector(".copy-button")) return;
 
@@ -119,6 +151,11 @@ function addCopyButtons() {
     pre.appendChild(button);
   });
 }
+
+// 清理 Fancybox
+onBeforeUnmount(() => {
+  Fancybox.destroy();
+});
 
 // 监听内容变化
 watch(
@@ -367,7 +404,8 @@ watch(
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  margin: 1em 0;
+  margin: 1em auto;
+  cursor: zoom-in;
 }
 
 /* 表格样式 */

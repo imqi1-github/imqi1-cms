@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
+import { Fancybox } from "@fancyapps/ui";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import "@/assets/css/fancybox.css";
 
 const route = useRoute();
 const slug = route.params.slug as string;
@@ -38,8 +41,9 @@ useHead({
   title: computed(() => post.value?.title || "文章加载中..."),
 });
 
-// 初始化滚动渐入动画
+// 初始化滚动渐入动画和 Fancybox
 onMounted(() => {
+  // 初始化滚动渐入动画
   const observerOptions = {
     threshold: 0.1,
     rootMargin: "0px 0px -50px 0px",
@@ -58,6 +62,36 @@ onMounted(() => {
   document.querySelectorAll(".animate-fade-in").forEach(el => {
     fadeInObserver.observe(el);
   });
+
+  // 初始化 Fancybox（参照友情链接页面）
+  Fancybox.bind("[data-fancybox]", {
+    l10n: zh_CN,
+    placeFocusBack: false,
+    Hash: false,
+    trapFocus: false,
+    closeExisting: false,
+    zoomEffect: true,
+    Carousel: {
+      Panzoom: {
+        maxScale: 2,
+      },
+      Toolbar: {
+        display: {
+          left: ["infobar"],
+          middle: ["zoomIn", "zoomOut", "toggle1to1"],
+          right: ["thumbs", "close"],
+        },
+      },
+      Autoplay: false,
+    },
+    idle: false,
+    autoFocus: false,
+  });
+});
+
+// 清理 Fancybox
+onUnmounted(() => {
+  Fancybox.destroy();
 });
 </script>
 
@@ -75,7 +109,7 @@ onMounted(() => {
 
     <article v-else class="flex flex-col">
       <!-- 标题区域 -->
-      <header :class="['mb-5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out', !hasCover ? 'flex flex-col items-center' : '']">
+      <header :class="['mb-5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
         <CoverSwiper v-if="hasManyCovers" :covers="covers" />
 
@@ -84,6 +118,7 @@ onMounted(() => {
           v-else-if="hasCover"
           :src="firstCover"
           alt="封面"
+          data-fancybox="cover"
           class="w-full h-auto max-h-37.5 object-cover border border-gray-200 mb-5 cursor-zoom-in"
           loading="lazy" />
 

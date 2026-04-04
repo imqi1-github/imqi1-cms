@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "./vue-sonner.css";
-@import "~/fonts/font.css";
 
 @custom-variant dark (&:is(.dark *));
 

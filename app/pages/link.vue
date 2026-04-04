@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { Fancybox } from "@fancyapps/ui";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import "@/assets/css/fancybox.css";
 
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
@@ -81,8 +84,8 @@ onMounted(() => {
     rootMargin: "0px 0px -50px 0px",
   };
 
-  const fadeInObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
+  const fadeInObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add("fade-in-start");
         fadeInObserver.unobserve(entry.target);
@@ -91,9 +94,50 @@ onMounted(() => {
   }, observerOptions);
 
   // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
     fadeInObserver.observe(el);
   });
+
+  Fancybox.bind("[data-fancybox]", {
+    // === 全局选项 ===
+    l10n: zh_CN,
+    placeFocusBack: false,
+    Hash: false,
+    trapFocus: false,
+    closeExisting: false, // === v6改动：缩略图缩放动画 ===
+    zoomEffect: true, // 对应 v5 的 Images.zoom: true :contentReference[oaicite:0]{index=0}
+
+    // === Carousel 插件配置替代 v5 结构 ===
+    Carousel: {
+      // Images.zoom 和 Panzoom.maxScale
+      Panzoom: {
+        maxScale: 2,
+      }, // 工具栏结构
+      Toolbar: {
+        display: {
+          left: ["infobar"],
+          middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX", "flipY"],
+          right: ["thumbs", "close"],
+        },
+      }, // 关闭缩放缩略图中的自动播放、Hash 等
+      Autoplay: false,
+    },
+
+    // === 其他 UI 行为 ===
+    idle: false,
+    autoFocus: false,
+    tpl: {
+      main: `<div class="fancybox__container" role="dialog" tabindex="-1">
+  <div class="fancybox__backdrop"></div>
+  <div class="fancybox__carousel"></div>
+  <div class="fancybox__footer"></div>
+</div>`,
+    },
+  });
+});
+
+onUnmounted(() => {
+  Fancybox.destroy();
 });
 </script>
 
@@ -103,6 +147,8 @@ onMounted(() => {
     <header class="mb-5 animate-fade-in">
       <!-- 封面图片 -->
       <img
+        data-fancybox="gallery"
+        data-caption="封面"
         src="/imgs/link-cover.png"
         alt="封面"
         loading="lazy"
@@ -292,7 +338,9 @@ onMounted(() => {
 .animate-fade-in {
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .animate-fade-in.fade-in-start {

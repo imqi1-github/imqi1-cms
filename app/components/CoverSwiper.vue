@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, onUnmounted, watch } from "vue";
 import Swiper from "swiper";
 import { Navigation, Pagination, Mousewheel } from "swiper/modules";
+import { Fancybox } from "@fancyapps/ui";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import "@/assets/css/fancybox.css";
 
 interface Cover {
   url: string;
@@ -70,6 +73,11 @@ onBeforeUnmount(() => {
   }
 });
 
+// 清理 Fancybox
+onUnmounted(() => {
+  Fancybox.destroy();
+});
+
 // 监听 covers 变化，重新初始化
 watch(
   () => props.covers,
@@ -86,7 +94,7 @@ watch(
   <div ref="swiperContainer" class="swiper-container">
     <div :class="['swiper-wrapper', !isPhotoCategory && 'noneed']">
       <div v-for="(cover, index) in covers" :key="index" class="swiper-slide">
-        <img :src="cover.url" :alt="cover.desc || '封面'" class="swiper-img" loading="lazy" />
+        <img :src="cover.url" :alt="cover.desc || '封面'" data-fancybox="cover" class="swiper-img" loading="lazy" />
         <div v-if="cover.desc" class="swiper-slide-title">
           {{ cover.desc }}
         </div>
@@ -166,6 +174,7 @@ watch(
   /* 确保图片不会超出视口 */
   object-fit: contain;
   flex-shrink: 0;
+  cursor: zoom-in;
 }
 
 /* 图片描述 - 显示在图片下方，带文字阴影 */
