@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted } from "vue";
+
 const props = defineProps<{
   postId: number;
   isReply?: boolean;
@@ -10,10 +12,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "cancel-reply"): void;
+  (e: "comment-submitted"): void;
 }>();
 
 const submitting = ref(false);
 const showEmoji = ref(false);
+const submitSuccess = ref(false);
+const submitError = ref("");
+const successMessage = ref("评论提交成功");
 
 // 表单数据
 const formData = ref({
@@ -23,6 +29,19 @@ const formData = ref({
   link: "",
 });
 
+// 从localStorage读取用户信息
+onMounted(() => {
+  if (import.meta.client) {
+    const savedName = localStorage.getItem("comment_name");
+    const savedMail = localStorage.getItem("comment_mail");
+    const savedLink = localStorage.getItem("comment_link");
+
+    if (savedName) formData.value.name = savedName;
+    if (savedMail) formData.value.mail = savedMail;
+    if (savedLink) formData.value.link = savedLink;
+  }
+});
+
 // 取消回复
 function cancelReply() {
   emit("cancel-reply");
@@ -30,13 +49,24 @@ function cancelReply() {
 
 // 提交评论
 async function submitComment() {
+  // 重置状态
+  submitSuccess.value = false;
+  submitError.value = "";
+
+  // 验证必填项
   if (!formData.value.content.trim()) {
+    submitError.value = "请输入评论内容";
+    return;
+  }
+
+  if (!formData.value.name.trim()) {
+    submitError.value = "请输入昵称";
     return;
   }
 
   submitting.value = true;
   try {
-    await $fetch("/api/comments", {
+    const response: any = await $fetch("/api/comments", {
       method: "POST",
       body: {
         cid: props.postId,
@@ -44,12 +74,42 @@ async function submitComment() {
         name: formData.value.name,
         mail: formData.value.mail,
         link: formData.value.link,
+        parent_id: props.isReply ? props.replyTo?.id : null,
       },
     });
-    formData.value.content = "";
-    // 刷新评论列表的事件可以通过 emit 或者刷新页面
-    window.location.reload();
-  } catch (error) {
+
+    if (response.code === 200) {
+      submitSuccess.value = true;
+      submitError.value = "";
+      // 根据是否需要审核显示不同的提示
+      successMessage.value = response.needModeration ? "评论提交成功，请等待审核" : "评论提交成功";
+
+      // 保存用户信息到localStorage
+      if (import.meta.client) {
+        localStorage.setItem("comment_name", formData.value.name);
+        if (formData.value.mail) {
+          localStorage.setItem("comment_mail", formData.value.mail);
+        }
+        if (formData.value.link) {
+          localStorage.setItem("comment_link", formData.value.link);
+        }
+      }
+
+      // 重置表单（只重置内容，保留用户信息）
+      formData.value.content = "";
+      // 3秒后自动隐藏成功提示
+      setTimeout(() => {
+        submitSuccess.value = false;
+      }, 3000);
+      // 通知父组件刷新评论列表
+      setTimeout(() => {
+        emit("comment-submitted");
+      }, 500);
+    } else {
+      submitError.value = response.message || "评论失败，请重试";
+    }
+  } catch (error: any) {
+    submitError.value = error?.message || "网络错误，请稍后重试";
     console.error("评论失败:", error);
   } finally {
     submitting.value = false;
@@ -102,6 +162,22 @@ function insertEmoji(emoji: string) {
           {{ submitting ? "提交中..." : "提交评论" }}
         </button>
       </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div
+      v-if="submitSuccess"
+      class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
+      <Icon name="lucide:check-circle" class="size-4 flex-shrink-0" />
+      <span>{{ successMessage }}</span>
+    </div>
+
+    <!-- 错误提示 -->
+    <div
+      v-if="submitError"
+      class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-300 text-sm flex items-center gap-2">
+      <Icon name="lucide:alert-circle" class="size-4 flex-shrink-0" />
+      <span>{{ submitError }}</span>
     </div>
 
     <!-- 表情面板 -->

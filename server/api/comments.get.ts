@@ -12,15 +12,15 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 获取所有已启用的评论
+    // 获取所有已启用的评论，按时间倒序排列（最新的在最上面）
     const comments = await prisma.comment.findMany({
       where: {
         cid,
-        status: 1
+        status: 1,
       },
       orderBy: {
-        create_time: 'asc'
-      }
+        create_time: "desc",
+      },
     });
 
     // 构建评论树结构
@@ -31,7 +31,7 @@ export default defineEventHandler(async event => {
     comments.forEach(comment => {
       commentMap.set(comment.coid, {
         ...comment,
-        children: []
+        children: [],
       });
     });
 
@@ -52,7 +52,7 @@ export default defineEventHandler(async event => {
     return {
       code: 200,
       message: "获取评论列表成功",
-      data: rootComments
+      data: rootComments,
     };
   } catch (error) {
     if (error instanceof Error) {
