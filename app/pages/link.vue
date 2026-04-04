@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
@@ -73,18 +73,40 @@ const handleSubmit = async () => {
     submitting.value = false;
   }
 };
+
+// 初始化滚动渐入动画
+onMounted(() => {
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: "0px 0px -50px 0px",
+  };
+
+  const fadeInObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("fade-in-start");
+        fadeInObserver.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  // 观察所有需要滚动渐入的元素
+  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+    fadeInObserver.observe(el);
+  });
+});
 </script>
 
 <template>
-  <div class="max-w-[900px] mx-auto px-5 py-8">
+  <div class="max-w-225 mx-auto px-5 py-8">
     <!-- 标题区域 -->
-    <header class="mb-5">
+    <header class="mb-5 animate-fade-in">
       <!-- 封面图片 -->
       <img
-        src="@/assets/imgs/jixi.webp"
+        src="@/assets/imgs/link-cover.png"
         alt="封面"
         loading="lazy"
-        class="w-full aspect-video max-h-[150px] object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800" />
+        class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800" />
 
       <!-- 标题 -->
       <h1 class="text-[3em] font-extrabold mb-2.5">友链</h1>
@@ -94,7 +116,7 @@ const handleSubmit = async () => {
     </header>
 
     <!-- 友链列表区域 -->
-    <section class="my-8">
+    <section class="my-8 animate-fade-in">
       <h2 class="sr-only">友链列表</h2>
       <blockquote
         class="border-l-4 border-blue-600 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[0.95em] px-4 py-3 my-4 rounded-sm">
@@ -135,7 +157,7 @@ const handleSubmit = async () => {
           <div class="flex items-center gap-4 mb-4">
             <!-- 头像 -->
             <div
-              class="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-semibold text-xl flex-shrink-0 overflow-hidden">
+              class="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-semibold text-xl shrink-0 overflow-hidden">
               <template v-if="link.avatar">
                 <img
                   :src="link.avatar"
@@ -172,7 +194,7 @@ const handleSubmit = async () => {
     </section>
 
     <!-- 友链申请说明 -->
-    <section class="mt-12">
+    <section class="mt-12 animate-fade-in">
       <h2 class="text-xl font-bold mb-4">申请友链</h2>
 
       <div
@@ -264,5 +286,17 @@ const handleSubmit = async () => {
 <style scoped>
 .no-underline {
   text-decoration: none;
+}
+
+/* 滚动淡入动画 */
+.animate-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in.fade-in-start {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
