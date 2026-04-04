@@ -17,7 +17,7 @@
 
         <!-- 头像区域 -->
         <div class="index-avatar-box h-fit">
-          <img src="@/assets/imgs/avatar.webp" alt="头像" class="index-avatar rounded-full max-w-50 w-50 h-50 object-cover" />
+          <img src="/imgs/avatar.webp" alt="头像" class="index-avatar rounded-full max-w-50 w-50 h-50 object-cover" />
         </div>
         <div class="index-scroll absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 animate-bounce">
           <RiMouseLine class="size-5" />
@@ -36,7 +36,7 @@
           <!-- 小程序二维码 -->
           <template v-if="link.name === 'miniprogram'">
             <img
-              src="@/assets/imgs/miniprogram.jpg"
+              src="/imgs/miniprogram.jpg"
               alt="小程序码"
               style="width: 192px; height: 192px; max-width: none; max-height: none;"
               class="absolute bottom-full left-1/2 -translate-x-1/2 rounded-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto" />
@@ -79,28 +79,28 @@
         </div>
         <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap">
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="@/assets/imgs/chrome.png" alt="浏览器">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/chrome.png" alt="浏览器">
             <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">浏览器</span>
           </div>
           <div class="index-framework-arrow">
             <RiArrowLeftLine class="text-2xl text-slate-400 mx-7" />
           </div>
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="@/assets/imgs/edgeone.png" alt="Edgeone">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/edgeone.png" alt="Edgeone">
             <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">EdgeOne</span>
           </div>
           <div class="index-framework-arrow">
             <RiArrowLeftLine class="text-2xl text-slate-400 mx-7" />
           </div>
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="@/assets/imgs/jdcloud.png" alt="云服务器">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/jdcloud.png" alt="云服务器">
             <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">云服务器</span>
           </div>
           <div class="index-framework-arrow">
             <RiArrowLeftLine class="text-2xl text-slate-400 mx-7" />
           </div>
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="@/assets/imgs/typecho.png" alt="Typecho">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/typecho.png" alt="Typecho">
             <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">Typecho</span>
           </div>
         </div>
@@ -188,7 +188,7 @@
                 <div v-else-if="rightItem.type === 'layout'" class="index-theme-box relative h-75 w-75">
                   <div
                     class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 overflow-hidden">
-                    <img src="@/assets/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站">
+                    <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站">
                   </div>
                   <div class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 rounded-xl border border-slate-200 transition-transform"></div>
                 </div>
@@ -318,7 +318,7 @@ const themeItems = [
 
 const themeRightItems = [
   { type: "fonts" },
-  { type: "layout", image: "@/assets/imgs/shenyang.webp" },
+  { type: "layout", image: "/imgs/shenyang.webp" },
   { type: "music" },
   { type: "article" },
 ];

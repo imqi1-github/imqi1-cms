@@ -73,37 +73,36 @@ onMounted(() => {
       <p class="text-red-500">文章不存在或加载失败</p>
     </div>
 
-    <article v-else class="flex flex-col animate-fade-in opacity-0 translate-y-8 duration-600 ease-out">
+    <article v-else class="flex flex-col">
       <!-- 标题区域 -->
-      <header :class="['mb-5', !hasCover ? 'flex flex-col items-center' : '']">
+      <header :class="['mb-5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out', !hasCover ? 'flex flex-col items-center' : '']">
         <!-- 多封面轮播 -->
-        <CoverSwiper v-if="hasManyCovers" :covers="covers" class="animate-fade-in opacity-0 translate-y-8 duration-600 ease-out" />
+        <CoverSwiper v-if="hasManyCovers" :covers="covers" />
 
         <!-- 单封面 -->
         <img
           v-else-if="hasCover"
           :src="firstCover"
           alt="封面"
-          class="w-full h-auto max-h-37.5 object-cover border border-gray-200 mb-5 cursor-zoom-in animate-fade-in opacity-0 translate-y-8 duration-600 ease-out"
+          class="w-full h-auto max-h-37.5 object-cover border border-gray-200 mb-5 cursor-zoom-in"
           loading="lazy" />
 
         <!-- 标题 -->
         <h1
           id="article-title"
-          class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 break-words animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-100">
+          class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 break-words">
           {{ post.title }}
         </h1>
 
         <!-- 描述/摘要 -->
         <div
           v-if="post.desc"
-          class="text-[1.1em] text-slate-600 dark:text-slate-400 leading-relaxed mb-5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-150">
+          class="text-[1.1em] text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
           {{ post.desc }}
         </div>
 
         <!-- 元信息 -->
-        <div
-          class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-200">
+        <div class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5">
           <span class="inline-flex items-center gap-1">
             <Icon name="ri:user-line" class="size-4" />
             <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
@@ -130,7 +129,7 @@ onMounted(() => {
       </header>
 
       <!-- 文章内容 -->
-      <div class="mt-8 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-300">
+      <div class="mt-8 animate-fade-in opacity-0 translate-y-8 duration-600 ease-out delay-200">
         <MarkdownRenderer :content="post.content" />
       </div>
 

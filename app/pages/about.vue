@@ -11,7 +11,7 @@
       <div class="about-bold-header ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32">
         <div class="about-bold-header-left pl-8">
           <div class="about-bold-avatar w-48 h-48 rounded-full border-6 border-slate-100 shadow-lg overflow-hidden mb-8">
-            <img src="@/assets/imgs/avatar.webp" alt="Qi1" class="w-full h-full object-cover" />
+            <img src="/imgs/avatar.webp" alt="Qi1" class="w-full h-full object-cover" />
           </div>
           <h1 class="about-bold-name text-slate-900 text-[clamp(3rem,8vw,6rem)] font-black tracking-tight leading-[.9] mb-4">Qi1</h1>
           <p class="about-bold-tagline text-slate-600 text-lg leading-relaxed max-w-xs">做技术的分享者 · 生活的摄影师 · 时事的评论员</p>
@@ -40,7 +40,7 @@
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
             <img
               class="about-bold-location-img w-full h-full object-cover transition-transform duration-500"
-              src="@/assets/imgs/jixi.webp"
+              src="/imgs/jixi.webp"
               alt="沈阳" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">来自</div>
@@ -50,7 +50,7 @@
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
             <img
               class="about-bold-location-img w-full h-full object-cover transition-transform duration-500"
-              src="@/assets/imgs/ysu.webp"
+              src="/imgs/ysu.webp"
               alt="燕山大学" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">毕业于</div>
@@ -60,7 +60,7 @@
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
             <img
               class="about-bold-location-img w-full h-full object-cover transition-transform duration-500"
-              src="@/assets/imgs/shenyang.webp"
+              src="/imgs/shenyang.webp"
               alt="秦皇岛" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">现居</div>
@@ -81,142 +81,142 @@
             <div class="about-bold-skills-track flex gap-4 animate-scroll-diagonal w-max">
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/regex.svg"
+                src="/skills/regex.svg"
                 alt="Regex"
                 title="正则表达式" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/c.svg"
+                src="/skills/c.svg"
                 alt="C"
                 title="C" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/cpp.svg"
+                src="/skills/cpp.svg"
                 alt="C++"
                 title="C++" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/java.svg"
+                src="/skills/java.svg"
                 alt="Java"
                 title="Java" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/sqlite.svg"
+                src="/skills/sqlite.svg"
                 alt="SQLite"
                 title="SQLite" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/mysql.svg"
+                src="/skills/mysql.svg"
                 alt="MySQL"
                 title="MySQL" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/html.svg"
+                src="/skills/html.svg"
                 alt="HTML"
                 title="HTML" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/css.svg"
+                src="/skills/css.svg"
                 alt="CSS"
                 title="CSS" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/js.svg"
+                src="/skills/js.svg"
                 alt="JavaScript"
                 title="JavaScript" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/php.svg"
+                src="/skills/php.svg"
                 alt="PHP"
                 title="PHP" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/md.svg"
+                src="/skills/md.svg"
                 alt="Markdown"
                 title="Markdown" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/latex.svg"
+                src="/skills/latex.svg"
                 alt="LaTeX"
                 title="LaTeX" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/python.svg"
+                src="/skills/python.svg"
                 alt="Python"
                 title="Python" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/qt.svg"
+                src="/skills/qt.svg"
                 alt="Qt"
                 title="Qt" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/regex.svg"
+                src="/skills/regex.svg"
                 alt="Regex"
                 title="正则表达式" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/c.svg"
+                src="/skills/c.svg"
                 alt="C"
                 title="C" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/cpp.svg"
+                src="/skills/cpp.svg"
                 alt="C++"
                 title="C++" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/java.svg"
+                src="/skills/java.svg"
                 alt="Java"
                 title="Java" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/sqlite.svg"
+                src="/skills/sqlite.svg"
                 alt="SQLite"
                 title="SQLite" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/mysql.svg"
+                src="/skills/mysql.svg"
                 alt="MySQL"
                 title="MySQL" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/html.svg"
+                src="/skills/html.svg"
                 alt="HTML"
                 title="HTML" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/css.svg"
+                src="/skills/css.svg"
                 alt="CSS"
                 title="CSS" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/js.svg"
+                src="/skills/js.svg"
                 alt="JavaScript"
                 title="JavaScript" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/php.svg"
+                src="/skills/php.svg"
                 alt="PHP"
                 title="PHP" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/md.svg"
+                src="/skills/md.svg"
                 alt="Markdown"
                 title="Markdown" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/latex.svg"
+                src="/skills/latex.svg"
                 alt="LaTeX"
                 title="LaTeX" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/python.svg"
+                src="/skills/python.svg"
                 alt="Python"
                 title="Python" />
               <img
                 class="about-bold-skill-img bg-slate-100 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
-                src="@/assets/skills/qt.svg"
+                src="/skills/qt.svg"
                 alt="Qt"
                 title="Qt" />
             </div>
@@ -267,7 +267,7 @@
         <div class="about-bold-mbti bg-slate-100 rounded-2xl p-8">
           <div class="about-bold-mbti-header flex items-center gap-8 mb-8">
             <div class="about-bold-mbti-type shrink-0">
-              <img src="@/assets/imgs/entp.svg" alt="ENTP" class="w-32 h-32 object-contain" />
+              <img src="/imgs/entp.svg" alt="ENTP" class="w-32 h-32 object-contain" />
             </div>
             <div class="about-bold-mbti-info flex-1">
               <div class="about-bold-mbti-name text-slate-900 text-xl font-bold mb-2">辩论家 · ENTP-A</div>

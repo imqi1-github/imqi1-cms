@@ -48,7 +48,7 @@ onMounted(() => {
         to="/"
         class="flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0.5)]' : ''">
-        <img src="@/assets/imgs/imqi1.svg" alt="favicon" class="w-[22px] h-[22px]" />
+        <img src="/imgs/imqi1.svg" alt="favicon" class="w-[22px] h-[22px]" />
         <span class="text-[0.95em] font-black -top-[1px] relative">{{ siteName }}</span>
       </NuxtLink>
 
