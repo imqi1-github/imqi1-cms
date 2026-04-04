@@ -11,8 +11,8 @@ const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
         <SiteHeader class="font-serif font-[450]" />
-        <main class="bg-white pt-20 px-5 pb-10 grow">
-          <NuxtPage class="font-serif font-[450]" />
+        <main class="bg-white flex pt-20 px-5 pb-10 grow">
+          <NuxtPage class="font-serif font-[450] grow" />
         </main>
         <SiteFooter class="font-serif font-[450]" />
       </div>
