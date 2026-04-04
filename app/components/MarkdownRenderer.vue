@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MarkdownIt from "markdown-it";
-import highlightAll from "~/plugins/prism-v2/prism.js";
+import Shiki from "@shikijs/markdown-it";
+import { transformerNotationHighlight, transformerNotationDiff } from "@shikijs/transformers";
 
 const props = defineProps<{
   content: string;
@@ -9,37 +10,32 @@ const props = defineProps<{
 const renderedHtml = ref("");
 
 // 创建 markdown-it 实例
-const md = new MarkdownIt({
+const md = MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
   breaks: true,
 });
 
-// 自定义代码块渲染，添加 language-xxx 类
-md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-  const token = tokens[idx];
-  const info = token.info ? md.utils.unescapeAll(token.info).trim() : "";
+// 初始化 Shiki
+onMounted(async () => {
+  try {
+    md.use(await Shiki({
+      themes: {
+        light: 'vitesse-light',
+        dark: 'vitesse-dark',
+      },
+      transformers: [
+        transformerNotationHighlight(),
+        transformerNotationDiff(),
+      ],
+    }));
 
-  // 提取语言名称
-  let lang = "";
-  if (info) {
-    // 获取第一个单词作为语言
-    lang = info.split(/\s+/g)[0];
+    renderMarkdown();
+  } catch (error) {
+    console.error("Shiki初始化错误:", error);
   }
-
-  // 获取代码内容
-  let content = token.content;
-
-  // 转义 HTML
-  content = content.replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
-
-  // 构建 pre code 结构，prism 需要 <pre><code class="language-xxx">
-  const className = lang ? `language-${lang}` : "";
-  return `<pre class="line-numbers"><code class="${className}">${content}</code></pre>`;
-};
+});
 
 // 自定义链接渲染规则（新窗口打开）
 md.renderer.rules.link_open = (tokens: any[], idx: number, options: any, env: any, self: any) => {
@@ -65,7 +61,7 @@ md.renderer.rules.image = (tokens: any[], idx: number, options: any, env: any, s
 };
 
 // 渲染 Markdown 内容
-function renderMarkdown() {
+async function renderMarkdown() {
   if (!props.content) {
     renderedHtml.value = "";
     return;
@@ -74,21 +70,47 @@ function renderMarkdown() {
   try {
     renderedHtml.value = md.render(props.content);
 
-    // 渲染后调用 prism 高亮
-    nextTick(() => {
-      highlightAll(
-        (el: Element, type: string, handler: any, options: any) => {
-          el.addEventListener(type, handler, options);
-        },
-        () => {
-          // forEach 回调，在高亮前执行
-        }
-      );
-    });
+    // 渲染后添加复制按钮
+    await nextTick();
+    addCopyButtons();
   } catch (error) {
     console.error("Markdown渲染错误:", error);
     renderedHtml.value = `<p class="text-red-500">Markdown渲染错误</p>`;
   }
+}
+
+// 添加复制按钮
+function addCopyButtons() {
+  const preBlocks = document.querySelectorAll(".markdown-body pre.shiki");
+  preBlocks.forEach((pre) => {
+    // 如果已经有复制按钮，跳过
+    if (pre.querySelector(".copy-button")) return;
+
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+    button.ariaLabel = "复制代码";
+
+    button.addEventListener("click", async () => {
+      const code = pre.querySelector("code");
+      if (!code) return;
+
+      const text = code.textContent || "";
+      try {
+        await navigator.clipboard.writeText(text);
+        button.classList.add("copied");
+        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        setTimeout(() => {
+          button.classList.remove("copied");
+          button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        }, 2000);
+      } catch (err) {
+        console.error("复制失败:", err);
+      }
+    });
+
+    pre.appendChild(button);
+  });
 }
 
 // 监听内容变化
@@ -232,124 +254,111 @@ watch(
   background: rgb(55 65 81);
 }
 
-/* 代码块样式 - prism 容器 */
-.markdown-body pre {
+/* Shiki 代码块容器样式 */
+.markdown-body pre.shiki {
   margin: 1em 0;
-  padding: 0;
+  padding: 16px;
   overflow: auto;
   font-size: 0.875em;
-  line-height: 1.5;
-  background: transparent;
+  line-height: 1.7;
   border-radius: 8px;
-}
-
-.markdown-body pre code {
-  padding: 16px;
-  background: rgb(30 30 30);
-  color: rgb(229 231 235);
-  border-radius: 8px;
-  display: block;
-  overflow-x: auto;
-}
-
-.dark .markdown-body pre code {
-  background: rgb(15 15 15);
-}
-
-/* Prism 工具栏样式 */
-.markdown-body .code-toolbar {
   position: relative;
-  margin: 1em 0;
-  border-radius: 8px;
-  overflow: hidden;
 }
 
-.markdown-body .code-toolbar pre {
-  margin: 0;
+/* 行号样式 - 使用 CSS 计数器 */
+.markdown-body pre.shiki {
+  counter-reset: line;
+  padding-left: 4em;
 }
 
-.markdown-body .toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 8px 16px;
-  background: rgb(40 40 40);
-  border-bottom: 1px solid rgb(51 51 51);
-  font-size: 0.875em;
+.markdown-body pre.shiki .line {
+  display: block;
+  counter-increment: line;
 }
 
-.markdown-body .toolbar-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.markdown-body .copy-to-clipboard-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: none;
-  background: transparent;
+.markdown-body pre.shiki .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 3em;
+  padding-right: 1em;
+  margin-left: -3.5em;
+  text-align: right;
   color: rgb(156 163 175);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.dark .markdown-body pre.shiki .line::before {
+  color: rgb(107 114 128);
+}
+
+/* 高亮行样式 */
+.markdown-body pre.shiki .line.highlighted {
+  background: rgb(253 224 71 / 0.2);
+}
+
+.dark .markdown-body pre.shiki .line.highlighted {
+  background: rgb(250 204 21 / 0.15);
+}
+
+/* Diff 样式 */
+.markdown-body pre.shiki .line.diff.add {
+  background: rgb(34 197 94 / 0.15);
+}
+
+.markdown-body pre.shiki .line.diff.remove {
+  background: rgb(239 68 68 / 0.15);
+}
+
+/* 复制按钮样式 */
+.markdown-body .copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  background: rgb(243 244 246);
+  color: rgb(75 85 99);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.875em;
   transition: all 0.2s;
+  opacity: 0;
 }
 
-.markdown-body .copy-to-clipboard-button:hover {
-  background: rgb(51 51 51);
-  color: rgb(255 255 255);
+.markdown-body pre.shiki:hover .copy-button {
+  opacity: 1;
 }
 
-.markdown-body .copy-to-clipboard-button[data-copy-state="copy-success"] {
-  color: rgb(34 197 94);
+.markdown-body .copy-button:hover {
+  background: rgb(229 231 235);
 }
 
-.markdown-body .prism-icon {
+.dark .markdown-body .copy-button {
+  background: rgb(55 65 81);
+  color: rgb(209 213 219);
+}
+
+.dark .markdown-body .copy-button:hover {
+  background: rgb(75 85 99);
+}
+
+.markdown-body .copy-button.copied {
+  background: rgb(34 197 94);
+  color: white;
+}
+
+.dark .markdown-body .copy-button.copied {
+  background: rgb(22 163 74);
+}
+
+.markdown-body .copy-button svg {
   width: 16px;
   height: 16px;
-}
-
-.markdown-body .prism-language {
-  color: rgb(156 163 175);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.875em;
-  text-transform: lowercase;
-}
-
-/* Prism 行号样式 */
-.markdown-body .line-numbers-rows {
-  position: absolute;
-  pointer-events: none;
-  top: 0;
-  left: -3.8em;
-  width: 3em;
-  letter-spacing: -1px;
-  border-right: 1px solid rgb(51 51 51);
-  user-select: none;
-  padding-right: 8px;
-  padding-top: 16px;
-}
-
-.markdown-body .line-numbers-rows > span {
-  counter-increment: linenumber;
-}
-
-.markdown-body .line-numbers-rows > span:before {
-  content: counter(linenumber);
-  color: rgb(107 114 128);
-  display: block;
-  text-align: right;
-}
-
-.markdown-body .line-numbers .line-numbers-rows {
-  border-right: 1px solid rgb(75 85 99);
-}
-
-.dark .markdown-body .line-numbers-rows > span:before {
-  color: rgb(75 85 99);
 }
 
 /* 图片样式 */
