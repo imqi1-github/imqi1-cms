@@ -5,33 +5,103 @@ const route = useRoute();
 const { data } = await useFetch("/api/site");
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 
+// 分类菜单数据
+const categories = [
+  { name: "小记", href: "/note", icon: "ri:pencil-fill" },
+  { name: "图片", href: "/shot", icon: "ri:camera-fill" },
+  { name: "技术", href: "/tech", icon: "ri:cpu-line" },
+  { name: "讨论", href: "/discuss", icon: "ri:chat-1-fill" },
+];
+
+// 导航项数据
+const navItems = [
+  { name: "留言", href: "/message", icon: "ri:chat-1-line" },
+  { name: "友链", href: "/link", icon: "ri:links-line" },
+  { name: "关于", href: "/about", icon: "ri:user-line" },
+];
+
+// 是否显示分类下拉菜单
+const showCategory = ref(false);
+
+// 滚动监听
+const isScrolled = ref(false);
+
+onMounted(() => {
+  const handleScroll = () => {
+    isScrolled.value = window.scrollY > 20;
+  };
+
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  handleScroll();
+
+  onUnmounted(() => {
+    window.removeEventListener("scroll", handleScroll);
+  });
+});
 </script>
 
 <template>
-  <header class="bg-white border-b border-gray-200 sticky top-0 z-100">
-    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center gap-10">
+  <nav class="sticky top-5 z-50 h-0 transition-all duration-150" :class="{ sticked: isScrolled }" aria-label="主导航">
+    <div class="flex justify-between items-center max-w-[900px] mx-auto relative">
       <!-- Logo -->
-      <NuxtLink to="/" class="no-underline">
-        <span class="text-2xl font-bold text-gray-800 tracking-tight">{{ siteName }}</span>
+      <NuxtLink
+        to="/"
+        class="flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]"
+        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0.5)]' : ''">
+        <img src="@/assets/imgs/imqi1.svg" alt="favicon" class="w-[22px] h-[22px]" />
+        <span class="text-[0.95em] font-black -top-[1px] relative">{{ siteName }}</span>
       </NuxtLink>
 
-      <!-- Navigation -->
-      <nav class="flex gap-2 flex-1">
-        <NuxtLink to="/about" class="px-4 py-2 rounded-md text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all no-underline"
-          >关于
-        </NuxtLink>
-      </nav>
+      <!-- 右侧菜单 -->
+      <div
+        id="nav-menu"
+        class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]"
+        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0.5)]' : ''">
+        <!-- 搜索按钮 -->
+        <div class="group flex items-center justify-center w-[25px] h-[25px] rounded-full cursor-pointer relative hover:text-white">
+          <Icon name="ri:search-line" class="text-[1.2em] relative z-[1]" />
+          <span
+            class="absolute -inset-[2px] bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 z-0" />
+        </div>
 
-      <!-- Search -->
-      <div class="relative w-60">
-        <input
-          type="search"
-          placeholder="搜索..."
-          class="w-full py-2 pr-9 pl-3 border border-gray-200 rounded-full text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 transition-all" />
-        <Icon name="lucide:search" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <!-- 分类下拉 -->
+        <div
+          class="group flex items-center justify-center w-[25px] h-[25px] rounded-full cursor-pointer relative hover:text-white"
+          @mouseenter="showCategory = true"
+          @mouseleave="showCategory = false">
+          <Icon name="ri:book-shelf-line" class="text-[1.2em] relative z-[1]" />
+          <span
+            class="absolute -inset-[2px] bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 z-0" />
+
+          <!-- 分类下拉菜单 -->
+          <div
+            class="absolute right-0 top-[calc(100%+10px)] flex flex-col items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-1.5 px-2.5 w-[100px] opacity-0 invisible transition-all duration-150 text-gray-900 dark:text-gray-100"
+            :class="{ 'opacity-100 visible': showCategory }">
+            <NuxtLink
+              v-for="cat in categories"
+              :key="cat.href"
+              :to="cat.href"
+              class="flex items-center gap-2 px-3 py-0.5 rounded text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150 w-full no-underline">
+              <Icon :name="cat.icon" class="text-sm" />
+              <span class="text-sm">{{ cat.name }}</span>
+            </NuxtLink>
+            <div class="absolute -top-5 right-0 w-[100px] h-5"></div>
+          </div>
+        </div>
+
+        <!-- 其他导航项 -->
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.href"
+          :to="item.href"
+          class="group flex items-center justify-center w-[25px] h-[25px] rounded-full cursor-pointer relative text-inherit hover:text-white no-underline">
+          <Icon :name="item.icon" class="text-[1.2em] relative z-[1]" />
+          <span
+            class="absolute -inset-[2px] bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 z-0" />
+        </NuxtLink>
       </div>
     </div>
-  </header>
+  </nav>
 </template>
 
 <style scoped>
