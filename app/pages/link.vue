@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed } from "vue";
 
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
@@ -17,14 +17,14 @@ useHead({
 // 表单状态
 const submitting = ref(false);
 const submitSuccess = ref(false);
-const submitError = ref('');
+const submitError = ref("");
 
 // 表单数据
 const formData = ref({
-  name: '',
-  link: '',
-  sort: '',
-  avatar: ''
+  name: "",
+  link: "",
+  sort: "",
+  avatar: "",
 });
 
 // 处理链接显示
@@ -41,16 +41,16 @@ const formatUrl = (url: string) => {
 const handleSubmit = async () => {
   // 重置状态
   submitSuccess.value = false;
-  submitError.value = '';
+  submitError.value = "";
   submitting.value = true;
 
   try {
-    const response = await fetch('/api/links', {
-      method: 'POST',
+    const response = await fetch("/api/links", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData.value)
+      body: JSON.stringify(formData.value),
     });
 
     const data = await response.json();
@@ -59,16 +59,16 @@ const handleSubmit = async () => {
       submitSuccess.value = true;
       // 重置表单
       formData.value = {
-        name: '',
-        link: '',
-        sort: '',
-        avatar: ''
+        name: "",
+        link: "",
+        sort: "",
+        avatar: "",
       };
     } else {
-      submitError.value = data.message || '申请失败，请重试';
+      submitError.value = data.message || "申请失败，请重试";
     }
   } catch (error) {
-    submitError.value = '网络错误，请稍后重试';
+    submitError.value = "网络错误，请稍后重试";
   } finally {
     submitting.value = false;
   }
@@ -175,24 +175,6 @@ const handleSubmit = async () => {
     <section class="mt-12">
       <h2 class="text-xl font-bold mb-4">申请友链</h2>
 
-      <!-- 成功提示 -->
-      <div v-if="submitSuccess"
-        class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-800 dark:text-green-200 text-[0.95em] mb-6">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:check-circle" class="size-5" />
-          <span>申请成功，请等待审核</span>
-        </div>
-      </div>
-
-      <!-- 错误提示 -->
-      <div v-if="submitError"
-        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200 text-[0.95em] mb-6">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:alert-circle" class="size-5" />
-          <span>{{ submitError }}</span>
-        </div>
-      </div>
-
       <div
         class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-amber-800 dark:text-amber-200 text-[0.95em] mb-6">
         <p class="mb-2">
@@ -216,7 +198,6 @@ const handleSubmit = async () => {
               v-model="formData.name"
               type="text"
               placeholder="名称 *"
-              required
               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
           </div>
           <div>
@@ -224,12 +205,12 @@ const handleSubmit = async () => {
             <input
               id="link-url"
               v-model="formData.link"
-              type="url"
+              type="text"
               placeholder="链接 *"
-              required
               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
           </div>
         </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="link-sort" class="sr-only">分类</label>
@@ -245,11 +226,29 @@ const handleSubmit = async () => {
             <input
               id="link-avatar"
               v-model="formData.avatar"
-              type="url"
+              type="text"
               placeholder="头像"
               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
           </div>
         </div>
+
+        <!-- ✅ 提示统一位置（按钮上方） -->
+        <div
+          v-if="submitSuccess || submitError"
+          class="rounded-lg p-4 text-[0.95em]"
+          :class="
+            submitSuccess
+              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
+              : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+          ">
+          <div class="flex items-center gap-2">
+            <Icon :name="submitSuccess ? 'lucide:check-circle' : 'lucide:alert-circle'" class="size-5" />
+            <span>
+              {{ submitSuccess ? "申请成功，请等待审核" : submitError }}
+            </span>
+          </div>
+        </div>
+
         <button
           type="submit"
           :disabled="submitting"
