@@ -91,7 +91,7 @@ function handleCommentSubmitted() {
     <!-- 空状态 -->
     <div v-else-if="comments.length === 0" class="py-8 text-center">
       <Icon name="lucide:message-square" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-      <p class="text-slate-500">暂无评论，快来发表第一条评论吧！</p>
+      <p class="text-slate-500">暂无评论</p>
     </div>
 
     <!-- 默认评论框 -->

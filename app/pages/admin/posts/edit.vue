@@ -69,6 +69,13 @@ const toggleCategory = (categoryId: number, checked: boolean) => {
   if (checked && index === -1) {
     selectedCategoryIds.value.push(categoryId);
   } else if (!checked && index > -1) {
+    // 检查是否是最后一个分类
+    if (selectedCategoryIds.value.length <= 1) {
+      toast.error({
+        message: "至少需要选择一个分类",
+      });
+      return;
+    }
     selectedCategoryIds.value.splice(index, 1);
   }
 };
@@ -288,6 +295,14 @@ const savePost = async () => {
   if (!title.value) {
     toast.error({
       message: "标题不能为空",
+    });
+    return;
+  }
+
+  // 检查是否至少选择了一个分类
+  if (selectedCategoryIds.value.length === 0) {
+    toast.error({
+      message: "至少需要选择一个分类",
     });
     return;
   }

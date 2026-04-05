@@ -69,6 +69,15 @@ async function updateCategory() {
 }
 
 async function deleteCategory(mid: number) {
+  // 检查是否是最后一个分类
+  if (categories.length <= 1) {
+    toast.error({
+      message: "无法删除",
+      description: "至少需要保留一个分类",
+    });
+    return;
+  }
+
   const confirmed = confirm("确定要删除这个分类吗？删除后文章将不再关联此分类。");
   if (confirmed) {
     try {
@@ -192,6 +201,7 @@ onMounted(() => {
                   size="icon"
                   class="size-8 text-destructive hover:text-destructive"
                   title="删除"
+                  :disabled="categories.length <= 1"
                   @click="deleteCategory(category.mid)">
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
