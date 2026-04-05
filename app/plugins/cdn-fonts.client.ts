@@ -3,7 +3,7 @@ export default defineNuxtPlugin(() => {
   const cdnURL = config.public.cdnURL as string;
 
   // 只在生产环境或明确配置了 cdnURL 时使用 CDN
-  if (cdnURL && process.env.NODE_ENV === "production") {
+  if (cdnURL && import.meta.env.PROD) {
     // 移除默认的 fonts.css 链接
     const defaultLink = document.querySelector('link[href="/fonts/font.css"]');
     if (defaultLink) {
