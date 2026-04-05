@@ -124,10 +124,11 @@ async function main() {
   // 创建默认分类
   console.log('📁 创建默认分类...')
   const category = await prisma.category.upsert({
-    where: { class: 'default' },
+    where: { slug: 'default' },
     update: {},
     create: {
       name: '未分类',
+      slug: 'default',
       desc: '默认分类',
       class: 'default',
     },
