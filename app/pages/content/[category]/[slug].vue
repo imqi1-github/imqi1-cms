@@ -32,16 +32,6 @@ const post = computed(() => data.value?.data);
 // 判断文章是否存在
 const isNotFound = computed(() => !pending.value && (!post.value || error.value));
 
-// 监听 404 状态，打印警告
-// watch(isNotFound, (notFound) => {
-//   if (notFound) {
-//     console.warn(`[404] 文章未找到: /${categorySlug}/${slug}`);
-//     if (error.value) {
-//       console.warn(`[404] 错误信息:`, error.value);
-//     }
-//   }
-// }, { immediate: true });
-
 const categories = computed(() => post.value?.relations?.map(r => r.category) || []);
 const covers = computed(() => post.value?.parsedCovers || []);
 const tags = computed(() => post.value?.tags || []);
@@ -395,6 +385,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(h1) {
   font-size: 2em;
+  border-bottom: 1px solid rgb(229 231 235);
   padding-bottom: 0.3em;
 }
 
@@ -404,6 +395,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(h2) {
   font-size: 1.5em;
+  border-bottom: 1px solid rgb(229 231 235);
   padding-bottom: 0.3em;
 }
 
@@ -561,9 +553,6 @@ onUnmounted(() => {
   right: 36px;
   font-size: 11px;
   font-weight: 500;
-  /* padding: 2px 6px; */
-  /* border-radius: 4px; */
-  /* background: rgb(243 244 246); */
   color: rgb(107 114 128);
   opacity: 0.5;
   transition: opacity 0.2s;

@@ -9,10 +9,10 @@ const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 
 // 分类菜单数据
 const categories = [
-  { name: "小记", href: "/note", icon: "ri:pencil-fill" },
-  { name: "图片", href: "/shot", icon: "ri:camera-fill" },
-  { name: "技术", href: "/tech", icon: "ri:cpu-line" },
-  { name: "讨论", href: "/discuss", icon: "ri:chat-1-fill" },
+  { name: "小记", href: "/category/note", icon: "ri:pencil-fill" },
+  { name: "图片", href: "/category/shot", icon: "ri:camera-fill" },
+  { name: "技术", href: "/category/tech", icon: "ri:cpu-line" },
+  { name: "讨论", href: "/category/discuss", icon: "ri:chat-1-fill" },
 ];
 
 // 导航项数据

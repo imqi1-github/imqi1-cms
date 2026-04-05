@@ -229,7 +229,7 @@
                     <p v-else class="text-slate-400 text-sm italic">暂无描述</p>
                     <!-- 链接 -->
                     <NuxtLink
-                      :to="`/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
+                      :to="`/content/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
                       class="pt-3 text-blue-600 text-sm hover:underline">
                       阅读全文 →
                     </NuxtLink>
@@ -346,7 +346,7 @@ const themeItems = computed(() => [
     grids:
       categories.value.length > 0
         ? categories.value.flatMap(cat => [
-            { text: cat.name, href: `/${cat.slug}` },
+            { text: cat.name, href: `/category/${cat.slug}` },
             { text: cat.desc || "暂无描述", isCategory: true },
           ])
         : [{ text: "暂无分类" }, { text: "", isCategory: true }],
