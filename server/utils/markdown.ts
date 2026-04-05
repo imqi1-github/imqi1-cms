@@ -60,17 +60,26 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     return self.renderToken(tokens, idx, options);
   };
 
-  // 自定义图片渲染规则（添加 data-fancybox 属性）
+  // 自定义图片渲染规则（包装成 figure 并添加标题）
   md.renderer.rules.image = (tokens: any[], idx: number, options: any, env: any, self: any) => {
     const token = tokens[idx];
     token.attrSet("loading", "lazy");
     token.attrSet("class", "markdown-image");
     token.attrSet("data-fancybox", "gallery");
-    const alt = token.attrGet("alt") || "";
+    const alt = token.content || "";
     if (alt) {
       token.attrSet("data-caption", alt);
     }
-    return self.renderToken(tokens, idx, options);
+
+    // 先渲染图片标签
+    const imgHtml = self.renderToken(tokens, idx, options);
+
+    // 如果有 alt 文本，包装成 figure 并添加 figcaption
+    if (alt) {
+      return `<figure class="markdown-figure">${imgHtml}<figcaption class="markdown-figcaption">${alt}</figcaption></figure>`;
+    }
+
+    return imgHtml;
   };
 
   // 配置 Shiki（只加载常见语言）

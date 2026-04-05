@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted } from "vue";
+
 const route = useRoute();
 const slug = route.params.slug as string;
 
@@ -52,10 +54,21 @@ useHead({
     return `${category.value?.name} - ${siteName.value}`;
   }),
 });
+
+// 初始化渐入动画
+onMounted(() => {
+  requestAnimationFrame(() => {
+    // 触发所有带 fade-in 类的元素的动画
+    document.querySelectorAll(".fade-in-element").forEach(el => {
+      el.classList.remove("opacity-0", "translate-y-8");
+      el.classList.add("opacity-100", "translate-y-0");
+    });
+  });
+});
 </script>
 
 <template>
-  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'max-w-full' : 'max-w-225']">
+  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'photo-category-container' : 'max-w-225']">
     <!-- 加载中 -->
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -63,7 +76,7 @@ useHead({
     </div>
 
     <!-- 404 -->
-    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col py-20">
+    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
         <Icon name="ri:close-large-fill" class="text-red-500" />
         <span>分类不存在</span>
@@ -76,20 +89,11 @@ useHead({
 
     <!-- 图片分类 - 瀑布流布局 -->
     <template v-else-if="isPhotoCategory">
-      <!-- 标题 -->
-      <header class="mb-6">
-        <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100">{{ category?.name }}</h1>
-        <p v-if="category?.desc" class="text-slate-600 dark:text-slate-400 mt-2">{{ category.desc }}</p>
-      </header>
-
       <!-- 图片列表 -->
-      <div v-if="posts.length > 0" class="photos-container">
+      <div v-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         <template v-for="post in posts" :key="post.cid">
-          <!-- 多封面 -->
-          <template v-if="post.many_covers && post.covers.length > 0">
+          <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
             <NuxtLink
-              v-for="(cover, index) in post.covers"
-              :key="`${post.cid}-${index}`"
               :to="`/content/${slug}/${post.slug}`"
               class="photo-item"
             >
@@ -97,16 +101,11 @@ useHead({
               <div class="photo-name">{{ cover.desc || post.title }}</div>
             </NuxtLink>
           </template>
-          <!-- 单封面 -->
-          <NuxtLink v-else-if="post.covers.length > 0" :to="`/content/${slug}/${post.slug}`" class="photo-item">
-            <img :src="post.covers[0].url" :alt="post.title" loading="lazy" />
-            <div class="photo-name">{{ post.title }}</div>
-          </NuxtLink>
         </template>
       </div>
 
       <!-- 空状态 -->
-      <div v-else class="text-center py-20 text-slate-500">
+      <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         暂无文章
       </div>
     </template>
@@ -114,13 +113,13 @@ useHead({
     <!-- 普通分类 - 网格布局 -->
     <template v-else>
       <!-- 标题 -->
-      <header class="content-title-box title-no-cover mb-6">
+      <header class="content-title-box title-no-cover mb-6 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         <h1 class="content-title text-[3em] font-extrabold text-slate-900 dark:text-slate-100">{{ category?.name }}</h1>
         <p v-if="category?.desc" class="content-description text-slate-600 dark:text-slate-400 mt-2">{{ category.desc }}</p>
       </header>
 
       <!-- 文章列表 -->
-      <div v-if="posts.length > 0" class="archive-articles grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div v-if="posts.length > 0" class="archive-articles grid grid-cols-1 md:grid-cols-2 gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         <div
           v-for="post in posts"
           :key="post.cid"
@@ -137,7 +136,7 @@ useHead({
           </NuxtLink>
 
           <!-- 文章信息 -->
-          <div :class="['archive-article-box p-5 md:p-6', post.covers.length > 0 ? 'mt-auto' : '']">
+          <div :class="['archive-article-box p-5 md:p-6 mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
             <NuxtLink :to="`/content/${slug}/${post.slug}`" class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-3 block">
               {{ post.title }}
             </NuxtLink>
@@ -165,7 +164,7 @@ useHead({
       </div>
 
       <!-- 空状态 -->
-      <div v-else class="text-center py-20 text-slate-500">
+      <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         暂无文章
       </div>
     </template>
@@ -196,19 +195,61 @@ useHead({
 </template>
 
 <style scoped>
-/* 图片分类 - 瀑布流布局 */
-.photos-container {
-  column-count: 3;
-  column-gap: 10px;
+/* 图片分类容器 */
+.photo-category-container {
+  max-width: 1600px;
 }
 
-@media (max-width: 768px) {
+/* 渐入动画 */
+.fade-in-element {
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.opacity-100 {
+  opacity: 1;
+}
+
+.translate-y-0 {
+  transform: translateY(0);
+}
+
+.translate-y-8 {
+  transform: translateY(2rem);
+}
+
+.duration-600 {
+  transition-duration: 0.6s;
+}
+
+.ease-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 图片分类 - 瀑布流布局 */
+.photos-container {
+  column-count: 4;
+  column-gap: 12px;
+}
+
+@media (max-width: 1400px) {
+  .photos-container {
+    column-count: 3;
+  }
+}
+
+@media (max-width: 1024px) {
   .photos-container {
     column-count: 2;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .photos-container {
     column-count: 1;
   }
@@ -239,7 +280,7 @@ useHead({
 }
 
 .photo-item img {
-  aspect-ratio: 4/3;
+  /* aspect-ratio: 4/3; */
   display: block;
   width: 100%;
   height: auto;

@@ -255,8 +255,8 @@ onUnmounted(() => {
           v-else-if="hasCover"
           :src="firstCover"
           alt="封面"
-          data-fancybox="cover"
-          data-caption="封面"
+          data-fancybox="gallery"
+          :data-caption="covers[0]?.desc || '封面'"
           :class="[
             'w-full h-auto object-cover border border-gray-200 mb-5 cursor-zoom-in',
             isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5'
@@ -287,8 +287,13 @@ onUnmounted(() => {
           </span>
           <span v-if="categories.length > 0" class="inline-flex items-center gap-1">
             <Icon name="ri:menu-line" class="size-4" />
-            <NuxtLink :to="`/category/${categories[0].slug}`" class="text-inherit no-underline transition-colors hover:text-blue-600">
-              {{ categories[0].name }}
+            <NuxtLink
+              v-for="(cat, index) in categories"
+              :key="cat.mid"
+              :to="`/category/${cat.slug}`"
+              class="text-inherit no-underline transition-colors hover:text-blue-600"
+            >
+              {{ cat.name }}{{ index < categories.length - 1 ? ', ' : '' }}
             </NuxtLink>
           </span>
           <span v-if="tags.length > 0" class="inline-flex items-center gap-1">
@@ -359,12 +364,36 @@ onUnmounted(() => {
   word-wrap: break-word;
 }
 
+/* 图片容器 */
+.markdown-body :deep(.markdown-figure) {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.markdown-body :deep(.markdown-figure img) {
+  margin: auto;
+}
+
+/* 图片标题 */
+.markdown-body :deep(.markdown-figcaption) {
+  font-size: 0.875em;
+  color: rgb(107 114 128);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.dark .markdown-body :deep(.markdown-figcaption) {
+  color: rgb(156 163 175);
+}
+
 .markdown-body :deep(img) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
   margin: 20px 0;
   cursor: zoom-in;
+  max-height: 600px;
+  margin: auto;
 }
 
 .markdown-body :deep(p) {
@@ -385,7 +414,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(h1) {
   font-size: 2em;
-  border-bottom: 1px solid rgb(229 231 235);
+  /* border-bottom: 1px solid rgb(229 231 235); */
   padding-bottom: 0.3em;
 }
 
@@ -395,7 +424,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(h2) {
   font-size: 1.5em;
-  border-bottom: 1px solid rgb(229 231 235);
+  /* border-bottom: 1px solid rgb(229 231 235); */
   padding-bottom: 0.3em;
 }
 
