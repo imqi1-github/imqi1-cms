@@ -473,7 +473,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { RiArchiveLine, RiArrowRightLine, RiCompassLine, RiEditLine, RiGithubLine, RiHomeLine, RiMailLine } from "@remixicon/vue";
 import { onMounted, ref } from "vue";
 
@@ -543,6 +543,8 @@ const animateNumber = (from, to, duration, callback) => {
 };
 
 // 滚动动画
+let scrollObserver: IntersectionObserver | null = null;
+
 onMounted(() => {
   // 立即检查首屏元素
   const checkInitialElements = () => {
@@ -590,7 +592,7 @@ onMounted(() => {
   checkInitialElements();
 
   // 继续使用IntersectionObserver监听滚动
-  const observer = new IntersectionObserver(
+  scrollObserver = new IntersectionObserver(
     entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.target.classList.contains("ready")) {
@@ -633,8 +635,12 @@ onMounted(() => {
   );
 
   document.querySelectorAll(".ready").forEach(el => {
-    observer.observe(el);
+    scrollObserver?.observe(el);
   });
+});
+
+onUnmounted(() => {
+  scrollObserver?.disconnect();
 });
 </script>
 

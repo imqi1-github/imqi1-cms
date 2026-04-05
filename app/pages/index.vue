@@ -266,7 +266,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   RiAttachmentLine,
   RiArrowLeftLine,
@@ -424,15 +424,21 @@ const handleScroll = () => {
   }
 };
 
+// 滚动监听函数 - 样式选择区域跟随效果
+const handleStyleScroll = () => {
+  requestAnimationFrame(checkVisibleItems);
+};
+
+// IntersectionObserver 实例
+let fadeInObserver: IntersectionObserver | null = null;
+
 // 初始化滚动动画
 onMounted(() => {
   // 监听滚动 - 英雄区缩放/淡出
   window.addEventListener("scroll", handleScroll);
 
   // 监听滚动 - 样式选择区域跟随效果
-  window.addEventListener("scroll", () => {
-    requestAnimationFrame(checkVisibleItems);
-  });
+  window.addEventListener("scroll", handleStyleScroll);
 
   // 等待DOM渲染后初始化
   nextTick(() => {
@@ -445,23 +451,25 @@ onMounted(() => {
     rootMargin: "0px 0px -50px 0px",
   };
 
-  const fadeInObserver = new IntersectionObserver(entries => {
+  fadeInObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
+        fadeInObserver?.unobserve(entry.target);
       }
     });
   }, observerOptions);
 
   // 观察所有需要滚动渐入的元素
   document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-    fadeInObserver.observe(el);
+    fadeInObserver?.observe(el);
   });
 });
 
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("scroll", handleStyleScroll);
+  fadeInObserver?.disconnect();
 });
 </script>
 
