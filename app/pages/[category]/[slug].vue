@@ -33,14 +33,14 @@ const post = computed(() => data.value?.data);
 const isNotFound = computed(() => !pending.value && (!post.value || error.value));
 
 // 监听 404 状态，打印警告
-watch(isNotFound, (notFound) => {
-  if (notFound) {
-    console.warn(`[404] 文章未找到: /${categorySlug}/${slug}`);
-    if (error.value) {
-      console.warn(`[404] 错误信息:`, error.value);
-    }
-  }
-}, { immediate: true });
+// watch(isNotFound, (notFound) => {
+//   if (notFound) {
+//     console.warn(`[404] 文章未找到: /${categorySlug}/${slug}`);
+//     if (error.value) {
+//       console.warn(`[404] 错误信息:`, error.value);
+//     }
+//   }
+// }, { immediate: true });
 
 const categories = computed(() => post.value?.relations?.map(r => r.category) || []);
 const covers = computed(() => post.value?.parsedCovers || []);
@@ -51,9 +51,16 @@ const hasCover = computed(() => covers.value.length > 0);
 const hasManyCovers = computed(() => post.value?.many_covers && covers.value.length > 1);
 const firstCover = computed(() => covers.value[0]?.url || "");
 
+const { data2 } = await useFetch("/api/site");
+const siteName = computed(() => data2.value?.data?.siteName || "ImQi1");
+
 // 页面元数据
 useHead({
-  title: computed(() => post.value?.title || "文章加载中..."),
+  title: computed(() => {
+    if (pending.value) return `文章加载中... - ${siteName.value}`;
+    if (isNotFound.value) return `页面未找到 - ${siteName.value}`;
+    return `${post.value?.title} - ${siteName.value}` || `文章加载中... - ${siteName.value}`;
+  }),
 });
 
 // 初始化滚动渐入动画和 Fancybox
@@ -81,6 +88,7 @@ onMounted(() => {
   });
 
   // 初始化 Fancybox（参照友情链接页面）
+  // @ts-ignore
   Fancybox.bind("[data-fancybox]", {
     l10n: zh_CN,
     placeFocusBack: false,

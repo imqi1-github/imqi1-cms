@@ -80,142 +80,142 @@
           <div class="about-bold-skills-wrapper ml-[-10%] transform -rotate-12 transform-origin-center w-[120%]">
             <div class="about-bold-skills-track flex gap-4 animate-scroll-diagonal w-max">
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/regex.svg"
                 alt="Regex"
                 title="正则表达式" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/c.svg"
                 alt="C"
                 title="C" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/cpp.svg"
                 alt="C++"
                 title="C++" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/java.svg"
                 alt="Java"
                 title="Java" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/sqlite.svg"
                 alt="SQLite"
                 title="SQLite" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/mysql.svg"
                 alt="MySQL"
                 title="MySQL" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/html.svg"
                 alt="HTML"
                 title="HTML" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/css.svg"
                 alt="CSS"
                 title="CSS" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/js.svg"
                 alt="JavaScript"
                 title="JavaScript" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/php.svg"
                 alt="PHP"
                 title="PHP" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/md.svg"
                 alt="Markdown"
                 title="Markdown" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/latex.svg"
                 alt="LaTeX"
                 title="LaTeX" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/python.svg"
                 alt="Python"
                 title="Python" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/qt.svg"
                 alt="Qt"
                 title="Qt" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/regex.svg"
                 alt="Regex"
                 title="正则表达式" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/c.svg"
                 alt="C"
                 title="C" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/cpp.svg"
                 alt="C++"
                 title="C++" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/java.svg"
                 alt="Java"
                 title="Java" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/sqlite.svg"
                 alt="SQLite"
                 title="SQLite" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/mysql.svg"
                 alt="MySQL"
                 title="MySQL" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/html.svg"
                 alt="HTML"
                 title="HTML" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/css.svg"
                 alt="CSS"
                 title="CSS" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/js.svg"
                 alt="JavaScript"
                 title="JavaScript" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/php.svg"
                 alt="PHP"
                 title="PHP" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/md.svg"
                 alt="Markdown"
                 title="Markdown" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/latex.svg"
                 alt="LaTeX"
                 title="LaTeX" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/python.svg"
                 alt="Python"
                 title="Python" />
               <img
-                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-transform duration-200 hover:-translate-y-2"
+                class="about-bold-skill-img bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
                 src="/skills/qt.svg"
                 alt="Qt"
                 title="Qt" />
@@ -231,27 +231,27 @@
           兴趣广泛
         </h2>
         <div class="about-bold-hobbies flex gap-4 pt-3">
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-transform duration-200 w-20 hover:-translate-y-2 transition-colors duration-300">
+          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">💻</span>
             <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">编程</span>
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-transform duration-200 w-20 hover:-translate-y-2 transition-colors duration-300">
+          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">🎮</span>
             <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">游戏</span>
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-transform duration-200 w-20 hover:-translate-y-2 transition-colors duration-300">
+          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">🎸</span>
             <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">音乐</span>
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-transform duration-200 w-20 hover:-translate-y-2 transition-colors duration-300">
+          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">📸</span>
             <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">摄影</span>
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-transform duration-200 w-20 hover:-translate-y-2 transition-colors duration-300">
+          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">📚</span>
             <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">阅读</span>
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-transform duration-200 w-20 hover:-translate-y-2 transition-colors duration-300">
+          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">✈️</span>
             <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">旅行</span>
           </div>
