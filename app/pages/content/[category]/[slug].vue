@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
-import { Fancybox } from "@fancyapps/ui";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "@/assets/css/fancybox.css";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import { Fancybox } from "@fancyapps/ui";
+import { onMounted, onUnmounted, ref } from "vue";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -47,6 +47,73 @@ const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 // 判断是否为图片分类
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
+
+// 目录相关
+interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+}
+
+const tocItems = ref<TocItem[]>([]);
+const showToc = ref(false);
+const activeTocId = ref("");
+
+// 提取目录
+const extractToc = () => {
+  const contentBody = document.querySelector(".content-body");
+  if (!contentBody) return;
+
+  const headings = contentBody.querySelectorAll("h2, h3");
+  const items: TocItem[] = [];
+
+  headings.forEach((heading, index) => {
+    const id = `heading-${index}`;
+    heading.id = id;
+    items.push({
+      id,
+      text: heading.textContent || "",
+      level: heading.tagName === "H2" ? 2 : 3,
+    });
+  });
+
+  tocItems.value = items;
+  showToc.value = items.length > 0;
+};
+
+// 滚动到指定标题
+const scrollToHeading = (id: string) => {
+  const element = document.getElementById(id);
+  if (element) {
+    const headerOffset = 100;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth",
+    });
+
+    activeTocId.value = id;
+  }
+};
+
+// 监听滚动，更新当前激活的目录项
+const handleTocScroll = () => {
+  const headings = document.querySelectorAll(".content-body h2, .content-body h3");
+  let currentId = "";
+
+  headings.forEach(heading => {
+    const rect = heading.getBoundingClientRect();
+    if (rect.top <= 150) {
+      currentId = heading.id;
+    }
+  });
+
+  if (currentId) {
+    activeTocId.value = currentId;
+  }
+};
 
 // 页面元数据
 useHead({
@@ -164,7 +231,7 @@ onMounted(() => {
     }
 
     // 点击代码块切换折叠状态
-    pre.addEventListener("click", (e) => {
+    pre.addEventListener("click", e => {
       const target = e.target as HTMLElement;
       // 不处理复制按钮的点击
       if (target.closest(".copy-button")) return;
@@ -216,11 +283,18 @@ onMounted(() => {
     pre.appendChild(langLabel);
     pre.appendChild(button);
   });
+
+  // 初始化目录
+  nextTick(() => {
+    extractToc();
+    window.addEventListener("scroll", handleTocScroll);
+  });
 });
 
-// 清理 Fancybox
+// 清理 Fancybox 和滚动监听
 onUnmounted(() => {
   Fancybox.destroy();
+  window.removeEventListener("scroll", handleTocScroll);
 });
 </script>
 
@@ -231,7 +305,9 @@ onUnmounted(() => {
       <p class="mt-2 text-slate-500">加载中...</p>
     </div>
 
-    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
+    <div
+      v-else-if="isNotFound"
+      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
         <Icon name="ri:close-large-fill" class="text-red-500" />
         <span>页面未找到</span>
@@ -257,10 +333,7 @@ onUnmounted(() => {
           alt="封面"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
-          :class="[
-            'w-full h-auto object-cover border border-gray-200 mb-5 cursor-zoom-in',
-            isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5'
-          ]"
+          :class="['w-full h-auto object-cover border border-gray-200 mb-5 cursor-zoom-in', isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5']"
           loading="lazy" />
 
         <!-- 标题 -->
@@ -291,9 +364,8 @@ onUnmounted(() => {
               v-for="(cat, index) in categories"
               :key="cat.mid"
               :to="`/category/${cat.slug}`"
-              class="text-inherit no-underline transition-colors hover:text-blue-600"
-            >
-              {{ cat.name }}{{ index < categories.length - 1 ? ', ' : '' }}
+              class="text-inherit no-underline transition-colors hover:text-blue-600">
+              {{ cat.name }}{{ index < categories.length - 1 ? ", " : "" }}
             </NuxtLink>
           </span>
           <span v-if="tags.length > 0" class="inline-flex items-center gap-1">
@@ -305,8 +377,34 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <!-- 文章内容 - 服务端已渲染 -->
-      <div class="mt-8 opacity-0 translate-y-8 duration-600 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
+      <!-- 文章内容区域 - 带目录 -->
+      <div class="mt-8 flex gap-8 relative">
+        <!-- 文章正文 -->
+        <div class="flex-1 min-w-0 opacity-0 translate-y-8 duration-600 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
+
+        <!-- 目录侧边栏 -->
+        <aside v-if="showToc" class="toc-sidebar hidden lg:block w-48 flex-shrink-0">
+          <nav class="toc-nav sticky top-24">
+            <h3 class="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
+            <ul class="space-y-1">
+              <li v-for="item in tocItems" :key="item.id">
+                <a
+                  href="javascript:;"
+                  @click="scrollToHeading(item.id)"
+                  :class="[
+                    'block text-sm py-1 px-2 rounded transition-colors no-underline',
+                    item.level === 3 ? 'pl-4' : '',
+                    activeTocId === item.id
+                      ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800',
+                  ]">
+                  {{ item.text }}
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+      </div>
 
       <!-- 评论区 -->
       <section class="mt-10 opacity-0 translate-y-8 duration-600 ease-out">
@@ -356,6 +454,44 @@ onUnmounted(() => {
 
 .no-underline {
   text-decoration: none;
+}
+
+/* 目录样式 */
+.toc-sidebar {
+  position: relative;
+  opacity: 0;
+  transform: translateX(20px);
+  animation: toc-slide-in 0.5s ease-out forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes toc-slide-in {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toc-nav {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.toc-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toc-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toc-nav::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 2px;
+}
+
+.dark .toc-nav::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105);
 }
 
 /* 正文样式 */
