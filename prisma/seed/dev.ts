@@ -27,7 +27,7 @@ const samplePosts = [
 
 希望你喜欢这个系统！`,
     desc: "欢迎来到我们的新博客，这里有一些你需要知道的事情。",
-    slug: 1,
+    slug: "welcome-to-new-blog",
   },
   {
     title: "TypeScript 最佳实践指南",
@@ -49,7 +49,7 @@ interface User {
 
 泛型可以帮助我们创建可复用的组件。`,
     desc: "分享一些 TypeScript 开发中的最佳实践和技巧。",
-    slug: 2,
+    slug: "typescript-best-practices",
   },
   {
     title: "Vue 3 Composition API 详解",
@@ -65,7 +65,7 @@ setup 函数是 Composition API 的入口点。
 
 ref 和 reactive 是创建响应式数据的两种方式。`,
     desc: "深入理解 Vue 3 Composition API 的工作原理和使用方法。",
-    slug: 3,
+    slug: "vue3-composition-api-guide",
   },
   {
     title: "Nuxt 4 新特性介绍",
@@ -81,7 +81,7 @@ Nuxt 4 带来了许多令人兴奋的新特性。
 
 开箱即用的 TypeScript 支持，无需额外配置。`,
     desc: "探索 Nuxt 4 框架的最新功能和改进。",
-    slug: 4,
+    slug: "nuxt4-new-features",
   },
   {
     title: "PostgreSQL 性能优化技巧",
@@ -97,7 +97,7 @@ PostgreSQL 是一个强大的开源关系数据库。
 
 使用 EXPLAIN ANALYZE 分析查询计划。`,
     desc: "一些实用的 PostgreSQL 数据库优化建议。",
-    slug: 5,
+    slug: "postgresql-performance-tips",
   },
   {
     title: "前端开发工具推荐",
@@ -113,7 +113,7 @@ PostgreSQL 是一个强大的开源关系数据库。
 
 前端调试的必备工具。`,
     desc: "分享一些提高开发效率的工具和插件。",
-    slug: 6,
+    slug: "frontend-dev-tools",
   },
   {
     title: "CSS Grid 布局完全指南",
@@ -132,7 +132,7 @@ CSS Grid 是一个强大的二维布局系统。
 
 通过实际案例学习 Grid 布局。`,
     desc: "从零开始学习 CSS Grid 网格布局。",
-    slug: 7,
+    slug: "css-grid-complete-guide",
   },
   {
     title: "RESTful API 设计规范",
@@ -148,7 +148,7 @@ CSS Grid 是一个强大的二维布局系统。
 
 GET、POST、PUT、DELETE 的正确使用。`,
     desc: "如何设计优雅且易用的 RESTful API。",
-    slug: 8,
+    slug: "restful-api-design",
   },
   {
     title: "Git 工作流最佳实践",
@@ -166,7 +166,7 @@ GET、POST、PUT、DELETE 的正确使用。`,
 
 使用清晰的提交信息，遵循 Conventional Commits 规范。`,
     desc: "高效使用 Git 进行版本控制和团队协作。",
-    slug: 9,
+    slug: "git-workflow-best-practices",
   },
   {
     title: "Docker 容器化入门",
@@ -182,7 +182,7 @@ Docker 让应用部署变得简单。
 
 使用 Docker Compose 管理多容器应用。`,
     desc: "学习如何使用 Docker 容器化你的应用。",
-    slug: 10,
+    slug: "docker-containerization-guide",
   },
   {
     title: "Web 性能优化实战",
@@ -202,7 +202,7 @@ Docker 让应用部署变得简单。
 - 使用虚拟滚动
 - 防抖和节流`,
     desc: "提升网页加载速度和用户体验的实用技巧。",
-    slug: 11,
+    slug: "web-performance-optimization",
   },
   {
     title: "React Hooks 深入解析",
@@ -222,7 +222,7 @@ Hooks 改变了我们编写 React 组件的方式。
 
 复用逻辑的最佳方式。`,
     desc: "深入理解 React Hooks 的工作原理和最佳实践。",
-    slug: 12,
+    slug: "react-hooks-deep-dive",
   },
   {
     title: "Node.js 异步编程",
@@ -242,7 +242,7 @@ Promise 让异步代码更易读。
 
 同步风格的异步代码写法。`,
     desc: "掌握 Node.js 中的异步编程模式。",
-    slug: 13,
+    slug: "nodejs-async-programming",
   },
   {
     title: "Tailwind CSS 实战教程",
@@ -260,7 +260,7 @@ Tailwind CSS 是一个实用优先的 CSS 框架。
 
 通过 tailwind.config.js 自定义主题。`,
     desc: "从零开始学习 Tailwind CSS 框架。",
-    slug: 14,
+    slug: "tailwind-css-tutorial",
   },
   {
     title: "微前端架构实践",
@@ -276,7 +276,7 @@ Tailwind CSS 是一个实用优先的 CSS 框架。
 
 Webpack 5 的模块联邦功能。`,
     desc: "探讨微前端架构的设计理念和实现方案。",
-    slug: 15,
+    slug: "micro-frontend-architecture",
   },
 ];
 
@@ -391,6 +391,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: "admin",
+      nickname: "管理员",
       mail: "admin@example.com",
       password: hashedPassword,
       role: 1,
@@ -420,7 +421,7 @@ async function main() {
       data: {
         title: postData.title,
         desc: postData.desc,
-        slug: "" + postData.slug,
+        slug: postData.slug,
         content: postData.content,
         status: 1, // 已发布
         comment_num: Math.floor(Math.random() * 10),
@@ -485,10 +486,10 @@ async function main() {
   // 创建示例友情链接
   console.log("🔗 创建友情链接...");
   const links = [
-    { name: "Vue.js", desc: "渐进式 JavaScript 框架", link: "https://vuejs.org", avatar: "https://vuejs.org/logo.svg" },
-    { name: "Nuxt", desc: "Vue.js 全栈框架", link: "https://nuxt.com", avatar: "https://nuxt.com/assets/design/test/logo-full.svg" },
-    { name: "Prisma", desc: "下一代 ORM", link: "https://www.prisma.io", avatar: "https://www.prisma.io/images/favicon.ico" },
-    { name: "Vite", desc: "下一代前端工具", link: "https://vitejs.dev", avatar: "https://vitejs.dev/logo.svg" },
+    { name: "Vue.js", desc: "渐进式 JavaScript 框架", link: "https://vuejs.org", avatar: "https://vuejs.org/logo.svg", enabled: true },
+    { name: "Nuxt", desc: "Vue.js 全栈框架", link: "https://nuxt.com", avatar: "https://nuxt.com/assets/design/test/logo-full.svg", enabled: true },
+    { name: "Prisma", desc: "下一代 ORM", link: "https://www.prisma.io", avatar: "https://www.prisma.io/images/favicon.ico", enabled: true },
+    { name: "Vite", desc: "下一代前端工具", link: "https://vitejs.dev", avatar: "https://vitejs.dev/logo.svg", enabled: true },
   ];
   await prisma.link.createMany({
     data: links,

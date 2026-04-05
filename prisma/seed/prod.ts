@@ -96,6 +96,7 @@ async function main() {
     admin = await prisma.user.create({
       data: {
         name: ADMIN_USER.name,
+        nickname: '管理员',
         mail: ADMIN_USER.mail,
         password: hashedPassword,
         role: 1,
@@ -138,6 +139,7 @@ async function main() {
   const post = await prisma.post.create({
     data: {
       title: '欢迎使用新的博客系统',
+      slug: 'welcome-to-new-blog',
       desc: '这是您的第一篇文章，可以登录后台进行编辑或删除。',
       content: `# 欢迎使用新的博客系统
 
