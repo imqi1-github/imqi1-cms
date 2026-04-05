@@ -1,0 +1,80 @@
+import { prisma } from "#server/utils/prisma";
+
+export default defineEventHandler(async event => {
+  try {
+    const total = await prisma.post.count({
+      where: { status: 1 },
+    });
+
+    if (total === 0) {
+      return {
+        success: false,
+        data: null,
+      };
+    }
+
+    const skip = Math.floor(Math.random() * total);
+
+    const posts = await prisma.post.findMany({
+      where: { status: 1 },
+      skip,
+      take: 1,
+      include: {
+        relations: {
+          include: {
+            category: {
+              select: {
+                mid: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const post = posts[0];
+
+    if (!post) {
+      return {
+        success: false,
+        data: null,
+      };
+    }
+
+    const category = post.relations[0]?.category;
+
+    let covers: string[] = [];
+    if (post.covers) {
+      try {
+        covers = JSON.parse(post.covers);
+      } catch {
+        covers = [];
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        cid: post.cid,
+        title: post.title,
+        slug: post.slug,
+        desc: post.desc,
+        covers,
+        category: category
+          ? {
+              name: category.name,
+              slug: category.slug,
+            }
+          : null,
+      },
+    };
+  } catch (error) {
+    console.error("获取随机文章失败:", error);
+    return {
+      success: false,
+      data: null,
+    };
+  }
+});

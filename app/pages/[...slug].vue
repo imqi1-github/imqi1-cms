@@ -13,8 +13,12 @@ definePageMeta({
   layout: false, // 不使用 layout，直接在 app.vue 中渲染
 });
 
+// 获取站点信息
+const { data } = await useFetch("/api/site");
+const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+
 useHead({
-  title: "页面未找到 - 404",
+  title: computed(() => `页面未找到 - ${siteName.value}`),
 });
 
 // 初始化滚动渐入动画

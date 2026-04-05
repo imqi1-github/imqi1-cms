@@ -477,6 +477,15 @@
 import { RiArchiveLine, RiArrowRightLine, RiCompassLine, RiEditLine, RiGithubLine, RiHomeLine, RiMailLine } from "@remixicon/vue";
 import { onMounted, ref } from "vue";
 
+// 获取站点信息
+const { data } = await useFetch("/api/site");
+const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+
+// 页面元数据
+useHead({
+  title: computed(() => `关于 - ${siteName.value}`),
+});
+
 // 模拟统计数据
 const stats = ref({
   publishedPostsNum: 100,

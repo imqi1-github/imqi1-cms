@@ -14,7 +14,7 @@ const links = computed(() => linksData.value?.data || []);
 
 // 页面元数据
 useHead({
-  title: "友情链接",
+  title: computed(() => `友情链接 - ${siteName.value}`),
 });
 
 // 表单状态

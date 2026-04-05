@@ -40,7 +40,7 @@
             <img
               src="/imgs/miniprogram.jpg"
               alt="小程序码"
-              style="width: 192px; height: 192px; max-width: none; max-height: none;"
+              style="width: 192px; height: 192px; max-width: none; max-height: none"
               class="absolute bottom-full left-1/2 -translate-x-1/2 rounded-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto" />
           </template>
         </a>
@@ -79,33 +79,38 @@
         </div>
         <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col-reverse">
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/chrome.png" alt="浏览器">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/chrome.png" alt="浏览器" />
             <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">浏览器</span>
           </div>
           <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
             <RiArrowLeftLine class="text-2xl text-slate-400" />
           </div>
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/edgeone.png" alt="Edgeone">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/edgeone.png" alt="Edgeone" />
             <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">EdgeOne</span>
           </div>
           <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
             <RiArrowLeftLine class="text-2xl text-slate-400" />
           </div>
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/jdcloud.png" alt="云服务器">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/jdcloud.png" alt="云服务器" />
             <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">云服务器</span>
           </div>
           <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
             <RiArrowLeftLine class="text-2xl text-slate-400" />
           </div>
           <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/typecho.png" alt="Typecho">
+            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/typecho.png" alt="Typecho" />
             <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">Typecho</span>
           </div>
         </div>
         <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 leading-relaxed">
-          本站主题名为 NewImQi1，是我制作的第一款主题，从 2024 年 10 月开始制作，到现在仍持续更新中。最新版的 NewImQi1 主题重构了 Pjax 的整个周期，采用全新的带自动销毁的事件管理器，确保切换页面时没有内存泄漏，你可以在<a href="/updates" class="text-blue-600 hover:underline">更新日志</a>查看所有的主题更新信息。NewImQi1 在 Typecho 1.3  的原有功能上做了很多扩充，包括但不限于友情链接、RSS 订阅系统、小程序、图片灯箱、评论归属地显示、实况照片，正文还可以嵌入多种多样的组件。为增强安全，本站设置了评论 Token 校验、CSP，资源部署在 EdgeOne 上，配合 Service Worker，在保证功能丰富的同时，也不会牺牲太多性能。
+          本站主题名为 NewImQi1，是我制作的第一款主题，从 2024 年 10 月开始制作，到现在仍持续更新中。最新版的 NewImQi1 主题重构了 Pjax
+          的整个周期，采用全新的带自动销毁的事件管理器，确保切换页面时没有内存泄漏，你可以在<a href="/updates" class="text-blue-600 hover:underline"
+            >更新日志</a
+          >查看所有的主题更新信息。NewImQi1 在 Typecho 1.3 的原有功能上做了很多扩充，包括但不限于友情链接、RSS
+          订阅系统、小程序、图片灯箱、评论归属地显示、实况照片，正文还可以嵌入多种多样的组件。为增强安全，本站设置了评论 Token 校验、CSP，资源部署在
+          EdgeOne 上，配合 Service Worker，在保证功能丰富的同时，也不会牺牲太多性能。
         </div>
       </div>
     </section>
@@ -130,24 +135,23 @@
               :ref="setThemeItemRef"
               class="index-theme-item flex flex-col items-start justify-center h-75 max-w-75">
               <div class="index-theme-title3 text-slate-500 text-sm">{{ item.title }}</div>
-              <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
+              <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
                 <template v-for="(grid, gIndex) in item.grids" :key="gIndex">
                   <div v-if="grid.isLink" class="index-theme-grid">
-                    <a :href="grid.href" class="text-slate-900 hover:underline" target="_blank">{{ grid.text }}</a>
+                    <a :href="grid.href" class="hover:underline text-blue-600 font-weight" target="_blank">{{ grid.text }}</a>
                   </div>
                   <div v-else-if="grid.isCode" class="index-theme-grid">
                     <code class="bg-slate-100 px-1 rounded text-sm">{{ grid.text }}</code>
                   </div>
                   <div v-else-if="grid.hasIcon" class="index-theme-grid flex items-center gap-1">
                     {{ grid.text }}
-                    <RiRemixiconFill class="text-slate-600" />
                   </div>
                   <div v-else-if="grid.isCategory" class="index-theme-grid text-slate-800">
                     {{ grid.text }}
                   </div>
-                  <a v-else-if="grid.href" :href="grid.href" class="index-theme-grid text-slate-900 hover:underline" target="_blank">
+                  <NuxtLink v-else-if="grid.href" :to="grid.href" class="index-theme-grid hover:underline text-blue-600">
                     {{ grid.text }}
-                  </a>
+                  </NuxtLink>
                   <div v-else class="index-theme-grid">{{ grid.text }}</div>
                 </template>
               </div>
@@ -159,24 +163,27 @@
 
           <!-- 右侧展示 -->
           <div class="index-theme-right flex-1 flex justify-end relative max-md:hidden">
-            <div class="index-theme-right-items flex items-center justify-center h-75 sticky w-full top-[calc(50%-150px)]">
+            <div class="index-theme-right-items flex items-center justify-center w-full h-0 sticky top-1/2 my-38">
               <div
                 v-for="(rightItem, index) in themeRightItems"
                 :key="index"
-                class="index-theme-right-item h-75 opacity-0 pointer-events-none absolute transition-opacity duration-500"
-                :class="{ 'opacity-100 pointer-events-auto': activeThemeIndex === index }">
+                class="index-theme-right-item h-75 opacity-0 invisible absolute transition-opacity duration-500"
+                :class="{ 'opacity-100 pointer-events-auto visible': activeThemeIndex === index }">
                 <!-- 字体展示 -->
                 <div v-if="rightItem.type === 'fonts'" class="index-theme-box relative h-75 w-75">
-                  <div class="index-theme-serif grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-[2.5em] font-bold border border-slate-200 rounded-xl shadow-sm h-38 w-38 absolute left-28 top-19 animate-float">
+                  <div
+                    class="index-theme-serif grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-[2.5em] font-bold border border-slate-200 rounded-xl shadow-sm h-38 w-38 absolute left-28 top-19 animate-float">
                     <span>之</span>
                     <span>的</span>
                     <span>事</span>
                     <span>以</span>
                   </div>
-                  <code class="index-theme-mono bg-slate-50 border border-slate-200 rounded shadow-sm px-2 py-1 absolute left-2.5 bottom-14 animate-float-delay-1">
+                  <code
+                    class="index-theme-mono bg-slate-50 border border-slate-200 rounded shadow-sm px-2 py-1 absolute left-2.5 bottom-14 animate-float-delay-1">
                     <span class="text-blue-700">print</span>(<span class="text-green-700">"Hello World"</span>)
                   </code>
-                  <div class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 border border-slate-200 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
+                  <div
+                    class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 border border-slate-200 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
                     <span><RiAttachmentLine class="text-slate-600" /></span>
                     <span><RiFileZipFill class="text-slate-600" /></span>
                     <span><RiVideoFill class="text-slate-600" /></span>
@@ -188,9 +195,10 @@
                 <div v-else-if="rightItem.type === 'layout'" class="index-theme-box relative h-75 w-75">
                   <div
                     class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 overflow-hidden">
-                    <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站">
+                    <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
                   </div>
-                  <div class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 rounded-xl border border-slate-200 transition-transform"></div>
+                  <div
+                    class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 rounded-xl border border-slate-200 transition-transform"></div>
                 </div>
 
                 <!-- 音乐播放器 -->
@@ -203,9 +211,31 @@
 
                 <!-- 文章预览 -->
                 <div v-else-if="rightItem.type === 'article'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                  <div class="index-theme-article-box flex flex-col items-start h-fit w-full">
-                    <div class="text-slate-500 text-sm">随机文章占位</div>
-                    <div class="text-slate-400 text-xs mt-2">这里会显示一篇随机文章的预览</div>
+                  <div v-if="randomPost" class="index-theme-article-box flex flex-col w-full h-full justify-center">
+                    <!-- 封面 -->
+                    <div
+                      v-if="randomPost.covers && randomPost.covers.length > 0"
+                      class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200">
+                      <img :src="randomPost.covers[0].url" :alt="randomPost.title" class="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <!-- 标题 -->
+                    <h3 class="text-slate-900 font-bold text-base line-clamp-2 mb-2">
+                      {{ randomPost.title }}
+                    </h3>
+                    <!-- 描述 -->
+                    <p v-if="randomPost.desc" class="text-slate-500 text-sm line-clamp-3">
+                      {{ randomPost.desc }}
+                    </p>
+                    <p v-else class="text-slate-400 text-sm italic">暂无描述</p>
+                    <!-- 链接 -->
+                    <NuxtLink
+                      :to="`/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
+                      class="pt-3 text-blue-600 text-sm hover:underline">
+                      阅读全文 →
+                    </NuxtLink>
+                  </div>
+                  <div v-else class="index-theme-article-box flex flex-col items-center justify-center h-full w-full">
+                    <div class="text-slate-500 text-sm">暂无文章</div>
                   </div>
                 </div>
               </div>
@@ -255,6 +285,23 @@ import {
 } from "@remixicon/vue";
 import { markRaw, nextTick, onMounted, onUnmounted, ref } from "vue";
 
+// 获取站点信息
+const { data } = await useFetch("/api/site");
+const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+
+// 获取分类信息（前4个）
+const { data: categoriesData } = await useFetch("/api/categories?limit=4");
+const categories = computed(() => categoriesData.value?.data || []);
+
+// 获取随机文章
+const { data: randomPostData } = await useFetch("/api/random-post");
+const randomPost = computed(() => randomPostData.value?.data);
+
+// 页面元数据
+useHead({
+  title: siteName,
+});
+
 // 首页公告（占位符，后续可以从API获取）
 const homeAnnounce = ref("做技术的分享者 · 生活的摄影师 · 时事的评论员");
 
@@ -270,7 +317,7 @@ const contactLinks = ref([
 ]);
 
 // 样式选择区域数据
-const themeItems = [
+const themeItems = computed(() => [
   {
     title: "字体选择",
     type: "grid",
@@ -291,37 +338,22 @@ const themeItems = [
   {
     title: "用小组件丰富文章内容",
     type: "grid",
-    grids: [
-      { text: "音乐播放器" },
-      { text: "视频播放器" },
-      { text: "代码块" },
-      { text: "TIP 组件" },
-      { text: "轮播图" },
-      { text: "..." },
-    ],
+    grids: [{ text: "音乐播放器" }, { text: "视频播放器" }, { text: "代码块" }, { text: "TIP 组件" }, { text: "轮播图" }, { text: "..." }],
   },
   {
     title: "用文章的方式记录生活",
     type: "grid",
-    grids: [
-      { text: "小记", href: "/note" },
-      { text: "记录旅游、活动、生活中的小事。", isCategory: true },
-      { text: "图片", href: "/shot" },
-      { text: "美好的瞬间都值得被记录。", isCategory: true },
-      { text: "技术", href: "/tech" },
-      { text: "分享开发中有趣的事情。", isCategory: true },
-      { text: "讨论", href: "/discuss" },
-      { text: "理性地发表自己的看法。", isCategory: true },
-    ],
+    grids:
+      categories.value.length > 0
+        ? categories.value.flatMap(cat => [
+            { text: cat.name, href: `/${cat.slug}` },
+            { text: cat.desc || "暂无描述", isCategory: true },
+          ])
+        : [{ text: "暂无分类" }, { text: "", isCategory: true }],
   },
-];
+]);
 
-const themeRightItems = [
-  { type: "fonts" },
-  { type: "layout", image: "/imgs/shenyang.webp" },
-  { type: "music" },
-  { type: "article" },
-];
+const themeRightItems = [{ type: "fonts" }, { type: "layout", image: "/imgs/shenyang.webp" }, { type: "music" }, { type: "article" }];
 
 // 当前激活的样式索引
 const activeThemeIndex = ref(0);
@@ -330,7 +362,7 @@ const activeThemeIndex = ref(0);
 const themeItemRefsSet = new Set();
 const themeItemRefs = ref([]);
 
-const setThemeItemRef = (el) => {
+const setThemeItemRef = el => {
   if (el) {
     themeItemRefsSet.add(el);
     themeItemRefs.value = Array.from(themeItemRefsSet);
@@ -413,8 +445,8 @@ onMounted(() => {
     rootMargin: "0px 0px -50px 0px",
   };
 
-  const fadeInObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
+  const fadeInObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add("fade-in-start");
         fadeInObserver.unobserve(entry.target);
@@ -423,7 +455,7 @@ onMounted(() => {
   }, observerOptions);
 
   // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
     fadeInObserver.observe(el);
   });
 });
@@ -438,7 +470,9 @@ onUnmounted(() => {
 .animate-fade-in {
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .animate-fade-in.fade-in-start {
@@ -455,7 +489,8 @@ onUnmounted(() => {
 
 /* 浮动动画 */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {

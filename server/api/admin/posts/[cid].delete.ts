@@ -12,8 +12,10 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const id = getRouterParam(event, "id");
-  if (!id) {
+  // 获取路由参数 - 使用 cid 匹配文件名 [cid].delete.ts
+  const cid = getRouterParam(event, "cid");
+
+  if (!cid) {
     throw createError({
       statusCode: 400,
       message: "缺少文章 ID",
@@ -22,10 +24,11 @@ export default defineEventHandler(async event => {
 
   try {
     await prisma.post.delete({
-      where: { cid: Number(id) },
+      where: { cid: Number(cid) },
     });
     return { success: true };
   } catch (error) {
+    console.error("Delete error:", error);
     throw createError({
       statusCode: 500,
       message: "删除文章失败",

@@ -51,8 +51,8 @@ const hasCover = computed(() => covers.value.length > 0);
 const hasManyCovers = computed(() => post.value?.many_covers && covers.value.length > 1);
 const firstCover = computed(() => covers.value[0]?.url || "");
 
-const { data2 } = await useFetch("/api/site");
-const siteName = computed(() => data2.value?.data?.siteName || "ImQi1");
+const { data: siteData } = await useFetch("/api/site");
+const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 
 // 页面元数据
 useHead({
@@ -388,7 +388,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(h1) {
   font-size: 2em;
-  border-bottom: 1px solid rgb(229 231 235);
   padding-bottom: 0.3em;
 }
 
@@ -398,7 +397,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(h2) {
   font-size: 1.5em;
-  border-bottom: 1px solid rgb(229 231 235);
   padding-bottom: 0.3em;
 }
 
