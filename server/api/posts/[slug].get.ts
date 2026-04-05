@@ -1,9 +1,8 @@
 import { prisma } from "#server/utils/prisma";
+import { renderMarkdown } from "#server/utils/markdown";
 
 export default defineEventHandler(async event => {
   const slug = getRouterParam(event, 'slug');
-
-  // console.log('[API /posts/' + slug + '] Querying post with slug:', slug);
 
   if (!slug) {
     throw createError({
@@ -11,12 +10,6 @@ export default defineEventHandler(async event => {
       message: "文章 slug 不能为空",
     });
   }
-
-  // 先查询所有文章看看有什么
-  const allPosts = await prisma.post.findMany({
-    select: { cid: true, title: true, slug: true, status: true },
-  });
-  // console.log('[API /posts/' + slug + '] All posts in DB:', allPosts);
 
   const post = await prisma.post.findFirst({
     where: {
@@ -57,7 +50,6 @@ export default defineEventHandler(async event => {
   let covers = [];
   if (post.covers) {
     try {
-      // 尝试解析为 JSON 数组
       const parsed = JSON.parse(post.covers);
       if (Array.isArray(parsed)) {
         covers = parsed.map(item => ({
@@ -66,11 +58,9 @@ export default defineEventHandler(async event => {
         }));
       }
     } catch {
-      // 不是 JSON，按换行分隔处理
       covers = post.covers.split('\n').map(line => {
         const trimmed = line.trim();
         if (!trimmed) return null;
-        // 支持 URL||描述 格式
         if (trimmed.includes('||')) {
           const [url, desc] = trimmed.split('||');
           return { url: url.trim(), desc: desc?.trim() || '' };
@@ -85,13 +75,17 @@ export default defineEventHandler(async event => {
     ? post.tags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
+  // 在服务端渲染 Markdown 内容
+  const renderedContent = post.content ? await renderMarkdown(post.content) : "";
+
   return {
     success: true,
     data: {
       ...post,
       covers,
       tags,
-      parsedCovers: covers, // 保留原始解析结果
+      parsedCovers: covers,
+      renderedContent, // 返回已渲染的 HTML
     },
   };
 });

@@ -62,8 +62,6 @@ export default defineNuxtConfig({
             utils: ["@vueuse/core", "clsx", "tailwind-merge", "class-variance-authority"],
             // 图标
             icons: ["@iconify/vue"],
-            // Markdown 相关
-            markdown: ["markdown-it", "shiki"],
           },
         },
       },
