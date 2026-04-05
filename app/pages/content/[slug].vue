@@ -27,6 +27,9 @@ function formatDate(date: string | Date): string {
 const { data, pending, error } = await useFetch(`/api/posts/${slug}`);
 
 const post = computed(() => data.value?.data);
+
+// 判断文章是否存在
+const isNotFound = computed(() => !pending.value && (!post.value || error.value));
 const categories = computed(() => post.value?.relations?.map(r => r.category) || []);
 const covers = computed(() => post.value?.parsedCovers || []);
 const tags = computed(() => post.value?.tags || []);
@@ -45,6 +48,13 @@ useHead({
 onMounted(() => {
   // 页面渐入动画 - 直接触发，不需要滚动监听
   requestAnimationFrame(() => {
+    // 触发 404 页面动画
+    const notFound = document.querySelector("div.animate-fade-in");
+    if (notFound && isNotFound.value) {
+      notFound.classList.add("fade-in-start");
+      return;
+    }
+
     const article = document.querySelector("article.animate-fade-in");
     const header = article?.querySelector("header.article-cover");
     const contentBody = article?.querySelector(".content-body");
@@ -207,9 +217,17 @@ onUnmounted(() => {
       <p class="mt-2 text-slate-500">加载中...</p>
     </div>
 
-    <div v-else-if="error || !post" class="py-20 text-center">
-      <Icon name="lucide:alert-circle" class="size-8 text-red-500 mx-auto mb-2" />
-      <p class="text-red-500">文章不存在或加载失败</p>
+    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full animate-fade-in">
+      <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
+        <Icon name="ri:close-large-fill" class="text-red-500" />
+        <span>页面未找到</span>
+      </h1>
+
+      <p class="text-lg text-slate-600 dark:text-slate-400 mb-8">
+        未找到内容，你可以
+        <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>
+        。
+      </p>
     </div>
 
     <article v-else class="flex flex-col animate-fade-in">
@@ -279,9 +297,16 @@ onUnmounted(() => {
 <style scoped>
 /* 渐入动画基础类 */
 .animate-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in.fade-in-start {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .opacity-0 {
