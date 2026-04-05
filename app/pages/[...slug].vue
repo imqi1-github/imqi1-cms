@@ -2,6 +2,11 @@
 import { onMounted } from "vue";
 
 // ✅ Catch-all 路由：处理前台 404
+
+const route = useRoute();
+
+// 打印 404 警告
+console.warn(`[404] 页面未找到: ${route.path}`);
 // 这是一个普通页面，Header/Footer 不会重新渲染
 
 definePageMeta({

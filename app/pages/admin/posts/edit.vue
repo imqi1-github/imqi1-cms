@@ -539,7 +539,7 @@ onMounted(() => {
                 <div class="space-y-2">
                   <Label for="slug">文章 Slug</Label>
                   <div class="flex items-center gap-2">
-                    <span class="text-sm text-muted-foreground">/post/</span>
+                    <span class="text-sm text-muted-foreground">/&lt;category_slug&gt;/</span>
                     <Input id="slug" v-model="slug" placeholder="article-slug" class="flex-1" />
                   </div>
                   <p class="text-xs text-muted-foreground">文章的唯一标识符，用于 URL，留空将自动生成</p>

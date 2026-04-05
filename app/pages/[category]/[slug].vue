@@ -5,6 +5,7 @@ import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "@/assets/css/fancybox.css";
 
 const route = useRoute();
+const categorySlug = route.params.category as string;
 const slug = route.params.slug as string;
 
 // 格式化日期
@@ -23,13 +24,24 @@ function formatDate(date: string | Date): string {
   return "刚刚";
 }
 
-// 获取文章数据
-const { data, pending, error } = await useFetch(`/api/posts/${slug}`);
+// 获取文章数据 - 使用新的 API 格式
+const { data, pending, error } = await useFetch(`/api/posts/${categorySlug}/${slug}`);
 
 const post = computed(() => data.value?.data);
 
 // 判断文章是否存在
 const isNotFound = computed(() => !pending.value && (!post.value || error.value));
+
+// 监听 404 状态，打印警告
+watch(isNotFound, (notFound) => {
+  if (notFound) {
+    console.warn(`[404] 文章未找到: /${categorySlug}/${slug}`);
+    if (error.value) {
+      console.warn(`[404] 错误信息:`, error.value);
+    }
+  }
+}, { immediate: true });
+
 const categories = computed(() => post.value?.relations?.map(r => r.category) || []);
 const covers = computed(() => post.value?.parsedCovers || []);
 const tags = computed(() => post.value?.tags || []);

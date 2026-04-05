@@ -12,25 +12,26 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 构建查询条件
-  const whereCondition: any = {
-    slug,
-    status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
-  };
-
-  // 如果提供了 categorySlug，则需要同时匹配分类
-  if (categorySlug) {
-    whereCondition.relations = {
-      some: {
-        category: {
-          slug: categorySlug,
-        },
-      },
-    };
+  if (!categorySlug) {
+    throw createError({
+      statusCode: 400,
+      message: "分类 slug 不能为空",
+    });
   }
 
+  // 构建查询条件 - 必须同时匹配分类和文章
   const post = await prisma.post.findFirst({
-    where: whereCondition,
+    where: {
+      slug,
+      status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
+      relations: {
+        some: {
+          category: {
+            slug: categorySlug,
+          },
+        },
+      },
+    },
     include: {
       user: {
         select: {
