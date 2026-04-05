@@ -10,6 +10,7 @@ const settings = ref({
   siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
   siteKeywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习",
   siteIcp: "",
+  homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
   commentEnabled: true,
   commentModeration: false,
   commentMarkdown: false,
@@ -118,6 +119,7 @@ const defaultSettings = {
   siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
   siteKeywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习",
   siteIcp: "",
+  homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
   commentEnabled: true,
   commentModeration: false,
   commentMarkdown: false,
@@ -334,6 +336,11 @@ onMounted(() => {
                 <div class="space-y-2">
                   <Label for="siteIcp">备案号</Label>
                   <Input id="siteIcp" v-model="settings.siteIcp" placeholder="备案号" />
+                </div>
+                <div class="space-y-2 md:col-span-2">
+                  <Label for="homeHeroSubtitle">首页Hero下文字</Label>
+                  <Input id="homeHeroSubtitle" v-model="settings.homeHeroSubtitle" placeholder="做技术的分享者 · 生活的摄影师 · 时事的评论员" />
+                  <p class="text-xs text-muted-foreground">显示在首页标题下方的副标题文字</p>
                 </div>
               </div>
             </CardContent>

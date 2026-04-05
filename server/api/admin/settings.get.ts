@@ -21,6 +21,7 @@ export default defineEventHandler(async event => {
       siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
       siteKeywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习",
       siteIcp: "",
+      homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
       commentEnabled: true,
       commentModeration: false,
       commentMarkdown: false,

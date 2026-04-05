@@ -10,7 +10,7 @@
         <!-- 标题区域 -->
         <div class="index-hero-title p-1.5">
           <h1 class="index-first-line text-slate-900 text-[6em] font-black leading-none">IM<span class="text-red-600">QI1</span>.COM</h1>
-          <div class="index-second-line mt-4 text-slate-600 text-lg">
+          <div class="index-second-line mt-4 text-slate-600 text-base">
             {{ homeAnnounce }}
           </div>
         </div>
@@ -302,8 +302,8 @@ useHead({
   title: siteName,
 });
 
-// 首页公告（占位符，后续可以从API获取）
-const homeAnnounce = ref("做技术的分享者 · 生活的摄影师 · 时事的评论员");
+// 首页Hero下文字
+const homeAnnounce = computed(() => data.value?.data?.homeHeroSubtitle || "做技术的分享者 · 生活的摄影师 · 时事的评论员");
 
 // 联系链接配置
 const contactLinks = ref([
