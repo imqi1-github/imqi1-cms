@@ -11,7 +11,7 @@ export default defineNuxtConfig({
     head: {
       link: [{ rel: "stylesheet", href: "/fonts/font.css" }],
     },
-    cdnURL: process.env.CDN_URL || undefined,
+    cdnURL: "https://testcdn.qi1.website",
   },
 
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
@@ -39,15 +39,15 @@ export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
       include: [
-        "@vue/devtools-core",
-        "@vue/devtools-kit",
-        "class-variance-authority",
-        "@vueuse/core",
-        "clsx",
-        "tailwind-merge",
-        "reka-ui",
-        "lucide-vue-next",
-        "vue-sonner",
+        // "@vue/devtools-core",
+        // "@vue/devtools-kit",
+        // "class-variance-authority",
+        // "@vueuse/core",
+        // "clsx",
+        // "tailwind-merge",
+        // "reka-ui",
+        // "lucide-vue-next",
+        // "vue-sonner",
       ],
     },
     build: {
@@ -56,8 +56,6 @@ export default defineNuxtConfig({
           manualChunks: {
             // Vue 相关
             vue: ["vue", "@vue/runtime-core", "@vue/runtime-dom"],
-            // Nuxt 相关
-            nuxt: ["@nuxt/app", "@nuxt/kit", "@nuxt/schema"],
             // UI 组件库
             ui: ["reka-ui", "lucide-vue-next", "vue-sonner"],
             // 工具库
@@ -69,7 +67,7 @@ export default defineNuxtConfig({
           },
         },
       },
-      chunkSizeWarningLimit: 500,
+      chunkSizeWarningLimit: 800,
     },
   },
 });
