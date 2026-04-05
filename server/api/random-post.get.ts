@@ -45,7 +45,7 @@ export default defineEventHandler(async event => {
 
     const category = post.relations[0]?.category;
 
-    let covers: string[] = [];
+    let covers: { url: string; desc?: string }[] = [];
     if (post.covers) {
       try {
         covers = JSON.parse(post.covers);

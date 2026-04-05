@@ -68,7 +68,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'photo-category-container' : 'max-w-225']">
+  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'photo-category-container' : 'max-w-225 flex justify-center items-center']">
     <!-- 加载中 -->
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -83,7 +83,7 @@ onMounted(() => {
       </h1>
       <p class="text-lg text-slate-600 dark:text-slate-400">
         未找到内容，你可以
-        <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>
+        <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>。
       </p>
     </div>
 

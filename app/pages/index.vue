@@ -216,7 +216,11 @@
                     <div
                       v-if="randomPost.covers && randomPost.covers.length > 0"
                       class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200">
-                      <img :src="randomPost.covers[0].url" :alt="randomPost.title" class="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        :src="randomPost.covers[0].url || randomPost.covers[0]"
+                        :alt="randomPost.title"
+                        class="w-full h-full object-cover"
+                        loading="lazy" />
                     </div>
                     <!-- 标题 -->
                     <h3 class="text-slate-900 font-bold text-base line-clamp-2 mb-2">
@@ -248,6 +252,102 @@
     <!-- 间隔 -->
     <div class="h-62.5"></div>
 
+    <!-- 最新文章 -->
+    <section class="index-recent-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
+      <h2 id="index-recent-posts-title" class="index-theme-title1 text-blue-700 text-sm font-bold">文章内容</h2>
+      <div class="index-theme-title2 text-slate-800 text-[1.6em] font-bold my-1">最新发布的内容</div>
+      <div class="index-theme-title3 text-slate-500 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
+
+      <!-- 文章列表 -->
+      <div v-if="recentPosts.length > 0" class="index-recent-posts-list space-y-4">
+        <NuxtLink
+          v-for="post in recentPosts"
+          :key="post.cid"
+          :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
+          class="index-recent-post-item block p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 no-underline">
+          <div class="flex gap-4">
+            <!-- 封面图片 -->
+            <div v-if="post.covers && post.covers.length > 0" class="flex-shrink-0 w-32 h-24 rounded-lg overflow-hidden">
+              <img :src="post.covers[0].url || post.covers[0]" :alt="post.title" class="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <!-- 文章信息 -->
+            <div class="flex-1 min-w-0 flex flex-col justify-between">
+              <div>
+                <h3 class="text-slate-900 font-bold text-base line-clamp-1 mb-1">{{ post.title }}</h3>
+                <p v-if="post.desc" class="text-slate-500 text-sm line-clamp-2">{{ post.desc }}</p>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-400 mt-2">
+                <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1 flex-wrap">
+                  <RiMenuLine class="size-3.5" />
+                  <span v-for="(cat, idx) in post.categories" :key="cat.slug" class="text-gray-500">
+                    {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <RiTimeLine class="size-3.5" />
+                  <span>{{ formatDate(post.created) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </NuxtLink>
+      </div>
+
+      <!-- 无文章状态 -->
+      <div v-else class="text-center py-12 text-slate-500">
+        <p>暂无文章</p>
+      </div>
+
+      <!-- 查看更多 -->
+      <div v-if="recentPosts.length > 0" class="text-center mt-8">
+        <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+          查看全部文章
+          <RiArrowLeftLine class="rotate-180" />
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- 间隔 -->
+    <div class="h-62.5"></div>
+
+    <!-- 最新图片 -->
+    <section v-if="photoImages.length > 0" class="index-photo-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-photo-posts-title">
+      <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 text-sm font-bold">图片内容</h2>
+      <div class="index-theme-title2 text-slate-800 text-[1.6em] font-bold my-1">最新发布的图片</div>
+      <div class="index-theme-title3 text-slate-500 text-sm mb-8">记录生活中的美好瞬间</div>
+
+      <!-- 图片瀑布流 -->
+      <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+        <NuxtLink
+          v-for="(image, index) in photoImages"
+          :key="index"
+          :to="`/content/shot/${image.slug || image.cid}`"
+          class="block break-inside-avoid no-underline group">
+          <div class="relative rounded-xl overflow-hidden border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300">
+            <img :src="image.url" :alt="image.desc || image.title" class="w-full h-auto object-cover" loading="lazy" />
+            <!-- 悬浮标题 -->
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div class="absolute bottom-0 left-0 right-0 p-3">
+                <p class="text-white text-sm font-medium line-clamp-2">{{ image.desc || image.title }}</p>
+              </div>
+            </div>
+          </div>
+        </NuxtLink>
+      </div>
+
+      <!-- 查看更多 -->
+      <div class="text-center mt-8">
+        <NuxtLink to="/shot" class="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+          查看全部图片
+          <RiArrowLeftLine class="rotate-180" />
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- 间隔 -->
+    <div class="h-62.5"></div>
+
     <!-- 阅读更多 -->
     <section class="index-read-more mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
       <h2 id="index-read-more-title" class="index-theme-title2 text-slate-800 text-[1.6em] font-bold text-center">阅读更多</h2>
@@ -268,18 +368,19 @@
 
 <script setup lang="ts">
 import {
-  RiAttachmentLine,
   RiArrowLeftLine,
+  RiAttachmentLine,
   RiFileZipFill,
   RiGithubFill,
   RiHome2Fill,
   RiLinksFill,
   RiMailFill,
+  RiMenuLine,
   RiMiniProgramFill,
   RiMouseLine,
   RiNpmjsFill,
-  RiRemixiconFill,
   RiRestartLine,
+  RiTimeLine,
   RiTwitterXFill,
   RiVideoFill,
 } from "@remixicon/vue";
@@ -296,6 +397,42 @@ const categories = computed(() => categoriesData.value?.data || []);
 // 获取随机文章
 const { data: randomPostData } = await useFetch("/api/random-post");
 const randomPost = computed(() => randomPostData.value?.data);
+
+// 获取最新文章
+const { data: recentPostsData } = await useFetch("/api/recent-posts?limit=6");
+const recentPosts = computed(() => recentPostsData.value?.data || []);
+
+// 获取图片文章
+const { data: photoPostsData } = await useFetch("/api/photo-posts?limit=4");
+const photoPosts = computed(() => photoPostsData.value?.data || []);
+
+// 展示的图片列表（所有文章的封面展开）
+const photoImages = computed(() => {
+  const images: { url: string; desc?: string; title: string; slug: string; cid: number }[] = [];
+  photoPosts.value.forEach(post => {
+    if (post.covers && post.covers.length > 0) {
+      post.covers.forEach(cover => {
+        images.push({
+          url: cover.url || (typeof cover === "string" ? cover : ""),
+          desc: cover.desc,
+          title: post.title,
+          slug: post.slug,
+          cid: post.cid,
+        });
+      });
+    }
+  });
+  return images;
+});
+
+// 格式化日期
+function formatDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 // 页面元数据
 useHead({
