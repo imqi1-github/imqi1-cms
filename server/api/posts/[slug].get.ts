@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   const slug = getRouterParam(event, 'slug');
 
-  console.log('[API /posts/' + slug + '] Querying post with slug:', slug);
+  // console.log('[API /posts/' + slug + '] Querying post with slug:', slug);
 
   if (!slug) {
     throw createError({
@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
   const allPosts = await prisma.post.findMany({
     select: { cid: true, title: true, slug: true, status: true },
   });
-  console.log('[API /posts/' + slug + '] All posts in DB:', allPosts);
+  // console.log('[API /posts/' + slug + '] All posts in DB:', allPosts);
 
   const post = await prisma.post.findFirst({
     where: {

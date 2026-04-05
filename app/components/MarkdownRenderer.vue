@@ -117,6 +117,9 @@ function initFancybox() {
 
 // 添加复制按钮
 function addCopyButtons() {
+  // SSR 安全检查
+  if (import.meta.client === false || typeof document === "undefined") return;
+
   const preBlocks = document.querySelectorAll(".markdown-body pre.shiki");
   if (preBlocks.length === 0) return;
   preBlocks.forEach(pre => {
