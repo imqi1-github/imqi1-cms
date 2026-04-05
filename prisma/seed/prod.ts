@@ -140,7 +140,7 @@ async function main() {
   const post = await prisma.post.create({
     data: {
       title: '欢迎使用新的博客系统',
-      slug: 'welcome-to-new-blog',
+      slug: '1',
       desc: '这是您的第一篇文章，可以登录后台进行编辑或删除。',
       content: `# 欢迎使用新的博客系统
 
