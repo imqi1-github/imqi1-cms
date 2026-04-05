@@ -7,6 +7,7 @@ const defaults: Record<string, any> = {
   siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
   siteIcp: "",
   homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
+  photoCategorySlug: "shot",
 };
 
 export default defineEventHandler(async event => {

@@ -54,6 +54,10 @@ const firstCover = computed(() => covers.value[0]?.url || "");
 const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 
+// 判断是否为图片分类
+const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
+const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
+
 // 页面元数据
 useHead({
   title: computed(() => {
@@ -231,7 +235,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-225 mx-auto px-5 py-8">
+  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'max-w-full' : 'max-w-225']">
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
       <p class="mt-2 text-slate-500">加载中...</p>
@@ -254,7 +258,7 @@ onUnmounted(() => {
       <!-- 标题区域 -->
       <header :class="['mb-5 opacity-0 translate-y-8 duration-600 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
-        <CoverSwiper v-if="hasManyCovers" :covers="covers" />
+        <CoverSwiper v-if="hasManyCovers" :covers="covers" :is-photo-category="isPhotoCategory" />
 
         <!-- 单封面 -->
         <img
@@ -263,7 +267,10 @@ onUnmounted(() => {
           alt="封面"
           data-fancybox="cover"
           data-caption="封面"
-          class="w-full h-auto max-h-37.5 object-cover border border-gray-200 mb-5 cursor-zoom-in"
+          :class="[
+            'w-full h-auto object-cover border border-gray-200 mb-5 cursor-zoom-in',
+            isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5'
+          ]"
           loading="lazy" />
 
         <!-- 标题 -->
