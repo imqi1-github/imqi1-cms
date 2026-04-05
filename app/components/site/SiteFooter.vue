@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import {
-  RiRssFill,
   RiCopyrightLine,
   RiCreativeCommonsByLine,
   RiCreativeCommonsNcLine,
   RiCreativeCommonsNdLine,
-  RiSubwayFill,
   RiEarthFill,
+  RiRssFill,
+  RiSubwayFill, RiSunLine,
 } from "@remixicon/vue";
 
 const currentYear = new Date().getFullYear();
@@ -34,21 +34,22 @@ const siteIcp = computed(() => data.value?.data?.siteIcp || "");
         </div>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          t="1755579480924"
           class="icon"
           viewBox="0 0 1024 1024"
-          version="1.1"
-          p-id="4927"
           width="16"
           height="16">
           <path
             d="M512 1024C132.647 1024 0 891.313 0 512S132.647 0 512 0s512 132.687 512 512-132.647 512-512 512zM236.308 354.462h551.384v-78.77H236.308v78.77z m0 196.923h393.846v-78.77H236.308v78.77z m0 196.923h472.615v-78.77H236.308v78.77z"
-            p-id="4928"
             fill="currentColor"></path>
         </svg>
         <RiSubwayFill class="size-4.5" />
         <RiEarthFill class="size-4.5" />
       </div>
+    </div>
+    <div class="footer-buttons fixed bottom-8 right-8">
+      <button class="footer-button rounded-full border border-px border-gray-200 p-1.5 flex items-center justify-center bg-white">
+        <RiSunLine class="size-4 fill-gray-600" />
+      </button>
     </div>
   </div>
 </template>

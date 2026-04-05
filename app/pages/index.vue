@@ -9,23 +9,25 @@
       <div class="index-hero-box flex items-center justify-between w-full opacity-0 animate-fade-in">
         <!-- 标题区域 -->
         <div class="index-hero-title p-1.5">
-          <h1 class="index-first-line text-slate-900 text-[7em] font-black leading-none">IM<span class="text-red-600">QI1</span>.COM</h1>
-          <div class="index-second-line mt-4 text-slate-600 text-xl">
+          <h1 class="index-first-line text-slate-900 text-[6em] font-black leading-none">IM<span class="text-red-600">QI1</span>.COM</h1>
+          <div class="index-second-line mt-4 text-slate-600 text-lg">
             {{ homeAnnounce }}
           </div>
         </div>
 
         <!-- 头像区域 -->
-        <div class="index-avatar-box h-fit">
+        <div class="index-avatar-box h-fit max-md:hidden">
           <img src="/imgs/avatar.webp" alt="头像" class="index-avatar rounded-full max-w-50 w-50 h-50 object-cover" />
         </div>
-        <div class="index-scroll absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 animate-bounce">
-          <RiMouseLine class="size-5" />
+
+        <!-- 滚动提示 -->
+        <div class="index-scroll absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 animate-bounce max-md:-bottom-20">
+          <RiMouseLine class="size-4" />
         </div>
       </div>
 
       <!-- 联系链接 -->
-      <div class="index-contact flex mt-3 self-start animate-fade-in">
+      <div class="index-contact flex mt-3 self-start animate-fade-in max-md:mx-auto">
         <a
           v-for="link in contactLinks"
           :key="link.name"
@@ -43,8 +45,6 @@
           </template>
         </a>
       </div>
-
-      <!-- 滚动提示 -->
     </div>
 
     <!-- 占位section，用于撑开页面高度 -->
@@ -77,31 +77,31 @@
             <p>腾讯云 EdgeOne 遍布全球的边缘节点，以最快速度响应和回源必要资源</p>
           </div>
         </div>
-        <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap">
+        <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col-reverse">
           <div class="index-framework-item flex flex-col relative">
             <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/chrome.png" alt="浏览器">
-            <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">浏览器</span>
+            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">浏览器</span>
           </div>
-          <div class="index-framework-arrow">
-            <RiArrowLeftLine class="text-2xl text-slate-400 mx-7" />
+          <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
+            <RiArrowLeftLine class="text-2xl text-slate-400" />
           </div>
           <div class="index-framework-item flex flex-col relative">
             <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/edgeone.png" alt="Edgeone">
-            <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">EdgeOne</span>
+            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">EdgeOne</span>
           </div>
-          <div class="index-framework-arrow">
-            <RiArrowLeftLine class="text-2xl text-slate-400 mx-7" />
+          <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
+            <RiArrowLeftLine class="text-2xl text-slate-400" />
           </div>
           <div class="index-framework-item flex flex-col relative">
             <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/jdcloud.png" alt="云服务器">
-            <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">云服务器</span>
+            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">云服务器</span>
           </div>
-          <div class="index-framework-arrow">
-            <RiArrowLeftLine class="text-2xl text-slate-400 mx-7" />
+          <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
+            <RiArrowLeftLine class="text-2xl text-slate-400" />
           </div>
           <div class="index-framework-item flex flex-col relative">
             <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/typecho.png" alt="Typecho">
-            <span class="absolute -bottom-8 left-0 right-0 text-center text-sm text-slate-500">Typecho</span>
+            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500">Typecho</span>
           </div>
         </div>
         <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 leading-relaxed">
@@ -116,12 +116,12 @@
     <!-- 样式选择 -->
     <div class="index-theme -mt-5 mx-auto max-w-[800px]">
       <div class="index-theme-inner">
-        <div class="index-theme-themes mb-[200px]">
+        <div class="index-theme-themes mb-50 max-md:text-center">
           <h2 class="index-theme-title1 text-blue-700 text-sm">样式选择</h2>
           <div class="index-theme-title2 text-slate-800 text-[1.6em] font-bold my-1">保持界面清爽，同时不牺牲功能丰富度</div>
           <div class="index-theme-title3 text-slate-500 text-sm">选择字体类型，合理规划布局，注意颜色搭配，添加边框圆角。</div>
         </div>
-        <div class="index-theme-introduction flex">
+        <div class="index-theme-introduction flex max-md:justify-center">
           <!-- 左侧选项 -->
           <div class="index-theme-left flex flex-col gap-[50px]">
             <div
@@ -158,7 +158,7 @@
           </div>
 
           <!-- 右侧展示 -->
-          <div class="index-theme-right flex-1 flex justify-end relative">
+          <div class="index-theme-right flex-1 flex justify-end relative max-md:hidden">
             <div class="index-theme-right-items flex items-center justify-center h-75 sticky w-full top-[calc(50%-150px)]">
               <div
                 v-for="(rightItem, index) in themeRightItems"
