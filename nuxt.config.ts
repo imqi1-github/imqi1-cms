@@ -7,11 +7,18 @@ export default defineNuxtConfig({
     port: 4000,
   },
 
+  runtimeConfig: {
+    public: {
+      cdnURL: "http://testcdn.qi1.website",
+    },
+  },
+
   app: {
     head: {
+      // 使用 runtime config 的 cdnURL（需要在 app.vue 或插件中动态设置）
       link: [{ rel: "stylesheet", href: "/fonts/font.css" }],
     },
-    cdnURL: "https://testcdn.qi1.website",
+    cdnURL: "http://testcdn.qi1.website",
   },
 
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
