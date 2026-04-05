@@ -49,7 +49,7 @@ onMounted(() => {
   // 页面渐入动画 - 直接触发，不需要滚动监听
   requestAnimationFrame(() => {
     // 触发 404 页面动画
-    const notFound = document.querySelector("div.animate-fade-in");
+    const notFound = document.querySelector(".not-found-fade-in");
     if (notFound && isNotFound.value) {
       notFound.classList.add("fade-in-start");
       return;
@@ -217,7 +217,7 @@ onUnmounted(() => {
       <p class="mt-2 text-slate-500">加载中...</p>
     </div>
 
-    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full animate-fade-in">
+    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
         <Icon name="ri:close-large-fill" class="text-red-500" />
         <span>页面未找到</span>
@@ -297,6 +297,13 @@ onUnmounted(() => {
 <style scoped>
 /* 渐入动画基础类 */
 .animate-fade-in {
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 404 页面淡入动画 */
+.not-found-fade-in {
   opacity: 0;
   transform: translateY(30px);
   transition:
@@ -304,7 +311,7 @@ onUnmounted(() => {
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.animate-fade-in.fade-in-start {
+.not-found-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
 }

@@ -73,8 +73,6 @@ function handleCommentSubmitted() {
 
 <template>
   <div class="mt-5">
-    <h2 class="text-[1.3em] font-bold mb-4">评论 ({{ comments.length }})</h2>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="py-8 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>

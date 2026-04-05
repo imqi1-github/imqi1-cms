@@ -127,7 +127,7 @@ function insertEmoji(emoji: string) {
 
 <template>
   <div class="comment-input-box">
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center justify-between">
       <h2 class="comment-box-title">
         {{ isReply ? `回复 ${replyTo?.name}` : "评论" }}
       </h2>

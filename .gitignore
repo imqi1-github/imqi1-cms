@@ -26,3 +26,4 @@ logs
 /app/generated/prisma
 
 .old-theme
+public/uploads/*
