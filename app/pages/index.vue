@@ -48,12 +48,12 @@
     </div>
 
     <!-- 占位section，用于撑开页面高度 -->
-    <section class="h-[calc(100vh-250px)] mb-[250px]" aria-hidden="true"></section>
+    <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true"></section>
 
     <!-- 为什么要做这个网站 -->
-    <section class="index-about-this mx-auto max-w-[1100px] animate-fade-in" aria-labelledby="index-why-title">
+    <section class="index-about-this mx-auto max-w-275 animate-fade-in" aria-labelledby="index-why-title">
       <h2 id="index-why-title" class="index-why-this text-slate-500 text-sm">？ 为什么要做这个网站</h2>
-      <div class="index-why-reason tracking-[0.1ch] leading-[1.7em] mt-2.5 max-w-[750px]">
+      <div class="index-why-reason tracking-[0.1ch] leading-[1.7em] mt-2.5 max-w-187.5">
         <p class="my-2.5">
           起初建站只是一时兴起，和大多数人一样，我只是想记录下自己学习编程的心路历程和笔记，供自己以后有个参考。刚开始我以为有一个自己的网站是一个小众爱好，直到后来我才发现网络上有很多对此感兴趣的伙伴，于是我开始和他们保持联系。随着时间的增长，我对软件开发有了更浓厚的兴趣，我开始和同学、朋友交流，也有了自己独立开发的想法。在这之前我曾换过多个框架、主题，最终还是觉得自己开发一个主题最有成就感，也最能证明自己真正地学到了东西，所以你能在这里看到这些文字，也能看到我在此记录的其他内容。
         </p>
@@ -62,7 +62,7 @@
     </section>
 
     <!-- 间隔 -->
-    <div class="h-[150px]"></div>
+    <div class="h-37.5"></div>
 
     <!-- 网站架构 -->
     <section class="index-website-framework animate-fade-in" aria-labelledby="index-framework-title">
@@ -111,10 +111,10 @@
     </section>
 
     <!-- 大间隔 -->
-    <div class="h-[250px]"></div>
+    <div class="h-62.5"></div>
 
     <!-- 样式选择 -->
-    <div class="index-theme -mt-5 mx-auto max-w-[800px]">
+    <div class="index-theme -mt-5 mx-auto max-w-200">
       <div class="index-theme-inner">
         <div class="index-theme-themes mb-50 max-md:text-center">
           <h2 class="index-theme-title1 text-blue-700 text-sm">样式选择</h2>
@@ -123,14 +123,14 @@
         </div>
         <div class="index-theme-introduction flex max-md:justify-center">
           <!-- 左侧选项 -->
-          <div class="index-theme-left flex flex-col gap-[50px]">
+          <div class="index-theme-left flex flex-col gap-12.5">
             <div
               v-for="(item, index) in themeItems"
               :key="index"
               :ref="setThemeItemRef"
-              class="index-theme-item flex flex-col items-start justify-center h-75 max-w-[300px]">
+              class="index-theme-item flex flex-col items-start justify-center h-75 max-w-75">
               <div class="index-theme-title3 text-slate-500 text-sm">{{ item.title }}</div>
-              <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2.5 max-w-[300px]">
+              <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
                 <template v-for="(grid, gIndex) in item.grids" :key="gIndex">
                   <div v-if="grid.isLink" class="index-theme-grid">
                     <a :href="grid.href" class="text-slate-900 hover:underline" target="_blank">{{ grid.text }}</a>
@@ -216,10 +216,10 @@
     </div>
 
     <!-- 间隔 -->
-    <div class="h-[250px]"></div>
+    <div class="h-62.5"></div>
 
     <!-- 阅读更多 -->
-    <section class="index-read-more mx-auto max-w-[1100px] animate-fade-in" aria-labelledby="index-read-more-title">
+    <section class="index-read-more mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
       <h2 id="index-read-more-title" class="index-theme-title2 text-slate-800 text-[1.6em] font-bold text-center">阅读更多</h2>
       <div class="index-read-more-inner flex flex-wrap justify-center gap-4 mt-8">
         <a href="/subscription" class="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition-colors">我的订阅</a>
@@ -232,7 +232,7 @@
     </section>
 
     <!-- 底部间隔 -->
-    <div class="h-[150px]"></div>
+    <div class="h-37.5"></div>
   </div>
 </template>
 

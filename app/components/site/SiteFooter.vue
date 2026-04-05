@@ -6,7 +6,9 @@ import {
   RiCreativeCommonsNdLine,
   RiEarthFill,
   RiRssFill,
-  RiSubwayFill, RiSunLine,
+  RiSubwayFill,
+  RiSunLine,
+  RiMoonLine,
 } from "@remixicon/vue";
 
 const currentYear = new Date().getFullYear();
@@ -15,16 +17,28 @@ const currentYear = new Date().getFullYear();
 const { data } = await useFetch("/api/site");
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 const siteIcp = computed(() => data.value?.data?.siteIcp || "");
+
+// 使用官方 colorMode 模块
+const colorMode = useColorMode();
+
+// 测试函数
+const handleClick = () => {
+  console.log("Button clicked!");
+  console.log("colorMode.value:", colorMode.value);
+  console.log("colorMode.preference:", colorMode.preference);
+  colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
+  console.log("New preference:", colorMode.preference);
+};
 </script>
 
 <template>
-  <div class="bg-slate-50">
-    <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600">
+  <div class="bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+    <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
         <span v-if="siteIcp">│ {{ siteIcp }}</span>
       </div>
-      <div class="**:fill-slate-600 flex gap-2 items-center">
+      <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
         <RiRssFill class="size-4.5" />
         <div class="flex items-center **:size-4.5 **:fill-state-600">
           <RiCopyrightLine />
@@ -46,11 +60,14 @@ const siteIcp = computed(() => data.value?.data?.siteIcp || "");
         <RiEarthFill class="size-4.5" />
       </div>
     </div>
-    <div class="footer-buttons fixed bottom-8 right-8">
-      <button class="footer-button rounded-full border border-px border-gray-200 p-1.5 flex items-center justify-center bg-white">
-        <RiSunLine class="size-4 fill-gray-600" />
-      </button>
-    </div>
+    <!-- 暗黑模式切换按钮 -->
+    <button
+      @click="handleClick"
+      class="cursor-pointer fixed bottom-8 right-8 z-[9999] rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md"
+      :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
+      <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
+      <RiMoonLine v-else class="size-4 fill-gray-100" />
+    </button>
   </div>
 </template>
 

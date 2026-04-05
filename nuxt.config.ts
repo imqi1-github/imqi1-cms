@@ -11,9 +11,16 @@ export default defineNuxtConfig({
     head: {
       link: [{ rel: "stylesheet", href: "/fonts/font.css" }],
     },
+    cdnURL: process.env.CDN_URL || undefined,
   },
 
-  modules: ["shadcn-nuxt", "@nuxt/icon"],
+  modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
+
+  colorMode: {
+    classSuffix: "",
+    fallback: "light",
+    storageKey: "theme",
+  },
 
   shadcn: {
     prefix: "",
@@ -42,6 +49,27 @@ export default defineNuxtConfig({
         "lucide-vue-next",
         "vue-sonner",
       ],
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vue 相关
+            vue: ["vue", "@vue/runtime-core", "@vue/runtime-dom"],
+            // Nuxt 相关
+            nuxt: ["@nuxt/app", "@nuxt/kit", "@nuxt/schema"],
+            // UI 组件库
+            ui: ["reka-ui", "lucide-vue-next", "vue-sonner"],
+            // 工具库
+            utils: ["@vueuse/core", "clsx", "tailwind-merge", "class-variance-authority"],
+            // 图标
+            icons: ["@iconify/vue"],
+            // Markdown 相关
+            markdown: ["markdown-it", "shiki"],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 500,
     },
   },
 });
