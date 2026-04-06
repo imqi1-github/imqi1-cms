@@ -49,15 +49,38 @@ function truncateDescription(desc: string | null, maxLength = 150) {
 onMounted(() => {
   loadPosts();
 });
+
+// 监听 posts 变化，初始化渐入动画
+watch(posts, () => {
+  nextTick(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px",
+    };
+
+    const fadeInObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("fade-in-start");
+          fadeInObserver.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+      fadeInObserver.observe(el);
+    });
+  });
+});
 </script>
 
 <template>
   <div class="container mx-auto px-4 py-8 max-w-5xl">
     <!-- 页面头部 -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">订阅文章</h1>
-      <p class="text-muted-foreground">来自各大订阅源的最新文章，每8小时自动更新</p>
-    </div>
+    <header class="mb-8 animate-fade-in">
+      <h1 class="text-[3em] font-extrabold mb-2.5">订阅文章</h1>
+      <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每8小时自动更新</p>
+    </header>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="space-y-6">
@@ -92,7 +115,7 @@ onMounted(() => {
       <article
         v-for="post in posts"
         :key="post.id"
-        class="border rounded-lg p-6 hover:shadow-md hover:border-primary/50 transition-all"
+        class="border rounded-lg p-6 hover:shadow-md hover:border-primary/50 transition-all animate-fade-in"
       >
         <div class="flex items-start gap-4">
           <!-- 订阅源头像 -->
@@ -148,3 +171,19 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 滚动淡入动画 */
+.animate-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in.fade-in-start {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>

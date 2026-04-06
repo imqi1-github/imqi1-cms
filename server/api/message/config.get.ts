@@ -14,7 +14,7 @@ export default defineEventHandler(async event => {
 
     if (!messagePostId) {
       const messagePost = await prisma.post.findFirst({
-        where: { slug: "message-board" },
+        where: { slug: "message" },
         select: { cid: true },
       });
       messagePostId = messagePost?.cid || null;

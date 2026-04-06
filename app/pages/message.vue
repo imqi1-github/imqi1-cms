@@ -105,7 +105,7 @@ onUnmounted(() => {
     <section class="my-8 animate-fade-in">
       <blockquote
         class="border-l-4 border-blue-600 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[0.95em] px-4 py-3 my-4 rounded-sm">
-        欢迎在这里留言，分享你的想法和建议。留言需要审核后才会显示。
+        欢迎在这里留言，分享你的想法和建议。
       </blockquote>
 
       <!-- 未配置提示 -->
