@@ -2,6 +2,7 @@
 import {RiHomeLine} from "@remixicon/vue";
 
 const route = useRoute();
+const router = useRouter();
 
 // 获取站点设置
 const { data } = await useFetch("/api/site");
@@ -23,6 +24,11 @@ const showCategory = ref(false);
 
 // 滚动监听
 const isScrolled = ref(false);
+
+// 跳转到搜索页面
+function goToSearch() {
+  router.push("/search");
+}
 
 onMounted(() => {
   const handleScroll = () => {
@@ -59,7 +65,9 @@ onMounted(() => {
         class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
         <!-- 搜索按钮 -->
-        <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white">
+        <div
+          class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white"
+          @click="goToSearch">
           <Icon name="ri:search-line" class="text-[1.2em] relative z-1" />
           <span
             class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 z-0" />
