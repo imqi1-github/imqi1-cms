@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { nextTick, onMounted, watch } from "vue";
 
 const route = useRoute();
 const slug = route.params.slug as string;
@@ -11,7 +11,7 @@ const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug
 
 // 获取分类文章数据
 const page = ref(1);
-const { data, pending, error } = await useFetch(`/api/category/${slug}/posts`, {
+const { data, pending, error, refresh } = await useFetch(`/api/category/${slug}/posts`, {
   query: { page, pageSize: 12 },
 });
 
@@ -46,6 +46,28 @@ function goToPage(newPage: number) {
   page.value = newPage;
 }
 
+// 触发渐入动画
+function triggerFadeIn() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".fade-in-element").forEach(el => {
+        el.classList.remove("opacity-0", "translate-y-8");
+        el.classList.add("opacity-100", "translate-y-0");
+      });
+    });
+  });
+}
+
+// 监听路由变化，重新触发动画
+watch(() => route.params.slug, () => {
+  // 先重置所有元素状态
+  document.querySelectorAll(".fade-in-element").forEach(el => {
+    el.classList.remove("opacity-100", "translate-y-0");
+    el.classList.add("opacity-0", "translate-y-8");
+  });
+  triggerFadeIn();
+});
+
 // 页面标题
 useHead({
   title: computed(() => {
@@ -57,18 +79,12 @@ useHead({
 
 // 初始化渐入动画
 onMounted(() => {
-  requestAnimationFrame(() => {
-    // 触发所有带 fade-in 类的元素的动画
-    document.querySelectorAll(".fade-in-element").forEach(el => {
-      el.classList.remove("opacity-0", "translate-y-8");
-      el.classList.add("opacity-100", "translate-y-0");
-    });
-  });
+  triggerFadeIn();
 });
 </script>
 
 <template>
-  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'photo-category-container' : 'max-w-225 flex justify-center items-center']">
+  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'photo-category-container' : 'max-w-225 flex flex-col justify-center items-center']">
     <!-- 加载中 -->
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -123,7 +139,7 @@ onMounted(() => {
         <div
           v-for="post in posts"
           :key="post.cid"
-          :class="['archive-article rounded-15 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow', post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover']"
+          :class="['archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow', post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover']"
         >
           <!-- 封面 -->
           <NuxtLink v-if="post.covers.length > 0" :to="`/content/${slug}/${post.slug}`" class="relative h-70 overflow-hidden rounded-t-15">
@@ -256,7 +272,7 @@ onMounted(() => {
 }
 
 .photo-item {
-  background-color: white;
+  background-color: rgb(255 255 255 / 0.95);
   border-radius: 8px;
   display: block;
   margin-bottom: 10px;
@@ -264,10 +280,11 @@ onMounted(() => {
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   break-inside: avoid;
+  backdrop-filter: blur(12px);
 }
 
 .dark .photo-item {
-  background-color: rgb(30 41 59);
+  background-color: rgb(17 24 39 / 0.95);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 

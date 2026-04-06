@@ -578,6 +578,278 @@ https://www.example.com 会自动转换为链接。
     desc: "完整的 Markdown 语法参考手册，涵盖所有常用和高级语法特性。",
     slug: "16",
   },
+  {
+    title: "WebSocket 实时通信实战",
+    content: `# WebSocket 实时通信实战
+
+WebSocket 提供了全双工通信通道。
+
+## 连接建立
+
+\`\`\`javascript
+const ws = new WebSocket('ws://localhost:8080');
+ws.onopen = () => console.log('Connected');
+\`\`\`
+
+## 消息收发
+
+发送和接收消息的示例。`,
+    desc: "学习如何使用 WebSocket 实现实时通信功能。",
+    slug: "17",
+  },
+  {
+    title: "CSS 动画入门教程",
+    content: `# CSS 动画入门教程
+
+CSS 动画让网页更加生动。
+
+## @keyframes
+
+定义动画的关键帧。
+
+## transition
+
+平滑过渡效果。
+
+## animation
+
+综合动画属性。`,
+    desc: "从零开始学习 CSS 动画的制作。",
+    slug: "18",
+  },
+  {
+    title: "JavaScript 闭包详解",
+    content: `# JavaScript 闭包详解
+
+闭包是 JavaScript 中的重要概念。
+
+## 什么是闭包
+
+闭包是指有权访问另一个函数作用域中变量的函数。
+
+## 闭包的应用
+
+- 数据私有化
+- 函数柯里化
+- 模块模式`,
+    desc: "深入理解 JavaScript 闭包的工作原理。",
+    slug: "19",
+  },
+  {
+    title: "Webpack 配置指南",
+    content: `# Webpack 配置指南
+
+Webpack 是强大的模块打包工具。
+
+## 基本配置
+
+entry、output、loader 的配置。
+
+## 优化技巧
+
+代码分割、tree shaking、压缩优化。`,
+    desc: "掌握 Webpack 的配置和优化技巧。",
+    slug: "20",
+  },
+  {
+    title: "HTTP 缓存策略",
+    content: `# HTTP 缓存策略
+
+合理的缓存策略可以提升性能。
+
+## 强缓存
+
+Cache-Control 和 Expires。
+
+## 协商缓存
+
+ETag 和 Last-Modified。`,
+    desc: "理解 HTTP 缓存机制，优化网页加载速度。",
+    slug: "21",
+  },
+  {
+    title: "Vue 组件通信方式",
+    content: `# Vue 组件通信方式
+
+组件间通信是 Vue 开发的核心。
+
+## props 和 emit
+
+父子组件通信。
+
+## provide 和 inject
+
+跨层级组件通信。
+
+## 事件总线
+
+任意组件间通信。`,
+    desc: "总结 Vue 中各种组件通信的方式和适用场景。",
+    slug: "22",
+  },
+  {
+    title: "CSS 预处理器对比",
+    content: `# CSS 预处理器对比
+
+Sass、Less、Stylus 各有特点。
+
+## Sass
+
+功能最强大，成熟稳定。
+
+## Less
+
+学习曲线平缓，易于上手。
+
+## Stylus
+
+语法简洁灵活。`,
+    desc: "对比主流 CSS 预处理器的优缺点。",
+    slug: "23",
+  },
+  {
+    title: "前端安全防护",
+    content: `# 前端安全防护
+
+Web 安全至关重要。
+
+## XSS 防护
+
+输入过滤、输出编码。
+
+## CSRF 防护
+
+Token 验证、SameSite 属性。
+
+## CSP
+
+内容安全策略。`,
+    desc: "了解常见的前端安全漏洞及防护措施。",
+    slug: "24",
+  },
+  {
+    title: "移动端适配方案",
+    content: `# 移动端适配方案
+
+移动端适配是响应式设计的关键。
+
+## rem 方案
+
+根据根元素字体大小计算。
+
+## vw/vh 方案
+
+视口单位相对布局。
+
+## 媒体查询
+
+不同屏幕不同样式。`,
+    desc: "介绍几种主流的移动端适配方案。",
+    slug: "25",
+  },
+  {
+    title: "JavaScript 异步处理",
+    content: `# JavaScript 异步处理
+
+掌握异步编程是必备技能。
+
+## Promise
+
+异步操作的容器。
+
+## async/await
+
+同步风格的异步代码。
+
+## 事件循环
+
+理解 JavaScript 执行机制。`,
+    desc: "深入理解 JavaScript 的异步编程模式。",
+    slug: "26",
+  },
+  {
+    title: "Git 常用命令总结",
+    content: `# Git 常用命令总结
+
+Git 是版本控制的标准工具。
+
+## 分支操作
+
+branch、checkout、merge。
+
+## 提交操作
+
+add、commit、push、pull。
+
+## 撤销操作
+
+reset、revert、checkout。`,
+    desc: "整理 Git 开发中常用的命令。",
+    slug: "27",
+  },
+  {
+    title: "CSS BEM 命名规范",
+    content: `# CSS BEM 命名规范
+
+BEM 是一种实用的 CSS 命名方法论。
+
+## 命名规则
+
+Block、Element、Modifier。
+
+## 示例
+
+\`\`\`css
+.block { }
+.block__element { }
+.block--modifier { }
+\`\`\`
+
+## 优势
+
+提高代码可读性和可维护性。`,
+    desc: "学习 BEM 命名规范，写出更清晰的 CSS。",
+    slug: "28",
+  },
+  {
+    title: "正则表达式入门",
+    content: `# 正则表达式入门
+
+正则表达式是强大的文本处理工具。
+
+## 基本语法
+
+- 字符类
+- 量词
+- 边界
+- 分组
+
+## 常用模式
+
+邮箱、手机号、URL 等验证。`,
+    desc: "掌握正则表达式的基本语法和常用模式。",
+    slug: "29",
+  },
+  {
+    title: "前端性能监控",
+    content: `# 前端性能监控
+
+性能监控是优化的重要依据。
+
+## 核心指标
+
+FCP、LCP、CLS、FID。
+
+## 监控工具
+
+Lighthouse、Web Vitals。
+
+## 优化建议
+
+基于监控数据进行针对性优化。`,
+    desc: "了解前端性能监控的指标和工具。",
+    slug: "30",
+  },
 ];
 
 // 示例评论内容
@@ -599,24 +871,12 @@ const sampleComments = [
   "请问这个问题有其他解决方案吗？",
 ];
 
-// 示例分类
+// 示例分类（4个，其中一个是图片分类）
 const categories = [
   { name: "前端开发", slug: "frontend", desc: "关于 HTML、CSS、JavaScript 等前端技术的文章", class: "frontend" },
   { name: "后端开发", slug: "backend", desc: "服务器端开发相关的技术文章", class: "backend" },
-  { name: "数据库", slug: "database", desc: "数据库设计、优化和管理相关内容", class: "database" },
-  { name: "工具与效率", slug: "tools", desc: "开发工具、效率提升技巧分享", class: "tools" },
-];
-
-// 示例话题（额外分类）
-const topics = [
-  { name: "Vue.js", slug: "vue", desc: "Vue.js 框架相关", class: "vue" },
-  { name: "React", slug: "react", desc: "React 框架相关", class: "react" },
-  { name: "Node.js", slug: "nodejs", desc: "Node.js 后端开发", class: "nodejs" },
-  { name: "TypeScript", slug: "typescript", desc: "TypeScript 相关", class: "typescript" },
-  { name: "性能优化", slug: "performance", desc: "Web 性能优化", class: "performance" },
-  { name: "DevOps", slug: "devops", desc: "开发运维相关", class: "devops" },
-  { name: "UI/UX", slug: "ui", desc: "用户界面和体验设计", class: "ui" },
-  { name: "算法", slug: "algorithm", desc: "算法与数据结构", class: "algorithm" },
+  { name: "生活随笔", slug: "life", desc: "记录生活中的点滴和感悟", class: "life" },
+  { name: "摄影", slug: "shot", desc: "用镜头记录生活中的美好瞬间", class: "shot" },
 ];
 
 // 示例元数据
@@ -699,14 +959,13 @@ async function main() {
   });
   console.log(`   ✅ 用户: ${admin.name} / 123456`);
 
-  // 创建分类和话题
-  console.log("📁 创建分类和话题...");
-  const allCategories = [...categories, ...topics];
+  // 创建分类
+  console.log("📁 创建分类...");
   const createdCategories = await prisma.category.createMany({
-    data: allCategories,
+    data: categories,
     skipDuplicates: true,
   });
-  console.log(`   ✅ 创建了 ${allCategories.length} 个分类/话题`);
+  console.log(`   ✅ 创建了 ${categories.length} 个分类`);
 
   // 获取分类ID
   const categoryRecords = await prisma.category.findMany();
@@ -715,8 +974,30 @@ async function main() {
   // 创建文章
   console.log("📝 创建文章...");
   const posts = [];
+  // 获取图片分类的 mid
+  const shotCategory = categoryRecords.find(c => c.slug === "shot");
+  const shotCategoryMid = shotCategory?.mid;
+
   for (let i = 0; i < samplePosts.length; i++) {
     const postData = samplePosts[i];
+
+    // 检查这篇文章是否会被分配到图片分类
+    const numCategories = Math.floor(Math.random() * 3) + 1;
+    const shuffledCategories = [...categoryIds].sort(() => Math.random() - 0.5);
+    const assignedCategories = shuffledCategories.slice(0, numCategories);
+    const isShotPost = assignedCategories.includes(shotCategoryMid!);
+
+    // 为图片分类的文章生成封面
+    let covers = null;
+    if (isShotPost) {
+      covers = JSON.stringify([
+        {
+          url: `https://picsum.photos/seed/shot${i}/600/400`,
+          desc: `照片 ${i + 1}`,
+        },
+      ]);
+    }
+
     const post = await prisma.post.create({
       data: {
         title: postData.title,
@@ -727,18 +1008,17 @@ async function main() {
         comment_num: Math.floor(Math.random() * 10),
         show_toc: true,
         uid: admin.uid, // 设置文章作者
+        covers,
       },
     });
     posts.push(post);
 
-    // 为每篇文章随机分配 2-4 个分类
-    const numCategories = Math.floor(Math.random() * 3) + 2;
-    const shuffledCategories = [...categoryIds].sort(() => Math.random() - 0.5);
+    // 为每篇文章分配分类
     for (let j = 0; j < numCategories; j++) {
       await prisma.postRelation.create({
         data: {
           cid: post.cid,
-          mid: shuffledCategories[j],
+          mid: assignedCategories[j],
         },
       });
     }
@@ -747,7 +1027,7 @@ async function main() {
 
   // 创建评论
   console.log("💬 创建评论...");
-  const commentCount = 30;
+  const commentCount = 50;
   let createdComments = 0;
 
   for (let i = 0; i < commentCount; i++) {
@@ -826,8 +1106,7 @@ async function main() {
   console.log(`   - 用户: 1 (admin / 123456)`);
   console.log(`   - 文章: ${posts.length}`);
   console.log(`   - 评论: ${createdComments}`);
-  console.log(`   - 分类: ${categories.length}`);
-  console.log(`   - 话题: ${topics.length}`);
+  console.log(`   - 分类: ${categories.length} (含1个图片分类)`);
   console.log(`   - 元数据: ${metaItems.length}`);
   console.log(`   - 友情链接: ${links.length}`);
   console.log(`   - 订阅: ${subscribes.length}`);

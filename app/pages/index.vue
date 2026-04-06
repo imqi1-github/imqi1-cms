@@ -307,11 +307,60 @@
       </div>
     </section>
 
-    <!-- 间隔 -->
-    <div class="h-62.5"></div>
+    <!-- 分类文章 -->
+    <section v-if="categoryRecentPosts.length > 0" class="index-category-posts mx-auto max-w-275 animate-fade-in">
+      <template v-for="(categoryData, index) in categoryRecentPosts" :key="categoryData.category.slug">
+        <!-- 分类标题 -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="index-theme-title1 text-blue-700 text-sm font-bold">{{ categoryData.category.name }}</h2>
+            <div class="text-slate-800 text-lg font-bold mt-1">{{ categoryData.category.name }}分类</div>
+          </div>
+          <NuxtLink
+            :to="`/category/${categoryData.category.slug}`"
+            class="text-blue-600 hover:underline text-sm flex items-center gap-1">
+            查看更多
+            <RiArrowRightLine class="size-4" />
+          </NuxtLink>
+        </div>
+
+        <!-- 文章网格 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
+          <NuxtLink
+            v-for="post in categoryData.posts"
+            :key="post.cid"
+            :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
+            class="group block no-underline">
+            <div class="rounded-xl border border-slate-200 overflow-hidden hover:border-blue-300 hover:shadow-md transition-all duration-300">
+              <!-- 封面 -->
+              <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden">
+                <img
+                  :src="post.covers[0].url || post.covers[0]"
+                  :alt="post.title"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy" />
+              </div>
+              <!-- 无封面占位 -->
+              <div v-else class="aspect-video bg-slate-100 flex items-center justify-center">
+                <span class="text-slate-400 text-4xl">{{ categoryData.category.name[0] }}</span>
+              </div>
+              <!-- 文章信息 -->
+              <div class="p-3">
+                <h3 class="text-slate-900 font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
+                  {{ post.title }}
+                </h3>
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                  <span>{{ formatDate(post.created) }}</span>
+                </div>
+              </div>
+            </div>
+          </NuxtLink>
+        </div>
+      </template>
+    </section>
 
     <!-- 最新图片 -->
-    <section v-if="photoImages.length > 0" class="index-photo-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-photo-posts-title">
+    <section v-if="photoImages.length > 0" class="index-photo-posts mt-6 mx-auto max-w-275 animate-fade-in" aria-labelledby="index-photo-posts-title">
       <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 text-sm font-bold">图片内容</h2>
       <div class="index-theme-title2 text-slate-800 text-[1.6em] font-bold my-1">最新发布的图片</div>
       <div class="index-theme-title3 text-slate-500 text-sm mb-8">记录生活中的美好瞬间</div>
@@ -406,6 +455,10 @@ const recentPosts = computed(() => recentPostsData.value?.data || []);
 // 获取图片文章
 const { data: photoPostsData } = await useFetch("/api/photo-posts?limit=4");
 const photoPosts = computed(() => photoPostsData.value?.data || []);
+
+// 获取分类文章（mid最小的3个分类，每个分类最新4篇，排除最新发布中的文章）
+const { data: categoryRecentPostsData } = await useFetch("/api/category-recent-posts?limit=4");
+const categoryRecentPosts = computed(() => categoryRecentPostsData.value?.data || []);
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
@@ -555,11 +608,22 @@ const handleScroll = () => {
     const scale = 1 - (offset / maxOffset) * 0.2;
     const opacity = 1 - offset / maxOffset;
 
-    heroStyle.value = {
-      transform: `scale(${Math.max(scale, 0)})`,
-      opacity: Math.max(opacity, 0).toString(),
-      display: scrollTop > 550 ? "none" : "",
-    };
+    // 当滚动超过阈值时隐藏
+    if (scrollTop > windowHeight - 200) {
+      heroStyle.value = {
+        transform: `scale(${Math.max(scale, 0)})`,
+        opacity: "0",
+        display: "none",
+        pointerEvents: "none",
+      };
+    } else {
+      heroStyle.value = {
+        transform: `scale(${Math.max(scale, 0)})`,
+        opacity: Math.max(opacity, 0).toString(),
+        display: "flex",
+        pointerEvents: "auto",
+      };
+    }
   }
 };
 
@@ -573,16 +637,15 @@ let fadeInObserver: IntersectionObserver | null = null;
 
 // 初始化滚动动画
 onMounted(() => {
+  // 立即执行一次滚动检测，确保页面加载时状态正确
+  handleScroll();
+  checkVisibleItems();
+
   // 监听滚动 - 英雄区缩放/淡出
   window.addEventListener("scroll", handleScroll);
 
   // 监听滚动 - 样式选择区域跟随效果
   window.addEventListener("scroll", handleStyleScroll);
-
-  // 等待DOM渲染后初始化
-  nextTick(() => {
-    checkVisibleItems();
-  });
 
   // 滚动渐入效果监听
   const observerOptions = {

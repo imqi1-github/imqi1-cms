@@ -7,13 +7,9 @@ const route = useRoute();
 const { data } = await useFetch("/api/site");
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 
-// 分类菜单数据
-const categories = [
-  { name: "小记", href: "/category/note", icon: "ri:pencil-fill" },
-  { name: "图片", href: "/category/shot", icon: "ri:camera-fill" },
-  { name: "技术", href: "/category/tech", icon: "ri:cpu-line" },
-  { name: "讨论", href: "/category/discuss", icon: "ri:chat-1-fill" },
-];
+// 获取分类
+const { data: categoriesData } = await useFetch("/api/categories");
+const categories = computed(() => categoriesData.value?.data || []);
 
 // 导航项数据
 const navItems = [
@@ -71,26 +67,27 @@ onMounted(() => {
 
         <!-- 分类下拉 -->
         <div
-          class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white"
+          class="relative"
           @mouseenter="showCategory = true"
           @mouseleave="showCategory = false">
-          <Icon name="ri:book-shelf-line" class="text-[1.2em] relative z-1" />
-          <span
-            class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 z-0" />
+          <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white">
+            <Icon name="ri:book-shelf-line" class="text-[1.2em] relative z-1" />
+            <span
+              class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 z-0" />
+          </div>
 
           <!-- 分类下拉菜单 -->
           <div
-            class="absolute right-0 top-[calc(100%+10px)] flex flex-col items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-1.5 px-2.5 w-25 opacity-0 invisible transition-all duration-150 text-gray-900 dark:text-gray-100"
-            :class="{ 'opacity-100 visible': showCategory }">
+            class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible transition-all duration-200 translate-y-2"
+            :class="{ 'opacity-100 visible translate-y-0': showCategory }">
             <NuxtLink
               v-for="cat in categories"
-              :key="cat.href"
-              :to="cat.href"
-              class="flex items-center gap-2 px-3 py-0.5 rounded text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-150 w-full no-underline">
-              <Icon :name="cat.icon" class="text-sm" />
-              <span class="text-sm">{{ cat.name }}</span>
+              :key="cat.slug"
+              :to="`/category/${cat.slug}`"
+              class="block px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 no-underline text-sm font-medium"
+              :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400': route.path === `/category/${cat.slug}` }">
+              {{ cat.name }}
             </NuxtLink>
-            <div class="absolute -top-5 right-0 w-25 h-5"></div>
           </div>
         </div>
 
