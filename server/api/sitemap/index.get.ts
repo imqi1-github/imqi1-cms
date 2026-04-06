@@ -39,7 +39,6 @@ export default defineEventHandler(async event => {
             relations: {
               some: {
                 mid: category.mid,
-                type: "category",
               },
             },
           },
@@ -49,7 +48,7 @@ export default defineEventHandler(async event => {
             cid: true,
             title: true,
             slug: true,
-            created: true,
+            create_time: true,
           },
         });
 

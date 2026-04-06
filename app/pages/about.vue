@@ -505,7 +505,7 @@
       <!-- 导航 -->
       <div class="about-bold-section ready mb-24">
         <div class="about-bold-nav grid grid-cols-1 md:grid-cols-3 gap-6">
-          <a
+          <NuxtLink 
             href="/archiving"
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
@@ -517,9 +517,9 @@
               文章归档
             </div>
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">浏览所有文章</div>
-          </a>
-          <a
-            href="/sitemap"
+          </NuxtLink>
+          <NuxtLink
+            to="/sitemap"
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
@@ -530,9 +530,9 @@
               站点地图
             </div>
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">探索本站结构</div>
-          </a>
-          <a
-            href="/link"
+          </NuxtLink>
+          <NuxtLink
+            to="/link"
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
@@ -543,7 +543,7 @@
               更新日志
             </div>
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">不断优化主题</div>
-          </a>
+          </NuxtLink>
         </div>
       </div>
 
@@ -593,15 +593,18 @@ import { onMounted, ref } from "vue";
 const { data } = await useFetch("/api/site");
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 
+// 获取统计数据
+const { data: statsData } = await useFetch("/api/stats");
+const stats = computed(() => ({
+  publishedPostsNum: statsData.value?.data?.publishedPostsNum || 0,
+  publishedCommentsNum: statsData.value?.data?.publishedCommentsNum || 0,
+  categoriesNum: statsData.value?.data?.categoriesNum || 0,
+  tagsNum: statsData.value?.data?.tagsNum || 0,
+}));
+
 // 页面元数据
 useHead({
   title: computed(() => `关于 - ${siteName.value}`),
-});
-
-// 模拟统计数据
-const stats = ref({
-  publishedPostsNum: 100,
-  publishedCommentsNum: 500,
 });
 
 // 动画用的统计数据

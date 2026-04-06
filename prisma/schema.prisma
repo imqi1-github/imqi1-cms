@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,78 +6,68 @@ datasource db {
   provider = "postgresql"
 }
 
-// 友情链接类
 model Link {
-  id       Int      @id @default(autoincrement())
-  name     String
-  desc     String?
-  link     String
-  avatar   String?
-  enabled  Boolean  @default(true)
+  id      Int     @id @default(autoincrement())
+  name    String
+  desc    String?
+  link    String
+  avatar  String?
+  enabled Boolean @default(true)
 }
 
-// 订阅列表类
 model Subscribe {
-  id           Int            @id @default(autoincrement())
-  url          String
-  name         String
-  avatar       String?
-  lastUpdated  DateTime?
-  posts        SubscribePost[]
+  id          Int             @id @default(autoincrement())
+  url         String
+  name        String
+  avatar      String?
+  lastUpdated DateTime?
+  posts       SubscribePost[]
 }
 
-// 订阅文章类
 model SubscribePost {
-  id           Int       @id @default(autoincrement())
-  subscribeId  Int
-  title        String
-  link         String     @unique
-  description  String?    @db.Text
-  content      String?    @db.Text
-  author       String?
-  pubDate      DateTime?
-  create_time  DateTime  @default(now())
-
-  // 关联
-  subscribe    Subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade)
+  id          Int       @id @default(autoincrement())
+  subscribeId Int
+  title       String
+  link        String    @unique
+  description String?
+  content     String?
+  author      String?
+  pubDate     DateTime?
+  create_time DateTime  @default(now())
+  subscribe   Subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade)
 }
 
-// 更新日志类
 model Changelog {
   id          Int      @id @default(autoincrement())
   class       String
-  desc        String   @db.Text
+  desc        String
   create_time DateTime @default(now())
 }
 
-// 文章类
 model Post {
-  cid          Int       @id @default(autoincrement())
-  title        String
-  slug         String?
-  desc         String?   @db.Text
-  content      String?   @db.Text
-  create_time  DateTime  @default(now())
-  update_time  DateTime  @updatedAt
-  status       Int       @default(1)
-  comment_num  Int       @default(0)
-  many_covers  Boolean   @default(false)
-  covers       String?
-  show_toc     Boolean   @default(false)
-  tags         String?   @db.Text
-  type         Int       @default(0) // 0: 文章, 1: 页面
-  uid          Int       @default(1)
-
-  // 关联
-  comments     Comment[]
-  relations    PostRelation[]
-  attachments  Attachment[]
-  user         User      @relation(fields: [uid], references: [uid])
+  cid         Int            @id @default(autoincrement())
+  title       String
+  slug        String?
+  desc        String?
+  content     String?
+  create_time DateTime       @default(now())
+  update_time DateTime       @updatedAt
+  status      Int            @default(1)
+  comment_num Int            @default(0)
+  many_covers Boolean        @default(false)
+  covers      String?
+  show_toc    Boolean        @default(false)
+  tags        String?
+  type        Int            @default(0)
+  uid         Int            @default(1)
+  attachments Attachment[]
+  comments    Comment[]
+  user        User           @relation(fields: [uid], references: [uid])
+  relations   PostRelation[]
 
   @@unique([slug, type])
 }
 
-// 评论类
 model Comment {
   coid        Int      @id @default(autoincrement())
   cid         Int
@@ -88,88 +75,72 @@ model Comment {
   mail        String?
   link        String?
   avatar      String?
-  content     String   @db.Text
+  content     String
   create_time DateTime @default(now())
   status      Int      @default(0)
   parent_id   Int?
   agent       String?
   ip          String?
-
-  // 关联
   post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
 }
 
-// 附件类
 model Attachment {
   aid         Int      @id @default(autoincrement())
   cid         Int
   type        String
   title       String
   url         String
-  storage     String   @default("local") // 存储位置: local 或 upyun
+  storage     String   @default("local")
   create_time DateTime @default(now())
-
-  // 关联
   post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
 }
 
-// 分类/标签类
 model Category {
-  mid    Int             @id @default(autoincrement())
-  name   String          @unique
-  slug   String?         @unique
-  desc   String?         @db.Text
-  class  String?
-  type   String          @default("category") // category 或 tag
-
-  // 关联
+  mid       Int            @id @default(autoincrement())
+  name      String         @unique
+  slug      String?        @unique
+  desc      String?
+  class     String?
+  type      String         @default("category")
   relations PostRelation[]
 }
 
-// 关系类 (文章-分类 多对多)
 model PostRelation {
-  id    Int      @id @default(autoincrement())
-  cid   Int
-  mid   Int
-
-  // 关联
-  post  Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
+  id       Int      @id @default(autoincrement())
+  cid      Int
+  mid      Int
+  post     Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
   category Category @relation(fields: [mid], references: [mid], onDelete: Cascade)
 
   @@unique([cid, mid])
 }
 
-// 用户类
 model User {
-  uid         Int      @id @default(autoincrement())
-  name       String   @unique
-  nickname   String?
-  avatar     String?
-  mail       String   @unique
-  password   String
-  create     DateTime @default(now())
-  auth_code  String?
-  role       Int      @default(0)
-
-  // 关联
-  posts      Post[]
+  uid       Int      @id @default(autoincrement())
+  name      String   @unique
+  nickname  String?
+  avatar    String?
+  mail      String   @unique
+  password  String
+  create    DateTime @default(now())
+  auth_code String?
+  role      Int      @default(0)
+  posts     Post[]
 }
 
-// 元数据类
 model Meta {
-  id    Int     @id @default(autoincrement())
-  key   String  @unique
-  value String  @db.Text
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
 }
 
-// Session 类（用于数据库存储）
 model Session {
   id        String   @id
   userId    Int
   authCode  String
   expires   DateTime
   createdAt DateTime @default(now())
-  data      String?  @db.Text
+  data      String?
 
   @@index([userId])
   @@index([expires])
