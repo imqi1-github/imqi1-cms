@@ -27,6 +27,9 @@ const submitSuccess = ref(false);
 const submitError = ref("");
 const successMessage = ref("评论提交成功");
 
+// 用户登录状态
+const isLoggedIn = ref(false);
+
 // 表单数据
 const formData = ref({
   content: "",
@@ -72,16 +75,50 @@ const categories = computed(() => {
 // Textarea 引用
 const textareaRef = ref<HTMLTextAreaElement>();
 
-// 从localStorage读取用户信息
-onMounted(() => {
+// 初始化表单数据
+onMounted(async () => {
   if (import.meta.client) {
-    const savedName = localStorage.getItem("comment_name");
-    const savedMail = localStorage.getItem("comment_mail");
-    const savedLink = localStorage.getItem("comment_link");
+    try {
+      // 并行获取用户信息和站点设置
+      const [userRes, settingsRes] = await Promise.allSettled([
+        $fetch("/api/user", { credentials: "include" }),
+        $fetch("/api/settings"),
+      ]);
 
-    if (savedName) formData.value.name = savedName;
-    if (savedMail) formData.value.mail = savedMail;
-    if (savedLink) formData.value.link = savedLink;
+      // 处理用户信息
+      if (userRes.status === "fulfilled" && userRes.value?.user) {
+        const user = userRes.value.user;
+        isLoggedIn.value = true;
+        formData.value.name = user.name || "";
+        formData.value.mail = user.mail || "";
+      } else {
+        // 未登录，从localStorage读取
+        const savedName = localStorage.getItem("comment_name");
+        const savedMail = localStorage.getItem("comment_mail");
+        const savedLink = localStorage.getItem("comment_link");
+
+        if (savedName) formData.value.name = savedName;
+        if (savedMail) formData.value.mail = savedMail;
+        if (savedLink) formData.value.link = savedLink;
+      }
+
+      // 处理站点设置（获取链接）
+      if (settingsRes.status === "fulfilled" && settingsRes.value?.siteUrl) {
+        // 如果已登录，自动填充站点链接
+        if (isLoggedIn.value) {
+          formData.value.link = settingsRes.value.siteUrl;
+        }
+      }
+    } catch {
+      // 出错时从localStorage读取
+      const savedName = localStorage.getItem("comment_name");
+      const savedMail = localStorage.getItem("comment_mail");
+      const savedLink = localStorage.getItem("comment_link");
+
+      if (savedName) formData.value.name = savedName;
+      if (savedMail) formData.value.mail = savedMail;
+      if (savedLink) formData.value.link = savedLink;
+    }
   }
 });
 
@@ -135,6 +172,7 @@ async function submitComment() {
   try {
     const response: any = await $fetch("/api/comments", {
       method: "POST",
+      credentials: "include",
       body: {
         cid: props.postId,
         content: formData.value.content,
@@ -230,7 +268,7 @@ function formatEmojiPlaceholder(text: string): string {
 </script>
 
 <template>
-  <div class="comment-input-box">
+  <div id="comment-input-box" class="comment-input-box">
     <div class="flex items-center justify-between">
       <h2 class="comment-box-title">
         {{ isReply ? `回复 ${replyTo?.name}` : "评论" }}
@@ -247,15 +285,15 @@ function formatEmojiPlaceholder(text: string): string {
     <div class="comment-input-row">
       <div class="comment-input-group">
         <label for="comment-input-name" class="sr-only">昵称</label>
-        <input id="comment-input-name" v-model="formData.name" type="text" placeholder="昵称 *" class="comment-input" required />
+        <input id="comment-input-name" v-model="formData.name" type="text" placeholder="昵称 *" class="comment-input" :disabled="isLoggedIn" required />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-mail" class="sr-only">邮箱</label>
-        <input id="comment-input-mail" v-model="formData.mail" type="email" :placeholder="requireMail ? '邮箱 *' : '邮箱'" class="comment-input" />
+        <input id="comment-input-mail" v-model="formData.mail" type="email" :placeholder="requireMail ? '邮箱 *' : '邮箱'" class="comment-input" :disabled="isLoggedIn" />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-link" class="sr-only">链接</label>
-        <input id="comment-input-link" v-model="formData.link" type="url" :placeholder="requireLink ? '链接 *' : '链接'" class="comment-input" />
+        <input id="comment-input-link" v-model="formData.link" type="url" :placeholder="requireLink ? '链接 *' : '链接'" class="comment-input" :disabled="isLoggedIn" />
       </div>
 
       <div class="comment-buttons">
@@ -415,6 +453,17 @@ function formatEmojiPlaceholder(text: string): string {
   outline: none;
   border-color: rgb(37 99 235);
   box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+}
+
+.comment-input:disabled {
+  background: rgb(243 244 246);
+  color: rgb(107 114 128);
+  cursor: not-allowed;
+}
+
+.dark .comment-input:disabled {
+  background: rgb(30 41 59);
+  color: rgb(107 114 128);
 }
 
 .comment-buttons {

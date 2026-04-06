@@ -290,3 +290,259 @@ export function getRecentLogs(limit = 50): Array<{
 
   return logs
 }
+
+// 获取站点信息
+async function getSiteInfo() {
+  const settings = await prisma.meta.findMany({
+    where: {
+      key: {
+        in: ['siteName', 'siteUrl'],
+      },
+    },
+  })
+
+  const get = (key: string) => settings.find(s => s.key === key)?.value || ''
+
+  return {
+    name: get('siteName') || 'ImQi1',
+    url: get('siteUrl') || 'https://imqi1.com',
+  }
+}
+
+// 生成邮件基础模板
+function createEmailTemplate(title: string, content: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 4px; overflow: hidden; }
+    .header { background: #fff; padding: 24px 20px; border-bottom: 1px solid #e5e7eb; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 500; color: #111; }
+    .content { padding: 24px 20px; }
+    .content p { margin: 0 0 12px; }
+    .info-box { background: #f9fafb; border-left: 2px solid #d1d5db; padding: 12px 16px; margin: 16px 0; }
+    .info-box p { margin: 0; }
+    .info-meta { font-size: 12px; color: #666; margin-top: 8px; }
+    .link { color: #111; text-decoration: underline; }
+    .footer { padding: 16px 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>${title}</h1>
+    </div>
+    <div class="content">
+      ${content}
+    </div>
+    <div class="footer">
+      此邮件由系统自动发送，请勿直接回复
+    </div>
+  </div>
+</body>
+</html>
+  `
+}
+
+// 获取文章的完整 URL
+async function getPostUrl(cid: number): Promise<string> {
+  const siteInfo = await getSiteInfo()
+  const post = await prisma.post.findUnique({
+    where: { cid },
+    select: { slug: true },
+  })
+
+  if (post?.slug) {
+    // 优先使用 slug
+    const category = await prisma.postRelation.findFirst({
+      where: { cid },
+      include: { category: true },
+    })
+    const categorySlug = category?.category?.slug || 'posts'
+    return `${siteInfo.url}/content/${categorySlug}/${post.slug}`
+  }
+
+  return `${siteInfo.url}/content/posts/${cid}`
+}
+
+// 获取文章标题
+async function getPostTitle(cid: number): Promise<string> {
+  const post = await prisma.post.findUnique({
+    where: { cid },
+    select: { title: true },
+  })
+  return post?.title || '未知文章'
+}
+
+// ========== 4类邮件通知功能 ==========
+
+// 1. 友链申请通知 - 通知站长
+export async function notifyFriendLinkApplication(linkName: string, linkUrl: string): Promise<boolean> {
+  const config = await getMailConfig()
+
+  // 检查是否启用邮件通知
+  if (config.pushType === 'none' || !config.adminEmail) {
+    writeLog('warn', '邮件推送未启用，跳过友链申请通知', { linkName, linkUrl })
+    return false
+  }
+
+  const siteInfo = await getSiteInfo()
+  const subject = `[${siteInfo.name}] 新的友链申请`
+
+  const content = `
+    <h2>友链申请通知</h2>
+    <p>有人在 <strong>${siteInfo.name}</strong> 申请了友链：</p>
+    <div class="info-box">
+      <p><strong>网站名称：</strong>${linkName}</p>
+      <p><strong>网站链接：</strong><a href="${linkUrl}" target="_blank">${linkUrl}</a></p>
+    </div>
+    <p>请前往后台审核此友链申请。</p>
+    <p><a href="${siteInfo.url}/admin/links" class="link">前往后台管理</a></p>
+  `
+
+  return await sendMail({
+    to: config.adminEmail,
+    subject,
+    html: createEmailTemplate('友链申请通知', content),
+  })
+}
+
+// 2. 新评论通知 - 通知站长（顶级评论）
+export async function notifyAdminNewComment(
+  postId: number,
+  commenterName: string,
+  commentContent: string
+): Promise<boolean> {
+  const config = await getMailConfig()
+
+  // 检查是否启用邮件通知
+  if (config.pushType === 'none' || !config.adminEmail) {
+    writeLog('warn', '邮件推送未启用，跳过新评论通知', { postId, commenterName })
+    return false
+  }
+
+  const siteInfo = await getSiteInfo()
+  const postTitle = await getPostTitle(postId)
+  const postUrl = await getPostUrl(postId)
+  const subject = `[${siteInfo.name}] 文章新评论：${commenterName}`
+
+  const content = `
+    <h2>文章新评论通知</h2>
+    <p>您的文章 <strong>${postTitle}</strong> 收到了一条新评论：</p>
+    <div class="info-box">
+      <p><strong>${commenterName}</strong> 评论道：</p>
+      <p>${commentContent}</p>
+    </div>
+    <p><a href="${postUrl}" class="link">查看评论</a></p>
+  `
+
+  return await sendMail({
+    to: config.adminEmail,
+    subject,
+    html: createEmailTemplate('文章新评论通知', content),
+  })
+}
+
+// 3. 评论回复通知 - 通知被回复的评论者
+export async function notifyCommentReply(
+  postId: number,
+  parentCommenterName: string,
+  parentCommenterEmail: string,
+  parentCommentContent: string,
+  replierName: string,
+  replyContent: string
+): Promise<boolean> {
+  const config = await getMailConfig()
+
+  // 检查是否启用邮件通知
+  if (config.pushType === 'none') {
+    writeLog('warn', '邮件推送未启用，跳过评论回复通知', {
+      postId,
+      parentCommenterName,
+      replierName,
+    })
+    return false
+  }
+
+  // 如果被回复者就是自己（同一个邮箱），不发送通知
+  if (parentCommenterEmail === config.address) {
+    writeLog('info', '被回复者为自己，跳过回复通知', {
+      postId,
+      parentCommenterName,
+      replierName,
+    })
+    return false
+  }
+
+  const siteInfo = await getSiteInfo()
+  const postTitle = await getPostTitle(postId)
+  const postUrl = await getPostUrl(postId)
+  const subject = `[${siteInfo.name}] 您的评论收到了回复`
+
+  const content = `
+    <h2>评论回复通知</h2>
+    <p>您好 <strong>${parentCommenterName}</strong>，</p>
+    <p>您在文章 <strong>${postTitle}</strong> 下的评论收到了 <strong>${replierName}</strong> 的回复：</p>
+    <div class="info-box">
+      <p><strong>您的原评论：</strong></p>
+      <p>${parentCommentContent}</p>
+    </div>
+    <div class="info-box">
+      <p><strong>${replierName}</strong> 回复道：</p>
+      <p>${replyContent}</p>
+    </div>
+    <p><a href="${postUrl}" class="link">查看回复</a></p>
+  `
+
+  return await sendMail({
+    to: parentCommenterEmail,
+    subject,
+    html: createEmailTemplate('评论回复通知', content),
+  })
+}
+
+// 4. 待审核/垃圾评论通知 - 通知站长
+export async function notifyAdminPendingComment(
+  postId: number,
+  commenterName: string,
+  commentContent: string,
+  status: number
+): Promise<boolean> {
+  const config = await getMailConfig()
+
+  // 检查是否启用邮件通知
+  if (config.pushType === 'none' || !config.adminEmail) {
+    writeLog('warn', '邮件推送未启用，跳过待审核评论通知', { postId, commenterName, status })
+    return false
+  }
+
+  const siteInfo = await getSiteInfo()
+  const postTitle = await getPostTitle(postId)
+  const postUrl = await getPostUrl(postId)
+
+  // status: 0-待审核, 1-已发布, 2-垃圾
+  const isSpam = status === 2
+  const typeLabel = isSpam ? '垃圾评论' : '待审核评论'
+  const subject = `[${siteInfo.name}] 新的${typeLabel}：${commenterName}`
+
+  const content = `
+    <h2>${typeLabel}通知</h2>
+    <p>文章 <strong>${postTitle}</strong> 收到了一条${typeLabel}：</p>
+    <div class="info-box">
+      <p><strong>${commenterName}</strong> 评论道：</p>
+      <p>${commentContent}</p>
+      <p class="info-meta">状态：${isSpam ? '垃圾评论' : '等待审核'}</p>
+    </div>
+    <p><a href="${siteInfo.url}/admin/comments" class="link">前往后台审核</a></p>
+  `
+
+  return await sendMail({
+    to: config.adminEmail,
+    subject,
+    html: createEmailTemplate(`${typeLabel}通知`, content),
+  })
+}

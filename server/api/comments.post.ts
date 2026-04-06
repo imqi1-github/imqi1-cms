@@ -1,5 +1,10 @@
 import { prisma } from "#server/utils/prisma";
 import { auditText, mapAuditResultToStatus, getAuditConfig } from "#server/utils/baidu-audit";
+import {
+  notifyAdminNewComment,
+  notifyCommentReply,
+  notifyAdminPendingComment,
+} from "#server/utils/mail";
 
 export default defineEventHandler(async event => {
   try {
@@ -60,6 +65,45 @@ export default defineEventHandler(async event => {
         agent: userAgent,
       },
     });
+
+    // ========== 邮件通知逻辑 ==========
+
+    // 4. 待审核/垃圾评论通知 - 通知站长
+    // 如果评论状态不是已发布(status !== 1)，则通知站长
+    if (commentStatus !== 1) {
+      // 异步发送邮件，不阻塞响应
+      notifyAdminPendingComment(parseInt(cid), name, content, commentStatus);
+    }
+
+    // 3. 评论回复通知 - 通知被回复的评论者
+    // 如果是回复评论(parent_id不为null)
+    if (parent_id) {
+      // 获取父评论信息
+      const parentComment = await prisma.comment.findUnique({
+        where: { coid: parseInt(parent_id as string) },
+        select: { name: true, mail: true, content: true },
+      });
+
+      // 如果父评论有邮箱，发送回复通知
+      if (parentComment?.mail) {
+        // 异步发送邮件
+        notifyCommentReply(
+          parseInt(cid),
+          parentComment.name,
+          parentComment.mail,
+          parentComment.content,
+          name,
+          content
+        );
+      }
+    } else {
+      // 2. 新评论通知 - 通知站长（仅顶级评论）
+      // 如果是顶级评论且已发布(status === 1)，通知站长有新评论
+      if (commentStatus === 1) {
+        // 异步发送邮件
+        notifyAdminNewComment(parseInt(cid), name, content);
+      }
+    }
 
     let message = "评论提交成功";
     if (auditConfig.enabled && auditResult) {

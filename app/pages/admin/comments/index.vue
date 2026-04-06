@@ -6,7 +6,7 @@ const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const pagination = ref({
   page: 1,
-  pageSize: 10,
+  pageSize: 20,
   total: 0,
   totalPages: 0,
 });
@@ -57,7 +57,7 @@ async function fetchComments(page: number = 1) {
   loading.value = true;
   selectedIds.value = [];
   try {
-    const res = (await $fetch(`/api/admin/comments?page=${page}&pageSize=10`)) as any;
+    const res = (await $fetch(`/api/admin/comments?page=${page}&pageSize=20`)) as any;
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
   } catch (error) {

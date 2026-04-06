@@ -11,7 +11,7 @@ const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const pagination = ref({
   page: 1,
-  pageSize: 5,
+  pageSize: 10,
   total: 0,
   totalPages: 0,
 });
@@ -62,7 +62,7 @@ async function fetchPosts(page: number = 1) {
   try {
     const params = new URLSearchParams({
       page: page.toString(),
-      pageSize: "5",
+      pageSize: "10",
     });
 
     if (selectedCategory.value) {
