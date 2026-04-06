@@ -175,6 +175,7 @@ const actions = {
     '',
     ''
   ),
+  details: () => insertMarkdown(':::details 标题\n', '\n:::\n', '折叠内容'),
 }
 </script>
 
@@ -388,6 +389,19 @@ const actions = {
         @click="actions.table"
       >
         <Icon name="lucide:table" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- 折叠 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="折叠"
+        @click="actions.details"
+      >
+        <Icon name="lucide:chevrons-up-down" class="size-4" />
       </Button>
 
       <!-- 上传状态指示 -->

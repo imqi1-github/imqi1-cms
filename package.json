@@ -32,6 +32,7 @@
     "fast-xml-parser": "^5.5.10",
     "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.1.1",
+    "markdown-it-container": "^4.0.0",
     "nodemailer": "^8.0.4",
     "nuxt": "^4.4.2",
     "pg": "^8.20.0",

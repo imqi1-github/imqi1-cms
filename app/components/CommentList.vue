@@ -95,19 +95,19 @@ const fetchSettings = async () => {
         avatarService.value = data.data.commentAvatarService;
       }
       if (data.data.commentPageSize) {
-        pageSize.value = data.data.commentPageSize;
+        pageSize.value = Number(data.data.commentPageSize);
       }
       if (data.data.commentMaxLevel !== undefined) {
-        maxLevel.value = data.data.commentMaxLevel;
+        maxLevel.value = Number(data.data.commentMaxLevel);
       }
       if (data.data.commentInterval !== undefined) {
-        commentInterval.value = data.data.commentInterval;
+        commentInterval.value = Number(data.data.commentInterval);
       }
       if (data.data.commentRequireMail !== undefined) {
-        requireMail.value = data.data.commentRequireMail;
+        requireMail.value = data.data.commentRequireMail === true || data.data.commentRequireMail === 'true';
       }
       if (data.data.commentRequireLink !== undefined) {
-        requireLink.value = data.data.commentRequireLink;
+        requireLink.value = data.data.commentRequireLink === true || data.data.commentRequireLink === 'true';
       }
     }
   } catch (err) {

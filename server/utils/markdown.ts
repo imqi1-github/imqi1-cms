@@ -1,6 +1,7 @@
 import MarkdownIt from "markdown-it";
 import Shiki from "@shikijs/markdown-it";
 import { transformerNotationHighlight, transformerNotationDiff } from "@shikijs/transformers";
+import container from "markdown-it-container";
 
 // 只加载常见语言，减少服务端内存占用
 import javascript from "@shikijs/langs/javascript";
@@ -121,6 +122,27 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       transformers: [transformerNotationHighlight(), transformerNotationDiff()],
     }),
   );
+
+  // 配置容器插件（用于折叠等功能）
+  md.use(container, "details", {
+    validate: (params: string) => {
+      return params.trim().match(/^(.*)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      let summary = tokens[idx].info.trim() || "展开";
+      // 去掉 "details" 前缀（如果存在）
+      if (summary.toLowerCase().startsWith("details")) {
+        summary = summary.substring(7).trim() || "展开";
+      }
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<div class="markdown-details-wrapper" data-summary="${summary}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
 
   mdInstance = md;
   return md;
