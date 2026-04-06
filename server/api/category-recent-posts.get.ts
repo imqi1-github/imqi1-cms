@@ -39,6 +39,7 @@ export default defineEventHandler(async event => {
     const recentPostsLimit = 6;
     const recentPosts = await prisma.post.findMany({
       where: {
+        type: 0, // 0: 文章
         status: 1,
         ...(photoCategoryMid && {
           relations: {
@@ -63,6 +64,7 @@ export default defineEventHandler(async event => {
       categories.map(async category => {
         const posts = await prisma.post.findMany({
           where: {
+            type: 0, // 0: 文章
             status: 1,
             cid: { notIn: excludeCids },
             relations: {

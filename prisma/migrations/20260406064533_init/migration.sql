@@ -61,6 +61,7 @@ CREATE TABLE "Post" (
     "covers" TEXT,
     "show_toc" BOOLEAN NOT NULL DEFAULT false,
     "tags" TEXT,
+    "type" INTEGER NOT NULL DEFAULT 0,
     "uid" INTEGER NOT NULL DEFAULT 1,
 
     CONSTRAINT "Post_pkey" PRIMARY KEY ("cid")
@@ -157,7 +158,7 @@ CREATE TABLE "Session" (
 CREATE UNIQUE INDEX "SubscribePost_link_key" ON "SubscribePost"("link");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Post_slug_key" ON "Post"("slug");
+CREATE UNIQUE INDEX "Post_slug_type_key" ON "Post"("slug", "type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");

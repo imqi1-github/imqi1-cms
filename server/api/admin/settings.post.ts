@@ -62,6 +62,7 @@ export default defineEventHandler(async event => {
       { key: "upyunTokenKey", value: body.upyunTokenKey ?? "" },
       { key: "upyunTokenExpire", value: String(body.upyunTokenExpire ?? 1800) },
       { key: "sessionStoreType", value: body.sessionStoreType || "memory" },
+      { key: "messagePostId", value: body.messagePostId ?? "" },
     ];
 
     for (const update of updates) {

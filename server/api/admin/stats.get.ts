@@ -12,8 +12,9 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const [postsCount, commentsCount, categoriesCount, usersCount] = await Promise.all([
-      prisma.post.count(),
+    const [postsCount, pagesCount, commentsCount, categoriesCount, usersCount] = await Promise.all([
+      prisma.post.count({ where: { type: 0 } }), // 文章数
+      prisma.post.count({ where: { type: 1 } }), // 页面数
       prisma.comment.count(),
       prisma.category.count(),
       prisma.user.count(),
@@ -21,6 +22,7 @@ export default defineEventHandler(async event => {
 
     return {
       posts: postsCount,
+      pages: pagesCount,
       comments: commentsCount,
       categories: categoriesCount,
       users: usersCount,

@@ -29,6 +29,11 @@ const navItems = [
     icon: 'lucide:file-text',
   },
   {
+    title: '页面管理',
+    href: '/admin/pages',
+    icon: 'lucide:file',
+  },
+  {
     title: '评论管理',
     href: '/admin/comments',
     icon: 'lucide:message-square',

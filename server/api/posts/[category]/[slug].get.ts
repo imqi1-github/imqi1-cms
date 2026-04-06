@@ -23,6 +23,7 @@ export default defineEventHandler(async event => {
   const post = await prisma.post.findFirst({
     where: {
       slug,
+      type: 0, // 0: 文章
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
       relations: {
         some: {

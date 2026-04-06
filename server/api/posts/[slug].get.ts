@@ -15,6 +15,7 @@ export default defineEventHandler(async event => {
   // 构建查询条件
   const whereCondition: any = {
     slug,
+    type: 0, // 0: 文章
     status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
   };
 

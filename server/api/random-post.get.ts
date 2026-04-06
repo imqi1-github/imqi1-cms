@@ -3,7 +3,10 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     const total = await prisma.post.count({
-      where: { status: 1 },
+      where: {
+        type: 0, // 0: 文章
+        status: 1,
+      },
     });
 
     if (total === 0) {
@@ -16,7 +19,10 @@ export default defineEventHandler(async event => {
     const skip = Math.floor(Math.random() * total);
 
     const posts = await prisma.post.findMany({
-      where: { status: 1 },
+      where: {
+        type: 0, // 0: 文章
+        status: 1,
+      },
       skip,
       take: 1,
       include: {

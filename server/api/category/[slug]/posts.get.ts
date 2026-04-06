@@ -40,6 +40,7 @@ export default defineEventHandler(async event => {
         slug: categorySlug,
       },
       post: {
+        type: 0, // 0: 文章
         status: 1, // 只统计已发布的文章
       },
     },
@@ -52,6 +53,7 @@ export default defineEventHandler(async event => {
         slug: categorySlug,
       },
       post: {
+        type: 0, // 0: 文章
         status: 1,
       },
     },

@@ -19,7 +19,9 @@ export default defineEventHandler(async event => {
     const categoryId = query.category ? Number(query.category) : undefined;
     const status = query.status ? Number(query.status) : undefined;
 
-    const where: any = {};
+    const where: any = {
+      type: 0, // 0: 文章
+    };
 
     if (categoryId) {
       where.relations = {

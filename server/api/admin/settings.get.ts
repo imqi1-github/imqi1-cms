@@ -62,6 +62,7 @@ export default defineEventHandler(async event => {
       upyunTokenKey: "",
       upyunTokenExpire: 1800,
       sessionStoreType: "memory",
+      messagePostId: "",
     };
 
     const settings: Record<string, any> = { ...defaults };

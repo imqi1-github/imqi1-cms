@@ -20,6 +20,7 @@ export default defineEventHandler(async event => {
 
     const posts = await prisma.post.findMany({
       where: {
+        type: 0, // 0: 文章
         status: 1,
         ...(photoCategoryMid && {
           relations: {

@@ -149,7 +149,7 @@ onMounted(() => {
       </header>
 
       <!-- 文章列表 -->
-      <div v-if="posts.length > 0" class="archive-articles grid grid-cols-1 md:grid-cols-2 gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+      <div v-if="posts.length > 0" class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         <div
           v-for="post in posts"
           :key="post.cid"

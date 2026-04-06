@@ -28,6 +28,7 @@ export default defineEventHandler(async event => {
     slug,
     content,
     status,
+    type,
     manyCovers,
     covers,
     showToc,
@@ -60,6 +61,7 @@ export default defineEventHandler(async event => {
     desc,
     content,
     status,
+    ...(type !== undefined && { type }),
     many_covers: manyCovers,
     covers,
     show_toc: showToc,
@@ -70,10 +72,11 @@ export default defineEventHandler(async event => {
 
   // 处理 slug：只有当提供了新的 slug 且与当前不同时才更新
   if (slug !== undefined && slug !== null && slug !== existing.slug) {
-    // 检查新 slug 是否已被其他文章使用
+    // 检查新 slug 是否已被其他文章使用（同一 type 下唯一）
     const slugExists = await prisma.post.findFirst({
       where: {
         slug,
+        type: existing.type, // 使用当前文章的 type
         cid: { not: cid }, // 排除当前文章
       },
     });

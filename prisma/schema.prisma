@@ -57,7 +57,7 @@ model Changelog {
 model Post {
   cid          Int       @id @default(autoincrement())
   title        String
-  slug         String?   @unique
+  slug         String?
   desc         String?   @db.Text
   content      String?   @db.Text
   create_time  DateTime  @default(now())
@@ -68,6 +68,7 @@ model Post {
   covers       String?
   show_toc     Boolean   @default(false)
   tags         String?   @db.Text
+  type         Int       @default(0) // 0: 文章, 1: 页面
   uid          Int       @default(1)
 
   // 关联
@@ -75,6 +76,8 @@ model Post {
   relations    PostRelation[]
   attachments  Attachment[]
   user         User      @relation(fields: [uid], references: [uid])
+
+  @@unique([slug, type])
 }
 
 // 评论类

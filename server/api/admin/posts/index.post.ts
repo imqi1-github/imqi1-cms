@@ -19,6 +19,7 @@ export default defineEventHandler(async event => {
     slug,
     content,
     status = 1,
+    type = 0,
     manyCovers = false,
     covers,
     showToc = false,
@@ -47,6 +48,7 @@ export default defineEventHandler(async event => {
       slug: slug || undefined, // 如果没有提供 slug，设为 undefined 让数据库使用默认值
       content,
       status,
+      type,
       many_covers: manyCovers,
       covers,
       show_toc: showToc,
