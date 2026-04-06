@@ -17,6 +17,16 @@ const { data, pending, error } = await useFetch(`/api/p/${slug}`);
 
 const page = computed(() => data.value?.data);
 
+// 封面图片
+const coverImage = computed(() => {
+  if (page.value?.covers && page.value.covers.length > 0) {
+    return page.value.covers[0].url;
+  }
+  return null;
+});
+
+const manyCovers = computed(() => page.value?.many_covers && page.value?.covers && page.value.covers.length > 1);
+
 // 页面元数据
 useHead({
   title: computed(() => `${page.value?.title || "页面"} - ${siteName.value}`),
@@ -112,11 +122,22 @@ onUnmounted(() => {
     <!-- 页面内容 -->
     <div v-else-if="page">
       <!-- 标题区域 -->
-      <header class="mb-8 animate-fade-in">
-        <h1 class="text-[2.5em] font-extrabold mb-3">{{ page.title }}</h1>
+      <header class="mb-5 animate-fade-in">
+        <!-- 封面图片 -->
+        <img
+          v-if="coverImage"
+          data-fancybox="gallery"
+          data-caption="封面"
+          :src="coverImage"
+          alt="封面"
+          loading="lazy"
+          class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800"
+          onerror="this.src='/imgs/nopic.png'" />
+
+        <h1 class="text-[3em] font-extrabold mb-2.5">{{ page.title }}</h1>
 
         <!-- 描述 -->
-        <div v-if="page.desc" class="text-[0.9em] text-slate-600 dark:text-slate-400">
+        <div v-if="page.desc" class="text-[0.8em] text-slate-600 dark:text-slate-400 mb-4">
           {{ page.desc }}
         </div>
       </header>

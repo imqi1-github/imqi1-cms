@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import MarkdownIt from "markdown-it";
-
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -10,8 +7,8 @@ const toast = useToast();
 const isEdit = computed(() => !!route.query.cid);
 const pageId = computed(() => (route.query.cid ? Number(route.query.cid) : null));
 
+const activeTab = ref("content");
 const loading = ref(false);
-const saving = ref(false);
 
 // 表单数据
 const title = ref("");
@@ -20,19 +17,159 @@ const content = ref("");
 const desc = ref("");
 const showToc = ref(false);
 const status = ref(1); // 0: 草稿, 1: 已发布
+const manyCovers = ref(false);
+const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
-// 预览
-const previewHtml = ref("");
-const showPreview = ref(false);
+// 附件相关
+const attachments = ref<any[]>([]);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const dragOver = ref(false);
+const uploading = ref(false);
+const uploadProgress = ref(0);
 
-const md = new MarkdownIt({ html: true });
+// 获取附件列表
+const fetchAttachments = async () => {
+  if (!pageId.value) return;
 
-// 更新预览
-watch([content], () => {
-  if (content.value) {
-    previewHtml.value = md.render(content.value);
+  try {
+    const res = (await $fetch(`/api/attachments/list?cid=${pageId.value}`)) as any;
+    if (res?.success) {
+      attachments.value = res.data || [];
+    }
+  } catch (error) {
+    console.error("获取附件失败:", error);
   }
-});
+};
+
+// 选择文件
+const handleFileSelect = () => {
+  fileInputRef.value?.click();
+};
+
+// 处理文件选择
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const files = target.files;
+  if (files && files.length > 0) {
+    await uploadFiles(Array.from(files));
+  }
+  target.value = "";
+};
+
+// 处理拖放
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault();
+  dragOver.value = false;
+
+  const files = event.dataTransfer?.files;
+  if (files && files.length > 0) {
+    await uploadFiles(Array.from(files));
+  }
+};
+
+// 上传文件
+const uploadFiles = async (files: File[]) => {
+  if (!pageId.value) {
+    toast.error({
+      message: "请先保存页面",
+      description: "需要先保存页面后才能上传附件",
+    });
+    return;
+  }
+
+  uploading.value = true;
+  uploadProgress.value = 0;
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // 验证文件类型
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error({
+          message: "不支持的文件类型",
+          description: file.name,
+        });
+        continue;
+      }
+
+      // 验证文件大小 (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error({
+          message: "文件过大",
+          description: `${file.name} 超过 10MB 限制`,
+        });
+        continue;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = (await $fetch(`/api/attachments/upload?cid=${pageId.value}`, {
+          method: "POST",
+          body: formData,
+        })) as any;
+
+        if (res?.success) {
+          attachments.value.push(res.data);
+          toast.success({
+            message: "上传成功",
+            description: file.name,
+          });
+        }
+      } catch (error) {
+        toast.error({
+          message: "上传失败",
+          description: file.name,
+        });
+      }
+
+      uploadProgress.value = Math.round(((i + 1) / files.length) * 100);
+    }
+  } finally {
+    uploading.value = false;
+    uploadProgress.value = 0;
+  }
+};
+
+// 删除附件
+const deleteAttachment = async (attachment: any) => {
+  const confirmed = confirm(`确定要删除附件 "${attachment.name}" 吗？`);
+  if (!confirmed) return;
+
+  try {
+    await $fetch(`/api/attachments/${attachment.id}`, {
+      method: "DELETE",
+    });
+
+    attachments.value = attachments.value.filter(a => a.id !== attachment.id);
+    toast.success({
+      message: "删除成功",
+    });
+  } catch (error) {
+    toast.error({
+      message: "删除失败",
+    });
+  }
+};
+
+// 复制链接
+const copyLink = async (url: string) => {
+  const fullUrl = `${window.location.origin}${url}`;
+  try {
+    await navigator.clipboard.writeText(fullUrl);
+    toast.success({
+      message: "已复制链接",
+      description: fullUrl,
+    });
+  } catch {
+    toast.error({
+      message: "复制失败",
+    });
+  }
+};
 
 // 获取页面数据
 const fetchPage = async () => {
@@ -49,10 +186,24 @@ const fetchPage = async () => {
       desc.value = page.desc || "";
       showToc.value = page.show_toc || false;
       status.value = page.status ?? 1;
+      manyCovers.value = page.many_covers || false;
 
-      if (content.value) {
-        previewHtml.value = md.render(content.value);
+      // 解析封面数据：从 JSON 格式转为输入框格式
+      if (page.covers) {
+        try {
+          const coversArray = JSON.parse(page.covers);
+          coversInput.value = coversArray
+            .map((c: any) => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ''}`)
+            .join('\n');
+        } catch {
+          coversInput.value = "";
+        }
+      } else {
+        coversInput.value = "";
       }
+
+      // 获取附件
+      await fetchAttachments();
     }
   } catch (error) {
     console.error("获取页面失败:", error);
@@ -73,8 +224,30 @@ const savePage = async (publish = false) => {
     return;
   }
 
-  saving.value = true;
+  loading.value = true;
   try {
+    // 处理封面数据：从输入框格式转为 JSON
+    let coversValue = null;
+    if (coversInput.value.trim()) {
+      const lines = coversInput.value.trim().split('\n');
+      const coversArray = lines
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+          const parts = line.split('||');
+          if (parts.length === 2) {
+            return { url: parts[0].trim(), title: parts[1].trim() };
+          } else if (parts.length === 1 && parts[0].trim()) {
+            return { url: parts[0].trim(), title: '' };
+          }
+          return null;
+        })
+        .filter(c => c !== null);
+      if (coversArray.length > 0) {
+        coversValue = JSON.stringify(coversArray);
+      }
+    }
+
     const body = {
       title: title.value.trim(),
       slug: slug.value?.trim() || null,
@@ -83,6 +256,8 @@ const savePage = async (publish = false) => {
       show_toc: showToc.value,
       status: publish ? 1 : status.value,
       type: 1, // 1: 页面
+      manyCovers: manyCovers.value,
+      covers: coversValue,
     };
 
     let res;
@@ -107,12 +282,10 @@ const savePage = async (publish = false) => {
 
       // 如果是新建且成功，跳转到编辑页面
       if (!isEdit.value && (res as any).data?.cid) {
-        router.replace(`/admin/pages/edit?cid=${(res as any).data.cid}`);
-      } else {
-        // 如果是编辑模式，刷新数据
-        if (isEdit.value) {
-          await fetchPage();
-        }
+        const newCid = (res as any).data.cid;
+        pageId.value = newCid;
+        await fetchAttachments();
+        await router.replace(`/admin/pages/edit?cid=${newCid}`);
       }
     }
   } catch (error: any) {
@@ -121,7 +294,7 @@ const savePage = async (publish = false) => {
       message,
     });
   } finally {
-    saving.value = false;
+    loading.value = false;
   }
 };
 
@@ -140,7 +313,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 onMounted(() => {
-  fetchPage();
+  if (isEdit.value) {
+    fetchPage();
+  }
   window.addEventListener("keydown", handleKeydown);
 });
 
@@ -151,273 +326,319 @@ onUnmounted(() => {
 
 <template>
   <AdminLayout>
-    <div class="max-w-5xl mx-auto">
-      <!-- 页面标题 -->
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h2 class="text-2xl font-bold">{{ isEdit ? "编辑页面" : "新建页面" }}</h2>
-          <p class="text-sm text-muted-foreground mt-1">创建和编辑独立页面内容</p>
+    <!-- 骨架屏 -->
+    <div v-if="loading && isEdit" class="flex gap-6">
+      <!-- 左侧主内容区骨架屏 -->
+      <div class="flex-1 space-y-6">
+        <!-- Tabs 导航骨架屏 -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="h-10 bg-muted rounded animate-pulse" />
+          <div class="h-10 bg-muted rounded animate-pulse" />
+          <div class="h-10 bg-muted rounded animate-pulse" />
         </div>
-        <div class="flex items-center gap-2">
-          <Button variant="outline" @click="cancel">
-            <Icon name="lucide:x" class="mr-2 size-4" />
-            取消
-          </Button>
-          <Button variant="outline" @click="showPreview = !showPreview">
-            <Icon name="lucide:eye" class="mr-2 size-4" />
-            {{ showPreview ? "编辑" : "预览" }}
-          </Button>
-          <Button variant="secondary" :disabled="saving" @click="savePage(false)">
-            <Icon name="lucide:save" class="mr-2 size-4" />
-            {{ saving ? "保存中..." : "保存草稿" }}
-          </Button>
-          <Button :disabled="saving" @click="savePage(true)">
-            <Icon name="lucide:send" class="mr-2 size-4" />
-            {{ saving ? "发布中..." : "发布" }}
-          </Button>
-        </div>
+
+        <!-- 内容骨架屏 -->
+        <Card class="overflow-hidden px-0 pt-0">
+          <CardContent class="p-6">
+            <div class="space-y-3">
+              <div v-for="i in 8" :key="i" class="space-y-2">
+                <div class="h-4 bg-muted rounded animate-pulse" />
+                <div class="h-4 bg-muted rounded w-5/6 animate-pulse" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-if="loading && isEdit" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p class="ml-3 text-muted-foreground">加载中...</p>
-      </div>
-
-      <!-- 编辑表单 -->
-      <div v-else class="space-y-6">
-        <!-- 基本信息 -->
+      <!-- 右侧设置栏骨架屏 -->
+      <div class="w-80 space-y-6">
+        <!-- 发布设置骨架屏 -->
         <Card>
           <CardHeader>
-            <CardTitle>基本信息</CardTitle>
+            <div class="h-5 bg-muted rounded w-20 animate-pulse" />
           </CardHeader>
           <CardContent class="space-y-4">
-            <!-- 标题 -->
             <div class="space-y-2">
-              <Label for="page-title">页面标题 *</Label>
-              <Input
-                id="page-title"
-                v-model="title"
-                placeholder="输入页面标题"
-                class="font-medium" />
+              <div class="h-4 bg-muted rounded w-16 animate-pulse" />
+              <div class="flex gap-2">
+                <div class="h-10 bg-muted rounded flex-1 animate-pulse" />
+                <div class="h-10 bg-muted rounded flex-1 animate-pulse" />
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <!-- Slug -->
+        <!-- 操作按钮骨架屏 -->
+        <Card>
+          <CardContent class="pt-6 space-y-2">
+            <div class="h-10 bg-muted rounded w-full animate-pulse" />
+            <div class="h-10 bg-muted rounded w-full animate-pulse" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+
+    <!-- 实际内容 -->
+    <div v-else class="flex gap-6">
+      <!-- 左侧主内容区 -->
+      <div class="flex-1 space-y-6">
+        <!-- Tabs 导航 -->
+        <Tabs v-model="activeTab" default-value="content">
+          <TabsList class="grid w-full grid-cols-3">
+            <TabsTrigger value="content">
+              <Icon name="lucide:file-text" class="mr-2 size-4" />
+              页面内容
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Icon name="lucide:settings" class="mr-2 size-4" />
+              页面设置
+            </TabsTrigger>
+            <TabsTrigger value="attachments">
+              <Icon name="lucide:paperclip" class="mr-2 size-4" />
+              附件管理
+              <Badge v-if="attachments.length > 0" variant="secondary" class="ml-2">
+                {{ attachments.length }}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+
+          <!-- 页面内容 Tab -->
+          <TabsContent value="content" class="mt-6">
+            <Card class="overflow-hidden px-0 pt-0">
+              <CardContent class="p-0">
+                <MarkdownEditor v-model="content" :post-id="pageId" @attachment-updated="fetchAttachments" />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <!-- 页面设置 Tab -->
+          <TabsContent value="settings" class="mt-6 space-y-6">
+            <!-- 基本信息 -->
+            <Card>
+              <CardHeader>
+                <CardTitle>基本信息</CardTitle>
+                <CardDescription>设置页面的基本属性</CardDescription>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <!-- 标题 -->
+                <div class="space-y-2">
+                  <Label for="page-title">页面标题</Label>
+                  <Input id="page-title" v-model="title" placeholder="请输入页面标题" class="text-lg font-medium" />
+                </div>
+
+                <!-- 描述 -->
+                <div class="space-y-2">
+                  <Label for="page-desc">页面描述</Label>
+                  <Textarea id="page-desc" v-model="desc" placeholder="请输入页面描述，用于 SEO 和分享" :rows="2" />
+                </div>
+
+                <!-- Slug -->
+                <div class="space-y-2">
+                  <Label for="page-slug">页面 Slug</Label>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm text-muted-foreground">/page/</span>
+                    <Input id="page-slug" v-model="slug" placeholder="page-slug" class="flex-1" />
+                  </div>
+                  <p class="text-xs text-muted-foreground">页面的唯一标识符，用于 URL，留空将自动生成</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <!-- 封面设置 -->
+            <Card>
+              <CardHeader>
+                <CardTitle>封面设置</CardTitle>
+                <CardDescription>设置页面封面图片，每行一个封面</CardDescription>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <!-- 多封面开关 -->
+                <div class="flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <Label>启用多封面</Label>
+                    <p class="text-xs text-muted-foreground">开启后可以设置多张封面轮播显示</p>
+                  </div>
+                  <Switch v-model="manyCovers" />
+                </div>
+
+                <!-- 封面输入 -->
+                <div class="space-y-2">
+                  <Label for="coversInput">封面列表</Label>
+                  <Textarea
+                    id="coversInput"
+                    v-model="coversInput"
+                    :rows="4"
+                    placeholder="每行一个封面，格式：&#10;封面图片地址 || 标题&#10;&#10;示例：&#10;/uploads/cover1.jpg || 页面封面1&#10;/uploads/cover2.jpg || 页面封面2"
+                    class="font-mono text-sm"
+                  />
+                  <p class="text-xs text-muted-foreground">
+                    一行一个封面，使用 || 分隔图片地址和标题。如只有图片地址则不显示标题。
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <!-- 附件管理 Tab -->
+          <TabsContent value="attachments" class="mt-6">
+            <!-- 隐藏的文件输入 -->
+            <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" />
+
+            <Card>
+              <CardHeader>
+                <div class="flex items-center justify-between">
+                  <div>
+                    <CardTitle>页面附件</CardTitle>
+                    <CardDescription>管理此页面的图片和视频附件</CardDescription>
+                  </div>
+                  <Button :disabled="uploading" @click="handleFileSelect">
+                    <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:upload'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
+                    {{ uploading ? `上传中 ${uploadProgress}%` : "上传附件" }}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <!-- 拖拽上传区域 -->
+                <div
+                  v-if="attachments.length === 0"
+                  class="border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer"
+                  :class="dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'"
+                  @dragover.prevent="dragOver = true"
+                  @dragleave.prevent="dragOver = false"
+                  @drop.prevent="handleDrop"
+                  @click="handleFileSelect">
+                  <Icon name="lucide:paperclip" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
+                  <p class="text-muted-foreground text-lg mb-2">拖拽文件到此处</p>
+                  <p class="text-sm text-muted-foreground mb-4">或点击选择文件</p>
+                  <p class="text-xs text-muted-foreground">支持 JPG、PNG、GIF、WebP、MP4、WebM，最大 10MB</p>
+                </div>
+
+                <!-- 附件列表 -->
+                <div v-else class="space-y-4">
+                  <!-- 上传区域（有附件时显示小一点） -->
+                  <div
+                    class="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+                    :class="dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'"
+                    @dragover.prevent="dragOver = true"
+                    @dragleave.prevent="dragOver = false"
+                    @drop.prevent="handleDrop"
+                    @click="handleFileSelect">
+                    <Icon name="lucide:plus" class="size-6 text-muted-foreground/30 mx-auto mb-2" />
+                    <p class="text-sm text-muted-foreground">点击或拖拽上传更多附件</p>
+                  </div>
+
+                  <!-- 附件网格 -->
+                  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div
+                      v-for="item in attachments"
+                      :key="item.id"
+                      class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                      <!-- 预览图 -->
+                      <div class="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                        <img
+                          v-if="item.type === 'image'"
+                          :src="item.url"
+                          :alt="item.name"
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <div v-else class="flex flex-col items-center text-muted-foreground">
+                          <Icon name="lucide:film" class="size-12 mb-2" />
+                          <span class="text-xs">视频预览</span>
+                        </div>
+                      </div>
+
+                      <!-- 操作遮罩 -->
+                      <div
+                        class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
+                        <Button variant="secondary" size="sm" class="h-7" @click.stop="copyLink(item.url)" title="复制链接">
+                          <Icon name="lucide:copy" class="size-3" />
+                        </Button>
+                        <Button variant="destructive" size="sm" class="h-7" @click.stop="deleteAttachment(item)" title="删除">
+                          <Icon name="lucide:trash-2" class="size-3" />
+                        </Button>
+                      </div>
+
+                      <!-- 信息 -->
+                      <div class="p-2">
+                        <p class="text-xs font-medium truncate" :title="item.name">
+                          {{ item.name }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">{{ item.size }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <!-- 使用提示 -->
+            <Card class="mt-4 bg-muted/50">
+              <CardContent class="p-4">
+                <div class="flex items-start gap-3">
+                  <Icon name="lucide:info" class="size-5 text-muted-foreground mt-0.5" />
+                  <div class="text-sm text-muted-foreground">
+                    <p class="font-medium text-foreground mb-1">附件使用说明</p>
+                    <ul class="space-y-1 list-disc list-inside">
+                      <li>上传的附件可以插入到页面内容中</li>
+                      <li>支持图片格式：JPG、PNG、GIF、WebP</li>
+                      <li>支持视频格式：MP4、WebM</li>
+                      <li>单个文件大小不超过 10MB</li>
+                      <li>点击复制链接可获取附件 URL，用于 Markdown 中</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <!-- 右侧设置栏 -->
+      <div class="w-80 space-y-6">
+        <!-- 发布设置 -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">发布设置</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <!-- 发布状态 -->
             <div class="space-y-2">
-              <Label for="page-slug">
-                Slug
-                <span class="text-muted-foreground font-normal ml-2">(访问路径，留空自动生成)</span>
-              </Label>
-              <div class="flex items-center gap-2">
-                <span class="text-muted-foreground">/page/</span>
-                <Input
-                  id="page-slug"
-                  v-model="slug"
-                  placeholder="page-url"
-                  class="flex-1 font-mono" />
+              <Label>发布状态</Label>
+              <div class="flex gap-2">
+                <Button :variant="status === 0 ? 'default' : 'outline'" class="flex-1" @click="status = 0">
+                  <Icon name="lucide:file" class="mr-2 size-4" />
+                  草稿
+                </Button>
+                <Button :variant="status === 1 ? 'default' : 'outline'" class="flex-1" @click="status = 1">
+                  <Icon name="lucide:globe" class="mr-2 size-4" />
+                  发布
+                </Button>
               </div>
             </div>
 
-            <!-- 描述 -->
-            <div class="space-y-2">
-              <Label for="page-desc">页面描述</Label>
-              <Textarea
-                id="page-desc"
-                v-model="desc"
-                placeholder="简短描述此页面的内容"
-                :rows="2" />
+            <!-- 是否展示目录 -->
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <Label>展示目录</Label>
+                <p class="text-xs text-muted-foreground">在页面侧边栏显示目录导航</p>
+              </div>
+              <Switch v-model="showToc" />
             </div>
           </CardContent>
         </Card>
 
-        <!-- 编辑/预览模式 -->
-        <Card v-if="!showPreview">
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-0">
-            <CardTitle>页面内容</CardTitle>
-            <div class="flex items-center gap-4 text-sm text-muted-foreground">
-              <Label class="flex items-center gap-2 cursor-pointer">
-                <Checkbox v-model:checked="showToc" />
-                显示目录
-              </Label>
-            </div>
-          </CardHeader>
-          <CardContent class="pt-4">
-            <Textarea
-              v-model="content"
-              placeholder="支持 Markdown 语法..."
-              class="min-h-[400px] font-mono text-sm" />
-          </CardContent>
-        </Card>
-
-        <!-- 预览模式 -->
-        <Card v-else>
-          <CardHeader>
-            <CardTitle>预览</CardTitle>
-          </CardHeader>
-          <CardContent class="pt-4">
-            <div
-              class="markdown-body prose prose-slate dark:prose-invert max-w-none"
-              v-html="previewHtml || '<p class=\'text-muted-foreground\'>暂无内容</p>'" />
+        <!-- 操作按钮 -->
+        <Card>
+          <CardContent class="pt-6 space-y-2">
+            <Button class="w-full" size="lg" :disabled="loading" @click="savePage">
+              <Icon name="lucide:save" class="mr-2 size-4" />
+              {{ loading ? "保存中..." : "保存页面" }}
+            </Button>
+            <Button variant="outline" class="w-full" size="lg" @click="cancel">
+              <Icon name="lucide:x" class="mr-2 size-4" />
+              取消
+            </Button>
           </CardContent>
         </Card>
       </div>
     </div>
   </AdminLayout>
 </template>
-
-<style scoped>
-.markdown-body {
-  line-height: 1.8;
-  word-wrap: break-word;
-}
-
-.markdown-body :deep(h1) {
-  font-size: 2em;
-  font-weight: 700;
-  border-bottom: 1px solid rgb(229 231 235);
-  padding-bottom: 0.3em;
-  margin-bottom: 0.5em;
-}
-
-.dark .markdown-body :deep(h1) {
-  border-bottom-color: rgb(55 65 81);
-}
-
-.markdown-body :deep(h2) {
-  font-size: 1.5em;
-  font-weight: 700;
-  border-bottom: 1px solid rgb(229 231 235);
-  padding-bottom: 0.3em;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-}
-
-.dark .markdown-body :deep(h2) {
-  border-bottom-color: rgb(55 65 81);
-}
-
-.markdown-body :deep(h3) {
-  font-size: 1.25em;
-  font-weight: 700;
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
-}
-
-.markdown-body :deep(p) {
-  margin: 1em 0;
-}
-
-.markdown-body :deep(a) {
-  color: rgb(37 99 235);
-  text-decoration: none;
-}
-
-.dark .markdown-body :deep(a) {
-  color: rgb(96 165 250);
-}
-
-.markdown-body :deep(ul),
-.markdown-body :deep(ol) {
-  margin: 1em 0;
-  padding-left: 2em;
-}
-
-.markdown-body :deep(ul) {
-  list-style-type: disc;
-}
-
-.markdown-body :deep(ol) {
-  list-style-type: decimal;
-}
-
-.markdown-body :deep(li) {
-  margin: 0.5em 0;
-  display: list-item;
-}
-
-.markdown-body :deep(blockquote) {
-  margin: 1em 0;
-  padding: 0.5em 1em;
-  border-left: 4px solid rgb(37 99 235);
-  background: rgb(249 250 251);
-  color: rgb(107 114 128);
-}
-
-.dark .markdown-body :deep(blockquote) {
-  background: rgb(31 41 55);
-  color: rgb(156 163 175);
-}
-
-.markdown-body :deep(code:not(pre code)) {
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
-  background: rgb(243 244 246);
-  border-radius: 3px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.dark .markdown-body :deep(code:not(pre code)) {
-  background: rgb(55 65 81);
-}
-
-.markdown-body :deep(pre) {
-  margin: 1em 0;
-  padding: 1em;
-  overflow-x: auto;
-  background: rgb(246 248 250);
-  border-radius: 0.5em;
-}
-
-.dark .markdown-body :deep(pre) {
-  background: rgb(15 23 42);
-}
-
-.markdown-body :deep(pre code) {
-  background: transparent;
-  padding: 0;
-}
-
-.markdown-body :deep(img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: 0.5em;
-  margin: 1em 0;
-}
-
-.markdown-body :deep(table) {
-  width: 100%;
-  margin: 1em 0;
-  border-collapse: collapse;
-}
-
-.markdown-body :deep(table th),
-.markdown-body :deep(table td) {
-  padding: 0.5em 1em;
-  border: 1px solid rgb(229 231 235);
-}
-
-.dark .markdown-body :deep(table th),
-.dark .markdown-body :deep(table td) {
-  border-color: rgb(55 65 81);
-}
-
-.markdown-body :deep(table th) {
-  background: rgb(249 250 251);
-  font-weight: 600;
-}
-
-.dark .markdown-body :deep(table th) {
-  background: rgb(31 41 55);
-}
-
-.markdown-body :deep(hr) {
-  margin: 2em 0;
-  border: none;
-  border-top: 1px solid rgb(229 231 235);
-}
-
-.dark .markdown-body :deep(hr) {
-  border-top-color: rgb(55 65 81);
-}
-</style>

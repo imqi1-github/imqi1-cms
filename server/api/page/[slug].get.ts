@@ -37,6 +37,22 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // 解析封面
+  let covers = [];
+  if (page.covers) {
+    try {
+      const parsed = JSON.parse(page.covers);
+      if (Array.isArray(parsed)) {
+        covers = parsed.map(item => ({
+          url: item.url || item,
+          desc: item.title || item.desc || '',
+        }));
+      }
+    } catch {
+      covers = [];
+    }
+  }
+
   // 在服务端渲染 Markdown 内容
   const renderedContent = page.content ? await renderMarkdown(page.content) : "";
 
@@ -44,6 +60,7 @@ export default defineEventHandler(async event => {
     success: true,
     data: {
       ...page,
+      covers,
       renderedContent,
     },
   };
