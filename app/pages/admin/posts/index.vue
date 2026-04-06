@@ -5,7 +5,9 @@ const toast = useToast();
 const loading = ref(true);
 const posts = ref<any[]>([]);
 const categories = ref<any[]>([]);
+const tags = ref<any[]>([]);
 const selectedCategory = ref<number | null>(null);
+const selectedTag = ref<number | null>(null);
 const selectedStatus = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
@@ -56,6 +58,15 @@ async function fetchCategories() {
   }
 }
 
+async function fetchTags() {
+  try {
+    tags.value = (await $fetch("/api/admin/tags")) as any[];
+  } catch (error) {
+    console.error("获取标签失败:", error);
+    tags.value = [];
+  }
+}
+
 async function fetchPosts(page: number = 1) {
   loading.value = true;
   selectedIds.value = [];
@@ -67,6 +78,10 @@ async function fetchPosts(page: number = 1) {
 
     if (selectedCategory.value) {
       params.append("category", selectedCategory.value.toString());
+    }
+
+    if (selectedTag.value) {
+      params.append("tag", selectedTag.value.toString());
     }
 
     if (selectedStatus.value !== null) {
@@ -89,6 +104,11 @@ function filterByCategory(categoryId: number | null) {
   fetchPosts(1);
 }
 
+function filterByTag(tagId: number | null) {
+  selectedTag.value = tagId;
+  fetchPosts(1);
+}
+
 function filterByStatus(status: number | null) {
   selectedStatus.value = status;
   fetchPosts(1);
@@ -96,6 +116,7 @@ function filterByStatus(status: number | null) {
 
 function clearFilters() {
   selectedCategory.value = null;
+  selectedTag.value = null;
   selectedStatus.value = null;
   fetchPosts(1);
 }
@@ -164,10 +185,16 @@ function goToPage(page: number) {
 
 onMounted(() => {
   fetchCategories();
+  fetchTags();
 
   const categoryId = route.query.category ? Number(route.query.category) : null;
   if (categoryId) {
     selectedCategory.value = categoryId;
+  }
+
+  const tagId = route.query.tag ? Number(route.query.tag) : null;
+  if (tagId) {
+    selectedTag.value = tagId;
   }
 
   fetchPosts();
@@ -209,6 +236,18 @@ onMounted(() => {
                 <SelectItem v-for="category in categories" :key="category.mid" :value="category.mid">
                   {{ category.name }} ({{ category.postCount }})
                 </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="flex items-center gap-2">
+            <Label for="tag-filter">标签:</Label>
+            <Select id="tag-filter" v-model="selectedTag" @update:model-value="filterByTag">
+              <SelectTrigger class="w-[180px]">
+                <SelectValue placeholder="全部标签" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">全部标签</SelectItem>
+                <SelectItem v-for="tag in tags" :key="tag.mid" :value="tag.mid"> {{ tag.name }} ({{ tag.postCount }}) </SelectItem>
               </SelectContent>
             </Select>
           </div>

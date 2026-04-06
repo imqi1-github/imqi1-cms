@@ -25,6 +25,10 @@ const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 const categories = ref<any[]>([]);
 const selectedCategoryIds = ref<number[]>([]);
 
+// 标签相关
+const tagList = ref<any[]>([]);
+const selectedTagIds = ref<number[]>([]);
+
 // 获取分类列表
 const fetchCategories = async () => {
   try {
@@ -32,6 +36,16 @@ const fetchCategories = async () => {
     categories.value = res || [];
   } catch (error) {
     console.error("获取分类失败:", error);
+  }
+};
+
+// 获取标签列表
+const fetchTags = async () => {
+  try {
+    const res = (await $fetch("/api/admin/tags")) as any[];
+    tagList.value = res || [];
+  } catch (error) {
+    console.error("获取标签失败:", error);
   }
 };
 
@@ -49,6 +63,20 @@ const fetchPostCategories = async () => {
   }
 };
 
+// 获取文章的标签
+const fetchPostTags = async () => {
+  if (!postId.value) return;
+
+  try {
+    const res = (await $fetch(`/api/admin/post-tags/${postId.value}`)) as any;
+    if (res?.success) {
+      selectedTagIds.value = res.data.map((t: any) => t.mid);
+    }
+  } catch (error) {
+    console.error("获取文章标签失败:", error);
+  }
+};
+
 // 保存文章分类
 const savePostCategories = async () => {
   if (!postId.value) return;
@@ -60,6 +88,20 @@ const savePostCategories = async () => {
     });
   } catch (error) {
     console.error("保存分类失败:", error);
+  }
+};
+
+// 保存文章标签
+const savePostTags = async () => {
+  if (!postId.value) return;
+
+  try {
+    await $fetch(`/api/admin/post-tags/${postId.value}`, {
+      method: "PUT",
+      body: { tagIds: selectedTagIds.value },
+    });
+  } catch (error) {
+    console.error("保存标签失败:", error);
   }
 };
 
@@ -77,6 +119,16 @@ const toggleCategory = (categoryId: number, checked: boolean) => {
       return;
     }
     selectedCategoryIds.value.splice(index, 1);
+  }
+};
+
+// 切换标签选择
+const toggleTag = (tagId: number, checked: boolean) => {
+  const index = selectedTagIds.value.indexOf(tagId);
+  if (checked && index === -1) {
+    selectedTagIds.value.push(tagId);
+  } else if (!checked && index > -1) {
+    selectedTagIds.value.splice(index, 1);
   }
 };
 
@@ -262,9 +314,7 @@ const fetchPost = async () => {
       if (post.covers) {
         try {
           const coversArray = JSON.parse(post.covers);
-          coversInput.value = coversArray
-            .map((c: any) => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ''}`)
-            .join('\n');
+          coversInput.value = coversArray.map((c: any) => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ""}`).join("\n");
         } catch {
           coversInput.value = "";
         }
@@ -278,7 +328,7 @@ const fetchPost = async () => {
       }
 
       // 同时获取附件列表和分类
-      await Promise.all([fetchAttachments(), fetchPostCategories()]);
+      await Promise.all([fetchAttachments(), fetchPostCategories(), fetchPostTags()]);
     }
   } catch (e: any) {
     toast.error({
@@ -313,16 +363,16 @@ const savePost = async () => {
     // 处理封面数据：从输入框格式转为 JSON
     let coversValue = null;
     if (coversInput.value.trim()) {
-      const lines = coversInput.value.trim().split('\n');
+      const lines = coversInput.value.trim().split("\n");
       const coversArray = lines
         .map(line => line.trim())
         .filter(line => line.length > 0)
         .map(line => {
-          const parts = line.split('||');
+          const parts = line.split("||");
           if (parts.length === 2) {
             return { url: parts[0].trim(), title: parts[1].trim() };
           } else if (parts.length === 1 && parts[0].trim()) {
-            return { url: parts[0].trim(), title: '' };
+            return { url: parts[0].trim(), title: "" };
           }
           return null;
         })
@@ -376,6 +426,8 @@ const savePost = async () => {
 
       // 保存分类
       await savePostCategories();
+      // 保存标签
+      await savePostTags();
     }
   } catch (e: any) {
     toast.error({
@@ -390,6 +442,7 @@ const savePost = async () => {
 // 页面加载时获取文章数据
 onMounted(() => {
   fetchCategories();
+  fetchTags();
   if (isEdit.value) {
     fetchPost();
   } else {
@@ -400,7 +453,7 @@ onMounted(() => {
 });
 
 // 监听 postId 变化，自动填充 slug
-watch(postId, (newCid) => {
+watch(postId, newCid => {
   if (newCid && !slug.value) {
     slug.value = String(newCid);
   }
@@ -582,11 +635,8 @@ watch(postId, (newCid) => {
                     v-model="coversInput"
                     :rows="4"
                     placeholder="每行一个封面，格式：&#10;封面图片地址 || 标题&#10;&#10;示例：&#10;/uploads/cover1.jpg || 文章封面1&#10;/uploads/cover2.jpg || 文章封面2"
-                    class="font-mono text-sm"
-                  />
-                  <p class="text-xs text-muted-foreground">
-                    一行一个封面，使用 || 分隔图片地址和标题。如只有图片地址则不显示标题。
-                  </p>
+                    class="font-mono text-sm" />
+                  <p class="text-xs text-muted-foreground">一行一个封面，使用 || 分隔图片地址和标题。如只有图片地址则不显示标题。</p>
                 </div>
               </CardContent>
             </Card>
@@ -770,7 +820,7 @@ watch(postId, (newCid) => {
                     <Checkbox
                       :id="`category-${category.mid}`"
                       :model-value="selectedCategoryIds.includes(category.mid)"
-                      @update:model-value="(checked) => toggleCategory(category.mid, checked)" />
+                      @update:model-value="checked => toggleCategory(category.mid, checked)" />
                     <Label :for="`category-${category.mid}`" class="text-sm font-normal cursor-pointer flex-1">
                       {{ category.name }}
                       <span class="text-xs text-muted-foreground">({{ category.postCount }})</span>
@@ -779,9 +829,33 @@ watch(postId, (newCid) => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <!-- 标签设置 -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">标签设置</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
             <div class="space-y-2">
               <Label>文章标签</Label>
-              <Input v-model="tags" placeholder="输入标签，用逗号分隔" />
+              <div class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                <div v-if="tagList.length === 0" class="text-sm text-muted-foreground text-center py-4">暂无标签</div>
+                <div v-else class="space-y-2">
+                  <div v-for="tag in tagList" :key="tag.mid" class="flex items-center space-x-2">
+                    <Checkbox
+                      :id="`tag-${tag.mid}`"
+                      :model-value="selectedTagIds.includes(tag.mid)"
+                      @update:model-value="checked => toggleTag(tag.mid, checked)" />
+                    <Label :for="`tag-${tag.mid}`" class="text-sm font-normal cursor-pointer flex-1">
+                      {{ tag.name }}
+                      <span class="text-xs text-muted-foreground">({{ tag.postCount }})</span>
+                    </Label>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-muted-foreground">标签为可选，文章可以不关联任何标签</p>
             </div>
           </CardContent>
         </Card>

@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -13,10 +13,16 @@ export default defineEventHandler(async event => {
   }
   try {
     const categories = await prisma.category.findMany({
+      where: {
+        type: "category",
+      },
       include: {
         _count: {
           select: { relations: true },
         },
+      },
+      orderBy: {
+        mid: "asc",
       },
     });
 

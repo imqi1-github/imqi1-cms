@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -17,6 +17,7 @@ export default defineEventHandler(async event => {
     const page = Number(query.page) || 1;
     const pageSize = Number(query.pageSize) || 5;
     const categoryId = query.category ? Number(query.category) : undefined;
+    const tagId = query.tag ? Number(query.tag) : undefined;
     const status = query.status ? Number(query.status) : undefined;
 
     const where: any = {
@@ -29,6 +30,17 @@ export default defineEventHandler(async event => {
           mid: categoryId,
         },
       };
+    }
+
+    if (tagId) {
+      where.AND = where.AND || [];
+      where.AND.push({
+        relations: {
+          some: {
+            mid: tagId,
+          },
+        },
+      });
     }
 
     if (status !== undefined) {
@@ -55,6 +67,7 @@ export default defineEventHandler(async event => {
                 select: {
                   mid: true,
                   name: true,
+                  type: true,
                 },
               },
             },

@@ -44,6 +44,11 @@ const navItems = [
     icon: 'lucide:folder',
   },
   {
+    title: '标签管理',
+    href: '/admin/tags',
+    icon: 'lucide:tag',
+  },
+  {
     title: '用户管理',
     href: '/admin/users',
     icon: 'lucide:users',

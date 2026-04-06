@@ -113,13 +113,14 @@ model Attachment {
   post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
 }
 
-// 分类/话题类
+// 分类/标签类
 model Category {
   mid    Int             @id @default(autoincrement())
   name   String          @unique
   slug   String?         @unique
   desc   String?         @db.Text
   class  String?
+  type   String          @default("category") // category 或 tag
 
   // 关联
   relations PostRelation[]
