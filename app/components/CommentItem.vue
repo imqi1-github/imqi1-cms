@@ -8,6 +8,11 @@ const props = defineProps<{
     targetCommentId: number | null;
   };
   avatarService: string;
+  maxLevel: number;
+  currentLevel: number;
+  commentInterval: number;
+  requireMail: boolean;
+  requireLink: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -205,6 +210,10 @@ const getAvatarUrl = (email: string | null | undefined): string | null => {
 
 const avatarUrl = computed(() => getAvatarUrl(props.comment.mail));
 
+const canReply = computed(() => {
+  return props.maxLevel > 0 && props.currentLevel < props.maxLevel;
+});
+
 function startReply(comment: any) {
   emit("start-reply", comment);
 }
@@ -224,6 +233,7 @@ function handleCommentSubmitted() {
       <!-- 头像区域 -->
       <div class="relative w-10 h-10 flex-shrink-0">
         <button
+          v-if="canReply"
           class="absolute top-[-6px] right-[-6px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
           title="回复"
           @click="startReply(comment)">
@@ -285,6 +295,9 @@ function handleCommentSubmitted() {
         :post-id="postId"
         :is-reply="true"
         :reply-to="replyState.replyTo"
+        :comment-interval="commentInterval"
+        :require-mail="requireMail"
+        :require-link="requireLink"
         @cancel-reply="cancelReply"
         @comment-submitted="handleCommentSubmitted" />
     </div>
@@ -299,6 +312,11 @@ function handleCommentSubmitted() {
           :post-id="postId"
           :reply-state="replyState"
           :avatar-service="avatarService"
+          :max-level="maxLevel"
+          :current-level="currentLevel + 1"
+          :comment-interval="commentInterval"
+          :require-mail="requireMail"
+          :require-link="requireLink"
           @start-reply="startReply"
           @cancel-reply="cancelReply"
           @comment-submitted="handleCommentSubmitted" />

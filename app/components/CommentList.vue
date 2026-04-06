@@ -15,6 +15,10 @@ const currentPage = ref(1);
 const totalComments = ref(0);
 const hasMore = ref(false);
 const loadingMore = ref(false);
+const maxLevel = ref(4);
+const commentInterval = ref(60);
+const requireMail = ref(true);
+const requireLink = ref(false);
 
 const replyState = ref({
   isReplying: false,
@@ -93,6 +97,18 @@ const fetchSettings = async () => {
       if (data.data.commentPageSize) {
         pageSize.value = data.data.commentPageSize;
       }
+      if (data.data.commentMaxLevel !== undefined) {
+        maxLevel.value = data.data.commentMaxLevel;
+      }
+      if (data.data.commentInterval !== undefined) {
+        commentInterval.value = data.data.commentInterval;
+      }
+      if (data.data.commentRequireMail !== undefined) {
+        requireMail.value = data.data.commentRequireMail;
+      }
+      if (data.data.commentRequireLink !== undefined) {
+        requireLink.value = data.data.commentRequireLink;
+      }
     }
   } catch (err) {
     console.error("获取设置失败:", err);
@@ -134,7 +150,12 @@ function handleCommentSubmitted() {
 
       <!-- 默认评论框 -->
       <div v-if="!replyState.isReplying" class="mb-8">
-        <CommentInput :post-id="props.postId" @comment-submitted="handleCommentSubmitted" />
+        <CommentInput
+          :post-id="props.postId"
+          :comment-interval="commentInterval"
+          :require-mail="requireMail"
+          :require-link="requireLink"
+          @comment-submitted="handleCommentSubmitted" />
       </div>
 
       <!-- 评论统计 -->
@@ -158,6 +179,11 @@ function handleCommentSubmitted() {
               :post-id="props.postId"
               :reply-state="replyState"
               :avatar-service="avatarService"
+              :max-level="maxLevel"
+              :current-level="1"
+              :comment-interval="commentInterval"
+              :require-mail="requireMail"
+              :require-link="requireLink"
               @start-reply="startReply"
               @cancel-reply="cancelReply"
               @comment-submitted="handleCommentSubmitted" />

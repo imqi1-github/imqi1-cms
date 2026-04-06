@@ -11,6 +11,9 @@ const props = defineProps<{
     id: number;
     name: string;
   };
+  commentInterval?: number;
+  requireMail?: boolean;
+  requireLink?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -93,6 +96,20 @@ async function submitComment() {
   submitSuccess.value = false;
   submitError.value = "";
 
+  // 检查评论间隔
+  if (import.meta.client && props.commentInterval && props.commentInterval > 0) {
+    const lastCommentTime = localStorage.getItem("last_comment_time");
+    if (lastCommentTime) {
+      const elapsed = Date.now() - parseInt(lastCommentTime);
+      const remaining = props.commentInterval * 1000 - elapsed;
+      if (remaining > 0) {
+        const remainingSeconds = Math.ceil(remaining / 1000);
+        submitError.value = `评论太频繁，请 ${remainingSeconds} 秒后再试`;
+        return;
+      }
+    }
+  }
+
   // 验证必填项
   if (!formData.value.content.trim()) {
     submitError.value = "请输入评论内容";
@@ -101,6 +118,16 @@ async function submitComment() {
 
   if (!formData.value.name.trim()) {
     submitError.value = "请输入昵称";
+    return;
+  }
+
+  if (props.requireMail && !formData.value.mail.trim()) {
+    submitError.value = "请输入邮箱";
+    return;
+  }
+
+  if (props.requireLink && !formData.value.link.trim()) {
+    submitError.value = "请输入链接";
     return;
   }
 
@@ -133,6 +160,8 @@ async function submitComment() {
         if (formData.value.link) {
           localStorage.setItem("comment_link", formData.value.link);
         }
+        // 记录评论时间
+        localStorage.setItem("last_comment_time", Date.now().toString());
       }
 
       // 重置表单（只重置内容，保留用户信息）
@@ -222,11 +251,11 @@ function formatEmojiPlaceholder(text: string): string {
       </div>
       <div class="comment-input-group">
         <label for="comment-input-mail" class="sr-only">邮箱</label>
-        <input id="comment-input-mail" v-model="formData.mail" type="email" placeholder="邮箱" class="comment-input" />
+        <input id="comment-input-mail" v-model="formData.mail" type="email" :placeholder="requireMail ? '邮箱 *' : '邮箱'" class="comment-input" />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-link" class="sr-only">链接</label>
-        <input id="comment-input-link" v-model="formData.link" type="url" placeholder="链接" class="comment-input" />
+        <input id="comment-input-link" v-model="formData.link" type="url" :placeholder="requireLink ? '链接 *' : '链接'" class="comment-input" />
       </div>
 
       <div class="comment-buttons">

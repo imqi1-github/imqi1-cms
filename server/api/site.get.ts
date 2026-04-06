@@ -11,6 +11,11 @@ const defaults: Record<string, any> = {
   commentEnabled: true,
   commentAvatarService: "gravatar",
   commentPageSize: 10,
+  commentMaxLevel: 4,
+  commentInterval: 60,
+  commentRequireMail: true,
+  commentRequireLink: false,
+  postPageSize: 12,
 };
 
 export default defineEventHandler(async event => {

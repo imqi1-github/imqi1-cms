@@ -8,11 +8,13 @@ const slug = route.params.slug as string;
 const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
+const postPageSize = computed(() => siteData.value?.data?.postPageSize || 12);
 
 // 获取分类文章数据
 const page = ref(1);
 const { data, pending, error, refresh } = await useFetch(`/api/category/${slug}/posts`, {
-  query: { page, pageSize: 12 },
+  query: { page, pageSize: postPageSize },
+  watch: [page],
 });
 
 const category = computed(() => data.value?.data?.category);
@@ -43,6 +45,11 @@ function formatDate(date: string | Date): string {
 
 // 翻页
 function goToPage(newPage: number) {
+  // 先重置所有元素状态
+  document.querySelectorAll(".fade-in-element").forEach(el => {
+    el.classList.remove("opacity-100", "translate-y-0");
+    el.classList.add("opacity-0", "translate-y-8");
+  });
   page.value = newPage;
 }
 
@@ -57,6 +64,13 @@ function triggerFadeIn() {
     });
   });
 }
+
+// 监听数据加载完成，触发动画
+watch(pending, (newVal, oldVal) => {
+  if (oldVal === true && newVal === false) {
+    triggerFadeIn();
+  }
+});
 
 // 监听路由变化，重新触发动画
 watch(() => route.params.slug, () => {
@@ -152,12 +166,12 @@ onMounted(() => {
           </NuxtLink>
 
           <!-- 文章信息 -->
-          <div :class="['archive-article-box p-5 md:p-6 mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
+          <div :class="['archive-article-box p-5 md:p-6 pt-1! mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
             <NuxtLink :to="`/content/${slug}/${post.slug}`" class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-3 block">
               {{ post.title }}
             </NuxtLink>
 
-            <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-3 pb-3 flex flex-wrap gap-4">
+            <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-3 flex flex-wrap gap-4">
               <span class="flex items-center gap-1" data-tip="最后更新时间">
                 <Icon name="ri-time-line" class="size-4" />
                 {{ formatDate(post.updated) }}
