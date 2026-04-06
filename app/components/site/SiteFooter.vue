@@ -22,13 +22,44 @@ const siteIcp = computed(() => data.value?.data?.siteIcp || "");
 // 使用官方 colorMode 模块
 const colorMode = useColorMode();
 
-// 测试函数
-const handleClick = () => {
-  console.log("Button clicked!");
-  console.log("colorMode.value:", colorMode.value);
-  console.log("colorMode.preference:", colorMode.preference);
-  colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
-  console.log("New preference:", colorMode.preference);
+// 按钮引用
+const themeButtonRef = ref<HTMLElement | null>(null);
+
+// 切换亮暗模式（带圆形扩散动画）
+const handleClick = async (event: MouseEvent) => {
+  const x = event.clientX;
+  const y = event.clientY;
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+  if (!document.startViewTransition) {
+    colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
+    return;
+  }
+
+  const transition = document.startViewTransition(async () => {
+    colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
+    await nextTick();
+  });
+
+  transition.ready.then(() => {
+    // 切换后 colorMode.value 已经是新的值
+    // 切换到暗色：colorMode.value === "dark"，old（亮色）收缩
+    // 切换到亮色：colorMode.value === "light"，new（亮色）扩散
+    const isToDark = colorMode.value === "dark";
+    const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
+    
+    document.documentElement.animate(
+      {
+        clipPath: isToDark ? clipPath.reverse() : clipPath,
+      },
+      {
+        duration: 300,
+        easing: "ease-in-out",
+        fill: "forwards",
+        pseudoElement: isToDark ? "::view-transition-old(root)" : "::view-transition-new(root)",
+      },
+    );
+  });
 };
 
 // 滚动进度

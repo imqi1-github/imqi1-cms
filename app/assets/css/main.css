@@ -69,6 +69,17 @@ img {
   }
 }
 
+/* View Transitions 动画 - 禁用默认动画 */
+::view-transition-new(root),
+::view-transition-old(root) {
+  animation: none !important;
+}
+
+/* 暗色模式下，旧视图在上层 */
+:root.dark::view-transition-old(root) {
+  z-index: 100;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

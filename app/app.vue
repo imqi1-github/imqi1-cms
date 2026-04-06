@@ -51,7 +51,7 @@ watch(() => route.hash, () => {
 </script>
 
 <template>
-  <div class="transition-[background-color,color,border-color,opacity] will-change-auto duration-300">
+  <div>
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
