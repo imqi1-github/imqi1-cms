@@ -184,6 +184,8 @@ const actions = {
   tooltip: () => insertMarkdown(':::tooltip 解释文本\n', '\n:::', '文本'),
   card: () => insertMarkdown(':::card https://example.com | 标题 | 描述文本 | https://example.com/image.jpg\n', '\n:::', ''),
   swiper: () => insertMarkdown(':::swiper\nhttps://example.com/image1.jpg | 图片标题1\nhttps://example.com/image2.jpg | 图片标题2\nhttps://example.com/image3.jpg | 图片标题3\n:::', ''),
+  githubRepo: () => insertMarkdown(':::repo https://github.com/owner/repo\n:::', ''),
+  giteeRepo: () => insertMarkdown(':::repo https://gitee.com/owner/repo\n:::', ''),
 }
 </script>
 
@@ -508,6 +510,34 @@ const actions = {
         @click="actions.swiper"
       >
         <Icon name="lucide:images" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- GitHub 仓库 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="GitHub 仓库"
+        @click="actions.githubRepo"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </Button>
+
+      <!-- Gitee 仓库 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="Gitee 仓库"
+        @click="actions.giteeRepo"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="size-4 text-red-600 dark:text-red-400">
+          <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.037a.594.594 0 0 1-.592-.593v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296Z"/>
+        </svg>
       </Button>
 
       <!-- 上传状态指示 -->

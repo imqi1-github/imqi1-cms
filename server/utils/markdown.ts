@@ -245,6 +245,27 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     },
   });
 
+  // 仓库卡片容器（支持 GitHub 和 Gitee）
+  md.use(container, "repo", {
+    validate: (params: string) => {
+      // 匹配 "repo URL" 格式
+      return params.trim().match(/^repo\s+(https:\/\/(?:github|gitee)\.com\/[^/\s]+\/[^/\s]+)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取仓库 URL（去掉 "repo" 前缀）
+      let url = info.replace(/^repo\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<div class="markdown-repo-wrapper" data-url="${url}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
   mdInstance = md;
   return md;
 }

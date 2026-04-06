@@ -650,6 +650,195 @@ onMounted(() => {
       }, 100);
     });
 
+    // 初始化仓库卡片容器
+    const repoWrappers = document.querySelectorAll(".markdown-repo-wrapper");
+    repoWrappers.forEach(async wrapper => {
+      const url = wrapper.getAttribute("data-url") || "";
+
+      // 解析 URL，判断是 GitHub 还是 Gitee
+      let platform: "github" | "gitee" | null = null;
+      let owner = "";
+      let repo = "";
+
+      if (url.includes("github.com")) {
+        platform = "github";
+        const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (match) {
+          owner = match[1];
+          repo = match[2].replace(/\.git$/, "");
+        }
+      } else if (url.includes("gitee.com")) {
+        platform = "gitee";
+        const match = url.match(/gitee\.com\/([^/]+)\/([^/]+)/);
+        if (match) {
+          owner = match[1];
+          repo = match[2].replace(/\.git$/, "");
+        }
+      }
+
+      if (!platform || !owner || !repo) {
+        wrapper.innerHTML = `
+          <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+            无效的仓库 URL
+          </div>
+        `;
+        return;
+      }
+
+      // 显示加载状态
+      wrapper.innerHTML = `
+        <div class="flex items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+          <span class="text-slate-600 dark:text-slate-400">加载仓库信息...</span>
+        </div>
+      `;
+
+      try {
+        let apiUrl = "";
+        if (platform === "github") {
+          apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+        } else {
+          apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}`;
+        }
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error("Failed to fetch repo data");
+        }
+
+        const data = await response.json();
+
+        // 提取仓库信息
+        const repoName = data.full_name || data.name || "";
+        const description = data.description || "";
+        const language = data.language || "";
+        const stars = platform === "github" ? data.stargazers_count : data.stargazers_count;
+        const forks = data.forks_count;
+        const avatarUrl = platform === "github" ? data.owner?.avatar_url : data.owner?.avatar_url;
+        const isPrivate = data.private || false;
+
+        // 创建仓库卡片
+        const cardContainer = document.createElement("div");
+        cardContainer.className = "markdown-repo my-6";
+
+        const platformIcon =
+          platform === "github"
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.037a.594.594 0 0 1-.592-.593v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296Z"/></svg>`;
+
+        const platformColor = platform === "github" ? "text-slate-600 dark:text-slate-400" : "text-red-600 dark:text-red-400";
+
+        cardContainer.innerHTML = `
+          <a
+            href="${url}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block group">
+            <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300">
+              <!-- 顶部栏 -->
+              <div class="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2">
+                  <span class="${platformColor}">
+                    ${platformIcon}
+                  </span>
+                  <span class="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    ${platform === "github" ? "GitHub" : "Gitee"}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${
+                    isPrivate
+                      ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          私有
+                        </span>`
+                      : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="m21 9-9 9-9-9"/><path d="M21 3 9 15l-5-5"/></svg>
+                          公开
+                        </span>`
+                  }
+                </div>
+              </div>
+
+              <!-- 内容区域 -->
+              <div class="p-4">
+                <!-- 标题行 -->
+                <div class="flex items-start justify-between gap-2 mb-3">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
+                    ${repoName}
+                  </h3>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-0.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </div>
+
+                <!-- 描述 -->
+                ${
+                  description
+                    ? `
+                  <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                    ${description}
+                  </p>
+                `
+                    : ""
+                }
+
+                <!-- 底部信息 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      <span class="font-semibold">${stars?.toLocaleString() || 0}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                      <span class="font-semibold">${forks?.toLocaleString() || 0}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    ${
+                      language
+                        ? `<div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                        <span>${language}</span>
+                        <span class="size-2 rounded-full ${
+                          language === "JavaScript"
+                            ? "bg-yellow-400"
+                            : language === "TypeScript"
+                            ? "bg-blue-500"
+                            : language === "Python"
+                            ? "bg-green-500"
+                            : language === "Java"
+                            ? "bg-red-500"
+                            : language === "Go"
+                            ? "bg-cyan-500"
+                            : language === "Rust"
+                            ? "bg-orange-500"
+                            : language === "C++"
+                            ? "bg-blue-600"
+                            : language === "Vue"
+                            ? "bg-green-400"
+                            : "bg-slate-400"
+                        }"></span>
+                      </div>`
+                        : ""
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        `;
+
+        // 替换原容器
+        wrapper.replaceWith(cardContainer);
+      } catch (error) {
+        console.error("Failed to load repo info:", error);
+        wrapper.innerHTML = `
+          <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+            加载仓库信息失败
+          </div>
+        `;
+      }
+    });
+
     // 添加轮播图样式
     const style = document.createElement("style");
     style.textContent = `
@@ -1072,16 +1261,16 @@ onUnmounted(() => {
   margin: auto;
 }
 
-.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p)) {
+.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p)) {
   margin: 1em 0;
 }
 
-.markdown-body :deep(h1):not(.markdown-callout h1):not(.markdown-card h1):not(.swiper-slide-title h1),
-.markdown-body :deep(h2):not(.markdown-callout h2):not(.markdown-card h2):not(.swiper-slide-title h2),
-.markdown-body :deep(h3):not(.markdown-callout h3):not(.markdown-card h3):not(.swiper-slide-title h3),
-.markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4),
-.markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5),
-.markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6) {
+.markdown-body :deep(h1):not(.markdown-callout h1):not(.markdown-card h1):not(.swiper-slide-title h1):not(.markdown-repo h1),
+.markdown-body :deep(h2):not(.markdown-callout h2):not(.markdown-card h2):not(.swiper-slide-title h2):not(.markdown-repo h2),
+.markdown-body :deep(h3):not(.markdown-callout h3):not(.markdown-card h3):not(.swiper-slide-title h3):not(.markdown-repo h3),
+.markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4):not(.markdown-repo h4),
+.markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5):not(.markdown-repo h5),
+.markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6):not(.markdown-repo h6) {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
   font-weight: 700;
@@ -1129,8 +1318,8 @@ onUnmounted(() => {
   color: rgb(96 165 250);
 }
 
-.markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul),
-.markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol) {
+.markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul),
+.markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol) {
   margin: 1em 0;
   padding-left: 2em;
 }
@@ -1143,12 +1332,12 @@ onUnmounted(() => {
   list-style-type: decimal;
 }
 
-.markdown-body :deep(li):not(.markdown-callout li):not(.markdown-card li) {
+.markdown-body :deep(li):not(.markdown-callout li):not(.markdown-card li):not(.markdown-repo li) {
   margin: 0.5em 0;
   display: list-item;
 }
 
-.markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote) {
+.markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote):not(.markdown-repo blockquote) {
   margin: 1em 0;
   padding: 0.5em 1em;
   border-left: 4px solid rgb(37 99 235);
