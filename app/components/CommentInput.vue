@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 
+// 导入表情数据
+import emojisData from "~/assets/emojis.json";
+
 const props = defineProps<{
   postId: number;
   isReply?: boolean;
@@ -28,6 +31,51 @@ const formData = ref({
   mail: "",
   link: "",
 });
+
+// 表情相关
+const activeCategory = ref("capoo");
+const searchQuery = ref("");
+
+// 表情分类配置
+const categoryConfig: Record<string, { name: string; prefix: string }> = {
+  "Heo-Sticker": { name: "Heo表情", prefix: "heo-" },
+  capoo: { name: "猫猫虫", prefix: "猫猫虫-" },
+  Cat: { name: "猫咪", prefix: "cat-" },
+};
+
+// 当前分类的表情列表
+const currentEmojis = computed(() => {
+  const category = activeCategory.value;
+  const config = categoryConfig[category];
+  if (!config) return [];
+
+  const emojis = emojisData[category as keyof typeof emojisData];
+  if (!emojis) return [];
+
+  return Object.entries(emojis)
+    .filter(([key]) => {
+      // 移除前缀后的名称用于搜索
+      const name = key.replace(config.prefix, "");
+      if (!searchQuery.value) return true;
+      return name.toLowerCase().includes(searchQuery.value.toLowerCase());
+    })
+    .map(([key, path]) => ({
+      key,
+      path,
+      name: key.replace(config.prefix, ""),
+    }));
+});
+
+// 所有分类
+const categories = computed(() => {
+  return Object.keys(emojisData).map(key => ({
+    key,
+    name: categoryConfig[key]?.name || key,
+  }));
+});
+
+// Textarea 引用
+const textareaRef = ref<HTMLTextAreaElement>();
 
 // 从localStorage读取用户信息
 onMounted(() => {
@@ -116,12 +164,47 @@ async function submitComment() {
   }
 }
 
-// 简单的表情列表
-const emojis = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
+// 在光标位置插入表情
+function insertEmoji(key: string) {
+  const config = categoryConfig[activeCategory.value];
+  const name = key.replace(config?.prefix || "", "");
+  const placeholder = `:[${activeCategory.value}-${name}]`;
 
-function insertEmoji(emoji: string) {
-  formData.value.content += emoji;
-  showEmoji.value = false;
+  const textarea = textareaRef.value;
+  if (!textarea) {
+    formData.value.content += placeholder;
+    return;
+  }
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = formData.value.content;
+
+  formData.value.content = text.substring(0, start) + placeholder + text.substring(end);
+
+  // 重新聚焦并设置光标位置
+  nextTick(() => {
+    const newPosition = start + placeholder.length;
+    textarea.setSelectionRange(newPosition, newPosition);
+    textarea.focus();
+  });
+}
+
+// 格式化表情占位符为图片
+function formatEmojiPlaceholder(text: string): string {
+  // 匹配 :[category-name] 格式
+  const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
+
+  return text.replace(emojiRegex, (match, category, name) => {
+    const config = categoryConfig[category];
+    if (!config) return match;
+
+    const key = config.prefix + name;
+    const emojis = emojisData[category as keyof typeof emojisData];
+    if (!emojis || !emojis[key]) return match;
+
+    return emojis[key];
+  });
 }
 </script>
 
@@ -137,7 +220,14 @@ function insertEmoji(emoji: string) {
 
     <div class="comment-input-row">
       <label for="comment-content-input" class="sr-only">评论内容</label>
-      <textarea id="comment-content-input" v-model="formData.content" placeholder="评论内容 *" class="comment-textarea" required />
+      <textarea
+        id="comment-content-input"
+        ref="textareaRef"
+        v-model="formData.content"
+        placeholder="评论内容 *"
+        class="comment-textarea"
+        required
+      />
     </div>
 
     <div class="comment-input-row">
@@ -183,10 +273,41 @@ function insertEmoji(emoji: string) {
     <!-- 表情面板 -->
     <Transition name="emoji">
       <div v-if="showEmoji" class="emoji-box">
+        <!-- 分类标签 -->
+        <div class="emoji-tabs">
+          <button
+            v-for="cat in categories"
+            :key="cat.key"
+            type="button"
+            class="emoji-tab"
+            :class="{ active: activeCategory === cat.key }"
+            @click="activeCategory = cat.key"
+          >
+            {{ cat.name }}
+          </button>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="emoji-search">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="搜索表情..."
+            class="emoji-search-input"
+          />
+        </div>
+
+        <!-- 表情列表 -->
         <div class="emoji-list">
-          <span v-for="emoji in emojis" :key="emoji" class="emoji-item" @click="insertEmoji(emoji)">
-            {{ emoji }}
-          </span>
+          <img
+            v-for="emoji in currentEmojis"
+            :key="emoji.key"
+            :src="emoji.path"
+            :alt="emoji.name"
+            :title="emoji.name"
+            class="emoji-item"
+            @click="insertEmoji(emoji.key)"
+          />
         </div>
       </div>
     </Transition>
@@ -305,8 +426,11 @@ function insertEmoji(emoji: string) {
 .emoji-button,
 .submit-button {
   border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.875em;
   font-weight: 600;
@@ -316,6 +440,7 @@ function insertEmoji(emoji: string) {
 .emoji-button {
   background: rgb(241 245 249);
   color: rgb(51 65 85);
+  padding-inline: 12px;
 }
 
 .dark .emoji-button {
@@ -334,6 +459,7 @@ function insertEmoji(emoji: string) {
 .submit-button {
   background: rgb(37 99 235);
   color: white;
+  padding-inline: 12px;
 }
 
 .submit-button:hover:not(:disabled) {
@@ -362,24 +488,123 @@ function insertEmoji(emoji: string) {
   border-color: rgb(51 65 85);
 }
 
+/* 表情分类标签 */
+.emoji-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgb(226 232 240);
+  padding-bottom: 8px;
+}
+
+.dark .emoji-tabs {
+  border-bottom-color: rgb(51 65 85);
+}
+
+.emoji-tab {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: rgb(100 116 139);
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.875em;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.dark .emoji-tab {
+  color: rgb(148 163 184);
+}
+
+.emoji-tab:hover {
+  background: rgb(241 245 249);
+}
+
+.dark .emoji-tab:hover {
+  background: rgb(30 41 59);
+}
+
+.emoji-tab.active {
+  background: rgb(37 99 235);
+  color: white;
+}
+
+/* 表情搜索 */
+.emoji-search {
+  margin-bottom: 10px;
+}
+
+.emoji-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 6px;
+  font-size: 0.875em;
+  background: rgb(249 250 251);
+  transition: all 0.15s;
+}
+
+.dark .emoji-search-input {
+  background: rgb(30 41 59);
+  border-color: rgb(51 65 85);
+  color: rgb(226 232 240);
+}
+
+.emoji-search-input:focus {
+  outline: none;
+  border-color: rgb(37 99 235);
+  background: rgb(255 255 255);
+}
+
+.dark .emoji-search-input:focus {
+  background: rgb(15 23 42);
+}
+
 .emoji-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  max-height: 150px;
+  gap: 6px;
+  max-height: 200px;
   overflow-y: auto;
+  padding: 4px;
+}
+
+.emoji-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emoji-list::-webkit-scrollbar-track {
+  background: rgb(241 245 249);
+  border-radius: 3px;
+}
+
+.dark .emoji-list::-webkit-scrollbar-track {
+  background: rgb(30 41 59);
+}
+
+.emoji-list::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184);
+  border-radius: 3px;
+}
+
+.emoji-list::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139);
 }
 
 .emoji-item {
-  font-size: 1.5em;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
-  transition: background-color 0.15s;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
 
 .emoji-item:hover {
   background: rgb(241 245 249);
+  transform: scale(1.1);
 }
 
 .dark .emoji-item:hover {

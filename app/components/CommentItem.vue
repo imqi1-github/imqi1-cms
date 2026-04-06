@@ -100,7 +100,7 @@ function handleCommentSubmitted() {
 
         <!-- 评论内容 -->
         <div class="line-clamp-2 leading-relaxed my-2 text-slate-700 dark:text-slate-300">
-          {{ comment.content }}
+          <EmojiParser :content="comment.content" />
         </div>
 
         <!-- 底部信息 -->
