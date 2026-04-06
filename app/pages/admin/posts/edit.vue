@@ -15,9 +15,9 @@ const description = ref("");
 const slug = ref("");
 const content = ref("");
 const publishDate = ref("");
-const showToc = ref(true);
+const showToc = ref(false);
 const manyCovers = ref(false);
-const status = ref("draft"); // draft | published
+const status = ref("published"); // draft | published
 const tags = ref(""); // 标签
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
@@ -392,6 +392,17 @@ onMounted(() => {
   fetchCategories();
   if (isEdit.value) {
     fetchPost();
+  } else {
+    // 新建文章时，自动填充当前时间
+    const now = new Date();
+    publishDate.value = now.toISOString().slice(0, 16);
+  }
+});
+
+// 监听 postId 变化，自动填充 slug
+watch(postId, (newCid) => {
+  if (newCid && !slug.value) {
+    slug.value = String(newCid);
   }
 });
 </script>

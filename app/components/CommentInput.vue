@@ -34,7 +34,6 @@ const formData = ref({
 
 // 表情相关
 const activeCategory = ref("capoo");
-const searchQuery = ref("");
 
 // 表情分类配置
 const categoryConfig: Record<string, { name: string; prefix: string }> = {
@@ -52,18 +51,11 @@ const currentEmojis = computed(() => {
   const emojis = emojisData[category as keyof typeof emojisData];
   if (!emojis) return [];
 
-  return Object.entries(emojis)
-    .filter(([key]) => {
-      // 移除前缀后的名称用于搜索
-      const name = key.replace(config.prefix, "");
-      if (!searchQuery.value) return true;
-      return name.toLowerCase().includes(searchQuery.value.toLowerCase());
-    })
-    .map(([key, path]) => ({
-      key,
-      path,
-      name: key.replace(config.prefix, ""),
-    }));
+  return Object.entries(emojis).map(([key, path]) => ({
+    key,
+    path,
+    name: key.replace(config.prefix, ""),
+  }));
 });
 
 // 所有分类
@@ -245,9 +237,41 @@ function formatEmojiPlaceholder(text: string): string {
       </div>
 
       <div class="comment-buttons">
-        <button type="button" class="emoji-button" @click="showEmoji = !showEmoji">
-          <Icon name="ri:emoji-sticker-line" class="size-4" />
-        </button>
+        <div class="relative">
+          <button type="button" class="emoji-button" @click="showEmoji = !showEmoji">
+            <Icon name="ri:emoji-sticker-line" class="size-4" />
+          </button>
+          <!-- 表情面板 - 悬浮 -->
+          <Transition name="emoji">
+            <div v-if="showEmoji" class="emoji-box">
+              <!-- 分类标签 -->
+              <div class="emoji-tabs">
+                <button
+                  v-for="cat in categories"
+                  :key="cat.key"
+                  type="button"
+                  class="emoji-tab"
+                  :class="{ active: activeCategory === cat.key }"
+                  @click="activeCategory = cat.key"
+                >
+                  {{ cat.name }}
+                </button>
+              </div>
+              <!-- 表情列表 -->
+              <div class="emoji-list">
+                <img
+                  v-for="emoji in currentEmojis"
+                  :key="emoji.key"
+                  :src="emoji.path"
+                  :alt="emoji.name"
+                  :title="emoji.name"
+                  class="emoji-item"
+                  @click="insertEmoji(emoji.key)"
+                />
+              </div>
+            </div>
+          </Transition>
+        </div>
         <button type="button" class="submit-button" @click="submitComment" :disabled="submitting">
           {{ submitting ? "提交中..." : "提交评论" }}
         </button>
@@ -269,49 +293,6 @@ function formatEmojiPlaceholder(text: string): string {
       <Icon name="lucide:alert-circle" class="size-4 flex-shrink-0" />
       <span>{{ submitError }}</span>
     </div>
-
-    <!-- 表情面板 -->
-    <Transition name="emoji">
-      <div v-if="showEmoji" class="emoji-box">
-        <!-- 分类标签 -->
-        <div class="emoji-tabs">
-          <button
-            v-for="cat in categories"
-            :key="cat.key"
-            type="button"
-            class="emoji-tab"
-            :class="{ active: activeCategory === cat.key }"
-            @click="activeCategory = cat.key"
-          >
-            {{ cat.name }}
-          </button>
-        </div>
-
-        <!-- 搜索框 -->
-        <div class="emoji-search">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="搜索表情..."
-            class="emoji-search-input"
-          />
-        </div>
-
-        <!-- 表情列表 -->
-        <div class="emoji-list">
-          <img
-            v-for="emoji in currentEmojis"
-            :key="emoji.key"
-            :src="emoji.path"
-            :alt="emoji.name"
-            :title="emoji.name"
-            class="emoji-item"
-            @click="insertEmoji(emoji.key)"
-          />
-        </div>
-      </div>
-    </Transition>
-    <div v-if="showEmoji" class="emoji-backdrop" @click="showEmoji = false" />
   </div>
 </template>
 
@@ -471,16 +452,18 @@ function formatEmojiPlaceholder(text: string): string {
   cursor: not-allowed;
 }
 
-/* 表情面板 */
+/* 表情面板 - 悬浮样式 */
 .emoji-box {
-  position: relative;
-  z-index: 10;
-  margin-top: 10px;
-  padding: 10px;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  width: 320px;
+  padding: 8px;
   background: rgb(255 255 255);
   border: 1px solid rgb(226 232 240);
   border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
 .dark .emoji-box {
@@ -491,25 +474,18 @@ function formatEmojiPlaceholder(text: string): string {
 /* 表情分类标签 */
 .emoji-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid rgb(226 232 240);
-  padding-bottom: 8px;
-}
-
-.dark .emoji-tabs {
-  border-bottom-color: rgb(51 65 85);
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 .emoji-tab {
-  padding: 6px 12px;
+  padding: 4px 10px;
   border: none;
   background: transparent;
   color: rgb(100 116 139);
   cursor: pointer;
-  border-radius: 6px;
-  font-size: 0.875em;
-  font-weight: 500;
+  border-radius: 4px;
+  font-size: 0.75em;
   transition: all 0.15s;
 }
 
@@ -517,118 +493,60 @@ function formatEmojiPlaceholder(text: string): string {
   color: rgb(148 163 184);
 }
 
-.emoji-tab:hover {
-  background: rgb(241 245 249);
-}
-
-.dark .emoji-tab:hover {
-  background: rgb(30 41 59);
-}
-
 .emoji-tab.active {
   background: rgb(37 99 235);
   color: white;
 }
 
-/* 表情搜索 */
-.emoji-search {
-  margin-bottom: 10px;
-}
-
-.emoji-search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgb(226 232 240);
-  border-radius: 6px;
-  font-size: 0.875em;
-  background: rgb(249 250 251);
-  transition: all 0.15s;
-}
-
-.dark .emoji-search-input {
-  background: rgb(30 41 59);
-  border-color: rgb(51 65 85);
-  color: rgb(226 232 240);
-}
-
-.emoji-search-input:focus {
-  outline: none;
-  border-color: rgb(37 99 235);
-  background: rgb(255 255 255);
-}
-
-.dark .emoji-search-input:focus {
-  background: rgb(15 23 42);
-}
-
 .emoji-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  max-height: 200px;
+  gap: 4px;
+  max-height: 180px;
   overflow-y: auto;
-  padding: 4px;
 }
 
 .emoji-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.emoji-list::-webkit-scrollbar-track {
-  background: rgb(241 245 249);
-  border-radius: 3px;
-}
-
-.dark .emoji-list::-webkit-scrollbar-track {
-  background: rgb(30 41 59);
+  width: 4px;
 }
 
 .emoji-list::-webkit-scrollbar-thumb {
-  background: rgb(148 163 184);
-  border-radius: 3px;
+  background: rgb(203 213 225);
+  border-radius: 2px;
 }
 
-.emoji-list::-webkit-scrollbar-thumb:hover {
-  background: rgb(100 116 139);
+.dark .emoji-list::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105);
 }
 
 .emoji-item {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.15s;
+  padding: 2px;
+  border-radius: 4px;
+  transition: background 0.15s;
 }
 
 .emoji-item:hover {
   background: rgb(241 245 249);
-  transform: scale(1.1);
 }
 
 .dark .emoji-item:hover {
   background: rgb(30 41 59);
 }
 
-.emoji-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 5;
-}
-
 /* 表情面板动画 */
 .emoji-enter-active,
 .emoji-leave-active {
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
+  transition: all 0.15s;
 }
 
 .emoji-enter-from,
 .emoji-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-8px);
 }
 
 .cancel-reply-button {

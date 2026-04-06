@@ -56,8 +56,12 @@ interface TocItem {
 }
 
 const tocItems = ref<TocItem[]>([]);
-const showToc = ref(false);
 const activeTocId = ref("");
+
+// 根据文章的 show_toc 字段和实际标题数量决定是否显示目录
+const showToc = computed(() => {
+  return post.value?.show_toc && tocItems.value.length > 0;
+});
 
 // 提取目录
 const extractToc = () => {
@@ -78,7 +82,6 @@ const extractToc = () => {
   });
 
   tocItems.value = items;
-  showToc.value = items.length > 0;
 };
 
 // 滚动到指定标题
@@ -299,7 +302,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'max-w-full' : 'max-w-225']">
+  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'max-w-full' : showToc ? 'max-w-280' : 'max-w-225']">
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
       <p class="mt-2 text-slate-500">加载中...</p>
@@ -379,11 +382,8 @@ onUnmounted(() => {
 
       <!-- 文章内容区域 - 带目录 -->
       <div class="mt-8 flex gap-8 relative">
-        <!-- 文章正文 -->
-        <div class="flex-1 min-w-0 opacity-0 translate-y-8 duration-600 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
-
-        <!-- 目录侧边栏 -->
-        <aside v-if="showToc" class="toc-sidebar hidden lg:block w-48 flex-shrink-0">
+        <!-- 目录侧边栏 - 左侧 -->
+        <aside v-if="showToc" class="toc-sidebar hidden lg:block w-48 flex-shrink-0 order-first">
           <nav class="toc-nav sticky top-24">
             <h3 class="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
             <ul class="space-y-1">
@@ -404,10 +404,13 @@ onUnmounted(() => {
             </ul>
           </nav>
         </aside>
+
+        <!-- 文章正文 -->
+        <div class="flex-1 min-w-0 opacity-0 translate-y-8 duration-600 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
       </div>
 
       <!-- 评论区 -->
-      <section class="mt-10 opacity-0 translate-y-8 duration-600 ease-out">
+      <section class="mt-10 opacity-0 translate-y-8 duration-600 ease-out content-constrained">
         <CommentList :post-id="post.cid" />
       </section>
     </article>
@@ -456,11 +459,32 @@ onUnmounted(() => {
   text-decoration: none;
 }
 
+/* 封面和评论区约束宽度 */
+.article-cover {
+  max-width: 56.25rem; /* 900px - same as max-w-225 */
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.content-constrained {
+  max-width: 56.25rem; /* 900px - same as max-w-225 */
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 正文扩展超出约束宽度 */
+.content-body {
+  /* margin-left: calc((56.25rem - 100%) / 2); */
+  margin-right: calc((56.25rem - 100%) / 2);
+}
+
 /* 目录样式 */
 .toc-sidebar {
   position: relative;
   opacity: 0;
-  transform: translateX(20px);
+  transform: translateX(-20px);
   animation: toc-slide-in 0.5s ease-out forwards;
   animation-delay: 0.3s;
 }

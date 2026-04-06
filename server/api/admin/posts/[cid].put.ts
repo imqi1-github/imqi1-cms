@@ -92,9 +92,25 @@ export default defineEventHandler(async event => {
   }
 
   // 更新文章
-  const post = await prisma.post.update({
+  await prisma.post.update({
     where: { cid },
     data: updateData,
+  });
+
+  // 重新获取完整的文章信息（包含关联数据）
+  const post = await prisma.post.findUnique({
+    where: { cid },
+    include: {
+      user: {
+        select: {
+          uid: true,
+          name: true,
+          nickname: true,
+          avatar: true,
+          mail: true,
+        },
+      },
+    },
   });
 
   return {

@@ -18,10 +18,10 @@ export default defineEventHandler(async event => {
     desc,
     slug,
     content,
-    status = 0,
+    status = 1,
     manyCovers = false,
     covers,
-    showToc = true,
+    showToc = false,
     publishDate,
     tags,
   } = body;
@@ -62,11 +62,26 @@ export default defineEventHandler(async event => {
       where: { cid: post.cid },
       data: { slug: String(post.cid) },
     });
-    post.slug = String(post.cid);
   }
+
+  // 重新获取完整的文章信息（包含关联数据）
+  const updatedPost = await prisma.post.findUnique({
+    where: { cid: post.cid },
+    include: {
+      user: {
+        select: {
+          uid: true,
+          name: true,
+          nickname: true,
+          avatar: true,
+          mail: true,
+        },
+      },
+    },
+  });
 
   return {
     success: true,
-    data: post,
+    data: updatedPost,
   };
 });

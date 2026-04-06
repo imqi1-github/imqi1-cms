@@ -62,11 +62,11 @@ model Post {
   content      String?   @db.Text
   create_time  DateTime  @default(now())
   update_time  DateTime  @updatedAt
-  status       Int       @default(0)
+  status       Int       @default(1)
   comment_num  Int       @default(0)
   many_covers  Boolean   @default(false)
   covers       String?
-  show_toc     Boolean   @default(true)
+  show_toc     Boolean   @default(false)
   tags         String?   @db.Text
   uid          Int       @default(1)
 
