@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import {
+  RiArrowUpLine,
   RiCopyrightLine,
   RiCreativeCommonsByLine,
   RiCreativeCommonsNcLine,
   RiCreativeCommonsNdLine,
   RiEarthFill,
+  RiMoonLine,
   RiRssFill,
   RiSubwayFill,
   RiSunLine,
-  RiMoonLine,
 } from "@remixicon/vue";
 
 const currentYear = new Date().getFullYear();
@@ -29,6 +30,54 @@ const handleClick = () => {
   colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
   console.log("New preference:", colorMode.preference);
 };
+
+// 滚动进度
+const scrollProgress = ref(0);
+const showBackToTop = ref(false);
+const showProgress = ref(false);
+
+const updateScrollProgress = () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+
+  if (docHeight > 0) {
+    scrollProgress.value = (scrollTop / docHeight) * 100;
+  } else {
+    scrollProgress.value = 0;
+  }
+
+  // 10%以下不显示
+  if (scrollProgress.value < 10) {
+    showBackToTop.value = false;
+    showProgress.value = false;
+  }
+  // 10%-90% 显示进度圆环
+  else if (scrollProgress.value < 90) {
+    showBackToTop.value = false;
+    showProgress.value = true;
+  }
+  // 90%以上显示返回顶部箭头
+  else {
+    showBackToTop.value = true;
+    showProgress.value = false;
+  }
+};
+
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+};
+
+onMounted(() => {
+  window.addEventListener("scroll", updateScrollProgress);
+  updateScrollProgress();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", updateScrollProgress);
+});
 </script>
 
 <template>
@@ -46,12 +95,7 @@ const handleClick = () => {
           <RiCreativeCommonsNcLine />
           <RiCreativeCommonsNdLine />
         </div>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="icon"
-          viewBox="0 0 1024 1024"
-          width="16"
-          height="16">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 1024 1024" width="16" height="16">
           <path
             d="M512 1024C132.647 1024 0 891.313 0 512S132.647 0 512 0s512 132.687 512 512-132.647 512-512 512zM236.308 354.462h551.384v-78.77H236.308v78.77z m0 196.923h393.846v-78.77H236.308v78.77z m0 196.923h472.615v-78.77H236.308v78.77z"
             fill="currentColor"></path>
@@ -60,15 +104,79 @@ const handleClick = () => {
         <RiEarthFill class="size-4.5" />
       </div>
     </div>
-    <!-- 暗黑模式切换按钮 -->
-    <button
-      @click="handleClick"
-      class="cursor-pointer fixed bottom-8 right-8 z-[9999] rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md"
-      :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
-      <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
-      <RiMoonLine v-else class="size-4 fill-gray-100" />
-    </button>
+    <!-- 右下角按钮组 -->
+    <div class="fixed bottom-8 right-8 z-[9999] flex flex-col gap-3">
+      <!-- 返回顶部/进度按钮 -->
+      <Transition name="fade">
+        <button
+          v-if="showProgress || showBackToTop"
+          @click="scrollToTop"
+          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md aspect-square"
+          title="返回顶部">
+          <!-- 进度圆环 -->
+          <Transition name="icon-fade" mode="out-in">
+            <svg v-if="showProgress" key="progress" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+              <circle
+                cx="14"
+                cy="14"
+                r="12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                class="text-gray-900 dark:text-gray-100"
+                :stroke-dasharray="75.4"
+                :stroke-dashoffset="75.4 - (75.4 * scrollProgress) / 100" />
+            </svg>
+            <div v-else-if="showBackToTop" key="arrow" class="absolute inset-0 flex items-center justify-center">
+              <RiArrowUpLine class="size-4 fill-gray-600 dark:fill-gray-300" />
+            </div>
+          </Transition>
+          <!-- 进度数字 -->
+          <Transition name="icon-fade" mode="out-in">
+            <span v-if="showProgress" key="number" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
+              {{ Math.round(scrollProgress) }}
+            </span>
+          </Transition>
+        </button>
+      </Transition>
+
+      <!-- 暗黑模式切换按钮 -->
+      <button
+        @click="handleClick"
+        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md"
+        :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
+        <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
+        <RiMoonLine v-else class="size-4 fill-gray-100" />
+      </button>
+    </div>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.icon-fade-enter-active,
+.icon-fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.icon-fade-enter-from,
+.icon-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+</style>

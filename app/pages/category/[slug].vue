@@ -73,14 +73,17 @@ watch(pending, (newVal, oldVal) => {
 });
 
 // 监听路由变化，重新触发动画
-watch(() => route.params.slug, () => {
-  // 先重置所有元素状态
-  document.querySelectorAll(".fade-in-element").forEach(el => {
-    el.classList.remove("opacity-100", "translate-y-0");
-    el.classList.add("opacity-0", "translate-y-8");
-  });
-  triggerFadeIn();
-});
+watch(
+  () => route.params.slug,
+  () => {
+    // 先重置所有元素状态
+    document.querySelectorAll(".fade-in-element").forEach(el => {
+      el.classList.remove("opacity-100", "translate-y-0");
+      el.classList.add("opacity-0", "translate-y-8");
+    });
+    triggerFadeIn();
+  },
+);
 
 // 页面标题
 useHead({
@@ -106,7 +109,9 @@ onMounted(() => {
     </div>
 
     <!-- 404 -->
-    <div v-else-if="isNotFound" class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+    <div
+      v-else-if="isNotFound"
+      class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
         <Icon name="ri:close-large-fill" class="text-red-500" />
         <span>分类不存在</span>
@@ -120,13 +125,10 @@ onMounted(() => {
     <!-- 图片分类 - 瀑布流布局 -->
     <template v-else-if="isPhotoCategory">
       <!-- 图片列表 -->
-      <div v-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+      <div v-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
         <template v-for="post in posts" :key="post.cid">
           <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
-            <NuxtLink
-              :to="`/content/${slug}/${post.slug}`"
-              class="photo-item"
-            >
+            <NuxtLink :to="`/content/${slug}/${post.slug}`" class="photo-item">
               <img :src="cover.url" :alt="cover.desc || post.title" loading="lazy" />
               <div class="photo-name">{{ cover.desc || post.title }}</div>
             </NuxtLink>
@@ -135,39 +137,42 @@ onMounted(() => {
       </div>
 
       <!-- 空状态 -->
-      <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
-        暂无文章
-      </div>
+      <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
     </template>
 
     <!-- 普通分类 - 网格布局 -->
     <template v-else>
       <!-- 标题 -->
-      <header class="content-title-box title-no-cover mb-6 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+      <header class="content-title-box title-no-cover mb-6 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
         <h1 class="content-title text-[3em] font-extrabold text-slate-900 dark:text-slate-100">{{ category?.name }}</h1>
         <p v-if="category?.desc" class="content-description text-slate-600 dark:text-slate-400 mt-2">{{ category.desc }}</p>
       </header>
 
       <!-- 文章列表 -->
-      <div v-if="posts.length > 0" class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+      <div
+        v-if="posts.length > 0"
+        class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
         <div
           v-for="post in posts"
           :key="post.cid"
-          :class="['archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow', post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover']"
-        >
+          :class="[
+            'archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow',
+            post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover',
+          ]">
           <!-- 封面 -->
           <NuxtLink v-if="post.covers.length > 0" :to="`/content/${slug}/${post.slug}`" class="relative h-70 overflow-hidden rounded-t-15">
             <img
               :src="post.covers[0].url"
               :alt="post.title"
               class="archive-article-cover absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-            />
+              loading="lazy" />
           </NuxtLink>
 
           <!-- 文章信息 -->
           <div :class="['archive-article-box p-5 md:p-6 pt-1! mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
-            <NuxtLink :to="`/content/${slug}/${post.slug}`" class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-3 block">
+            <NuxtLink
+              :to="`/content/${slug}/${post.slug}`"
+              class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-3 block">
               {{ post.title }}
             </NuxtLink>
 
@@ -178,11 +183,11 @@ onMounted(() => {
               </span>
               <span v-if="post.tags.length > 0" class="flex items-center gap-1" data-tip="标签">
                 <Icon name="ri-price-tag-3-line" class="size-4" />
-                {{ post.tags.join(' ') }}
+                {{ post.tags.join(" ") }}
               </span>
               <span class="flex items-center gap-1" data-tip="评论数量">
                 <Icon name="ri-chat-2-line" class="size-4" />
-                {{ post.commentsNum > 0 ? post.commentsNum : '暂无评论' }}
+                {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
               </span>
             </div>
 
@@ -194,9 +199,7 @@ onMounted(() => {
       </div>
 
       <!-- 空状态 -->
-      <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
-        暂无文章
-      </div>
+      <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
     </template>
 
     <!-- 分页 -->
@@ -204,20 +207,16 @@ onMounted(() => {
       <button
         v-if="pagination.page > 1"
         @click="goToPage(pagination.page - 1)"
-        class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-      >
+        class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
         <Icon name="ri-arrow-left-double-line" />
       </button>
 
-      <span class="px-4 py-2 text-slate-600 dark:text-slate-400">
-        第 {{ pagination.page }} / {{ pagination.totalPages }} 页
-      </span>
+      <span class="px-4 py-2 text-slate-600 dark:text-slate-400"> 第 {{ pagination.page }} / {{ pagination.totalPages }} 页 </span>
 
       <button
         v-if="pagination.page < pagination.totalPages"
         @click="goToPage(pagination.page + 1)"
-        class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-      >
+        class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
         <Icon name="ri-arrow-right-double-line" />
       </button>
     </div>
@@ -253,7 +252,7 @@ onMounted(() => {
   transform: translateY(2rem);
 }
 
-.duration-600 {
+.duration-300 {
   transition-duration: 0.6s;
 }
 

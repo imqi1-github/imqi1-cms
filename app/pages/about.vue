@@ -10,22 +10,43 @@
       <!-- 头部区域 -->
       <div class="about-bold-header ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32">
         <div class="about-bold-header-left pl-8">
-          <div class="about-bold-avatar w-48 h-48 rounded-full border-6 border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden mb-8 transition-colors duration-300">
+          <div
+            class="about-bold-avatar w-48 h-48 rounded-full border-6 border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden mb-8 transition-colors duration-300">
             <img src="/imgs/avatar.webp" alt="Qi1" class="w-full h-full object-cover" />
           </div>
-          <h1 class="about-bold-name text-slate-900 dark:text-slate-100 text-[clamp(3rem,8vw,6rem)] font-black tracking-tight leading-[.9] mb-4 transition-colors duration-300">Qi1</h1>
-          <p class="about-bold-tagline text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xs transition-colors duration-300">做技术的分享者 · 生活的摄影师 · 时事的评论员</p>
+          <h1
+            class="about-bold-name text-slate-900 dark:text-slate-100 text-[clamp(3rem,8vw,6rem)] font-black tracking-tight leading-[.9] mb-4 transition-colors duration-300">
+            Qi1
+          </h1>
+          <p class="about-bold-tagline text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xs transition-colors duration-300">
+            做技术的分享者 · 生活的摄影师 · 时事的评论员
+          </p>
         </div>
         <div class="about-bold-header-right pb-8 text-right">
-          <div class="about-bold-big-label text-blue-600 dark:text-blue-400 text-xs tracking-widest mb-4 uppercase transition-colors duration-300">ABOUT ME</div>
-          <div class="about-bold-description text-slate-800 dark:text-slate-200 text-2xl font-medium leading-relaxed mb-8 transition-colors duration-300">
+          <div class="about-bold-big-label text-blue-600 dark:text-blue-400 text-xs tracking-widest mb-4 uppercase transition-colors duration-300">
+            ABOUT ME
+          </div>
+          <div
+            class="about-bold-description text-slate-800 dark:text-slate-200 text-2xl font-medium leading-relaxed mb-8 transition-colors duration-300">
             我热爱编程，喜欢记录生活，分享有趣的事情。这是我的个人博客，记录着技术、生活和思考。
           </div>
           <div class="about-bold-badges flex flex-wrap gap-3 justify-end">
-            <span class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300">💻 全栈开发者</span>
-            <span class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300">📸 摄影爱好者</span>
-            <span class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300">🎵 音乐迷</span>
-            <span class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300">✍️ 博主</span>
+            <span
+              class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
+              >💻 全栈开发者</span
+            >
+            <span
+              class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
+              >📸 摄影爱好者</span
+            >
+            <span
+              class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
+              >🎵 音乐迷</span
+            >
+            <span
+              class="about-bold-badge bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
+              >✍️ 博主</span
+            >
           </div>
         </div>
       </div>
@@ -33,25 +54,20 @@
       <!-- 游山玩水 -->
       <div class="about-bold-section about-bold-section-left ready ml-5% mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">01</div>
-        <h2 class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
+        <h2
+          class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           游山玩水
         </h2>
         <div class="about-bold-locations grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
-            <img
-              class="about-bold-location-img w-full h-full object-cover transition-transform duration-500"
-              src="/imgs/jixi.webp"
-              alt="沈阳" />
+            <img class="about-bold-location-img w-full h-full object-cover transition-transform duration-3000" src="/imgs/jixi.webp" alt="沈阳" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">来自</div>
               <div class="about-bold-location-name text-lg font-semibold">黑龙江省鸡西市</div>
             </div>
           </div>
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
-            <img
-              class="about-bold-location-img w-full h-full object-cover transition-transform duration-500"
-              src="/imgs/ysu.webp"
-              alt="燕山大学" />
+            <img class="about-bold-location-img w-full h-full object-cover transition-transform duration-3000" src="/imgs/ysu.webp" alt="燕山大学" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">毕业于</div>
               <div class="about-bold-location-name text-lg font-semibold">燕山大学</div>
@@ -59,7 +75,7 @@
           </div>
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
             <img
-              class="about-bold-location-img w-full h-full object-cover transition-transform duration-500"
+              class="about-bold-location-img w-full h-full object-cover transition-transform duration-3000"
               src="/imgs/shenyang.webp"
               alt="秦皇岛" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
@@ -73,7 +89,8 @@
       <!-- 技多不压身 -->
       <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">02</div>
-        <h2 class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
+        <h2
+          class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           技多不压身
         </h2>
         <div class="about-bold-skills overflow-hidden py-16 relative">
@@ -227,33 +244,58 @@
       <!-- 兴趣广泛 -->
       <div class="about-bold-section about-bold-section-left ready ml-5% mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">03</div>
-        <h2 class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
+        <h2
+          class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           兴趣广泛
         </h2>
         <div class="about-bold-hobbies flex gap-4 pt-3">
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div
+            class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">💻</span>
-            <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">编程</span>
+            <span
+              class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
+              >编程</span
+            >
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div
+            class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">🎮</span>
-            <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">游戏</span>
+            <span
+              class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
+              >游戏</span
+            >
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div
+            class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">🎸</span>
-            <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">音乐</span>
+            <span
+              class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
+              >音乐</span
+            >
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div
+            class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">📸</span>
-            <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">摄影</span>
+            <span
+              class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
+              >摄影</span
+            >
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div
+            class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">📚</span>
-            <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">阅读</span>
+            <span
+              class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
+              >阅读</span
+            >
           </div>
-          <div class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div
+            class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">✈️</span>
-            <span class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">旅行</span>
+            <span
+              class="about-bold-hobby-name text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
+              >旅行</span
+            >
           </div>
         </div>
       </div>
@@ -261,7 +303,8 @@
       <!-- 16 Personality -->
       <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">04</div>
-        <h2 class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
+        <h2
+          class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           16 Personality
         </h2>
         <div class="about-bold-mbti bg-slate-100 dark:bg-slate-800 rounded-2xl p-8 transition-colors duration-300">
@@ -270,61 +313,95 @@
               <img src="/imgs/entp.svg" alt="ENTP" class="w-32 h-32 object-contain" />
             </div>
             <div class="about-bold-mbti-info flex-1">
-              <div class="about-bold-mbti-name text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">辩论家 · ENTP-A</div>
+              <div class="about-bold-mbti-name text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">
+                辩论家 · ENTP-A
+              </div>
               <div class="about-bold-mbti-desc text-slate-600 dark:text-slate-400 mb-4 transition-colors duration-300">外向 · 直觉 · 思维 · 展望</div>
               <div class="about-bold-mbti-traits flex flex-wrap gap-2">
-                <span class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300">富有创意</span>
-                <span class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300">思维敏捷</span>
-                <span class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300">善于辩论</span>
-                <span class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300">追求知识</span>
+                <span
+                  class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
+                  >富有创意</span
+                >
+                <span
+                  class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
+                  >思维敏捷</span
+                >
+                <span
+                  class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
+                  >善于辩论</span
+                >
+                <span
+                  class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
+                  >追求知识</span
+                >
               </div>
             </div>
           </div>
           <div class="about-bold-mbti-bars grid gap-4">
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">外向</div>
-              <div class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div
+                class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="about-bold-mbti-bar-fill bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.extroversion + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">{{ animatedMbtiData.extroversion }}%</div>
+              <div
+                class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+                {{ animatedMbtiData.extroversion }}%
+              </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">直觉</div>
-              <div class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div
+                class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="about-bold-mbti-bar-fill bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.intuition + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">{{ animatedMbtiData.intuition }}%</div>
+              <div
+                class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+                {{ animatedMbtiData.intuition }}%
+              </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">思维</div>
-              <div class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div
+                class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="about-bold-mbti-bar-fill bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.thinking + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">{{ animatedMbtiData.thinking }}%</div>
+              <div
+                class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+                {{ animatedMbtiData.thinking }}%
+              </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">展望</div>
-              <div class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div
+                class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="about-bold-mbti-bar-fill bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.prospecting + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">{{ animatedMbtiData.prospecting }}%</div>
+              <div
+                class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+                {{ animatedMbtiData.prospecting }}%
+              </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
               <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">坚决</div>
-              <div class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div
+                class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="about-bold-mbti-bar-fill bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.assertive + '%' }"></div>
               </div>
-              <div class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">{{ animatedMbtiData.assertive }}%</div>
+              <div
+                class="about-bold-mbti-bar-value text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+                {{ animatedMbtiData.assertive }}%
+              </div>
             </div>
           </div>
           <a
@@ -339,25 +416,42 @@
       <!-- 站点统计 -->
       <div class="about-bold-section about-bold-section-left ready ml-5% mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">05</div>
-        <h2 class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
+        <h2
+          class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           站点统计
         </h2>
         <div class="about-bold-stats grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">2022</div>
-            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">建站年份</div>
+            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
+              2022
+            </div>
+            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
+              建站年份
+            </div>
           </div>
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">{{ animatedStats.publishedPostsNum }}</div>
-            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">篇文章</div>
+            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
+              {{ animatedStats.publishedPostsNum }}
+            </div>
+            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
+              篇文章
+            </div>
           </div>
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">{{ animatedStats.publishedCommentsNum }}</div>
-            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">评论</div>
+            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
+              {{ animatedStats.publishedCommentsNum }}
+            </div>
+            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
+              评论
+            </div>
           </div>
           <div class="about-bold-stat text-center">
-            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">{{ animatedStats.techStack }}</div>
-            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">技术栈</div>
+            <div class="about-bold-stat-number text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
+              {{ animatedStats.techStack }}
+            </div>
+            <div class="about-bold-stat-label text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
+              技术栈
+            </div>
           </div>
         </div>
       </div>
@@ -365,7 +459,8 @@
       <!-- 交个朋友 -->
       <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">06</div>
-        <h2 class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
+        <h2
+          class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           交个朋友
         </h2>
         <p class="text-slate-600 dark:text-slate-400 text-lg mb-6 transition-colors duration-300">欢迎与我交流技术和生活</p>
@@ -395,11 +490,16 @@
 
       <!-- 引言 -->
       <div class="about-bold-quote ready my-24 py-16 relative">
-        <div class="about-bold-quote-text text-slate-900 dark:text-slate-100 text-2xl font-bold leading-relaxed max-w-2xl pl-12 relative transition-colors duration-300">
-          <div class="absolute -top-36 left-0 text-[12em] text-slate-200 dark:text-slate-700 size-fit -z-1 opacity-55 transition-colors duration-300">"</div>
+        <div
+          class="about-bold-quote-text text-slate-900 dark:text-slate-100 text-2xl font-bold leading-relaxed max-w-2xl pl-12 relative transition-colors duration-300">
+          <div class="absolute -top-36 left-0 text-[12em] text-slate-200 dark:text-slate-700 size-fit -z-1 opacity-55 transition-colors duration-300">
+            "
+          </div>
           山海寻梦，不觉其远<br />前路迢迢，阔步而行
         </div>
-        <div class="about-bold-quote-author text-slate-600 dark:text-slate-400 mt-6 pl-12 relative transition-colors duration-300">—— 习近平 · 二〇二六年新年贺词</div>
+        <div class="about-bold-quote-author text-slate-600 dark:text-slate-400 mt-6 pl-12 relative transition-colors duration-300">
+          —— 习近平 · 二〇二六年新年贺词
+        </div>
       </div>
 
       <!-- 导航 -->
@@ -412,7 +512,8 @@
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <RiArchiveLine class="size-8" />
             </div>
-            <div class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+            <div
+              class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
               文章归档
             </div>
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">浏览所有文章</div>
@@ -424,7 +525,8 @@
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <RiCompassLine class="size-8" />
             </div>
-            <div class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+            <div
+              class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
               站点地图
             </div>
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">探索本站结构</div>
@@ -436,7 +538,8 @@
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <RiEditLine class="size-8" />
             </div>
-            <div class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+            <div
+              class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
               更新日志
             </div>
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">不断优化主题</div>
@@ -446,19 +549,28 @@
 
       <!-- 更多故事 -->
       <div class="about-bold-content-section ready border-t-2 border-slate-200 dark:border-slate-700 mt-32 pt-12 transition-colors duration-300">
-        <h2 class="about-bold-content-title text-slate-900 dark:text-slate-100 text-[clamp(2.5rem,6vw,4rem)] font-black tracking-tight leading-none mb-12 transition-colors duration-300">更多故事</h2>
+        <h2
+          class="about-bold-content-title text-slate-900 dark:text-slate-100 text-[clamp(2.5rem,6vw,4rem)] font-black tracking-tight leading-none mb-12 transition-colors duration-300">
+          更多故事
+        </h2>
         <div class="about-bold-content text-slate-800 dark:text-slate-200 text-lg leading-relaxed max-w-2xl space-y-8 transition-colors duration-300">
           <!-- 第一节：关于本站 -->
           <div class="about-story-section">
             <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 transition-colors duration-300">关于本站</h3>
-            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">这个网站是我庞大信息世界中的一个藏身之所，我喜欢在这里记录我觉得有趣的东西。</p>
-            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">包括但不限于生活中有趣的事情、好看的景色、游戏，有时还比较关心时事。</p>
+            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
+              这个网站是我庞大信息世界中的一个藏身之所，我喜欢在这里记录我觉得有趣的东西。
+            </p>
+            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
+              包括但不限于生活中有趣的事情、好看的景色、游戏，有时还比较关心时事。
+            </p>
             <p class="text-slate-700 dark:text-slate-300 transition-colors duration-300">本人热爱代码，所以偶尔也会写点技术文章。</p>
           </div>
           <!-- 第二节：框架？主题？ -->
           <div class="about-story-section">
             <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 transition-colors duration-300">框架？主题？</h3>
-            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">你所看到的这一版网站是我制作的第二款主题，第一款框架，整体采用 Nuxt 4 编写，我给这个 CMS 取名为 Glass。</p>
+            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
+              你所看到的这一版网站是我制作的第二款主题，第一款框架，整体采用 Nuxt 4 编写，我给这个 CMS 取名为 Glass。
+            </p>
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300"></p>
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
               这款主题从 2026 年 4 月 1 日开始制作，保留了之前 Typecho 版本的绝大多数功能，可以让我在更改技术栈的同时，继续使用之前的功能。

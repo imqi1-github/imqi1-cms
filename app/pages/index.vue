@@ -9,7 +9,9 @@
       <div class="index-hero-box flex items-center justify-between w-full opacity-0 animate-fade-in">
         <!-- 标题区域 -->
         <div class="index-hero-title p-1.5">
-          <h1 class="index-first-line text-slate-900 dark:text-white text-[6em] font-black leading-none">IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM</h1>
+          <h1 class="index-first-line text-slate-900 dark:text-white text-[6em] font-black leading-none">
+            IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
+          </h1>
           <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base">
             {{ homeAnnounce }}
           </div>
@@ -167,7 +169,7 @@
               <div
                 v-for="(rightItem, index) in themeRightItems"
                 :key="index"
-                class="index-theme-right-item h-75 opacity-0 invisible absolute transition-opacity duration-500"
+                class="index-theme-right-item h-75 opacity-0 invisible absolute transition-opacity duration-3000"
                 :class="{ 'opacity-100 pointer-events-auto visible': activeThemeIndex === index }">
                 <!-- 字体展示 -->
                 <div v-if="rightItem.type === 'fonts'" class="index-theme-box relative h-75 w-75">
@@ -331,7 +333,8 @@
             :key="post.cid"
             :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
             class="group block no-underline">
-            <div class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300">
+            <div
+              class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300">
               <!-- 封面 -->
               <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden">
                 <img
@@ -346,7 +349,8 @@
               </div>
               <!-- 文章信息 -->
               <div class="p-3">
-                <h3 class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <h3
+                  class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {{ post.title }}
                 </h3>
                 <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
@@ -372,7 +376,8 @@
           :key="index"
           :to="`/content/${image.categorySlug || 'shot'}/${image.slug || image.cid}`"
           class="block break-inside-avoid no-underline group">
-          <div class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
+          <div
+            class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
             <img :src="image.url" :alt="image.desc || image.title" class="w-full h-auto object-cover" loading="lazy" />
             <!-- 悬浮标题 -->
             <div
@@ -401,12 +406,37 @@
     <section class="index-read-more mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
       <h2 id="index-read-more-title" class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold text-center">阅读更多</h2>
       <div class="index-read-more-inner flex flex-wrap justify-center gap-4 mt-8">
-        <NuxtLink to="/subscribes" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">我的订阅</NuxtLink>
-        <NuxtLink href="/agreement" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">协议</NuxtLink>
-        <a href="/sitemap" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">站点地图</a>
-        <NuxtLink href="/archiving" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">归档</NuxtLink>
-        <NuxtLink to="/changelog" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">更新日志</NuxtLink>
-        <NuxtLink to="/feed" target="_blank" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">订阅本站</NuxtLink>
+        <NuxtLink
+          to="/subscribes"
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
+          >我的订阅</NuxtLink
+        >
+        <NuxtLink
+          href="/agreement"
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
+          >协议</NuxtLink
+        >
+        <a
+          href="/sitemap"
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
+          >站点地图</a
+        >
+        <NuxtLink
+          href="/archiving"
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
+          >归档</NuxtLink
+        >
+        <NuxtLink
+          to="/changelog"
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
+          >更新日志</NuxtLink
+        >
+        <NuxtLink
+          to="/feed"
+          target="_blank"
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
+          >订阅本站</NuxtLink
+        >
       </div>
     </section>
 
@@ -417,24 +447,24 @@
 
 <script setup lang="ts">
 import {
-  RiArrowLeftLine,
-  RiArrowRightLine,
-  RiAttachmentLine,
-  RiFileZipFill,
-  RiGithubFill,
-  RiHome2Fill,
-  RiLinksFill,
-  RiMailFill,
-  RiMenuLine,
-  RiMiniProgramFill,
-  RiMouseLine,
-  RiNpmjsFill,
-  RiRestartLine,
-  RiTimeLine,
-  RiTwitterXFill,
-  RiVideoFill,
+    RiArrowLeftLine,
+    RiArrowRightLine,
+    RiAttachmentLine,
+    RiFileZipFill,
+    RiGithubFill,
+    RiHome2Fill,
+    RiLinksFill,
+    RiMailFill,
+    RiMenuLine,
+    RiMiniProgramFill,
+    RiMouseLine,
+    RiNpmjsFill,
+    RiRestartLine,
+    RiTimeLine,
+    RiTwitterXFill,
+    RiVideoFill,
 } from "@remixicon/vue";
-import { markRaw, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { markRaw, onMounted, onUnmounted, ref } from "vue";
 
 // 获取站点信息
 const { data } = await useFetch("/api/site");

@@ -129,26 +129,30 @@ useHead({
 });
 
 // 监听文章数据变化，触发渐入动画
-watch(() => post.value, (newPost) => {
-  if (newPost) {
-    // 使用 setTimeout 确保 DOM 完全渲染
-    setTimeout(() => {
-      const article = document.querySelector("article.animate-fade-in");
-      const header = article?.querySelector("header.article-cover");
-      const contentBody = article?.querySelector(".content-body");
-      const commentSection = article?.querySelector("section.opacity-0");
+watch(
+  () => post.value,
+  newPost => {
+    if (newPost) {
+      // 使用 setTimeout 确保 DOM 完全渲染
+      setTimeout(() => {
+        const article = document.querySelector("article.animate-fade-in");
+        const header = article?.querySelector("header.article-cover");
+        const contentBody = article?.querySelector(".content-body");
+        const commentSection = article?.querySelector("section.opacity-0");
 
-      console.log("触发渐入动画", { article, header, contentBody, commentSection });
+        console.log("触发渐入动画", { article, header, contentBody, commentSection });
 
-      header?.classList.remove("opacity-0", "translate-y-8");
-      header?.classList.add("opacity-100", "translate-y-0");
-      contentBody?.classList.remove("opacity-0", "translate-y-8");
-      contentBody?.classList.add("opacity-100", "translate-y-0");
-      commentSection?.classList.remove("opacity-0", "translate-y-8");
-      commentSection?.classList.add("opacity-100", "translate-y-0");
-    }, 100);
-  }
-}, { immediate: true });
+        header?.classList.remove("opacity-0", "translate-y-8");
+        header?.classList.add("opacity-100", "translate-y-0");
+        contentBody?.classList.remove("opacity-0", "translate-y-8");
+        contentBody?.classList.add("opacity-100", "translate-y-0");
+        commentSection?.classList.remove("opacity-0", "translate-y-8");
+        commentSection?.classList.add("opacity-100", "translate-y-0");
+      }, 100);
+    }
+  },
+  { immediate: true },
+);
 
 // 监听 404 状态，触发错误页动画
 watch(isNotFound, () => {
@@ -348,7 +352,7 @@ onUnmounted(() => {
 
     <article v-else class="flex flex-col animate-fade-in">
       <!-- 标题区域 -->
-      <header :class="['mb-5 opacity-0 translate-y-8 duration-600 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
+      <header :class="['mb-5 opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
         <CoverSwiper v-if="hasManyCovers" :covers="covers" :is-photo-category="isPhotoCategory" />
 
@@ -432,11 +436,11 @@ onUnmounted(() => {
         </aside>
 
         <!-- 文章正文 -->
-        <div class="flex-1 min-w-0 opacity-0 translate-y-8 duration-600 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
+        <div class="flex-1 min-w-0 opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
       </div>
 
       <!-- 评论区 -->
-      <section v-if="commentEnabled" class="mt-10 opacity-0 translate-y-8 duration-600 ease-out content-constrained">
+      <section v-if="commentEnabled" class="mt-10 opacity-0 translate-y-8 duration-300 ease-out content-constrained">
         <CommentList :post-id="post.cid" />
       </section>
     </article>
