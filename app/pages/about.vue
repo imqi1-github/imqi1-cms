@@ -60,14 +60,14 @@
         </h2>
         <div class="about-bold-locations grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
-            <img class="about-bold-location-img w-full h-full object-cover transition-transform duration-3000" src="/imgs/jixi.webp" alt="沈阳" />
+            <img class="about-bold-location-img w-full h-full object-cover transition-transform duration-300" src="/imgs/jixi.webp" alt="沈阳" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">来自</div>
               <div class="about-bold-location-name text-lg font-semibold">黑龙江省鸡西市</div>
             </div>
           </div>
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
-            <img class="about-bold-location-img w-full h-full object-cover transition-transform duration-3000" src="/imgs/ysu.webp" alt="燕山大学" />
+            <img class="about-bold-location-img w-full h-full object-cover transition-transform duration-300" src="/imgs/ysu.webp" alt="燕山大学" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="about-bold-location-label text-xs mb-1 opacity-80">毕业于</div>
               <div class="about-bold-location-name text-lg font-semibold">燕山大学</div>
@@ -75,7 +75,7 @@
           </div>
           <div class="about-bold-location-item aspect-video rounded-2xl overflow-hidden relative">
             <img
-              class="about-bold-location-img w-full h-full object-cover transition-transform duration-3000"
+              class="about-bold-location-img w-full h-full object-cover transition-transform duration-300"
               src="/imgs/shenyang.webp"
               alt="秦皇岛" />
             <div class="about-bold-location-overlay absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">

@@ -47,7 +47,7 @@ const handleClick = async (event: MouseEvent) => {
     // 切换到亮色：colorMode.value === "light"，new（亮色）扩散
     const isToDark = colorMode.value === "dark";
     const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
-    
+
     document.documentElement.animate(
       {
         clipPath: isToDark ? clipPath.reverse() : clipPath,
@@ -116,7 +116,7 @@ onUnmounted(() => {
     <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
-        <span v-if="siteIcp">│ {{ siteIcp }}</span>
+        <span v-if="siteIcp">│ <NuxtLink class="hover:underline" to="https://beian.miit.gov.cn/" target="_blank">{{ siteIcp }}</NuxtLink></span>
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
         <RiRssFill class="size-4.5" />

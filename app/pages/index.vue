@@ -66,182 +66,186 @@
     <!-- 间隔 -->
     <div class="h-37.5"></div>
 
-    <!-- 网站架构 -->
-    <section class="index-website-framework animate-fade-in" aria-labelledby="index-framework-title">
-      <div class="index-website-framework-content max-w-fit w-full mx-auto">
-        <div class="index-framework-title mb-10">
-          <h2 id="index-framework-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">网站架构</h2>
-          <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">加载时间长的网页是劝退用户的主要因素</div>
-          <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
-            <p>Typecho 足够轻量，可最大地发挥服务器性能</p>
-          </div>
-          <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
-            <p>腾讯云 EdgeOne 遍布全球的边缘节点，以最快速度响应和回源必要资源</p>
-          </div>
-        </div>
-        <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col-reverse">
-          <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/chrome.png" alt="浏览器" />
-            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">浏览器</span>
-          </div>
-          <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
-            <RiArrowLeftLine class="text-2xl text-slate-400 dark:text-gray-500" />
-          </div>
-          <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/edgeone.png" alt="Edgeone" />
-            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">EdgeOne</span>
-          </div>
-          <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
-            <RiArrowLeftLine class="text-2xl text-slate-400 dark:text-gray-500" />
-          </div>
-          <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/jdcloud.png" alt="云服务器" />
-            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">云服务器</span>
-          </div>
-          <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
-            <RiArrowLeftLine class="text-2xl text-slate-400 dark:text-gray-500" />
-          </div>
-          <div class="index-framework-item flex flex-col relative">
-            <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/typecho.png" alt="Typecho" />
-            <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Typecho</span>
-          </div>
-        </div>
-        <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
-          本站主题名为 NewImQi1，是我制作的第一款主题，从 2024 年 10 月开始制作，到现在仍持续更新中。最新版的 NewImQi1 主题重构了 Pjax
-          的整个周期，采用全新的带自动销毁的事件管理器，确保切换页面时没有内存泄漏，你可以在<a href="/updates" class="text-blue-600 hover:underline"
-            >更新日志</a
-          >查看所有的主题更新信息。NewImQi1 在 Typecho 1.3 的原有功能上做了很多扩充，包括但不限于友情链接、RSS
-          订阅系统、小程序、图片灯箱、评论归属地显示、实况照片，正文还可以嵌入多种多样的组件。为增强安全，本站设置了评论 Token 校验、CSP，资源部署在
-          EdgeOne 上，配合 Service Worker，在保证功能丰富的同时，也不会牺牲太多性能。
-        </div>
-      </div>
-    </section>
-
-    <!-- 大间隔 -->
-    <div class="h-62.5"></div>
-
-    <!-- 样式选择 -->
-    <div class="index-theme -mt-5 mx-auto max-w-200">
-      <div class="index-theme-inner">
-        <div class="index-theme-themes mb-50 max-md:text-center">
-          <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
-          <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">保持界面清爽，同时不牺牲功能丰富度</div>
-          <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">选择字体类型，合理规划布局，注意颜色搭配，添加边框圆角。</div>
-        </div>
-        <div class="index-theme-introduction flex max-md:justify-center">
-          <!-- 左侧选项 -->
-          <div class="index-theme-left flex flex-col gap-12.5">
-            <div
-              v-for="(item, index) in themeItems"
-              :key="index"
-              :ref="setThemeItemRef"
-              class="index-theme-item flex flex-col items-start justify-center h-75 max-w-75">
-              <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">{{ item.title }}</div>
-              <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
-                <template v-for="(grid, gIndex) in item.grids" :key="gIndex">
-                  <div v-if="grid.isLink" class="index-theme-grid">
-                    <a :href="grid.href" class="hover:underline text-blue-600 dark:text-blue-400 font-weight" target="_blank">{{ grid.text }}</a>
-                  </div>
-                  <div v-else-if="grid.isCode" class="index-theme-grid">
-                    <code class="bg-slate-100 dark:bg-gray-800 px-1 rounded text-sm text-slate-800 dark:text-gray-200">{{ grid.text }}</code>
-                  </div>
-                  <div v-else-if="grid.hasIcon" class="index-theme-grid flex items-center gap-1 text-slate-700 dark:text-gray-300">
-                    {{ grid.text }}
-                  </div>
-                  <div v-else-if="grid.isCategory" class="index-theme-grid text-slate-800 dark:text-gray-200">
-                    {{ grid.text }}
-                  </div>
-                  <NuxtLink v-else-if="grid.href" :to="grid.href" class="index-theme-grid hover:underline text-blue-600 dark:text-blue-400">
-                    {{ grid.text }}
-                  </NuxtLink>
-                  <div v-else class="index-theme-grid text-slate-700 dark:text-gray-300">{{ grid.text }}</div>
-                </template>
-              </div>
-              <div v-else class="index-theme-content2 tracking-[0.1ch] mt-5 text-slate-700 dark:text-gray-300">
-                {{ item.content }}
-              </div>
+    <!-- 四个内容的父盒子 -->
+    <div class="index-content-box">
+      <!-- 网站架构 -->
+      <section ref="sectionFramework" class="index-website-framework animate-fade-in" aria-labelledby="index-framework-title">
+        <div class="index-website-framework-content max-w-fit w-full mx-auto">
+          <div class="index-framework-title mb-10">
+            <h2 id="index-framework-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">网站架构</h2>
+            <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">加载时间长的网页是劝退用户的主要因素</div>
+            <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
+              <p>Typecho 足够轻量，可最大地发挥服务器性能</p>
+            </div>
+            <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
+              <p>腾讯云 EdgeOne 遍布全球的边缘节点，以最快速度响应和回源必要资源</p>
             </div>
           </div>
+          <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col-reverse">
+            <div class="index-framework-item flex flex-col relative">
+              <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/chrome.png" alt="浏览器" />
+              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">浏览器</span>
+            </div>
+            <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
+              <RiArrowLeftLine class="text-2xl text-slate-400 dark:text-gray-500" />
+            </div>
+            <div class="index-framework-item flex flex-col relative">
+              <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/edgeone.png" alt="Edgeone" />
+              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">EdgeOne</span>
+            </div>
+            <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
+              <RiArrowLeftLine class="text-2xl text-slate-400 dark:text-gray-500" />
+            </div>
+            <div class="index-framework-item flex flex-col relative">
+              <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/jdcloud.png" alt="云服务器" />
+              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">云服务器</span>
+            </div>
+            <div class="index-framework-arrow max-md:-rotate-90 max-md:mt-7">
+              <RiArrowLeftLine class="text-2xl text-slate-400 dark:text-gray-500" />
+            </div>
+            <div class="index-framework-item flex flex-col relative">
+              <img class="index-framework-pic rounded-full w-25 h-25" src="/imgs/typecho.png" alt="Typecho" />
+              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Typecho</span>
+            </div>
+          </div>
+          <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
+            本站主题名为 NewImQi1，是我制作的第一款主题，从 2024 年 10 月开始制作，到现在仍持续更新中。最新版的 NewImQi1 主题重构了 Pjax
+            的整个周期，采用全新的带自动销毁的事件管理器，确保切换页面时没有内存泄漏，你可以在<a href="/updates" class="text-blue-600 hover:underline"
+              >更新日志</a
+            >查看所有的主题更新信息。NewImQi1 在 Typecho 1.3 的原有功能上做了很多扩充，包括但不限于友情链接、RSS
+            订阅系统、小程序、图片灯箱、评论归属地显示、实况照片，正文还可以嵌入多种多样的组件。为增强安全，本站设置了评论 Token 校验、CSP，资源部署在
+            EdgeOne 上，配合 Service Worker，在保证功能丰富的同时，也不会牺牲太多性能。
+          </div>
+        </div>
+      </section>
 
-          <!-- 右侧展示 -->
-          <div class="index-theme-right flex-1 flex justify-end relative max-md:hidden">
-            <div class="index-theme-right-items flex items-center justify-center w-full h-0 sticky top-1/2 my-38">
+      <!-- 大间隔 -->
+      <div class="h-62.5"></div>
+
+      <!-- 样式选择 -->
+      <div ref="sectionStyle" class="index-theme -mt-5 mx-auto max-w-200">
+        <div class="index-theme-inner">
+          <div class="index-theme-themes mb-50 max-md:text-center">
+            <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
+            <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">保持界面清爽，同时不牺牲功能丰富度</div>
+            <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">选择字体类型，合理规划布局，注意颜色搭配，添加边框圆角。</div>
+          </div>
+          <div class="index-theme-introduction flex max-md:justify-center">
+            <!-- 左侧选项 -->
+            <div class="index-theme-left flex flex-col gap-12.5">
               <div
-                v-for="(rightItem, index) in themeRightItems"
+                v-for="(item, index) in themeItems"
                 :key="index"
-                class="index-theme-right-item h-75 opacity-0 invisible absolute transition-opacity duration-3000"
-                :class="{ 'opacity-100 pointer-events-auto visible': activeThemeIndex === index }">
-                <!-- 字体展示 -->
-                <div v-if="rightItem.type === 'fonts'" class="index-theme-box relative h-75 w-75">
-                  <div
-                    class="index-theme-serif grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-[2.5em] font-bold border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl shadow-sm h-38 w-38 absolute left-28 top-19 animate-float text-slate-900 dark:text-white">
-                    <span>之</span>
-                    <span>的</span>
-                    <span>事</span>
-                    <span>以</span>
-                  </div>
-                  <code
-                    class="index-theme-mono bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm px-2 py-1 absolute left-2.5 bottom-14 animate-float-delay-1 text-slate-800 dark:text-gray-200">
-                    <span class="text-blue-700 dark:text-blue-400">print</span>(<span class="text-green-700 dark:text-green-400">"Hello World"</span>)
-                  </code>
-                  <div
-                    class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
-                    <span><RiAttachmentLine class="text-slate-600 dark:text-gray-400" /></span>
-                    <span><RiFileZipFill class="text-slate-600 dark:text-gray-400" /></span>
-                    <span><RiVideoFill class="text-slate-600 dark:text-gray-400" /></span>
-                    <span><RiRestartLine class="text-slate-600 dark:text-gray-400" /></span>
-                  </div>
-                </div>
-
-                <!-- 布局图片 -->
-                <div v-else-if="rightItem.type === 'layout'" class="index-theme-box relative h-75 w-75">
-                  <div
-                    class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-                    <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
-                  </div>
-                  <div
-                    class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform"></div>
-                </div>
-
-                <!-- 音乐播放器 -->
-                <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                  <div class="index-theme-music-box absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
-                    <div class="text-slate-500 dark:text-gray-400 text-sm text-center">音乐播放器占位</div>
-                    <div class="text-slate-400 dark:text-gray-500 text-xs text-center mt-2">支持嵌入网易云音乐、QQ音乐等</div>
-                  </div>
-                </div>
-
-                <!-- 文章预览 -->
-                <div v-else-if="rightItem.type === 'article'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                  <div v-if="randomPost" class="index-theme-article-box flex flex-col w-full h-full justify-center">
-                    <!-- 封面 -->
-                    <div
-                      v-if="randomPost.covers && randomPost.covers.length > 0"
-                      class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
-                      <img
-                        :src="randomPost.covers[0].url || randomPost.covers[0]"
-                        :alt="randomPost.title"
-                        class="w-full h-full object-cover"
-                        loading="lazy" />
+                :ref="setThemeItemRef"
+                class="index-theme-item flex flex-col items-start justify-center h-75 max-w-75">
+                <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">{{ item.title }}</div>
+                <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
+                  <template v-for="(grid, gIndex) in item.grids" :key="gIndex">
+                    <div v-if="grid.isLink" class="index-theme-grid">
+                      <a :href="grid.href" class="hover:underline text-blue-600 dark:text-blue-400 font-weight" target="_blank">{{ grid.text }}</a>
                     </div>
-                    <!-- 标题 -->
-                    <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-2 mb-2">
-                      {{ randomPost.title }}
-                    </h3>
-                    <!-- 描述 -->
-                    <p v-if="randomPost.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-3">
-                      {{ randomPost.desc }}
-                    </p>
-                    <p v-else class="text-slate-400 dark:text-gray-500 text-sm italic">暂无描述</p>
-                    <!-- 链接 -->
-                    <NuxtLink
-                      :to="`/content/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
-                      class="pt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline">
-                      阅读全文 →
+                    <div v-else-if="grid.isCode" class="index-theme-grid">
+                      <code class="bg-slate-100 dark:bg-gray-800 px-1 rounded text-sm text-slate-800 dark:text-gray-200">{{ grid.text }}</code>
+                    </div>
+                    <div v-else-if="grid.hasIcon" class="index-theme-grid flex items-center gap-1 text-slate-700 dark:text-gray-300">
+                      {{ grid.text }}
+                    </div>
+                    <div v-else-if="grid.isCategory" class="index-theme-grid text-slate-800 dark:text-gray-200">
+                      {{ grid.text }}
+                    </div>
+                    <NuxtLink v-else-if="grid.href" :to="grid.href" class="index-theme-grid hover:underline text-blue-600 dark:text-blue-400">
+                      {{ grid.text }}
                     </NuxtLink>
+                    <div v-else class="index-theme-grid text-slate-700 dark:text-gray-300">{{ grid.text }}</div>
+                  </template>
+                </div>
+                <div v-else class="index-theme-content2 tracking-[0.1ch] mt-5 text-slate-700 dark:text-gray-300">
+                  {{ item.content }}
+                </div>
+              </div>
+            </div>
+
+            <!-- 右侧展示 -->
+            <div class="index-theme-right flex-1 flex justify-end relative max-md:hidden">
+              <div class="index-theme-right-items flex items-center justify-center w-full h-0 sticky top-1/2 my-38">
+                <div
+                  v-for="(rightItem, index) in themeRightItems"
+                  :key="index"
+                  class="index-theme-right-item h-75 opacity-0 invisible absolute transition-opacity duration-300"
+                  :class="{ 'opacity-100 pointer-events-auto visible': activeThemeIndex === index }">
+                  <!-- 字体展示 -->
+                  <div v-if="rightItem.type === 'fonts'" class="index-theme-box relative h-75 w-75">
+                    <div
+                      class="index-theme-serif grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-[2.5em] font-bold border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl shadow-sm h-38 w-38 absolute left-28 top-19 animate-float text-slate-900 dark:text-white">
+                      <span>之</span>
+                      <span>的</span>
+                      <span>事</span>
+                      <span>以</span>
+                    </div>
+                    <code
+                      class="index-theme-mono bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm px-2 py-1 absolute left-2.5 bottom-14 animate-float-delay-1 text-slate-800 dark:text-gray-200">
+                      <span class="text-blue-700 dark:text-blue-400">print</span>(<span class="text-green-700 dark:text-green-400">"Hello World"</span
+                      >)
+                    </code>
+                    <div
+                      class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
+                      <span><RiAttachmentLine class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><RiFileZipFill class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><RiVideoFill class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><RiRestartLine class="text-slate-600 dark:text-gray-400" /></span>
+                    </div>
                   </div>
-                  <div v-else class="index-theme-article-box flex flex-col items-center justify-center h-full w-full">
-                    <div class="text-slate-500 dark:text-gray-400 text-sm">暂无文章</div>
+
+                  <!-- 布局图片 -->
+                  <div v-else-if="rightItem.type === 'layout'" class="index-theme-box relative h-75 w-75">
+                    <div
+                      class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+                      <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
+                    </div>
+                    <div
+                      class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform"></div>
+                  </div>
+
+                  <!-- 音乐播放器 -->
+                  <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
+                    <div class="index-theme-music-box absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
+                      <div class="text-slate-500 dark:text-gray-400 text-sm text-center">音乐播放器占位</div>
+                      <div class="text-slate-400 dark:text-gray-500 text-xs text-center mt-2">支持嵌入网易云音乐、QQ音乐等</div>
+                    </div>
+                  </div>
+
+                  <!-- 文章预览 -->
+                  <div v-else-if="rightItem.type === 'article'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
+                    <div v-if="randomPost" class="index-theme-article-box flex flex-col w-full h-full justify-center">
+                      <!-- 封面 -->
+                      <div
+                        v-if="randomPost.covers && randomPost.covers.length > 0"
+                        class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
+                        <img
+                          :src="randomPost.covers[0].url || randomPost.covers[0]"
+                          :alt="randomPost.title"
+                          class="w-full h-full object-cover"
+                          loading="lazy" />
+                      </div>
+                      <!-- 标题 -->
+                      <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-2 mb-2">
+                        {{ randomPost.title }}
+                      </h3>
+                      <!-- 描述 -->
+                      <p v-if="randomPost.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-3">
+                        {{ randomPost.desc }}
+                      </p>
+                      <p v-else class="text-slate-400 dark:text-gray-500 text-sm italic">暂无描述</p>
+                      <!-- 链接 -->
+                      <NuxtLink
+                        :to="`/content/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
+                        class="pt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline">
+                        阅读全文 →
+                      </NuxtLink>
+                    </div>
+                    <div v-else class="index-theme-article-box flex flex-col items-center justify-center h-full w-full">
+                      <div class="text-slate-500 dark:text-gray-400 text-sm">暂无文章</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -249,156 +253,172 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 间隔 -->
-    <div class="h-62.5"></div>
+      <!-- 间隔 -->
+      <div class="h-62.5"></div>
 
-    <!-- 最新文章 -->
-    <section class="index-recent-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
-      <h2 id="index-recent-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">文章内容</h2>
-      <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
-      <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
+      <!-- 最新文章 -->
+      <section ref="sectionContent" class="index-recent-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
+        <h2 id="index-recent-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">文章内容</h2>
+        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
+        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
 
-      <!-- 文章列表 -->
-      <div v-if="recentPosts.length > 0" class="index-recent-posts-list gap-4 flex flex-wrap">
-        <NuxtLink
-          v-for="post in recentPosts"
-          :key="post.cid"
-          :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
-          class="index-recent-post-item block p-4 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 no-underline flex-[1_0_250px]">
-          <div class="flex gap-4">
-            <!-- 封面图片 -->
-            <div v-if="post.covers && post.covers.length > 0" class="flex-shrink-0 w-32 h-24 rounded-lg overflow-hidden">
-              <img :src="post.covers[0].url || post.covers[0]" :alt="post.title" class="w-full h-full object-cover" loading="lazy" />
-            </div>
-            <!-- 文章信息 -->
-            <div class="flex-1 min-w-0 flex flex-col justify-between">
-              <div>
-                <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-1 mb-1">{{ post.title }}</h3>
-                <p v-if="post.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-2">{{ post.desc }}</p>
-              </div>
-              <div class="flex gap-1 text-xs text-slate-400 dark:text-gray-500 mt-2 flex-col">
-                <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1 flex-wrap">
-                  <RiMenuLine class="size-3.5" />
-                  <span v-for="(cat, idx) in post.categories" :key="cat.slug" class="text-gray-500 dark:text-gray-400">
-                    {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
-                  </span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <RiTimeLine class="size-3.5" />
-                  <span>{{ formatDate(post.created) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </NuxtLink>
-      </div>
-
-      <!-- 无文章状态 -->
-      <div v-else class="text-center py-12 text-slate-500 dark:text-gray-400">
-        <p>暂无文章</p>
-      </div>
-
-      <!-- 查看更多 -->
-      <div v-if="recentPosts.length > 0" class="text-center mt-8">
-        <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
-          查看全部文章
-          <RiArrowRightLine class="size-4" />
-        </NuxtLink>
-      </div>
-    </section>
-
-    <!-- 分类文章 -->
-    <section v-if="categoryRecentPosts.length > 0" class="index-category-posts mx-auto max-w-275 animate-fade-in">
-      <template v-for="(categoryData, index) in categoryRecentPosts" :key="categoryData.category.slug">
-        <!-- 分类标题 -->
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">{{ categoryData.category.name }}</h2>
-            <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.name }}分类</div>
-          </div>
+        <!-- 文章列表 -->
+        <div v-if="recentPosts.length > 0" class="index-recent-posts-list gap-4 flex flex-wrap">
           <NuxtLink
-            :to="`/category/${categoryData.category.slug}`"
-            class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
-            查看更多
+            v-for="post in recentPosts"
+            :key="post.cid"
+            :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
+            class="index-recent-post-item block p-4 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 no-underline flex-[1_0_400px]">
+            <div class="flex gap-4">
+              <!-- 封面图片 -->
+              <div v-if="post.covers && post.covers.length > 0" class="flex-shrink-0 w-32 h-24 rounded-lg overflow-hidden">
+                <img :src="post.covers[0].url || post.covers[0]" :alt="post.title" class="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <!-- 文章信息 -->
+              <div class="flex-1 min-w-0 flex flex-col justify-between">
+                <div>
+                  <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-1 mb-1">{{ post.title }}</h3>
+                  <p v-if="post.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-2">{{ post.desc }}</p>
+                </div>
+                <div class="flex gap-1 text-xs text-slate-400 dark:text-gray-500 mt-2 flex-col">
+                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1 flex-wrap">
+                    <RiMenuLine class="size-3.5" />
+                    <span v-for="(cat, idx) in post.categories" :key="cat.slug" class="text-gray-500 dark:text-gray-400">
+                      {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <RiTimeLine class="size-3.5" />
+                    <span>{{ formatDate(post.created) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </NuxtLink>
+        </div>
+
+        <!-- 无文章状态 -->
+        <div v-else class="text-center py-12 text-slate-500 dark:text-gray-400">
+          <p>暂无文章</p>
+        </div>
+
+        <!-- 查看更多 -->
+        <div v-if="recentPosts.length > 0" class="text-center mt-8">
+          <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
+            查看全部文章
             <RiArrowRightLine class="size-4" />
           </NuxtLink>
         </div>
+      </section>
 
-        <!-- 文章网格 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
+      <!-- 分类文章 -->
+      <section v-if="categoryRecentPosts.length > 0" class="index-category-posts mx-auto max-w-275 animate-fade-in">
+        <template v-for="(categoryData, index) in categoryRecentPosts" :key="categoryData.category.slug">
+          <!-- 分类标题 -->
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">{{ categoryData.category.name }}</h2>
+              <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.name }}分类</div>
+            </div>
+            <NuxtLink
+              :to="`/category/${categoryData.category.slug}`"
+              class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+              查看更多
+              <RiArrowRightLine class="size-4" />
+            </NuxtLink>
+          </div>
+
+          <!-- 文章网格 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
+            <NuxtLink
+              v-for="post in categoryData.posts"
+              :key="post.cid"
+              :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
+              class="group block no-underline">
+              <div
+                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300">
+                <!-- 封面 -->
+                <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden">
+                  <img
+                    :src="post.covers[0].url || post.covers[0]"
+                    :alt="post.title"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy" />
+                </div>
+                <!-- 无封面占位 -->
+                <div v-else class="aspect-video bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+                  <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ categoryData.category.name[0] }}</span>
+                </div>
+                <!-- 文章信息 -->
+                <div class="p-3">
+                  <h3
+                    class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {{ post.title }}
+                  </h3>
+                  <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
+                    <span>{{ formatDate(post.created) }}</span>
+                  </div>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </template>
+      </section>
+
+      <!-- 最新图片 -->
+      <section
+        ref="sectionPhotos"
+        v-if="photoImages.length > 0"
+        class="index-photo-posts mt-6 mx-auto max-w-275 animate-fade-in"
+        aria-labelledby="index-photo-posts-title">
+        <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">图片内容</h2>
+        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的图片</div>
+        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">记录生活中的美好瞬间</div>
+
+        <!-- 图片瀑布流 -->
+        <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
           <NuxtLink
-            v-for="post in categoryData.posts"
-            :key="post.cid"
-            :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
-            class="group block no-underline">
+            v-for="(image, index) in photoImages"
+            :key="index"
+            :to="`/content/${image.categorySlug || 'shot'}/${image.slug || image.cid}`"
+            class="block break-inside-avoid no-underline group">
             <div
-              class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300">
-              <!-- 封面 -->
-              <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden">
-                <img
-                  :src="post.covers[0].url || post.covers[0]"
-                  :alt="post.title"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy" />
-              </div>
-              <!-- 无封面占位 -->
-              <div v-else class="aspect-video bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
-                <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ categoryData.category.name[0] }}</span>
-              </div>
-              <!-- 文章信息 -->
-              <div class="p-3">
-                <h3
-                  class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {{ post.title }}
-                </h3>
-                <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
-                  <span>{{ formatDate(post.created) }}</span>
+              class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
+              <img :src="image.url" :alt="image.desc || image.title" class="w-full h-auto object-cover" loading="lazy" />
+              <!-- 悬浮标题 -->
+              <div
+                class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="absolute bottom-0 left-0 right-0 p-3">
+                  <p class="text-white text-sm font-medium line-clamp-2">{{ image.desc || image.title }}</p>
                 </div>
               </div>
             </div>
           </NuxtLink>
         </div>
-      </template>
-    </section>
 
-    <!-- 最新图片 -->
-    <section v-if="photoImages.length > 0" class="index-photo-posts mt-6 mx-auto max-w-275 animate-fade-in" aria-labelledby="index-photo-posts-title">
-      <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">图片内容</h2>
-      <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的图片</div>
-      <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">记录生活中的美好瞬间</div>
+        <!-- 查看更多 -->
+        <div class="text-center mt-8">
+          <NuxtLink :to="`/category/${photoCategorySlug}`" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
+            查看全部图片
+            <RiArrowRightLine class="size-4" />
+          </NuxtLink>
+        </div>
+      </section>
 
-      <!-- 图片瀑布流 -->
-      <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-        <NuxtLink
-          v-for="(image, index) in photoImages"
-          :key="index"
-          :to="`/content/${image.categorySlug || 'shot'}/${image.slug || image.cid}`"
-          class="block break-inside-avoid no-underline group">
-          <div
-            class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
-            <img :src="image.url" :alt="image.desc || image.title" class="w-full h-auto object-cover" loading="lazy" />
-            <!-- 悬浮标题 -->
-            <div
-              class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div class="absolute bottom-0 left-0 right-0 p-3">
-                <p class="text-white text-sm font-medium line-clamp-2">{{ image.desc || image.title }}</p>
-              </div>
-            </div>
-          </div>
-        </NuxtLink>
+      <!-- 目录 -->
+      <div
+        class="max-sm:hidden flex mt-24 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full left-1/2 -translate-x-1/2 text-sm">
+        <div
+          v-for="(item, index) in tocItems"
+          :key="item.id"
+          class="px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 duration-150"
+          :class="{ 'bg-blue-700 text-white hover:bg-blue-600!': activeTocIndex === index }"
+          @click="scrollToSection(index)">
+          {{ item.title }}
+        </div>
       </div>
-
-      <!-- 查看更多 -->
-      <div class="text-center mt-8">
-        <NuxtLink to="/shot" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
-          查看全部图片
-          <RiArrowRightLine class="size-4" />
-        </NuxtLink>
-      </div>
-    </section>
-
+    </div>
     <!-- 间隔 -->
     <div class="h-62.5"></div>
 
@@ -447,24 +467,84 @@
 
 <script setup lang="ts">
 import {
-    RiArrowLeftLine,
-    RiArrowRightLine,
-    RiAttachmentLine,
-    RiFileZipFill,
-    RiGithubFill,
-    RiHome2Fill,
-    RiLinksFill,
-    RiMailFill,
-    RiMenuLine,
-    RiMiniProgramFill,
-    RiMouseLine,
-    RiNpmjsFill,
-    RiRestartLine,
-    RiTimeLine,
-    RiTwitterXFill,
-    RiVideoFill,
+  RiArrowLeftLine,
+  RiArrowRightLine,
+  RiAttachmentLine,
+  RiFileZipFill,
+  RiGithubFill,
+  RiHome2Fill,
+  RiLinksFill,
+  RiMailFill,
+  RiMenuLine,
+  RiMiniProgramFill,
+  RiMouseLine,
+  RiNpmjsFill,
+  RiRestartLine,
+  RiTimeLine,
+  RiTwitterXFill,
+  RiVideoFill,
 } from "@remixicon/vue";
 import { markRaw, onMounted, onUnmounted, ref } from "vue";
+
+// 目录导航数据
+const tocItems = [
+  { id: "framework", title: "网站架构" },
+  { id: "style", title: "样式选择" },
+  { id: "content", title: "最新内容" },
+  { id: "photos", title: "最新照片" },
+];
+
+// 当前激活的目录项索引
+const activeTocIndex = ref(0);
+
+// Section refs
+const sectionFramework = ref<HTMLElement | null>(null);
+const sectionStyle = ref<HTMLElement | null>(null);
+const sectionContent = ref<HTMLElement | null>(null);
+const sectionPhotos = ref<HTMLElement | null>(null);
+
+// 导航栏高度
+const NAV_HEIGHT = 80;
+
+// 滚动到指定 section
+const scrollToSection = (index: number) => {
+  const sections = [sectionFramework.value, sectionStyle.value, sectionContent.value, sectionPhotos.value];
+  const targetSection = sections[index];
+
+  if (!targetSection) return;
+
+  const rect = targetSection.getBoundingClientRect();
+  const scrollTop = window.scrollY + rect.top - NAV_HEIGHT;
+
+  window.scrollTo({
+    top: scrollTop,
+    behavior: "smooth",
+  });
+};
+
+// 目录滚动监听 - 更新当前激活项
+const handleTocScroll = () => {
+  const sections = [
+    { el: sectionFramework.value, index: 0 },
+    { el: sectionStyle.value, index: 1 },
+    { el: sectionContent.value, index: 2 },
+    { el: sectionPhotos.value, index: 3 },
+  ];
+
+  const scrollY = window.scrollY;
+  const windowHeight = window.innerHeight;
+
+  for (const section of sections) {
+    if (!section.el) continue;
+    const rect = section.el.getBoundingClientRect();
+    const offsetTop = rect.top + scrollY;
+
+    // 当 section 顶部在视口上方 1/3 处时激活
+    if (scrollY >= offsetTop - windowHeight / 3 - NAV_HEIGHT) {
+      activeTocIndex.value = section.index;
+    }
+  }
+};
 
 // 获取站点信息
 const { data } = await useFetch("/api/site");
@@ -526,6 +606,9 @@ useHead({
 
 // 首页Hero下文字
 const homeAnnounce = computed(() => data.value?.data?.homeHeroSubtitle || "做技术的分享者 · 生活的摄影师 · 时事的评论员");
+
+// 图片分类slug
+const photoCategorySlug = computed(() => data.value?.data?.photoCategorySlug || "shot");
 
 // 联系链接配置
 const contactLinks = ref([
@@ -677,6 +760,10 @@ onMounted(() => {
   // 监听滚动 - 样式选择区域跟随效果
   window.addEventListener("scroll", handleStyleScroll);
 
+  // 监听滚动 - 目录导航高亮
+  window.addEventListener("scroll", handleTocScroll);
+  handleTocScroll();
+
   // 滚动渐入效果监听
   const observerOptions = {
     threshold: 0.1,
@@ -701,6 +788,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
   window.removeEventListener("scroll", handleStyleScroll);
+  window.removeEventListener("scroll", handleTocScroll);
   fadeInObserver?.disconnect();
 });
 </script>
