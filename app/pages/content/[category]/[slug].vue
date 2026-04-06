@@ -675,6 +675,25 @@ onUnmounted(() => {
   border-color: rgb(55 65 81);
 }
 
+/* Shiki 双主题切换 - 使用 CSS 变量 */
+/* 暗色模式下应用暗色主题的 CSS 变量 */
+.dark .markdown-body :deep(pre.shiki),
+.dark .markdown-body :deep(pre.shiki span),
+.dark .markdown-body :deep(pre.shiki code),
+.dark .markdown-body :deep(pre.shiki .line) {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+/* 暗色模式下行号颜色 */
+.dark .markdown-body :deep(pre.shiki code .line::before) {
+  color: var(--shiki-dark) !important;
+  opacity: 0.5;
+}
+
 /* 代码块折叠 - 只显示前14行 */
 .markdown-body :deep(pre.shiki.code-collapsed) {
   max-height: calc(0.8em * 14 + 32px);

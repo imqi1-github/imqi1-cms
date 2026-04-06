@@ -87,7 +87,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     await Shiki({
       themes: {
         light: "min-light",
-        dark: "vitesse-dark",
+        dark: "one-dark-pro",
       },
       langs: [
         javascript,
