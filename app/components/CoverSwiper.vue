@@ -154,6 +154,7 @@ watch(
   border: 1px solid rgb(229 231 235);
   border-radius: 15px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   max-width: 100%;
@@ -167,9 +168,10 @@ watch(
 .swiper-img {
   display: block;
   height: 100%;
-  /* 图片宽度自适应内容，不设上限 */
+  /* 图片宽度自适应内容 */
   width: auto;
-  max-width: none;
+  /* 限制最大宽度不超过容器 */
+  max-width: 100%;
   /* 确保图片不会超出视口 */
   object-fit: cover;
   flex-shrink: 0;

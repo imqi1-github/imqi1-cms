@@ -456,7 +456,8 @@ onMounted(() => {
 
       // 创建悬浮解释元素
       const tooltipElement = document.createElement("span");
-      tooltipElement.className = "markdown-tooltip relative inline-block border-b border-dashed border-blue-500 dark:border-blue-400 cursor-help text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
+      tooltipElement.className =
+        "markdown-tooltip relative inline-block border-b border-dashed border-blue-500 dark:border-blue-400 cursor-help text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
       tooltipElement.innerHTML = `
         <span class="tooltip-content">${content}</span>
         <span class="tooltip-popup invisible absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none">
@@ -509,7 +510,9 @@ onMounted(() => {
           rel="noopener noreferrer"
           class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
           <div class="flex flex-col md:flex-row">
-            ${image ? `
+            ${
+              image
+                ? `
               <div class="md:w-1/3 h-48 md:h-auto overflow-hidden bg-slate-100 dark:bg-slate-900">
                 <img
                   src="${image}"
@@ -518,7 +521,9 @@ onMounted(() => {
                   loading="lazy"
                 />
               </div>
-            ` : ''}
+            `
+                : ""
+            }
             <div class="flex-1 p-5 flex flex-col justify-center">
               <div class="flex items-start justify-between gap-3 mb-2">
                 <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
@@ -529,11 +534,15 @@ onMounted(() => {
                   class="size-5 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5 group-hover:text-blue-500 transition-colors"
                 />
               </div>
-              ${description ? `
+              ${
+                description
+                  ? `
                 <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
                   ${description}
                 </p>
-              ` : ''}
+              `
+                  : ""
+              }
               <div class="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
                 <Icon name="lucide:link" class="size-3" />
                 <span class="truncate max-w-xs">${url}</span>
@@ -552,7 +561,10 @@ onMounted(() => {
     swiperWrappers.forEach((wrapper, wrapperIndex) => {
       // 获取容器的完整文本内容，按行分割
       const fullText = wrapper.textContent || "";
-      const lines = fullText.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+      const lines = fullText
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
       const slides: { url: string; title: string }[] = [];
 
       // 解析每一行，提取图片 URL 和标题
@@ -580,21 +592,23 @@ onMounted(() => {
       swiperContainer.className = `swiper-container ${uniqueClass}`;
       swiperContainer.innerHTML = `
         <div class="swiper-wrapper noneed">
-          ${slides.map(
-            (slide, index) => `
+          ${slides
+            .map(
+              (slide, index) => `
             <div class="swiper-slide">
               <img
                 src="${slide.url}"
-                alt="${slide.title || '图片'}"
+                alt="${slide.title || "图片"}"
                 data-fancybox="markdown-swiper-${wrapperIndex}"
-                data-caption="${slide.title || '图片'}"
+                data-caption="${slide.title || "图片"}"
                 class="swiper-img"
                 loading="lazy"
               />
               ${slide.title ? `<div class="swiper-slide-title">${slide.title}</div>` : ""}
             </div>
           `,
-          ).join("")}
+            )
+            .join("")}
         </div>
         <div class="flex justify-between items-center h-8">
           <div class="swiper-pagination"></div>
@@ -673,6 +687,10 @@ onMounted(() => {
         position: relative;
         border: 1px solid rgb(229 231 235);
         border-radius: 15px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
       }
 
       .dark .swiper-container[class*="markdown-swiper-instance"] .swiper-slide {
@@ -683,7 +701,7 @@ onMounted(() => {
         display: block;
         height: 100%;
         width: auto;
-        max-width: none;
+        max-width: 100%;
         object-fit: contain;
         flex-shrink: 0;
         cursor: zoom-in;
@@ -802,7 +820,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'max-w-full' : showToc ? 'max-w-280' : 'max-w-225']">
+  <div
+    :class="[
+      'mx-auto px-5 py-8 w-full',
+      isPhotoCategory ? (showToc ? 'max-w-[93.75rem]' : 'max-w-[87.5rem]') : showToc ? 'max-w-[62.5rem]' : 'max-w-[56.25rem]',
+    ]">
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
       <p class="mt-2 text-slate-500">加载中...</p>
@@ -823,7 +845,7 @@ onUnmounted(() => {
       </p>
     </div>
 
-    <article v-else class="flex flex-col animate-fade-in">
+    <article v-else class="flex flex-col w-full animate-fade-in">
       <!-- 标题区域 -->
       <header :class="['mb-5 opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
@@ -884,7 +906,7 @@ onUnmounted(() => {
       </header>
 
       <!-- 文章内容区域 - 带目录 -->
-      <div class="mt-8 flex gap-8 relative">
+      <div class="mt-8 flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
         <aside v-if="showToc" class="toc-sidebar hidden lg:block w-48 flex-shrink-0 order-first">
           <nav class="toc-nav sticky top-24">
@@ -909,11 +931,11 @@ onUnmounted(() => {
         </aside>
 
         <!-- 文章正文 -->
-        <div class="min-w-0 opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
+        <div class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
       </div>
 
       <!-- 评论区 -->
-      <section v-if="commentEnabled" class="mt-10 opacity-0 translate-y-8 duration-300 ease-out content-constrained">
+      <section v-if="commentEnabled" class="mt-10 w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
         <CommentList :post-id="post.cid" />
       </section>
     </article>
@@ -964,10 +986,7 @@ onUnmounted(() => {
 
 /* 封面和评论区约束宽度 */
 .article-cover {
-  max-width: 56.25rem; /* 900px - same as max-w-225 */
   width: 100%;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .content-constrained {
@@ -976,7 +995,6 @@ onUnmounted(() => {
   margin-left: auto;
   margin-right: auto;
 }
-
 
 /* 目录样式 */
 .toc-sidebar {
@@ -1054,16 +1072,16 @@ onUnmounted(() => {
   margin: auto;
 }
 
-.markdown-body :deep(p) {
+.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p)) {
   margin: 1em 0;
 }
 
-.markdown-body :deep(h1),
-.markdown-body :deep(h2),
-.markdown-body :deep(h3),
-.markdown-body :deep(h4),
-.markdown-body :deep(h5),
-.markdown-body :deep(h6) {
+.markdown-body :deep(h1):not(.markdown-callout h1):not(.markdown-card h1):not(.swiper-slide-title h1),
+.markdown-body :deep(h2):not(.markdown-callout h2):not(.markdown-card h2):not(.swiper-slide-title h2),
+.markdown-body :deep(h3):not(.markdown-callout h3):not(.markdown-card h3):not(.swiper-slide-title h3),
+.markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4),
+.markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5),
+.markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6) {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
   font-weight: 700;
@@ -1111,8 +1129,8 @@ onUnmounted(() => {
   color: rgb(96 165 250);
 }
 
-.markdown-body :deep(ul),
-.markdown-body :deep(ol) {
+.markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul),
+.markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol) {
   margin: 1em 0;
   padding-left: 2em;
 }
@@ -1125,12 +1143,12 @@ onUnmounted(() => {
   list-style-type: decimal;
 }
 
-.markdown-body :deep(li) {
+.markdown-body :deep(li):not(.markdown-callout li):not(.markdown-card li) {
   margin: 0.5em 0;
   display: list-item;
 }
 
-.markdown-body :deep(blockquote) {
+.markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote) {
   margin: 1em 0;
   padding: 0.5em 1em;
   border-left: 4px solid rgb(37 99 235);
@@ -1360,4 +1378,6 @@ onUnmounted(() => {
     font-size: 2em;
   }
 }
+
+
 </style>
