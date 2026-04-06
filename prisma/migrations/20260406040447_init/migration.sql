@@ -55,11 +55,11 @@ CREATE TABLE "Post" (
     "content" TEXT,
     "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "update_time" TIMESTAMP(3) NOT NULL,
-    "status" INTEGER NOT NULL DEFAULT 0,
+    "status" INTEGER NOT NULL DEFAULT 1,
     "comment_num" INTEGER NOT NULL DEFAULT 0,
     "many_covers" BOOLEAN NOT NULL DEFAULT false,
     "covers" TEXT,
-    "show_toc" BOOLEAN NOT NULL DEFAULT true,
+    "show_toc" BOOLEAN NOT NULL DEFAULT false,
     "tags" TEXT,
     "uid" INTEGER NOT NULL DEFAULT 1,
 
@@ -141,6 +141,18 @@ CREATE TABLE "Meta" (
     CONSTRAINT "Meta_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "authCode" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "data" TEXT,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "SubscribePost_link_key" ON "SubscribePost"("link");
 
@@ -164,6 +176,12 @@ CREATE UNIQUE INDEX "User_mail_key" ON "User"("mail");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Meta_key_key" ON "Meta"("key");
+
+-- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
+CREATE INDEX "Session_expires_idx" ON "Session"("expires");
 
 -- AddForeignKey
 ALTER TABLE "SubscribePost" ADD CONSTRAINT "SubscribePost_subscribeId_fkey" FOREIGN KEY ("subscribeId") REFERENCES "Subscribe"("id") ON DELETE CASCADE ON UPDATE CASCADE;

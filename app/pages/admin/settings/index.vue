@@ -25,8 +25,8 @@ const settings = ref({
   staticFilePath: "https://cdn.imqi1.com/static",
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
-  photoCoverSuffix: "!600px.width",
-  postCoverSuffix: "!1000px",
+  photoCoverSuffix: "",
+  postCoverSuffix: "",
   moderationApiType: "1",
   baiduAppId: "",
   baiduApiKey: "",
@@ -54,6 +54,7 @@ const settings = ref({
   upyunTokenEnabled: false,
   upyunTokenKey: "",
   upyunTokenExpire: 1800,
+  sessionStoreType: "memory",
 });
 
 const avatarServices = [
@@ -83,17 +84,23 @@ const uploadLocations = [
   { value: "upyun", label: "又拍云" },
 ];
 
+const sessionStoreTypes = [
+  { value: "memory", label: "内存存储" },
+  { value: "file", label: "文件存储" },
+  { value: "database", label: "数据库存储" },
+];
+
 const testingEmail = ref(false);
 
 async function testEmail() {
   testingEmail.value = true;
   try {
-    const result = await $fetch('/api/admin/mail/test', {
-      method: 'POST',
+    const result = (await $fetch("/api/admin/mail/test", {
+      method: "POST",
       body: {
         to: settings.value.adminEmail || settings.value.smtpAddress || settings.value.smtpUser,
       },
-    }) as any;
+    })) as any;
 
     if (result.success) {
       toast.success({
@@ -106,7 +113,7 @@ async function testEmail() {
     }
   } catch (error) {
     toast.error({
-      message: error instanceof Error ? error.message : '未知错误',
+      message: error instanceof Error ? error.message : "未知错误",
     });
   } finally {
     testingEmail.value = false;
@@ -134,8 +141,8 @@ const defaultSettings = {
   staticFilePath: "https://cdn.imqi1.com/static",
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
-  photoCoverSuffix: "!600px.width",
-  postCoverSuffix: "!1000px",
+  photoCoverSuffix: "",
+  postCoverSuffix: "",
   moderationApiType: "1",
   baiduAppId: "",
   baiduApiKey: "",
@@ -163,6 +170,7 @@ const defaultSettings = {
   upyunTokenEnabled: false,
   upyunTokenKey: "",
   upyunTokenExpire: 1800,
+  sessionStoreType: "memory",
 };
 
 // 加载设置
@@ -281,7 +289,7 @@ onMounted(() => {
     <div v-else class="space-y-6">
       <!-- Tab 导航 -->
       <Tabs v-model="activeTab" default-value="basic">
-        <TabsList class="grid w-full max-w-3xl grid-cols-6">
+        <TabsList class="grid w-full max-w-3xl grid-cols-7">
           <TabsTrigger value="basic">
             <Icon name="lucide:settings" class="mr-2 size-4" />
             基本信息
@@ -305,6 +313,10 @@ onMounted(() => {
           <TabsTrigger value="upload">
             <Icon name="lucide:upload-cloud" class="mr-2 size-4" />
             附件上传
+          </TabsTrigger>
+          <TabsTrigger value="advanced">
+            <Icon name="lucide:shield" class="mr-2 size-4" />
+            高级设置
           </TabsTrigger>
         </TabsList>
 
@@ -535,8 +547,7 @@ onMounted(() => {
                     id="homeCustomText"
                     v-model="settings.homeCustomText"
                     rows="3"
-                    placeholder='<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>'
-                  />
+                    placeholder='<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' />
                   <p class="text-xs text-muted-foreground">显示在首页的自定义内容，支持 HTML 标签</p>
                 </div>
               </div>
@@ -570,12 +581,12 @@ onMounted(() => {
                 </div>
                 <div class="space-y-2">
                   <Label for="photoCoverSuffix">图片封面后缀</Label>
-                  <Input id="photoCoverSuffix" v-model="settings.photoCoverSuffix" placeholder="!600px.width" />
+                  <Input id="photoCoverSuffix" v-model="settings.photoCoverSuffix" placeholder="" />
                   <p class="text-xs text-muted-foreground">图片封面图的处理参数后缀，用于控制显示尺寸</p>
                 </div>
                 <div class="space-y-2">
                   <Label for="postCoverSuffix">文章封面后缀</Label>
-                  <Input id="postCoverSuffix" v-model="settings.postCoverSuffix" placeholder="!1000px" />
+                  <Input id="postCoverSuffix" v-model="settings.postCoverSuffix" placeholder="" />
                   <p class="text-xs text-muted-foreground">文章封面图的处理参数后缀，用于控制显示尺寸</p>
                 </div>
               </div>
@@ -625,7 +636,7 @@ onMounted(() => {
                   <h4 class="text-sm font-medium">SMTP 服务器配置</h4>
                   <Button variant="outline" size="sm" :disabled="testingEmail" @click="testEmail">
                     <Icon name="lucide:send" class="mr-2 size-4" />
-                    {{ testingEmail ? '发送中...' : '发送测试邮件' }}
+                    {{ testingEmail ? "发送中..." : "发送测试邮件" }}
                   </Button>
                 </div>
 
@@ -824,6 +835,48 @@ onMounted(() => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <!-- 高级设置 Tab -->
+        <TabsContent value="advanced" class="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Session 存储</CardTitle>
+              <CardDescription>配置用户登录会话的存储方式</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+              <div class="space-y-4">
+                <div class="space-y-2">
+                  <Label for="sessionStoreType">存储方式</Label>
+                  <Select v-model="settings.sessionStoreType">
+                    <SelectTrigger id="sessionStoreType">
+                      <SelectValue placeholder="选择存储方式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="type in sessionStoreTypes" :key="type.value" :value="type.value">
+                        {{ type.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="p-4 bg-muted/30 rounded-lg space-y-3">
+                  <div class="flex items-start gap-3">
+                    <Icon name="lucide:info" class="size-5 text-blue-500 mt-0.5" />
+                    <div class="space-y-2 text-sm">
+                      <p class="font-medium">存储方式说明：</p>
+                      <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+                        <li><strong>内存存储</strong>：Session 保存在内存中，服务重启后需要重新登录</li>
+                        <li><strong>文件存储</strong>：Session 保存在 .sessions 目录中，服务重启后保持登录状态</li>
+                        <li><strong>数据库存储</strong>：Session 保存在数据库中，支持多实例部署</li>
+                      </ul>
+                      <p class="text-amber-600 dark:text-amber-500">⚠️ 更改存储方式后，所有用户需要重新登录</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <!-- 保存按钮 -->
@@ -840,17 +893,11 @@ onMounted(() => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>重置为默认值</DialogTitle>
-          <DialogDescription>
-            确定要将所有设置重置为默认值吗？此操作不可撤销。
-          </DialogDescription>
+          <DialogDescription> 确定要将所有设置重置为默认值吗？此操作不可撤销。 </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" @click="showResetDialog = false">
-            取消
-          </Button>
-          <Button variant="destructive" @click="resetToDefaults">
-            确认重置
-          </Button>
+          <Button variant="outline" @click="showResetDialog = false"> 取消 </Button>
+          <Button variant="destructive" @click="resetToDefaults"> 确认重置 </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

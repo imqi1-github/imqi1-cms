@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { getSessionStore, resetSessionStore } from "#server/utils/session-store";
 
 export interface SessionUser {
   uid: number;
@@ -12,9 +13,6 @@ export interface SessionUser {
 const SESSION_COOKIE_NAME = "session";
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-// 简单的 session 存储（生产环境建议使用 Redis）
-const sessions = new Map<string, { userId: number; authCode: string; expires: number }>();
-
 // 生成随机 session ID
 function generateSessionId(): string {
   return Buffer.from(`${Date.now()}-${Math.random()}`).toString("base64");
@@ -23,15 +21,6 @@ function generateSessionId(): string {
 // 生成 authCode（用于单端登录验证）
 function generateAuthCode(): string {
   return Buffer.from(`${Date.now()}-${Math.random()}-${Math.random()}`).toString("base64url");
-}
-
-// 清除用户的所有旧 session（用于单端登录）
-function clearUserSessions(userId: number) {
-  for (const [sessionId, session] of sessions.entries()) {
-    if (session.userId === userId) {
-      sessions.delete(sessionId);
-    }
-  }
 }
 
 // 设置 session cookie
@@ -47,9 +36,15 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
   });
 
   // 清除该用户的所有旧 session
-  clearUserSessions(user.uid);
+  const store = await getSessionStore();
+  await store.clearUserSessions(user.uid);
 
-  sessions.set(sessionId, { userId: user.uid, authCode, expires });
+  // 保存新 session
+  await store.set(sessionId, {
+    userId: user.uid,
+    authCode,
+    expires,
+  });
 
   setCookie(event, SESSION_COOKIE_NAME, sessionId, {
     secure: process.env.NODE_ENV === "production",
@@ -69,15 +64,10 @@ export async function getUser(event: any): Promise<SessionUser | null> {
     return null;
   }
 
-  const session = sessions.get(sessionId);
+  const store = await getSessionStore();
+  const session = await store.get(sessionId);
 
   if (!session) {
-    return null;
-  }
-
-  // 检查 session 是否过期
-  if (Date.now() > session.expires) {
-    sessions.delete(sessionId);
     return null;
   }
 
@@ -94,14 +84,14 @@ export async function getUser(event: any): Promise<SessionUser | null> {
   });
 
   if (!user) {
-    sessions.delete(sessionId);
+    await store.delete(sessionId);
     return null;
   }
 
   // 验证 authCode，实现单端登录
   // 如果数据库中的 auth_code 与 session 中的不一致，说明已在其他设备登录
   if (user.auth_code !== session.authCode) {
-    sessions.delete(sessionId);
+    await store.delete(sessionId);
     deleteCookie(event, SESSION_COOKIE_NAME, { path: "/" });
     return null;
   }
@@ -117,11 +107,12 @@ export async function getUser(event: any): Promise<SessionUser | null> {
 }
 
 // 清除 session
-export function clearSession(event: any) {
+export async function clearSession(event: any) {
   const sessionId = getCookie(event, SESSION_COOKIE_NAME);
 
   if (sessionId) {
-    sessions.delete(sessionId);
+    const store = await getSessionStore();
+    await store.delete(sessionId);
   }
 
   deleteCookie(event, SESSION_COOKIE_NAME, { path: "/" });
@@ -146,3 +137,6 @@ export async function requireAuth(event: any) {
 
   return user;
 }
+
+// 导出重置函数，供配置更改时调用
+export { resetSessionStore };

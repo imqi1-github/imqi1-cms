@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -36,8 +36,8 @@ export default defineEventHandler(async event => {
       { key: "staticFilePath", value: body.staticFilePath ?? "https://cdn.imqi1.com/static" },
       { key: "musicPlaylistId", value: body.musicPlaylistId ?? "9255074836 || netease" },
       { key: "photoCategorySlug", value: body.photoCategorySlug ?? "shot" },
-      { key: "photoCoverSuffix", value: body.photoCoverSuffix ?? "!600px.width" },
-      { key: "postCoverSuffix", value: body.postCoverSuffix ?? "!1000px" },
+      { key: "photoCoverSuffix", value: body.photoCoverSuffix ?? "" },
+      { key: "postCoverSuffix", value: body.postCoverSuffix ?? "" },
       { key: "moderationApiType", value: String(body.moderationApiType ?? "1") },
       { key: "baiduAppId", value: body.baiduAppId ?? "" },
       { key: "baiduApiKey", value: body.baiduApiKey ?? "" },
@@ -65,6 +65,7 @@ export default defineEventHandler(async event => {
       { key: "upyunTokenEnabled", value: String(body.upyunTokenEnabled ?? false) },
       { key: "upyunTokenKey", value: body.upyunTokenKey ?? "" },
       { key: "upyunTokenExpire", value: String(body.upyunTokenExpire ?? 1800) },
+      { key: "sessionStoreType", value: body.sessionStoreType || "memory" },
     ];
 
     for (const update of updates) {

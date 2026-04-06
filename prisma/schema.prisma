@@ -157,3 +157,16 @@ model Meta {
   key   String  @unique
   value String  @db.Text
 }
+
+// Session 类（用于数据库存储）
+model Session {
+  id        String   @id
+  userId    Int
+  authCode  String
+  expires   DateTime
+  createdAt DateTime @default(now())
+  data      String?  @db.Text
+
+  @@index([userId])
+  @@index([expires])
+}
