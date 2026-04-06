@@ -53,6 +53,11 @@ export default defineEventHandler(async event => {
     });
 
     const data = posts.map(post => {
+      const categories = post.relations.map(r => ({
+        name: r.category.name,
+        slug: r.category.slug,
+      }));
+
       let covers: { url: string; desc?: string }[] = [];
       if (post.covers) {
         try {
@@ -68,6 +73,7 @@ export default defineEventHandler(async event => {
         slug: post.slug,
         covers,
         created: post.create_time,
+        categories,
       };
     });
 

@@ -259,12 +259,12 @@
       <div class="index-theme-title3 text-slate-500 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
 
       <!-- 文章列表 -->
-      <div v-if="recentPosts.length > 0" class="index-recent-posts-list space-y-4">
+      <div v-if="recentPosts.length > 0" class="index-recent-posts-list gap-4 flex flex-wrap">
         <NuxtLink
           v-for="post in recentPosts"
           :key="post.cid"
           :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
-          class="index-recent-post-item block p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 no-underline">
+          class="index-recent-post-item block p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 no-underline flex-[1_0_250px]">
           <div class="flex gap-4">
             <!-- 封面图片 -->
             <div v-if="post.covers && post.covers.length > 0" class="flex-shrink-0 w-32 h-24 rounded-lg overflow-hidden">
@@ -276,7 +276,7 @@
                 <h3 class="text-slate-900 font-bold text-base line-clamp-1 mb-1">{{ post.title }}</h3>
                 <p v-if="post.desc" class="text-slate-500 text-sm line-clamp-2">{{ post.desc }}</p>
               </div>
-              <div class="flex items-center gap-3 text-xs text-slate-400 mt-2">
+              <div class="flex gap-1 text-xs text-slate-400 mt-2 flex-col">
                 <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1 flex-wrap">
                   <RiMenuLine class="size-3.5" />
                   <span v-for="(cat, idx) in post.categories" :key="cat.slug" class="text-gray-500">
@@ -302,7 +302,7 @@
       <div v-if="recentPosts.length > 0" class="text-center mt-8">
         <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
           查看全部文章
-          <RiArrowLeftLine class="rotate-180" />
+          <RiArrowRightLine class="size-4" />
         </NuxtLink>
       </div>
     </section>
@@ -321,13 +321,13 @@
         <NuxtLink
           v-for="(image, index) in photoImages"
           :key="index"
-          :to="`/content/shot/${image.slug || image.cid}`"
+          :to="`/content/${image.categorySlug || 'shot'}/${image.slug || image.cid}`"
           class="block break-inside-avoid no-underline group">
           <div class="relative rounded-xl overflow-hidden border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300">
             <img :src="image.url" :alt="image.desc || image.title" class="w-full h-auto object-cover" loading="lazy" />
             <!-- 悬浮标题 -->
             <div
-              class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div class="absolute bottom-0 left-0 right-0 p-3">
                 <p class="text-white text-sm font-medium line-clamp-2">{{ image.desc || image.title }}</p>
               </div>
@@ -340,7 +340,7 @@
       <div class="text-center mt-8">
         <NuxtLink to="/shot" class="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
           查看全部图片
-          <RiArrowLeftLine class="rotate-180" />
+          <RiArrowRightLine class="size-4" />
         </NuxtLink>
       </div>
     </section>
@@ -369,6 +369,7 @@
 <script setup lang="ts">
 import {
   RiArrowLeftLine,
+  RiArrowRightLine,
   RiAttachmentLine,
   RiFileZipFill,
   RiGithubFill,
@@ -408,7 +409,7 @@ const photoPosts = computed(() => photoPostsData.value?.data || []);
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
-  const images: { url: string; desc?: string; title: string; slug: string; cid: number }[] = [];
+  const images: { url: string; desc?: string; title: string; slug: string; cid: number; categorySlug?: string }[] = [];
   photoPosts.value.forEach(post => {
     if (post.covers && post.covers.length > 0) {
       post.covers.forEach(cover => {
@@ -418,6 +419,7 @@ const photoImages = computed(() => {
           title: post.title,
           slug: post.slug,
           cid: post.cid,
+          categorySlug: post.categories?.[0]?.slug,
         });
       });
     }
