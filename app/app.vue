@@ -4,6 +4,18 @@ const route = useRoute();
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
 
+// 全局 RSS 订阅链接
+useHead({
+  link: [
+    {
+      rel: "alternate",
+      type: "application/rss+xml",
+      title: "RSS 订阅",
+      href: "/feed",
+    },
+  ],
+});
+
 // 滚动到 Hash 对应的元素
 function scrollToHash() {
   if (!import.meta.client) return;

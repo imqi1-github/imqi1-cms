@@ -405,7 +405,7 @@
         <NuxtLink href="/agreement" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">协议</NuxtLink>
         <a href="/sitemap" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">站点地图</a>
         <a href="/archiving" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">归档</a>
-        <a href="/updates" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">更新日志</a>
+        <NuxtLink to="/changelog" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">更新日志</NuxtLink>
         <a href="/feed" target="_blank" class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">订阅本站</a>
       </div>
     </section>
@@ -492,6 +492,14 @@ function formatDate(date: string | Date): string {
 // 页面元数据
 useHead({
   title: siteName,
+  link: [
+    {
+      rel: "alternate",
+      type: "application/rss+xml",
+      title: "RSS 订阅",
+      href: "/feed",
+    },
+  ],
 });
 
 // 首页Hero下文字
