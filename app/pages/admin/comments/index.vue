@@ -1,76 +1,104 @@
 <script setup lang="ts">
-const toast = useToast()
-const loading = ref(true)
-const comments = ref<any[]>([])
+const toast = useToast();
+const loading = ref(true);
+const comments = ref<any[]>([]);
+const selectedIds = ref<number[]>([]);
+const deleting = ref(false);
 const pagination = ref({
   page: 1,
   pageSize: 10,
   total: 0,
   totalPages: 0,
-})
+});
 
 // 编辑对话框状态
-const editDialogOpen = ref(false)
-const editingComment = ref<any>(null)
+const editDialogOpen = ref(false);
+const editingComment = ref<any>(null);
 const editForm = ref({
-  name: '',
-  mail: '',
-  content: '',
+  name: "",
+  mail: "",
+  content: "",
   status: 0,
-})
+});
 
 // 状态选项
 const statusOptions = [
-  { value: 0, label: '待审核', variant: 'secondary' as const },
-  { value: 1, label: '已通过', variant: 'default' as const },
-  { value: 2, label: '垃圾评论', variant: 'destructive' as const },
-]
+  { value: 0, label: "待审核", variant: "secondary" as const },
+  { value: 1, label: "已通过", variant: "default" as const },
+  { value: 2, label: "垃圾评论", variant: "destructive" as const },
+];
+
+const isAllSelected = computed(() => {
+  return comments.value.length > 0 && selectedIds.value.length === comments.value.length;
+});
+
+const isIndeterminate = computed(() => {
+  return selectedIds.value.length > 0 && selectedIds.value.length < comments.value.length;
+});
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedIds.value = [];
+  } else {
+    selectedIds.value = comments.value.map(c => c.coid);
+  }
+}
+
+function toggleSelect(coid: number) {
+  const index = selectedIds.value.indexOf(coid);
+  if (index > -1) {
+    selectedIds.value.splice(index, 1);
+  } else {
+    selectedIds.value.push(coid);
+  }
+}
 
 async function fetchComments(page: number = 1) {
-  loading.value = true
+  loading.value = true;
+  selectedIds.value = [];
   try {
-    const res = await $fetch(`/api/admin/comments?page=${page}&pageSize=10`) as any
-    comments.value = res.data || []
-    pagination.value = res.pagination || pagination.value
+    const res = (await $fetch(`/api/admin/comments?page=${page}&pageSize=10`)) as any;
+    comments.value = res.data || [];
+    pagination.value = res.pagination || pagination.value;
   } catch (error) {
-    console.error('获取评论失败:', error)
-    comments.value = []
+    console.error("获取评论失败:", error);
+    comments.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // 打开编辑对话框
 function openEditDialog(comment: any) {
-  editingComment.value = comment
+  editingComment.value = comment;
   editForm.value = {
-    name: comment.name || '',
-    mail: comment.mail || '',
-    content: comment.content || '',
+    name: comment.name || "",
+    mail: comment.mail || "",
+    content: comment.content || "",
     status: comment.status ?? 0,
-  }
-  editDialogOpen.value = true
+  };
+  editDialogOpen.value = true;
 }
 
 // 保存编辑
 async function saveEdit() {
-  if (!editingComment.value) return
+  if (!editingComment.value) return;
 
   try {
-    const res = await $fetch(`/api/admin/comments/${editingComment.value.coid}`, {
-      method: 'PATCH',
+    const res = (await $fetch(`/api/admin/comments/${editingComment.value.coid}`, {
+      method: "PATCH",
       body: editForm.value,
-    }) as any
+    })) as any;
 
     toast.success({
-      message: '评论更新成功',
-    })
-    editDialogOpen.value = false
-    await fetchComments(pagination.value.page)
+      message: "评论更新成功",
+    });
+    editDialogOpen.value = false;
+    await fetchComments(pagination.value.page);
   } catch (error) {
     toast.error({
-      message: '更新失败',
-    })
+      message: "更新失败",
+    });
   }
 }
 
@@ -78,65 +106,97 @@ async function saveEdit() {
 async function setStatus(coid: number, status: number) {
   try {
     await $fetch(`/api/admin/comments/${coid}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: { status },
-    })
-    await fetchComments(pagination.value.page)
+    });
+    await fetchComments(pagination.value.page);
     toast.success({
-      message: '状态已更新',
-    })
+      message: "状态已更新",
+    });
   } catch (error) {
     toast.error({
-      message: '操作失败',
-    })
+      message: "操作失败",
+    });
   }
 }
 
 async function deleteComment(coid: number) {
-  const confirmed = confirm('确定要删除这条评论吗？')
+  const confirmed = confirm("确定要删除这条评论吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/comments/${coid}`, { method: 'DELETE' })
-      await fetchComments(pagination.value.page)
+      await $fetch(`/api/admin/comments/${coid}`, { method: "DELETE" });
+      await fetchComments(pagination.value.page);
       toast.success({
-        message: '评论已删除',
-      })
+        message: "评论已删除",
+      });
     } catch (error) {
       toast.error({
-        message: '删除失败',
-      })
+        message: "删除失败",
+      });
+    }
+  }
+}
+
+async function batchDelete() {
+  if (selectedIds.value.length === 0) {
+    toast.error({ message: "请选择要删除的评论" });
+    return;
+  }
+
+  const confirmed = confirm(`确定要删除选中的 ${selectedIds.value.length} 条评论吗？`);
+  if (confirmed) {
+    deleting.value = true;
+    try {
+      const res = await $fetch("/api/admin/comments/batch-delete", {
+        method: "POST",
+        body: { ids: selectedIds.value },
+      });
+      toast.success({ message: (res as any).message || "批量删除成功" });
+      selectedIds.value = [];
+      await fetchComments(pagination.value.page);
+    } catch (error) {
+      console.error("批量删除失败:", error);
+      toast.error({ message: "批量删除失败" });
+    } finally {
+      deleting.value = false;
     }
   }
 }
 
 function goToPage(page: number) {
   if (page >= 1 && page <= pagination.value.totalPages) {
-    fetchComments(page)
+    fetchComments(page);
   }
 }
 
 function getPostTitle(comment: any) {
-  return comment.post?.title || '未知'
+  return comment.post?.title || "未知";
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleString('zh-CN')
+  return new Date(date).toLocaleString("zh-CN");
 }
 
 function getStatusInfo(status: number) {
-  return statusOptions.find(s => s.value === status) || statusOptions[0]
+  return statusOptions.find(s => s.value === status) || statusOptions[0];
 }
 
 onMounted(() => {
-  fetchComments()
-})
+  fetchComments();
+});
 </script>
 
 <template>
   <AdminLayout>
-    <div class="mb-6">
-      <h2 class="text-2xl font-bold">评论管理</h2>
-      <p class="text-sm text-muted-foreground mt-1">审核和管理用户评论</p>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold">评论管理</h2>
+        <p class="text-sm text-muted-foreground mt-1">审核和管理用户评论</p>
+      </div>
+      <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete">
+        <Icon name="lucide:trash-2" class="mr-2 size-4" />
+        {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
+      </Button>
     </div>
 
     <Card>
@@ -145,6 +205,7 @@ onMounted(() => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-12"></TableHead>
               <TableHead>评论者</TableHead>
               <TableHead>内容</TableHead>
               <TableHead>文章</TableHead>
@@ -155,6 +216,9 @@ onMounted(() => {
           </TableHeader>
           <TableBody>
             <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="size-4 bg-muted rounded animate-pulse" />
+              </TableCell>
               <TableCell>
                 <div class="flex items-center gap-3">
                   <div class="size-8 bg-muted rounded-full animate-pulse" />
@@ -188,6 +252,9 @@ onMounted(() => {
       <Table v-else>
         <TableHeader>
           <TableRow>
+            <TableHead class="w-12">
+              <Checkbox :checked="isAllSelected" :indeterminate="isIndeterminate" @click.stop="toggleSelectAll" />
+            </TableHead>
             <TableHead>评论者</TableHead>
             <TableHead>内容</TableHead>
             <TableHead>文章</TableHead>
@@ -197,15 +264,18 @@ onMounted(() => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="comment in comments" :key="comment.coid">
+          <TableRow v-for="comment in comments" :key="comment.coid" :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
+            <TableCell>
+              <Checkbox :checked="selectedIds.includes(comment.coid)" @click.stop="toggleSelect(comment.coid)" />
+            </TableCell>
             <TableCell>
               <div class="flex items-center gap-3">
                 <Avatar class="size-8">
-                  <AvatarFallback>{{ comment.name?.charAt(0) || '?' }}</AvatarFallback>
+                  <AvatarFallback>{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p class="font-medium">{{ comment.name }}</p>
-                  <p class="text-sm text-muted-foreground">{{ comment.mail || '-' }}</p>
+                  <p class="text-sm text-muted-foreground">{{ comment.mail || "-" }}</p>
                 </div>
               </div>
             </TableCell>
@@ -238,22 +308,12 @@ onMounted(() => {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>设置状态</DropdownMenuLabel>
-                    <DropdownMenuItem
-                      v-for="option in statusOptions"
-                      :key="option.value"
-                      @click="setStatus(comment.coid, option.value)"
-                    >
-                      <Icon
-                        :name="comment.status === option.value ? 'lucide:check' : 'lucide:circle'"
-                        class="mr-2 size-4"
-                      />
+                    <DropdownMenuItem v-for="option in statusOptions" :key="option.value" @click="setStatus(comment.coid, option.value)">
+                      <Icon :name="comment.status === option.value ? 'lucide:check' : 'lucide:circle'" class="mr-2 size-4" />
                       {{ option.label }}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      class="text-destructive focus:text-destructive"
-                      @click="deleteComment(comment.coid)"
-                    >
+                    <DropdownMenuItem class="text-destructive focus:text-destructive" @click="deleteComment(comment.coid)">
                       <Icon name="lucide:trash-2" class="mr-2 size-4" />
                       删除
                     </DropdownMenuItem>
@@ -273,16 +333,9 @@ onMounted(() => {
 
       <!-- 分页 -->
       <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
-        <p class="text-sm text-muted-foreground">
-          共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
-        </p>
+        <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
         <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="pagination.page <= 1"
-            @click="goToPage(pagination.page - 1)"
-          >
+          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
             <Icon name="lucide:chevron-left" class="size-4" />
             上一页
           </Button>
@@ -293,18 +346,12 @@ onMounted(() => {
               variant="outline"
               size="sm"
               :class="{ 'bg-primary text-primary-foreground': page === pagination.page }"
-              @click="goToPage(page)"
-            >
+              @click="goToPage(page)">
               {{ page }}
             </Button>
             <span v-if="pagination.totalPages > 5" class="px-2 text-muted-foreground">...</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="pagination.page >= pagination.totalPages"
-            @click="goToPage(pagination.page + 1)"
-          >
+          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             下一页
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>
@@ -350,18 +397,11 @@ onMounted(() => {
           <!-- 评论内容 -->
           <div class="space-y-2">
             <Label for="edit-content">评论内容</Label>
-            <Textarea
-              id="edit-content"
-              v-model="editForm.content"
-              placeholder="评论内容"
-              :rows="5"
-            />
+            <Textarea id="edit-content" v-model="editForm.content" placeholder="评论内容" :rows="5" />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="editDialogOpen = false">
-            取消
-          </Button>
+          <Button variant="outline" @click="editDialogOpen = false"> 取消 </Button>
           <Button @click="saveEdit">
             <Icon name="lucide:save" class="mr-2 size-4" />
             保存

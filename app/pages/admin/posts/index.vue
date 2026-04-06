@@ -1,11 +1,14 @@
 <script setup lang="ts">
 const router = useRouter();
 const route = useRoute();
+const toast = useToast();
 const loading = ref(true);
 const posts = ref<any[]>([]);
 const categories = ref<any[]>([]);
 const selectedCategory = ref<number | null>(null);
 const selectedStatus = ref<number | null>(null);
+const selectedIds = ref<number[]>([]);
+const deleting = ref(false);
 const pagination = ref({
   page: 1,
   pageSize: 5,
@@ -19,6 +22,31 @@ const statusOptions = [
   { value: 0, label: "草稿" },
 ];
 
+const isAllSelected = computed(() => {
+  return posts.value.length > 0 && selectedIds.value.length === posts.value.length;
+});
+
+const isIndeterminate = computed(() => {
+  return selectedIds.value.length > 0 && selectedIds.value.length < posts.value.length;
+});
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedIds.value = [];
+  } else {
+    selectedIds.value = posts.value.map(p => p.cid);
+  }
+}
+
+function toggleSelect(cid: number) {
+  const index = selectedIds.value.indexOf(cid);
+  if (index > -1) {
+    selectedIds.value.splice(index, 1);
+  } else {
+    selectedIds.value.push(cid);
+  }
+}
+
 async function fetchCategories() {
   try {
     categories.value = (await $fetch("/api/admin/categories")) as any[];
@@ -30,6 +58,7 @@ async function fetchCategories() {
 
 async function fetchPosts(page: number = 1) {
   loading.value = true;
+  selectedIds.value = [];
   try {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -77,8 +106,36 @@ async function deletePost(cid: number) {
     try {
       await $fetch(`/api/admin/posts/${cid}`, { method: "DELETE" });
       await fetchPosts(pagination.value.page);
+      toast.success({ message: "文章已删除" });
     } catch (error) {
       console.error("删除失败:", error);
+      toast.error({ message: "删除失败" });
+    }
+  }
+}
+
+async function batchDelete() {
+  if (selectedIds.value.length === 0) {
+    toast.error({ message: "请选择要删除的文章" });
+    return;
+  }
+
+  const confirmed = confirm(`确定要删除选中的 ${selectedIds.value.length} 篇文章吗？`);
+  if (confirmed) {
+    deleting.value = true;
+    try {
+      const res = await $fetch("/api/admin/posts/batch-delete", {
+        method: "POST",
+        body: { ids: selectedIds.value },
+      });
+      toast.success({ message: (res as any).message || "批量删除成功" });
+      selectedIds.value = [];
+      await fetchPosts(pagination.value.page);
+    } catch (error) {
+      console.error("批量删除失败:", error);
+      toast.error({ message: "批量删除失败" });
+    } finally {
+      deleting.value = false;
     }
   }
 }
@@ -125,10 +182,16 @@ onMounted(() => {
         <h2 class="text-2xl font-bold">文章管理</h2>
         <p class="text-sm text-muted-foreground mt-1">管理所有文章内容</p>
       </div>
-      <Button @click="createPost">
-        <Icon name="lucide:plus" class="mr-2 size-4" />
-        新建文章
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete">
+          <Icon name="lucide:trash-2" class="mr-2 size-4" />
+          {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
+        </Button>
+        <Button @click="createPost">
+          <Icon name="lucide:plus" class="mr-2 size-4" />
+          新建文章
+        </Button>
+      </div>
     </div>
 
     <!-- 筛选栏 -->
@@ -177,6 +240,7 @@ onMounted(() => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-12"></TableHead>
               <TableHead>标题</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>分类</TableHead>
@@ -188,6 +252,9 @@ onMounted(() => {
           </TableHeader>
           <TableBody>
             <TableRow v-for="i in 5" :key="i">
+              <TableCell>
+                <div class="size-4 bg-muted rounded animate-pulse" />
+              </TableCell>
               <TableCell>
                 <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
               </TableCell>
@@ -221,6 +288,9 @@ onMounted(() => {
       <Table v-else>
         <TableHeader>
           <TableRow>
+            <TableHead class="w-12">
+              <Checkbox :checked="isAllSelected" :indeterminate="isIndeterminate" @click.stop="toggleSelectAll" />
+            </TableHead>
             <TableHead>标题</TableHead>
             <TableHead>Slug</TableHead>
             <TableHead>分类</TableHead>
@@ -231,9 +301,12 @@ onMounted(() => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="post in posts" :key="post.cid">
+          <TableRow v-for="post in posts" :key="post.cid" :class="{ 'bg-muted/50': selectedIds.includes(post.cid) }">
+            <TableCell>
+              <Checkbox :checked="selectedIds.includes(post.cid)" @click.stop="toggleSelect(post.cid)" />
+            </TableCell>
             <TableCell class="font-medium">{{ post.title }}</TableCell>
-            <TableCell class="text-muted-foreground font-mono text-sm">{{ post.slug || '-' }}</TableCell>
+            <TableCell class="text-muted-foreground font-mono text-sm">{{ post.slug || "-" }}</TableCell>
             <TableCell>
               <div v-if="post.relations && post.relations.length > 0" class="flex flex-wrap gap-1">
                 <Badge v-for="rel in post.relations" :key="rel.category.mid" variant="outline" class="text-xs">
