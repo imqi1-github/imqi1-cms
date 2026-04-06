@@ -176,6 +176,14 @@ const actions = {
     ''
   ),
   details: () => insertMarkdown(':::details 标题\n', '\n:::\n', '折叠内容'),
+  video: () => insertMarkdown(':::video 视频URL\n', '\n:::', ''),
+  success: () => insertMarkdown(':::callout success\n', '\n:::\n', '成功消息'),
+  warning: () => insertMarkdown(':::callout warning\n', '\n:::\n', '警告消息'),
+  error: () => insertMarkdown(':::callout error\n', '\n:::\n', '错误消息'),
+  info: () => insertMarkdown(':::callout info\n', '\n:::\n', '信息消息'),
+  tooltip: () => insertMarkdown(':::tooltip 解释文本\n', '\n:::', '文本'),
+  card: () => insertMarkdown(':::card https://example.com | 标题 | 描述文本 | https://example.com/image.jpg\n', '\n:::', ''),
+  swiper: () => insertMarkdown(':::swiper\nhttps://example.com/image1.jpg | 图片标题1\nhttps://example.com/image2.jpg | 图片标题2\nhttps://example.com/image3.jpg | 图片标题3\n:::', ''),
 }
 </script>
 
@@ -402,6 +410,104 @@ const actions = {
         @click="actions.details"
       >
         <Icon name="lucide:chevrons-up-down" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- 视频 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="视频"
+        @click="actions.video"
+      >
+        <Icon name="lucide:video" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- 成功提示框 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8 text-green-600 dark:text-green-400"
+        title="成功提示框"
+        @click="actions.success"
+      >
+        <Icon name="lucide:check-circle" class="size-4" />
+      </Button>
+
+      <!-- 警告提示框 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8 text-yellow-600 dark:text-yellow-400"
+        title="警告提示框"
+        @click="actions.warning"
+      >
+        <Icon name="lucide:alert-triangle" class="size-4" />
+      </Button>
+
+      <!-- 错误提示框 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8 text-red-600 dark:text-red-400"
+        title="错误提示框"
+        @click="actions.error"
+      >
+        <Icon name="lucide:x-circle" class="size-4" />
+      </Button>
+
+      <!-- 信息提示框 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8 text-blue-600 dark:text-blue-400"
+        title="信息提示框"
+        @click="actions.info"
+      >
+        <Icon name="lucide:info" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- 悬浮解释 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="悬浮解释"
+        @click="actions.tooltip"
+      >
+        <Icon name="lucide:help-circle" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- 卡片 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="链接卡片"
+        @click="actions.card"
+      >
+        <Icon name="lucide:layout-template" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
+      <!-- 轮播图 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="轮播图"
+        @click="actions.swiper"
+      >
+        <Icon name="lucide:images" class="size-4" />
       </Button>
 
       <!-- 上传状态指示 -->

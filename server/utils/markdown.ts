@@ -126,17 +126,118 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   // 配置容器插件（用于折叠等功能）
   md.use(container, "details", {
     validate: (params: string) => {
-      return params.trim().match(/^(.*)$/);
+      // 只匹配以 "details" 开头的内容
+      return params.trim().match(/^details\s+(.*)$/);
     },
     render: (tokens: any[], idx: number) => {
-      let summary = tokens[idx].info.trim() || "展开";
-      // 去掉 "details" 前缀（如果存在）
-      if (summary.toLowerCase().startsWith("details")) {
-        summary = summary.substring(7).trim() || "展开";
-      }
+      const info = tokens[idx].info.trim();
+      // 提取标题（去掉 "details" 前缀）
+      let summary = info.replace(/^details\s+/, "").trim() || "展开";
+
       if (tokens[idx].nesting === 1) {
         // 开始容器
         return `<div class="markdown-details-wrapper" data-summary="${summary}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
+  // 视频容器
+  md.use(container, "video", {
+    validate: (params: string) => {
+      // 匹配 "video URL" 格式
+      return params.trim().match(/^video\s+(.+)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取视频 URL（去掉 "video" 前缀）
+      let url = info.replace(/^video\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<div class="markdown-video-wrapper" data-url="${url}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
+  // 提示框容器（支持 success, warning, error, info 四种类型）
+  md.use(container, "callout", {
+    validate: (params: string) => {
+      // 匹配 "callout type" 格式
+      return params.trim().match(/^callout\s+(success|warning|error|info)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取类型（去掉 "callout" 前缀）
+      let type = info.replace(/^callout\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<div class="markdown-callout-wrapper" data-type="${type}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
+  // 悬浮解释容器
+  md.use(container, "tooltip", {
+    validate: (params: string) => {
+      // 匹配 "tooltip 解释文本" 格式
+      return params.trim().match(/^tooltip\s+(.+)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取解释文本（去掉 "tooltip" 前缀）
+      let tooltipText = info.replace(/^tooltip\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<span class="markdown-tooltip-wrapper" data-tooltip="${tooltipText}">`;
+      } else {
+        // 结束容器
+        return `</span>`;
+      }
+    },
+  });
+
+  // 卡片容器（用于展示超链接卡片）
+  md.use(container, "card", {
+    validate: (params: string) => {
+      // 匹配 "card url | title | description | image" 格式
+      return params.trim().match(/^card\s+(.+)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取参数（去掉 "card" 前缀）
+      let paramsStr = info.replace(/^card\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器，将参数存储在 data 属性中
+        return `<div class="markdown-card-wrapper" data-params="${encodeURIComponent(paramsStr)}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
+  // 轮播图容器（多图片轮播，每张图片带标题）
+  md.use(container, "swiper", {
+    validate: (params: string) => {
+      // 匹配 "swiper" 格式（不需要额外参数）
+      return params.trim().match(/^swiper$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<div class="markdown-swiper-wrapper">`;
       } else {
         // 结束容器
         return `</div>`;

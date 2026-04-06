@@ -3,6 +3,11 @@ import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
 import { onMounted, onUnmounted, ref } from "vue";
+import Swiper from "swiper";
+import { Navigation, Pagination, Mousewheel } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -362,6 +367,430 @@ onMounted(() => {
         }
       });
     });
+
+    // 初始化视频容器
+    const videoWrappers = document.querySelectorAll(".markdown-video-wrapper");
+    videoWrappers.forEach(wrapper => {
+      const url = wrapper.getAttribute("data-url") || "";
+
+      // 创建 video 元素
+      const videoContainer = document.createElement("div");
+      videoContainer.className = "markdown-video-container my-6";
+      videoContainer.innerHTML = `
+        <video
+          class="w-full rounded-lg shadow-lg"
+          controls
+          preload="metadata">
+          <source src="${url}" type="video/mp4">
+          您的浏览器不支持视频播放。
+        </video>
+      `;
+
+      // 替换原容器
+      wrapper.replaceWith(videoContainer);
+    });
+
+    // 初始化提示框容器
+    const calloutWrappers = document.querySelectorAll(".markdown-callout-wrapper");
+    calloutWrappers.forEach(wrapper => {
+      const type = wrapper.getAttribute("data-type") || "info";
+      const content = wrapper.innerHTML;
+
+      // 根据类型定义样式和图标
+      const typeConfig = {
+        success: {
+          bgColor: "bg-green-50 dark:bg-green-900/20",
+          borderColor: "border-green-200 dark:border-green-800",
+          textColor: "text-green-900 dark:text-green-100",
+          iconColor: "text-green-600 dark:text-green-400",
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+        },
+        warning: {
+          bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
+          borderColor: "border-yellow-200 dark:border-yellow-800",
+          textColor: "text-yellow-900 dark:text-yellow-100",
+          iconColor: "text-yellow-600 dark:text-yellow-400",
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+        },
+        error: {
+          bgColor: "bg-red-50 dark:bg-red-900/20",
+          borderColor: "border-red-200 dark:border-red-800",
+          textColor: "text-red-900 dark:text-red-100",
+          iconColor: "text-red-600 dark:text-red-400",
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`,
+        },
+        info: {
+          bgColor: "bg-blue-50 dark:bg-blue-900/20",
+          borderColor: "border-blue-200 dark:border-blue-800",
+          textColor: "text-blue-900 dark:text-blue-100",
+          iconColor: "text-blue-600 dark:text-blue-400",
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+        },
+      };
+
+      const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.info;
+
+      // 创建提示框元素
+      const calloutContainer = document.createElement("div");
+      calloutContainer.className = `markdown-callout my-4 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
+      calloutContainer.innerHTML = `
+        <div class="flex items-start gap-3">
+          <div class="${config.iconColor} flex-shrink-0 mt-0.5">
+            ${config.icon}
+          </div>
+          <div class="flex-1 ${config.textColor}">
+            ${content}
+          </div>
+        </div>
+      `;
+
+      // 替换原容器
+      wrapper.replaceWith(calloutContainer);
+    });
+
+    // 初始化悬浮解释容器
+    const tooltipWrappers = document.querySelectorAll(".markdown-tooltip-wrapper");
+    tooltipWrappers.forEach(wrapper => {
+      const tooltipText = wrapper.getAttribute("data-tooltip") || "";
+      const content = wrapper.innerHTML;
+
+      // 创建悬浮解释元素
+      const tooltipElement = document.createElement("span");
+      tooltipElement.className = "markdown-tooltip relative inline-block border-b border-dashed border-blue-500 dark:border-blue-400 cursor-help text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
+      tooltipElement.innerHTML = `
+        <span class="tooltip-content">${content}</span>
+        <span class="tooltip-popup invisible absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none">
+          ${tooltipText}
+          <span class="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900 dark:border-t-slate-100"></span>
+        </span>
+      `;
+
+      // 添加悬浮事件
+      tooltipElement.addEventListener("mouseenter", () => {
+        const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
+        if (popup) {
+          popup.classList.remove("invisible", "opacity-0");
+          popup.classList.add("visible", "opacity-100");
+        }
+      });
+
+      tooltipElement.addEventListener("mouseleave", () => {
+        const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
+        if (popup) {
+          popup.classList.add("invisible", "opacity-0");
+          popup.classList.remove("visible", "opacity-100");
+        }
+      });
+
+      // 替换原容器
+      wrapper.replaceWith(tooltipElement);
+    });
+
+    // 初始化卡片容器
+    const cardWrappers = document.querySelectorAll(".markdown-card-wrapper");
+    cardWrappers.forEach(wrapper => {
+      const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+      // 解析参数：url | title | description | image
+      const parts = paramsStr.split("|").map(p => p.trim());
+
+      const url = parts[0] || "";
+      const title = parts[1] || "标题";
+      const description = parts[2] || "";
+      const image = parts[3] || "";
+
+      // 创建卡片元素
+      const cardContainer = document.createElement("div");
+      cardContainer.className = "markdown-card my-6";
+
+      cardContainer.innerHTML = `
+        <a
+          href="${url}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
+          <div class="flex flex-col md:flex-row">
+            ${image ? `
+              <div class="md:w-1/3 h-48 md:h-auto overflow-hidden bg-slate-100 dark:bg-slate-900">
+                <img
+                  src="${image}"
+                  alt="${title}"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+              </div>
+            ` : ''}
+            <div class="flex-1 p-5 flex flex-col justify-center">
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                  ${title}
+                </h3>
+                <Icon
+                  name="lucide:external-link"
+                  class="size-5 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5 group-hover:text-blue-500 transition-colors"
+                />
+              </div>
+              ${description ? `
+                <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                  ${description}
+                </p>
+              ` : ''}
+              <div class="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
+                <Icon name="lucide:link" class="size-3" />
+                <span class="truncate max-w-xs">${url}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      `;
+
+      // 替换原容器
+      wrapper.replaceWith(cardContainer);
+    });
+
+    // 初始化轮播图容器
+    const swiperWrappers = document.querySelectorAll(".markdown-swiper-wrapper");
+    swiperWrappers.forEach((wrapper, wrapperIndex) => {
+      // 获取容器的完整文本内容，按行分割
+      const fullText = wrapper.textContent || "";
+      const lines = fullText.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+      const slides: { url: string; title: string }[] = [];
+
+      // 解析每一行，提取图片 URL 和标题
+      lines.forEach(line => {
+        const parts = line.split("|").map(s => s.trim());
+        if (parts.length >= 1 && parts[0].length > 0) {
+          slides.push({
+            url: parts[0],
+            title: parts[1] || "",
+          });
+        }
+      });
+
+      if (slides.length === 0) {
+        wrapper.remove();
+        return;
+      }
+
+      // 创建唯一的类名和 ID
+      const uniqueId = `markdown-swiper-${wrapperIndex}`;
+      const uniqueClass = `markdown-swiper-instance-${wrapperIndex}`;
+
+      // 创建轮播图元素
+      const swiperContainer = document.createElement("div");
+      swiperContainer.className = `swiper-container ${uniqueClass}`;
+      swiperContainer.innerHTML = `
+        <div class="swiper-wrapper noneed">
+          ${slides.map(
+            (slide, index) => `
+            <div class="swiper-slide">
+              <img
+                src="${slide.url}"
+                alt="${slide.title || '图片'}"
+                data-fancybox="markdown-swiper-${wrapperIndex}"
+                data-caption="${slide.title || '图片'}"
+                class="swiper-img"
+                loading="lazy"
+              />
+              ${slide.title ? `<div class="swiper-slide-title">${slide.title}</div>` : ""}
+            </div>
+          `,
+          ).join("")}
+        </div>
+        <div class="flex justify-between items-center h-8">
+          <div class="swiper-pagination"></div>
+          <div class="swiper-buttons absolute right-0">
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-button-next"></div>
+          </div>
+        </div>
+      `;
+
+      // 替换原容器
+      wrapper.replaceWith(swiperContainer);
+
+      // 初始化 Swiper
+      setTimeout(() => {
+        const newSwiper = new Swiper(`.${uniqueClass}`, {
+          modules: [Navigation, Pagination, Mousewheel],
+          slidesPerView: "auto",
+          spaceBetween: 20,
+          loop: false,
+          mousewheel: {
+            forceToAxis: true,
+            sensitivity: 1,
+            releaseOnEdges: false,
+          },
+          navigation: {
+            nextEl: `.${uniqueClass} .swiper-button-next`,
+            prevEl: `.${uniqueClass} .swiper-button-prev`,
+          },
+          pagination: {
+            el: `.${uniqueClass} .swiper-pagination`,
+            clickable: true,
+          },
+          freeMode: false,
+          touchRatio: 1,
+          resistance: true,
+          resistanceRatio: 0.85,
+        });
+      }, 100);
+    });
+
+    // 添加轮播图样式
+    const style = document.createElement("style");
+    style.textContent = `
+      /* Markdown Swiper 样式 - 使用更具体的选择器避免影响其他轮播图 */
+      .swiper-container[class*="markdown-swiper-instance"] {
+        margin: 0 0 20px;
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"]:not(.swiper-initialized) > .swiper-wrapper {
+        gap: 20px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-wrapper {
+        display: flex;
+        height: 650px;
+        transition-timing-function: ease;
+        width: 100%;
+        z-index: 1;
+        flex-wrap: nowrap;
+        border-radius: 15px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-wrapper.noneed {
+        height: 350px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-slide {
+        width: auto;
+        max-width: 100%;
+        flex-shrink: 0;
+        height: 100%;
+        position: relative;
+        border: 1px solid rgb(229 231 235);
+        border-radius: 15px;
+      }
+
+      .dark .swiper-container[class*="markdown-swiper-instance"] .swiper-slide {
+        border-color: rgb(51 65 85);
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-img {
+        display: block;
+        height: 100%;
+        width: auto;
+        max-width: none;
+        object-fit: contain;
+        flex-shrink: 0;
+        cursor: zoom-in;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-slide-title {
+        text-align: center;
+        color: white;
+        padding: 8px 12px;
+        font-size: 13px;
+        line-height: 1.4;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-shrink: 0;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 0;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-slide::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-slide::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-slide::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 2px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-slide::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-buttons {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-pagination {
+        display: flex;
+        flex-grow: 1;
+        gap: 2px;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] :deep(.swiper-pagination-bullet) {
+        background: rgb(148 163 184);
+        border-radius: 4px;
+        display: inline-block;
+        height: 8px;
+        transition: 0.15s;
+        width: 8px;
+        opacity: 1;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] :deep(.swiper-pagination-bullet-active) {
+        width: 16px;
+        background: rgb(37 99 235);
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] :deep(.swiper-pagination-bullet:hover) {
+        background: rgb(37 99 235);
+        opacity: 1;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-button-prev,
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-button-next {
+        align-items: center;
+        color: rgb(148 163 184);
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        transition: 0.15s;
+        position: static;
+        margin: 0;
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-button-prev:hover,
+      .swiper-container[class*="markdown-swiper-instance"] .swiper-button-next:hover {
+        color: rgb(37 99 235);
+      }
+
+      .swiper-container[class*="markdown-swiper-instance"] :deep(.swiper-button-disabled) {
+        cursor: auto;
+        opacity: 0.35;
+        pointer-events: none;
+      }
+
+      @media (max-width: 768px) {
+        .swiper-container[class*="markdown-swiper-instance"] .swiper-wrapper {
+          height: 350px;
+        }
+
+        .swiper-container[class*="markdown-swiper-instance"] .swiper-wrapper.noneed {
+          height: 250px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
   });
 });
 
@@ -480,7 +909,7 @@ onUnmounted(() => {
         </aside>
 
         <!-- 文章正文 -->
-        <div class="flex-1 min-w-0 opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
+        <div class="min-w-0 opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
       </div>
 
       <!-- 评论区 -->
@@ -548,11 +977,6 @@ onUnmounted(() => {
   margin-right: auto;
 }
 
-/* 正文扩展超出约束宽度 */
-.content-body {
-  /* margin-left: calc((56.25rem - 100%) / 2); */
-  margin-right: calc((56.25rem - 100%) / 2);
-}
 
 /* 目录样式 */
 .toc-sidebar {

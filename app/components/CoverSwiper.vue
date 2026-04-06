@@ -147,8 +147,6 @@ watch(
 .swiper-slide {
   /* 自动宽度，由图片内容决定 */
   width: auto;
-  /* 最小宽度为内容宽度，确保图片完整显示 */
-  min-width: fit-content;
   /* 不允许收缩 */
   flex-shrink: 0;
   height: 100%;
@@ -158,6 +156,7 @@ watch(
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  max-width: 100%;
 }
 
 .dark .swiper-slide {
@@ -172,7 +171,7 @@ watch(
   width: auto;
   max-width: none;
   /* 确保图片不会超出视口 */
-  object-fit: contain;
+  object-fit: cover;
   flex-shrink: 0;
   cursor: zoom-in;
 }
