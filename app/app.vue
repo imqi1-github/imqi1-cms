@@ -3,6 +3,39 @@ const route = useRoute();
 
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
+
+// 滚动到 Hash 对应的元素
+function scrollToHash() {
+  if (!import.meta.client) return;
+
+  const hash = route.hash;
+  if (!hash) return;
+
+  // 移除 # 符号
+  const id = hash.slice(1);
+  if (!id) return;
+
+  // 等待 DOM 更新完成
+  nextTick(() => {
+    const element = document.getElementById(id);
+    if (element) {
+      // 导航栏高度偏移（pt-20 = 5rem = 80px）
+      const offset = 90;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  });
+}
+
+// 监听路由变化，处理 Hash 滚动
+watch(() => route.hash, () => {
+  scrollToHash();
+}, { immediate: true });
 </script>
 
 <template>
