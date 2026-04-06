@@ -34,7 +34,6 @@ const SITE_META = {
   siteIcp: process.env.SEED_SITE_ICP || "",
   commentEnabled: process.env.SEED_COMMENT_ENABLED || "true",
   commentModeration: process.env.SEED_COMMENT_MODERATION || "false",
-  commentMarkdown: process.env.SEED_COMMENT_MARKDOWN || "false",
   commentAvatarService: process.env.SEED_COMMENT_AVATAR_SERVICE || "gravatar",
   commentPageSize: process.env.SEED_COMMENT_PAGE_SIZE || "10",
   commentMaxLevel: process.env.SEED_COMMENT_MAX_LEVEL || "4",

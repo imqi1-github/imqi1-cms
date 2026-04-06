@@ -24,7 +24,6 @@ export default defineEventHandler(async event => {
       { key: "homeHeroSubtitle", value: body.homeHeroSubtitle || "做技术的分享者 · 生活的摄影师 · 时事的评论员" },
       { key: "commentEnabled", value: String(body.commentEnabled ?? true) },
       { key: "commentModeration", value: String(body.commentModeration ?? false) },
-      { key: "commentMarkdown", value: String(body.commentMarkdown ?? false) },
       { key: "commentAvatarService", value: body.commentAvatarService || "gravatar" },
       { key: "commentPageSize", value: String(body.commentPageSize ?? 10) },
       { key: "commentMaxLevel", value: String(body.commentMaxLevel ?? 4) },

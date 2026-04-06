@@ -888,7 +888,6 @@ const metaItems = [
   { key: "siteIcp", value: "" },
   { key: "commentEnabled", value: "true" },
   { key: "commentModeration", value: "false" },
-  { key: "commentMarkdown", value: "false" },
   { key: "commentAvatarService", value: "gravatar" },
   { key: "commentPageSize", value: "10" },
   { key: "commentMaxLevel", value: "4" },

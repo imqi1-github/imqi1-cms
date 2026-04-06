@@ -24,7 +24,6 @@ export default defineEventHandler(async event => {
       homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
       commentEnabled: true,
       commentModeration: false,
-      commentMarkdown: false,
       commentAvatarService: "gravatar",
       commentPageSize: 10,
       commentMaxLevel: 4,

@@ -43,6 +43,7 @@ const firstCover = computed(() => covers.value[0]?.url || "");
 
 const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
+const commentEnabled = computed(() => siteData.value?.data?.commentEnabled ?? true);
 
 // 判断是否为图片分类
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
@@ -336,7 +337,10 @@ onUnmounted(() => {
           alt="封面"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
-          :class="['w-full h-auto object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in', isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5']"
+          :class="[
+            'w-full h-auto object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
+            isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5',
+          ]"
           loading="lazy" />
 
         <!-- 标题 -->
@@ -410,7 +414,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 评论区 -->
-      <section class="mt-10 opacity-0 translate-y-8 duration-600 ease-out content-constrained">
+      <section v-if="commentEnabled" class="mt-10 opacity-0 translate-y-8 duration-600 ease-out content-constrained">
         <CommentList :post-id="post.cid" />
       </section>
     </article>

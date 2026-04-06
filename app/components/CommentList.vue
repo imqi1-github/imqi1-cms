@@ -9,15 +9,19 @@ const comments = ref<any[]>([]);
 const loading = ref(true);
 const refreshing = ref(false);
 const error = ref("");
+const avatarService = ref("gravatar");
+const pageSize = ref(10);
+const currentPage = ref(1);
+const totalComments = ref(0);
+const hasMore = ref(false);
+const loadingMore = ref(false);
 
-// 回复状态管理
 const replyState = ref({
   isReplying: false,
   replyTo: null as { id: number; name: string } | null,
   targetCommentId: null as number | null,
 });
 
-// 开始回复
 function startReply(comment: any) {
   replyState.value = {
     isReplying: true,
@@ -29,7 +33,6 @@ function startReply(comment: any) {
   };
 }
 
-// 取消回复
 function cancelReply() {
   replyState.value = {
     isReplying: false,
@@ -38,21 +41,29 @@ function cancelReply() {
   };
 }
 
-// 获取评论数据
-const fetchComments = async (isRefresh = false) => {
+const fetchComments = async (isRefresh = false, page = 1) => {
   if (isRefresh) {
     refreshing.value = true;
+  } else if (page > 1) {
+    loadingMore.value = true;
   } else {
     loading.value = true;
   }
   error.value = "";
 
   try {
-    const response = await fetch(`/api/comments?cid=${props.postId}`);
+    const response = await fetch(`/api/comments?cid=${props.postId}&page=${page}&pageSize=${pageSize.value}`);
     const data = await response.json();
 
     if (data.code === 200) {
-      comments.value = data.data;
+      if (page === 1 || isRefresh) {
+        comments.value = data.data;
+      } else {
+        comments.value = [...comments.value, ...data.data];
+      }
+      currentPage.value = page;
+      totalComments.value = data.pagination.total;
+      hasMore.value = data.pagination.hasMore;
     } else {
       error.value = data.message || "获取评论失败";
     }
@@ -61,24 +72,46 @@ const fetchComments = async (isRefresh = false) => {
   } finally {
     loading.value = false;
     refreshing.value = false;
+    loadingMore.value = false;
   }
 };
 
-// 组件挂载时获取评论
-onMounted(() => {
+const loadMore = () => {
+  if (hasMore.value && !loadingMore.value) {
+    fetchComments(false, currentPage.value + 1);
+  }
+};
+
+const fetchSettings = async () => {
+  try {
+    const response = await fetch("/api/site");
+    const data = await response.json();
+    if (data.success && data.data) {
+      if (data.data.commentAvatarService) {
+        avatarService.value = data.data.commentAvatarService;
+      }
+      if (data.data.commentPageSize) {
+        pageSize.value = data.data.commentPageSize;
+      }
+    }
+  } catch (err) {
+    console.error("获取设置失败:", err);
+  }
+};
+
+onMounted(async () => {
+  await fetchSettings();
   fetchComments();
 });
 
-// 处理评论提交事件
 function handleCommentSubmitted() {
-  fetchComments(true);
-  // 取消回复状态
+  fetchComments(true, 1);
   cancelReply();
 }
 </script>
 
 <template>
-  <div class="mt-5 min-h-[200px]">
+  <div class="mt-5 min-h-50">
     <!-- 加载状态（首次加载） -->
     <div v-if="loading" class="py-8 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -104,6 +137,9 @@ function handleCommentSubmitted() {
         <CommentInput :post-id="props.postId" @comment-submitted="handleCommentSubmitted" />
       </div>
 
+      <!-- 评论统计 -->
+      <div v-if="totalComments > 0" class="mb-4 text-sm text-slate-500 dark:text-slate-400">共 {{ totalComments }} 条评论</div>
+
       <!-- 评论列表容器 -->
       <Transition name="comment-fade" mode="out-in">
         <!-- 空状态 -->
@@ -113,17 +149,34 @@ function handleCommentSubmitted() {
         </div>
 
         <!-- 评论列表（使用递归组件） -->
-        <ul v-else key="list" class="space-y-6">
-          <CommentItem
-            v-for="comment in comments"
-            :key="comment.coid"
-            :comment="comment"
-            :post-id="props.postId"
-            :reply-state="replyState"
-            @start-reply="startReply"
-            @cancel-reply="cancelReply"
-            @comment-submitted="handleCommentSubmitted" />
-        </ul>
+        <div v-else key="list">
+          <ul class="space-y-6">
+            <CommentItem
+              v-for="comment in comments"
+              :key="comment.coid"
+              :comment="comment"
+              :post-id="props.postId"
+              :reply-state="replyState"
+              :avatar-service="avatarService"
+              @start-reply="startReply"
+              @cancel-reply="cancelReply"
+              @comment-submitted="handleCommentSubmitted" />
+          </ul>
+
+          <!-- 加载更多 -->
+          <div v-if="hasMore" class="mt-6 text-center">
+            <button
+              @click="loadMore"
+              :disabled="loadingMore"
+              class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <span v-if="loadingMore" class="flex items-center gap-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                加载中...
+              </span>
+              <span v-else>加载更多评论</span>
+            </button>
+          </div>
+        </div>
       </Transition>
     </template>
   </div>

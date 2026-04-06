@@ -4,6 +4,8 @@ export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
     const cid = parseInt(query.cid as string);
+    const page = parseInt(query.page as string) || 1;
+    const pageSize = parseInt(query.pageSize as string) || 10;
 
     if (!cid) {
       throw createError({
@@ -12,7 +14,6 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 获取所有已启用的评论，按时间倒序排列（最新的在最上面）
     const comments = await prisma.comment.findMany({
       where: {
         cid,
@@ -23,36 +24,46 @@ export default defineEventHandler(async event => {
       },
     });
 
-    // 构建评论树结构
     const commentMap = new Map<number, any>();
     const rootComments: any[] = [];
 
-    // 先将所有评论放入map
     comments.forEach(comment => {
       commentMap.set(comment.coid, {
         ...comment,
         children: [],
+        parent_name: null,
       });
     });
 
-    // 构建父子关系
     comments.forEach(comment => {
       if (comment.parent_id) {
-        // 子评论
         const parent = commentMap.get(comment.parent_id);
         if (parent) {
-          parent.children.push(commentMap.get(comment.coid));
+          const childComment = commentMap.get(comment.coid);
+          childComment.parent_name = parent.name;
+          parent.children.push(childComment);
         }
       } else {
-        // 根评论
         rootComments.push(commentMap.get(comment.coid));
       }
     });
 
+    const total = rootComments.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const paginatedRootComments = rootComments.slice(startIndex, startIndex + pageSize);
+
     return {
       code: 200,
       message: "获取评论列表成功",
-      data: rootComments,
+      data: paginatedRootComments,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     };
   } catch (error) {
     if (error instanceof Error) {

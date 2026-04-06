@@ -8,6 +8,9 @@ const defaults: Record<string, any> = {
   siteIcp: "",
   homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
   photoCategorySlug: "shot",
+  commentEnabled: true,
+  commentAvatarService: "gravatar",
+  commentPageSize: 10,
 };
 
 export default defineEventHandler(async event => {
@@ -23,7 +26,12 @@ export default defineEventHandler(async event => {
     // 从数据库覆盖值
     metas.forEach((meta: any) => {
       if (settings.hasOwnProperty(meta.key)) {
-        settings[meta.key] = meta.value;
+        // 布尔值转换
+        if (typeof defaults[meta.key] === "boolean") {
+          settings[meta.key] = meta.value === "true";
+        } else {
+          settings[meta.key] = meta.value;
+        }
       }
     });
 

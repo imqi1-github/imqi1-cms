@@ -13,7 +13,6 @@ const settings = ref({
   homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
   commentEnabled: true,
   commentModeration: false,
-  commentMarkdown: false,
   commentAvatarService: "gravatar",
   commentPageSize: 10,
   commentMaxLevel: 4,
@@ -129,7 +128,6 @@ const defaultSettings = {
   homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
   commentEnabled: true,
   commentModeration: false,
-  commentMarkdown: false,
   commentAvatarService: "gravatar",
   commentPageSize: 10,
   commentMaxLevel: 4,
@@ -383,13 +381,6 @@ onMounted(() => {
                     <p class="text-sm text-muted-foreground">新评论需要审核后才能显示</p>
                   </div>
                   <Switch id="commentModeration" v-model="settings.commentModeration" />
-                </div>
-                <div class="flex items-center justify-between">
-                  <div class="space-y-0.5">
-                    <Label for="commentMarkdown">Markdown 支持</Label>
-                    <p class="text-sm text-muted-foreground">允许在评论中使用 Markdown 语法</p>
-                  </div>
-                  <Switch id="commentMarkdown" v-model="settings.commentMarkdown" />
                 </div>
               </div>
 
