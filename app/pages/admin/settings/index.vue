@@ -21,11 +21,8 @@ const settings = ref({
   commentInterval: 60,
   postPageSize: 12,
   homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
-  staticFilePath: "https://cdn.imqi1.com/static",
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
-  photoCoverSuffix: "",
-  postCoverSuffix: "",
   moderationApiType: "1",
   baiduAppId: "",
   baiduApiKey: "",
@@ -136,11 +133,8 @@ const defaultSettings = {
   commentInterval: 60,
   postPageSize: 12,
   homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
-  staticFilePath: "https://cdn.imqi1.com/static",
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
-  photoCoverSuffix: "",
-  postCoverSuffix: "",
   moderationApiType: "1",
   baiduAppId: "",
   baiduApiKey: "",
@@ -545,14 +539,9 @@ onMounted(() => {
 
               <Separator />
 
-              <!-- 资源路径 -->
+              <!-- 音乐设置 -->
               <div class="space-y-4">
-                <h4 class="text-sm font-medium">资源路径</h4>
-                <div class="space-y-2">
-                  <Label for="staticFilePath">静态文件路径</Label>
-                  <Input id="staticFilePath" v-model="settings.staticFilePath" placeholder="https://cdn.imqi1.com/static" />
-                  <p class="text-xs text-muted-foreground">CDN 或静态资源的访问路径，用于加载图片、样式等资源</p>
-                </div>
+                <h4 class="text-sm font-medium">音乐设置</h4>
                 <div class="space-y-2">
                   <Label for="musicPlaylistId">音乐列表 ID</Label>
                   <Input id="musicPlaylistId" v-model="settings.musicPlaylistId" placeholder="9255074836 || netease" />
@@ -569,16 +558,6 @@ onMounted(() => {
                   <Label for="photoCategorySlug">图片分类 Slug</Label>
                   <Input id="photoCategorySlug" v-model="settings.photoCategorySlug" placeholder="shot" />
                   <p class="text-xs text-muted-foreground">图片作品分类在 URL 中的标识符</p>
-                </div>
-                <div class="space-y-2">
-                  <Label for="photoCoverSuffix">图片封面后缀</Label>
-                  <Input id="photoCoverSuffix" v-model="settings.photoCoverSuffix" placeholder="" />
-                  <p class="text-xs text-muted-foreground">图片封面图的处理参数后缀，用于控制显示尺寸</p>
-                </div>
-                <div class="space-y-2">
-                  <Label for="postCoverSuffix">文章封面后缀</Label>
-                  <Input id="postCoverSuffix" v-model="settings.postCoverSuffix" placeholder="" />
-                  <p class="text-xs text-muted-foreground">文章封面图的处理参数后缀，用于控制显示尺寸</p>
                 </div>
               </div>
             </CardContent>
