@@ -253,7 +253,7 @@ onMounted(() => {
         <TableHeader>
           <TableRow>
             <TableHead class="w-12">
-              <Checkbox :checked="isAllSelected" :indeterminate="isIndeterminate" @click.stop="toggleSelectAll" />
+              <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />
             </TableHead>
             <TableHead>评论者</TableHead>
             <TableHead>内容</TableHead>
@@ -266,7 +266,7 @@ onMounted(() => {
         <TableBody>
           <TableRow v-for="comment in comments" :key="comment.coid" :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
             <TableCell>
-              <Checkbox :checked="selectedIds.includes(comment.coid)" @click.stop="toggleSelect(comment.coid)" />
+              <Checkbox :model-value="selectedIds.includes(comment.coid)" @update:model-value="toggleSelect(comment.coid)" />
             </TableCell>
             <TableCell>
               <div class="flex items-center gap-3">

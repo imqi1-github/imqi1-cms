@@ -289,7 +289,7 @@ onMounted(() => {
         <TableHeader>
           <TableRow>
             <TableHead class="w-12">
-              <Checkbox :checked="isAllSelected" :indeterminate="isIndeterminate" @click.stop="toggleSelectAll" />
+              <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />
             </TableHead>
             <TableHead>标题</TableHead>
             <TableHead>Slug</TableHead>
@@ -303,7 +303,7 @@ onMounted(() => {
         <TableBody>
           <TableRow v-for="post in posts" :key="post.cid" :class="{ 'bg-muted/50': selectedIds.includes(post.cid) }">
             <TableCell>
-              <Checkbox :checked="selectedIds.includes(post.cid)" @click.stop="toggleSelect(post.cid)" />
+              <Checkbox :model-value="selectedIds.includes(post.cid)" @update:model-value="toggleSelect(post.cid)" />
             </TableCell>
             <TableCell class="font-medium">{{ post.title }}</TableCell>
             <TableCell class="text-muted-foreground font-mono text-sm">{{ post.slug || "-" }}</TableCell>
