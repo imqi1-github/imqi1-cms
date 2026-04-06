@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+img {
+  @apply dark:brightness-75;
+}
+
 @theme {
   --font-serif: "Noto Serif SC", serif;
   --font-mono: "JetBrains Mono", monospace;

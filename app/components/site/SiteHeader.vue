@@ -45,7 +45,7 @@ onMounted(() => {
       <NuxtLink
         to="/"
         class="flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] group"
-        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0.5)]' : ''">
+        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
         <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
         <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
         <div class="absolute inset-0 items-center group-hover:opacity-100 opacity-0 transition-all duration-150 justify-center flex bg-blue-600">
@@ -57,7 +57,7 @@ onMounted(() => {
       <div
         id="nav-menu"
         class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]"
-        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0.5)]' : ''">
+        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
         <!-- 搜索按钮 -->
         <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white">
           <Icon name="ri:search-line" class="text-[1.2em] relative z-1" />

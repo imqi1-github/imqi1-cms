@@ -256,8 +256,8 @@ function insertEmoji(emoji: string) {
 }
 
 .dark .comment-textarea {
-  background: rgb(15 23 42);
-  border-color: rgb(51 65 85);
+  background: rgb(8, 14, 30);
+  border-color: rgb(24, 35, 49);
 }
 
 .comment-textarea:focus {
@@ -285,8 +285,8 @@ function insertEmoji(emoji: string) {
 }
 
 .dark .comment-input {
-  background: rgb(15 23 42);
-  border-color: rgb(51 65 85);
+  background: rgb(8, 14, 30);
+  border-color: rgb(24, 35, 49);
 }
 
 .comment-input:focus {

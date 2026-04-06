@@ -333,7 +333,7 @@ onUnmounted(() => {
           alt="封面"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
-          :class="['w-full h-auto object-cover border border-gray-200 mb-5 cursor-zoom-in', isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5']"
+          :class="['w-full h-auto object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in', isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5']"
           loading="lazy" />
 
         <!-- 标题 -->
