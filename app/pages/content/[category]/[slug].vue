@@ -128,29 +128,51 @@ useHead({
   }),
 });
 
-// 初始化滚动渐入动画和 Fancybox
+// 监听文章数据变化，触发渐入动画
+watch(() => post.value, (newPost) => {
+  if (newPost) {
+    // 使用 setTimeout 确保 DOM 完全渲染
+    setTimeout(() => {
+      const article = document.querySelector("article.animate-fade-in");
+      const header = article?.querySelector("header.article-cover");
+      const contentBody = article?.querySelector(".content-body");
+      const commentSection = article?.querySelector("section.opacity-0");
+
+      console.log("触发渐入动画", { article, header, contentBody, commentSection });
+
+      header?.classList.remove("opacity-0", "translate-y-8");
+      header?.classList.add("opacity-100", "translate-y-0");
+      contentBody?.classList.remove("opacity-0", "translate-y-8");
+      contentBody?.classList.add("opacity-100", "translate-y-0");
+      commentSection?.classList.remove("opacity-0", "translate-y-8");
+      commentSection?.classList.add("opacity-100", "translate-y-0");
+    }, 100);
+  }
+}, { immediate: true });
+
+// 监听 404 状态，触发错误页动画
+watch(isNotFound, () => {
+  if (isNotFound.value) {
+    nextTick(() => {
+      const notFound = document.querySelector(".not-found-fade-in");
+      if (notFound) {
+        notFound.classList.add("fade-in-start");
+      }
+    });
+  }
+});
+
+// 初始化 Fancybox 和其他功能
 onMounted(() => {
-  // 页面渐入动画 - 直接触发，不需要滚动监听
-  requestAnimationFrame(() => {
-    // 触发 404 页面动画
-    const notFound = document.querySelector(".not-found-fade-in");
-    if (notFound && isNotFound.value) {
-      notFound.classList.add("fade-in-start");
-      return;
-    }
-
-    const article = document.querySelector("article.animate-fade-in");
-    const header = article?.querySelector("header.article-cover");
-    const contentBody = article?.querySelector(".content-body");
-    const commentSection = article?.querySelector("section.opacity-0");
-
-    header?.classList.remove("opacity-0", "translate-y-8");
-    header?.classList.add("opacity-100", "translate-y-0");
-    contentBody?.classList.remove("opacity-0", "translate-y-8");
-    contentBody?.classList.add("opacity-100", "translate-y-0");
-    commentSection?.classList.remove("opacity-0", "translate-y-8");
-    commentSection?.classList.add("opacity-100", "translate-y-0");
-  });
+  // 404 页面动画（初始状态）
+  if (isNotFound.value) {
+    nextTick(() => {
+      const notFound = document.querySelector(".not-found-fade-in");
+      if (notFound) {
+        notFound.classList.add("fade-in-start");
+      }
+    });
+  }
 
   // 初始化 Fancybox（参照友情链接页面）
   // @ts-ignore
