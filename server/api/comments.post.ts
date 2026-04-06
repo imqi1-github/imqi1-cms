@@ -1,11 +1,11 @@
 import { prisma } from "#server/utils/prisma";
+import { auditText, mapAuditResultToStatus, getAuditConfig } from "#server/utils/baidu-audit";
 
 export default defineEventHandler(async event => {
   try {
     const body = await readBody(event);
     const { cid, content, name, mail, link, parent_id } = body;
 
-    // 验证必填项
     if (!cid || !content || !name) {
       throw createError({
         statusCode: 400,
@@ -13,7 +13,6 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 验证邮箱格式（如果提供）
     if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
       throw createError({
         statusCode: 400,
@@ -21,7 +20,6 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 验证链接格式（如果提供）
     if (link) {
       try {
         new URL(link);
@@ -33,18 +31,23 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // 获取用户代理信息
     const userAgent = getHeader(event, "user-agent") || "unknown";
 
-    // 获取评论审核配置
-    const meta = await prisma.meta.findUnique({
-      where: { key: "commentModeration" },
-    });
+    const auditConfig = await getAuditConfig();
+    let commentStatus = 1;
+    let auditResult = null;
 
-    // 是否需要审核（默认不需要）
-    const needModeration = meta?.value === "true";
+    if (auditConfig.enabled) {
+      auditResult = await auditText(content);
+      commentStatus = mapAuditResultToStatus(auditResult.conclusionType);
+    } else {
+      const meta = await prisma.meta.findUnique({
+        where: { key: "commentModeration" },
+      });
+      const needModeration = meta?.value === "true";
+      commentStatus = needModeration ? 0 : 1;
+    }
 
-    // 创建评论
     const comment = await prisma.comment.create({
       data: {
         cid: parseInt(cid),
@@ -53,16 +56,30 @@ export default defineEventHandler(async event => {
         mail: mail || null,
         link: link || null,
         parent_id: parent_id || null,
-        status: needModeration ? 0 : 1, // 0: 待审核, 1: 已启用
+        status: commentStatus,
         agent: userAgent,
       },
     });
 
+    let message = "评论提交成功";
+    if (auditConfig.enabled && auditResult) {
+      if (auditResult.conclusionType === 2) {
+        message = "评论内容违规，已被标记为垃圾";
+      } else if (auditResult.conclusionType === 3) {
+        message = "评论内容疑似违规，请等待审核";
+      } else if (auditResult.conclusionType === 4) {
+        message = "评论提交成功，请等待审核";
+      }
+    } else if (commentStatus === 0) {
+      message = "评论提交成功，请等待审核";
+    }
+
     return {
       code: 200,
-      message: needModeration ? "评论提交成功，请等待审核" : "评论提交成功",
+      message,
       data: comment,
-      needModeration,
+      needModeration: commentStatus === 0,
+      auditResult: auditConfig.enabled ? auditResult : null,
     };
   } catch (error) {
     if (error instanceof Error) {

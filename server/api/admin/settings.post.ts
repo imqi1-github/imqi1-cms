@@ -14,9 +14,6 @@ export default defineEventHandler(async event => {
 
   const body = await readBody(event);
 
-  // 调试日志
-  console.log('[设置保存] upyunImageProcess 原始值:', body.upyunImageProcess, '类型:', typeof body.upyunImageProcess);
-
   try {
     const updates = [
       { key: "siteName", value: body.siteName || "ImQi1" },

@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const comments = ref<any[]>([]);
 const loading = ref(true);
+const refreshing = ref(false);
 const error = ref("");
 
 // 回复状态管理
@@ -38,8 +39,12 @@ function cancelReply() {
 }
 
 // 获取评论数据
-const fetchComments = async () => {
-  loading.value = true;
+const fetchComments = async (isRefresh = false) => {
+  if (isRefresh) {
+    refreshing.value = true;
+  } else {
+    loading.value = true;
+  }
   error.value = "";
 
   try {
@@ -55,6 +60,7 @@ const fetchComments = async () => {
     error.value = "网络错误，请稍后重试";
   } finally {
     loading.value = false;
+    refreshing.value = false;
   }
 };
 
@@ -65,15 +71,15 @@ onMounted(() => {
 
 // 处理评论提交事件
 function handleCommentSubmitted() {
-  fetchComments();
+  fetchComments(true);
   // 取消回复状态
   cancelReply();
 }
 </script>
 
 <template>
-  <div class="mt-5">
-    <!-- 加载状态 -->
+  <div class="mt-5 min-h-[200px]">
+    <!-- 加载状态（首次加载） -->
     <div v-if="loading" class="py-8 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
       <p class="mt-2 text-slate-500">加载评论中...</p>
@@ -83,35 +89,43 @@ function handleCommentSubmitted() {
     <div v-else-if="error" class="py-8 text-center">
       <Icon name="lucide:alert-circle" class="size-8 text-red-500 mx-auto mb-2" />
       <p class="text-red-500">{{ error }}</p>
-      <button @click="fetchComments" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-        重试
-      </button>
+      <button @click="fetchComments" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">重试</button>
     </div>
 
-    <!-- 空状态 -->
-    <div v-else-if="comments.length === 0" class="py-8 text-center">
-      <Icon name="lucide:message-square" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-      <p class="text-slate-500">暂无评论</p>
-    </div>
+    <!-- 评论框（加载完成后显示） -->
+    <template v-else>
+      <!-- 刷新指示器 -->
+      <div v-if="refreshing" class="py-2 text-center">
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
+      </div>
 
-    <!-- 默认评论框 -->
-    <div v-if="!replyState.isReplying" class="mb-8">
-      <CommentInput :post-id="props.postId" @comment-submitted="handleCommentSubmitted" />
-    </div>
+      <!-- 默认评论框 -->
+      <div v-if="!replyState.isReplying" class="mb-8">
+        <CommentInput :post-id="props.postId" @comment-submitted="handleCommentSubmitted" />
+      </div>
 
-    <!-- 评论列表（使用递归组件） -->
-    <ul v-if="comments.length > 0" class="space-y-6">
-      <CommentItem
-        v-for="comment in comments"
-        :key="comment.coid"
-        :comment="comment"
-        :post-id="props.postId"
-        :reply-state="replyState"
-        @start-reply="startReply"
-        @cancel-reply="cancelReply"
-        @comment-submitted="handleCommentSubmitted"
-      />
-    </ul>
+      <!-- 评论列表容器 -->
+      <Transition name="comment-fade" mode="out-in">
+        <!-- 空状态 -->
+        <div v-if="comments.length === 0" key="empty" class="py-8 text-center">
+          <Icon name="lucide:message-square" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <p class="text-slate-500">暂无评论</p>
+        </div>
+
+        <!-- 评论列表（使用递归组件） -->
+        <ul v-else key="list" class="space-y-6">
+          <CommentItem
+            v-for="comment in comments"
+            :key="comment.coid"
+            :comment="comment"
+            :post-id="props.postId"
+            :reply-state="replyState"
+            @start-reply="startReply"
+            @cancel-reply="cancelReply"
+            @comment-submitted="handleCommentSubmitted" />
+        </ul>
+      </Transition>
+    </template>
   </div>
 </template>
 
@@ -119,5 +133,23 @@ function handleCommentSubmitted() {
 /* 根级评论不需要缩进 */
 :deep(ul.space-y-6) > li > div.flex {
   padding-left: 0;
+}
+
+/* 评论列表过渡动画 */
+.comment-fade-enter-active,
+.comment-fade-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.comment-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.comment-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

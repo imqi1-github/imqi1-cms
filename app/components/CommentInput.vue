@@ -141,10 +141,10 @@ async function submitComment() {
       setTimeout(() => {
         submitSuccess.value = false;
       }, 3000);
-      // 通知父组件刷新评论列表
+      // 通知父组件刷新评论列表（延迟1.5秒）
       setTimeout(() => {
         emit("comment-submitted");
-      }, 500);
+      }, 3000);
     } else {
       submitError.value = response.message || "评论失败，请重试";
     }
@@ -212,14 +212,7 @@ function formatEmojiPlaceholder(text: string): string {
 
     <div class="comment-input-row">
       <label for="comment-content-input" class="sr-only">评论内容</label>
-      <textarea
-        id="comment-content-input"
-        ref="textareaRef"
-        v-model="formData.content"
-        placeholder="评论内容 *"
-        class="comment-textarea"
-        required
-      />
+      <textarea id="comment-content-input" ref="textareaRef" v-model="formData.content" placeholder="评论内容 *" class="comment-textarea" required />
     </div>
 
     <div class="comment-input-row">
@@ -252,8 +245,7 @@ function formatEmojiPlaceholder(text: string): string {
                   type="button"
                   class="emoji-tab"
                   :class="{ active: activeCategory === cat.key }"
-                  @click="activeCategory = cat.key"
-                >
+                  @click="activeCategory = cat.key">
                   {{ cat.name }}
                 </button>
               </div>
@@ -266,8 +258,7 @@ function formatEmojiPlaceholder(text: string): string {
                   :alt="emoji.name"
                   :title="emoji.name"
                   class="emoji-item"
-                  @click="insertEmoji(emoji.key)"
-                />
+                  @click="insertEmoji(emoji.key)" />
               </div>
             </div>
           </Transition>
