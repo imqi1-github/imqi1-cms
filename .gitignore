@@ -34,3 +34,4 @@ pids
 
 .old-theme
 public/uploads/*
+.sessions
