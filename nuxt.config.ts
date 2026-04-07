@@ -17,19 +17,6 @@ export default defineNuxtConfig({
   //   cdnURL: "https://cdn.imqi1.com",
   // },
 
-  // ISR 预渲染配置 - 大幅降低 TTFB
-  routeRules: {
-    // 首页和内容页面使用 ISR，每 5 分钟重新生成一次
-    "/": { isr: 300 },
-    "/category/**": { isr: 300 },
-    "/page/**": { isr: 3600 },
-    "/post/**": { isr: 300 },
-    // API 缓存
-    "/api/site": { cache: { maxAge: 300 } },
-    "/api/categories": { cache: { maxAge: 300 } },
-    "/api/links": { cache: { maxAge: 600 } },
-  },
-
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
 
   colorMode: {
