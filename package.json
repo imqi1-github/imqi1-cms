@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "upload": "node scripts/upload-cos.mjs"
   },
   "dependencies": {
     "@fancyapps/ui": "^6.1.13",
@@ -29,6 +30,8 @@
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cos-nodejs-sdk-v5": "^2.15.4",
+    "dotenv": "^17.4.1",
     "fast-xml-parser": "^5.5.10",
     "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.1.1",
