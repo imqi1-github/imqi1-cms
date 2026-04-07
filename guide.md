@@ -6,7 +6,7 @@
 
 - Node.js >= 18.17.0
 - PostgreSQL 数据库
-- Yarn 包管理器
+- Bun 包管理器
 
 ## 部署步骤
 
@@ -15,14 +15,14 @@
 确保服务器已安装：
 - Node.js
 - PostgreSQL
-- Yarn（可选，也可使用 npm）
+- Bun
 
 ### 2. 克隆代码并安装依赖
 
 ```bash
 git clone <your-repo-url>
 cd nodejs-imqi1
-yarn install
+bun install
 ```
 
 ### 3. 配置环境变量
@@ -64,19 +64,19 @@ SEED_UPLOAD_LOCATION="local"  # 或 "upyun" 使用又拍云
 
 ```bash
 # 生成 Prisma Client
-yarn prisma generate
+bun run prisma:generate
 
 # 运行数据库迁移
-yarn prisma migrate deploy
+bunx prisma migrate deploy
 
 # 初始化种子数据（创建管理员账户等）
-NODE_ENV=production yarn prisma db seed
+NODE_ENV=production bun run prisma:seed
 ```
 
 ### 5. 构建项目
 
 ```bash
-yarn build
+bun run build
 ```
 
 构建完成后，产物在 `.output` 目录。
@@ -87,8 +87,8 @@ yarn build
 # 开发环境
 yarn dev
 
-# 生产环境（使用 PM2 推荐）
-pm2 start .output/server/index.mjs --name "imqi1-blog"
+# 生产环境（使用 PM2）
+yarn pm2:start
 ```
 
 ### 7. 配置反向代理（Nginx）
@@ -127,29 +127,45 @@ sudo certbot renew --dry-run
 
 ## PM2 配置（推荐）
 
-创建 `ecosystem.config.js`：
+项目已包含 `ecosystem.config.js` 配置文件，使用集群模式自动利用所有 CPU 核心。
 
-```javascript
-module.exports = {
-  apps: [{
-    name: 'imqi1-blog',
-    script: '.output/server/index.mjs',
-    instances: 1,
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 4000
-    }
-  }]
-}
-```
-
-使用 PM2 启动：
+### PM2 常用命令
 
 ```bash
-pm2 start ecosystem.config.js
+# 启动服务
+bun run pm2:start
+
+# 停止服务
+bun run pm2:stop
+
+# 重启服务（有停机）
+bun run pm2:restart
+
+# 零停机重载（推荐用于更新）
+bun run pm2:reload
+
+# 删除服务
+bun run pm2:delete
+
+# 查看日志
+bun run pm2:logs
+
+# 实时监控
+bun run pm2:monit
+
+# 查看状态
+bun run pm2:status
+```
+
+### PM2 开机自启
+
+```bash
+# 保存当前进程列表
 pm2 save
+
+# 生成开机自启脚本
 pm2 startup
+# 按照提示执行输出的命令
 ```
 
 ## 常见问题
@@ -170,14 +186,14 @@ pm2 startup
 git pull
 
 # 安装依赖
-yarn install
+bun install
 
 # 运行迁移（如有数据库变更）
-yarn prisma migrate deploy
+bunx prisma migrate deploy
 
 # 重新构建
-yarn build
+bun run build
 
-# 重启服务
-pm2 restart imqi1-blog
+# 零停机重载服务
+bun run pm2:reload
 ```

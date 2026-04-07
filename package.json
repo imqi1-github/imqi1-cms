@@ -15,7 +15,6 @@
     "prisma:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "upload:cos": "node scripts/upload-cos.mjs",
-    "upload:ubuntu": "node scripts/upload-ubuntu.mjs",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop ecosystem.config.js",
     "pm2:restart": "pm2 restart ecosystem.config.js",
