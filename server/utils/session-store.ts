@@ -246,10 +246,10 @@ export async function getSessionConfig(): Promise<{ storeType: SessionStoreType 
     const meta = await prisma.meta.findUnique({
       where: { key: "sessionStoreType" },
     });
-    const storeType = (meta?.value as SessionStoreType) || "memory";
+    const storeType = (meta?.value as SessionStoreType) || "file";
     return { storeType };
   } catch {
-    return { storeType: "memory" };
+    return { storeType: "file" };
   }
 }
 
