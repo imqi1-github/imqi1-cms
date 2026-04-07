@@ -105,6 +105,7 @@ CREATE TABLE "Category" (
     "slug" TEXT,
     "desc" TEXT,
     "class" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'category',
 
     CONSTRAINT "Category_pkey" PRIMARY KEY ("mid")
 );
