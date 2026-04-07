@@ -13,9 +13,9 @@ export default defineNuxtConfig({
     },
   },
 
-  app: {
-    cdnURL: "https://cdn.imqi1.com",
-  },
+  // app: {
+  //   cdnURL: "https://cdn.imqi1.com",
+  // },
 
   // ISR 预渲染配置 - 大幅降低 TTFB
   routeRules: {
