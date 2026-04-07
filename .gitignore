@@ -13,6 +13,13 @@ node_modules
 logs
 *.log
 
+# PM2
+.pm2
+pids
+*.pid
+*.seed
+*.pid.lock
+
 # Misc
 .DS_Store
 .fleet
