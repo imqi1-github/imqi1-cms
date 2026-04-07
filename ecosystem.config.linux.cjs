@@ -7,7 +7,8 @@ module.exports = {
     {
       name: 'imqi1-nuxt',
       script: path.join(__dirname, '.output', 'server', 'index.mjs'),
-      instances: 'max', // Ubuntu/Linux 下使用所有CPU核心，或指定数字如 2、4
+      instances: 'max', // Ubuntu/Linux 下使用所有CPU核心
+      // 或者指定具体实例数，如: instances: 4
       exec_mode: 'cluster', // cluster 模式支持多实例负载均衡
       env: {
         NODE_ENV: 'production',
@@ -26,6 +27,7 @@ module.exports = {
       log_file: path.join(__dirname, 'logs', 'combined.log'),
       time: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true, // 合并所有实例的日志
 
       // 自动重启配置
       watch: false,
@@ -41,6 +43,9 @@ module.exports = {
       // 环境变量
       autorestart: true,
       exp_backoff_restart_delay: 100,
+
+      // cluster 模式下的额外配置
+      node_args: [], // 额外的 node 参数，如 ['--max-old-space-size=2048']
     },
   ],
 };

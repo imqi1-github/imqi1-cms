@@ -7,8 +7,8 @@ module.exports = {
     {
       name: 'imqi1-nuxt',
       script: path.join(__dirname, '.output', 'server', 'index.mjs'),
-      instances: 'max', // Ubuntu/Linux 下使用所有CPU核心，或指定数字如 2、4
-      exec_mode: 'cluster', // cluster 模式支持多实例负载均衡
+      instances: 1, // Windows 下建议使用单实例
+      exec_mode: 'fork', // Windows 不支持 cluster 模式
       env: {
         NODE_ENV: 'production',
         PORT: process.env.PORT || 4000,
