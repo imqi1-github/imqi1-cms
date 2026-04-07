@@ -1,10 +1,12 @@
-export default {
+const path = require('path');
+
+module.exports = {
   apps: [
     {
       name: 'imqi1-nuxt',
-      script: './.output/server/index.mjs',
-      instances: 'max', // 使用所有 CPU 核心
-      exec_mode: 'cluster', // 集群模式
+      script: path.join(__dirname, '.output', 'server', 'index.mjs'),
+      instances: 1, // Windows 下建议使用单实例
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PORT: 4000,
@@ -14,9 +16,9 @@ export default {
         PORT: 4000,
       },
       // 日志配置
-      error_file: './logs/err.log',
-      out_file: './logs/out.log',
-      log_file: './logs/combined.log',
+      error_file: path.join(__dirname, 'logs', 'err.log'),
+      out_file: path.join(__dirname, 'logs', 'out.log'),
+      log_file: path.join(__dirname, 'logs', 'combined.log'),
       time: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
 
