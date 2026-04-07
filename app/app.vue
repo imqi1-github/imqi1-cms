@@ -1,10 +1,18 @@
 <script setup lang="ts">
 const route = useRoute();
+const config = useRuntimeConfig();
 
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
 
-// 全局 RSS 订阅链接
+// 获取字体 CSS URL
+const fontCssUrl = computed(() => {
+  const cdnURL = config.public.cdnURL as string;
+  // 生产环境且配置了 CDN 时使用 CDN，否则使用本地路径
+  return import.meta.env.PROD && cdnURL ? `${cdnURL}/fonts/font.css` : "/fonts/font.css";
+});
+
+// 全局 RSS 订阅链接和字体
 useHead({
   link: [
     {
@@ -12,6 +20,10 @@ useHead({
       type: "application/rss+xml",
       title: "RSS 订阅",
       href: "/feed",
+    },
+    {
+      rel: "stylesheet",
+      href: fontCssUrl.value,
     },
   ],
 });

@@ -9,16 +9,12 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      cdnURL: "http://cdn.imqi1.com",
+      cdnURL: "https://cdn.imqi1.com",
     },
   },
 
   app: {
-    head: {
-      // 使用 runtime config 的 cdnURL（需要在 app.vue 或插件中动态设置）
-      link: [{ rel: "stylesheet", href: "/fonts/font.css" }],
-    },
-    cdnURL: "http://cdn.imqi1.com",
+    cdnURL: "https://cdn.imqi1.com",
   },
 
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
