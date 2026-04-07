@@ -19,8 +19,7 @@ module.exports = {
       out_file: path.join(__dirname, 'logs/out.log'),
       time: true,
 
-      autorestart: true,
-      max_memory_restart: '1G'
+      autorestart: true
     }
   ]
 }
