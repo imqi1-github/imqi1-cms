@@ -895,7 +895,7 @@ const metaItems = [
   { key: "commentRequireLink", value: "false" },
   { key: "commentInterval", value: "60" },
   { key: "postPageSize", value: "12" },
-  { key: "homeCustomText", value: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' },
+  { key: "homeCustomText", value: '<p>本站新架构上线，由 Nuxt 4 构建，你所看见的都是测试数据，测试完毕后友联和数据会同步，请不要删除友联，可以的话，帮我找找 bug，谢谢 🙏</p>' },
   { key: "musicPlaylistId", value: "9255074836 || netease" },
   { key: "photoCategorySlug", value: "shot" },
   { key: "moderationApiType", value: "1" },

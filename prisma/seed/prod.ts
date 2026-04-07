@@ -135,20 +135,32 @@ async function main() {
   console.log("📝 创建示例文章...");
   const post = await prisma.post.create({
     data: {
-      title: "欢迎使用新的博客系统",
-      slug: "1",
-      desc: "这是您的第一篇文章，可以登录后台进行编辑或删除。",
-      content: `# 欢迎使用新的博客系统
+      title: "本站新架构上线",
+      slug: "welcome",
+      desc: "本站基于 Nuxt 4 构建，欢迎访问",
+      content: `# 本站新架构上线
 
-这是您的第一篇文章，可以登录后台进行编辑或删除。
+本站已全新升级为 **Nuxt 4** 架构，带来更快的加载速度和更好的用户体验。
 
-## 开始使用
+## 关于新架构
 
-1. 登录后台管理系统
-2. 编辑或删除这篇文章
-3. 发布您的第一篇原创内容
+- **框架**: Nuxt 4 + Vue 3
+- **数据库**: PostgreSQL
+- **ORM**: Prisma
+- **部署**: PM2
 
-祝您使用愉快！`,
+## 当前状态
+
+您现在看到的是测试数据，正式上线后：
+- 友情链接将同步更新
+- 文章内容将逐步迁移
+- 功能持续优化中
+
+## 反馈与建议
+
+如果您在使用过程中发现任何问题或有改进建议，欢迎通过留言功能反馈。
+
+感谢您的关注和支持！ 🙏`,
       status: 1,
       comment_num: 1,
       show_toc: true,
@@ -180,6 +192,47 @@ async function main() {
   });
   console.log(`   ✅ 创建评论: ${comment.content.slice(0, 20)}...`);
 
+  // 创建标签
+  console.log("🏷️  创建标签...");
+  const tag = await prisma.meta.create({
+    data: {
+      key: "tags",
+      value: JSON.stringify([
+        { name: "Nuxt", slug: "nuxt", count: 1 },
+        { name: "Vue", slug: "vue", count: 1 },
+        { name: "前端", slug: "frontend", count: 1 },
+      ]),
+    },
+  });
+  console.log(`   ✅ 创建标签: ${tag.key}`);
+
+  // 创建留言页面
+  console.log("📄 创建留言页面...");
+  const messagePage = await prisma.post.create({
+    data: {
+      title: "留言",
+      slug: "message",
+      desc: "欢迎在这里留言",
+      content: `# 留言板
+
+欢迎在这里留下您的想法和建议！
+
+## 留言规则
+
+- 请文明发言，尊重他人
+- 禁止发布违法和不良信息
+- 留言审核通过后会显示
+
+期待您的留言！`,
+      status: 1,
+      type: 1, // 页面类型
+      comment_num: 0,
+      show_toc: false,
+      uid: admin.uid,
+    },
+  });
+  console.log(`   ✅ 创建留言页面: ${messagePage.title}`);
+
   console.log("");
   console.log("✨ [生产环境] 种子数据生成完成！");
   console.log("");
@@ -188,6 +241,8 @@ async function main() {
   console.log(`   - 分类: 1`);
   console.log(`   - 文章: 1`);
   console.log(`   - 评论: 1`);
+  console.log(`   - 标签: 3 (Nuxt, Vue, 前端)`);
+  console.log(`   - 留言页面: 1`);
   console.log("");
 }
 
