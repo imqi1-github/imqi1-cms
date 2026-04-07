@@ -47,7 +47,7 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
   });
 
   setCookie(event, SESSION_COOKIE_NAME, sessionId, {
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
     maxAge: SESSION_MAX_AGE,
     path: "/",

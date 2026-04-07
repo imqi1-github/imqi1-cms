@@ -9,7 +9,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      cdnURL: "https://cdn.imqi1.com",
+      // cdnURL: "https://cdn.imqi1.com",
     },
   },
 
