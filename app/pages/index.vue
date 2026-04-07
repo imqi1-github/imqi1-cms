@@ -30,7 +30,7 @@
 
       <!-- 联系链接 -->
       <div class="index-contact flex mt-3 self-start animate-fade-in max-md:mx-auto">
-        <a
+        <NuxtLink
           v-for="link in contactLinks"
           :key="link.name"
           :href="link.url"
@@ -45,7 +45,7 @@
               style="width: 192px; height: 192px; max-width: none; max-height: none"
               class="absolute bottom-full left-1/2 -translate-x-1/2 border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto rounded-full" />
           </template>
-        </a>
+        </NuxtLink>
       </div>
     </div>
 

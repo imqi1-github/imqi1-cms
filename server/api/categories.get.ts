@@ -1,6 +1,9 @@
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
+  // 设置缓存头 - CDN 和浏览器缓存 5 分钟
+  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+
   try {
     const query = getQuery(event);
     const limit = Number(query.limit) || 4;

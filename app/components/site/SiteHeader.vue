@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { RiHomeLine } from "@remixicon/vue";
+import { RiHomeFill } from "@remixicon/vue";
 
 const route = useRoute();
 const router = useRouter();
 
-// 获取站点设置
-const { data } = await useFetch("/api/site");
+// 获取站点设置 - 使用非阻塞加载，不阻塞首屏渲染
+const { data } = useLazyAsyncData("site-settings", () => $fetch("/api/site"), {
+  server: true,
+});
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 
-// 获取分类
-const { data: categoriesData } = await useFetch("/api/categories");
+// 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
+const { data: categoriesData } = useLazyAsyncData("categories", () => $fetch("/api/categories"), {
+  server: true,
+});
 const categories = computed(() => categoriesData.value?.data || []);
 
 // 导航项数据
@@ -55,7 +59,7 @@ onMounted(() => {
         <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
         <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
         <div class="absolute inset-0 items-center group-hover:opacity-100 opacity-0 transition-all duration-300 justify-center flex bg-blue-600">
-          <RiHomeLine class="size-5 fill-white" />
+          <RiHomeFill class="size-5 fill-white" />
         </div>
       </NuxtLink>
 

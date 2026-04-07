@@ -159,6 +159,9 @@ CREATE TABLE "Session" (
 CREATE UNIQUE INDEX "SubscribePost_link_key" ON "SubscribePost"("link");
 
 -- CreateIndex
+CREATE INDEX "Post_status_type_create_time_idx" ON "Post"("status", "type", "create_time");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Post_slug_type_key" ON "Post"("slug", "type");
 
 -- CreateIndex
@@ -166,6 +169,9 @@ CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
+
+-- CreateIndex
+CREATE INDEX "Category_mid_type_idx" ON "Category"("mid", "type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PostRelation_cid_mid_key" ON "PostRelation"("cid", "mid");

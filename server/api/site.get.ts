@@ -19,6 +19,9 @@ const defaults: Record<string, any> = {
 };
 
 export default defineEventHandler(async event => {
+  // 设置缓存头 - CDN 和浏览器缓存 5 分钟
+  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+
   try {
     const metas = await prisma.meta.findMany({
       where: {
