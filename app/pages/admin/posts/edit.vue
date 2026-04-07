@@ -321,10 +321,15 @@ const fetchPost = async () => {
       } else {
         coversInput.value = "";
       }
-      // 格式化发布日期为 datetime-local 输入格式
+      // 格式化发布日期为 datetime-local 输入格式（使用本地时间）
       if (post.create_time) {
         const date = new Date(post.create_time);
-        publishDate.value = date.toISOString().slice(0, 16);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        publishDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
       }
 
       // 同时获取附件列表和分类
@@ -446,9 +451,14 @@ onMounted(() => {
   if (isEdit.value) {
     fetchPost();
   } else {
-    // 新建文章时，自动填充当前时间
+    // 新建文章时，自动填充当前时间（使用本地时间，而非 UTC）
     const now = new Date();
-    publishDate.value = now.toISOString().slice(0, 16);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    publishDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 });
 
