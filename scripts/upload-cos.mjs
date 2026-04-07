@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
 import dotenv from 'dotenv'
+import readline from 'readline'
 
 // 使用 createRequire 来导入 CommonJS 模块
 const require = createRequire(import.meta.url)
@@ -10,6 +11,12 @@ const COS = require('cos-nodejs-sdk-v5')
 
 // 加载环境变量
 dotenv.config()
+
+// 创建 readline 接口用于用户交互
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -103,6 +110,106 @@ async function uploadFile(localPath, remotePath, maxRetries = 3) {
   throw lastError
 }
 
+// 获取远程目录中的所有文件
+async function getRemoteFiles(prefix = '') {
+  return new Promise((resolve, reject) => {
+    cos.getBucket({
+      Bucket: cosConfig.Bucket,
+      Region: cosConfig.Region,
+      Prefix: prefix,
+      Marker: '',
+      MaxKeys: 1000
+    }, (err, data) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(data.Contents || [])
+      }
+    })
+  })
+}
+
+// 删除远程文件
+async function deleteRemoteFiles(keys) {
+  if (keys.length === 0) return []
+
+  const deleteTasks = keys.map(key => {
+    return new Promise((resolve, reject) => {
+      cos.deleteObject({
+        Bucket: cosConfig.Bucket,
+        Region: cosConfig.Region,
+        Key: key
+      }, (err, data) => {
+        if (err) reject({ key, error: err })
+        else resolve({ key, success: true })
+      })
+    })
+  })
+
+  return Promise.all(deleteTasks)
+}
+
+// 询问用户确认
+function askQuestion(query) {
+  return new Promise(resolve => {
+    rl.question(query, (answer) => {
+      resolve(answer.toLowerCase())
+    })
+  })
+}
+
+// 清空远程目录
+async function clearRemoteDirectory() {
+  try {
+    console.log('\n🔍 正在检查远程目录...\n')
+
+    const remoteFiles = await getRemoteFiles(UPLOAD_PREFIX)
+
+    if (remoteFiles.length === 0) {
+      console.log('✅ 远程目录为空，无需清空\n')
+      return true
+    }
+
+    console.log(`📁 远程目录中有 ${remoteFiles.length} 个文件：\n`)
+
+    // 显示前20个文件
+    const previewFiles = remoteFiles.slice(0, 20)
+    previewFiles.forEach(file => {
+      console.log(`  - ${file.Key}`)
+    })
+
+    if (remoteFiles.length > 20) {
+      console.log(`  ... 还有 ${remoteFiles.length - 20} 个文件\n`)
+    } else {
+      console.log('')
+    }
+
+    const answer = await askQuestion('⚠️  是否要清空远程目录中的所有文件？(yes/no): ')
+
+    if (answer === 'yes' || answer === 'y') {
+      console.log('\n🗑️  正在清空远程目录...')
+
+      const keys = remoteFiles.map(file => file.Key)
+      const results = await deleteRemoteFiles(keys)
+
+      const failed = results.filter(r => r.success !== true)
+      if (failed.length > 0) {
+        console.log(`⚠️  部分文件删除失败: ${failed.length} 个`)
+      } else {
+        console.log('✅ 远程目录已清空\n')
+      }
+
+      return true
+    } else {
+      console.log('❌ 已取消清空操作\n')
+      return false
+    }
+  } catch (error) {
+    console.error(`❌ 清空远程目录失败: ${error.message}\n`)
+    return false
+  }
+}
+
 // 并发控制函数
 async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CONCURRENCY) || 10) {
   const results = {
@@ -157,6 +264,7 @@ async function main() {
   if (!fs.existsSync(SOURCE_DIR)) {
     console.error(`❌ 源目录不存在: ${SOURCE_DIR}`)
     console.error('请先运行构建命令: bun run build')
+    rl.close()
     process.exit(1)
   }
 
@@ -165,12 +273,24 @@ async function main() {
 
   if (files.length === 0) {
     console.warn('⚠️  没有找到需要上传的文件')
+    rl.close()
     return
   }
 
   console.log(`📦 找到 ${files.length} 个文件`)
   console.log(`📂 上传目录: ${SOURCE_DIR}`)
-  console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 10}）\n`)
+  console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 10}）`)
+
+  // 清空远程目录
+  const shouldContinue = await clearRemoteDirectory()
+
+  if (!shouldContinue) {
+    console.log('❌ 上传已取消')
+    rl.close()
+    process.exit(0)
+  }
+
+  console.log('📤 开始上传文件...\n')
 
   const results = await concurrentUpload(files)
 
@@ -188,6 +308,8 @@ async function main() {
 
   console.log('='.repeat(50))
 
+  rl.close()
+
   if (results.failed > 0) {
     process.exit(1)
   }
@@ -195,5 +317,6 @@ async function main() {
 
 main().catch((error) => {
   console.error('❌ 发生错误:', error.message)
+  rl.close()
   process.exit(1)
 })
