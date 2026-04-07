@@ -22,7 +22,8 @@
     "pm2:delete": "pm2 delete imqi1-nuxt",
     "pm2:logs": "pm2 logs imqi1-nuxt",
     "pm2:monit": "pm2 monit",
-    "pm2:status": "pm2 status"
+    "pm2:status": "pm2 status",
+    "deploy": "npm run build && npm run upload:cos"
   },
   "dependencies": {
     "@fancyapps/ui": "^6.1.13",
