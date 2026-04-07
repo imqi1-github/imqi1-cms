@@ -617,7 +617,7 @@ const contactLinks = ref([
   { name: "npm", url: "https://www.npmjs.com/~imqi1-npm", icon: markRaw(RiNpmjsFill), target: true },
   { name: "x", url: "https://x.com/imqi1_X", icon: markRaw(RiTwitterXFill), target: true },
   { name: "home", url: "https://qi1.website", icon: markRaw(RiHome2Fill), target: true },
-  { name: "link", url: "/link", icon: markRaw(RiLinksFill), target: false },
+  { name: "link", url: "/links", icon: markRaw(RiLinksFill), target: false },
   { name: "miniprogram", url: "", icon: markRaw(RiMiniProgramFill), target: false },
 ]);
 

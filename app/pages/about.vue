@@ -532,7 +532,7 @@
             <div class="about-bold-nav-desc text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">探索本站结构</div>
           </NuxtLink>
           <NuxtLink
-            to="/link"
+            to="/links"
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">

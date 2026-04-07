@@ -149,7 +149,7 @@ onUnmounted(() => {
       <img
         data-fancybox="gallery"
         data-caption="封面"
-        src="/imgs/link-cover.png"
+        src="/imgs/links-cover.png"
         alt="封面"
         loading="lazy"
         class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800" />
