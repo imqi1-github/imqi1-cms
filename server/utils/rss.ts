@@ -37,6 +37,7 @@ async function fetchWithTimeout(url: string, timeout = 30000): Promise<Response>
 
 // 获取单个订阅源的文章
 async function fetchSubscribePosts(subscribeId: number, url: string) {
+  console.log(`[订阅更新] 开始获取订阅 ${subscribeId}: ${url}`);
   try {
     const response = await fetchWithTimeout(url, 30000);
 
@@ -45,6 +46,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
     }
 
     const xmlText = await response.text();
+    console.log(`[订阅更新] 订阅 ${subscribeId} XML 内容长度: ${xmlText.length}`);
     const feed = parser.parse(xmlText);
 
     const items: Array<{
@@ -123,14 +125,21 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       }
     }
 
+    // 检查是否成功解析到文章
+    if (items.length === 0) {
+      console.warn(`[订阅更新] 订阅 ${subscribeId} 未解析到任何文章，可能不是标准的 RSS/Atom 格式`);
+      return { success: false, error: '未解析到任何文章，请检查 RSS 源格式' };
+    }
+
     // 每个订阅源最多保存10篇文章
     const postsToSave = items.slice(0, 10);
+    console.log(`[订阅更新] 订阅 ${subscribeId} 解析到 ${items.length} 篇文章，将保存前 ${postsToSave.length} 篇`);
 
     for (const item of postsToSave) {
       if (!item.link) continue;
 
       try {
-        await prisma.subscribePost.upsert({
+        await prisma.subscribepost.upsert({
           where: { link: item.link },
           create: {
             subscribeId,
@@ -156,16 +165,19 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       data: { lastUpdated: new Date() },
     });
 
+    console.log(`[订阅更新] 订阅 ${subscribeId} 更新成功，获取了 ${postsToSave.length} 篇文章`);
     return { success: true, count: postsToSave.length };
   } catch (error) {
-    console.error(`获取订阅 ${subscribeId} 失败:`, error);
+    console.error(`[订阅更新] 订阅 ${subscribeId} 失败:`, error);
     return { success: false, error: (error as Error).message };
   }
 }
 
 // 更新所有订阅
 export async function updateAllSubscribes() {
+  console.log('[订阅更新] 开始更新所有订阅');
   const subscribes = await prisma.subscribe.findMany();
+  console.log(`[订阅更新] 找到 ${subscribes.length} 个订阅源`);
 
   const results = {
     success: 0,
@@ -175,6 +187,7 @@ export async function updateAllSubscribes() {
   };
 
   for (const subscribe of subscribes) {
+    console.log(`[订阅更新] 正在处理: ${subscribe.name}`);
     const result = await fetchSubscribePosts(subscribe.id, subscribe.url);
     results.details.push({
       name: subscribe.name,
@@ -189,6 +202,7 @@ export async function updateAllSubscribes() {
     }
   }
 
+  console.log(`[订阅更新] 更新完成: 成功 ${results.success}/${results.total}，失败 ${results.failed}`);
   return results;
 }
 
@@ -197,12 +211,12 @@ export async function getSubscribePosts() {
   // 获取所有有文章的订阅源
   const subscribesWithPosts = await prisma.subscribe.findMany({
     where: {
-      posts: {
+      subscribepost: {
         some: {},
       },
     },
     include: {
-      posts: {
+      subscribepost: {
         orderBy: { pubDate: 'desc' },
         take: 10,
       },
@@ -225,7 +239,7 @@ export async function getSubscribePosts() {
   }> = [];
 
   for (const subscribe of subscribesWithPosts) {
-    for (const post of subscribe.posts) {
+    for (const post of subscribe.subscribepost) {
       allPosts.push({
         id: post.id,
         subscribeId: subscribe.id,

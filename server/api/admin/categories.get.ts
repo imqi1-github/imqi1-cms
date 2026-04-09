@@ -18,7 +18,7 @@ export default defineEventHandler(async event => {
       },
       include: {
         _count: {
-          select: { relations: true },
+          select: { postrelation: true },
         },
       },
       orderBy: {
@@ -29,7 +29,7 @@ export default defineEventHandler(async event => {
     // 返回带文章数量的分类列表
     return categories.map(cat => ({
       ...cat,
-      postCount: cat._count.relations,
+      postCount: cat._count.postrelation,
     }));
   } catch (error) {
     throw createError({

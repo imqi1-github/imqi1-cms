@@ -31,7 +31,7 @@ export default defineEventHandler(async event => {
       });
     }
 
-    await prisma.postRelation.deleteMany({
+    await prisma.postrelation.deleteMany({
       where: {
         cid: Number(id),
         category: {
@@ -41,7 +41,7 @@ export default defineEventHandler(async event => {
     });
 
     if (tagIds.length > 0) {
-      await prisma.postRelation.createMany({
+      await prisma.postrelation.createMany({
         data: tagIds.map((mid: number) => ({
           cid: Number(id),
           mid,

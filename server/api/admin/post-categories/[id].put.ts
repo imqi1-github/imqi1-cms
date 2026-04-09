@@ -33,13 +33,13 @@ export default defineEventHandler(async event => {
     }
 
     // 删除现有的分类关系
-    await prisma.postRelation.deleteMany({
+    await prisma.postrelation.deleteMany({
       where: { cid: Number(id) },
     });
 
     // 创建新的分类关系
     if (categoryIds.length > 0) {
-      await prisma.postRelation.createMany({
+      await prisma.postrelation.createMany({
         data: categoryIds.map((mid: number) => ({
           cid: Number(id),
           mid,

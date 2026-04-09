@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@fancyapps/ui": "^6.1.13",
+    "@meting/core": "^1.6.1",
     "@nuxtjs/color-mode": "^4.0.0",
     "@prisma/adapter-mariadb": "^7.6.0",
     "@prisma/client": "^7.6.0",

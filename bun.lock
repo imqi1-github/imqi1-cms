@@ -6,6 +6,7 @@
       "name": "imqi1-nodejs",
       "dependencies": {
         "@fancyapps/ui": "^6.1.13",
+        "@meting/core": "^1.6.1",
         "@nuxtjs/color-mode": "^4.0.0",
         "@prisma/adapter-mariadb": "^7.6.0",
         "@prisma/client": "^7.6.0",
@@ -244,6 +245,8 @@
     "@kwsites/promise-deferred": ["@kwsites/promise-deferred@1.1.1", "", {}, "sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw=="],
 
     "@mapbox/node-pre-gyp": ["@mapbox/node-pre-gyp@2.0.3", "", { "dependencies": { "consola": "^3.2.3", "detect-libc": "^2.0.0", "https-proxy-agent": "^7.0.5", "node-fetch": "^2.6.7", "nopt": "^8.0.0", "semver": "^7.5.3", "tar": "^7.4.0" }, "bin": { "node-pre-gyp": "bin/node-pre-gyp" } }, "sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg=="],
+
+    "@meting/core": ["@meting/core@1.6.1", "", {}, "sha512-6LPRZlZc8hUc0Jmg74tbMBLeoyXoyttPBLoNNpybLZ6GY+de95h9w3YQGh0yDwnrSivqcHMGZ5u5VJym5PdY1w=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.2", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" } }, "sha512-sNXv5oLJ7ob93xkZ1XnxisYhGYXfaG9f65/ZgYuAu3qt7b3NadcOEhLvx28hv31PgX8SZJRYrAIPQilQmFpLVw=="],
 

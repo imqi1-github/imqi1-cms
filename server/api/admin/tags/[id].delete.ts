@@ -40,7 +40,7 @@ export default defineEventHandler(async event => {
       });
     }
 
-    await prisma.postRelation.deleteMany({
+    await prisma.postrelation.deleteMany({
       where: { mid: tagId },
     });
 

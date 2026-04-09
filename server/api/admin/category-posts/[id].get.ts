@@ -30,7 +30,7 @@ export default defineEventHandler(async event => {
 
     // 获取分类下的文章
     const [relations, total] = await Promise.all([
-      prisma.postRelation.findMany({
+      prisma.postrelation.findMany({
         where: { mid: Number(id) },
         include: {
           post: {
@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
         skip,
         take: pageSize,
       }),
-      prisma.postRelation.count({
+      prisma.postrelation.count({
         where: { mid: Number(id) },
       }),
     ]);

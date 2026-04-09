@@ -13,7 +13,7 @@ export default defineEventHandler(async event => {
     }
 
     // 删除文章关联
-    await prisma.postRelation.deleteMany({
+    await prisma.postrelation.deleteMany({
       where: {
         cid: { in: ids },
       },

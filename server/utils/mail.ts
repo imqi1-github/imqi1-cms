@@ -358,7 +358,7 @@ async function getPostUrl(cid: number): Promise<string> {
 
   if (post?.slug) {
     // 优先使用 slug
-    const category = await prisma.postRelation.findFirst({
+    const category = await prisma.postrelation.findFirst({
       where: { cid },
       include: { category: true },
     })

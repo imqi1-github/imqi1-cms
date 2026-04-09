@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
       },
       include: {
         _count: {
-          select: { relations: true },
+          select: { postrelation: true },
         },
       },
       orderBy: {
@@ -27,7 +27,7 @@ export default defineEventHandler(async event => {
 
     return tags.map(tag => ({
       ...tag,
-      postCount: tag._count.relations,
+      postCount: tag._count.postrelation,
     }));
   } catch (error) {
     throw createError({

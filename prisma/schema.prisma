@@ -132,11 +132,11 @@ model subscribe {
 model subscribepost {
   id          Int       @id @default(autoincrement())
   subscribeId Int
-  title       String
-  link        String    @unique(map: "SubscribePost_link_key")
-  description String?
-  content     String?
-  author      String?
+  title       String    @db.VarChar(500)
+  link        String    @unique(map: "SubscribePost_link_key") @db.VarChar(500)
+  description String?   @db.Text
+  content     String?   @db.LongText
+  author      String?   @db.VarChar(255)
   pubDate     DateTime?
   create_time DateTime  @default(now())
   subscribe   subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade, map: "SubscribePost_subscribeId_fkey")

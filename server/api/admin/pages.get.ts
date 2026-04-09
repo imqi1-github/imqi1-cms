@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
     // 获取每个页面的分类
     const pagesWithRelations = await Promise.all(
       posts.map(async (post: any) => {
-        const relations = await prisma.postRelation.findMany({
+        const relations = await prisma.postrelation.findMany({
           where: { cid: post.cid },
           include: {
             category: {

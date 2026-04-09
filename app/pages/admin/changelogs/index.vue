@@ -1,9 +1,4 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: "admin",
-  middleware: "auth",
-});
-
 const logs = ref<any[]>([]);
 const loading = ref(true);
 const submitting = ref(false);
@@ -132,15 +127,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">更新日志管理</h1>
-      <Button @click="cancelEdit()" :disabled="editingId !== null">
-        <Icon name="lucide:plus" class="mr-2 size-4" />
-        添加日志
-      </Button>
-    </div>
+  <AdminLayout>
+    <div class="space-y-6">
+      <!-- 页面标题 -->
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold">更新日志管理</h1>
+        <Button @click="cancelEdit()" :disabled="editingId !== null">
+          <Icon name="lucide:plus" class="mr-2 size-4" />
+          添加日志
+        </Button>
+      </div>
 
     <!-- 添加/编辑表单 -->
     <Card v-if="editingId === null" class="p-6">
@@ -262,4 +258,5 @@ onMounted(() => {
       <p class="text-muted-foreground">暂无更新日志</p>
     </div>
   </div>
+  </AdminLayout>
 </template>

@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const relations = await prisma.postRelation.findMany({
+    const relations = await prisma.postrelation.findMany({
       where: { cid: Number(id) },
       include: {
         category: true,
@@ -34,6 +34,7 @@ export default defineEventHandler(async event => {
       data: relations.map(r => r.category),
     };
   } catch (error) {
+    console.error("获取文章分类失败:", error);
     throw createError({
       statusCode: 500,
       message: "获取文章分类失败",
