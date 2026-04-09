@@ -3,73 +3,42 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
-model Link {
-  id      Int     @id @default(autoincrement())
-  name    String
-  desc    String?
-  link    String
-  avatar  String?
-  enabled Boolean @default(true)
-}
-
-model Subscribe {
-  id          Int             @id @default(autoincrement())
-  url         String
-  name        String
-  avatar      String?
-  lastUpdated DateTime?
-  posts       SubscribePost[]
-}
-
-model SubscribePost {
-  id          Int       @id @default(autoincrement())
-  subscribeId Int
+model attachment {
+  aid         Int      @id @default(autoincrement())
+  cid         Int
+  type        String
   title       String
-  link        String    @unique
-  description String?
-  content     String?
-  author      String?
-  pubDate     DateTime?
-  create_time DateTime  @default(now())
-  subscribe   Subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade)
+  url         String
+  storage     String   @default("local")
+  create_time DateTime @default(now())
+  post        post     @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Attachment_cid_fkey")
+
+  @@index([cid], map: "Attachment_cid_fkey")
 }
 
-model Changelog {
+model category {
+  mid          Int            @id @default(autoincrement())
+  name         String         @unique(map: "Category_name_key")
+  slug         String?        @unique(map: "Category_slug_key")
+  desc         String?
+  class        String?
+  type         String         @default("category")
+  postrelation postrelation[]
+
+  @@index([mid, type], map: "Category_mid_type_idx")
+}
+
+model changelog {
   id          Int      @id @default(autoincrement())
   class       String
   desc        String
   create_time DateTime @default(now())
 }
 
-model Post {
-  cid         Int            @id @default(autoincrement())
-  title       String
-  slug        String?
-  desc        String?
-  content     String?
-  create_time DateTime       @default(now())
-  update_time DateTime       @updatedAt
-  status      Int            @default(1)
-  comment_num Int            @default(0)
-  many_covers Boolean        @default(false)
-  covers      String?
-  show_toc    Boolean        @default(false)
-  tags        String?
-  type        Int            @default(0)
-  uid         Int            @default(1)
-  attachments Attachment[]
-  comments    Comment[]
-  user        User           @relation(fields: [uid], references: [uid])
-  relations   PostRelation[]
-
-  @@unique([slug, type])
-  @@index([status, type, create_time])
-}
-
-model Comment {
+model comment {
   coid        Int      @id @default(autoincrement())
   cid         Int
   name        String
@@ -82,62 +51,64 @@ model Comment {
   parent_id   Int?
   agent       String?
   ip          String?
-  post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
+  post        post     @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comment_cid_fkey")
+
+  @@index([cid], map: "Comment_cid_fkey")
 }
 
-model Attachment {
-  aid         Int      @id @default(autoincrement())
-  cid         Int
-  type        String
-  title       String
-  url         String
-  storage     String   @default("local")
-  create_time DateTime @default(now())
-  post        Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
+model link {
+  id      Int     @id @default(autoincrement())
+  name    String
+  desc    String?
+  link    String
+  avatar  String?
+  enabled Boolean @default(true)
 }
 
-model Category {
-  mid       Int            @id @default(autoincrement())
-  name      String         @unique
-  slug      String?        @unique
-  desc      String?
-  class     String?
-  type      String         @default("category")
-  relations PostRelation[]
-
-  @@index([mid, type])
-}
-
-model PostRelation {
-  id       Int      @id @default(autoincrement())
-  cid      Int
-  mid      Int
-  post     Post     @relation(fields: [cid], references: [cid], onDelete: Cascade)
-  category Category @relation(fields: [mid], references: [mid], onDelete: Cascade)
-
-  @@unique([cid, mid])
-}
-
-model User {
-  uid       Int      @id @default(autoincrement())
-  name      String   @unique
-  nickname  String?
-  avatar    String?
-  mail      String   @unique
-  password  String
-  create    DateTime @default(now())
-  auth_code String?
-  role      Int      @default(0)
-  posts     Post[]
-}
-
-model Meta {
+model meta {
   id    Int    @id @default(autoincrement())
-  key   String @unique
+  key   String @unique(map: "Meta_key_key")
   value String
 }
 
-model Session {
+model post {
+  cid          Int            @id @default(autoincrement())
+  title        String
+  slug         String?
+  desc         String?
+  content      String?
+  create_time  DateTime       @default(now())
+  update_time  DateTime
+  status       Int            @default(1)
+  comment_num  Int            @default(0)
+  many_covers  Boolean        @default(false)
+  covers       String?
+  show_toc     Boolean        @default(false)
+  tags         String?
+  type         Int            @default(0)
+  uid          Int            @default(1)
+  attachment   attachment[]
+  comment      comment[]
+  user         user           @relation(fields: [uid], references: [uid], map: "Post_uid_fkey")
+  postrelation postrelation[]
+
+  @@unique([slug, type], map: "Post_slug_type_key")
+  @@index([status, type, create_time], map: "Post_status_type_create_time_idx")
+  @@index([uid], map: "Post_uid_fkey")
+}
+
+model postrelation {
+  id       Int      @id @default(autoincrement())
+  cid      Int
+  mid      Int
+  post     post     @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
+  category category @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
+
+  @@unique([cid, mid], map: "PostRelation_cid_mid_key")
+  @@index([mid], map: "PostRelation_mid_fkey")
+}
+
+model session {
   id        String   @id
   userId    Int
   authCode  String
@@ -145,6 +116,43 @@ model Session {
   createdAt DateTime @default(now())
   data      String?
 
-  @@index([userId])
-  @@index([expires])
+  @@index([expires], map: "Session_expires_idx")
+  @@index([userId], map: "Session_userId_idx")
+}
+
+model subscribe {
+  id            Int             @id @default(autoincrement())
+  url           String
+  name          String
+  avatar        String?
+  lastUpdated   DateTime?
+  subscribepost subscribepost[]
+}
+
+model subscribepost {
+  id          Int       @id @default(autoincrement())
+  subscribeId Int
+  title       String
+  link        String    @unique(map: "SubscribePost_link_key")
+  description String?
+  content     String?
+  author      String?
+  pubDate     DateTime?
+  create_time DateTime  @default(now())
+  subscribe   subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade, map: "SubscribePost_subscribeId_fkey")
+
+  @@index([subscribeId], map: "SubscribePost_subscribeId_fkey")
+}
+
+model user {
+  uid       Int      @id @default(autoincrement())
+  name      String   @unique(map: "User_name_key")
+  nickname  String?
+  avatar    String?
+  mail      String   @unique(map: "User_mail_key")
+  password  String
+  create    DateTime @default(now())
+  auth_code String?
+  role      Int      @default(0)
+  post      post[]
 }
