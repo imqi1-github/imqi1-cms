@@ -27,7 +27,7 @@ const samplePosts = [
 
 - 📝 响应式设计
 - 🎨 使用 shadcn-nuxt 组件库
-- 💾 PostgreSQL 数据库
+- 💾 MySQL 数据库
 - 🔐 完整的用户认证系统
 
 希望你喜欢这个系统！`,
@@ -89,10 +89,10 @@ Nuxt 4 带来了许多令人兴奋的新特性。
     slug: "4",
   },
   {
-    title: "PostgreSQL 性能优化技巧",
-    content: `# PostgreSQL 性能优化技巧
+    title: "MySQL 性能优化技巧",
+    content: `# MySQL 性能优化技巧
 
-PostgreSQL 是一个强大的开源关系数据库。
+MySQL 是一个流行的开源关系数据库。
 
 ## 索引优化
 
@@ -100,8 +100,12 @@ PostgreSQL 是一个强大的开源关系数据库。
 
 ## 查询优化
 
-使用 EXPLAIN ANALYZE 分析查询计划。`,
-    desc: "一些实用的 PostgreSQL 数据库优化建议。",
+使用 EXPLAIN 分析查询计划。
+
+## 配置优化
+
+调整 my.cnf 配置文件以提升性能。`,
+    desc: "一些实用的 MySQL 数据库优化建议。",
     slug: "5",
   },
   {
@@ -937,7 +941,7 @@ async function main() {
   // 清空现有数据
   console.log("🗑️  清空现有数据...");
   await prisma.comment.deleteMany();
-  await prisma.postRelation.deleteMany();
+  await prisma.postrelation.deleteMany();
   await prisma.post.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
@@ -1010,13 +1014,14 @@ async function main() {
         show_toc: true,
         uid: admin.uid, // 设置文章作者
         covers,
+        update_time: new Date(),
       },
     });
     posts.push(post);
 
     // 为每篇文章分配分类
     for (let j = 0; j < numCategories; j++) {
-      await prisma.postRelation.create({
+      await prisma.postrelation.create({
         data: {
           cid: post.cid,
           mid: assignedCategories[j],

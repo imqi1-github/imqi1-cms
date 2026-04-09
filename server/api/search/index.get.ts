@@ -33,7 +33,7 @@ export default defineEventHandler(async event => {
             name: true,
           },
         },
-        relations: {
+        postrelation: {
           include: {
             category: {
               select: {
@@ -53,8 +53,8 @@ export default defineEventHandler(async event => {
     // 格式化结果
     const results = posts.map(post => {
       // 获取第一个分类
-      const category = post.relations && post.relations.length > 0
-        ? post.relations[0].category
+      const category = post.postrelation && post.postrelation.length > 0
+        ? post.postrelation[0].category
         : null;
 
       // 从内容中提取摘要（去掉 HTML 标签）

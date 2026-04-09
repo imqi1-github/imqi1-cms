@@ -41,16 +41,16 @@ model changelog {
 model comment {
   coid        Int      @id @default(autoincrement())
   cid         Int
-  name        String
-  mail        String?
-  link        String?
-  avatar      String?
-  content     String
+  name        String   @db.VarChar(255)
+  mail        String?  @db.VarChar(255)
+  link        String?  @db.VarChar(500)
+  avatar      String?  @db.VarChar(500)
+  content     String   @db.Text
   create_time DateTime @default(now())
   status      Int      @default(0)
   parent_id   Int?
-  agent       String?
-  ip          String?
+  agent       String?  @db.VarChar(500)
+  ip          String?  @db.VarChar(45)
   post        post     @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comment_cid_fkey")
 
   @@index([cid], map: "Comment_cid_fkey")
@@ -73,18 +73,18 @@ model meta {
 
 model post {
   cid          Int            @id @default(autoincrement())
-  title        String
-  slug         String?
-  desc         String?
-  content      String?
+  title        String         @db.VarChar(255)
+  slug         String?        @db.VarChar(255)
+  desc         String?        @db.Text
+  content      String?        @db.LongText
   create_time  DateTime       @default(now())
   update_time  DateTime
   status       Int            @default(1)
   comment_num  Int            @default(0)
   many_covers  Boolean        @default(false)
-  covers       String?
+  covers       String?        @db.Text
   show_toc     Boolean        @default(false)
-  tags         String?
+  tags         String?        @db.VarChar(500)
   type         Int            @default(0)
   uid          Int            @default(1)
   attachment   attachment[]

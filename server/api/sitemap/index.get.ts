@@ -36,7 +36,7 @@ export default defineEventHandler(async event => {
           where: {
             type: 0, // 文章
             status: 1, // 已发布
-            relations: {
+            postrelation: {
               some: {
                 mid: category.mid,
               },

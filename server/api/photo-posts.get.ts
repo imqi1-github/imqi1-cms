@@ -28,7 +28,7 @@ export default defineEventHandler(async event => {
       where: {
         type: 0, // 0: 文章
         status: 1,
-        relations: {
+        postrelation: {
           some: {
             mid: photoCategory.mid,
           },
@@ -39,7 +39,7 @@ export default defineEventHandler(async event => {
         create_time: "desc",
       },
       include: {
-        relations: {
+        postrelation: {
           include: {
             category: {
               select: {
@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
     });
 
     const data = posts.map(post => {
-      const categories = post.relations.map(r => ({
+      const categories = post.postrelation.map(r => ({
         name: r.category.name,
         slug: r.category.slug,
       }));

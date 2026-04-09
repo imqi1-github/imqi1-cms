@@ -42,7 +42,7 @@ export default defineEventHandler(async event => {
         type: 0, // 0: 文章
         status: 1,
         ...(photoCategoryMid && {
-          relations: {
+          postrelation: {
             none: {
               mid: photoCategoryMid,
             },
@@ -67,7 +67,7 @@ export default defineEventHandler(async event => {
             type: 0, // 0: 文章
             status: 1,
             cid: { notIn: excludeCids },
-            relations: {
+            postrelation: {
               some: {
                 mid: category.mid,
               },
@@ -78,7 +78,7 @@ export default defineEventHandler(async event => {
             create_time: "desc",
           },
           include: {
-            relations: {
+            postrelation: {
               include: {
                 category: {
                   select: {
@@ -93,7 +93,7 @@ export default defineEventHandler(async event => {
         });
 
         const mappedPosts = posts.map(post => {
-          const categories = post.relations.map(r => ({
+          const categories = post.postrelation.map(r => ({
             name: r.category.name,
             slug: r.category.slug,
           }));

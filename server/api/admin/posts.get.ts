@@ -25,7 +25,7 @@ export default defineEventHandler(async event => {
     };
 
     if (categoryId) {
-      where.relations = {
+      where.postrelation = {
         some: {
           mid: categoryId,
         },
@@ -35,7 +35,7 @@ export default defineEventHandler(async event => {
     if (tagId) {
       where.AND = where.AND || [];
       where.AND.push({
-        relations: {
+        postrelation: {
           some: {
             mid: tagId,
           },
@@ -61,7 +61,7 @@ export default defineEventHandler(async event => {
               avatar: true,
             },
           },
-          relations: {
+          postrelation: {
             include: {
               category: {
                 select: {

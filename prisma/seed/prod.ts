@@ -150,7 +150,7 @@ async function main() {
 ## 关于新架构
 
 - **框架**: Nuxt 4 + Vue 3
-- **数据库**: PostgreSQL
+- **数据库**: MySQL
 - **ORM**: Prisma
 - **部署**: PM2
 
@@ -170,6 +170,7 @@ async function main() {
       comment_num: 1,
       show_toc: true,
       uid: admin.uid,
+      update_time: new Date(),
     },
   });
   console.log(`   ✅ 创建文章: ${post.title}`);
@@ -234,6 +235,7 @@ async function main() {
       comment_num: 0,
       show_toc: false,
       uid: admin.uid,
+      update_time: new Date(),
     },
   });
   console.log(`   ✅ 创建留言页面: ${messagePage.title}`);

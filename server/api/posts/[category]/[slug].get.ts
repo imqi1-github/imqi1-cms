@@ -25,7 +25,7 @@ export default defineEventHandler(async event => {
       slug,
       type: 0, // 0: 文章
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
-      relations: {
+      postrelation: {
         some: {
           category: {
             slug: categorySlug,
@@ -42,7 +42,7 @@ export default defineEventHandler(async event => {
           avatar: true,
         },
       },
-      relations: {
+      postrelation: {
         include: {
           category: {
             select: {

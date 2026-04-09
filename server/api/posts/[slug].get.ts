@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
 
   // 如果提供了 categorySlug，则需要同时匹配分类
   if (categorySlug) {
-    whereCondition.relations = {
+    whereCondition.postrelation = {
       some: {
         category: {
           slug: categorySlug,
@@ -41,7 +41,7 @@ export default defineEventHandler(async event => {
           avatar: true,
         },
       },
-      relations: {
+      postrelation: {
         include: {
           category: {
             select: {

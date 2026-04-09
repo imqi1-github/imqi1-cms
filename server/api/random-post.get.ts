@@ -26,7 +26,7 @@ export default defineEventHandler(async event => {
       skip,
       take: 1,
       include: {
-        relations: {
+        postrelation: {
           include: {
             category: {
               select: {
@@ -49,7 +49,7 @@ export default defineEventHandler(async event => {
       };
     }
 
-    const category = post.relations[0]?.category;
+    const category = post.postrelation[0]?.category;
 
     let covers: { url: string; desc?: string }[] = [];
     if (post.covers) {

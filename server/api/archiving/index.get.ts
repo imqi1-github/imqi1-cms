@@ -9,7 +9,7 @@ export default defineEventHandler(async event => {
         type: 0,
       },
       include: {
-        relations: {
+        postrelation: {
           include: {
             category: {
               select: {
@@ -40,8 +40,8 @@ export default defineEventHandler(async event => {
       }
 
       // 获取第一个分类的 slug
-      const categorySlug = post.relations && post.relations.length > 0
-        ? post.relations[0].category?.slug
+      const categorySlug = post.postrelation && post.postrelation.length > 0
+        ? post.postrelation[0].category?.slug
         : null;
 
       acc[key].posts.push({
