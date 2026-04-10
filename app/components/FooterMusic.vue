@@ -27,6 +27,9 @@ const isPlaying = ref(false);
 const isLoaded = ref(false);
 const progress = ref(0);
 
+// 是否应该自动播放（用于切换歌曲时）
+const shouldAutoPlay = ref(false);
+
 // Audio 实例
 let audio: HTMLAudioElement | null = null;
 
@@ -111,24 +114,30 @@ const updateProgress = () => {
 
 // 歌曲播放完毕，切换下一首
 const handleSongEnd = () => {
+  // 标记应该自动播放下一首
+  shouldAutoPlay.value = true;
   playNext();
 };
 
 // 歌曲加载失败，切换下一首
 const handleSongError = () => {
   console.warn("歌曲加载失败，切换下一首");
+  // 如果之前在播放，继续播放下一首
+  shouldAutoPlay.value = isPlaying.value;
   playNext();
 };
 
 // 网络卡顿，切换下一首
 const handleSongStalled = () => {
   console.warn("网络卡顿，切换下一首");
+  // 如果之前在播放，继续播放下一首
+  shouldAutoPlay.value = isPlaying.value;
   playNext();
 };
 
 // 音频可以播放
 const handleCanPlayThrough = () => {
-  if (isPlaying.value && audio) {
+  if (shouldAutoPlay.value && audio) {
     audio.play().catch(err => {
       console.error("播放失败:", err);
     });
@@ -138,6 +147,7 @@ const handleCanPlayThrough = () => {
 // 正在播放
 const handlePlaying = () => {
   isPlaying.value = true;
+  shouldAutoPlay.value = false;
   // 暂停所有正文中的播放器
   pauseAllMetingPlayers();
 };
@@ -145,6 +155,7 @@ const handlePlaying = () => {
 // 已暂停
 const handlePause = () => {
   isPlaying.value = false;
+  shouldAutoPlay.value = false;
 };
 
 // 暂停所有正文中的 Meting 播放器
@@ -165,7 +176,9 @@ function togglePlay() {
 
   if (isPlaying.value) {
     audio.pause();
+    shouldAutoPlay.value = false;
   } else {
+    shouldAutoPlay.value = true;
     // 如果音频已准备好，直接播放
     if (audio.readyState >= 3) {
       audio.play().catch(err => {
@@ -186,9 +199,21 @@ function playNext() {
     progress.value = 0;
     createAudio(nextSong);
 
-    if (isPlaying.value) {
-      // 等待音频加载完成后再播放
-      audio?.load();
+    // 如果标记了应该自动播放，等待音频准备好后播放
+    if (shouldAutoPlay.value && audio) {
+      audio.load();
+
+      // 监听 canplay 事件，确保音频可以播放后再开始播放
+      const playWhenReady = () => {
+        if (shouldAutoPlay.value && audio) {
+          audio.play().catch(err => {
+            console.error("自动播放下一首失败:", err);
+          });
+        }
+        audio?.removeEventListener("canplay", playWhenReady);
+      };
+
+      audio.addEventListener("canplay", playWhenReady);
     }
   }
 }
