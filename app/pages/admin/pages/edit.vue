@@ -327,9 +327,9 @@ onUnmounted(() => {
 <template>
   <AdminLayout>
     <!-- 骨架屏 -->
-    <div v-if="loading && isEdit" class="flex gap-6">
+    <div v-if="loading && isEdit" class="flex flex-col lg:flex-row gap-4 lg:gap-6">
       <!-- 左侧主内容区骨架屏 -->
-      <div class="flex-1 space-y-6">
+      <div class="flex-1 space-y-4 lg:space-y-6">
         <!-- Tabs 导航骨架屏 -->
         <div class="grid grid-cols-3 gap-2">
           <div class="h-10 bg-muted rounded animate-pulse" />
@@ -339,7 +339,7 @@ onUnmounted(() => {
 
         <!-- 内容骨架屏 -->
         <Card class="overflow-hidden px-0 pt-0">
-          <CardContent class="p-6">
+          <CardContent class="p-4 lg:p-6">
             <div class="space-y-3">
               <div v-for="i in 8" :key="i" class="space-y-2">
                 <div class="h-4 bg-muted rounded animate-pulse" />
@@ -351,7 +351,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 右侧设置栏骨架屏 -->
-      <div class="w-80 space-y-6">
+      <div class="w-full lg:w-80 space-y-4 lg:space-y-6">
         <!-- 发布设置骨架屏 -->
         <Card>
           <CardHeader>
@@ -379,24 +379,27 @@ onUnmounted(() => {
     </div>
 
     <!-- 实际内容 -->
-    <div v-else class="flex gap-6">
+    <div v-else class="flex flex-col lg:flex-row gap-4 lg:gap-6">
       <!-- 左侧主内容区 -->
-      <div class="flex-1 space-y-6">
+      <div class="flex-1 space-y-4 lg:space-y-6">
         <!-- Tabs 导航 -->
         <Tabs v-model="activeTab" default-value="content">
           <TabsList class="grid w-full grid-cols-3">
-            <TabsTrigger value="content">
-              <Icon name="lucide:file-text" class="mr-2 size-4" />
-              页面内容
+            <TabsTrigger value="content" class="text-sm">
+              <Icon name="lucide:file-text" class="mr-1 sm:mr-2 size-4" />
+              <span class="hidden sm:inline">页面内容</span>
+              <span class="sm:hidden">内容</span>
             </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Icon name="lucide:settings" class="mr-2 size-4" />
-              页面设置
+            <TabsTrigger value="settings" class="text-sm">
+              <Icon name="lucide:settings" class="mr-1 sm:mr-2 size-4" />
+              <span class="hidden sm:inline">页面设置</span>
+              <span class="sm:hidden">设置</span>
             </TabsTrigger>
-            <TabsTrigger value="attachments">
-              <Icon name="lucide:paperclip" class="mr-2 size-4" />
-              附件管理
-              <Badge v-if="attachments.length > 0" variant="secondary" class="ml-2">
+            <TabsTrigger value="attachments" class="text-sm">
+              <Icon name="lucide:paperclip" class="mr-1 sm:mr-2 size-4" />
+              <span class="hidden sm:inline">附件管理</span>
+              <span class="sm:hidden">附件</span>
+              <Badge v-if="attachments.length > 0" variant="secondary" class="ml-1 sm:ml-2">
                 {{ attachments.length }}
               </Badge>
             </TabsTrigger>
@@ -527,7 +530,7 @@ onUnmounted(() => {
                   </div>
 
                   <!-- 附件网格 -->
-                  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div
                       v-for="item in attachments"
                       :key="item.id"
@@ -547,11 +550,11 @@ onUnmounted(() => {
 
                       <!-- 操作遮罩 -->
                       <div
-                        class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
-                        <Button variant="secondary" size="sm" class="h-7" @click.stop="copyLink(item.url)" title="复制链接">
+                        class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
+                        <Button variant="secondary" size="sm" class="h-7 text-xs px-2" @click.stop="copyLink(item.url)" title="复制链接">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>
-                        <Button variant="destructive" size="sm" class="h-7" @click.stop="deleteAttachment(item)" title="删除">
+                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" @click.stop="deleteAttachment(item)" title="删除">
                           <Icon name="lucide:trash-2" class="size-3" />
                         </Button>
                       </div>
@@ -592,7 +595,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 右侧设置栏 -->
-      <div class="w-80 space-y-6">
+      <div class="w-full lg:w-80 space-y-4 lg:space-y-6">
         <!-- 发布设置 -->
         <Card>
           <CardHeader>
@@ -604,12 +607,12 @@ onUnmounted(() => {
               <Label>发布状态</Label>
               <div class="flex gap-2">
                 <Button :variant="status === 0 ? 'default' : 'outline'" class="flex-1" @click="status = 0">
-                  <Icon name="lucide:file" class="mr-2 size-4" />
-                  草稿
+                  <Icon name="lucide:file" class="mr-1 sm:mr-2 size-4" />
+                  <span class="text-sm">草稿</span>
                 </Button>
                 <Button :variant="status === 1 ? 'default' : 'outline'" class="flex-1" @click="status = 1">
-                  <Icon name="lucide:globe" class="mr-2 size-4" />
-                  发布
+                  <Icon name="lucide:globe" class="mr-1 sm:mr-2 size-4" />
+                  <span class="text-sm">发布</span>
                 </Button>
               </div>
             </div>
@@ -617,7 +620,7 @@ onUnmounted(() => {
             <!-- 是否展示目录 -->
             <div class="flex items-center justify-between">
               <div class="space-y-0.5">
-                <Label>展示目录</Label>
+                <Label class="text-sm">展示目录</Label>
                 <p class="text-xs text-muted-foreground">在页面侧边栏显示目录导航</p>
               </div>
               <Switch v-model="showToc" />

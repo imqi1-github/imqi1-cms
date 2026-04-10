@@ -279,7 +279,61 @@ onMounted(() => {
     <div v-else class="space-y-6">
       <!-- Tab 导航 -->
       <Tabs v-model="activeTab" default-value="basic">
-        <TabsList class="grid w-full max-w-3xl grid-cols-7">
+        <!-- 移动端：下拉选择器 -->
+        <div class="sm:hidden mb-6">
+          <Select v-model="activeTab">
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="选择设置分类" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basic">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:settings" class="size-4" />
+                  基本信息
+                </div>
+              </SelectItem>
+              <SelectItem value="comment">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:message-square" class="size-4" />
+                  评论设置
+                </div>
+              </SelectItem>
+              <SelectItem value="reading">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:book-open" class="size-4" />
+                  阅读设置
+                </div>
+              </SelectItem>
+              <SelectItem value="appearance">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:palette" class="size-4" />
+                  外观设置
+                </div>
+              </SelectItem>
+              <SelectItem value="email">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:mail" class="size-4" />
+                  邮件配置
+                </div>
+              </SelectItem>
+              <SelectItem value="upload">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:upload-cloud" class="size-4" />
+                  附件上传
+                </div>
+              </SelectItem>
+              <SelectItem value="advanced">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:shield" class="size-4" />
+                  高级设置
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <!-- 桌面端：标签栏 -->
+        <TabsList class="hidden sm:grid w-full max-w-3xl grid-cols-7">
           <TabsTrigger value="basic">
             <Icon name="lucide:settings" class="mr-2 size-4" />
             基本信息
