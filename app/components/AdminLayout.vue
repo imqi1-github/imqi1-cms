@@ -3,6 +3,51 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
+// 根据路由获取页面标题
+const pageTitle = computed(() => {
+  // 如果路由元信息中定义了标题，优先使用
+  if (route.meta.title) {
+    return route.meta.title as string
+  }
+
+  // 路径到标题的映射
+  const pathToTitle: Record<string, string> = {
+    '/admin': '仪表盘',
+    '/admin/posts': '文章管理',
+    '/admin/pages': '页面管理',
+    '/admin/comments': '评论管理',
+    '/admin/categories': '分类管理',
+    '/admin/tags': '标签管理',
+    '/admin/users': '用户管理',
+    '/admin/links': '友情链接',
+    '/admin/attachments': '附件管理',
+    '/admin/subscribes': '订阅列表',
+    '/admin/changelogs': '更新日志',
+    '/admin/settings': '系统设置',
+  }
+
+  // 精确匹配
+  if (pathToTitle[route.path]) {
+    return pathToTitle[route.path]
+  }
+
+  // 对于子路由（如 /admin/posts/edit），匹配父路径
+  const parentPath = Object.keys(pathToTitle)
+    .sort((a, b) => b.length - a.length) // 按长度降序，优先匹配更长的路径
+    .find(path => route.path.startsWith(path + '/'))
+
+  if (parentPath) {
+    return pathToTitle[parentPath]
+  }
+
+  return '后台管理'
+})
+
+// 更新页面标题
+useHead({
+  title: computed(() => `${pageTitle.value} - 后台管理`),
+})
+
 // 验证会话是否有效（检查是否在其他设备登录）
 onMounted(async () => {
   try {
@@ -145,7 +190,9 @@ const handleLogout = async () => {
         <!-- 顶部栏 -->
         <header class="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
           <div class="flex h-14 items-center gap-4 px-6">
-            <div class="flex-1" />
+            <div class="flex-1">
+              <h2 class="text-lg font-semibold">{{ pageTitle }}</h2>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
                 <Button variant="ghost" size="icon" class="rounded-full">

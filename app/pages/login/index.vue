@@ -92,4 +92,8 @@ const handleLogin = async () => {
     loading.value = false
   }
 }
+
+useHead({
+  title: "登录后台 - 后台管理"
+})
 </script>
