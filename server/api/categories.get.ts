@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
       take: limit,
       include: {
         _count: {
-          select: { relations: true },
+          select: { postrelation: true },
         },
       },
       orderBy: {
@@ -27,7 +27,7 @@ export default defineEventHandler(async event => {
         name: cat.name,
         slug: cat.slug,
         desc: cat.desc,
-        postCount: cat._count.relations,
+        postCount: cat._count.postrelation,
       })),
     };
   } catch (error) {

@@ -66,6 +66,7 @@ export default defineEventHandler(async event => {
     covers,
     show_toc: showToc,
     tags,
+    update_time: new Date(), // 添加 update_time
     // 如果提供了 publishDate，更新 create_time
     ...(publishDate ? { create_time: new Date(publishDate) } : {}),
   };

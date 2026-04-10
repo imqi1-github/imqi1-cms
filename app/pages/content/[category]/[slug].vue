@@ -71,6 +71,9 @@ const showToc = computed(() => {
 
 // 提取目录
 const extractToc = () => {
+  // 只在客户端执行
+  if (!import.meta.client) return;
+
   const contentBody = document.querySelector(".content-body");
   if (!contentBody) return;
 
@@ -109,6 +112,10 @@ const scrollToHeading = (id: string) => {
 
 // 监听滚动，更新当前激活的目录项
 const handleTocScroll = () => {
+  // 只在客户端执行
+  if (!import.meta.client) return;
+
+  try {
   const headings = document.querySelectorAll(".content-body h2, .content-body h3");
   let currentId = "";
 
@@ -121,6 +128,9 @@ const handleTocScroll = () => {
 
   if (currentId) {
     activeTocId.value = currentId;
+    }
+  } catch (error) {
+    console.error('目录滚动监听错误:', error);
   }
 };
 
@@ -137,13 +147,16 @@ useHead({
 watch(
   () => post.value,
   newPost => {
-    if (newPost) {
+    // 只在客户端执行
+    if (import.meta.client && newPost) {
       // 使用 setTimeout 确保 DOM 完全渲染
       setTimeout(() => {
         const article = document.querySelector("article.animate-fade-in");
-        const header = article?.querySelector("header.article-cover");
-        const contentBody = article?.querySelector(".content-body");
-        const commentSection = article?.querySelector("section.opacity-0");
+        if (!article) return;
+
+        const header = article.querySelector("header.article-cover");
+        const contentBody = article.querySelector(".content-body");
+        const commentSection = article.querySelector("section.opacity-0");
 
         console.log("触发渐入动画", { article, header, contentBody, commentSection });
 
@@ -161,6 +174,9 @@ watch(
 
 // 监听 404 状态，触发错误页动画
 watch(isNotFound, () => {
+  // 只在客户端执行
+  if (!import.meta.client) return;
+
   if (isNotFound.value) {
     nextTick(() => {
       const notFound = document.querySelector(".not-found-fade-in");
@@ -173,6 +189,7 @@ watch(isNotFound, () => {
 
 // 初始化 Fancybox 和其他功能
 onMounted(() => {
+  try {
   // 404 页面动画（初始状态）
   if (isNotFound.value) {
     nextTick(() => {
@@ -999,6 +1016,9 @@ onMounted(() => {
     `;
     document.head.appendChild(style);
   });
+  } catch (error) {
+    console.error('页面功能初始化失败:', error);
+  }
 });
 
 // 清理 Fancybox 和滚动监听

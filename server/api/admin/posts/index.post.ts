@@ -53,6 +53,7 @@ export default defineEventHandler(async event => {
       covers,
       show_toc: showToc,
       create_time: createTime,
+      update_time: new Date(), // 添加 update_time
       tags,
       uid: user.uid, // 设置文章作者为当前登录用户
     },

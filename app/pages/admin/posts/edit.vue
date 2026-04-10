@@ -444,6 +444,43 @@ const savePost = async () => {
   }
 };
 
+// 打开文章查看页面
+const openPost = () => {
+  if (!postId.value) {
+    toast.error({
+      message: "请先保存文章",
+    });
+    return;
+  }
+
+  if (selectedCategoryIds.value.length === 0) {
+    toast.error({
+      message: "请先为文章选择分类",
+    });
+    return;
+  }
+
+  // 获取第一个分类
+  const categoryId = selectedCategoryIds.value[0];
+  const category = categories.value.find(c => c.mid === categoryId);
+
+  if (!category) {
+    toast.error({
+      message: "分类信息错误",
+    });
+    return;
+  }
+
+  // 使用 slug 或 cid 构建 URL
+  const postSlug = slug.value || postId.value;
+
+  // 构建文章 URL
+  const url = `/content/${category.slug}/${postSlug}`;
+
+  // 在新窗口打开
+  window.open(url, '_blank');
+};
+
 // 页面加载时获取文章数据
 onMounted(() => {
   fetchCategories();
@@ -877,9 +914,9 @@ watch(postId, newCid => {
               <Icon name="lucide:save" class="mr-2 size-4" />
               {{ loading ? "保存中..." : "保存文章" }}
             </Button>
-            <Button variant="outline" class="w-full" size="lg">
+            <Button variant="outline" class="w-full" size="lg" :disabled="!postId.value" @click="openPost">
               <Icon name="lucide:eye" class="mr-2 size-4" />
-              预览
+              查看本文章
             </Button>
           </CardContent>
         </Card>
