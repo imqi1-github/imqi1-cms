@@ -16,6 +16,112 @@ const { data: categoriesData } = useLazyAsyncData("categories", () => $fetch("/a
 });
 const categories = computed(() => categoriesData.value?.data || []);
 
+// 面包屑数据
+interface BreadcrumbItem {
+  name: string;
+  icon?: string;
+  href?: string;
+  isCurrent?: boolean;
+}
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  const path = route.path;
+  const items: BreadcrumbItem[] = [];
+
+  // 首页
+  if (path === "/") {
+    items.push({
+      name: siteName.value,
+      icon: "ri:home-line",
+      isCurrent: true,
+    });
+    return items;
+  }
+
+  // 添加首页
+  items.push({
+    name: "",
+    icon: "ri:home-line",
+    href: "/",
+  });
+
+  // 文章页
+  if (path.startsWith("/posts/")) {
+    // TODO: 需要从文章数据中获取分类信息
+    items.push({
+      name: "文章",
+      icon: "ri:file-edit-line",
+      isCurrent: true,
+    });
+  }
+  // 独立页面
+  else if (path.startsWith("/pages/")) {
+    items.push({
+      name: route.meta.title || "页面",
+      icon: "ri:file-3-line",
+      isCurrent: true,
+    });
+  }
+  // 分类页
+  else if (path.startsWith("/category/")) {
+    items.push({
+      name: route.meta.title || "分类",
+      icon: "ri:menu-line",
+      isCurrent: true,
+    });
+  }
+  // 标签页
+  else if (path.startsWith("/tag/")) {
+    items.push({
+      name: route.meta.title || "标签",
+      icon: "ri:hashtag",
+      isCurrent: true,
+    });
+  }
+  // 搜索页
+  else if (path.startsWith("/search")) {
+    items.push({
+      name: "搜索",
+      icon: "ri:search-line",
+      isCurrent: true,
+    });
+  }
+  // 留言页
+  else if (path === "/message") {
+    items.push({
+      name: "留言",
+      icon: "ri:chat-1-line",
+      isCurrent: true,
+    });
+  }
+  // 友链页
+  else if (path === "/links") {
+    items.push({
+      name: "友链",
+      icon: "ri:links-line",
+      isCurrent: true,
+    });
+  }
+  // 关于页
+  else if (path === "/about") {
+    items.push({
+      name: "关于",
+      icon: "ri:user-line",
+      isCurrent: true,
+    });
+  }
+  // 404或其他
+  else {
+    items.push({
+      name: "页面未找到",
+      icon: "ri:close-large-fill",
+      isCurrent: true,
+    });
+  }
+
+  return items;
+});
+
 // 导航项数据
 const navItems = [
   { name: "留言", href: "/message", icon: "ri:chat-1-line" },
@@ -62,6 +168,30 @@ onMounted(() => {
           <RiHomeFill class="size-5 fill-white" />
         </div>
       </NuxtLink>
+
+      <!-- 面包屑胶囊 -->
+      <div
+        class="absolute left-1/2 top-[20.5px] -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]"
+        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
+        <div class="flex items-center gap-2 text-sm">
+          <template v-for="(item, index) in breadcrumbs" :key="index">
+            <template v-if="index > 0">
+              <span class="text-muted-foreground">/</span>
+            </template>
+            <NuxtLink
+              v-if="item.href && !item.isCurrent"
+              :to="item.href"
+              class="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors no-underline">
+              <Icon v-if="item.icon" :name="item.icon" class="size-4" />
+              <span v-if="item.name" class="hidden sm:inline">{{ item.name }}</span>
+            </NuxtLink>
+            <span v-else class="flex items-center gap-1 font-medium">
+              <Icon v-if="item.icon" :name="item.icon" class="size-4" />
+              <span>{{ item.name }}</span>
+            </span>
+          </template>
+        </div>
+      </div>
 
       <!-- 右侧菜单 -->
       <div
