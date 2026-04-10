@@ -151,6 +151,27 @@ img {
   --sidebar-ring: oklch(0.704 0.04 256.788);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
+
+  /* APlayer 主题变量 - 浅色模式 */
+  --aplayer-bg: oklch(98.595% 0.00407 285.919);
+  --aplayer-text: oklch(0.208 0.042 265.755);
+  --aplayer-border: oklch(0.929 0.013 255.508);
+  --aplayer-icon-white: oklch(1 0 0);
+  --aplayer-lrc-border: oklch(0.295 0.019 265.755);
+  --aplayer-list-border: oklch(0.929 0.013 255.508);
+  --aplayer-shadow: oklch(0 0 0 / 20%);
+  --aplayer-text-secondary: oklch(0.554 0.046 257.417);
+  --aplayer-bar-bg: oklch(0.804 0.008 257.896);
+  --aplayer-bar-loaded: oklch(0.702 0.011 255.508);
+  --aplayer-icon-hover: oklch(0 0 0);
+  --aplayer-scrollbar: oklch(0.929 0.013 255.508);
+  --aplayer-scrollbar-hover: oklch(0.804 0.008 257.896);
+  --aplayer-gradient-start: oklch(1 0 0);
+  --aplayer-gradient-end: oklch(1 0 0 / 0);
+  --aplayer-notice-bg: oklch(0.961 0.013 255.508);
+  --aplayer-notice-text: oklch(0.601 0.016 255.508);
+  --aplayer-miniswitcher: oklch(0.905 0.006 255.508);
+  --aplayer-list-separator: oklch(0.914 0.005 255.508);
 }
 
 .dark {
@@ -185,6 +206,27 @@ img {
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  /* APlayer 主题变量 - 暗色模式 */
+  --aplayer-bg: oklch(0.208 0.042 265.755);
+  --aplayer-text: oklch(0.929 0.013 255.508);
+  --aplayer-border: oklch(1 0 0 / 10%);
+  --aplayer-icon-white: oklch(1 0 0);
+  --aplayer-lrc-border: oklch(0.312 0.021 265.755);
+  --aplayer-list-border: oklch(1 0 0 / 10%);
+  --aplayer-shadow: oklch(0 0 0 / 40%);
+  --aplayer-text-secondary: oklch(0.704 0.04 256.788);
+  --aplayer-bar-bg: oklch(0.302 0.021 265.755);
+  --aplayer-bar-loaded: oklch(0.402 0.021 265.755);
+  --aplayer-icon-hover: oklch(1 0 0);
+  --aplayer-scrollbar: oklch(0.302 0.021 265.755);
+  --aplayer-scrollbar-hover: oklch(0.402 0.021 265.755);
+  --aplayer-gradient-start: oklch(0.208 0.042 265.755);
+  --aplayer-gradient-end: oklch(0.208 0.042 265.755 / 0);
+  --aplayer-notice-bg: oklch(0.279 0.041 260.031);
+  --aplayer-notice-text: oklch(0.704 0.04 256.788);
+  --aplayer-miniswitcher: oklch(0.352 0.021 265.755);
+  --aplayer-list-separator: oklch(1 0 0 / 10%);
 }
 
 @layer base {
