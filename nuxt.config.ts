@@ -30,7 +30,7 @@ export default defineNuxtConfig({
     componentDir: "./app/components/ui",
   },
 
-  css: ["~/assets/css/main.css"],
+  css: ["~/assets/css/main.css", "~/assets/css/aplayer.css"],
 
   postcss: {
     plugins: {
@@ -56,6 +56,9 @@ export default defineNuxtConfig({
         "reka-ui",
         "lucide-vue-next",
         "vue-sonner",
+        "@remixicon/vue",
+        "promise-polyfill",
+        "smoothscroll",
       ],
     },
     build: {
