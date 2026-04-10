@@ -72,8 +72,8 @@ onMounted(() => {
     </div>
 
     <Card>
-      <!-- 加载状态 -->
-      <div v-if="loading" class="p-4">
+      <!-- 加载状态 - 桌面端表格 -->
+      <div v-if="loading" class="p-4 hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -112,8 +112,8 @@ onMounted(() => {
         </Table>
       </div>
 
-      <!-- 数据列表 -->
-      <Table v-else>
+      <!-- 数据列表 - 桌面端表格 -->
+      <Table v-else class="hidden lg:table">
         <TableHeader>
           <TableRow>
             <TableHead>用户名</TableHead>
@@ -163,6 +163,53 @@ onMounted(() => {
           </TableRow>
         </TableBody>
       </Table>
+
+      <!-- 加载状态 - 移动端卡片 -->
+      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+        <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="size-8 bg-muted rounded-full animate-pulse" />
+            <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+          </div>
+          <div class="space-y-2">
+            <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+            <div class="h-6 bg-muted rounded w-12 animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据列表 - 移动端卡片 -->
+      <div v-else class="p-4 lg:hidden space-y-4">
+        <div v-for="user in users" :key="user.uid" class="border rounded-lg p-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <Avatar class="size-8">
+              <AvatarFallback class="text-xs">{{ user.name?.charAt(0)?.toUpperCase() || '?' }}</AvatarFallback>
+            </Avatar>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium text-base truncate">{{ user.name }}</h3>
+              <p class="text-xs text-muted-foreground truncate">{{ user.mail }}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <Badge :variant="getRoleBadge(user.role).variant">
+              {{ getRoleBadge(user.role).label }}
+            </Badge>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t">
+            <span class="text-xs text-muted-foreground">{{ formatDate(user.create) }}</span>
+            <div class="flex items-center gap-1">
+              <Button variant="ghost" size="icon" class="size-8" @click="router.push(`/admin/users/${user.uid}`)">
+                <Icon name="lucide:pencil" class="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteUser(user.uid)">
+                <Icon name="lucide:trash-2" class="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 空状态 -->
       <div v-if="!loading && users.length === 0" class="text-center py-12">

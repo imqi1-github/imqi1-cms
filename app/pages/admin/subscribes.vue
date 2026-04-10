@@ -155,7 +155,79 @@ onMounted(() => {
         </div>
 
         <!-- 订阅列表 -->
-        <div v-if="loading" class="space-y-4">
+        <!-- 加载状态 - 桌面端表格 -->
+        <div v-if="loading" class="hidden lg:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>名称</TableHead>
+                <TableHead>订阅源</TableHead>
+                <TableHead>最后更新</TableHead>
+                <TableHead class="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="i in 5" :key="i">
+                <TableCell>
+                  <div class="flex items-center gap-3">
+                    <div class="size-8 bg-muted rounded-full animate-pulse" />
+                    <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div class="h-4 bg-muted rounded w-48 animate-pulse" />
+                </TableCell>
+                <TableCell>
+                  <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="size-8 bg-muted rounded-lg animate-pulse ml-auto" />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <!-- 数据列表 - 桌面端表格 -->
+        <Table v-else-if="subscribes.length > 0" class="hidden lg:table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>名称</TableHead>
+              <TableHead>订阅源</TableHead>
+              <TableHead>最后更新</TableHead>
+              <TableHead class="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="sub in subscribes" :key="sub.id">
+              <TableCell>
+                <div class="flex items-center gap-3">
+                  <Avatar class="size-8">
+                    <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
+                    <AvatarFallback>{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
+                  </Avatar>
+                  <span class="font-medium">{{ sub.name }}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <a :href="sub.url" target="_blank" class="text-primary hover:underline truncate block max-w-[300px]">
+                  {{ sub.url }}
+                </a>
+              </TableCell>
+              <TableCell class="text-muted-foreground text-sm">
+                {{ formatDate(sub.lastUpdated) }}
+              </TableCell>
+              <TableCell class="text-right">
+                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
+                  <Icon name="lucide:trash-2" class="size-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+
+        <!-- 加载状态 - 移动端卡片 -->
+        <div v-if="loading" class="lg:hidden space-y-4">
           <div v-for="i in 5" :key="i" class="flex items-center gap-4 p-4 border rounded-lg">
             <div class="size-12 bg-muted rounded-full animate-pulse" />
             <div class="flex-1 min-w-0">
@@ -167,24 +239,25 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-else-if="subscribes.length > 0" class="space-y-4">
+        <!-- 数据列表 - 移动端卡片 -->
+        <div v-else-if="subscribes.length > 0" class="lg:hidden space-y-4">
           <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <Avatar class="size-12">
               <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
-              <AvatarFallback>{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
+              <AvatarFallback class="text-sm">{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
             <div class="flex-1 min-w-0">
-              <p class="font-medium">{{ sub.name }}</p>
+              <p class="font-medium text-base">{{ sub.name }}</p>
               <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
                 {{ sub.url }}
               </a>
             </div>
-            <div class="text-sm text-muted-foreground min-w-[100px] text-right">
-              {{ formatDate(sub.lastUpdated) }}
+            <div class="flex flex-col items-end gap-2">
+              <span class="text-xs text-muted-foreground">{{ formatDate(sub.lastUpdated) }}</span>
+              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
+                <Icon name="lucide:trash-2" class="size-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
-              <Icon name="lucide:trash-2" class="size-4" />
-            </Button>
           </div>
         </div>
 

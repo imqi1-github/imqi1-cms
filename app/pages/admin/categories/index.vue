@@ -116,8 +116,8 @@ onMounted(() => {
     </div>
 
     <Card>
-      <!-- 加载状态 -->
-      <div v-if="loading" class="p-4">
+      <!-- 加载状态 - 桌面端表格 -->
+      <div v-if="loading" class="p-4 hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,8 +154,8 @@ onMounted(() => {
         </Table>
       </div>
 
-      <!-- 数据列表 -->
-      <Table v-else>
+      <!-- 数据列表 - 桌面端表格 -->
+      <Table v-else class="hidden lg:table">
         <TableHeader>
           <TableRow>
             <TableHead>名称</TableHead>
@@ -210,6 +210,66 @@ onMounted(() => {
           </TableRow>
         </TableBody>
       </Table>
+
+      <!-- 加载状态 - 移动端卡片 -->
+      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+        <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
+          <div class="space-y-2">
+            <div class="h-5 bg-muted rounded w-20 animate-pulse" />
+            <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+          </div>
+          <div class="flex gap-2">
+            <div class="h-6 bg-muted rounded w-12 animate-pulse" />
+            <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据列表 - 移动端卡片 -->
+      <div v-else class="p-4 lg:hidden space-y-4">
+        <div v-for="category in categories" :key="category.mid" class="border rounded-lg p-4 space-y-3">
+          <div>
+            <h3 class="font-medium text-base">{{ category.name }}</h3>
+            <p class="text-sm text-muted-foreground mt-1">{{ category.desc || "暂无描述" }}</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{{ category.class || "默认" }}</Badge>
+            <button
+              class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
+              :class="{ 'text-muted-foreground': category.postCount === 0 }"
+              :disabled="category.postCount === 0"
+              @click="viewCategoryPosts(category)">
+              <Icon name="lucide:file-text" class="size-3" />
+              <span>{{ category.postCount }} 篇</span>
+            </button>
+          </div>
+
+          <div class="flex items-center justify-end pt-2 border-t gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-8"
+              title="查看文章"
+              :disabled="category.postCount === 0"
+              @click="viewCategoryPosts(category)">
+              <Icon name="lucide:list" class="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="openEditModal(category)">
+              <Icon name="lucide:pencil" class="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-8 text-destructive hover:text-destructive"
+              title="删除"
+              :disabled="categories.length <= 1"
+              @click="deleteCategory(category.mid)">
+              <Icon name="lucide:trash-2" class="size-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <!-- 空状态 -->
       <div v-if="!loading && categories.length === 0" class="text-center py-12">

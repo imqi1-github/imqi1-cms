@@ -191,8 +191,8 @@ onMounted(() => {
 
     <!-- 页面列表 -->
     <Card>
-      <!-- 加载状态 -->
-      <div v-if="loading" class="p-4">
+      <!-- 加载状态 - 桌面端表格 -->
+      <div v-if="loading" class="p-4 hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -229,6 +229,7 @@ onMounted(() => {
                 <div class="flex items-center justify-end gap-2">
                   <div class="size-8 bg-muted rounded-lg animate-pulse" />
                   <div class="size-8 bg-muted rounded-lg animate-pulse" />
+                  <div class="size-8 bg-muted rounded-lg animate-pulse" />
                 </div>
               </TableCell>
             </TableRow>
@@ -236,8 +237,8 @@ onMounted(() => {
         </Table>
       </div>
 
-      <!-- 数据列表 -->
-      <Table v-else>
+      <!-- 数据列表 - 桌面端表格 -->
+      <Table v-else class="hidden lg:table">
         <TableHeader>
           <TableRow>
             <TableHead class="w-12">
@@ -282,6 +283,73 @@ onMounted(() => {
         </TableBody>
       </Table>
 
+      <!-- 加载状态 - 移动端卡片 -->
+      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+        <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
+          <div class="flex items-start gap-3">
+            <div class="size-4 bg-muted rounded animate-pulse mt-1" />
+            <div class="flex-1 space-y-2">
+              <div class="h-5 bg-muted rounded w-3/4 animate-pulse" />
+              <div class="h-4 bg-muted rounded w-1/2 animate-pulse" />
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <div class="h-6 bg-muted rounded w-12 animate-pulse" />
+            <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据列表 - 移动端卡片 -->
+      <div v-else class="p-4 lg:hidden space-y-4">
+        <!-- 全选和批量操作 -->
+        <div v-if="pages.length > 0" class="flex items-center gap-2 pb-2 border-b">
+          <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />
+          <span class="text-sm text-muted-foreground">全选</span>
+          <span v-if="selectedIds.length > 0" class="ml-auto text-sm text-muted-foreground"> 已选 {{ selectedIds.length }} 项 </span>
+        </div>
+
+        <!-- 页面卡片列表 -->
+        <div
+          v-for="page in pages"
+          :key="page.cid"
+          class="border rounded-lg p-4 space-y-3 transition-colors"
+          :class="{ 'bg-muted/50 border-primary': selectedIds.includes(page.cid) }">
+          <div class="flex items-start gap-3">
+            <Checkbox :model-value="selectedIds.includes(page.cid)" @update:model-value="toggleSelect(page.cid)" class="mt-1" />
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium text-base truncate">{{ page.title }}</h3>
+              <p class="text-sm text-muted-foreground font-mono mt-1 truncate">{{ page.slug || "-" }}</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge :variant="getStatusBadge(page.status).variant">
+              {{ getStatusBadge(page.status).label }}
+            </Badge>
+            <span class="text-sm text-muted-foreground">
+              <Icon name="lucide:message-square" class="size-3 inline mr-1" />
+              {{ page.comment_num || 0 }}
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t">
+            <span class="text-xs text-muted-foreground">{{ formatDate(page.create_time) }}</span>
+            <div class="flex items-center gap-1">
+              <Button variant="ghost" size="icon" class="size-8" @click="previewPage(page.cid, page.slug)">
+                <Icon name="lucide:eye" class="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8" @click="editPage(page.cid)">
+                <Icon name="lucide:pencil" class="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deletePage(page.cid)">
+                <Icon name="lucide:trash-2" class="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 空状态 -->
       <div v-if="!loading && pages.length === 0" class="text-center py-12">
         <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
@@ -292,8 +360,8 @@ onMounted(() => {
         </Button>
       </div>
 
-      <!-- 分页 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
+      <!-- 分页 - 桌面端 -->
+      <div v-if="!loading && pagination.totalPages > 1" class="hidden lg:flex items-center justify-between pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 个页面，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
         <div class="flex items-center gap-2">
           <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
@@ -314,6 +382,24 @@ onMounted(() => {
           </div>
           <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             下一页
+            <Icon name="lucide:chevron-right" class="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <!-- 分页 - 移动端 -->
+      <div
+        v-if="!loading && pagination.totalPages > 1"
+        class="lg:hidden flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-2 border-t">
+        <p class="text-sm text-muted-foreground text-center sm:text-left">
+          第 {{ pagination.page }} / {{ pagination.totalPages }} 页，共 {{ pagination.total }} 个
+        </p>
+        <div class="flex items-center gap-2">
+          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
+            <Icon name="lucide:chevron-left" class="size-4" />
+          </Button>
+          <span class="text-sm">{{ pagination.page }}</span>
+          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>
         </div>

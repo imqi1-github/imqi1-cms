@@ -140,11 +140,11 @@ onMounted(() => {
 
     <!-- 筛选栏 -->
     <Card class="mb-4">
-      <div class="flex items-center gap-4 p-4">
-        <div class="flex items-center gap-2">
-          <Label for="typeFilter">类型:</Label>
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <Label for="typeFilter" class="whitespace-nowrap">类型:</Label>
           <Select id="typeFilter" v-model="selectedType">
-            <SelectTrigger class="w-[120px]">
+            <SelectTrigger class="w-full sm:w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -158,7 +158,7 @@ onMounted(() => {
             </SelectContent>
           </Select>
         </div>
-        <div class="flex-1">
+        <div class="flex-1 w-full sm:w-auto">
           <div class="relative">
             <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
@@ -168,7 +168,7 @@ onMounted(() => {
             />
           </div>
         </div>
-        <div class="text-sm text-muted-foreground">
+        <div class="text-sm text-muted-foreground whitespace-nowrap">
           共 {{ total }} 个附件
         </div>
       </div>
@@ -276,7 +276,7 @@ onMounted(() => {
         </div>
 
         <!-- 分页 -->
-        <div v-if="total > pageSize" class="flex items-center justify-center gap-2 mt-6">
+        <div v-if="total > pageSize" class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-6">
           <Button
             variant="outline"
             size="sm"

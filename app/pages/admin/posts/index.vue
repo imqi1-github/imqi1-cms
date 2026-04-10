@@ -274,8 +274,8 @@ onMounted(() => {
 
     <!-- 文章列表 -->
     <Card>
-      <!-- 加载状态 -->
-      <div v-if="loading" class="p-4">
+      <!-- 加载状态 - 桌面端表格 -->
+      <div v-if="loading" class="p-4 hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -323,8 +323,8 @@ onMounted(() => {
         </Table>
       </div>
 
-      <!-- 数据列表 -->
-      <Table v-else>
+      <!-- 数据列表 - 桌面端表格 -->
+      <Table v-else class="hidden lg:table">
         <TableHeader>
           <TableRow>
             <TableHead class="w-12">
@@ -375,6 +375,57 @@ onMounted(() => {
         </TableBody>
       </Table>
 
+      <!-- 加载状态 - 移动端卡片 -->
+      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+        <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
+          <div class="space-y-2">
+            <div class="h-5 bg-muted rounded w-3/4 animate-pulse" />
+            <div class="h-4 bg-muted rounded w-1/2 animate-pulse" />
+          </div>
+          <div class="flex gap-2">
+            <div class="h-6 bg-muted rounded w-12 animate-pulse" />
+            <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据列表 - 移动端卡片 -->
+      <div v-else class="p-4 lg:hidden space-y-4">
+        <div v-for="post in posts" :key="post.cid" class="border rounded-lg p-4 space-y-3">
+          <div>
+            <h3 class="font-medium text-base">{{ post.title }}</h3>
+            <p class="text-sm text-muted-foreground font-mono mt-1">{{ post.slug || "-" }}</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <div v-if="post.postrelation && post.postrelation.length > 0" class="flex flex-wrap gap-1">
+              <Badge v-for="rel in post.postrelation" :key="rel.category.mid" variant="outline" class="text-xs">
+                {{ rel.category.name }}
+              </Badge>
+            </div>
+            <Badge :variant="getStatusBadge(post.status).variant">
+              {{ getStatusBadge(post.status).label }}
+            </Badge>
+            <span class="text-sm text-muted-foreground">
+              <Icon name="lucide:message-square" class="size-3 inline mr-1" />
+              {{ post.comment_num || 0 }}
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t">
+            <span class="text-xs text-muted-foreground">{{ formatDate(post.create_time) }}</span>
+            <div class="flex items-center gap-1">
+              <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
+                <Icon name="lucide:pencil" class="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deletePost(post.cid)">
+                <Icon name="lucide:trash-2" class="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 空状态 -->
       <div v-if="!loading && posts.length === 0" class="text-center py-12">
         <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
@@ -385,8 +436,8 @@ onMounted(() => {
         </Button>
       </div>
 
-      <!-- 分页 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
+      <!-- 分页 - 桌面端 -->
+      <div v-if="!loading && pagination.totalPages > 1" class="hidden lg:flex items-center justify-between pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
         <div class="flex items-center gap-2">
           <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
@@ -407,6 +458,24 @@ onMounted(() => {
           </div>
           <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             下一页
+            <Icon name="lucide:chevron-right" class="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <!-- 分页 - 移动端 -->
+      <div
+        v-if="!loading && pagination.totalPages > 1"
+        class="lg:hidden flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-2 border-t">
+        <p class="text-sm text-muted-foreground text-center sm:text-left">
+          第 {{ pagination.page }} / {{ pagination.totalPages }} 页，共 {{ pagination.total }} 篇
+        </p>
+        <div class="flex items-center gap-2">
+          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
+            <Icon name="lucide:chevron-left" class="size-4" />
+          </Button>
+          <span class="text-sm">{{ pagination.page }}</span>
+          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>
         </div>
