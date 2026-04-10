@@ -37,7 +37,7 @@ const post = computed(() => data.value?.data);
 // 判断文章是否存在
 const isNotFound = computed(() => !pending.value && (!post.value || error.value));
 
-const categories = computed(() => post.value?.relations?.map(r => r.category) || []);
+const categories = computed(() => post.value?.postrelation?.map(r => r.category) || []);
 const covers = computed(() => post.value?.parsedCovers || []);
 const tags = computed(() => post.value?.tags || []);
 
@@ -116,21 +116,21 @@ const handleTocScroll = () => {
   if (!import.meta.client) return;
 
   try {
-  const headings = document.querySelectorAll(".content-body h2, .content-body h3");
-  let currentId = "";
+    const headings = document.querySelectorAll(".content-body h2, .content-body h3");
+    let currentId = "";
 
-  headings.forEach(heading => {
-    const rect = heading.getBoundingClientRect();
-    if (rect.top <= 150) {
-      currentId = heading.id;
-    }
-  });
+    headings.forEach(heading => {
+      const rect = heading.getBoundingClientRect();
+      if (rect.top <= 150) {
+        currentId = heading.id;
+      }
+    });
 
-  if (currentId) {
-    activeTocId.value = currentId;
+    if (currentId) {
+      activeTocId.value = currentId;
     }
   } catch (error) {
-    console.error('目录滚动监听错误:', error);
+    console.error("目录滚动监听错误:", error);
   }
 };
 
@@ -157,8 +157,6 @@ watch(
         const header = article.querySelector("header.article-cover");
         const contentBody = article.querySelector(".content-body");
         const commentSection = article.querySelector("section.opacity-0");
-
-        console.log("触发渐入动画", { article, header, contentBody, commentSection });
 
         header?.classList.remove("opacity-0", "translate-y-8");
         header?.classList.add("opacity-100", "translate-y-0");
@@ -190,167 +188,167 @@ watch(isNotFound, () => {
 // 初始化 Fancybox 和其他功能
 onMounted(() => {
   try {
-  // 404 页面动画（初始状态）
-  if (isNotFound.value) {
-    nextTick(() => {
-      const notFound = document.querySelector(".not-found-fade-in");
-      if (notFound) {
-        notFound.classList.add("fade-in-start");
-      }
-    });
-  }
-
-  // 初始化 Fancybox（参照友情链接页面）
-  // @ts-ignore
-  Fancybox.bind("[data-fancybox]", {
-    l10n: zh_CN,
-    placeFocusBack: false,
-    Hash: false,
-    trapFocus: false,
-    closeExisting: false,
-    zoomEffect: true,
-    Carousel: {
-      Panzoom: {
-        maxScale: 2,
-      },
-      Toolbar: {
-        display: {
-          left: ["infobar"],
-          middle: ["zoomIn", "zoomOut", "toggle1to1"],
-          right: ["thumbs", "close"],
-        },
-      },
-      Autoplay: false,
-    },
-    idle: false,
-    autoFocus: false,
-  });
-
-  // 初始化代码复制按钮
-  document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {
-    const code = pre.querySelector("code");
-    // 提取语言名称
-    let lang = "";
-    if (code) {
-      const langClass = Array.from(code.classList).find(c => c.startsWith("language-"));
-      if (langClass) {
-        lang = langClass.replace("language-", "");
-      }
-    }
-
-    // 语言显示名称映射
-    const langNames: Record<string, string> = {
-      js: "JavaScript",
-      ts: "TypeScript",
-      jsx: "JSX",
-      tsx: "TSX",
-      vue: "Vue",
-      py: "Python",
-      rb: "Ruby",
-      go: "Go",
-      rs: "Rust",
-      java: "Java",
-      kt: "Kotlin",
-      swift: "Swift",
-      scala: "Scala",
-      cpp: "C++",
-      c: "C",
-      cs: "C#",
-      php: "PHP",
-      sql: "SQL",
-      sh: "Shell",
-      bash: "Bash",
-      yaml: "YAML",
-      yml: "YAML",
-      json: "JSON",
-      toml: "TOML",
-      xml: "XML",
-      html: "HTML",
-      css: "CSS",
-      scss: "SCSS",
-      less: "Less",
-      md: "Markdown",
-      mermaid: "Mermaid",
-    };
-    const displayLang = langNames[lang] || lang.toUpperCase();
-
-    // 检测代码行数，超过14行则折叠
-    const lineCount = code?.querySelectorAll(".line").length || 0;
-    const isCollapsed = lineCount > 14;
-
-    if (isCollapsed) {
-      pre.classList.add("code-collapsed");
-    }
-
-    // 点击代码块切换折叠状态
-    pre.addEventListener("click", e => {
-      const target = e.target as HTMLElement;
-      // 不处理复制按钮的点击
-      if (target.closest(".copy-button")) return;
-
-      pre.classList.toggle("code-collapsed");
-    });
-
-    // 创建语言标签
-    const langLabel = document.createElement("span");
-    langLabel.className = "lang-label";
-    langLabel.textContent = displayLang;
-
-    // 创建复制按钮
-    const button = document.createElement("button");
-    button.className = "copy-button";
-    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
-    button.ariaLabel = "复制代码";
-
-    const copyIcon = button.innerHTML;
-    const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-
-    const copyCode = async (e: Event) => {
-      e.stopPropagation(); // 阻止冒泡，避免触发折叠切换
-      if (code) {
-        const text = code.textContent || "";
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch {
-          // fallback for older browsers
-          const textarea = document.createElement("textarea");
-          textarea.value = text;
-          textarea.style.position = "fixed";
-          textarea.style.opacity = "0";
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand("copy");
-          document.body.removeChild(textarea);
+    // 404 页面动画（初始状态）
+    if (isNotFound.value) {
+      nextTick(() => {
+        const notFound = document.querySelector(".not-found-fade-in");
+        if (notFound) {
+          notFound.classList.add("fade-in-start");
         }
-        button.classList.add("copied");
-        button.innerHTML = checkIcon;
-        setTimeout(() => {
-          button.classList.remove("copied");
-          button.innerHTML = copyIcon;
-        }, 2000);
+      });
+    }
+
+    // 初始化 Fancybox（参照友情链接页面）
+    // @ts-ignore
+    Fancybox.bind("[data-fancybox]", {
+      l10n: zh_CN,
+      placeFocusBack: false,
+      Hash: false,
+      trapFocus: false,
+      closeExisting: false,
+      zoomEffect: true,
+      Carousel: {
+        Panzoom: {
+          maxScale: 2,
+        },
+        Toolbar: {
+          display: {
+            left: ["infobar"],
+            middle: ["zoomIn", "zoomOut", "toggle1to1"],
+            right: ["thumbs", "close"],
+          },
+        },
+        Autoplay: false,
+      },
+      idle: false,
+      autoFocus: false,
+    });
+
+    // 初始化代码复制按钮
+    document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {
+      const code = pre.querySelector("code");
+      // 提取语言名称
+      let lang = "";
+      if (code) {
+        const langClass = Array.from(code.classList).find(c => c.startsWith("language-"));
+        if (langClass) {
+          lang = langClass.replace("language-", "");
+        }
       }
-    };
 
-    button.addEventListener("click", copyCode);
-    pre.appendChild(langLabel);
-    pre.appendChild(button);
-  });
+      // 语言显示名称映射
+      const langNames: Record<string, string> = {
+        js: "JavaScript",
+        ts: "TypeScript",
+        jsx: "JSX",
+        tsx: "TSX",
+        vue: "Vue",
+        py: "Python",
+        rb: "Ruby",
+        go: "Go",
+        rs: "Rust",
+        java: "Java",
+        kt: "Kotlin",
+        swift: "Swift",
+        scala: "Scala",
+        cpp: "C++",
+        c: "C",
+        cs: "C#",
+        php: "PHP",
+        sql: "SQL",
+        sh: "Shell",
+        bash: "Bash",
+        yaml: "YAML",
+        yml: "YAML",
+        json: "JSON",
+        toml: "TOML",
+        xml: "XML",
+        html: "HTML",
+        css: "CSS",
+        scss: "SCSS",
+        less: "Less",
+        md: "Markdown",
+        mermaid: "Mermaid",
+      };
+      const displayLang = langNames[lang] || lang.toUpperCase();
 
-  // 初始化目录
-  nextTick(() => {
-    extractToc();
-    window.addEventListener("scroll", handleTocScroll);
+      // 检测代码行数，超过14行则折叠
+      const lineCount = code?.querySelectorAll(".line").length || 0;
+      const isCollapsed = lineCount > 14;
 
-    // 初始化折叠容器
-    const wrappers = document.querySelectorAll(".markdown-details-wrapper");
-    wrappers.forEach(wrapper => {
-      const summary = wrapper.getAttribute("data-summary") || "展开";
-      const content = wrapper.innerHTML;
+      if (isCollapsed) {
+        pre.classList.add("code-collapsed");
+      }
 
-      // 创建新的容器元素
-      const detailsContainer = document.createElement("div");
-      detailsContainer.className = "markdown-details-container";
-      detailsContainer.innerHTML = `
+      // 点击代码块切换折叠状态
+      pre.addEventListener("click", e => {
+        const target = e.target as HTMLElement;
+        // 不处理复制按钮的点击
+        if (target.closest(".copy-button")) return;
+
+        pre.classList.toggle("code-collapsed");
+      });
+
+      // 创建语言标签
+      const langLabel = document.createElement("span");
+      langLabel.className = "lang-label";
+      langLabel.textContent = displayLang;
+
+      // 创建复制按钮
+      const button = document.createElement("button");
+      button.className = "copy-button";
+      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+      button.ariaLabel = "复制代码";
+
+      const copyIcon = button.innerHTML;
+      const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+      const copyCode = async (e: Event) => {
+        e.stopPropagation(); // 阻止冒泡，避免触发折叠切换
+        if (code) {
+          const text = code.textContent || "";
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            // fallback for older browsers
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+          }
+          button.classList.add("copied");
+          button.innerHTML = checkIcon;
+          setTimeout(() => {
+            button.classList.remove("copied");
+            button.innerHTML = copyIcon;
+          }, 2000);
+        }
+      };
+
+      button.addEventListener("click", copyCode);
+      pre.appendChild(langLabel);
+      pre.appendChild(button);
+    });
+
+    // 初始化目录
+    nextTick(() => {
+      extractToc();
+      window.addEventListener("scroll", handleTocScroll);
+
+      // 初始化折叠容器
+      const wrappers = document.querySelectorAll(".markdown-details-wrapper");
+      wrappers.forEach(wrapper => {
+        const summary = wrapper.getAttribute("data-summary") || "展开";
+        const content = wrapper.innerHTML;
+
+        // 创建新的容器元素
+        const detailsContainer = document.createElement("div");
+        detailsContainer.className = "markdown-details-container";
+        detailsContainer.innerHTML = `
         <div class="markdown-details my-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
             class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
@@ -365,35 +363,35 @@ onMounted(() => {
         </div>
       `;
 
-      // 替换原容器
-      wrapper.replaceWith(detailsContainer);
+        // 替换原容器
+        wrapper.replaceWith(detailsContainer);
 
-      // 添加点击事件
-      const button = detailsContainer.querySelector(".markdown-details-summary");
-      const contentDiv = detailsContainer.querySelector(".markdown-details-content");
-      const arrow = button?.querySelector(".transform");
+        // 添加点击事件
+        const button = detailsContainer.querySelector(".markdown-details-summary");
+        const contentDiv = detailsContainer.querySelector(".markdown-details-content");
+        const arrow = button?.querySelector(".transform");
 
-      button?.addEventListener("click", () => {
-        const isHidden = contentDiv?.classList.contains("hidden");
-        if (isHidden) {
-          contentDiv?.classList.remove("hidden");
-          arrow?.classList.add("rotate-180");
-        } else {
-          contentDiv?.classList.add("hidden");
-          arrow?.classList.remove("rotate-180");
-        }
+        button?.addEventListener("click", () => {
+          const isHidden = contentDiv?.classList.contains("hidden");
+          if (isHidden) {
+            contentDiv?.classList.remove("hidden");
+            arrow?.classList.add("rotate-180");
+          } else {
+            contentDiv?.classList.add("hidden");
+            arrow?.classList.remove("rotate-180");
+          }
+        });
       });
-    });
 
-    // 初始化视频容器
-    const videoWrappers = document.querySelectorAll(".markdown-video-wrapper");
-    videoWrappers.forEach(wrapper => {
-      const url = wrapper.getAttribute("data-url") || "";
+      // 初始化视频容器
+      const videoWrappers = document.querySelectorAll(".markdown-video-wrapper");
+      videoWrappers.forEach(wrapper => {
+        const url = wrapper.getAttribute("data-url") || "";
 
-      // 创建 video 元素
-      const videoContainer = document.createElement("div");
-      videoContainer.className = "markdown-video-container my-6";
-      videoContainer.innerHTML = `
+        // 创建 video 元素
+        const videoContainer = document.createElement("div");
+        videoContainer.className = "markdown-video-container my-6";
+        videoContainer.innerHTML = `
         <video
           class="w-full rounded-lg shadow-lg"
           controls
@@ -403,54 +401,54 @@ onMounted(() => {
         </video>
       `;
 
-      // 替换原容器
-      wrapper.replaceWith(videoContainer);
-    });
+        // 替换原容器
+        wrapper.replaceWith(videoContainer);
+      });
 
-    // 初始化提示框容器
-    const calloutWrappers = document.querySelectorAll(".markdown-callout-wrapper");
-    calloutWrappers.forEach(wrapper => {
-      const type = wrapper.getAttribute("data-type") || "info";
-      const content = wrapper.innerHTML;
+      // 初始化提示框容器
+      const calloutWrappers = document.querySelectorAll(".markdown-callout-wrapper");
+      calloutWrappers.forEach(wrapper => {
+        const type = wrapper.getAttribute("data-type") || "info";
+        const content = wrapper.innerHTML;
 
-      // 根据类型定义样式和图标
-      const typeConfig = {
-        success: {
-          bgColor: "bg-green-50 dark:bg-green-900/20",
-          borderColor: "border-green-200 dark:border-green-800",
-          textColor: "text-green-900 dark:text-green-100",
-          iconColor: "text-green-600 dark:text-green-400",
-          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-        },
-        warning: {
-          bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
-          borderColor: "border-yellow-200 dark:border-yellow-800",
-          textColor: "text-yellow-900 dark:text-yellow-100",
-          iconColor: "text-yellow-600 dark:text-yellow-400",
-          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
-        },
-        error: {
-          bgColor: "bg-red-50 dark:bg-red-900/20",
-          borderColor: "border-red-200 dark:border-red-800",
-          textColor: "text-red-900 dark:text-red-100",
-          iconColor: "text-red-600 dark:text-red-400",
-          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`,
-        },
-        info: {
-          bgColor: "bg-blue-50 dark:bg-blue-900/20",
-          borderColor: "border-blue-200 dark:border-blue-800",
-          textColor: "text-blue-900 dark:text-blue-100",
-          iconColor: "text-blue-600 dark:text-blue-400",
-          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
-        },
-      };
+        // 根据类型定义样式和图标
+        const typeConfig = {
+          success: {
+            bgColor: "bg-green-50 dark:bg-green-900/20",
+            borderColor: "border-green-200 dark:border-green-800",
+            textColor: "text-green-900 dark:text-green-100",
+            iconColor: "text-green-600 dark:text-green-400",
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+          },
+          warning: {
+            bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
+            borderColor: "border-yellow-200 dark:border-yellow-800",
+            textColor: "text-yellow-900 dark:text-yellow-100",
+            iconColor: "text-yellow-600 dark:text-yellow-400",
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+          },
+          error: {
+            bgColor: "bg-red-50 dark:bg-red-900/20",
+            borderColor: "border-red-200 dark:border-red-800",
+            textColor: "text-red-900 dark:text-red-100",
+            iconColor: "text-red-600 dark:text-red-400",
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`,
+          },
+          info: {
+            bgColor: "bg-blue-50 dark:bg-blue-900/20",
+            borderColor: "border-blue-200 dark:border-blue-800",
+            textColor: "text-blue-900 dark:text-blue-100",
+            iconColor: "text-blue-600 dark:text-blue-400",
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+          },
+        };
 
-      const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.info;
+        const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.info;
 
-      // 创建提示框元素
-      const calloutContainer = document.createElement("div");
-      calloutContainer.className = `markdown-callout my-4 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
-      calloutContainer.innerHTML = `
+        // 创建提示框元素
+        const calloutContainer = document.createElement("div");
+        calloutContainer.className = `markdown-callout my-4 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
+        calloutContainer.innerHTML = `
         <div class="flex items-start gap-3">
           <div class="${config.iconColor} flex-shrink-0 mt-0.5">
             ${config.icon}
@@ -461,21 +459,21 @@ onMounted(() => {
         </div>
       `;
 
-      // 替换原容器
-      wrapper.replaceWith(calloutContainer);
-    });
+        // 替换原容器
+        wrapper.replaceWith(calloutContainer);
+      });
 
-    // 初始化悬浮解释容器
-    const tooltipWrappers = document.querySelectorAll(".markdown-tooltip-wrapper");
-    tooltipWrappers.forEach(wrapper => {
-      const tooltipText = wrapper.getAttribute("data-tooltip") || "";
-      const content = wrapper.innerHTML;
+      // 初始化悬浮解释容器
+      const tooltipWrappers = document.querySelectorAll(".markdown-tooltip-wrapper");
+      tooltipWrappers.forEach(wrapper => {
+        const tooltipText = wrapper.getAttribute("data-tooltip") || "";
+        const content = wrapper.innerHTML;
 
-      // 创建悬浮解释元素
-      const tooltipElement = document.createElement("span");
-      tooltipElement.className =
-        "markdown-tooltip relative inline-block border-b border-dashed border-blue-500 dark:border-blue-400 cursor-help text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
-      tooltipElement.innerHTML = `
+        // 创建悬浮解释元素
+        const tooltipElement = document.createElement("span");
+        tooltipElement.className =
+          "markdown-tooltip relative inline-block border-b border-dashed border-blue-500 dark:border-blue-400 cursor-help text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
+        tooltipElement.innerHTML = `
         <span class="tooltip-content">${content}</span>
         <span class="tooltip-popup invisible absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none">
           ${tooltipText}
@@ -483,44 +481,44 @@ onMounted(() => {
         </span>
       `;
 
-      // 添加悬浮事件
-      tooltipElement.addEventListener("mouseenter", () => {
-        const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
-        if (popup) {
-          popup.classList.remove("invisible", "opacity-0");
-          popup.classList.add("visible", "opacity-100");
-        }
+        // 添加悬浮事件
+        tooltipElement.addEventListener("mouseenter", () => {
+          const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
+          if (popup) {
+            popup.classList.remove("invisible", "opacity-0");
+            popup.classList.add("visible", "opacity-100");
+          }
+        });
+
+        tooltipElement.addEventListener("mouseleave", () => {
+          const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
+          if (popup) {
+            popup.classList.add("invisible", "opacity-0");
+            popup.classList.remove("visible", "opacity-100");
+          }
+        });
+
+        // 替换原容器
+        wrapper.replaceWith(tooltipElement);
       });
 
-      tooltipElement.addEventListener("mouseleave", () => {
-        const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
-        if (popup) {
-          popup.classList.add("invisible", "opacity-0");
-          popup.classList.remove("visible", "opacity-100");
-        }
-      });
+      // 初始化卡片容器
+      const cardWrappers = document.querySelectorAll(".markdown-card-wrapper");
+      cardWrappers.forEach(wrapper => {
+        const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+        // 解析参数：url | title | description | image
+        const parts = paramsStr.split("|").map(p => p.trim());
 
-      // 替换原容器
-      wrapper.replaceWith(tooltipElement);
-    });
+        const url = parts[0] || "";
+        const title = parts[1] || "标题";
+        const description = parts[2] || "";
+        const image = parts[3] || "";
 
-    // 初始化卡片容器
-    const cardWrappers = document.querySelectorAll(".markdown-card-wrapper");
-    cardWrappers.forEach(wrapper => {
-      const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
-      // 解析参数：url | title | description | image
-      const parts = paramsStr.split("|").map(p => p.trim());
+        // 创建卡片元素
+        const cardContainer = document.createElement("div");
+        cardContainer.className = "markdown-card my-6";
 
-      const url = parts[0] || "";
-      const title = parts[1] || "标题";
-      const description = parts[2] || "";
-      const image = parts[3] || "";
-
-      // 创建卡片元素
-      const cardContainer = document.createElement("div");
-      cardContainer.className = "markdown-card my-6";
-
-      cardContainer.innerHTML = `
+        cardContainer.innerHTML = `
         <a
           href="${url}"
           target="_blank"
@@ -569,45 +567,45 @@ onMounted(() => {
         </a>
       `;
 
-      // 替换原容器
-      wrapper.replaceWith(cardContainer);
-    });
-
-    // 初始化轮播图容器
-    const swiperWrappers = document.querySelectorAll(".markdown-swiper-wrapper");
-    swiperWrappers.forEach((wrapper, wrapperIndex) => {
-      // 获取容器的完整文本内容，按行分割
-      const fullText = wrapper.textContent || "";
-      const lines = fullText
-        .split("\n")
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-      const slides: { url: string; title: string }[] = [];
-
-      // 解析每一行，提取图片 URL 和标题
-      lines.forEach(line => {
-        const parts = line.split("|").map(s => s.trim());
-        if (parts.length >= 1 && parts[0].length > 0) {
-          slides.push({
-            url: parts[0],
-            title: parts[1] || "",
-          });
-        }
+        // 替换原容器
+        wrapper.replaceWith(cardContainer);
       });
 
-      if (slides.length === 0) {
-        wrapper.remove();
-        return;
-      }
+      // 初始化轮播图容器
+      const swiperWrappers = document.querySelectorAll(".markdown-swiper-wrapper");
+      swiperWrappers.forEach((wrapper, wrapperIndex) => {
+        // 获取容器的完整文本内容，按行分割
+        const fullText = wrapper.textContent || "";
+        const lines = fullText
+          .split("\n")
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        const slides: { url: string; title: string }[] = [];
 
-      // 创建唯一的类名和 ID
-      const uniqueId = `markdown-swiper-${wrapperIndex}`;
-      const uniqueClass = `markdown-swiper-instance-${wrapperIndex}`;
+        // 解析每一行，提取图片 URL 和标题
+        lines.forEach(line => {
+          const parts = line.split("|").map(s => s.trim());
+          if (parts.length >= 1 && parts[0].length > 0) {
+            slides.push({
+              url: parts[0],
+              title: parts[1] || "",
+            });
+          }
+        });
 
-      // 创建轮播图元素
-      const swiperContainer = document.createElement("div");
-      swiperContainer.className = `swiper-container ${uniqueClass}`;
-      swiperContainer.innerHTML = `
+        if (slides.length === 0) {
+          wrapper.remove();
+          return;
+        }
+
+        // 创建唯一的类名和 ID
+        const uniqueId = `markdown-swiper-${wrapperIndex}`;
+        const uniqueClass = `markdown-swiper-instance-${wrapperIndex}`;
+
+        // 创建轮播图元素
+        const swiperContainer = document.createElement("div");
+        swiperContainer.className = `swiper-container ${uniqueClass}`;
+        swiperContainer.innerHTML = `
         <div class="swiper-wrapper noneed">
           ${slides
             .map(
@@ -636,116 +634,116 @@ onMounted(() => {
         </div>
       `;
 
-      // 替换原容器
-      wrapper.replaceWith(swiperContainer);
+        // 替换原容器
+        wrapper.replaceWith(swiperContainer);
 
-      // 初始化 Swiper
-      setTimeout(() => {
-        const newSwiper = new Swiper(`.${uniqueClass}`, {
-          modules: [Navigation, Pagination, Mousewheel],
-          slidesPerView: "auto",
-          spaceBetween: 20,
-          loop: false,
-          mousewheel: {
-            forceToAxis: true,
-            sensitivity: 1,
-            releaseOnEdges: false,
-          },
-          navigation: {
-            nextEl: `.${uniqueClass} .swiper-button-next`,
-            prevEl: `.${uniqueClass} .swiper-button-prev`,
-          },
-          pagination: {
-            el: `.${uniqueClass} .swiper-pagination`,
-            clickable: true,
-          },
-          freeMode: false,
-          touchRatio: 1,
-          resistance: true,
-          resistanceRatio: 0.85,
-        });
-      }, 100);
-    });
+        // 初始化 Swiper
+        setTimeout(() => {
+          const newSwiper = new Swiper(`.${uniqueClass}`, {
+            modules: [Navigation, Pagination, Mousewheel],
+            slidesPerView: "auto",
+            spaceBetween: 20,
+            loop: false,
+            mousewheel: {
+              forceToAxis: true,
+              sensitivity: 1,
+              releaseOnEdges: false,
+            },
+            navigation: {
+              nextEl: `.${uniqueClass} .swiper-button-next`,
+              prevEl: `.${uniqueClass} .swiper-button-prev`,
+            },
+            pagination: {
+              el: `.${uniqueClass} .swiper-pagination`,
+              clickable: true,
+            },
+            freeMode: false,
+            touchRatio: 1,
+            resistance: true,
+            resistanceRatio: 0.85,
+          });
+        }, 100);
+      });
 
-    // 初始化仓库卡片容器
-    const repoWrappers = document.querySelectorAll(".markdown-repo-wrapper");
-    repoWrappers.forEach(async wrapper => {
-      const url = wrapper.getAttribute("data-url") || "";
+      // 初始化仓库卡片容器
+      const repoWrappers = document.querySelectorAll(".markdown-repo-wrapper");
+      repoWrappers.forEach(async wrapper => {
+        const url = wrapper.getAttribute("data-url") || "";
 
-      // 解析 URL，判断是 GitHub 还是 Gitee
-      let platform: "github" | "gitee" | null = null;
-      let owner = "";
-      let repo = "";
+        // 解析 URL，判断是 GitHub 还是 Gitee
+        let platform: "github" | "gitee" | null = null;
+        let owner = "";
+        let repo = "";
 
-      if (url.includes("github.com")) {
-        platform = "github";
-        const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
-        if (match) {
-          owner = match[1];
-          repo = match[2].replace(/\.git$/, "");
+        if (url.includes("github.com")) {
+          platform = "github";
+          const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+          if (match) {
+            owner = match[1];
+            repo = match[2].replace(/\.git$/, "");
+          }
+        } else if (url.includes("gitee.com")) {
+          platform = "gitee";
+          const match = url.match(/gitee\.com\/([^/]+)\/([^/]+)/);
+          if (match) {
+            owner = match[1];
+            repo = match[2].replace(/\.git$/, "");
+          }
         }
-      } else if (url.includes("gitee.com")) {
-        platform = "gitee";
-        const match = url.match(/gitee\.com\/([^/]+)\/([^/]+)/);
-        if (match) {
-          owner = match[1];
-          repo = match[2].replace(/\.git$/, "");
-        }
-      }
 
-      if (!platform || !owner || !repo) {
-        wrapper.innerHTML = `
+        if (!platform || !owner || !repo) {
+          wrapper.innerHTML = `
           <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             无效的仓库 URL
           </div>
         `;
-        return;
-      }
+          return;
+        }
 
-      // 显示加载状态
-      wrapper.innerHTML = `
+        // 显示加载状态
+        wrapper.innerHTML = `
         <div class="flex items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
           <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
           <span class="text-slate-600 dark:text-slate-400">加载仓库信息...</span>
         </div>
       `;
 
-      try {
-        let apiUrl = "";
-        if (platform === "github") {
-          apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
-        } else {
-          apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}`;
-        }
+        try {
+          let apiUrl = "";
+          if (platform === "github") {
+            apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+          } else {
+            apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repo}`;
+          }
 
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error("Failed to fetch repo data");
-        }
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            throw new Error("Failed to fetch repo data");
+          }
 
-        const data = await response.json();
+          const data = await response.json();
 
-        // 提取仓库信息
-        const repoName = data.full_name || data.name || "";
-        const description = data.description || "";
-        const language = data.language || "";
-        const stars = platform === "github" ? data.stargazers_count : data.stargazers_count;
-        const forks = data.forks_count;
-        const avatarUrl = platform === "github" ? data.owner?.avatar_url : data.owner?.avatar_url;
-        const isPrivate = data.private || false;
+          // 提取仓库信息
+          const repoName = data.full_name || data.name || "";
+          const description = data.description || "";
+          const language = data.language || "";
+          const stars = platform === "github" ? data.stargazers_count : data.stargazers_count;
+          const forks = data.forks_count;
+          const avatarUrl = platform === "github" ? data.owner?.avatar_url : data.owner?.avatar_url;
+          const isPrivate = data.private || false;
 
-        // 创建仓库卡片
-        const cardContainer = document.createElement("div");
-        cardContainer.className = "markdown-repo my-6";
+          // 创建仓库卡片
+          const cardContainer = document.createElement("div");
+          cardContainer.className = "markdown-repo my-6";
 
-        const platformIcon =
-          platform === "github"
-            ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`
-            : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.037a.594.594 0 0 1-.592-.593v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296Z"/></svg>`;
+          const platformIcon =
+            platform === "github"
+              ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`
+              : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.037a.594.594 0 0 1-.592-.593v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296Z"/></svg>`;
 
-        const platformColor = platform === "github" ? "text-slate-600 dark:text-slate-400" : "text-red-600 dark:text-red-400";
+          const platformColor = platform === "github" ? "text-slate-600 dark:text-slate-400" : "text-red-600 dark:text-red-400";
 
-        cardContainer.innerHTML = `
+          cardContainer.innerHTML = `
           <a
             href="${url}"
             target="_blank"
@@ -819,20 +817,20 @@ onMounted(() => {
                           language === "JavaScript"
                             ? "bg-yellow-400"
                             : language === "TypeScript"
-                            ? "bg-blue-500"
-                            : language === "Python"
-                            ? "bg-green-500"
-                            : language === "Java"
-                            ? "bg-red-500"
-                            : language === "Go"
-                            ? "bg-cyan-500"
-                            : language === "Rust"
-                            ? "bg-orange-500"
-                            : language === "C++"
-                            ? "bg-blue-600"
-                            : language === "Vue"
-                            ? "bg-green-400"
-                            : "bg-slate-400"
+                              ? "bg-blue-500"
+                              : language === "Python"
+                                ? "bg-green-500"
+                                : language === "Java"
+                                  ? "bg-red-500"
+                                  : language === "Go"
+                                    ? "bg-cyan-500"
+                                    : language === "Rust"
+                                      ? "bg-orange-500"
+                                      : language === "C++"
+                                        ? "bg-blue-600"
+                                        : language === "Vue"
+                                          ? "bg-green-400"
+                                          : "bg-slate-400"
                         }"></span>
                       </div>`
                         : ""
@@ -844,21 +842,21 @@ onMounted(() => {
           </a>
         `;
 
-        // 替换原容器
-        wrapper.replaceWith(cardContainer);
-      } catch (error) {
-        console.error("Failed to load repo info:", error);
-        wrapper.innerHTML = `
+          // 替换原容器
+          wrapper.replaceWith(cardContainer);
+        } catch (error) {
+          console.error("Failed to load repo info:", error);
+          wrapper.innerHTML = `
           <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             加载仓库信息失败
           </div>
         `;
-      }
-    });
+        }
+      });
 
-    // 添加轮播图样式
-    const style = document.createElement("style");
-    style.textContent = `
+      // 添加轮播图样式
+      const style = document.createElement("style");
+      style.textContent = `
       /* Markdown Swiper 样式 - 使用更具体的选择器避免影响其他轮播图 */
       .swiper-container[class*="markdown-swiper-instance"] {
         margin: 0 0 20px;
@@ -1014,10 +1012,10 @@ onMounted(() => {
         }
       }
     `;
-    document.head.appendChild(style);
-  });
+      document.head.appendChild(style);
+    });
   } catch (error) {
-    console.error('页面功能初始化失败:', error);
+    console.error("页面功能初始化失败:", error);
   }
 });
 
@@ -1119,11 +1117,10 @@ onUnmounted(() => {
         <!-- 目录侧边栏 - 左侧 -->
         <aside v-if="showToc" class="toc-sidebar hidden lg:block w-48 flex-shrink-0 order-first">
           <nav class="toc-nav sticky top-24">
-            <h3 class="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
+            <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
             <ul class="space-y-1">
               <li v-for="item in tocItems" :key="item.id">
-                <a
-                  href="javascript:;"
+                <button
                   @click="scrollToHeading(item.id)"
                   :class="[
                     'block text-sm py-1 px-2 rounded transition-colors no-underline',
@@ -1133,7 +1130,7 @@ onUnmounted(() => {
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800',
                   ]">
                   {{ item.text }}
-                </a>
+                </button>
               </li>
             </ul>
           </nav>
@@ -1587,6 +1584,4 @@ onUnmounted(() => {
     font-size: 2em;
   }
 }
-
-
 </style>
