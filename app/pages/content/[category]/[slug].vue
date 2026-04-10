@@ -864,9 +864,9 @@ onMounted(() => {
 
         // 解析新的语法格式
         const parts = paramsStr.split(" ").filter(p => p.trim());
-        
-        if (parts.length >= 3) {
-          if (parts[0] === "auto") {
+
+        if (parts.length >= 1) {
+          if (parts[0] === "auto" && parts.length >= 2) {
             // 格式 1: :::music auto https://example.com:::
             const url = parts[1];
             // 尝试解析 URL 获取平台和 ID
@@ -909,16 +909,20 @@ onMounted(() => {
                 if (idMatch) {
                   id = idMatch[1];
                 }
+              } else {
+                console.warn("Unsupported music platform:", parsedUrl.hostname);
               }
             } catch (error) {
-              console.error("Failed to parse music URL:", error);
+              console.error("Failed to parse music URL:", error, "URL:", url);
             }
-          } else {
+          } else if (parts.length >= 3) {
             // 格式 2: :::music song netease 123456:::
             // 格式 3: :::music playlist netease 123456:::
             type = parts[0];
             server = parts[1];
             id = parts[2];
+          } else {
+            console.warn("Invalid music params format:", paramsStr);
           }
         }
 
