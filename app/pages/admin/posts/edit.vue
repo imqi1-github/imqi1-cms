@@ -914,7 +914,7 @@ watch(postId, newCid => {
               <Icon name="lucide:save" class="mr-2 size-4" />
               {{ loading ? "保存中..." : "保存文章" }}
             </Button>
-            <Button variant="outline" class="w-full" size="lg" :disabled="!postId.value" @click="openPost">
+            <Button variant="outline" class="w-full" size="lg" :disabled="!postId" @click="openPost">
               <Icon name="lucide:eye" class="mr-2 size-4" />
               查看本文章
             </Button>

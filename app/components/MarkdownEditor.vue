@@ -186,7 +186,9 @@ const actions = {
   swiper: () => insertMarkdown(':::swiper\nhttps://example.com/image1.jpg | 图片标题1\nhttps://example.com/image2.jpg | 图片标题2\nhttps://example.com/image3.jpg | 图片标题3\n:::', ''),
   githubRepo: () => insertMarkdown(':::repo https://github.com/owner/repo\n:::', ''),
   giteeRepo: () => insertMarkdown(':::repo https://gitee.com/owner/repo\n:::', ''),
-  music: () => insertMarkdown(':::music netease | playlist | 3778678\n:::', ''),
+  musicAuto: () => insertMarkdown(':::music auto | \n:::', ''),
+  musicSong: () => insertMarkdown(':::music song | \n:::', ''),
+  musicPlaylist: () => insertMarkdown(':::music playlist | \n:::', ''),
 }
 </script>
 
@@ -543,15 +545,37 @@ const actions = {
 
       <Separator orientation="vertical" class="h-6 mx-1" />
 
-      <!-- 音乐播放器 -->
+      <!-- 音乐自动识别 -->
       <Button
         variant="ghost"
         size="icon"
         class="size-8"
-        title="音乐播放器"
-        @click="actions.music"
+        title="音乐自动识别"
+        @click="actions.musicAuto"
       >
-        <Icon name="lucide:music" class="size-4" />
+        <Icon name="lucide:disc-3" class="size-4" />
+      </Button>
+
+      <!-- 音乐单曲 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="音乐单曲"
+        @click="actions.musicSong"
+      >
+        <Icon name="lucide:music-4" class="size-4" />
+      </Button>
+
+      <!-- 音乐列表 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="音乐列表"
+        @click="actions.musicPlaylist"
+      >
+        <Icon name="lucide:list-music" class="size-4" />
       </Button>
 
       <!-- 上传状态指示 -->
