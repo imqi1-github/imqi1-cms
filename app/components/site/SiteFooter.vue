@@ -144,7 +144,7 @@ onUnmounted(() => {
         <button
           v-if="showProgress || showBackToTop"
           @click="scrollToTop"
-          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md aspect-square size-7.5"
+          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700"
           title="返回顶部">
           <!-- 进度圆环 -->
           <Transition name="icon-fade" mode="out-in">
@@ -177,7 +177,7 @@ onUnmounted(() => {
       <!-- 暗黑模式切换按钮 -->
       <button
         @click="handleClick"
-        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md size-7.5"
+        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700"
         :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
         <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
         <RiMoonLine v-else class="size-4 fill-gray-100" />

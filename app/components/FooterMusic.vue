@@ -249,10 +249,7 @@ onUnmounted(() => {
   <Transition v-if="isLoaded && currentSong" name="fade">
     <button
       @click="togglePlay"
-      class="group relative flex items-center gap-2 rounded-full border border-gray-200 bg-white py-0.75 pr-0.75 pl-2 shadow-sm transition-all duration-300 hover:shadow-md dark:border-gray-700 dark:bg-slate-800 overflow-hidden max-w-36 h-7.5"
-      :class="{
-        'hover:bg-gray-100 dark:hover:bg-slate-700': true,
-      }"
+      class="group relative flex items-center gap-2 rounded-full border border-gray-200 bg-white py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 hover:border-blue-700 dark:border-gray-700 dark:bg-slate-800 overflow-hidden max-w-36 h-7.5"
       :title="isPlaying ? '暂停播放' : '开始播放'">
       <!-- 进度条背景 -->
       <span
