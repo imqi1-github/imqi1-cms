@@ -858,12 +858,69 @@ onMounted(() => {
       const musicWrappers = document.querySelectorAll(".markdown-music-wrapper");
       musicWrappers.forEach(async wrapper => {
         const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
-        // 解析参数：server | type | id
-        const parts = paramsStr.split("|").map(p => p.trim());
+        let server = "netease";
+        let type = "playlist";
+        let id = "";
 
-        const server = parts[0] || "netease";
-        const type = parts[1] || "playlist";
-        const id = parts[2] || "";
+        // 解析新的语法格式
+        const parts = paramsStr.split(" ").filter(p => p.trim());
+        
+        if (parts.length >= 3) {
+          if (parts[0] === "auto") {
+            // 格式 1: :::music auto https://example.com:::
+            const url = parts[1];
+            // 尝试解析 URL 获取平台和 ID
+            try {
+              const parsedUrl = new URL(url);
+              if (parsedUrl.hostname.includes("music.163.com")) {
+                server = "netease";
+                const typeMatch = parsedUrl.pathname.match(/\/(playlist|song|album|artist)\/?/);
+                if (typeMatch) {
+                  type = typeMatch[1];
+                }
+                id = parsedUrl.searchParams.get("id") || "";
+              } else if (parsedUrl.hostname.includes("y.qq.com")) {
+                server = "tencent";
+                const typeMatch = parsedUrl.pathname.match(/\/(playlist|songDetail|albumDetail)\/?/);
+                if (typeMatch) {
+                  type = typeMatch[1].replace("Detail", "");
+                }
+                const idMatch = parsedUrl.pathname.match(/\/([^/]+)$/);
+                if (idMatch) {
+                  id = idMatch[1];
+                }
+              } else if (parsedUrl.hostname.includes("kuwo.cn")) {
+                server = "kuwo";
+                const typeMatch = parsedUrl.pathname.match(/\/(playlist|song|album)\/?/);
+                if (typeMatch) {
+                  type = typeMatch[1];
+                }
+                const idMatch = parsedUrl.pathname.match(/\/([^/]+)$/);
+                if (idMatch) {
+                  id = idMatch[1];
+                }
+              } else if (parsedUrl.hostname.includes("kugou.com")) {
+                server = "kugou";
+                const typeMatch = parsedUrl.pathname.match(/\/(song|album|playlist)\/?/);
+                if (typeMatch) {
+                  type = typeMatch[1];
+                }
+                const idMatch = parsedUrl.pathname.match(/\/([^/]+)\.html$/);
+                if (idMatch) {
+                  id = idMatch[1];
+                }
+              }
+            } catch (error) {
+              console.error("Failed to parse music URL:", error);
+            }
+          } else {
+            // 格式 2: :::music song netease 123456:::
+            // 格式 3: :::music playlist netease 123456:::
+            type = parts[0];
+            server = parts[1];
+            id = parts[2];
+          }
+        }
 
         // 创建音乐播放器容器
         const musicContainer = document.createElement("div");

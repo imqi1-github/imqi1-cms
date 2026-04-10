@@ -269,7 +269,10 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   // 音乐播放器容器（支持 MetingJS）
   md.use(container, "music", {
     validate: (params: string) => {
-      // 匹配 "music server | type | id" 格式
+      // 匹配多种格式：
+      // 1. :::music auto https://example.com:::
+      // 2. :::music song netease 123456:::
+      // 3. :::music playlist netease 123456:::
       return params.trim().match(/^music\s+(.+)$/);
     },
     render: (tokens: any[], idx: number) => {
@@ -291,14 +294,90 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   return md;
 }
 
+// 音乐平台 URL 解析规则
+interface MusicPlatform {
+  name: string;
+  regex: RegExp;
+  getServer: () => string;
+  getType: (match: RegExpMatchArray) => string;
+  getId: (match: RegExpMatchArray) => string;
+}
+
+const musicPlatforms: MusicPlatform[] = [
+  // 网易云音乐
+  {
+    name: "netease",
+    regex: /https:\/\/music\.163\.com\/(playlist|song|album|artist)\?id=(\d+)/i,
+    getServer: () => "netease",
+    getType: (match) => match[1],
+    getId: (match) => match[2]
+  },
+  // QQ音乐
+  {
+    name: "tencent",
+    regex: /https:\/\/y\.qq\.com\/n\/ryqq\/(playlist|songDetail|albumDetail)\/(\d+)/i,
+    getServer: () => "tencent",
+    getType: (match) => {
+      const typeMap: Record<string, string> = {
+        playlist: "playlist",
+        songDetail: "song",
+        albumDetail: "album"
+      };
+      return typeMap[match[1]] || "song";
+    },
+    getId: (match) => match[2]
+  },
+  // 酷我音乐
+  {
+    name: "kuwo",
+    regex: /https:\/\/www\.kuwo\.cn\/(playlist|song|album)\/(\d+)/i,
+    getServer: () => "kuwo",
+    getType: (match) => match[1],
+    getId: (match) => match[2]
+  },
+  // 酷狗音乐
+  {
+    name: "kugou",
+    regex: /https:\/\/www\.kugou\.com\/(song|album|playlist)\/(\w+)\.html/i,
+    getServer: () => "kugou",
+    getType: (match) => match[1],
+    getId: (match) => match[2]
+  }
+];
+
+// 检测并转换音乐链接
+function transformMusicLinks(content: string): string {
+  let transformedContent = content;
+  
+  musicPlatforms.forEach(platform => {
+    const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, 'g');
+    transformedContent = transformedContent.replace(regex, (match, linkText, ...args) => {
+      const matchArray = args.slice(0, -2) as RegExpMatchArray;
+      const server = platform.getServer();
+      const type = platform.getType(matchArray);
+      const id = platform.getId(matchArray);
+      
+      if (id) {
+        return `:::music ${server} | ${type} | ${id}:::`;
+      }
+      return match;
+    });
+  });
+  
+  return transformedContent;
+}
+
 // 渲染 Markdown 内容
 export async function renderMarkdown(content: string): Promise<string> {
   if (!content) {
     return "";
   }
 
+  // 转换音乐链接为播放器容器
+  const transformedContent = transformMusicLinks(content);
+  
   const md = await createMarkdownInstance();
-  return md.render(content);
+  return md.render(transformedContent);
 }
 
 // 预热 Shiki（在应用启动时调用）

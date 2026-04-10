@@ -186,9 +186,9 @@ const actions = {
   swiper: () => insertMarkdown(':::swiper\nhttps://example.com/image1.jpg | 图片标题1\nhttps://example.com/image2.jpg | 图片标题2\nhttps://example.com/image3.jpg | 图片标题3\n:::', ''),
   githubRepo: () => insertMarkdown(':::repo https://github.com/owner/repo\n:::', ''),
   giteeRepo: () => insertMarkdown(':::repo https://gitee.com/owner/repo\n:::', ''),
-  musicAuto: () => insertMarkdown(':::music auto | \n:::', ''),
-  musicSong: () => insertMarkdown(':::music song | \n:::', ''),
-  musicPlaylist: () => insertMarkdown(':::music playlist | \n:::', ''),
+  musicAuto: () => insertMarkdown(':::music auto https://music.163.com/song?id=347230\n:::', ''),
+  musicSong: () => insertMarkdown(':::music song netease 347230\n:::', ''),
+  musicPlaylist: () => insertMarkdown(':::music playlist netease 3778678\n:::', ''),
 }
 </script>
 
