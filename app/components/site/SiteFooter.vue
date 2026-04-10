@@ -116,7 +116,9 @@ onUnmounted(() => {
     <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
-        <span v-if="siteIcp">│ <NuxtLink class="hover:underline" to="https://beian.miit.gov.cn/" target="_blank">{{ siteIcp }}</NuxtLink></span>
+        <span v-if="siteIcp"
+          >│ <NuxtLink class="hover:underline" to="https://beian.miit.gov.cn/" target="_blank">{{ siteIcp }}</NuxtLink></span
+        >
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
         <RiRssFill class="size-4.5" />
@@ -136,13 +138,13 @@ onUnmounted(() => {
       </div>
     </div>
     <!-- 右下角按钮组 -->
-    <div class="fixed bottom-8 right-8 z-[9999] flex flex-col gap-3">
+    <div class="fixed bottom-8 right-8 z-9999 flex flex-col gap-3 items-end">
       <!-- 返回顶部/进度按钮 -->
       <Transition name="fade">
         <button
           v-if="showProgress || showBackToTop"
           @click="scrollToTop"
-          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md aspect-square"
+          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md aspect-square size-7.5"
           title="返回顶部">
           <!-- 进度圆环 -->
           <Transition name="icon-fade" mode="out-in">
@@ -175,11 +177,14 @@ onUnmounted(() => {
       <!-- 暗黑模式切换按钮 -->
       <button
         @click="handleClick"
-        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md"
+        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm hover:shadow-md size-7.5"
         :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
         <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
         <RiMoonLine v-else class="size-4 fill-gray-100" />
       </button>
+
+      <!-- 页脚音乐播放器 -->
+      <FooterMusic />
     </div>
   </div>
 </template>
