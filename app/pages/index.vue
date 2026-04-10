@@ -12,8 +12,7 @@
           <h1 class="index-first-line text-slate-900 dark:text-white text-[6em] font-black leading-none">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
           </h1>
-          <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base">
-            {{ homeAnnounce }}
+          <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce">
           </div>
         </div>
 
@@ -605,7 +604,7 @@ useHead({
 });
 
 // 首页Hero下文字
-const homeAnnounce = computed(() => data.value?.data?.homeHeroSubtitle || "做技术的分享者 · 生活的摄影师 · 时事的评论员");
+const homeAnnounce = computed(() => data.value?.data?.homeCustomText || '<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>');
 
 // 图片分类slug
 const photoCategorySlug = computed(() => data.value?.data?.photoCategorySlug || "shot");

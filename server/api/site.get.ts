@@ -6,7 +6,7 @@ const defaults: Record<string, any> = {
   siteUrl: "https://imqi1.com",
   siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
   siteIcp: "",
-  homeHeroSubtitle: "做技术的分享者 · 生活的摄影师 · 时事的评论员",
+  homeCustomText: '<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>',
   photoCategorySlug: "shot",
   commentEnabled: true,
   commentAvatarService: "gravatar",

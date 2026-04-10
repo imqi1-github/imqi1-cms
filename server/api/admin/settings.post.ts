@@ -21,7 +21,6 @@ export default defineEventHandler(async event => {
       { key: "siteDesc", value: body.siteDesc || "做技术的分享者、生活的摄影师、时事的评论员。" },
       { key: "siteKeywords", value: body.siteKeywords || "棋,ImQi1,棋的小站,生活,科技,编程,学习" },
       { key: "siteIcp", value: body.siteIcp || "" },
-      { key: "homeHeroSubtitle", value: body.homeHeroSubtitle || "做技术的分享者 · 生活的摄影师 · 时事的评论员" },
       { key: "commentEnabled", value: String(body.commentEnabled ?? true) },
       { key: "commentModeration", value: String(body.commentModeration ?? false) },
       { key: "commentAvatarService", value: body.commentAvatarService || "gravatar" },
