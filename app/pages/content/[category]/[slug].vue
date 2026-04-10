@@ -854,6 +854,66 @@ onMounted(() => {
         }
       });
 
+      // 初始化音乐播放器容器
+      const musicWrappers = document.querySelectorAll(".markdown-music-wrapper");
+      musicWrappers.forEach(async wrapper => {
+        const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+        // 解析参数：server | type | id
+        const parts = paramsStr.split("|").map(p => p.trim());
+
+        const server = parts[0] || "netease";
+        const type = parts[1] || "playlist";
+        const id = parts[2] || "";
+
+        // 创建音乐播放器容器
+        const musicContainer = document.createElement("div");
+        musicContainer.className = "markdown-music my-6";
+
+        // 创建一个唯一的 ID 用于挂载
+        const mountId = `meting-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        musicContainer.innerHTML = `
+        <div id="${mountId}" class="meting-player-wrapper">
+          <div class="flex items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+            <span class="text-slate-600 dark:text-slate-400">加载音乐播放器...</span>
+          </div>
+        </div>
+      `;
+
+        // 替换原容器
+        wrapper.replaceWith(musicContainer);
+
+        // 动态导入并挂载 MetingPlayer 组件
+        try {
+          const { MetingPlayer } = await import("~/components/MetingPlayer.vue");
+          const { createApp, h } = await import("vue");
+
+          const mountEl = document.getElementById(mountId);
+          if (mountEl && id) {
+            const app = createApp({
+              render: () => h(MetingPlayer, {
+                server: server,
+                type: type,
+                id: id,
+              }),
+            });
+
+            app.mount(mountEl);
+          }
+        } catch (error) {
+          console.error("Failed to load music player:", error);
+          const mountEl = document.getElementById(mountId);
+          if (mountEl) {
+            mountEl.innerHTML = `
+            <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+              加载音乐播放器失败
+            </div>
+          `;
+          }
+        }
+      });
+
       // 添加轮播图样式
       const style = document.createElement("style");
       style.textContent = `
@@ -1335,8 +1395,8 @@ onUnmounted(() => {
   color: rgb(96 165 250);
 }
 
-.markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul),
-.markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol) {
+.markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul):not(.aplayer-list ul),
+.markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol):not(.aplayer-list ol) {
   margin: 1em 0;
   padding-left: 2em;
 }
@@ -1349,7 +1409,7 @@ onUnmounted(() => {
   list-style-type: decimal;
 }
 
-.markdown-body :deep(li):not(.markdown-callout li):not(.markdown-card li):not(.markdown-repo li) {
+.markdown-body :deep(li):not(.markdown-callout li):not(.markdown-card li):not(.markdown-repo li):not(.aplayer-list li) {
   margin: 0.5em 0;
   display: list-item;
 }

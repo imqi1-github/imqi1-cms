@@ -266,6 +266,27 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     },
   });
 
+  // 音乐播放器容器（支持 MetingJS）
+  md.use(container, "music", {
+    validate: (params: string) => {
+      // 匹配 "music server | type | id" 格式
+      return params.trim().match(/^music\s+(.+)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取参数（去掉 "music" 前缀）
+      let paramsStr = info.replace(/^music\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器，将参数存储在 data 属性中
+        return `<div class="markdown-music-wrapper" data-params="${encodeURIComponent(paramsStr)}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
   mdInstance = md;
   return md;
 }
