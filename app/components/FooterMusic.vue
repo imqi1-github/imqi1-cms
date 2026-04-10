@@ -249,7 +249,7 @@ onUnmounted(() => {
   <Transition v-if="isLoaded && currentSong" name="fade">
     <button
       @click="togglePlay"
-      class="group relative flex items-center gap-2 rounded-full border border-gray-200 bg-white py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 hover:border-blue-700 dark:border-gray-700 dark:bg-slate-800 overflow-hidden max-w-36 h-7.5"
+      class="group relative flex items-center gap-2 rounded-full border border-gray-200 bg-white py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 dark:border-gray-700 dark:bg-slate-800 overflow-hidden max-w-36 h-7.5 group"
       :title="isPlaying ? '暂停播放' : '开始播放'">
       <!-- 进度条背景 -->
       <span
@@ -268,9 +268,13 @@ onUnmounted(() => {
       <img
         :src="currentSong.pic"
         :alt="currentSong.name"
-        class="relative z-1 h-full shrink-0 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
-        :class="{ 'spin-slow': isPlaying }"
+        class="spin-slow relative z-1 h-full shrink-0 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
+        :style="{ 'animation-play-state': isPlaying ? 'running' : 'paused' }"
         loading="lazy" />
+
+        <span class="absolute inset-0 text-xs text-white bg-blue-600 z-2 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-150 ease-in-out">
+          {{ isPlaying ? '暂停播放' : '开始播放' }}
+        </span>
     </button>
   </Transition>
 </template>
@@ -301,6 +305,6 @@ onUnmounted(() => {
 }
 
 .spin-slow {
-  animation: spin 16s linear infinite;
+  animation: spin 16s linear infinite paused;
 }
 </style>

@@ -170,7 +170,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <nav class="sticky top-5 z-50 h-0 transition-all duration-300" :class="{ sticked: isScrolled }" aria-label="主导航">
+  <nav class="sticky top-5 z-50 h-0 transition-all duration-300 max-md:top-4 max-md:right-2" :class="{ sticked: isScrolled }" aria-label="主导航">
     <div class="flex justify-between items-center max-w-225 mx-auto relative">
       <!-- 左侧Logo - PC端显示 -->
       <NuxtLink
@@ -186,7 +186,7 @@ onMounted(() => {
 
       <!-- 中间面包屑胶囊 - PC端显示 -->
       <div
-        class="absolute left-1/2 top-[20.5px] -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] hidden md:flex font-serif"
+        class="absolute left-1/2 top-[20.5px] -translate-x-1/2 -translate-y-1/2 items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] hidden md:flex font-serif"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
         <div class="flex items-center gap-2 text-sm">
           <template v-for="(item, index) in breadcrumbs" :key="index">

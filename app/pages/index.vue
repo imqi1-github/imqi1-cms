@@ -71,7 +71,7 @@
       <section ref="sectionFramework" class="index-website-framework animate-fade-in" aria-labelledby="index-framework-title">
         <div class="index-website-framework-content max-w-fit w-full mx-auto">
           <div class="index-framework-title mb-10">
-            <h2 id="index-framework-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">网站架构</h2>
+            <h2 id="index-framework-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">网站架构</h2>
             <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">加载时间长的网页是劝退用户的主要因素</div>
             <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
               <p>Typecho 足够轻量，可最大地发挥服务器性能</p>
@@ -108,12 +108,7 @@
             </div>
           </div>
           <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
-            本站主题名为 NewImQi1，是我制作的第一款主题，从 2024 年 10 月开始制作，到现在仍持续更新中。最新版的 NewImQi1 主题重构了 Pjax
-            的整个周期，采用全新的带自动销毁的事件管理器，确保切换页面时没有内存泄漏，你可以在<a href="/updates" class="text-blue-600 hover:underline"
-              >更新日志</a
-            >查看所有的主题更新信息。NewImQi1 在 Typecho 1.3 的原有功能上做了很多扩充，包括但不限于友情链接、RSS
-            订阅系统、小程序、图片灯箱、评论归属地显示、实况照片，正文还可以嵌入多种多样的组件。为增强安全，本站设置了评论 Token 校验、CSP，资源部署在
-            EdgeOne 上，配合 Service Worker，在保证功能丰富的同时，也不会牺牲太多性能。
+            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，到现在仍持续更新中。这一版主题前后端采用 Nuxt4 搭建，配合 Tailwindcss，构建了现代化的响应式布局，同时集成了 APlayer 音乐播放器、Fancy Apps 图片灯箱等富媒体组件，为文章内容提供更丰富的交互体验。整个系统支持完整的博客功能，并具备完善的后台管理系统，实现了真正意义上的全栈内容管理系统。
           </div>
         </div>
       </section>
@@ -258,7 +253,7 @@
 
       <!-- 最新文章 -->
       <section ref="sectionContent" class="index-recent-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
-        <h2 id="index-recent-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">文章内容</h2>
+        <h2 id="index-recent-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
         <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
         <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
 
@@ -317,7 +312,7 @@
           <!-- 分类标题 -->
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">{{ categoryData.category.name }}</h2>
+              <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">{{ categoryData.category.name }}</h2>
               <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.name }}分类</div>
             </div>
             <NuxtLink
@@ -329,16 +324,16 @@
           </div>
 
           <!-- 文章网格 -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
             <NuxtLink
               v-for="post in categoryData.posts"
               :key="post.cid"
               :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
               class="group block no-underline">
               <div
-                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300">
+                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-64 flex flex-col">
                 <!-- 封面 -->
-                <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden">
+                <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden grow">
                   <img
                     :src="post.covers[0].url || post.covers[0]"
                     :alt="post.title"
@@ -346,7 +341,7 @@
                     loading="lazy" />
                 </div>
                 <!-- 无封面占位 -->
-                <div v-else class="aspect-video bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+                <div v-else class="aspect-video bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
                   <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ categoryData.category.name[0] }}</span>
                 </div>
                 <!-- 文章信息 -->
@@ -369,11 +364,11 @@
       <section
         ref="sectionPhotos"
         v-if="photoImages.length > 0"
-        class="index-photo-posts mt-6 mx-auto max-w-275 animate-fade-in"
+        class="index-photo-posts mt-12 mx-auto max-w-275 animate-fade-in"
         aria-labelledby="index-photo-posts-title">
-        <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm font-bold">图片内容</h2>
-        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的图片</div>
-        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">记录生活中的美好瞬间</div>
+        <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm text-center">图片内容</h2>
+        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最新发布的图片</div>
+        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">记录生活中的美好瞬间</div>
 
         <!-- 图片瀑布流 -->
         <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">

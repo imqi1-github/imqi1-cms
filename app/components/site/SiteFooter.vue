@@ -138,7 +138,7 @@ onUnmounted(() => {
       </div>
     </div>
     <!-- 右下角按钮组 -->
-    <div class="fixed bottom-8 right-8 z-9999 flex flex-col gap-3 items-end">
+    <div class="fixed bottom-8 right-8 z-9999 flex flex-col gap-3 items-end max-md:gap-1 max-md:bottom-4 max-md:right-4">
       <!-- 返回顶部/进度按钮 -->
       <Transition name="fade">
         <button
