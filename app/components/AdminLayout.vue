@@ -3,6 +3,24 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
+// 移动端侧边栏开关状态
+const mobileSidebarOpen = ref(false)
+
+// 切换移动端侧边栏
+const toggleMobileSidebar = () => {
+  mobileSidebarOpen.value = !mobileSidebarOpen.value
+}
+
+// 关闭移动端侧边栏
+const closeMobileSidebar = () => {
+  mobileSidebarOpen.value = false
+}
+
+// 监听路由变化，关闭移动端侧边栏
+watch(() => route.path, () => {
+  mobileSidebarOpen.value = false
+})
+
 // 根据路由获取页面标题
 const pageTitle = computed(() => {
   // 如果路由元信息中定义了标题，优先使用
@@ -154,15 +172,36 @@ const handleLogout = async () => {
 <template>
   <div class="min-h-screen bg-background">
     <div class="flex">
+      <!-- 移动端遮罩层 -->
+      <Transition name="fade">
+        <div
+          v-if="mobileSidebarOpen"
+          class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          @click="closeMobileSidebar"
+        />
+      </Transition>
+
       <!-- 侧边栏 -->
-      <aside class="fixed inset-y-0 left-0 z-10 w-64 border-r bg-card">
+      <aside
+        class="fixed inset-y-0 left-0 z-50 w-64 border-r bg-card transition-transform duration-300 ease-in-out lg:z-10"
+        :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+      >
         <ScrollArea class="h-full py-4">
           <!-- Logo -->
-          <div class="px-6 mb-6">
+          <div class="px-6 mb-6 flex items-center justify-between">
             <h1 class="text-xl font-bold flex items-center gap-2">
               <Icon name="lucide:layout-dashboard" class="size-6" />
               后台管理
             </h1>
+            <!-- 移动端关闭按钮 -->
+            <Button
+              variant="ghost"
+              size="icon"
+              class="lg:hidden"
+              @click="closeMobileSidebar"
+            >
+              <Icon name="lucide:x" class="size-5" />
+            </Button>
           </div>
 
           <!-- 导航菜单 -->
@@ -177,6 +216,7 @@ const handleLogout = async () => {
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               "
+              @click="closeMobileSidebar"
             >
               <Icon :name="item.icon" class="size-4" />
               {{ item.title }}
@@ -186,13 +226,24 @@ const handleLogout = async () => {
       </aside>
 
       <!-- 主内容区 -->
-      <div class="flex-1 ml-64">
+      <div class="flex-1 lg:ml-64">
         <!-- 顶部栏 -->
-        <header class="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-          <div class="flex h-14 items-center gap-4 px-6">
+        <header class="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+          <div class="flex h-14 items-center gap-4 px-4 lg:px-6">
+            <!-- 汉堡菜单按钮（仅移动端显示） -->
+            <Button
+              variant="ghost"
+              size="icon"
+              class="lg:hidden"
+              @click="toggleMobileSidebar"
+            >
+              <Icon name="lucide:menu" class="size-5" />
+            </Button>
+
             <div class="flex-1">
-              <h2 class="text-lg font-semibold">{{ pageTitle }}</h2>
+              <h2 class="text-base font-semibold lg:text-lg">{{ pageTitle }}</h2>
             </div>
+
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
                 <Button variant="ghost" size="icon" class="rounded-full">
@@ -223,10 +274,23 @@ const handleLogout = async () => {
         </header>
 
         <!-- 页面内容 -->
-        <main class="p-6">
+        <main class="p-4 lg:p-6">
           <slot />
         </main>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
