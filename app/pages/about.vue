@@ -6,7 +6,7 @@
       IMQI1.COM
     </div>
 
-    <div class="about-bold-main p-16 md:p-24 max-sm:p-4 relative z-10">
+    <div class="about-bold-main p-10 md:p-6 max-sm:p-4 relative z-10">
       <!-- 头部区域 -->
       <div class="about-bold-header ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32">
         <div class="about-bold-header-left pl-8">
@@ -505,7 +505,7 @@
       <!-- 导航 -->
       <div class="about-bold-section ready mb-24">
         <div class="about-bold-nav grid grid-cols-1 md:grid-cols-3 gap-6">
-          <NuxtLink 
+          <NuxtLink
             href="/archiving"
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
