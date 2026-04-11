@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="aplayer-container"></div>
+  <div ref="container" class="aplayer-container **:duration-300"></div>
 </template>
 
 <style scoped>

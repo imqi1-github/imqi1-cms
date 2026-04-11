@@ -203,9 +203,14 @@
 
                   <!-- 音乐播放器 -->
                   <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                    <div class="index-theme-music-box absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
-                      <div class="text-slate-500 dark:text-gray-400 text-sm text-center">音乐播放器占位</div>
-                      <div class="text-slate-400 dark:text-gray-500 text-xs text-center mt-2">支持嵌入网易云音乐、QQ音乐等</div>
+                    <div class="index-theme-music-box absolute top-1/2 -left-20 -right-20 -translate-y-1/2">
+                      <MetingPlayer
+                        server="netease"
+                        type="song"
+                        id="2142943893"
+                        :listFolded="false"
+                        :mutex="true"
+                      />
                     </div>
                   </div>
 
@@ -482,6 +487,7 @@ import {
   RiVideoFill,
 } from "@remixicon/vue";
 import { markRaw, onMounted, onUnmounted, ref } from "vue";
+import MetingPlayer from "~/components/MetingPlayer.vue";
 
 // 目录导航数据
 const tocItems = [
