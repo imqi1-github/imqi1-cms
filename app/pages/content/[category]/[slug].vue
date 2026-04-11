@@ -147,6 +147,12 @@ useHead({
 watch(
   () => post.value,
   newPost => {
+    // 设置页面标题供导航栏使用
+    if (newPost?.title) {
+      const { setPageTitle } = usePageTitle();
+      setPageTitle(newPost.title, "ri:file-edit-line");
+    }
+
     // 只在客户端执行
     if (import.meta.client && newPost) {
       // 使用 setTimeout 确保 DOM 完全渲染

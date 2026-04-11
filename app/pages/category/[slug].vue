@@ -68,6 +68,11 @@ function triggerFadeIn() {
 // 监听数据加载完成，触发动画
 watch(pending, (newVal, oldVal) => {
   if (oldVal === true && newVal === false) {
+    // 设置页面标题供导航栏使用
+    if (category.value?.name) {
+      const { setPageTitle } = usePageTitle();
+      setPageTitle(category.value.name, "ri:menu-line");
+    }
     triggerFadeIn();
   }
 });
@@ -83,6 +88,18 @@ watch(
     });
     triggerFadeIn();
   },
+);
+
+// 监听分类数据变化，设置标题
+watch(
+  category,
+  (newCategory) => {
+    if (newCategory?.name) {
+      const { setPageTitle } = usePageTitle();
+      setPageTitle(newCategory.name, "ri:menu-line");
+    }
+  },
+  { immediate: true }
 );
 
 // 页面标题

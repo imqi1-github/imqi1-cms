@@ -20,6 +20,11 @@ const { data: categoriesData } = useLazyAsyncData("categories", () => $fetch("/a
 });
 const categories = computed(() => categoriesData.value?.data || []);
 
+// 获取页面标题（从页面组件设置）
+const { getPageTitle, getPageIcon } = usePageTitle();
+const pageTitle = computed(() => getPageTitle().value || null);
+const pageIcon = computed(() => getPageIcon().value || null);
+
 // 面包屑数据
 interface BreadcrumbItem {
   name: string;
@@ -51,10 +56,9 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 
   // 文章页
   if (path.startsWith("/content/")) {
-    // TODO: 需要从文章数据中获取分类信息
     items.push({
-      name: "文章",
-      icon: "ri:file-edit-line",
+      name: pageTitle.value || "文章",
+      icon: pageIcon.value || "ri:file-edit-line",
       isCurrent: true,
     });
   }
@@ -69,8 +73,8 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   // 分类页
   else if (path.startsWith("/category/")) {
     items.push({
-      name: route.meta.title || "分类",
-      icon: "ri:menu-line",
+      name: pageTitle.value || "分类",
+      icon: pageIcon.value || "ri:menu-line",
       isCurrent: true,
     });
   }
