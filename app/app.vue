@@ -67,7 +67,7 @@ watch(() => route.hash, () => {
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
-        <SiteHeader class="font-serif font-[450]" />
+        <SiteHeader />
         <main class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow">
           <NuxtPage class="font-serif font-[450] grow" />
         </main>

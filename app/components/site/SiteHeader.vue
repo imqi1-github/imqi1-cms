@@ -172,7 +172,7 @@ onMounted(() => {
       <!-- 左侧Logo - PC端显示 -->
       <NuxtLink
         to="/"
-        class="hidden md:flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] group font-serif"
+        class="hidden md:flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] group font-serif font-[450]"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
         <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
         <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
@@ -183,7 +183,7 @@ onMounted(() => {
 
       <!-- 中间面包屑胶囊 - PC端显示 -->
       <div
-        class="absolute left-1/2 top-[20.5px] -translate-x-1/2 -translate-y-1/2 items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] hidden md:flex font-serif"
+        class="absolute left-1/2 top-[20.5px] -translate-x-1/2 -translate-y-1/2 items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] hidden md:flex font-serif font-[450]"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
         <div class="flex items-center gap-2 text-sm">
           <template v-for="(item, index) in breadcrumbs" :key="index">
@@ -213,7 +213,7 @@ onMounted(() => {
         <!-- 移动端Logo -->
         <NuxtLink
           to="/"
-          class="md:hidden flex items-center gap-1 rounded-full relative overflow-hidden transition-all duration-300 font-serif">
+          class="md:hidden flex items-center gap-1 rounded-full relative overflow-hidden transition-all duration-300 font-serif font-[450]">
           <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
           <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
         </NuxtLink>
@@ -274,9 +274,12 @@ onMounted(() => {
 
   <!-- 移动端侧边栏菜单 -->
   <Sheet :open="isMobileMenuOpen" @update:open="isMobileMenuOpen = $event">
-    <SheetContent side="right" class="w-80 font-serif">
+    <SheetContent side="right" class="w-80 font-serif font-[450]">
       <SheetHeader>
         <SheetTitle>菜单</SheetTitle>
+        <SheetDescription class="sr-only">
+          网站导航菜单，包含搜索、分类和其他页面链接
+        </SheetDescription>
       </SheetHeader>
 
       <div class="flex flex-col gap-2 mt-6">
