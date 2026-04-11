@@ -117,6 +117,14 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
       isCurrent: true,
     });
   }
+  // 协议页
+  else if (path === "/agreement") {
+    items.push({
+      name: "协议",
+      icon: "ri:file-text-line",
+      isCurrent: true,
+    });
+  }
   // 404或其他
   else {
     items.push({

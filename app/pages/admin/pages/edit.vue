@@ -439,10 +439,13 @@ onUnmounted(() => {
                 <div class="space-y-2">
                   <Label for="page-slug">页面 Slug</Label>
                   <div class="flex items-center gap-2">
-                    <span class="text-sm text-muted-foreground">/page/</span>
-                    <Input id="page-slug" v-model="slug" placeholder="page-slug" class="flex-1" />
+                    <span class="text-sm text-muted-foreground">特殊页面：</span>
+                    <Input id="page-slug" v-model="slug" placeholder="如: agreement, message" class="flex-1" />
                   </div>
-                  <p class="text-xs text-muted-foreground">页面的唯一标识符，用于 URL，留空将自动生成</p>
+                  <p class="text-xs text-muted-foreground">
+                    特殊页面的唯一标识符。如 <code class="bg-muted px-1 py-0.5 rounded">agreement</code> 为协议页，
+                    <code class="bg-muted px-1 py-0.5 rounded">message</code> 为留言页。留空则不生成特殊页面路由
+                  </p>
                 </div>
               </CardContent>
             </Card>
