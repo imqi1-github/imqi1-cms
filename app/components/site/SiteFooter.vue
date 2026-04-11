@@ -50,21 +50,17 @@ const isMobileButtonsOpen = ref(false);
 // 按钮引用
 const themeButtonRef = ref<HTMLElement | null>(null);
 
-// 客户端主题状态（避免 SSR 时默认为 light 的问题）
-const isDarkMode = ref(false);
+// 使用 computed 替代 ref + watch，减少响应式开销
+const isDarkMode = computed(() => colorMode.value === "dark");
 
-// 客户端挂载后初始化主题状态
-onMounted(() => {
-  isDarkMode.value = colorMode.value === "dark";
-});
+// 防抖锁，避免快速点击导致性能问题
+let isTransitioning = false;
 
-// 监听主题变化
-watch(() => colorMode.value, (newValue) => {
-  isDarkMode.value = newValue === "dark";
-});
-
-// 切换亮暗模式（带圆形扩散动画）
+// 切换亮暗模式（极致性能优化 + 圆形扩散动画）
 const handleClick = async (event: MouseEvent) => {
+  // 防抖：如果在过渡中，直接返回
+  if (isTransitioning) return;
+
   const x = event.clientX;
   const y = event.clientY;
   const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
@@ -73,8 +69,15 @@ const handleClick = async (event: MouseEvent) => {
   const isCurrentDark = colorMode.preference === "dark";
   const newMode = isCurrentDark ? "light" : "dark";
 
+  // 设置锁
+  isTransitioning = true;
+
   if (!document.startViewTransition) {
     colorMode.preference = newMode;
+    // 300ms 后释放锁（动画时间）
+    setTimeout(() => {
+      isTransitioning = false;
+    }, 300);
     return;
   }
 
@@ -89,7 +92,7 @@ const handleClick = async (event: MouseEvent) => {
     const isToDark = newMode === "dark";
     const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
 
-    document.documentElement.animate(
+    const animation = document.documentElement.animate(
       {
         clipPath: isToDark ? clipPath.reverse() : clipPath,
       },
@@ -100,6 +103,16 @@ const handleClick = async (event: MouseEvent) => {
         pseudoElement: isToDark ? "::view-transition-old(root)" : "::view-transition-new(root)",
       },
     );
+
+    // 动画完成后释放锁
+    animation.finished.then(() => {
+      isTransitioning = false;
+    });
+  });
+
+  // 如果 transition 失败，也要释放锁
+  transition.finished.catch(() => {
+    isTransitioning = false;
   });
 };
 
@@ -158,7 +171,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+  <div class="bg-slate-50 dark:bg-slate-900">
     <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
@@ -168,7 +181,7 @@ onUnmounted(() => {
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
         <NuxtLink to="/feed" target="_blank" title="RSS订阅">
-          <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 transition-colors duration-300 dark:hover:text-gray-200" />
+          <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200" />
         </NuxtLink>
         <NuxtLink
           to="https://creativecommons.org/licenses/by/4.0/deed.zh-hans"
@@ -184,7 +197,7 @@ onUnmounted(() => {
         <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
         <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
           <NuxtLink :to="iconItem.href" :target="iconItem.target" :title="iconItem.title" class="no-underline">
-            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 transition-colors duration-300" />
+            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200" />
           </NuxtLink>
         </template>
       </div>

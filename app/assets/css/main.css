@@ -1,6 +1,25 @@
 @import "tailwindcss";
 @import "./vue-sonner.css";
 
+/* 使用 @property 让 CSS 变量支持原生过渡，性能最优 */
+@property --background {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
+
+@property --foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(15, 23, 42);
+}
+
+@property --border {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(226, 232, 240);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 img {
@@ -235,5 +254,54 @@ img {
   }
   body {
     @apply bg-background text-foreground;
+    /* 极致优化：只过渡 CSS 变量本身，利用 @property 的原生支持 */
+    transition:
+      --background 0.15s linear,
+      --foreground 0.15s linear,
+      --border 0.15s linear;
+    /* 提示浏览器优化渲染 */
+    will-change: --background, --foreground, --border;
+    /* 限制重绘范围 */
+    contain: layout style position;
+  }
+}
+
+/* 滚动条主题样式 - 使用 CSS 类切换，性能优于动态创建 style 元素 */
+.scrollbar-light {
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+.scrollbar-dark {
+  --scrollbar-track: #1e293b;
+  --scrollbar-thumb: #475569;
+  --scrollbar-thumb-hover: #64748b;
+}
+
+/* 应用滚动条 CSS 变量 */
+.scrollbar-light,
+.scrollbar-dark {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
   }
 }

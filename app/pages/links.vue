@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { Fancybox } from "@fancyapps/ui";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "@/assets/css/fancybox.css";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import { Fancybox } from "@fancyapps/ui";
+import { computed, onMounted, ref } from "vue";
 
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
@@ -231,7 +231,7 @@ onUnmounted(() => {
 
           <!-- URL -->
           <div
-            class="flex items-center gap-1.5 text-[0.85em] text-slate-500 dark:text-slate-400 border-t border-gray-200 dark:border-gray-700 pt-3 mt-auto transition-colors duration-300 group-hover:text-blue-600">
+            class="flex items-center gap-1.5 text-[0.85em] text-slate-500 dark:text-slate-400 border-t border-gray-200 dark:border-gray-700 pt-3 mt-auto group-hover:text-blue-600">
             <Icon name="ri:link" class="text-base opacity-60 transition-opacity duration-300 group-hover:opacity-100" />
             <span class="truncate">{{ formatUrl(link.link) }}</span>
           </div>
