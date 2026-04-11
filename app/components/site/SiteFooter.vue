@@ -22,6 +22,9 @@ const siteIcp = computed(() => data.value?.data?.siteIcp || "");
 // 使用官方 colorMode 模块
 const colorMode = useColorMode();
 
+// 移动端按钮组展开状态
+const isMobileButtonsOpen = ref(false);
+
 // 按钮引用
 const themeButtonRef = ref<HTMLElement | null>(null);
 
@@ -101,6 +104,11 @@ const scrollToTop = () => {
   });
 };
 
+// 切换移动端按钮组
+const toggleMobileButtons = () => {
+  isMobileButtonsOpen.value = !isMobileButtonsOpen.value
+};
+
 onMounted(() => {
   window.addEventListener("scroll", updateScrollProgress);
   updateScrollProgress();
@@ -139,12 +147,12 @@ onUnmounted(() => {
     </div>
     <!-- 右下角按钮组 -->
     <div class="fixed bottom-8 right-8 z-9999 flex flex-col gap-3 items-end max-md:gap-1 max-md:bottom-4 max-md:right-4">
-      <!-- 返回顶部/进度按钮 -->
+      <!-- PC端：返回顶部/进度按钮 -->
       <Transition name="fade">
         <button
           v-if="showProgress || showBackToTop"
           @click="scrollToTop"
-          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700"
+          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden"
           title="返回顶部">
           <!-- 进度圆环 -->
           <Transition name="icon-fade" mode="out-in">
@@ -174,17 +182,79 @@ onUnmounted(() => {
         </button>
       </Transition>
 
-      <!-- 暗黑模式切换按钮 -->
+      <!-- 移动端：返回顶部按钮 -->
+      <Transition
+        enter-active-class="transition-all duration-300"
+        enter-from-class="opacity-0 translate-y-4 scale-75"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-75">
+        <button
+          v-show="isMobileButtonsOpen"
+          @click="scrollToTop"
+          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
+          data-tip="返回顶部">
+          <Icon name="ri:arrow-up-line" class="size-5 fill-gray-600 dark:fill-gray-300" />
+        </button>
+      </Transition>
+
+      <!-- 移动端：主题切换按钮 -->
+      <Transition
+        enter-active-class="transition-all duration-300"
+        enter-from-class="opacity-0 translate-y-4 scale-75"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-75">
+        <button
+          v-show="isMobileButtonsOpen"
+          @click="handleClick"
+          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
+          :data-tip="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
+          <Icon v-if="colorMode.value !== 'dark'" name="ri:sun-line" class="size-5 fill-gray-600" />
+          <Icon v-else name="ri:moon-line" class="size-5 fill-gray-100" />
+        </button>
+      </Transition>
+
+      <!-- 音乐播放器 -->
+      <Transition
+        enter-active-class="transition-all duration-300"
+        enter-from-class="opacity-0 translate-y-4 scale-75"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-75">
+        <div v-show="isMobileButtonsOpen" class="md:hidden">
+          <FooterMusic />
+        </div>
+      </Transition>
+
+      <!-- PC端：暗黑模式切换按钮 -->
       <button
         @click="handleClick"
-        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700"
+        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden"
         :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
         <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
         <RiMoonLine v-else class="size-4 fill-gray-100" />
       </button>
 
-      <!-- 页脚音乐播放器 -->
-      <FooterMusic />
+      <!-- PC端：页脚音乐播放器 -->
+      <FooterMusic class="max-md:hidden" />
+
+      <!-- 移动端：菜单切换按钮 -->
+      <button
+        @click="toggleMobileButtons"
+        class="rounded-full border p-2 flex items-center justify-center shadow-lg transition-all duration-300 md:hidden"
+        :class="isMobileButtonsOpen
+          ? 'border-red-500 bg-white dark:bg-slate-800'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'"
+        :data-tip="isMobileButtonsOpen ? '收起' : '展开'">
+        <Icon
+          :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
+          class="size-5"
+          :class="isMobileButtonsOpen ? 'fill-red-500' : 'fill-gray-600 dark:fill-gray-300'" />
+      </button>
     </div>
   </div>
 </template>

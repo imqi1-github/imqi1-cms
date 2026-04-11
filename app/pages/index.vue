@@ -196,7 +196,7 @@
 
                   <!-- 音乐播放器 -->
                   <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                    <div class="index-theme-music-box absolute top-1/2 -left-20 -right-20 -translate-y-1/2">
+                    <div class="index-theme-music-box absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
                       <MetingPlayer
                         server="netease"
                         type="song"
@@ -269,7 +269,7 @@
                 <img :src="post.covers[0].url || post.covers[0]" :alt="post.title" class="w-full h-full object-cover" loading="lazy" />
               </div>
               <!-- 文章信息 -->
-              <div class="flex-1 min-w-0 flex flex-col justify-between">
+              <div class="flex-1 min-w-0 flex flex-col justify-between min-h-24">
                 <div>
                   <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-1 mb-1">{{ post.title }}</h3>
                   <p v-if="post.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-2">{{ post.desc }}</p>
@@ -340,7 +340,7 @@
                     loading="lazy" />
                 </div>
                 <!-- 无封面占位 -->
-                <div v-else class="aspect-video bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
+                <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
                   <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ categoryData.category.name[0] }}</span>
                 </div>
                 <!-- 文章信息 -->
@@ -403,7 +403,7 @@
 
       <!-- 目录 -->
       <div
-        class="max-sm:hidden flex mt-24 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full left-1/2 -translate-x-1/2 text-sm">
+        class="max-sm:hidden flex mt-24 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm">
         <div
           v-for="(item, index) in tocItems"
           :key="item.id"
