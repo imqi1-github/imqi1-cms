@@ -181,7 +181,7 @@ onUnmounted(() => {
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
         <NuxtLink to="/feed" target="_blank" title="RSS订阅">
-          <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200" />
+          <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
         </NuxtLink>
         <NuxtLink
           to="https://creativecommons.org/licenses/by/4.0/deed.zh-hans"
@@ -197,7 +197,7 @@ onUnmounted(() => {
         <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
         <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
           <NuxtLink :to="iconItem.href" :target="iconItem.target" :title="iconItem.title" class="no-underline">
-            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200" />
+            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
           </NuxtLink>
         </template>
       </div>
