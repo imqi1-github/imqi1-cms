@@ -246,7 +246,7 @@ onMounted(() => {
                 v-for="cat in categories"
                 :key="cat.slug"
                 :to="`/category/${cat.slug}`"
-                class="block px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 no-underline text-sm font-medium"
+                class="block px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 no-underline text-sm font-medium font-serif"
                 :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400': route.path === `/category/${cat.slug}` }">
                 {{ cat.name }}
               </NuxtLink>

@@ -12,8 +12,7 @@
           <h1 class="index-first-line text-slate-900 dark:text-white text-[6em] font-black leading-none">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
           </h1>
-          <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce">
-          </div>
+          <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"></div>
         </div>
 
         <!-- 头像区域 -->
@@ -108,7 +107,9 @@
             </div>
           </div>
           <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
-            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，到现在仍持续更新中。这一版主题前后端采用 Nuxt4 搭建，配合 Tailwindcss，构建了现代化的响应式布局，同时集成了 APlayer 音乐播放器、Fancy Apps 图片灯箱等富媒体组件，为文章内容提供更丰富的交互体验。整个系统支持完整的博客功能，并具备完善的后台管理系统，实现了真正意义上的全栈内容管理系统。
+            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，到现在仍持续更新中。这一版主题前后端采用 Nuxt4 搭建，配合
+            Tailwindcss，构建了现代化的响应式布局，同时集成了 APlayer 音乐播放器、Fancy Apps
+            图片灯箱等富媒体组件，为文章内容提供更丰富的交互体验。整个系统支持完整的博客功能，并具备完善的后台管理系统，实现了真正意义上的全栈内容管理系统。
           </div>
         </div>
       </section>
@@ -117,7 +118,7 @@
       <div class="h-62.5"></div>
 
       <!-- 样式选择 -->
-      <div ref="sectionStyle" class="index-theme -mt-5 mx-auto max-w-200">
+      <div ref="sectionStyle" class="index-theme -mt-5 mx-auto max-w-200 animate-fade-in">
         <div class="index-theme-inner">
           <div class="index-theme-themes mb-50 max-md:text-center">
             <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
@@ -324,14 +325,14 @@
           </div>
 
           <!-- 文章网格 -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
+          <div class="flex flex-wrap gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
             <NuxtLink
               v-for="post in categoryData.posts"
               :key="post.cid"
               :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
-              class="group block no-underline">
+              class="group block no-underline flex-[1_0_200px]">
               <div
-                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-64 flex flex-col">
+                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
                 <!-- 封面 -->
                 <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden grow">
                   <img
@@ -366,9 +367,9 @@
         v-if="photoImages.length > 0"
         class="index-photo-posts mt-12 mx-auto max-w-275 animate-fade-in"
         aria-labelledby="index-photo-posts-title">
-        <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm text-center">图片内容</h2>
-        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最新发布的图片</div>
-        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">记录生活中的美好瞬间</div>
+        <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
+        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最近发布的图片</div>
+        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">小物件，风景，合照，值得记录的瞬间</div>
 
         <!-- 图片瀑布流 -->
         <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
@@ -393,7 +394,9 @@
 
         <!-- 查看更多 -->
         <div class="text-center mt-8">
-          <NuxtLink :to="`/category/${photoCategorySlug}`" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
+          <NuxtLink
+            :to="`/category/${photoCategorySlug}`"
+            class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部图片
             <RiArrowRightLine class="size-4" />
           </NuxtLink>
@@ -485,7 +488,7 @@ const tocItems = [
   { id: "framework", title: "网站架构" },
   { id: "style", title: "样式选择" },
   { id: "content", title: "最新内容" },
-  { id: "photos", title: "最新照片" },
+  { id: "photos", title: "最新图片" },
 ];
 
 // 当前激活的目录项索引
@@ -599,7 +602,7 @@ useHead({
 });
 
 // 首页Hero下文字
-const homeAnnounce = computed(() => data.value?.data?.homeCustomText || '<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>');
+const homeAnnounce = computed(() => data.value?.data?.homeCustomText || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>");
 
 // 图片分类slug
 const photoCategorySlug = computed(() => data.value?.data?.photoCategorySlug || "shot");
