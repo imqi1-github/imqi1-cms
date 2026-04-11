@@ -2,6 +2,9 @@
 const route = useRoute();
 const config = useRuntimeConfig();
 
+// 应用滚动条主题
+useScrollbarTheme();
+
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
 

@@ -1,23 +1,45 @@
 <script setup lang="ts">
-import {
-  RiArrowUpLine,
-  RiCopyrightLine,
-  RiCreativeCommonsByLine,
-  RiCreativeCommonsNcLine,
-  RiCreativeCommonsNdLine,
-  RiEarthFill,
-  RiMoonLine,
-  RiRssFill,
-  RiSubwayFill,
-  RiSunLine,
-} from "@remixicon/vue";
+import { RiArrowUpLine, RiMoonLine, RiSunLine } from "@remixicon/vue";
+
+const route = useRoute();
+const router = useRouter();
 
 const currentYear = new Date().getFullYear();
+
+// 判断是否为首页
+const isHomePage = computed(() => route.path === "/");
 
 // 获取站点设置
 const { data } = await useFetch("/api/site");
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
 const siteIcp = computed(() => data.value?.data?.siteIcp || "");
+
+// 页脚图标数据
+interface FooterIcon {
+  name: string;
+  icon: string; // 图标组件名
+  href: string;
+  title: string;
+  target?: string;
+}
+
+// 博客导航图标（仅首页显示）
+const blogNavIcons: FooterIcon[] = [
+  {
+    name: "开往",
+    icon: "ri:subway-fill",
+    href: "https://www.travellings.cn/go-by-clouds.html",
+    title: "开往 - 友谊链接探索",
+    target: "_blank",
+  },
+  {
+    name: "虫洞",
+    icon: "boxicons:planet-filled",
+    href: "https://foreverblog.cn/go.html",
+    title: "虫洞 - 随机访问博客",
+    target: "_blank",
+  },
+];
 
 // 使用官方 colorMode 模块
 const colorMode = useColorMode();
@@ -28,27 +50,43 @@ const isMobileButtonsOpen = ref(false);
 // 按钮引用
 const themeButtonRef = ref<HTMLElement | null>(null);
 
+// 客户端主题状态（避免 SSR 时默认为 light 的问题）
+const isDarkMode = ref(false);
+
+// 客户端挂载后初始化主题状态
+onMounted(() => {
+  isDarkMode.value = colorMode.value === "dark";
+});
+
+// 监听主题变化
+watch(() => colorMode.value, (newValue) => {
+  isDarkMode.value = newValue === "dark";
+});
+
 // 切换亮暗模式（带圆形扩散动画）
 const handleClick = async (event: MouseEvent) => {
   const x = event.clientX;
   const y = event.clientY;
   const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
 
+  // 判断当前是否为暗色模式
+  const isCurrentDark = colorMode.preference === "dark";
+  const newMode = isCurrentDark ? "light" : "dark";
+
   if (!document.startViewTransition) {
-    colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
+    colorMode.preference = newMode;
     return;
   }
 
   const transition = document.startViewTransition(async () => {
-    colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
+    colorMode.preference = newMode;
     await nextTick();
   });
 
   transition.ready.then(() => {
-    // 切换后 colorMode.value 已经是新的值
-    // 切换到暗色：colorMode.value === "dark"，old（亮色）收缩
-    // 切换到亮色：colorMode.value === "light"，new（亮色）扩散
-    const isToDark = colorMode.value === "dark";
+    // 切换到暗色：isToDark = true，old（亮色）收缩
+    // 切换到亮色：isToDark = false，new（亮色）扩散
+    const isToDark = newMode === "dark";
     const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
 
     document.documentElement.animate(
@@ -106,7 +144,7 @@ const scrollToTop = () => {
 
 // 切换移动端按钮组
 const toggleMobileButtons = () => {
-  isMobileButtonsOpen.value = !isMobileButtonsOpen.value
+  isMobileButtonsOpen.value = !isMobileButtonsOpen.value;
 };
 
 onMounted(() => {
@@ -129,20 +167,26 @@ onUnmounted(() => {
         >
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
-        <RiRssFill class="size-4.5" />
-        <div class="flex items-center **:size-4.5 **:fill-state-600">
-          <RiCopyrightLine />
-          <RiCreativeCommonsByLine />
-          <RiCreativeCommonsNcLine />
-          <RiCreativeCommonsNdLine />
-        </div>
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 1024 1024" width="16" height="16">
-          <path
-            d="M512 1024C132.647 1024 0 891.313 0 512S132.647 0 512 0s512 132.687 512 512-132.647 512-512 512zM236.308 354.462h551.384v-78.77H236.308v78.77z m0 196.923h393.846v-78.77H236.308v78.77z m0 196.923h472.615v-78.77H236.308v78.77z"
-            fill="currentColor"></path>
-        </svg>
-        <RiSubwayFill class="size-4.5" />
-        <RiEarthFill class="size-4.5" />
+        <NuxtLink to="/feed" target="_blank" title="RSS订阅">
+          <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 transition-colors duration-300 dark:hover:text-gray-200" />
+        </NuxtLink>
+        <NuxtLink
+          to="https://creativecommons.org/licenses/by/4.0/deed.zh-hans"
+          target="_blank"
+          class="flex items-center **:size-4.5 **:fill-state-600 group"
+          title="CC BY 4.0">
+          <Icon name="ri:copyright-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+          <Icon name="ri:creative-commons-by-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+          <Icon name="ri:creative-commons-nc-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+          <Icon name="ri:creative-commons-nd-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+        </NuxtLink>
+        <!-- 博客导航图标（仅首页显示） -->
+        <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
+        <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
+          <NuxtLink :to="iconItem.href" :target="iconItem.target" :title="iconItem.title" class="no-underline">
+            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 transition-colors duration-300" />
+          </NuxtLink>
+        </template>
       </div>
     </div>
     <!-- 右下角按钮组 -->
@@ -211,9 +255,9 @@ onUnmounted(() => {
           v-show="isMobileButtonsOpen"
           @click="handleClick"
           class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
-          :data-tip="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
-          <Icon v-if="colorMode.value !== 'dark'" name="ri:sun-line" class="size-5 fill-gray-600" />
-          <Icon v-else name="ri:moon-line" class="size-5 fill-gray-100" />
+          :data-tip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+          <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 fill-gray-600 dark:fill-gray-300" />
+          <Icon v-else name="ri:moon-line" class="size-5 fill-gray-100 dark:fill-gray-300" />
         </button>
       </Transition>
 
@@ -234,9 +278,9 @@ onUnmounted(() => {
       <button
         @click="handleClick"
         class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden"
-        :title="colorMode.value === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
-        <RiSunLine v-if="colorMode.value !== 'dark'" class="size-4 fill-gray-600" />
-        <RiMoonLine v-else class="size-4 fill-gray-100" />
+        :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+        <RiSunLine v-if="!isDarkMode" class="size-4 fill-gray-600 dark:fill-gray-300" />
+        <RiMoonLine v-else class="size-4 fill-gray-100 dark:fill-gray-300" />
       </button>
 
       <!-- PC端：页脚音乐播放器 -->
@@ -246,9 +290,7 @@ onUnmounted(() => {
       <button
         @click="toggleMobileButtons"
         class="rounded-full border p-2 flex items-center justify-center shadow-lg transition-all duration-300 md:hidden"
-        :class="isMobileButtonsOpen
-          ? 'border-red-500 bg-white dark:bg-slate-800'
-          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'"
+        :class="isMobileButtonsOpen ? 'border-red-500 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'"
         :data-tip="isMobileButtonsOpen ? '收起' : '展开'">
         <Icon
           :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
@@ -260,6 +302,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.no-underline {
+  text-decoration: none;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition:
