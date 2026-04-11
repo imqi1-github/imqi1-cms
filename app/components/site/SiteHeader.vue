@@ -133,9 +133,6 @@ const navItems = [
   { name: "关于", href: "/about", icon: "ri:user-line" },
 ];
 
-// 是否显示分类下拉菜单
-const showCategory = ref(false);
-
 // 滚动监听
 const isScrolled = ref(false);
 
@@ -231,7 +228,7 @@ onMounted(() => {
           </div>
 
           <!-- 分类下拉 -->
-          <div class="relative" @mouseenter="showCategory = true" @mouseleave="showCategory = false">
+          <div class="group/dropdown relative">
             <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white">
               <Icon name="ri:book-shelf-line" class="text-[1.2em] relative z-1" />
               <span
@@ -240,8 +237,7 @@ onMounted(() => {
 
             <!-- 分类下拉菜单 -->
             <div
-              class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible transition-all duration-200 translate-y-2"
-              :class="{ 'opacity-100 visible translate-y-0': showCategory }">
+              class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all duration-200 before:left-0 before:right-0 before:-top-5 before:h-5 before:absolute">
               <NuxtLink
                 v-for="cat in categories"
                 :key="cat.slug"
