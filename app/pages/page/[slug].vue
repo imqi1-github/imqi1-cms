@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { Fancybox } from "@fancyapps/ui";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "@/assets/css/fancybox.css";
@@ -17,6 +17,29 @@ const { data, pending, error } = await useFetch(`/api/p/${slug}`);
 
 const page = computed(() => data.value?.data);
 
+// 判断页面是否存在
+const isNotFound = computed(() => !pending.value && (!page.value || error.value));
+
+// 页面标题
+const pageTitle = ref(`页面未找到 - ${siteName.value}`);
+
+// 在数据加载完成后更新标题
+watch(
+  [page, isNotFound],
+  ([newPage, notFound]) => {
+    if (notFound) {
+      pageTitle.value = `页面未找到 - ${siteName.value}`;
+    } else if (newPage?.title) {
+      pageTitle.value = `${newPage.title} - ${siteName.value}`;
+    }
+  },
+  { immediate: true },
+);
+
+useHead({
+  title: pageTitle,
+});
+
 // 封面图片
 const coverImage = computed(() => {
   if (page.value?.covers && page.value.covers.length > 0) {
@@ -27,19 +50,33 @@ const coverImage = computed(() => {
 
 const manyCovers = computed(() => page.value?.many_covers && page.value?.covers && page.value.covers.length > 1);
 
-// 页面元数据
-useHead({
-  title: computed(() => `${page.value?.title || "页面"} - ${siteName.value}`),
-  meta: [
-    {
-      name: "description",
-      content: computed(() => page.value?.desc || ""),
-    },
-  ],
+// 监听 404 状态，触发错误页动画
+watch(isNotFound, () => {
+  // 只在客户端执行
+  if (!import.meta.client) return;
+
+  if (isNotFound.value) {
+    nextTick(() => {
+      const notFound = document.querySelector(".not-found-fade-in");
+      if (notFound) {
+        notFound.classList.add("fade-in-start");
+      }
+    });
+  }
 });
 
 // 初始化 Fancybox
 onMounted(() => {
+  // 404 页面动画（初始状态）
+  if (isNotFound.value) {
+    nextTick(() => {
+      const notFound = document.querySelector(".not-found-fade-in");
+      if (notFound) {
+        notFound.classList.add("fade-in-start");
+      }
+    });
+  }
+
   // 初始化滚动渐入动画
   const observerOptions = {
     threshold: 0.1,
@@ -106,17 +143,20 @@ onUnmounted(() => {
       <p class="ml-3 text-muted-foreground">加载中...</p>
     </div>
 
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="py-20 text-center">
-      <Icon name="lucide:alert-circle" class="size-12 text-destructive mx-auto mb-4" />
-      <h2 class="text-xl font-bold mb-2">页面不存在</h2>
-      <p class="text-muted-foreground mb-4">抱歉，您访问的页面不存在或已被删除。</p>
-      <NuxtLink to="/">
-        <Button>
-          <Icon name="lucide:home" class="mr-2 size-4" />
-          返回首页
-        </Button>
-      </NuxtLink>
+    <!-- 404 状态 -->
+    <div
+      v-else-if="isNotFound"
+      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
+      <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
+        <Icon name="ri:close-large-fill" class="text-red-500" />
+        <span>页面未找到</span>
+      </h1>
+
+      <p class="text-lg text-slate-600 dark:text-slate-400 mb-8">
+        未找到内容，你可以
+        <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>
+        。
+      </p>
     </div>
 
     <!-- 页面内容 -->
@@ -178,6 +218,20 @@ onUnmounted(() => {
 }
 
 .animate-fade-in.fade-in-start {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 404 页面淡入动画 */
+.not-found-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.not-found-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
 }

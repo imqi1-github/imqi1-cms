@@ -22,7 +22,7 @@
 
         <!-- 滚动提示 -->
         <div class="index-scroll absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 dark:text-gray-500 animate-bounce max-md:-bottom-20">
-          <RiMouseLine class="size-4" />
+          <Icon name="ri:mouse-line" class="size-4" mode="svg" />
         </div>
       </div>
 
@@ -34,7 +34,7 @@
           :href="link.url"
           :target="link.target ? '_blank' : undefined"
           class="index-contact-link group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
-          <component :is="link.icon" class="size-5" />
+          <Icon :name="link.icon" class="size-5" mode="svg" />
           <!-- 小程序二维码 -->
           <template v-if="link.name === 'miniprogram'">
             <img
@@ -85,14 +85,14 @@
               <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Nuxt</span>
             </div>
             <div class="index-framework-arrow max-md:mt-7">
-              <RiAddLargeLine class="text-2xl text-slate-400 dark:text-gray-500" />
+              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" mode="svg" />
             </div>
             <div class="index-framework-item flex flex-col relative">
               <Icon name="file-icons:prisma" mode='svg' class="index-framework-pic size-25"  />
               <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Prisma</span>
             </div>
             <div class="index-framework-arrow max-md:mt-7">
-              <RiAddLargeLine class="text-2xl text-slate-400 dark:text-gray-500" />
+              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" mode="svg" />
             </div>
             <div class="index-framework-item flex flex-col relative">
               <Icon name="logos:mysql" mode="svg" class="index-framework-pic size-25"  />
@@ -177,10 +177,10 @@
                     </code>
                     <div
                       class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
-                      <span><RiAttachmentLine class="text-slate-600 dark:text-gray-400" /></span>
-                      <span><RiFileZipFill class="text-slate-600 dark:text-gray-400" /></span>
-                      <span><RiVideoFill class="text-slate-600 dark:text-gray-400" /></span>
-                      <span><RiRestartLine class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><Icon name="ri:attachment-line" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
+                      <span><Icon name="ri:file-zip-fill" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
+                      <span><Icon name="ri:video-fill" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
+                      <span><Icon name="ri:restart-line" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
                     </div>
                   </div>
 
@@ -276,13 +276,13 @@
                 </div>
                 <div class="flex gap-1 text-xs text-slate-400 dark:text-gray-500 mt-2 flex-col">
                   <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1 flex-wrap">
-                    <RiMenuLine class="size-3.5" />
+                    <Icon name="ri:menu-line" class="size-3.5" mode="svg" />
                     <span v-for="(cat, idx) in post.categories" :key="cat.slug" class="text-gray-500 dark:text-gray-400">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
                   <div class="flex items-center gap-1">
-                    <RiTimeLine class="size-3.5" />
+                    <Icon name="ri:time-line" class="size-3.5" mode="svg" />
                     <span>{{ formatDate(post.created) }}</span>
                   </div>
                 </div>
@@ -300,7 +300,7 @@
         <div v-if="recentPosts.length > 0" class="text-center mt-8">
           <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部文章
-            <RiArrowRightLine class="size-4" />
+            <Icon name="ri:arrow-right-line" class="size-4" mode="svg" />
           </NuxtLink>
         </div>
       </section>
@@ -318,7 +318,7 @@
               :to="`/category/${categoryData.category.slug}`"
               class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
               查看更多
-              <RiArrowRightLine class="size-4" />
+              <Icon name="ri:arrow-right-line" class="size-4" mode="svg" />
             </NuxtLink>
           </div>
 
@@ -396,7 +396,7 @@
             :to="`/category/${photoCategorySlug}`"
             class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部图片
-            <RiArrowRightLine class="size-4" />
+            <Icon name="ri:arrow-right-line" class="size-4" mode="svg" />
           </NuxtLink>
         </div>
       </section>
@@ -461,25 +461,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  RiAddLargeLine,
-  RiArrowRightLine,
-  RiAttachmentLine,
-  RiFileZipFill,
-  RiGithubFill,
-  RiHome2Fill,
-  RiLinksFill,
-  RiMailFill,
-  RiMenuLine,
-  RiMiniProgramFill,
-  RiMouseLine,
-  RiNpmjsFill,
-  RiRestartLine,
-  RiTimeLine,
-  RiTwitterXFill,
-  RiVideoFill,
-} from "@remixicon/vue";
-import { markRaw, onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import MetingPlayer from "~/components/MetingPlayer.vue";
 
 // 目录导航数据
@@ -608,13 +590,13 @@ const photoCategorySlug = computed(() => data.value?.data?.photoCategorySlug || 
 
 // 联系链接配置
 const contactLinks = ref([
-  { name: "email", url: "mailto:imqi1@qq.com", icon: markRaw(RiMailFill), target: true },
-  { name: "github", url: "https://github.com/imqi1-github", icon: markRaw(RiGithubFill), target: true },
-  { name: "npm", url: "https://www.npmjs.com/~imqi1-npm", icon: markRaw(RiNpmjsFill), target: true },
-  { name: "x", url: "https://x.com/imqi1_X", icon: markRaw(RiTwitterXFill), target: true },
-  { name: "home", url: "https://qi1.website", icon: markRaw(RiHome2Fill), target: true },
-  { name: "link", url: "/links", icon: markRaw(RiLinksFill), target: false },
-  { name: "miniprogram", url: "", icon: markRaw(RiMiniProgramFill), target: false },
+  { name: "email", url: "mailto:imqi1@qq.com", icon: "ri:mail-fill", target: true },
+  { name: "github", url: "https://github.com/imqi1-github", icon: "ri:github-fill", target: true },
+  { name: "npm", url: "https://www.npmjs.com/~imqi1-npm", icon: "ri:npmjs-fill", target: true },
+  { name: "x", url: "https://x.com/imqi1_X", icon: "ri:twitter-x-fill", target: true },
+  { name: "home", url: "https://qi1.website", icon: "ri:home-2-fill", target: true },
+  { name: "link", url: "/links", icon: "ri:links-fill", target: false },
+  { name: "miniprogram", url: "", icon: "ri:mini-program-fill", target: false },
 ]);
 
 // 样式选择区域数据

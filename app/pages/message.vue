@@ -90,24 +90,17 @@ onUnmounted(() => {
         alt="封面"
         loading="lazy"
         class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800"
-        onerror="this.src='/imgs/nopic.png'" />
+        onerror="this.src = '/imgs/nopic.png'" />
 
       <!-- 标题 -->
       <h1 class="text-[3em] font-extrabold mb-2.5">留言</h1>
 
       <!-- 描述 -->
-      <div class="text-[0.8em] text-slate-600 dark:text-slate-400 mb-4">
-        留下你的足迹，说出你的想法。
-      </div>
+      <div class="text-[0.8em] text-slate-600 dark:text-slate-400 mb-4">留下你的足迹，说出你的想法。</div>
     </header>
 
     <!-- 留言内容区域 -->
     <section class="my-8 animate-fade-in">
-      <blockquote
-        class="border-l-4 border-blue-600 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[0.95em] px-4 py-3 my-4 rounded-sm">
-        欢迎在这里留言，分享你的想法和建议。
-      </blockquote>
-
       <!-- 未配置提示 -->
       <div v-if="!messagePostId" class="py-10 text-center">
         <Icon name="lucide:alert-circle" class="size-8 text-amber-500 mx-auto mb-2" />

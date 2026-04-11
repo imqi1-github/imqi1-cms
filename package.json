@@ -31,7 +31,6 @@
     "@nuxtjs/color-mode": "^4.0.0",
     "@prisma/adapter-mariadb": "^7.6.0",
     "@prisma/client": "^7.6.0",
-    "@remixicon/vue": "^4.9.0",
     "@shikijs/markdown-it": "^4.0.2",
     "@shikijs/transformers": "^4.0.2",
     "@tanstack/vue-table": "^8.21.3",

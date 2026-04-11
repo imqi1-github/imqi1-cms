@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { RiArrowUpLine, RiMoonLine, RiSunLine } from "@remixicon/vue";
-
 const route = useRoute();
 const router = useRouter();
 
@@ -227,7 +225,7 @@ onUnmounted(() => {
                 :stroke-dashoffset="75.4 - (75.4 * scrollProgress) / 100" />
             </svg>
             <div v-else-if="showBackToTop" key="arrow" class="absolute inset-0 flex items-center justify-center">
-              <RiArrowUpLine class="size-4 fill-gray-600 dark:fill-gray-300" />
+              <Icon name="ri:arrow-up-line" class="size-4 text-gray-600 dark:text-gray-300" />
             </div>
           </Transition>
           <!-- 进度数字 -->
@@ -252,27 +250,29 @@ onUnmounted(() => {
           @click="scrollToTop"
           class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
           data-tip="返回顶部">
-          <Icon name="ri:arrow-up-line" class="size-5 fill-gray-600 dark:fill-gray-300" />
+          <Icon name="ri:arrow-up-line" class="size-5 text-gray-600 dark:text-gray-300" />
         </button>
       </Transition>
 
       <!-- 移动端：主题切换按钮 -->
-      <Transition
-        enter-active-class="transition-all duration-300"
-        enter-from-class="opacity-0 translate-y-4 scale-75"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition-all duration-200"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 translate-y-4 scale-75">
-        <button
-          v-show="isMobileButtonsOpen"
-          @click="handleClick"
-          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
-          :data-tip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
-          <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 fill-gray-600 dark:fill-gray-300" />
-          <Icon v-else name="ri:moon-line" class="size-5 fill-gray-100 dark:fill-gray-300" />
-        </button>
-      </Transition>
+      <ClientOnly>
+        <Transition
+          enter-active-class="transition-all duration-300"
+          enter-from-class="opacity-0 translate-y-4 scale-75"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition-all duration-200"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-4 scale-75">
+          <button
+            v-show="isMobileButtonsOpen"
+            @click="handleClick"
+            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
+            :data-tip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+            <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 text-gray-600 dark:text-gray-300" />
+            <Icon v-else name="ri:moon-line" class="size-5 text-gray-100 dark:text-gray-300" />
+          </button>
+        </Transition>
+      </ClientOnly>
 
       <!-- 音乐播放器 -->
       <Transition
@@ -288,13 +288,15 @@ onUnmounted(() => {
       </Transition>
 
       <!-- PC端：暗黑模式切换按钮 -->
-      <button
-        @click="handleClick"
-        class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
-        :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
-        <RiSunLine v-if="!isDarkMode" class="size-4 fill-gray-600 dark:fill-gray-300" />
-        <RiMoonLine v-else class="size-4 fill-gray-100 dark:fill-gray-300" />
-      </button>
+      <ClientOnly>
+        <button
+          @click="handleClick"
+          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
+          :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+          <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-4 text-gray-600 dark:text-gray-300" />
+          <Icon v-else name="ri:moon-line" class="size-4 text-gray-100 dark:text-gray-300" />
+        </button>
+      </ClientOnly>
 
       <!-- PC端：页脚音乐播放器 -->
       <FooterMusic class="max-md:hidden" />
@@ -308,7 +310,7 @@ onUnmounted(() => {
         <Icon
           :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
           class="size-5"
-          :class="isMobileButtonsOpen ? 'fill-red-500' : 'fill-gray-600 dark:fill-gray-300'" />
+          :class="isMobileButtonsOpen ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'" />
       </button>
     </div>
   </div>

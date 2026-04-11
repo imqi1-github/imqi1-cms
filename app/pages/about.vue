@@ -408,7 +408,7 @@
             href="https://www.16personalities.com/ch/entp-%E4%BA%BA%E6%A0%BC"
             target="_blank"
             class="about-bold-mbti-link flex items-center bg-blue-600 dark:bg-blue-500 rounded-full text-white font-semibold gap-2 mt-6 px-6 py-3 transition-all duration-200 w-fit hover:bg-blue-500 dark:hover:bg-blue-400">
-            了解更多 <RiArrowRightLine class="size-4" />
+            了解更多 <Icon name="ri:arrow-right-line" class="size-4" />
           </a>
         </div>
       </div>
@@ -468,21 +468,21 @@
           <a
             href="mailto:imqi1@qq.com"
             class="about-bold-contact-link flex items-center bg-blue-600 dark:bg-blue-500 border border-slate-200 dark:border-slate-700 rounded-full text-white font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-500 dark:hover:bg-blue-400 hover:shadow">
-            <RiMailLine class="size-4 fill-white" />
+            <Icon name="ri:mail-line" class="size-4 text-white" mode="svg" />
             发邮件
           </a>
           <a
             href="https://qi1.website"
             target="_blank"
             class="about-bold-contact-link flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:*:fill-white hover:shadow hover:text-white">
-            <RiHomeLine class="transition-all duration-200 size-4 fill-slate-600 dark:fill-slate-400" />
+            <Icon name="ri:home-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400" mode="svg" />
             主页
           </a>
           <a
             href="https://github.com/imqi1-github"
             target="_blank"
             class="about-bold-contact-link flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:*:fill-white hover:shadow hover:text-white">
-            <RiGithubLine class="transition-all duration-200 size-4 fill-slate-600 dark:fill-slate-400" />
+            <Icon name="ri:github-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400" mode="svg" />
             GitHub
           </a>
         </div>
@@ -510,7 +510,7 @@
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
-              <RiArchiveLine class="size-8" />
+              <Icon name="ri:archive-line" class="size-8" mode="svg" />
             </div>
             <div
               class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
@@ -523,7 +523,7 @@
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
-              <RiCompassLine class="size-8" />
+              <Icon name="ri:compass-line" class="size-8" mode="svg" />
             </div>
             <div
               class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
@@ -536,7 +536,7 @@
             class="about-bold-nav-item group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
             <div
               class="about-bold-nav-icon flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-4 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
-              <RiEditLine class="size-8" />
+              <Icon name="ri:edit-line" class="size-8" mode="svg" />
             </div>
             <div
               class="about-bold-nav-title text-slate-800 dark:text-slate-200 text-xl font-bold mb-1 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
@@ -586,7 +586,6 @@
 </template>
 
 <script setup lang="ts">
-import { RiArchiveLine, RiArrowRightLine, RiCompassLine, RiEditLine, RiGithubLine, RiHomeLine, RiMailLine } from "@remixicon/vue";
 import { onMounted, ref } from "vue";
 
 // 获取站点信息

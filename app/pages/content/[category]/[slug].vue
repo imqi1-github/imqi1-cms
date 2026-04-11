@@ -2,7 +2,7 @@
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import Swiper from "swiper";
 import { Navigation, Pagination, Mousewheel } from "swiper/modules";
 import "swiper/css";
@@ -135,12 +135,24 @@ const handleTocScroll = () => {
 };
 
 // 页面元数据
+// 使用一个固定的初始值，避免服务端和客户端不一致
+const pageTitle = ref(`文章加载中... - ${siteName.value}`);
+
+// 在数据加载完成后更新标题
+watch(
+  [post, isNotFound],
+  ([newPost, notFound]) => {
+    if (notFound) {
+      pageTitle.value = `页面未找到 - ${siteName.value}`;
+    } else if (newPost?.title) {
+      pageTitle.value = `${newPost.title} - ${siteName.value}`;
+    }
+  },
+  { immediate: true },
+);
+
 useHead({
-  title: computed(() => {
-    if (pending.value) return `文章加载中... - ${siteName.value}`;
-    if (isNotFound.value) return `页面未找到 - ${siteName.value}`;
-    return `${post.value?.title} - ${siteName.value}` || `文章加载中... - ${siteName.value}`;
-  }),
+  title: pageTitle,
 });
 
 // 监听文章数据变化，触发渐入动画
@@ -1489,7 +1501,7 @@ onUnmounted(() => {
   color: rgb(107 114 128);
 }
 
-.dark .markdown-body :deep(blockquote) {
+.dark .markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote):not(.markdown-repo blockquote) {
   background: rgb(31 41 55);
   color: rgb(156 163 175);
 }

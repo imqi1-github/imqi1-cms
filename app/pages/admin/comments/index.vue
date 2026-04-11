@@ -343,9 +343,8 @@ onMounted(() => {
             <Button
               v-for="page in Math.min(pagination.totalPages, 5)"
               :key="page"
-              variant="outline"
+              :variant="page === pagination.page ? 'default' : 'outline'"
               size="sm"
-              :class="{ 'bg-primary text-primary-foreground': page === pagination.page }"
               @click="goToPage(page)">
               {{ page }}
             </Button>

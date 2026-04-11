@@ -724,7 +724,7 @@ onMounted(() => {
 
               <!-- 不使用 SMTP 时的提示 -->
               <div v-if="settings.emailPushType === 'none'" class="p-8 bg-muted/30 rounded-lg text-center">
-                <Icon name="lucide:mail-off" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
+                <Icon name="material-symbols:mail-off-outline" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
                 <p class="text-muted-foreground">未启用邮件推送功能，系统将不发送任何通知邮件</p>
               </div>
             </CardContent>

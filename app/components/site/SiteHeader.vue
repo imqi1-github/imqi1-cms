@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { RiHomeFill } from "@remixicon/vue";
 import { Menu } from "lucide-vue-next";
 
 const route = useRoute();
@@ -163,28 +162,31 @@ const isRouteChanging = ref(false);
 const isInitialLoad = ref(false);
 let shouldIgnoreScroll = false;
 
-watch(() => route.path, () => {
-  // 标记路由正在切换和初始加载，忽略滚动事件
-  isRouteChanging.value = true;
-  isInitialLoad.value = true;
-  shouldIgnoreScroll = true;
+watch(
+  () => route.path,
+  () => {
+    // 标记路由正在切换和初始加载，忽略滚动事件
+    isRouteChanging.value = true;
+    isInitialLoad.value = true;
+    shouldIgnoreScroll = true;
 
-  // 重置状态
-  isScrollingDown.value = true;
-  lastScrollY = 0;
-  isScrolled.value = false;
+    // 重置状态
+    isScrollingDown.value = true;
+    lastScrollY = 0;
+    isScrolled.value = false;
 
-  // 延迟恢复状态，确保没有动画
-  setTimeout(() => {
-    isRouteChanging.value = false;
-  }, 50);
+    // 延迟恢复状态，确保没有动画
+    setTimeout(() => {
+      isRouteChanging.value = false;
+    }, 50);
 
-  // 初始加载状态持续更长时间，然后恢复滚动监听
-  setTimeout(() => {
-    isInitialLoad.value = false;
-    shouldIgnoreScroll = false;
-  }, 500);
-});
+    // 初始加载状态持续更长时间，然后恢复滚动监听
+    setTimeout(() => {
+      isInitialLoad.value = false;
+      shouldIgnoreScroll = false;
+    }, 500);
+  },
+);
 
 // 跳转到搜索页面
 function goToSearch() {
@@ -240,80 +242,81 @@ onMounted(() => {
         <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
         <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
         <div class="absolute inset-0 items-center group-hover:opacity-100 opacity-0 transition-all duration-300 justify-center flex bg-blue-600">
-          <RiHomeFill class="size-5 fill-white" />
+          <Icon name="ri:home-fill" class="size-5 text-white" mode="svg" />
         </div>
       </NuxtLink>
 
       <!-- 中间面包屑胶囊 - PC端显示 -->
       <div class="absolute left-1/2 top-0.5 -translate-x-1/2 -translate-y-1/2 hidden md:flex font-serif font-[450]">
-        <!-- 首页：固定显示标题 -->
-        <div
-          v-if="route.path === '/'"
-          class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max"
-          :class="isScrolled ? 'shadow-xs' : ''">
-          <div class="flex items-center gap-1 font-medium text-sm">
-            <span>{{ currentPageTitle }}</span>
-          </div>
-        </div>
-
-        <!-- 其他页面：滚动切换 -->
-        <template v-else>
-          <!-- 路由切换时或初始加载时：直接显示标题，无动画 -->
+        <ClientOnly>
+          <!-- 首页：固定显示标题 -->
           <div
-            v-if="isRouteChanging || isInitialLoad"
-            class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max">
+            v-if="route.path === '/'"
+            class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max"
+            :class="isScrolled ? 'shadow-xs' : ''">
             <div class="flex items-center gap-1 font-medium text-sm">
               <span>{{ currentPageTitle }}</span>
             </div>
           </div>
 
-          <!-- 正常滚动时：有过渡动画 -->
-          <Transition v-else :name="isScrollingDown ? 'breadcrumb-slide-up' : 'breadcrumb-slide-down'">
-            <!-- 向下滚动时：显示当前页标题 -->
+          <!-- 其他页面：滚动切换 -->
+          <template v-else>
+            <!-- 路由切换时或初始加载时：直接显示标题，无动画 -->
             <div
-              v-if="isScrollingDown"
-              key="title"
-              class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max"
-              :class="isScrolled ? 'shadow-xs' : ''">
+              v-if="isRouteChanging || isInitialLoad"
+              class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max">
               <div class="flex items-center gap-1 font-medium text-sm">
                 <span>{{ currentPageTitle }}</span>
               </div>
             </div>
 
-            <!-- 向上滚动时：显示完整面包屑 -->
-            <div
-              v-else
-              key="breadcrumbs"
-              class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]  w-max"
-              :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
-              <div class="flex items-center gap-2 text-sm">
-                <template v-for="(item, index) in breadcrumbs" :key="index">
-                  <template v-if="index > 0">
-                    <span class="text-muted-foreground">/</span>
-                  </template>
-                  <NuxtLink
-                    v-if="item.href && !item.isCurrent"
-                    :to="item.href"
-                    class="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors no-underline">
-                    <Icon v-if="item.icon" :name="item.icon" class="size-4" />
-                    <span v-if="item.name" class="hidden sm:inline">{{ item.name }}</span>
-                  </NuxtLink>
-                  <span v-else class="flex items-center gap-1 font-medium">
-                    <Icon v-if="item.icon" :name="item.icon" class="size-4" />
-                    <span>{{ item.name }}</span>
-                  </span>
-                </template>
+            <!-- 正常滚动时：有过渡动画 -->
+            <Transition v-else :name="isScrollingDown ? 'breadcrumb-slide-up' : 'breadcrumb-slide-down'">
+              <!-- 向下滚动时：显示当前页标题 -->
+              <div
+                v-if="isScrollingDown"
+                key="title"
+                class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max"
+                :class="isScrolled ? 'shadow-xs' : ''">
+                <div class="flex items-center gap-1 font-medium text-sm">
+                  <span>{{ currentPageTitle }}</span>
+                </div>
               </div>
-            </div>
-          </Transition>
-        </template>
+
+              <!-- 向上滚动时：显示完整面包屑 -->
+              <div
+                v-else
+                key="breadcrumbs"
+                class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] w-max"
+                :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
+                <div class="flex items-center gap-2 text-sm">
+                  <template v-for="(item, index) in breadcrumbs" :key="index">
+                    <template v-if="index > 0">
+                      <span class="text-muted-foreground">/</span>
+                    </template>
+                    <NuxtLink
+                      v-if="item.href && !item.isCurrent"
+                      :to="item.href"
+                      class="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors no-underline">
+                      <Icon v-if="item.icon" :name="item.icon" class="size-4" />
+                      <span v-if="item.name" class="hidden sm:inline">{{ item.name }}</span>
+                    </NuxtLink>
+                    <span v-else class="flex items-center gap-1 font-medium">
+                      <Icon v-if="item.icon" :name="item.icon" class="size-4" />
+                      <span>{{ item.name }}</span>
+                    </span>
+                  </template>
+                </div>
+              </div>
+            </Transition>
+          </template>
+        </ClientOnly>
       </div>
 
       <!-- 右侧胶囊菜单 -->
       <div
         class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] ml-auto"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
-
         <!-- 移动端Logo -->
         <NuxtLink
           to="/"
@@ -381,9 +384,7 @@ onMounted(() => {
     <SheetContent side="right" class="w-80 font-serif font-[450]">
       <SheetHeader>
         <SheetTitle>菜单</SheetTitle>
-        <SheetDescription class="sr-only">
-          网站导航菜单，包含搜索、分类和其他页面链接
-        </SheetDescription>
+        <SheetDescription class="sr-only"> 网站导航菜单，包含搜索、分类和其他页面链接 </SheetDescription>
       </SheetHeader>
 
       <div class="flex flex-col gap-2 mt-6">
