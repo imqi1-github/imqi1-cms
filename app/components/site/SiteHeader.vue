@@ -125,6 +125,38 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
       isCurrent: true,
     });
   }
+  // 站点地图页
+  else if (path === "/sitemap") {
+    items.push({
+      name: "站点地图",
+      icon: "ri:map-pin-line",
+      isCurrent: true,
+    });
+  }
+  // 更新日志页
+  else if (path === "/changelog") {
+    items.push({
+      name: "更新日志",
+      icon: "ri:git-commit-line",
+      isCurrent: true,
+    });
+  }
+  // 文章归档页
+  else if (path === "/archiving") {
+    items.push({
+      name: "文章归档",
+      icon: "ri:archive-line",
+      isCurrent: true,
+    });
+  }
+  // 我的订阅页
+  else if (path === "/subscribes") {
+    items.push({
+      name: "我的订阅",
+      icon: "ri-rss-line",
+      isCurrent: true,
+    });
+  }
   // 404或其他
   else {
     items.push({

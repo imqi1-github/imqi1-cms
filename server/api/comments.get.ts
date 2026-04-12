@@ -42,6 +42,10 @@ export default defineEventHandler(async event => {
           const childComment = commentMap.get(comment.coid);
           childComment.parent_name = parent.name;
           parent.children.push(childComment);
+        } else {
+          // Orphan reply (parent doesn't exist in this post's comments)
+          // Treat as a root-level comment
+          rootComments.push(commentMap.get(comment.coid));
         }
       } else {
         rootComments.push(commentMap.get(comment.coid));

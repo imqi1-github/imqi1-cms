@@ -1,12 +1,22 @@
 <script setup lang="ts">
 const loading = ref(true);
 const sitemapData = ref<any>(null);
+const recentComments = ref<any[]>([]);
+const siteName = ref("ImQi1");
 
 async function fetchSitemap() {
   loading.value = true;
   try {
-    const data = (await $fetch("/api/sitemap")) as any;
-    sitemapData.value = data.data;
+    const [sitemapRes, commentsRes, siteRes] = await Promise.all([
+      $fetch("/api/sitemap") as Promise<any>,
+      $fetch("/api/recent-comments?limit=10") as Promise<any>,
+      $fetch("/api/site") as Promise<any>,
+    ]);
+    sitemapData.value = sitemapRes.data;
+    recentComments.value = commentsRes.data || [];
+    if (siteRes?.data?.siteName) {
+      siteName.value = siteRes.data.siteName;
+    }
   } catch (error) {
     console.error("获取站点地图失败:", error);
   } finally {
@@ -22,18 +32,33 @@ function formatDate(date: string | Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function formatDateTime(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}天前`;
+  if (hours > 0) return `${hours}小时前`;
+  if (minutes > 0) return `${minutes}分钟前`;
+  return "刚刚";
+}
+
 onMounted(() => {
   fetchSitemap();
 });
 
 useHead({
-  title: "站点地图",
+  title: computed(() => `站点地图 - ${siteName.value}`)
 });
 </script>
 
 <template>
   <div class="min-h-screen bg-white dark:bg-[#0a0a0a]">
-    <div class="mx-auto max-w-4xl px-6 py-16">
+    <div class="mx-auto max-w-4xl px-6 py-16 animate-fade-in">
       <!-- 标题 -->
       <header class="mb-12 text-center">
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">站点地图</h1>
@@ -62,38 +87,68 @@ useHead({
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/changelog" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/changelog"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 更新日志
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/subscribes" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/subscribes"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 我的订阅
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/feed" target="_blank" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/feed"
+                target="_blank"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 本站RSS
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/links" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/links"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 友情链接
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/message" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/message"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 留言
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/sitemap" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/sitemap"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 站点地图
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/archiving" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+              <NuxtLink
+                to="/archiving"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 文章归档
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink
+                to="/sitemap.xml"
+                target="_blank"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+                站点地图XML
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink
+                to="/search"
+                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
+                搜索
               </NuxtLink>
             </li>
           </ul>
@@ -112,7 +167,6 @@ useHead({
                   class="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                   {{ category.name }}
                 </NuxtLink>
-                <span class="text-sm text-slate-500 dark:text-gray-400 ml-2">({{ category.posts.length }} 篇文章)</span>
               </div>
 
               <!-- 文章列表 -->
@@ -133,6 +187,35 @@ useHead({
           </div>
         </section>
 
+        <!-- 最近评论 -->
+        <section v-if="recentComments && recentComments.length > 0" class="mb-12">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">最近评论</h2>
+          <div class="space-y-4">
+            <NuxtLink
+              v-for="comment in recentComments"
+              :key="comment.coid"
+              :to="comment.post ? `${comment.post.url}#comment-${comment.coid}` : '#'"
+              class="block pl-4 border-l-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
+              :class="{ 'pointer-events-none opacity-50': !comment.post }">
+              <div class="mb-2">
+                <span class="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {{ comment.author }}
+                </span>
+                <span class="text-sm text-slate-500 dark:text-gray-400 ml-2">• {{ formatDateTime(comment.created) }}</span>
+              </div>
+
+              <div class="ml-4 space-y-2">
+                <p class="text-slate-700 dark:text-gray-300 text-sm mb-1">{{ comment.text }}</p>
+                <div v-if="comment.post" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <Icon name="ri-article-line" class="size-4" />
+                  <span>{{ comment.post.title }}</span>
+                  <Icon name="ri-external-link-line" class="size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </section>
+
         <!-- 空状态 -->
         <div v-if="!sitemapData.categories || sitemapData.categories.length === 0" class="text-center py-12">
           <p class="text-slate-500 dark:text-gray-400">暂无分类</p>
@@ -146,3 +229,19 @@ useHead({
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 渐入动画 */
+.animate-fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

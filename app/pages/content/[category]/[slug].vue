@@ -110,6 +110,36 @@ const scrollToHeading = (id: string) => {
   }
 };
 
+// 滚动到指定评论
+const scrollToComment = (hash: string) => {
+  // 只在客户端执行
+  if (!import.meta.client) return;
+
+  // 从 hash 中提取评论 ID（格式：#comment-123）
+  const commentId = hash.replace(/^#comment-/, "");
+  if (!commentId) return;
+
+  const elementId = `comment-${commentId}`;
+  const element = document.getElementById(elementId);
+
+  if (element) {
+    const headerOffset = 100;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth",
+    });
+
+    // 高亮评论
+    element.classList.add("ring-2", "ring-blue-500", "ring-offset-2", "dark:ring-offset-slate-900");
+    setTimeout(() => {
+      element.classList.remove("ring-2", "ring-blue-500", "ring-offset-2", "dark:ring-offset-slate-900");
+    }, 3000);
+  }
+};
+
 // 监听滚动，更新当前激活的目录项
 const handleTocScroll = () => {
   // 只在客户端执行
@@ -202,6 +232,33 @@ watch(isNotFound, () => {
     });
   }
 });
+
+// 监听路由 hash 变化，滚动到评论
+watch(
+  () => route.hash,
+  newHash => {
+    if (newHash && newHash.startsWith("#comment-")) {
+      // 等待 DOM 更新和评论渲染
+      nextTick(() => {
+        // 多次尝试以确保评论已渲染
+        let attempts = 0;
+        const maxAttempts = 10;
+        const checkAndScroll = () => {
+          const commentId = newHash.replace(/^#comment-/, "");
+          const element = document.getElementById(`comment-${commentId}`);
+          if (element || attempts >= maxAttempts) {
+            scrollToComment(newHash);
+          } else {
+            attempts++;
+            setTimeout(checkAndScroll, 100);
+          }
+        };
+        checkAndScroll();
+      });
+    }
+  },
+  { immediate: true },
+);
 
 // 初始化 Fancybox 和其他功能
 onMounted(() => {
@@ -1281,7 +1338,7 @@ onUnmounted(() => {
 
       <!-- 评论区 -->
       <section v-if="commentEnabled" class="mt-10 w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
-        <CommentList :post-id="post.cid" />
+        <CommentList :post-id="post.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
     </article>
   </div>
@@ -1722,5 +1779,13 @@ onUnmounted(() => {
   .text-\[3em\] {
     font-size: 2em;
   }
+}
+
+/* 评论高亮效果 */
+:deep(li[id^="comment-"]) {
+  transition: all 0.3s ease-in-out;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  margin: -0.5rem;
 }
 </style>

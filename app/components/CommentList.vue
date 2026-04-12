@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue";
 
 const props = defineProps<{
   postId: number;
+  loadAllComments?: boolean;
 }>();
 
 const comments = ref<any[]>([]);
@@ -117,7 +118,20 @@ const fetchSettings = async () => {
 
 onMounted(async () => {
   await fetchSettings();
-  fetchComments();
+  // 如果需要加载所有评论，使用大 pageSize
+  if (props.loadAllComments) {
+    const actualPageSize = 10000;
+    const response = await fetch(`/api/comments?cid=${props.postId}&page=1&pageSize=${actualPageSize}`);
+    const data = await response.json();
+    if (data.code === 200) {
+      comments.value = data.data;
+      totalComments.value = data.pagination.total;
+      hasMore.value = data.pagination.hasMore;
+    }
+    loading.value = false;
+  } else {
+    fetchComments();
+  }
 });
 
 function handleCommentSubmitted() {

@@ -228,7 +228,7 @@ function handleCommentSubmitted() {
 </script>
 
 <template>
-  <li>
+  <li :id="`comment-${comment.coid}`">
     <div class="flex gap-3">
       <!-- 头像区域 -->
       <div class="relative w-10 h-10 flex-shrink-0">

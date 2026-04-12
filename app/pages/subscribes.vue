@@ -1,4 +1,10 @@
 <script setup lang="ts">
+const siteName = ref("ImQi1");
+
+useHead({
+  title: computed(() => `我的订阅 - ${siteName.value}`)
+});
+
 const posts = ref<any[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
