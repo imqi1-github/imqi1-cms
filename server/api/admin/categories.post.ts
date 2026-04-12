@@ -14,11 +14,11 @@ export default defineEventHandler(async event => {
 
   const body = await readBody(event);
   try {
-    const category = await prisma.category.create({
+    const category = await prisma.metas.create({
       data: {
         name: body.name,
+        slug: body.slug || null,
         desc: body.desc || null,
-        class: body.class || null,
         type: "category",
       },
     });

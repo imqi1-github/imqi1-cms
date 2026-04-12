@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
     const results = posts.map(post => {
       // 获取第一个分类
       const category = post.postrelation && post.postrelation.length > 0
-        ? post.postrelation[0].category
+        ? post.postrelation[0].metas
         : null;
 
       // 从内容中提取摘要（去掉 HTML 标签）

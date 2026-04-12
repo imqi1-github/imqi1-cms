@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const metas = await prisma.meta.findMany();
+    const metas = await prisma.informations.findMany();
 
     // 默认值
     const defaults: Record<string, any> = {

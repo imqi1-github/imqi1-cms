@@ -41,7 +41,7 @@ export default defineEventHandler(async event => {
 
       // 获取第一个分类的 slug
       const categorySlug = post.postrelation && post.postrelation.length > 0
-        ? post.postrelation[0].category?.slug
+        ? post.postrelation[0].metas?.slug
         : null;
 
       acc[key].posts.push({

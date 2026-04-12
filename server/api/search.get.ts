@@ -51,7 +51,7 @@ export default defineEventHandler(async event => {
 
     // 格式化结果
     const results = posts.map(post => {
-      const category = post.postrelation?.[0]?.category;
+      const category = post.postrelation?.[0]?.metas;
       return {
         cid: post.cid,
         title: post.title,

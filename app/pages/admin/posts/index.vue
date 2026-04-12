@@ -348,8 +348,8 @@ onMounted(() => {
             <TableCell class="text-muted-foreground font-mono text-sm">{{ post.slug || "-" }}</TableCell>
             <TableCell>
               <div v-if="post.postrelation && post.postrelation.length > 0" class="flex flex-wrap gap-1">
-                <Badge v-for="rel in post.postrelation" :key="rel.category.mid" variant="outline" class="text-xs">
-                  {{ rel.category.name }}
+                <Badge v-for="rel in post.postrelation" :key="rel.metas.mid" variant="outline" class="text-xs">
+                  {{ rel.metas.name }}
                 </Badge>
               </div>
               <span v-else class="text-muted-foreground text-sm">-</span>

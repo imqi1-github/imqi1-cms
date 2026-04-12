@@ -273,7 +273,7 @@ async function migrate() {
     for (const option of oldOptions) {
       const newKey = optionMapping[option.name] || option.name;
 
-      await prisma.meta.upsert({
+      await prisma.informations.upsert({
         where: { key: newKey },
         update: { value: option.value },
         create: {

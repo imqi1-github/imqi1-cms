@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
     });
 
     // 获取所有分类
-    const categories = await prisma.category.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category",
       },

@@ -25,13 +25,13 @@ export default defineEventHandler(async event => {
     const relations = await prisma.postrelation.findMany({
       where: { cid: Number(id) },
       include: {
-        category: true,
+        metas: true,
       },
     });
 
     return {
       success: true,
-      data: relations.map(r => r.category),
+      data: relations.map(r => r.metas),
     };
   } catch (error) {
     console.error("获取文章分类失败:", error);

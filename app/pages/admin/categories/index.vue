@@ -6,7 +6,7 @@ const loading = ref(true);
 const categories = ref<any[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
-const newCategory = ref({ name: "", desc: "", class: "" });
+const newCategory = ref({ name: "", slug: "", desc: "" });
 const editingCategory = ref<any>(null);
 
 async function fetchCategories() {
@@ -27,7 +27,7 @@ async function addCategory() {
       method: "POST",
       body: newCategory.value,
     });
-    newCategory.value = { name: "", desc: "", class: "" };
+    newCategory.value = { name: "", slug: "", desc: "" };
     showAddModal.value = false;
     toast.success({ message: "分类创建成功" });
     await fetchCategories();
@@ -52,8 +52,8 @@ async function updateCategory() {
       method: "PUT",
       body: {
         name: editingCategory.value.name,
+        slug: editingCategory.value.slug,
         desc: editingCategory.value.desc,
-        class: editingCategory.value.class,
       },
     });
     showEditModal.value = false;
@@ -159,8 +159,8 @@ onMounted(() => {
         <TableHeader>
           <TableRow>
             <TableHead>名称</TableHead>
+            <TableHead>Slug</TableHead>
             <TableHead>描述</TableHead>
-            <TableHead>类型</TableHead>
             <TableHead>文章数</TableHead>
             <TableHead class="text-right">操作</TableHead>
           </TableRow>
@@ -168,10 +168,8 @@ onMounted(() => {
         <TableBody>
           <TableRow v-for="category in categories" :key="category.mid">
             <TableCell class="font-medium">{{ category.name }}</TableCell>
+            <TableCell class="font-mono text-sm text-muted-foreground">{{ category.slug || "-" }}</TableCell>
             <TableCell class="text-muted-foreground">{{ category.desc || "-" }}</TableCell>
-            <TableCell>
-              <Badge variant="outline">{{ category.class || "默认" }}</Badge>
-            </TableCell>
             <TableCell>
               <button
                 class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
@@ -230,11 +228,11 @@ onMounted(() => {
         <div v-for="category in categories" :key="category.mid" class="border rounded-lg p-4 space-y-3">
           <div>
             <h3 class="font-medium text-base">{{ category.name }}</h3>
+            <p class="text-sm text-muted-foreground mt-1 font-mono">{{ category.slug || "-" }}</p>
             <p class="text-sm text-muted-foreground mt-1">{{ category.desc || "暂无描述" }}</p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{{ category.class || "默认" }}</Badge>
+          <div class="flex items-center gap-2">
             <button
               class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
               :class="{ 'text-muted-foreground': category.postCount === 0 }"
@@ -296,12 +294,12 @@ onMounted(() => {
               <Input id="name" v-model="newCategory.name" placeholder="分类名称" required />
             </div>
             <div class="space-y-2">
-              <Label for="desc">描述</Label>
-              <Textarea id="desc" v-model="newCategory.desc" placeholder="分类描述" rows="3" />
+              <Label for="slug">Slug</Label>
+              <Input id="slug" v-model="newCategory.slug" placeholder="英文标识 (如: tech)" />
             </div>
             <div class="space-y-2">
-              <Label for="class">类型</Label>
-              <Input id="class" v-model="newCategory.class" placeholder="分类类型" />
+              <Label for="desc">描述</Label>
+              <Textarea id="desc" v-model="newCategory.desc" placeholder="分类描述" rows="3" />
             </div>
           </div>
           <DialogFooter>
@@ -326,12 +324,12 @@ onMounted(() => {
               <Input id="edit-name" v-model="editingCategory.name" placeholder="分类名称" required />
             </div>
             <div class="space-y-2">
-              <Label for="edit-desc">描述</Label>
-              <Textarea id="edit-desc" v-model="editingCategory.desc" placeholder="分类描述" rows="3" />
+              <Label for="edit-slug">Slug</Label>
+              <Input id="edit-slug" v-model="editingCategory.slug" placeholder="英文标识 (如: tech)" />
             </div>
             <div class="space-y-2">
-              <Label for="edit-class">类型</Label>
-              <Input id="edit-class" v-model="editingCategory.class" placeholder="分类类型" />
+              <Label for="edit-desc">描述</Label>
+              <Textarea id="edit-desc" v-model="editingCategory.desc" placeholder="分类描述" rows="3" />
             </div>
           </div>
           <DialogFooter>

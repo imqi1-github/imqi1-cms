@@ -114,7 +114,7 @@ export default defineEventHandler(async event => {
     const fileName = generateFileName(file.name)
 
     // 获取上传位置配置
-    const uploadLocationMeta = await prisma.meta.findUnique({
+    const uploadLocationMeta = await prisma.informations.findUnique({
       where: { key: 'uploadLocation' },
     })
     const uploadLocation = uploadLocationMeta?.value || 'local'
@@ -124,7 +124,7 @@ export default defineEventHandler(async event => {
     // 根据配置选择上传方式
     if (uploadLocation === 'upyun') {
       // 获取图片处理配置
-      const imageProcessMetas = await prisma.meta.findMany({
+      const imageProcessMetas = await prisma.informations.findMany({
         where: {
           key: {
             in: ['upyunImageProcess', 'upyunThumbnailVersion', 'upyunOutputMode'],

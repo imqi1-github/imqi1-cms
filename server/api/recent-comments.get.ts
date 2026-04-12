@@ -48,10 +48,10 @@ export default defineEventHandler(async event => {
                comment.post.slug &&
                comment.post.postrelation &&
                comment.post.postrelation.length > 0 &&
-               comment.post.postrelation[0].category;
+               comment.post.postrelation[0].metas;
       })
       .map(comment => {
-        const categorySlug = comment.post.postrelation[0].category.slug;
+        const categorySlug = comment.post.postrelation[0].metas.slug;
         const postSlug = comment.post.slug;
         const postUrl = `/content/${categorySlug}/${postSlug}`;
 

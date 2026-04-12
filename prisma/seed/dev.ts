@@ -959,7 +959,7 @@ async function main() {
   await prisma.post.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
-  await prisma.meta.deleteMany();
+  await prisma.informations.deleteMany();
   await prisma.subscribe.deleteMany();
   await prisma.changelog.deleteMany();
   await prisma.link.deleteMany();
@@ -1101,7 +1101,7 @@ async function main() {
   // 创建元数据
   console.log("⚙️  创建元数据...");
   for (const item of metaItems) {
-    await prisma.meta.upsert({
+    await prisma.informations.upsert({
       where: { key: item.key },
       update: { value: item.value },
       create: item,

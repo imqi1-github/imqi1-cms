@@ -66,12 +66,12 @@ export default defineEventHandler(async event => {
 
   // 过滤 postrelation，只保留分类（type = "category"）
   const categoryRelations = post.postrelation.filter(
-    relation => relation.category.type === "category"
+    relation => relation.metas.type === "category"
   );
 
   // 过滤出标签关系（type = "tag"）
   const tagRelations = post.postrelation.filter(
-    relation => relation.category.type === "tag"
+    relation => relation.metas.type === "tag"
   );
 
   // 解析封面 - 支持 JSON 数组或换行分隔格式
@@ -100,8 +100,8 @@ export default defineEventHandler(async event => {
 
   // 从 tagRelations 构建标签信息
   const tags = tagRelations.map(relation => ({
-    name: relation.category.name,
-    slug: relation.category.slug,
+    name: relation.metas.name,
+    slug: relation.metas.slug,
   }));
 
   // 在服务端渲染 Markdown 内容

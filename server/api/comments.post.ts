@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
       auditResult = await auditText(content);
       commentStatus = mapAuditResultToStatus(auditResult.conclusionType);
     } else {
-      const meta = await prisma.meta.findUnique({
+      const meta = await prisma.informations.findUnique({
         where: { key: "commentModeration" },
       });
       const needModeration = meta?.value === "true";

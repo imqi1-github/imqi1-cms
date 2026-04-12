@@ -15,7 +15,7 @@ export default defineEventHandler(async event => {
     }
 
     // 查询标签信息（从 category 表）
-    const tag = await prisma.category.findFirst({
+    const tag = await prisma.metas.findFirst({
       where: {
         slug,
         type: "tag",
@@ -73,7 +73,7 @@ export default defineEventHandler(async event => {
             },
             postrelation: {
               include: {
-                category: {
+                metas: {
                   select: {
                     slug: true,
                     name: true,
@@ -117,10 +117,10 @@ export default defineEventHandler(async event => {
 
       // 获取分类信息（排除当前标签，只返回 type="category" 的）
       const categoryRelation = post.postrelation?.find(
-        r => r.category.type === "category"
+        r => r.metas.type === "category"
       );
-      const categoryName = categoryRelation?.category?.name || null;
-      const categorySlug = categoryRelation?.category?.slug || null;
+      const categoryName = categoryRelation?.metas?.name || null;
+      const categorySlug = categoryRelation?.metas?.slug || null;
 
       return {
         cid: post.cid,

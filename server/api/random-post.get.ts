@@ -28,7 +28,7 @@ export default defineEventHandler(async event => {
       include: {
         postrelation: {
           include: {
-            category: {
+            metas: {
               select: {
                 mid: true,
                 name: true,
@@ -49,7 +49,7 @@ export default defineEventHandler(async event => {
       };
     }
 
-    const category = post.postrelation[0]?.category;
+    const category = post.postrelation[0]?.metas;
 
     let covers: { url: string; desc?: string }[] = [];
     if (post.covers) {

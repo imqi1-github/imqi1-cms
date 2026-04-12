@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
   try {
-    const metas = await prisma.meta.findMany({
+    const metas = await prisma.informations.findMany({
       where: {
         key: { in: Object.keys(defaults) },
       },

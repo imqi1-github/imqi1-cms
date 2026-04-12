@@ -20,7 +20,7 @@ export default defineEventHandler(async event => {
 
     if (existingPost) {
       // 更新 meta 表中的配置
-      await prisma.meta.upsert({
+      await prisma.informations.upsert({
         where: { key: "messagePostId" },
         create: { key: "messagePostId", value: existingPost.cid.toString() },
         update: { value: existingPost.cid.toString() },
@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
     });
 
     // 在 meta 表中记录留言板文章 ID
-    await prisma.meta.upsert({
+    await prisma.informations.upsert({
       where: { key: "messagePostId" },
       create: { key: "messagePostId", value: messagePost.cid.toString() },
       update: { value: messagePost.cid.toString() },

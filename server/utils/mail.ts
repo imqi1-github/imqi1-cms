@@ -35,7 +35,7 @@ function writeLog(level: string, message: string, data?: any) {
 
 // 获取邮件配置
 async function getMailConfig() {
-  const settings = await prisma.meta.findMany({
+  const settings = await prisma.informations.findMany({
     where: {
       key: {
         in: [
@@ -293,7 +293,7 @@ export function getRecentLogs(limit = 50): Array<{
 
 // 获取站点信息
 async function getSiteInfo() {
-  const settings = await prisma.meta.findMany({
+  const settings = await prisma.informations.findMany({
     where: {
       key: {
         in: ['siteName', 'siteUrl'],

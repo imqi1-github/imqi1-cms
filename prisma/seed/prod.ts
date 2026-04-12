@@ -114,7 +114,7 @@ async function main() {
   console.log("⚙️  配置网站元数据...");
   for (const [key, value] of Object.entries(SITE_META)) {
     if (value) {
-      await prisma.meta.upsert({
+      await prisma.informations.upsert({
         where: { key },
         update: { value },
         create: { key, value },
@@ -207,7 +207,7 @@ async function main() {
 
   // 创建标签
   console.log("🏷️  创建标签...");
-  const tag = await prisma.meta.create({
+  const tag = await prisma.informations.create({
     data: {
       key: "tags",
       value: JSON.stringify([

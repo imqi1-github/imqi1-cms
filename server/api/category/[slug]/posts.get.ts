@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
   const skip = (page - 1) * pageSize;
 
   // 获取分类信息
-  const category = await prisma.category.findUnique({
+  const category = await prisma.metas.findUnique({
     where: { slug: categorySlug },
     select: {
       mid: true,
@@ -121,8 +121,8 @@ export default defineEventHandler(async event => {
 
     // 从 postrelation 中获取标签（只取 type="tag" 的）
     const tagNames = post.postrelation
-      ?.filter(r => r.category.type === "tag")
-      .map(r => r.category.name) || [];
+      ?.filter(r => r.metas.type === "tag")
+      .map(r => r.metas.name) || [];
 
     return {
       cid: post.cid,

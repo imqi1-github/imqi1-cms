@@ -243,7 +243,7 @@ export async function getSessionStore(): Promise<SessionStore> {
 // 获取 Session 配置
 export async function getSessionConfig(): Promise<{ storeType: SessionStoreType }> {
   try {
-    const meta = await prisma.meta.findUnique({
+    const meta = await prisma.informations.findUnique({
       where: { key: "sessionStoreType" },
     });
     const storeType = (meta?.value as SessionStoreType) || "file";

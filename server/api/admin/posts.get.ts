@@ -63,7 +63,7 @@ export default defineEventHandler(async event => {
           },
           postrelation: {
             include: {
-              category: {
+              metas: {
                 select: {
                   mid: true,
                   name: true,

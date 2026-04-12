@@ -23,12 +23,12 @@ export default defineEventHandler(async event => {
   const body = await readBody(event);
 
   try {
-    const category = await prisma.category.update({
+    const category = await prisma.metas.update({
       where: { mid: Number(id) },
       data: {
         name: body.name,
+        slug: body.slug || null,
         desc: body.desc || null,
-        class: body.class || null,
       },
     });
     return category;
