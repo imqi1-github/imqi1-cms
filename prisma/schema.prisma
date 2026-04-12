@@ -24,7 +24,6 @@ model category {
   name         String         @unique(map: "Category_name_key")
   slug         String?        @unique(map: "Category_slug_key")
   desc         String?
-  class        String?
   type         String         @default("category")
   postrelation postrelation[]
 

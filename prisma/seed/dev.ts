@@ -882,10 +882,10 @@ const sampleComments = [
 
 // 示例分类（4个大类）
 const categories = [
-  { name: "小记", slug: "note", desc: "记录生活中的点点滴滴", type: "category", class: "note" },
-  { name: "摄影", slug: "shot", desc: "用镜头记录生活中的美好瞬间", type: "category", class: "shot" },
-  { name: "技术", slug: "tech", desc: "分享编程技术和开发经验", type: "category", class: "tech" },
-  { name: "讨论", slug: "discussion", desc: "对时事和观点的讨论与思考", type: "category", class: "discussion" },
+  { name: "小记", slug: "note", desc: "记录生活中的点点滴滴", type: "category" },
+  { name: "摄影", slug: "shot", desc: "用镜头记录生活中的美好瞬间", type: "category" },
+  { name: "技术", slug: "tech", desc: "分享编程技术和开发经验", type: "category" },
+  { name: "讨论", slug: "discussion", desc: "对时事和观点的讨论与思考", type: "category" },
 ];
 
 // 示例标签（10个标签，作为小类）

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import * as bcrypt from "bcrypt";
@@ -131,15 +132,16 @@ async function main() {
       name: "未分类",
       slug: "default",
       desc: "默认分类",
-      class: "default",
     },
   });
   console.log(`   ✅ 创建分类: ${category.name}`);
 
   // 创建示例文章
   console.log("📝 创建示例文章...");
-  const post = await prisma.post.create({
-    data: {
+  const post = await prisma.post.upsert({
+    where: { slug_type: { slug: "welcome", type: 0 } },
+    update: {},
+    create: {
       title: "本站新架构上线",
       slug: "welcome",
       desc: "本站基于 Nuxt 4 构建，欢迎访问",
@@ -176,8 +178,10 @@ async function main() {
   console.log(`   ✅ 创建文章: ${post.title}`);
 
   // 关联文章与分类
-  await prisma.postRelation.create({
-    data: {
+  await prisma.postrelation.upsert({
+    where: { cid_mid: { cid: post.cid, mid: category.mid } },
+    update: {},
+    create: {
       cid: post.cid,
       mid: category.mid,
     },
@@ -185,8 +189,11 @@ async function main() {
 
   // 创建测试评论
   console.log("💬 创建测试评论...");
-  const comment = await prisma.comment.create({
-    data: {
+  const comment = await prisma.comment.upsert({
+    where: { coid: -1 },
+    update: {},
+    create: {
+      coid: -1,
       cid: post.cid,
       name: "测试用户",
       mail: "test@example.com",
@@ -214,8 +221,10 @@ async function main() {
 
   // 创建留言页面
   console.log("📄 创建留言页面...");
-  const messagePage = await prisma.post.create({
-    data: {
+  const messagePage = await prisma.post.upsert({
+    where: { slug_type: { slug: "message", type: 1 } },
+    update: {},
+    create: {
       title: "留言",
       slug: "message",
       desc: "欢迎在这里留言",

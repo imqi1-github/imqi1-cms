@@ -35,3 +35,4 @@ pids
 .old-theme
 public/uploads/*
 .sessions
+old_theme.sql
