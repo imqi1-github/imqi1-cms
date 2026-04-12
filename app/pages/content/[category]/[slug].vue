@@ -1278,7 +1278,7 @@ onUnmounted(() => {
         </div>
 
         <!-- 元信息 -->
-        <div class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5">
+        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5">
           <span class="inline-flex items-center gap-1">
             <Icon name="ri:user-line" class="size-4" />
             <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
@@ -1300,10 +1300,17 @@ onUnmounted(() => {
             </NuxtLink>
           </span>
           <span v-if="tags.length > 0" class="inline-flex items-center gap-1">
-            <Icon name="ri:price-tag-3-line" class="size-4" />
-            <span v-for="(tag, index) in tags" :key="index" class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[0.9em]">
-              {{ tag }}
-            </span>
+            <Icon name="ri:hashtag" class="size-4" />
+            <NuxtLink
+              v-for="(tag, index) in tags"
+              :key="index"
+              :to="tag.slug ? `/tag/${tag.slug}` : '#'"
+              :class="[
+                'hover:text-blue-600 dark:hover:text-blue-500 transition-colors',
+                tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50'
+              ]">
+              {{ typeof tag === 'string' ? tag : tag.name }}
+            </NuxtLink>
           </span>
         </div>
       </header>

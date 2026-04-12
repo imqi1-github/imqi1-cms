@@ -257,34 +257,54 @@
         <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
 
         <!-- 文章列表 -->
-        <div v-if="recentPosts.length > 0" class="index-recent-posts-list gap-4 flex flex-wrap">
+        <div v-if="recentPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <NuxtLink
             v-for="post in recentPosts"
             :key="post.cid"
             :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
-            class="index-recent-post-item block p-4 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 no-underline flex-[1_0_400px]">
-            <div class="flex gap-4">
-              <!-- 封面图片 -->
-              <div v-if="post.covers && post.covers.length > 0" class="flex-shrink-0 w-32 h-24 rounded-lg overflow-hidden">
-                <img :src="post.covers[0].url || post.covers[0]" :alt="post.title" class="w-full h-full object-cover" loading="lazy" />
+            class="group block no-underline">
+            <div
+              class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
+              <!-- 封面 -->
+              <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden grow">
+                <img
+                  :src="post.covers[0].url || post.covers[0]"
+                  :alt="post.title"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy" />
+              </div>
+              <!-- 无封面占位 -->
+              <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
+                <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
               </div>
               <!-- 文章信息 -->
-              <div class="flex-1 min-w-0 flex flex-col justify-between min-h-24">
-                <div>
-                  <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-1 mb-1">{{ post.title }}</h3>
-                  <p v-if="post.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-2">{{ post.desc }}</p>
-                </div>
-                <div class="flex gap-1 text-xs text-slate-400 dark:text-gray-500 mt-2 flex-col">
-                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1 flex-wrap">
+              <div class="p-3">
+                <h3
+                  class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {{ post.title }}
+                </h3>
+                <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500 flex-wrap">
+                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1">
                     <Icon name="ri:menu-line" class="size-3.5" mode="svg" />
-                    <span v-for="(cat, idx) in post.categories" :key="cat.slug" class="text-gray-500 dark:text-gray-400">
+                    <span v-for="(cat, idx) in post.categories" :key="cat.slug">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
-                  <div class="flex items-center gap-1">
-                    <Icon name="ri:time-line" class="size-3.5" mode="svg" />
-                    <span>{{ formatDate(post.created) }}</span>
+                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-1">
+                    <Icon name="ri:hashtag" class="size-3.5" mode="svg" />
+                    <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
+                      {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
+                    </span>
+                    <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                   </div>
+                  <span class="flex items-center gap-1">
+                    <Icon name="ri:time-line" class="size-3.5" mode="svg" />
+                    {{ formatDate(post.created) }}
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <Icon name="ri:chat-2-line" class="size-3.5" mode="svg" />
+                    {{ post.commentsNum > 0 ? post.commentsNum : '暂无评论' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -327,7 +347,7 @@
             <NuxtLink
               v-for="post in categoryData.posts"
               :key="post.cid"
-              :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
+              :to="`/content/${categoryData.category.slug}/${post.slug || post.cid}`"
               class="group block no-underline flex-[1_0_200px]">
               <div
                 class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
@@ -349,8 +369,18 @@
                     class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {{ post.title }}
                   </h3>
-                  <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
-                    <span>{{ formatDate(post.created) }}</span>
+                  <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500 flex-wrap">
+                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-1">
+                      <Icon name="ri:hashtag" class="size-3.5" mode="svg" />
+                      <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
+                        {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
+                      </span>
+                      <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <Icon name="ri:time-line" class="size-3.5" mode="svg" />
+                      <span>{{ formatDate(post.created) }}</span>
+                    </span>
                   </div>
                 </div>
               </div>

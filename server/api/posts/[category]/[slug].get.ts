@@ -49,6 +49,7 @@ export default defineEventHandler(async event => {
               mid: true,
               name: true,
               slug: true,
+              type: true,
             },
           },
         },
@@ -62,6 +63,16 @@ export default defineEventHandler(async event => {
       message: "文章不存在",
     });
   }
+
+  // 过滤 postrelation，只保留分类（type = "category"）
+  const categoryRelations = post.postrelation.filter(
+    relation => relation.category.type === "category"
+  );
+
+  // 过滤出标签关系（type = "tag"）
+  const tagRelations = post.postrelation.filter(
+    relation => relation.category.type === "tag"
+  );
 
   // 解析封面 - 支持 JSON 数组或换行分隔格式
   let covers = [];
@@ -87,10 +98,11 @@ export default defineEventHandler(async event => {
     }
   }
 
-  // 解析标签
-  const tags = post.tags
-    ? post.tags.split(',').map(t => t.trim()).filter(Boolean)
-    : [];
+  // 从 tagRelations 构建标签信息
+  const tags = tagRelations.map(relation => ({
+    name: relation.category.name,
+    slug: relation.category.slug,
+  }));
 
   // 在服务端渲染 Markdown 内容
   const renderedContent = post.content ? await renderMarkdown(post.content) : "";
@@ -99,6 +111,7 @@ export default defineEventHandler(async event => {
     success: true,
     data: {
       ...post,
+      postrelation: categoryRelations, // 只返回分类关系
       covers,
       tags,
       parsedCovers: covers,

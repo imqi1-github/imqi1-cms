@@ -85,6 +85,7 @@ export default defineEventHandler(async event => {
                     mid: true,
                     name: true,
                     slug: true,
+                    type: true,
                   },
                 },
               },
@@ -93,10 +94,13 @@ export default defineEventHandler(async event => {
         });
 
         const mappedPosts = posts.map(post => {
-          const categories = post.postrelation.map(r => ({
-            name: r.category.name,
-            slug: r.category.slug,
-          }));
+          // 只获取标签（不获取分类，因为已经在分类页面了）
+          const tags = post.postrelation
+            .filter(r => r.category.type === "tag")
+            .map(r => ({
+              name: r.category.name,
+              slug: r.category.slug,
+            }));
 
           let covers: { url: string; desc?: string }[] = [];
           if (post.covers) {
@@ -114,7 +118,7 @@ export default defineEventHandler(async event => {
             desc: post.desc,
             covers,
             created: post.create_time,
-            categories,
+            tags,
           };
         });
 

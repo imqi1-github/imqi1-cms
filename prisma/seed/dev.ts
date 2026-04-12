@@ -880,12 +880,26 @@ const sampleComments = [
   "请问这个问题有其他解决方案吗？",
 ];
 
-// 示例分类（4个，其中一个是图片分类）
+// 示例分类（4个大类）
 const categories = [
-  { name: "前端开发", slug: "frontend", desc: "关于 HTML、CSS、JavaScript 等前端技术的文章", class: "frontend" },
-  { name: "后端开发", slug: "backend", desc: "服务器端开发相关的技术文章", class: "backend" },
-  { name: "生活随笔", slug: "life", desc: "记录生活中的点滴和感悟", class: "life" },
-  { name: "摄影", slug: "shot", desc: "用镜头记录生活中的美好瞬间", class: "shot" },
+  { name: "小记", slug: "note", desc: "记录生活中的点点滴滴", type: "category", class: "note" },
+  { name: "摄影", slug: "shot", desc: "用镜头记录生活中的美好瞬间", type: "category", class: "shot" },
+  { name: "技术", slug: "tech", desc: "分享编程技术和开发经验", type: "category", class: "tech" },
+  { name: "讨论", slug: "discussion", desc: "对时事和观点的讨论与思考", type: "category", class: "discussion" },
+];
+
+// 示例标签（10个标签，作为小类）
+const tags = [
+  { name: "Vue", slug: "vue", desc: "Vue.js 框架相关", type: "tag" },
+  { name: "React", slug: "react", desc: "React 框架相关", type: "tag" },
+  { name: "TypeScript", slug: "typescript", desc: "TypeScript 语言相关", type: "tag" },
+  { name: "CSS", slug: "css", desc: "CSS 样式相关", type: "tag" },
+  { name: "JavaScript", slug: "javascript", desc: "JavaScript 语言相关", type: "tag" },
+  { name: "Node.js", slug: "nodejs", desc: "Node.js 后端开发", type: "tag" },
+  { name: "数据库", slug: "database", desc: "数据库相关技术", type: "tag" },
+  { name: "工具", slug: "tools", desc: "开发工具推荐", type: "tag" },
+  { name: "性能优化", slug: "performance", desc: "性能优化技巧", type: "tag" },
+  { name: "学习笔记", slug: "learning", desc: "学习过程中的笔记", type: "tag" },
 ];
 
 // 示例元数据
@@ -964,17 +978,18 @@ async function main() {
   });
   console.log(`   ✅ 用户: ${admin.name} / 123456`);
 
-  // 创建分类
-  console.log("📁 创建分类...");
-  const createdCategories = await prisma.category.createMany({
-    data: categories,
+  // 创建分类和标签
+  console.log("📁 创建分类和标签...");
+  await prisma.category.createMany({
+    data: [...categories, ...tags],
     skipDuplicates: true,
   });
-  console.log(`   ✅ 创建了 ${categories.length} 个分类`);
+  console.log(`   ✅ 创建了 ${categories.length} 个分类和 ${tags.length} 个标签`);
 
-  // 获取分类ID
+  // 获取分类和标签ID
   const categoryRecords = await prisma.category.findMany();
-  const categoryIds = categoryRecords.map(c => c.mid);
+  const categoryIds = categoryRecords.filter(c => c.type === "category").map(c => c.mid);
+  const tagIds = categoryRecords.filter(c => c.type === "tag").map(c => c.mid);
 
   // 创建文章
   console.log("📝 创建文章...");
@@ -987,10 +1002,15 @@ async function main() {
     const postData = samplePosts[i];
 
     // 检查这篇文章是否会被分配到图片分类
-    const numCategories = Math.floor(Math.random() * 3) + 1;
+    const numCategories = Math.floor(Math.random() * 2) + 1; // 1-2个分类
     const shuffledCategories = [...categoryIds].sort(() => Math.random() - 0.5);
     const assignedCategories = shuffledCategories.slice(0, numCategories);
     const isShotPost = assignedCategories.includes(shotCategoryMid!);
+
+    // 随机分配2-4个标签
+    const numTags = Math.floor(Math.random() * 3) + 2; // 2-4个标签
+    const shuffledTags = [...tagIds].sort(() => Math.random() - 0.5);
+    const assignedTags = shuffledTags.slice(0, numTags);
 
     // 为图片分类的文章生成封面
     let covers = null;
@@ -1003,6 +1023,15 @@ async function main() {
       ]);
     }
 
+    // 生成随机的创建时间和更新时间（不一致）
+    const now = new Date();
+    const daysAgo = Math.floor(Math.random() * 365); // 0-365天前
+    const createTime = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+    // 更新时间在创建时间之后的某个随机时间点
+    const updateDaysAfter = Math.floor(Math.random() * 30); // 0-30天后
+    const updateTime = new Date(createTime.getTime() + updateDaysAfter * 24 * 60 * 60 * 1000);
+
     const post = await prisma.post.create({
       data: {
         title: postData.title,
@@ -1014,7 +1043,8 @@ async function main() {
         show_toc: true,
         uid: admin.uid, // 设置文章作者
         covers,
-        update_time: new Date(),
+        create_time: createTime,
+        update_time: updateTime,
       },
     });
     posts.push(post);
@@ -1025,6 +1055,16 @@ async function main() {
         data: {
           cid: post.cid,
           mid: assignedCategories[j],
+        },
+      });
+    }
+
+    // 为每篇文章分配标签
+    for (let j = 0; j < numTags; j++) {
+      await prisma.postrelation.create({
+        data: {
+          cid: post.cid,
+          mid: assignedTags[j],
         },
       });
     }
@@ -1112,7 +1152,8 @@ async function main() {
   console.log(`   - 用户: 1 (admin / 123456)`);
   console.log(`   - 文章: ${posts.length}`);
   console.log(`   - 评论: ${createdComments}`);
-  console.log(`   - 分类: ${categories.length} (含1个图片分类)`);
+  console.log(`   - 分类: ${categories.length} 个 (小记、摄影、技术、讨论)`);
+  console.log(`   - 标签: ${tags.length} 个`);
   console.log(`   - 元数据: ${metaItems.length}`);
   console.log(`   - 友情链接: ${links.length}`);
   console.log(`   - 订阅: ${subscribes.length}`);

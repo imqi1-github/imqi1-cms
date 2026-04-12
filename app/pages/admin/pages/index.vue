@@ -137,9 +137,9 @@ function goToPage(page: number) {
 
 function previewPage(cid: number, slug: string | null) {
   if (slug) {
-    window.open(`/page/${slug}`, "_blank");
+    window.open(`/${slug}`, "_blank");
   } else {
-    window.open(`/page/${cid}`, "_blank");
+    toast.error({ message: "页面未配置 slug" });
   }
 }
 
@@ -175,7 +175,7 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
             <Select id="status-filter" v-model="selectedStatus" @update:model-value="filterByStatus">
-              <SelectTrigger class="w-[140px]">
+              <SelectTrigger class="w-35">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>

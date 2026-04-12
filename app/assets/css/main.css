@@ -26,6 +26,10 @@ img {
   @apply dark:brightness-75;
 }
 
+span.iconify {
+  @apply translate-y-[0.5px];
+}
+
 @theme {
   --font-serif: "Noto Serif SC", serif;
   --font-mono: "JetBrains Mono", monospace;

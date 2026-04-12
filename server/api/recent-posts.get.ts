@@ -34,7 +34,14 @@ export default defineEventHandler(async event => {
       orderBy: {
         create_time: "desc",
       },
-      include: {
+      select: {
+        cid: true,
+        title: true,
+        slug: true,
+        desc: true,
+        covers: true,
+        create_time: true,
+        comment_num: true,
         postrelation: {
           include: {
             category: {
@@ -42,6 +49,7 @@ export default defineEventHandler(async event => {
                 mid: true,
                 name: true,
                 slug: true,
+                type: true,
               },
             },
           },
@@ -50,10 +58,20 @@ export default defineEventHandler(async event => {
     });
 
     const data = posts.map(post => {
-      const categories = post.postrelation.map(r => ({
-        name: r.category.name,
-        slug: r.category.slug,
-      }));
+      // 分离分类和标签
+      const categories = post.postrelation
+        .filter(r => r.category.type === "category")
+        .map(r => ({
+          name: r.category.name,
+          slug: r.category.slug,
+        }));
+
+      const tags = post.postrelation
+        .filter(r => r.category.type === "tag")
+        .map(r => ({
+          name: r.category.name,
+          slug: r.category.slug,
+        }));
 
       let covers: { url: string; desc?: string }[] = [];
       if (post.covers) {
@@ -71,7 +89,9 @@ export default defineEventHandler(async event => {
         desc: post.desc,
         covers,
         created: post.create_time,
+        commentsNum: post.comment_num || 0,
         categories,
+        tags,
       };
     });
 

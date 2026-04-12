@@ -68,6 +68,17 @@ export default defineEventHandler(async event => {
               avatar: true,
             },
           },
+          postrelation: {
+            include: {
+              category: {
+                select: {
+                  name: true,
+                  slug: true,
+                  type: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -108,10 +119,10 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // 解析标签
-    const tags = post.tags
-      ? post.tags.split(',').map(t => t.trim()).filter(Boolean)
-      : [];
+    // 从 postrelation 中获取标签（只取 type="tag" 的）
+    const tagNames = post.postrelation
+      ?.filter(r => r.category.type === "tag")
+      .map(r => r.category.name) || [];
 
     return {
       cid: post.cid,
@@ -124,7 +135,7 @@ export default defineEventHandler(async event => {
       commentsNum: post.commentsNum || 0,
       many_covers: post.manyCovers === 'on',
       covers,
-      tags,
+      tags: tagNames, // 保持为字符串数组，前端会处理
       user: post.user,
     };
   });
