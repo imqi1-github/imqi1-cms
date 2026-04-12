@@ -304,10 +304,22 @@ onMounted(() => {
       const code = pre.querySelector("code");
       // 提取语言名称
       let lang = "";
+      let fileName = "";
+
       if (code) {
         const langClass = Array.from(code.classList).find(c => c.startsWith("language-"));
         if (langClass) {
-          lang = langClass.replace("language-", "");
+          const fullLang = langClass.replace("language-", "");
+
+          // 检测是否为 "语言+文件名" 格式 (如 "js+main.js")
+          if (fullLang.includes("+")) {
+            const parts = fullLang.split("+");
+            lang = parts[0];
+            fileName = parts.slice(1).join("+"); // 支持文件名中包含+的情况
+            pre.classList.add("has-file-name");
+          } else {
+            lang = fullLang;
+          }
         }
       }
 
@@ -345,7 +357,9 @@ onMounted(() => {
         md: "Markdown",
         mermaid: "Mermaid",
       };
-      const displayLang = langNames[lang] || lang.toUpperCase();
+
+      // 如果有文件名，使用文件名作为显示文本；否则使用语言名称
+      const displayLang = fileName || langNames[lang] || lang.toUpperCase();
 
       // 检测代码行数，超过14行则折叠
       const lineCount = code?.querySelectorAll(".line").length || 0;
@@ -353,21 +367,30 @@ onMounted(() => {
 
       if (isCollapsed) {
         pre.classList.add("code-collapsed");
+
+        const handler = e => {
+          const target = e.target as HTMLElement;
+          // 不处理复制按钮的点击
+          if (target.closest(".copy-button")) return;
+
+          pre.classList.toggle("code-collapsed");
+
+          pre.removeEventListener("click", handler);
+        }
+
+        // 点击代码块切换折叠状态
+        pre.addEventListener("click", handler);
       }
-
-      // 点击代码块切换折叠状态
-      pre.addEventListener("click", e => {
-        const target = e.target as HTMLElement;
-        // 不处理复制按钮的点击
-        if (target.closest(".copy-button")) return;
-
-        pre.classList.toggle("code-collapsed");
-      });
 
       // 创建语言标签
       const langLabel = document.createElement("span");
       langLabel.className = "lang-label";
       langLabel.textContent = displayLang;
+
+      // 如果有文件名，添加 data-file 属性用于样式匹配
+      if (fileName) {
+        langLabel.setAttribute("data-file", fileName);
+      }
 
       // 创建复制按钮
       const button = document.createElement("button");
@@ -1576,7 +1599,6 @@ onUnmounted(() => {
   font-size: 85%;
   background: rgb(243 244 246);
   border-radius: 3px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .dark .markdown-body :deep(code:not(pre code)) {
@@ -1587,13 +1609,69 @@ onUnmounted(() => {
 .markdown-body :deep(pre.shiki) {
   margin: 1em 0;
   padding: 16px;
-  overflow: auto;
+  overflow: visible;
   font-size: 0.875em;
-  line-height: 0.8;
   border-radius: 8px;
   position: relative;
   border: 1px solid rgb(229 231 235);
   counter-reset: line;
+  /* 防止内容溢出容器 */
+  max-width: 100%;
+}
+
+/* 代码内容单独处理滚动 */
+.markdown-body :deep(pre.shiki > code) {
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-block: 4px;
+  /* 长代码自动换行 */
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  /* 默认隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.markdown-body :deep(pre.shiki > code)::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* 悬浮时显示滚动条 */
+.markdown-body :deep(pre.shiki:hover > code) {
+  scrollbar-width: auto; /* Firefox */
+}
+
+.markdown-body :deep(pre.shiki:hover > code)::-webkit-scrollbar {
+  display: block; /* Chrome, Safari, Opera */
+}
+
+/* 美化滚动条样式 */
+.markdown-body :deep(pre.shiki > code)::-webkit-scrollbar {
+  height: 8px;
+}
+
+.markdown-body :deep(pre.shiki > code)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.markdown-body :deep(pre.shiki > code)::-webkit-scrollbar-thumb {
+  background: rgb(209 213 219);
+  border-radius: 4px;
+}
+
+.markdown-body :deep(pre.shiki > code)::-webkit-scrollbar-thumb:hover {
+  background: rgb(156 163 175);
+}
+
+.dark .markdown-body :deep(pre.shiki > code)::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99);
+}
+
+.dark .markdown-body :deep(pre.shiki > code)::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128);
 }
 
 .dark .markdown-body :deep(pre.shiki) {
@@ -1621,9 +1699,13 @@ onUnmounted(() => {
 
 /* 代码块折叠 - 只显示前14行 */
 .markdown-body :deep(pre.shiki.code-collapsed) {
-  max-height: calc(0.8em * 14 + 32px);
+  max-height: calc(1.8em * 14 + 32px);
   overflow: hidden;
   cursor: pointer;
+}
+
+.markdown-body :deep(pre.shiki.code-collapsed > code) {
+  overflow: hidden;
 }
 
 .markdown-body :deep(pre.shiki.code-collapsed::after) {
@@ -1646,20 +1728,17 @@ onUnmounted(() => {
   color: rgb(156 163 175);
 }
 
-/* 展开状态 */
-.markdown-body :deep(pre.shiki:not(.code-collapsed)) {
-  cursor: pointer;
-}
-
 /* 代码行号 - 通过 CSS 计数器生成 */
-.markdown-body :deep(pre.shiki code) {
+.markdown-body :deep(pre.shiki > code) {
   counter-reset: line;
 }
 
 .markdown-body :deep(pre.shiki code .line) {
   display: block;
   position: relative;
-  padding-left: 0;
+  padding-left: 40px;
+  line-height: 1.6;
+  min-height: 22.4px;
 }
 
 .markdown-body :deep(pre.shiki code .line::before) {
@@ -1671,8 +1750,10 @@ onUnmounted(() => {
   text-align: right;
   color: rgb(156 163 175);
   opacity: 0.5;
-  font-size: 0.85em;
+  /* font-size: 0.85em; */
   user-select: none;
+  position: absolute;
+  left: -1px;
 }
 
 .dark .markdown-body :deep(pre.shiki code .line::before) {
@@ -1682,13 +1763,14 @@ onUnmounted(() => {
 /* 代码复制按钮 */
 .markdown-body :deep(pre.shiki .lang-label) {
   position: absolute;
-  top: 13px;
+  top: 8px;
   right: 36px;
   font-size: 11px;
   font-weight: 500;
   color: rgb(107 114 128);
   opacity: 0.5;
   transition: opacity 0.2s;
+  pointer-events: none;
 }
 
 .markdown-body :deep(pre.shiki:hover .lang-label) {
@@ -1744,6 +1826,147 @@ onUnmounted(() => {
 .dark .markdown-body :deep(pre.shiki .copy-button.copied) {
   color: rgb(74 222 128);
 }
+
+/* 带文件名的代码块样式 - 编辑器风格 */
+.markdown-body :deep(pre.shiki.has-file-name) {
+  padding-top: 44px; /* 为文件标签栏留出空间 */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+/* 文件标签栏容器 */
+.markdown-body :deep(pre.shiki.has-file-name::before) {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: rgb(243 244 246);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom: 1px solid rgb(229 231 235);
+  z-index: 1;
+}
+
+.dark .markdown-body :deep(pre.shiki.has-file-name::before) {
+  background: rgb(31 41 55);
+  border-bottom-color: rgb(55 65 81);
+}
+
+/* 文件名标签样式 */
+.markdown-body :deep(pre.shiki.has-file-name .lang-label) {
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  right: auto;
+  background: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  z-index: 2;
+  opacity: 1;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 添加文件图标 */
+.markdown-body :deep(pre.shiki.has-file-name .lang-label::before) {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+/* 不同文件类型的图标 */
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".js"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".jsx"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".ts"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".tsx"]::before) {
+  background-image: url("/skills/js.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".vue"]::before) {
+  background-image: url("/skills/vue.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".css"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".scss"]::before) {
+  background-image: url("/skills/css.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".html"]::before) {
+  background-image: url("/skills/html.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".json"]::before) {
+  background-image: url("/skills/c.svg"); /* 使用 C 图标作为 JSON 的备用 */
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".md"]::before) {
+  background-image: url("/skills/md.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".py"]::before) {
+  background-image: url("/skills/python.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".php"]::before) {
+  background-image: url("/skills/php.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".java"]::before) {
+  background-image: url("/skills/java.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".c"]::before) {
+  background-image: url("/skills/c.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".cpp"]::before) {
+  background-image: url("/skills/cpp.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".sh"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".bash"]::before) {
+  background-image: url("/skills/bash.svg");
+}
+
+/* 没有匹配图标时的默认样式 */
+.markdown-body :deep(pre.shiki.has-file-name .lang-label::before) {
+  border-radius: 2px;
+  background-size: cover;
+}
+
+.dark .markdown-body :deep(pre.shiki.has-file-name .lang-label) {
+  background: rgb(55 65 81);
+  color: rgb(229 231 235);
+}
+
+/* 复制按钮位置调整 - 在带文件名的代码块中 */
+.markdown-body :deep(pre.shiki.has-file-name .copy-button) {
+  top: 38px; /* 移到文件标签栏下方 */
+}
+
+/* 语言标签悬浮效果 */
+.markdown-body :deep(pre.shiki.has-file-name .lang-label:hover) {
+  background: rgb(255 255 255);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.dark .markdown-body :deep(pre.shiki.has-file-name .lang-label:hover) {
+  background: rgb(75 85 99);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
 
 .markdown-body :deep(table) {
   width: 100%;

@@ -123,6 +123,42 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     }),
   );
 
+  // 自定义代码块渲染规则 - 处理 "语言+文件名" 格式
+  const defaultFence = md.renderer.rules.fence || function(tokens: any[], idx: number, options: any, env: any, self: any) {
+    return self.renderToken(tokens, idx, options);
+  };
+
+  md.renderer.rules.fence = (tokens: any[], idx: number, options: any, env: any, self: any) => {
+    const token = tokens[idx];
+    const info = token.info || "";
+
+    // 检测是否为 "语言+文件名" 格式 (如 "js+main.js")
+    if (info.includes("+")) {
+      const parts = info.split("+");
+      const lang = parts[0];
+      const fileName = parts.slice(1).join("+");
+
+      // 临时修改 info 为实际语言，让 Shiki 正确高亮
+      token.info = lang;
+
+      // 调用原始渲染器
+      let result = defaultFence(tokens, idx, options, env, self);
+
+      // 恢复原始 info
+      token.info = info;
+
+      // 修改渲染结果中的 class，保留完整的 "语言+文件名" 信息
+      result = result.replace(
+        `class="language-${lang}"`,
+        `class="language-${info}"`
+      );
+
+      return result;
+    }
+
+    return defaultFence(tokens, idx, options, env, self);
+  };
+
   // 配置容器插件（用于折叠等功能）
   md.use(container, "details", {
     validate: (params: string) => {
