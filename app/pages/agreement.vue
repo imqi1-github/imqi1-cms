@@ -29,10 +29,8 @@ interface TocItem {
 const tocItems = ref<TocItem[]>([]);
 const activeTocId = ref("");
 
-// 根据实际标题数量决定是否显示目录
-const showToc = computed(() => {
-  return tocItems.value.length > 0;
-});
+// 协议页始终显示目录容器
+const showToc = ref(true);
 
 // 提取目录
 const extractToc = () => {
@@ -133,6 +131,18 @@ watch(isNotFound, () => {
   }
 });
 
+// 监听页面数据加载完成，触发渐入动画
+watch(page, (newPage) => {
+  if (!import.meta.client || !newPage) return;
+
+  nextTick(() => {
+    const pageContent = document.querySelector(".animate-fade-in:not(.fade-in-start)");
+    if (pageContent) {
+      pageContent.classList.add("fade-in-start");
+    }
+  });
+});
+
 // 初始化滚动渐入动画
 onMounted(() => {
   // 404 页面动画（初始状态）
@@ -202,9 +212,9 @@ onUnmounted(() => {
     </div>
 
     <!-- 页面内容 -->
-    <div v-else-if="page">
+    <div v-else-if="page" class="animate-fade-in">
       <!-- 标题区域 -->
-      <header class="mb-5 animate-fade-in text-center">
+      <header class="mb-5 text-center">
         <h1 class="text-[3em] font-extrabold mb-2.5">{{ page.title }}</h1>
 
         <!-- 描述 -->
@@ -214,23 +224,23 @@ onUnmounted(() => {
       </header>
 
       <!-- 协议内容区域 - 带目录 -->
-      <div class="mt-8 flex gap-8 relative w-full max-w-5xl mx-auto">
+      <div class="mt-8 flex gap-8 relative w-full max-w-7xl mx-auto">
         <!-- 目录侧边栏 - 左侧 -->
-        <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 flex-shrink-0 order-first w-fit">
-          <nav class="toc-nav sticky top-24 w-fit">
-            <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 w-fit max-w-full">目录</h3>
-            <ul class="space-y-1 w-fit max-w-48">
-              <li v-for="item in tocItems" :key="item.id" class="max-w-48 wrap-anywhere overflow-hidden text-ellipsis">
+        <aside class="toc-sidebar hidden lg:block w-39 shrink-0 order-first">
+          <nav class="toc-nav sticky top-24">
+            <h3 class="px-4 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
+            <ul class="space-y-1" v-if="showToc">
+              <li v-for="item in tocItems" :key="item.id" class="wrap-anywhere overflow-hidden text-ellipsis">
                 <button
                   @click="scrollToHeading(item.id)"
                   :class="[
-                    'w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200 max-w-48',
+                    'w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200',
                     'hover:bg-slate-100 dark:hover:bg-slate-800',
                     activeTocId === item.id
                       ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium'
                       : 'text-slate-600 dark:text-slate-400'
                   ]"
-                  :style="{ paddingLeft: `${(item.level - 1) * 0.75 + 0.5}rem` }">
+                  :style="{ paddingLeft: `${(item.level - 1) * 0.75 + 0.25}rem` }">
                   {{ item.text }}
                 </button>
               </li>
@@ -239,7 +249,7 @@ onUnmounted(() => {
         </aside>
 
         <!-- 协议正文 -->
-        <div class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="page.renderedContent"></div>
+        <div class="min-w-0 flex-1 opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="page.renderedContent"></div>
       </div>
     </div>
   </div>
@@ -267,9 +277,16 @@ onUnmounted(() => {
 
 /* 渐入动画基础类 */
 .animate-fade-in {
+  opacity: 0;
+  transform: translateY(20px);
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in.fade-in-start {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* 404 页面淡入动画 */
