@@ -43,8 +43,10 @@ export default defineEventHandler(async event => {
         create_time: true,
         comment_num: true,
         postrelation: {
-          include: {
-            category: {
+            select: {
+              cid: true,
+              mid: true,
+              metas: {
               select: {
                 mid: true,
                 name: true,

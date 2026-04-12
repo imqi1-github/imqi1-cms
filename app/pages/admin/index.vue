@@ -23,7 +23,7 @@ const statCards = [
     color: 'text-green-500',
   },
   {
-    title: '分类数量',
+    title: '分类标签数量',
     value: stats.value.categories,
     icon: 'lucide:folder',
     color: 'text-yellow-500',
@@ -102,7 +102,7 @@ onMounted(() => {
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-muted-foreground">{{ card.title }}</p>
-              <p class="text-2xl font-bold mt-1">{{ stats[card.title === '文章总数' ? 'posts' : card.title === '评论总数' ? 'comments' : card.title === '分类数量' ? 'categories' : 'users'] }}</p>
+              <p class="text-2xl font-bold mt-1">{{ stats[card.title === '文章总数' ? 'posts' : card.title === '评论总数' ? 'comments' : card.title === '分类标签数量' ? 'categories' : 'users'] }}</p>
             </div>
             <Icon :name="card.icon" class="size-8 text-muted-foreground/30" />
           </div>

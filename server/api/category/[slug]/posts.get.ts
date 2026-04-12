@@ -36,8 +36,9 @@ export default defineEventHandler(async event => {
   // 获取该分类下的文章总数
   const total = await prisma.postrelation.count({
     where: {
-      category: {
+      metas: {
         slug: categorySlug,
+        type: "category",
       },
       post: {
         type: 0, // 0: 文章
@@ -49,8 +50,9 @@ export default defineEventHandler(async event => {
   // 获取该分类下的文章列表
   const relations = await prisma.postrelation.findMany({
     where: {
-      category: {
+      metas: {
         slug: categorySlug,
+        type: "category",
       },
       post: {
         type: 0, // 0: 文章
@@ -69,8 +71,10 @@ export default defineEventHandler(async event => {
             },
           },
           postrelation: {
-            include: {
-              category: {
+            select: {
+              cid: true,
+              mid: true,
+              metas: {
                 select: {
                   name: true,
                   slug: true,

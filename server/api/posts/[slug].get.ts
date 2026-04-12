@@ -23,8 +23,9 @@ export default defineEventHandler(async event => {
   if (categorySlug) {
     whereCondition.postrelation = {
       some: {
-        category: {
+        metas: {
           slug: categorySlug,
+          type: "category",
         },
       },
     };
@@ -42,8 +43,10 @@ export default defineEventHandler(async event => {
         },
       },
       postrelation: {
-        include: {
-          category: {
+        select: {
+          cid: true,
+          mid: true,
+          metas: {
             select: {
               mid: true,
               name: true,

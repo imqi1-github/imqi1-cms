@@ -360,9 +360,15 @@ async function getPostUrl(cid: number): Promise<string> {
     // 优先使用 slug
     const category = await prisma.postrelation.findFirst({
       where: { cid },
-      include: { category: true },
+      select: {
+        metas: {
+          select: {
+            slug: true,
+          },
+        },
+      },
     })
-    const categorySlug = category?.category?.slug || 'posts'
+    const categorySlug = category?.metas?.slug || 'posts'
     return `${siteInfo.url}/content/${categorySlug}/${post.slug}`
   }
 

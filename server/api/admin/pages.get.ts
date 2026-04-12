@@ -50,14 +50,16 @@ export default defineEventHandler(async event => {
       posts.map(async (post: any) => {
         const relations = await prisma.postrelation.findMany({
           where: { cid: post.cid },
-          include: {
-            category: {
+          select: {
+            cid: true,
+            mid: true,
+            metas: {
               select: {
                 mid: true,
-            name: true,
-              slug: true,
+                name: true,
+                slug: true,
+              },
             },
-          },
           },
         });
 

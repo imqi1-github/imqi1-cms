@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
             slug: true,
             postrelation: {
               select: {
-                category: {
+                metas: {
                   select: {
                     slug: true,
                   },

@@ -1,5 +1,14 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { createHash } from "node:crypto";
+
+// 生成 Gravatar 头像 URL
+function getAvatarUrl(email: string | null): string | null {
+  if (!email) return null;
+
+  const hash = createHash("md5").update(email.toLowerCase().trim()).digest("hex");
+  return `https://www.gravatar.com/avatar/${hash}?d=identicon&s=80`;
+}
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -22,7 +31,18 @@ export default defineEventHandler(async event => {
         orderBy: { create_time: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: {
+        select: {
+          coid: true,
+          cid: true,
+          name: true,
+          mail: true,
+          link: true,
+          content: true,
+          create_time: true,
+          status: true,
+          parent_id: true,
+          agent: true,
+          ip: true,
           post: {
             select: {
               cid: true,
@@ -34,8 +54,14 @@ export default defineEventHandler(async event => {
       prisma.comment.count(),
     ]);
 
+    // 在服务端生成头像 URL
+    const commentsWithAvatar = comments.map(comment => ({
+      ...comment,
+      avatarUrl: getAvatarUrl(comment.mail),
+    }));
+
     return {
-      data: comments,
+      data: commentsWithAvatar,
       pagination: {
         page,
         pageSize,

@@ -24,7 +24,18 @@ export default defineEventHandler(async event => {
   try {
     const comment = await prisma.comment.findUnique({
       where: { coid: Number(id) },
-      include: {
+      select: {
+        coid: true,
+        cid: true,
+        name: true,
+        mail: true,
+        link: true,
+        content: true,
+        create_time: true,
+        status: true,
+        parent_id: true,
+        agent: true,
+        ip: true,
         post: {
           select: {
             cid: true,

@@ -7,7 +7,9 @@ export default defineEventHandler(async event => {
       where: {
         mid: 6, // shotasdsa 的 mid
       },
-      include: {
+      select: {
+        cid: true,
+        mid: true,
         post: {
           select: {
             cid: true,
@@ -15,7 +17,7 @@ export default defineEventHandler(async event => {
             slug: true,
           },
         },
-        category: {
+        metas: {
           select: {
             mid: true,
             name: true,
@@ -31,8 +33,10 @@ export default defineEventHandler(async event => {
       where: {
         cid: postRelations[0]?.cid,
       },
-      include: {
-        category: {
+      select: {
+        cid: true,
+        mid: true,
+        metas: {
           select: {
             mid: true,
             name: true,

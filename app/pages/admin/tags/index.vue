@@ -159,7 +159,7 @@ onMounted(() => {
         <TableBody>
           <TableRow v-for="tag in tags" :key="tag.mid">
             <TableCell class="font-medium">{{ tag.name }}</TableCell>
-            <TableCell class="text-muted-foreground">{{ tag.slug || "-" }}</TableCell>
+            <TableCell class="text-muted-foreground font-mono">{{ tag.slug || "-" }}</TableCell>
             <TableCell class="text-muted-foreground">{{ tag.desc || "-" }}</TableCell>
             <TableCell>
               <button

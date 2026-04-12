@@ -27,8 +27,9 @@ export default defineEventHandler(async event => {
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
       postrelation: {
         some: {
-          category: {
+          metas: {
             slug: categorySlug,
+            type: "category",
           },
         },
       },
@@ -43,8 +44,10 @@ export default defineEventHandler(async event => {
         },
       },
       postrelation: {
-        include: {
-          category: {
+            select: {
+              cid: true,
+              mid: true,
+              metas: {
             select: {
               mid: true,
               name: true,

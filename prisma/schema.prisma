@@ -43,7 +43,6 @@ model comment {
   name        String   @db.VarChar(255)
   mail        String?  @db.VarChar(255)
   link        String?  @db.VarChar(500)
-  avatar      String?  @db.VarChar(500)
   content     String   @db.Text
   create_time DateTime @default(now())
   status      Int      @default(0)
@@ -97,13 +96,12 @@ model post {
 }
 
 model postrelation {
-  id     Int    @id @default(autoincrement())
-  cid    Int
-  mid    Int
-  post   post   @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
-  metas  metas  @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
+  cid   Int
+  mid   Int
+  post  post  @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
+  metas metas @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
 
-  @@unique([cid, mid], map: "PostRelation_cid_mid_key")
+  @@id([cid, mid])
   @@index([mid], map: "PostRelation_mid_fkey")
 }
 

@@ -80,8 +80,10 @@ export default defineEventHandler(async event => {
           },
           include: {
             postrelation: {
-              include: {
-                category: {
+            select: {
+              cid: true,
+              mid: true,
+              metas: {
                   select: {
                     mid: true,
                     name: true,

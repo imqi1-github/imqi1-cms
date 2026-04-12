@@ -51,7 +51,7 @@ export default defineEventHandler(async event => {
     console.log('[sitemap] 查询到的页面数量:', pages.length);
 
     // 获取所有分类
-    const categories = await prisma.category.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category", // 或者不设置，获取默认类型
       },
@@ -63,7 +63,7 @@ export default defineEventHandler(async event => {
     console.log('[sitemap] 查询到的分类数量:', categories.length);
 
     // 获取所有标签（tags 也存储在 category 表中，type="tag"）
-    const tags = await prisma.category.findMany({
+    const tags = await prisma.metas.findMany({
       where: {
         type: "tag",
       },
@@ -171,7 +171,7 @@ export default defineEventHandler(async event => {
     posts.forEach(post => {
       const lastmod = post.update_time ? new Date(post.update_time).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       // 获取第一个关联分类的slug，如果没有则使用 'default'
-      const categorySlug = post.postrelation?.[0]?.category?.slug || 'default';
+      const categorySlug = post.postrelation?.[0]?.metas?.slug || 'default';
       urls.push(
         `  <url>
     <loc>${baseUrl}/content/${categorySlug}/${post.slug}</loc>

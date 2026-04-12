@@ -32,6 +32,47 @@ const isIndeterminate = computed(() => {
   return selectedIds.value.length > 0 && selectedIds.value.length < posts.value.length;
 });
 
+const pageRange = computed(() => {
+  const totalPages = pagination.value.totalPages;
+  const current = pagination.value.page;
+  const range: (number | string)[] = [];
+
+  if (totalPages <= 7) {
+    // Show all pages if 7 or fewer
+    for (let i = 1; i <= totalPages; i++) {
+      range.push(i);
+    }
+  } else {
+    // Always show first page
+    range.push(1);
+
+    if (current <= 3) {
+      // Near the start: 1 2 3 4 5 ... 10
+      for (let i = 2; i <= 5; i++) {
+        range.push(i);
+      }
+      range.push("...");
+      range.push(totalPages);
+    } else if (current >= totalPages - 2) {
+      // Near the end: 1 ... 6 7 8 9 10
+      range.push("...");
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        range.push(i);
+      }
+    } else {
+      // Middle: 1 ... 4 5 6 ... 10
+      range.push("...");
+      for (let i = current - 1; i <= current + 1; i++) {
+        range.push(i);
+      }
+      range.push("...");
+      range.push(totalPages);
+    }
+  }
+
+  return range;
+});
+
 function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedIds.value = [];
@@ -399,8 +440,8 @@ onMounted(() => {
 
           <div class="flex flex-wrap items-center gap-2">
             <div v-if="post.postrelation && post.postrelation.length > 0" class="flex flex-wrap gap-1">
-              <Badge v-for="rel in post.postrelation" :key="rel.category.mid" variant="outline" class="text-xs">
-                {{ rel.category.name }}
+              <Badge v-for="rel in post.postrelation" :key="rel.metas.mid" variant="outline" class="text-xs">
+                {{ rel.metas.name }}
               </Badge>
             </div>
             <Badge :variant="getStatusBadge(post.status).variant">
@@ -446,14 +487,15 @@ onMounted(() => {
           </Button>
           <div class="flex items-center gap-1">
             <Button
-              v-for="page in Math.min(pagination.totalPages, 5)"
+              v-for="page in pageRange"
               :key="page"
               :variant="page === pagination.page ? 'default' : 'outline'"
               size="sm"
-              @click="goToPage(page)">
+              :disabled="page === '...'"
+              :class="{ 'pointer-events-none': page === '...' }"
+              @click="typeof page === 'number' && goToPage(page)">
               {{ page }}
             </Button>
-            <span v-if="pagination.totalPages > 5" class="px-2 text-muted-foreground">...</span>
           </div>
           <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
             下一页

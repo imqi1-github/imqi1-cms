@@ -36,6 +36,47 @@ const isIndeterminate = computed(() => {
   return selectedIds.value.length > 0 && selectedIds.value.length < comments.value.length;
 });
 
+const pageRange = computed(() => {
+  const totalPages = pagination.value.totalPages;
+  const current = pagination.value.page;
+  const range: (number | string)[] = [];
+
+  if (totalPages <= 7) {
+    // Show all pages if 7 or fewer
+    for (let i = 1; i <= totalPages; i++) {
+      range.push(i);
+    }
+  } else {
+    // Always show first page
+    range.push(1);
+
+    if (current <= 3) {
+      // Near the start: 1 2 3 4 5 ... 10
+      for (let i = 2; i <= 5; i++) {
+        range.push(i);
+      }
+      range.push("...");
+      range.push(totalPages);
+    } else if (current >= totalPages - 2) {
+      // Near the end: 1 ... 6 7 8 9 10
+      range.push("...");
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        range.push(i);
+      }
+    } else {
+      // Middle: 1 ... 4 5 6 ... 10
+      range.push("...");
+      for (let i = current - 1; i <= current + 1; i++) {
+        range.push(i);
+      }
+      range.push("...");
+      range.push(totalPages);
+    }
+  }
+
+  return range;
+});
+
 function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedIds.value = [];
@@ -188,24 +229,75 @@ onMounted(() => {
 
 <template>
   <AdminLayout>
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
       <div>
         <h2 class="text-2xl font-bold">评论管理</h2>
         <p class="text-sm text-muted-foreground mt-1">审核和管理用户评论</p>
       </div>
-      <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete">
+      <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete" class="w-full sm:w-auto">
         <Icon name="lucide:trash-2" class="mr-2 size-4" />
         {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
       </Button>
     </div>
 
-    <Card>
-      <!-- 加载状态 -->
-      <div v-if="loading" class="p-4">
-        <Table>
+    <Card class="overflow-hidden">
+      <!-- 超大屏表格视图 (≥1536px / 2xl) -->
+      <div class="hidden 2xl:block">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="p-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead class="w-12"></TableHead>
+                <TableHead>评论者</TableHead>
+                <TableHead>内容</TableHead>
+                <TableHead>文章</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>时间</TableHead>
+                <TableHead class="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="i in 5" :key="i">
+                <TableCell>
+                  <div class="size-4 bg-muted rounded animate-pulse" />
+                </TableCell>
+                <TableCell>
+                  <div class="flex items-center gap-3">
+                    <div class="size-8 bg-muted rounded-full animate-pulse" />
+                    <div class="space-y-1">
+                      <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+                      <div class="h-3 bg-muted rounded w-32 animate-pulse" />
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div class="h-4 bg-muted rounded w-full max-w-md animate-pulse" />
+                </TableCell>
+                <TableCell>
+                  <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                </TableCell>
+                <TableCell>
+                  <div class="h-6 bg-muted rounded w-16 animate-pulse" />
+                </TableCell>
+                <TableCell>
+                  <div class="h-4 bg-muted rounded w-32 animate-pulse" />
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="size-8 bg-muted rounded-lg animate-pulse ms-auto" />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        <!-- 数据列表 -->
+        <Table v-else>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12"></TableHead>
+              <TableHead class="w-12">
+                <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />
+              </TableHead>
               <TableHead>评论者</TableHead>
               <TableHead>内容</TableHead>
               <TableHead>文章</TableHead>
@@ -215,143 +307,311 @@ onMounted(() => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow v-for="i in 5" :key="i">
+            <TableRow v-for="comment in comments" :key="comment.coid" :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
               <TableCell>
-                <div class="size-4 bg-muted rounded animate-pulse" />
+                <Checkbox :model-value="selectedIds.includes(comment.coid)" @update:model-value="toggleSelect(comment.coid)" />
               </TableCell>
               <TableCell>
                 <div class="flex items-center gap-3">
-                  <div class="size-8 bg-muted rounded-full animate-pulse" />
-                  <div class="space-y-1">
-                    <div class="h-4 bg-muted rounded w-20 animate-pulse" />
-                    <div class="h-3 bg-muted rounded w-32 animate-pulse" />
+                  <Avatar class="size-8">
+                    <AvatarImage
+                      v-if="comment.avatarUrl"
+                      :src="comment.avatarUrl"
+                      :alt="comment.name"
+                    />
+                    <AvatarFallback>{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p class="font-medium">{{ comment.name }}</p>
+                    <p class="text-sm text-muted-foreground">{{ comment.mail || "-" }}</p>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
-                <div class="h-4 bg-muted rounded w-full max-w-md animate-pulse" />
+                <p class="max-w-md line-clamp-2">{{ comment.content }}</p>
               </TableCell>
               <TableCell>
-                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                <span class="text-sm text-muted-foreground">{{ getPostTitle(comment) }}</span>
               </TableCell>
               <TableCell>
-                <div class="h-6 bg-muted rounded w-16 animate-pulse" />
+                <Badge :variant="getStatusInfo(comment.status).variant">
+                  {{ getStatusInfo(comment.status).label }}
+                </Badge>
               </TableCell>
               <TableCell>
-                <div class="h-4 bg-muted rounded w-32 animate-pulse" />
+                <span class="text-sm text-muted-foreground">{{ formatDate(comment.create_time) }}</span>
               </TableCell>
               <TableCell class="text-right">
-                <div class="size-8 bg-muted rounded-lg animate-pulse ms-auto" />
+                <div class="flex items-center justify-end gap-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="ghost" size="icon" class="size-8">
+                        <Icon name="lucide:more-horizontal" class="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem @click="openEditDialog(comment)">
+                        <Icon name="lucide:pencil" class="mr-2 size-4" />
+                        编辑
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>设置状态</DropdownMenuLabel>
+                      <DropdownMenuItem v-for="option in statusOptions" :key="option.value" @click="setStatus(comment.coid, option.value)">
+                        <Icon :name="comment.status === option.value ? 'lucide:check' : 'lucide:circle'" class="mr-2 size-4" />
+                        {{ option.label }}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem class="text-destructive focus:text-destructive" @click="deleteComment(comment.coid)">
+                        <Icon name="lucide:trash-2" class="mr-2 size-4" />
+                        删除
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           </TableBody>
         </Table>
+
+        <!-- 空状态 -->
+        <div v-if="!loading && comments.length === 0" class="text-center py-12">
+          <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
+          <p class="text-muted-foreground">暂无评论</p>
+        </div>
       </div>
 
-      <!-- 数据列表 -->
-      <Table v-else>
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-12">
-              <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />
-            </TableHead>
-            <TableHead>评论者</TableHead>
-            <TableHead>内容</TableHead>
-            <TableHead>文章</TableHead>
-            <TableHead>状态</TableHead>
-            <TableHead>时间</TableHead>
-            <TableHead class="text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="comment in comments" :key="comment.coid" :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
-            <TableCell>
-              <Checkbox :model-value="selectedIds.includes(comment.coid)" @update:model-value="toggleSelect(comment.coid)" />
-            </TableCell>
-            <TableCell>
-              <div class="flex items-center gap-3">
-                <Avatar class="size-8">
-                  <AvatarFallback>{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p class="font-medium">{{ comment.name }}</p>
-                  <p class="text-sm text-muted-foreground">{{ comment.mail || "-" }}</p>
-                </div>
+      <!-- 中屏到大屏卡片视图 (1024px - 1535px / lg - xl) -->
+      <div class="hidden lg:block 2xl:hidden">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div v-for="i in 4" :key="i" class="border rounded-lg p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="size-8 bg-muted rounded-full animate-pulse" />
+              <div class="space-y-1 flex-1">
+                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+                <div class="h-3 bg-muted rounded w-32 animate-pulse" />
               </div>
-            </TableCell>
-            <TableCell>
-              <p class="max-w-md line-clamp-2">{{ comment.content }}</p>
-            </TableCell>
-            <TableCell>
-              <span class="text-sm text-muted-foreground">{{ getPostTitle(comment) }}</span>
-            </TableCell>
-            <TableCell>
-              <Badge :variant="getStatusInfo(comment.status).variant">
-                {{ getStatusInfo(comment.status).label }}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <span class="text-sm text-muted-foreground">{{ formatDate(comment.create_time) }}</span>
-            </TableCell>
-            <TableCell class="text-right">
-              <div class="flex items-center justify-end gap-1">
-                <DropdownMenu>
-                  <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" size="icon" class="size-8">
-                      <Icon name="lucide:more-horizontal" class="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem @click="openEditDialog(comment)">
-                      <Icon name="lucide:pencil" class="mr-2 size-4" />
-                      编辑
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>设置状态</DropdownMenuLabel>
-                    <DropdownMenuItem v-for="option in statusOptions" :key="option.value" @click="setStatus(comment.coid, option.value)">
-                      <Icon :name="comment.status === option.value ? 'lucide:check' : 'lucide:circle'" class="mr-2 size-4" />
-                      {{ option.label }}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem class="text-destructive focus:text-destructive" @click="deleteComment(comment.coid)">
-                      <Icon name="lucide:trash-2" class="mr-2 size-4" />
-                      删除
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+              <div class="size-6 bg-muted rounded animate-pulse" />
+            </div>
+            <div class="space-y-2">
+              <div class="h-4 bg-muted rounded w-full animate-pulse" />
+              <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+              <div class="h-3 bg-muted rounded w-1/2 animate-pulse" />
+            </div>
+          </div>
+        </div>
 
-      <!-- 空状态 -->
-      <div v-if="!loading && comments.length === 0" class="text-center py-12">
-        <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
-        <p class="text-muted-foreground">暂无评论</p>
+        <!-- 数据列表 - 网格布局 -->
+        <div v-else class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div
+            v-for="comment in comments"
+            :key="comment.coid"
+            class="border rounded-lg p-4 space-y-3"
+            :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
+            <!-- 头部 -->
+            <div class="flex items-start gap-3">
+              <Checkbox
+                :model-value="selectedIds.includes(comment.coid)"
+                @update:model-value="toggleSelect(comment.coid)"
+                class="mt-1" />
+              <Avatar class="size-10">
+                <AvatarImage
+                  v-if="comment.avatarUrl"
+                  :src="comment.avatarUrl"
+                  :alt="comment.name" />
+                <AvatarFallback>{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
+              </Avatar>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="font-medium truncate">{{ comment.name }}</p>
+                  <Badge :variant="getStatusInfo(comment.status).variant" class="text-xs">
+                    {{ getStatusInfo(comment.status).label }}
+                  </Badge>
+                </div>
+                <p class="text-xs text-muted-foreground mt-0.5">{{ comment.mail || "-" }}</p>
+              </div>
+            </div>
+
+            <!-- 评论内容 -->
+            <div class="pl-9 space-y-2">
+              <p class="text-sm line-clamp-3 whitespace-pre-wrap break-words">{{ comment.content }}</p>
+              <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span class="flex items-center">
+                  <Icon name="lucide:file-text" class="size-3 mr-1 flex-shrink-0" />
+                  <span class="truncate">{{ getPostTitle(comment) }}</span>
+                </span>
+                <span class="flex items-center">
+                  <Icon name="lucide:clock" class="size-3 mr-1 flex-shrink-0" />
+                  {{ formatDate(comment.create_time) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 操作 -->
+            <div class="flex items-center justify-end pl-9 pt-2 border-t">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button variant="ghost" size="icon" class="size-8">
+                    <Icon name="lucide:more-horizontal" class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem @click="openEditDialog(comment)">
+                    <Icon name="lucide:pencil" class="mr-2 size-4" />
+                    编辑
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>设置状态</DropdownMenuLabel>
+                  <DropdownMenuItem v-for="option in statusOptions" :key="option.value" @click="setStatus(comment.coid, option.value)">
+                    <Icon :name="comment.status === option.value ? 'lucide:check' : 'lucide:circle'" class="mr-2 size-4" />
+                    {{ option.label }}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem class="text-destructive focus:text-destructive" @click="deleteComment(comment.coid)">
+                    <Icon name="lucide:trash-2" class="mr-2 size-4" />
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-if="!loading && comments.length === 0" class="text-center py-12">
+          <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
+          <p class="text-muted-foreground">暂无评论</p>
+        </div>
+      </div>
+
+      <!-- 小屏卡片视图 (<1024px) -->
+      <div class="lg:hidden p-3 sm:p-4 space-y-3 sm:space-y-4">
+        <!-- 移动端加载状态 -->
+        <div v-if="loading" class="space-y-3 sm:space-y-4">
+          <div v-for="i in 3" :key="i" class="border rounded-lg p-3 sm:p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="size-8 sm:size-10 bg-muted rounded-full animate-pulse" />
+              <div class="space-y-1 flex-1">
+                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+                <div class="h-3 bg-muted rounded w-32 animate-pulse" />
+              </div>
+              <div class="size-6 bg-muted rounded animate-pulse" />
+            </div>
+            <div class="space-y-2">
+              <div class="h-4 bg-muted rounded w-full animate-pulse" />
+              <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+              <div class="h-3 bg-muted rounded w-1/2 animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 移动端数据列表 -->
+        <div v-else-if="comments.length > 0" class="space-y-3 sm:space-y-4">
+          <div
+            v-for="comment in comments"
+            :key="comment.coid"
+            class="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3"
+            :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
+            <!-- 头部：选择框、头像、信息、状态 -->
+            <div class="flex items-start gap-2 sm:gap-3">
+              <Checkbox
+                :model-value="selectedIds.includes(comment.coid)"
+                @update:model-value="toggleSelect(comment.coid)"
+                class="mt-1" />
+              <Avatar class="size-8 sm:size-10">
+                <AvatarImage
+                  v-if="comment.avatarUrl"
+                  :src="comment.avatarUrl"
+                  :alt="comment.name" />
+                <AvatarFallback class="text-xs sm:text-sm">{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
+              </Avatar>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <p class="font-medium text-sm sm:text-base truncate">{{ comment.name }}</p>
+                  <Badge :variant="getStatusInfo(comment.status).variant" class="text-xs">
+                    {{ getStatusInfo(comment.status).label }}
+                  </Badge>
+                </div>
+                <p class="text-xs text-muted-foreground mt-0.5">{{ comment.mail || "-" }}</p>
+              </div>
+            </div>
+
+            <!-- 评论内容 -->
+            <div class="pl-7 sm:pl-9 space-y-2">
+              <p class="text-sm line-clamp-4 whitespace-pre-wrap break-words">{{ comment.content }}</p>
+              <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span class="flex items-center">
+                  <Icon name="lucide:file-text" class="size-3 mr-1 flex-shrink-0" />
+                  <span class="truncate">{{ getPostTitle(comment) }}</span>
+                </span>
+                <span class="flex items-center">
+                  <Icon name="lucide:clock" class="size-3 mr-1 flex-shrink-0" />
+                  {{ formatDate(comment.create_time) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 底部操作 -->
+            <div class="flex items-center justify-end pl-7 sm:pl-9 pt-2 border-t">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button variant="ghost" size="icon" class="size-8">
+                    <Icon name="lucide:more-horizontal" class="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem @click="openEditDialog(comment)">
+                    <Icon name="lucide:pencil" class="mr-2 size-4" />
+                    编辑
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>设置状态</DropdownMenuLabel>
+                  <DropdownMenuItem v-for="option in statusOptions" :key="option.value" @click="setStatus(comment.coid, option.value)">
+                    <Icon :name="comment.status === option.value ? 'lucide:check' : 'lucide:circle'" class="mr-2 size-4" />
+                    {{ option.label }}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem class="text-destructive focus:text-destructive" @click="deleteComment(comment.coid)">
+                    <Icon name="lucide:trash-2" class="mr-2 size-4" />
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        <!-- 移动端空状态 -->
+        <div v-if="!loading && comments.length === 0" class="text-center py-12">
+          <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
+          <p class="text-muted-foreground">暂无评论</p>
+        </div>
       </div>
 
       <!-- 分页 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="flex items-center justify-between pt-4 pb-2 border-t">
-        <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
-        <div class="flex items-center gap-2">
-          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
+      <div v-if="!loading && pagination.totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 pb-2 border-t px-3 sm:px-4">
+        <p class="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+          共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
+        </p>
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
+          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)" class="h-8 px-2">
             <Icon name="lucide:chevron-left" class="size-4" />
-            上一页
+            <span class="hidden sm:inline ml-1">上一页</span>
           </Button>
           <div class="flex items-center gap-1">
             <Button
-              v-for="page in Math.min(pagination.totalPages, 5)"
+              v-for="page in pageRange"
               :key="page"
               :variant="page === pagination.page ? 'default' : 'outline'"
               size="sm"
-              @click="goToPage(page)">
+              :disabled="page === '...'"
+              :class="{ 'pointer-events-none': page === '...', 'h-8 w-8 p-0': true, 'text-xs': true }"
+              @click="typeof page === 'number' && goToPage(page)">
               {{ page }}
             </Button>
-            <span v-if="pagination.totalPages > 5" class="px-2 text-muted-foreground">...</span>
           </div>
-          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
-            下一页
+          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)" class="h-8 px-2">
+            <span class="hidden sm:inline mr-1">下一页</span>
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>
         </div>

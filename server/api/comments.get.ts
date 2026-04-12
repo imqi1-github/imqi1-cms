@@ -22,6 +22,19 @@ export default defineEventHandler(async event => {
       orderBy: {
         create_time: "desc",
       },
+      select: {
+        coid: true,
+        cid: true,
+        name: true,
+        mail: true,
+        link: true,
+        content: true,
+        create_time: true,
+        status: true,
+        parent_id: true,
+        agent: true,
+        ip: true,
+      },
     });
 
     const commentMap = new Map<number, any>();
