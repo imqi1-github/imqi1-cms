@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { parseUserAgent } from "~/utils/parseUserAgent";
+
 const props = defineProps<{
   comment: any;
   postId: number;
@@ -210,6 +212,8 @@ const getAvatarUrl = (email: string | null | undefined): string | null => {
 
 const avatarUrl = computed(() => getAvatarUrl(props.comment.mail));
 
+const parsedAgent = computed(() => parseUserAgent(props.comment.agent || ""));
+
 const canReply = computed(() => {
   return props.maxLevel > 0 && props.currentLevel < props.maxLevel;
 });
@@ -271,19 +275,22 @@ function handleCommentSubmitted() {
         </div>
 
         <!-- 评论内容 -->
-        <div class="line-clamp-2 leading-relaxed my-2 text-slate-700 dark:text-slate-300">
+        <div class="leading-relaxed my-2 text-slate-700 dark:text-slate-300">
           <EmojiParser :content="comment.content" />
         </div>
 
         <!-- 底部信息 -->
-        <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs text-slate-500 dark:text-slate-400">
+        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded text-xs text-slate-700 dark:text-slate-600">
           <span class="flex items-center gap-1">
-            <Icon name="ri-time-fill" class="size-3" />
+            <Icon name="ri-time-fill" class="size-4" />
             {{ formatDate(comment.create_time) }}
           </span>
-          <span class="flex items-center gap-1">
-            <Icon name="ri-computer-line" class="size-3" />
-            {{ comment.agent || "未知" }}
+          <span v-if="parsedAgent.browser || parsedAgent.os" class="flex items-center gap-1">
+            <Icon :name="parsedAgent.browserIcon" class="size-4" />
+            <Icon :name="parsedAgent.osIcon" class="size-4" />
+          </span>
+          <span v-else class="flex items-center gap-1">
+            <Icon name="ri-computer-line" class="size-4" />
           </span>
         </div>
       </div>

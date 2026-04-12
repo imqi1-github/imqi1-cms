@@ -6,10 +6,10 @@ const props = defineProps<{
 }>();
 
 // 表情分类配置
-const categoryConfig: Record<string, { prefix: string }> = {
-  "Heo-Sticker": { prefix: "heo-" },
-  capoo: { prefix: "猫猫虫-" },
-  Cat: { prefix: "cat-" },
+const categoryConfig: Record<string, { prefix: string; dataKey: string }> = {
+  "Heo-Sticker": { prefix: "heo-", dataKey: "Heo-Sticker" },
+  capoo: { prefix: "猫猫虫-", dataKey: "capoo" },
+  cat: { prefix: "cat-", dataKey: "Cat" },
 };
 
 // 解析表情占位符
@@ -25,7 +25,7 @@ const parsedContent = computed(() => {
     if (!config) return match;
 
     const key = config.prefix + name;
-    const emojis = emojisData[category as keyof typeof emojisData];
+    const emojis = emojisData[config.dataKey as keyof typeof emojisData];
     if (!emojis || !emojis[key]) return match;
 
     // 返回图片标签
@@ -44,8 +44,8 @@ const parsedContent = computed(() => {
 :deep(.inline-emoji) {
   display: inline-block;
   vertical-align: middle;
-  width: 24px;
-  height: 24px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   margin: 0 2px;
 }

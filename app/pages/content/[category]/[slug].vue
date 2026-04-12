@@ -1699,7 +1699,7 @@ onUnmounted(() => {
 
 /* 代码块折叠 - 只显示前14行 */
 .markdown-body :deep(pre.shiki.code-collapsed) {
-  max-height: calc(1.8em * 14 + 32px);
+  max-height: calc(1.8em * 12 + 32px);
   overflow: hidden;
   cursor: pointer;
 }
