@@ -121,9 +121,9 @@ function highlightKeyword(text: string, keyword: string) {
     <!-- 搜索结果 -->
     <div v-if="searchKeyword" class="animate-fade-in">
       <!-- 加载状态 -->
-      <div v-if="pending" class="flex items-center justify-center py-20">
+      <div v-if="pending" class="relative py-20">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p class="ml-3 text-muted-foreground">搜索中...</p>
+        <p class="text-center text-muted-foreground mt-4">搜索中...</p>
       </div>
 
       <!-- 错误状态 -->
