@@ -1,7 +1,7 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
 import { uploadToUpYun, type ImageProcessOptions } from '#server/utils/upyun'
-import { uploadToCOS, type UploadResult as CosUploadResult } from '#server/utils/cos'
+import { uploadToCOS } from '#server/utils/cos'
 import * as fs from 'fs'
 import * as path from 'path'
 import { randomUUID } from 'crypto'
