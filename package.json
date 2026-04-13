@@ -17,6 +17,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:migrate": "tsx prisma/seed/migrate.ts",
     "upload:cos": "node scripts/upload-cos.mjs",
+    "upload:cos:_nuxt": "node scripts/upload-cos.mjs _nuxt",
     "pm2:start": "pm2 start ecosystem.config.cjs",
     "pm2:stop": "pm2 stop imqi1-nuxt",
     "pm2:restart": "pm2 restart imqi1-nuxt",

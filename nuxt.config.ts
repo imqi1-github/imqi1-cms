@@ -12,13 +12,9 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      // cdnURL: "https://cdn.imqi1.com",
+      cdnURL: "https://cdn2.imqi1.com",
     },
   },
-
-  // app: {
-  //   cdnURL: "https://cdn.imqi1.com",
-  // },
 
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
 
@@ -34,6 +30,7 @@ export default defineNuxtConfig({
   },
 
   app: {
+    cdnURL: "https://cdn2.imqi1.com",
     head: {
       script: [
         {
@@ -114,26 +111,26 @@ export default defineNuxtConfig({
     // 复制根目录的 data 文件夹到构建输出（不经过 Vite 处理）
     publicAssets: [
       {
-        baseURL: '/data',
-        dir: './data',
-        maxAge: 60 * 60 * 24 * 365 // 1 year cache
-      }
+        baseURL: "/data",
+        dir: "./data",
+        maxAge: 60 * 60 * 24 * 365, // 1 year cache
+      },
     ],
     // Nitro 构建完成后复制 data 目录
     hooks: {
-      'compiled': () => {
-        const { mkdirSync, copyFileSync, existsSync } = require('fs');
-        const { join } = require('path');
+      compiled: () => {
+        const { mkdirSync, copyFileSync, existsSync } = require("fs");
+        const { join } = require("path");
 
-        const sourceDir = join(process.cwd(), 'data');
-        const targetDir = join(process.cwd(), '.output', 'server', 'data');
+        const sourceDir = join(process.cwd(), "data");
+        const targetDir = join(process.cwd(), ".output", "server", "data");
 
         if (existsSync(sourceDir)) {
           mkdirSync(targetDir, { recursive: true });
-          copyFileSync(join(sourceDir, 'qqwry.dat'), join(targetDir, 'qqwry.dat'));
-          console.log('✓ Copied qqwry.dat to .output/server/data/');
+          copyFileSync(join(sourceDir, "qqwry.dat"), join(targetDir, "qqwry.dat"));
+          console.log("✓ Copied qqwry.dat to .output/server/data/");
         }
-      }
-    }
-  }
+      },
+    },
+  },
 });

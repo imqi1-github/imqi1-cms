@@ -222,7 +222,8 @@ async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CO
 
   for (const file of files) {
     const promise = (async () => {
-      const relativePath = path.relative(SOURCE_DIR, file).replace(/\\/g, '/')
+      // 始终从 BASE_DIR 计算相对路径，保留子目录前缀（如 _nuxt/）
+      const relativePath = path.relative(BASE_DIR, file).replace(/\\/g, '/')
       const remotePath = UPLOAD_PREFIX ? `${UPLOAD_PREFIX}/${relativePath}` : relativePath
 
       try {
