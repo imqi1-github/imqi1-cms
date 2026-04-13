@@ -121,7 +121,7 @@ export async function clearSession(event: any) {
 // 验证密码（bcrypt）
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
   const bcrypt = await import("bcryptjs");
-  return bcrypt.compare(password, hashedPassword);
+  return bcrypt.default.compare(password, hashedPassword);
 }
 
 // 需要认证的中间件

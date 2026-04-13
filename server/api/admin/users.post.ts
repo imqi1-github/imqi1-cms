@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 export default defineEventHandler(async event => {
   // 验证用户登录

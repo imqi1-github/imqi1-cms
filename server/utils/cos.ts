@@ -10,14 +10,14 @@ interface CosConfig {
 }
 
 // 上传结果接口
-export interface UploadResult {
+export interface CosUploadResult {
   success: boolean
   url?: string
   error?: string
 }
 
 // 删除结果接口
-export interface DeleteResult {
+export interface CosDeleteResult {
   success: boolean
   error?: string
 }
@@ -221,7 +221,7 @@ export async function uploadToCOS(
   fileBuffer: Buffer,
   fileName: string,
   contentType: string
-): Promise<UploadResult> {
+): Promise<CosUploadResult> {
   try {
     // 验证配置
     const validation = await validateCosConfig()
@@ -322,7 +322,7 @@ export async function uploadToCOS(
 }
 
 // 从COS删除文件
-export async function deleteFromCOS(fileUrl: string): Promise<DeleteResult> {
+export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
   try {
     // 获取配置
     const config = await getCosConfig()

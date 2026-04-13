@@ -1,7 +1,7 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
 import { deleteFromUpYun } from '#server/utils/upyun'
-import { deleteFromCOS, type DeleteResult as CosDeleteResult } from '#server/utils/cos'
+import { deleteFromCOS } from '#server/utils/cos'
 import * as fs from 'fs'
 import * as path from 'path'
 

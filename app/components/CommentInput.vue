@@ -307,7 +307,7 @@ function formatEmojiPlaceholder(text: string): string {
 
       <div class="comment-buttons">
         <div class="relative">
-          <button type="button" class="emoji-button" @click="showEmoji = !showEmoji">
+          <button type="button" class="emoji-button" @click="showEmoji = !showEmoji" v-tooltip="'表情'">
             <Icon name="ri:emoji-sticker-line" class="size-4" />
           </button>
           <!-- 表情面板 - 悬浮 -->

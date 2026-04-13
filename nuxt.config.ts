@@ -85,7 +85,6 @@ export default defineNuxtConfig({
         "reka-ui",
         "lucide-vue-next",
         "vue-sonner",
-        "@remixicon/vue",
         "promise-polyfill",
         "smoothscroll",
       ],
