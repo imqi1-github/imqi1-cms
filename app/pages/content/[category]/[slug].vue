@@ -1903,57 +1903,73 @@ onUnmounted(() => {
 }
 
 /* 不同文件类型的图标 */
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".js"]::before),
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".jsx"]::before),
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".ts"]::before),
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".tsx"]::before) {
-  background-image: url("/skills/js.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".js"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".jsx"]::before) {
+  background-image: url("/icons/javascript.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".vue"]::before) {
-  background-image: url("/skills/vue.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".ts"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".tsx"]::before) {
+  background-image: url("/icons/typescript.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".css"]::before),
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".scss"]::before) {
-  background-image: url("/skills/css.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".vue"]::before) {
+  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".html"]::before) {
-  background-image: url("/skills/html.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".css"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".scss"]::before) {
+  background-image: url("/icons/css.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".json"]::before) {
-  background-image: url("/skills/c.svg"); /* 使用 C 图标作为 JSON 的备用 */
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".html"]::before) {
+  background-image: url("/icons/html.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".md"]::before) {
-  background-image: url("/skills/md.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".json"]::before) {
+  background-image: url("/icons/json.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".py"]::before) {
-  background-image: url("/skills/python.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".md"]::before) {
+  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".php"]::before) {
-  background-image: url("/skills/php.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".py"]::before) {
+  background-image: url("/icons/python.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".java"]::before) {
-  background-image: url("/skills/java.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".php"]::before) {
+  background-image: url("/icons/php.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".c"]::before) {
-  background-image: url("/skills/c.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".java"]::before) {
+  background-image: url("/icons/java.svg");
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".cpp"]::before) {
-  background-image: url("/skills/cpp.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".c"]::before) {
+  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
 }
 
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".sh"]::before),
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file*=".bash"]::before) {
-  background-image: url("/skills/bash.svg");
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".cpp"]::before) {
+  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".sh"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".bash"]::before) {
+  background-image: url("/icons/bash.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".sql"]::before) {
+  background-image: url("/icons/sql.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".yaml"]::before),
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".yml"]::before) {
+  background-image: url("/icons/yaml.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".xml"]::before) {
+  background-image: url("/icons/xml.svg");
 }
 
 /* 没有匹配图标时的默认样式 */

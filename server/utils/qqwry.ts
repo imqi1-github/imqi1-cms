@@ -10,6 +10,7 @@
 
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { readFileSync } from "fs";
 import * as iconv from "iconv-lite";
 
 export interface IpLocationInfo {
@@ -41,6 +42,16 @@ class QQWry {
    */
   async init(dataPath: string): Promise<void> {
     this.buffer = await readFile(dataPath);
+    this.firstRecord = this.read4Byte(0);
+    this.lastRecord = this.read4Byte(4);
+    this.recordNum = (this.lastRecord - this.firstRecord) / 7;
+  }
+
+  /**
+   * 从 Buffer 直接初始化（用于 Nitro storage）
+   */
+  initFromBuffer(buffer: Buffer): void {
+    this.buffer = buffer;
     this.firstRecord = this.read4Byte(0);
     this.lastRecord = this.read4Byte(4);
     this.recordNum = (this.lastRecord - this.firstRecord) / 7;
@@ -244,19 +255,22 @@ class QQWry {
   }
 }
 
-// 单例模式
+// 单例模式 + 内存缓存
 let qqwryInstance: QQWry | null = null;
 let initPromise: Promise<void> | null = null;
 
 /**
- * 获取 QQWry 实例（自动初始化）
+ * 获取 QQWry 实例（自动初始化，带内存缓存）
+ * 只使用 fs.readFileSync 读取，禁止 import/require
  */
 async function getInstance(): Promise<QQWry> {
   if (!qqwryInstance) {
     qqwryInstance = new QQWry();
     if (!initPromise) {
-      // QQWry.dat 文件路径
-      const dataPath = join(process.cwd(), "server", "data", "qqwry.dat");
+      // QQWry.dat 文件路径（项目根目录的 data 文件夹，不在 Nuxt 管理范围内）
+      // 开发环境: data/qqwry.dat
+      // 生产环境: .output/data/qqwry.dat
+      const dataPath = join(process.cwd(), "data", "qqwry.dat");
       initPromise = qqwryInstance.init(dataPath);
     }
     await initPromise;

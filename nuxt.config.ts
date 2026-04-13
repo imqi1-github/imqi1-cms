@@ -110,6 +110,29 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    compressPublicAssets: true
+    compressPublicAssets: true,
+    // 复制根目录的 data 文件夹到构建输出（不经过 Vite 处理）
+    publicAssets: [
+      {
+        baseURL: '/data',
+        dir: './data',
+        maxAge: 60 * 60 * 24 * 365 // 1 year cache
+      }
+    ]
+  },
+  // 在构建时复制 data 目录到 .output/server/data
+  hooks: {
+    'build:done': () => {
+      const { mkdirSync, copyFileSync, existsSync } = require('fs');
+      const { join } = require('path');
+
+      const sourceDir = join(process.cwd(), 'data');
+      const targetDir = join(process.cwd(), '.output', 'server', 'data');
+
+      if (existsSync(sourceDir)) {
+        mkdirSync(targetDir, { recursive: true });
+        copyFileSync(join(sourceDir, 'qqwry.dat'), join(targetDir, 'qqwry.dat'));
+      }
+    }
   }
 });

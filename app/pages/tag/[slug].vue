@@ -82,26 +82,32 @@ watch(pending, (newVal, oldVal) => {
 // 监听路由变化，重新触发动画
 watch(
   () => route.params.slug,
-  () => {
-    // 先重置所有元素状态
-    document.querySelectorAll(".fade-in-element").forEach(el => {
-      el.classList.remove("opacity-100", "translate-y-0");
-      el.classList.add("opacity-0", "translate-y-8");
+  async () => {
+    // 等待 DOM 更新
+    await nextTick();
+    // 等待浏览器渲染帧
+    requestAnimationFrame(() => {
+      // 先重置所有元素状态
+      document.querySelectorAll(".fade-in-element").forEach(el => {
+        el.classList.remove("opacity-100", "translate-y-0");
+        el.classList.add("opacity-0", "translate-y-8");
+      });
+      // 触发动画
+      triggerFadeIn();
     });
-    triggerFadeIn();
   },
 );
 
 // 监听标签数据变化，设置标题
 watch(
   tag,
-  (newTag) => {
+  newTag => {
     if (newTag?.name) {
       const { setPageTitle } = usePageTitle();
       setPageTitle(`#${newTag.name}`, "ri:hashtag");
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // 页面标题
@@ -115,12 +121,16 @@ useHead({
 
 // 初始化渐入动画
 onMounted(() => {
-  triggerFadeIn();
+  // 延迟触发，确保 DOM 完全渲染
+  setTimeout(() => {
+    triggerFadeIn();
+  }, 100);
 });
 </script>
 
 <template>
-  <div class="max-w-225 mx-auto px-5 py-8">
+  <ClientOnly>
+    <div class="max-w-225 mx-auto px-5 py-8">
     <!-- 加载中 -->
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -184,19 +194,17 @@ onMounted(() => {
             </NuxtLink>
 
             <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-4">
-              <span class="flex items-center" v-datatip="`最后更新时间`">
+              <span class="flex items-center" v-tooltip="`最后更新时间`">
                 <Icon name="ri-time-line" class="size-4" />
                 {{ formatDate(post.updated) }}
               </span>
-              <span v-if="post.categoryName" class="flex items-center" v-datatip="`分类`">
+              <span v-if="post.categoryName" class="flex items-center" v-tooltip="`分类`">
                 <Icon name="ri:menu-line" class="size-4" />
-                <NuxtLink
-                  :to="`/category/${post.categorySlug}`"
-                  class="hover:text-blue-600 dark:hover:text-blue-400 mr-1 transition-colors">
+                <NuxtLink :to="`/category/${post.categorySlug}`" class="hover:text-blue-600 dark:hover:text-blue-400 mr-1 transition-colors">
                   {{ post.categoryName }}
                 </NuxtLink>
               </span>
-              <span class="flex items-center" v-datatip="`评论数量`">
+              <span class="flex items-center" v-tooltip="`评论数量`">
                 <Icon name="ri-chat-2-line" class="size-4" />
                 {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
               </span>
@@ -231,7 +239,8 @@ onMounted(() => {
         <Icon name="ri-arrow-right-double-line" />
       </button>
     </div>
-  </div>
+    </div>
+  </ClientOnly>
 </template>
 
 <style scoped>

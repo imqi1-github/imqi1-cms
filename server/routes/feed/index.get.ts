@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取站点设置
-    const siteSettings = await prisma.meta.findUnique({
+    const siteSettings = await prisma.informations.findUnique({
       where: { key: "siteSettings" },
     });
 
