@@ -64,7 +64,9 @@
   },
   "packageManager": "bun@1.3.10+30e609e08",
   "devDependencies": {
+    "@iconify-json/devicon": "^1.2.62",
     "@iconify-json/lucide": "^1.2.101",
+    "@iconify-json/material-icon-theme": "^1.2.58",
     "@iconify-json/material-symbols": "^1.2.66",
     "@iconify-json/ri": "^1.2.10",
     "@nuxt/icon": "^2.2.1",

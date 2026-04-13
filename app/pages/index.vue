@@ -81,22 +81,19 @@
           </div>
           <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col">
             <div class="index-framework-item flex flex-col relative">
-              <Icon name="devicon:nuxt" mode="svg" class="index-framework-pic size-25" />
-              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Nuxt</span>
+              <Icon name="devicon:nuxtjs-wordmark" mode="svg" class="index-framework-pic size-25" />
             </div>
             <div class="index-framework-arrow max-md:mt-7">
               <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
             <div class="index-framework-item flex flex-col relative">
-              <Icon name="file-icons:prisma" mode="svg" class="index-framework-pic size-25" />
-              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Prisma</span>
+              <Icon name="devicon:prisma-wordmark" mode="svg" class="index-framework-pic size-25" />
             </div>
             <div class="index-framework-arrow max-md:mt-7">
               <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
             <div class="index-framework-item flex flex-col relative">
-              <Icon name="logos:mysql" class="index-framework-pic size-25" />
-              <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">MySQL</span>
+              <Icon name="logos:mysql" mode="svg" class="index-framework-pic size-25" />
             </div>
           </div>
           <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">

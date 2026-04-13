@@ -42,6 +42,30 @@ const blogNavIcons: FooterIcon[] = [
   },
 ];
 
+const blogStackIcons: FooterIcon[] = [
+  {
+    name: "Nuxt",
+    icon: "material-icon-theme:nuxt",
+    href: "https://nuxt.com/",
+    title: "Nuxt",
+    target: "_blank",
+  },
+  {
+    name: "Prisma",
+    icon: "file-icons:prisma",
+    href: "https://prisma.io/",
+    title: "Prisma",
+    target: "_blank",
+  },
+  {
+    name: "MySQL",
+    icon: "vscode-icons:file-type-mysql",
+    href: "https://www.mysql.com/",
+    title: "MySQL",
+    target: "_blank",
+  }
+]
+
 // 使用官方 colorMode 模块
 const colorMode = useColorMode();
 
@@ -194,6 +218,13 @@ onUnmounted(() => {
           <Icon name="ri:creative-commons-nc-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
           <Icon name="ri:creative-commons-nd-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
         </NuxtLink>
+        <!-- 技术栈图标 -->
+        <div class="border border-gray-300 dark:border-gray-600 h-3"></div>
+        <template v-for="iconItem in blogStackIcons" :key="iconItem.name">
+          <NuxtLink :to="iconItem.href" :target="iconItem.target" :title="iconItem.title" class="no-underline">
+            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+          </NuxtLink>
+        </template>
         <!-- 博客导航图标（仅首页显示） -->
         <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
         <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
