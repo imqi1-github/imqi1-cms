@@ -192,7 +192,8 @@
   color: oklch(var(--popover-foreground));
   border-radius: 6px;
   font-size: 12px;
-  padding: 2px 4px;
+  padding: 3px 6px;
+  text-align: center;
   font-family: "Noto Serif SC", serif;
 }
 

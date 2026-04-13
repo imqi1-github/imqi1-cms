@@ -33,6 +33,7 @@
           :key="link.name"
           :href="link.url"
           :target="link.target ? '_blank' : undefined"
+          v-tooltip="link.title"
           class="index-contact-link group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
           <Icon :name="link.icon" class="size-5" mode="svg" />
           <!-- 小程序二维码 -->
@@ -615,12 +616,12 @@ const photoCategorySlug = computed(() => data.value?.data?.photoCategorySlug || 
 
 // 联系链接配置
 const contactLinks = ref([
-  { name: "email", url: "mailto:imqi1@qq.com", icon: "ri:mail-fill", target: true },
-  { name: "github", url: "https://github.com/imqi1-github", icon: "ri:github-fill", target: true },
-  { name: "npm", url: "https://www.npmjs.com/~imqi1-npm", icon: "ri:npmjs-fill", target: true },
-  { name: "x", url: "https://x.com/imqi1_X", icon: "ri:twitter-x-fill", target: true },
-  { name: "home", url: "https://qi1.website", icon: "ri:home-2-fill", target: true },
-  { name: "link", url: "/links", icon: "ri:links-fill", target: false },
+  { name: "email", url: "mailto:imqi1@qq.com", icon: "ri:mail-fill", target: true, title: "邮箱" },
+  { name: "github", url: "https://github.com/imqi1-github", icon: "ri:github-fill", target: true, title: "GitHub" },
+  { name: "npm", url: "https://www.npmjs.com/~imqi1-npm", icon: "ri:npmjs-fill", target: true, title: "npm" },
+  { name: "x", url: "https://x.com/imqi1_X", icon: "ri:twitter-x-fill", target: true, title: "X" },
+  { name: "home", url: "https://qi1.website", icon: "ri:home-2-fill", target: true, title: "个人首页" },
+  { name: "link", url: "/links", icon: "ri:links-fill", target: false, title: "友情链接" },
   { name: "miniprogram", url: "", icon: "ri:mini-program-fill", target: false },
 ]);
 
