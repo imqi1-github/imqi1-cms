@@ -1,6 +1,7 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
 import { deleteFromUpYun } from '#server/utils/upyun'
+import { deleteFromCOS } from '#server/utils/cos'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -41,6 +42,12 @@ export default defineEventHandler(async event => {
       const deleted = await deleteFromUpYun(attachment.url)
       if (!deleted) {
         console.error('删除又拍云文件失败:', attachment.url)
+      }
+    } else if (attachment.storage === 'cos') {
+      // 删除腾讯云COS文件
+      const result = await deleteFromCOS(attachment.url)
+      if (!result.success) {
+        console.error('删除COS文件失败:', result.error)
       }
     } else {
       // 删除本地文件

@@ -49,6 +49,12 @@ const settings = ref({
   upyunTokenEnabled: false,
   upyunTokenKey: "",
   upyunTokenExpire: 1800,
+  cosSecretId: "",
+  cosSecretKey: "",
+  cosBucket: "",
+  cosRegion: "",
+  cosSourceDomain: "",
+  cosCdnDomain: "",
   sessionStoreType: "memory",
 });
 
@@ -77,6 +83,7 @@ const smtpSecureModes = [
 const uploadLocations = [
   { value: "local", label: "本地" },
   { value: "upyun", label: "又拍云" },
+  { value: "cos", label: "腾讯云 COS" },
 ];
 
 const sessionStoreTypes = [
@@ -160,6 +167,12 @@ const defaultSettings = {
   upyunTokenEnabled: false,
   upyunTokenKey: "",
   upyunTokenExpire: 1800,
+  cosSecretId: "",
+  cosSecretKey: "",
+  cosBucket: "",
+  cosRegion: "",
+  cosSourceDomain: "",
+  cosCdnDomain: "",
   sessionStoreType: "memory",
 };
 
@@ -839,6 +852,67 @@ onMounted(() => {
                       <Label for="upyunTokenExpire">过期时间（秒）</Label>
                       <Input id="upyunTokenExpire" v-model.number="settings.upyunTokenExpire" type="number" min="0" placeholder="1800" />
                       <p class="text-xs text-muted-foreground">Token 有效期，默认 1800 秒（30分钟）</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 腾讯云 COS 配置 -->
+              <div v-if="settings.uploadLocation === 'cos'" class="space-y-4">
+                <Separator />
+
+                <!-- 基本配置 -->
+                <div class="space-y-4">
+                  <div class="flex items-center gap-2">
+                    <Icon name="lucide:cloud" class="size-4 text-primary" />
+                    <h4 class="text-sm font-medium">腾讯云 COS 配置</h4>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <Label for="cosSecretId">SecretId</Label>
+                      <Input id="cosSecretId" v-model="settings.cosSecretId" placeholder="输入 SecretId" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="cosSecretKey">SecretKey</Label>
+                      <Input id="cosSecretKey" v-model="settings.cosSecretKey" type="password" placeholder="输入 SecretKey" />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="cosBucket">存储桶名称</Label>
+                      <Input id="cosBucket" v-model="settings.cosBucket" placeholder="如: bucket-name-1234567890" />
+                      <p class="text-xs text-muted-foreground">存储桶的完整名称，包含 AppID</p>
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="cosRegion">地域</Label>
+                      <Input id="cosRegion" v-model="settings.cosRegion" placeholder="如: ap-guangzhou" />
+                      <p class="text-xs text-muted-foreground">存储桶所在地域，如 ap-guangzhou、ap-beijing</p>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="cosSourceDomain">源站域名</Label>
+                    <Input id="cosSourceDomain" v-model="settings.cosSourceDomain" placeholder="https://bucket-name.cos.ap-guangzhou.myqcloud.com" />
+                    <p class="text-xs text-muted-foreground">COS 源站域名，用于上传文件。留空则使用默认域名</p>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="cosCdnDomain">CDN 加速域名（可选）</Label>
+                    <Input id="cosCdnDomain" v-model="settings.cosCdnDomain" placeholder="https://cdn.example.com" />
+                    <p class="text-xs text-muted-foreground">配置的 CDN 加速域名，用于外部访问文件。留空则使用源站域名</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <!-- 配置说明 -->
+                <div class="p-4 bg-muted/30 rounded-lg space-y-3">
+                  <div class="flex items-start gap-3">
+                    <Icon name="lucide:info" class="size-5 text-blue-500 mt-0.5" />
+                    <div class="space-y-2 text-sm">
+                      <p class="font-medium">配置说明：</p>
+                      <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+                        <li>在腾讯云控制台的 <strong>访问管理 - API密钥管理</strong> 中获取 SecretId 和 SecretKey</li>
+                        <li>存储桶格式：<code>bucket-name-appid</code>，可在存储桶列表中查看</li>
+                        <li>地域代码：ap-guangzhou（广州）、ap-beijing（北京）、ap-shanghai（上海）等</li>
+                        <li>确保存储桶权限设置为 <strong>公共读</strong>，否则上传的文件无法访问</li>
+                      </ul>
                     </div>
                   </div>
                 </div>

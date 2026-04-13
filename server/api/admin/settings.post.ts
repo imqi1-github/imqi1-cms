@@ -60,6 +60,12 @@ export default defineEventHandler(async event => {
       { key: "upyunTokenEnabled", value: String(body.upyunTokenEnabled ?? false) },
       { key: "upyunTokenKey", value: body.upyunTokenKey ?? "" },
       { key: "upyunTokenExpire", value: String(body.upyunTokenExpire ?? 1800) },
+      { key: "cosSecretId", value: body.cosSecretId ?? "" },
+      { key: "cosSecretKey", value: body.cosSecretKey ?? "" },
+      { key: "cosBucket", value: body.cosBucket ?? "" },
+      { key: "cosRegion", value: body.cosRegion ?? "" },
+      { key: "cosSourceDomain", value: body.cosSourceDomain ?? "" },
+      { key: "cosCdnDomain", value: body.cosCdnDomain ?? "" },
       { key: "sessionStoreType", value: body.sessionStoreType || "memory" },
       { key: "messagePostId", value: body.messagePostId ?? "" },
     ];

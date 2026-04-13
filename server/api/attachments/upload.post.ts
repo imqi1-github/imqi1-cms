@@ -1,6 +1,7 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
 import { uploadToUpYun, type ImageProcessOptions } from '#server/utils/upyun'
+import { uploadToCOS } from '#server/utils/cos'
 import * as fs from 'fs'
 import * as path from 'path'
 import { randomUUID } from 'crypto'
@@ -155,6 +156,16 @@ export default defineEventHandler(async event => {
         throw createError({
           statusCode: 500,
           message: result.error || '又拍云上传失败',
+        })
+      }
+      fileUrl = result.url!
+    } else if (uploadLocation === 'cos') {
+      // 腾讯云COS上传
+      const result = await uploadToCOS(buffer, fileName, file.type)
+      if (!result.success) {
+        throw createError({
+          statusCode: 500,
+          message: result.error || 'COS上传失败',
         })
       }
       fileUrl = result.url!

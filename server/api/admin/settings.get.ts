@@ -60,6 +60,12 @@ export default defineEventHandler(async event => {
       upyunTokenEnabled: false,
       upyunTokenKey: "",
       upyunTokenExpire: 1800,
+      cosSecretId: "",
+      cosSecretKey: "",
+      cosBucket: "",
+      cosRegion: "",
+      cosSourceDomain: "",
+      cosCdnDomain: "",
       sessionStoreType: "memory",
       messagePostId: "",
     };
