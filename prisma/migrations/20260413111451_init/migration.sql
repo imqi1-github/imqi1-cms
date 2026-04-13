@@ -13,17 +13,16 @@ CREATE TABLE `attachment` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `category` (
+CREATE TABLE `metas` (
     `mid` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `slug` VARCHAR(191) NULL,
     `desc` VARCHAR(191) NULL,
-    `class` VARCHAR(191) NULL,
     `type` VARCHAR(191) NOT NULL DEFAULT 'category',
 
-    UNIQUE INDEX `Category_name_key`(`name`),
-    UNIQUE INDEX `Category_slug_key`(`slug`),
-    INDEX `Category_mid_type_idx`(`mid`, `type`),
+    UNIQUE INDEX `Metas_name_key`(`name`),
+    UNIQUE INDEX `Metas_slug_key`(`slug`),
+    INDEX `Metas_mid_type_idx`(`mid`, `type`),
     PRIMARY KEY (`mid`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -44,7 +43,6 @@ CREATE TABLE `comment` (
     `name` VARCHAR(255) NOT NULL,
     `mail` VARCHAR(255) NULL,
     `link` VARCHAR(500) NULL,
-    `avatar` VARCHAR(500) NULL,
     `content` TEXT NOT NULL,
     `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `status` INTEGER NOT NULL DEFAULT 0,
@@ -69,12 +67,12 @@ CREATE TABLE `link` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `meta` (
+CREATE TABLE `informations` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `key` VARCHAR(191) NOT NULL,
     `value` VARCHAR(191) NOT NULL,
 
-    UNIQUE INDEX `Meta_key_key`(`key`),
+    UNIQUE INDEX `Informations_key_key`(`key`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -104,13 +102,11 @@ CREATE TABLE `post` (
 
 -- CreateTable
 CREATE TABLE `postrelation` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `cid` INTEGER NOT NULL,
     `mid` INTEGER NOT NULL,
 
     INDEX `PostRelation_mid_fkey`(`mid`),
-    UNIQUE INDEX `PostRelation_cid_mid_key`(`cid`, `mid`),
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`cid`, `mid`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -185,7 +181,7 @@ ALTER TABLE `post` ADD CONSTRAINT `Post_uid_fkey` FOREIGN KEY (`uid`) REFERENCES
 ALTER TABLE `postrelation` ADD CONSTRAINT `PostRelation_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `post`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `postrelation` ADD CONSTRAINT `PostRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `category`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `postrelation` ADD CONSTRAINT `PostRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `metas`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `subscribepost` ADD CONSTRAINT `SubscribePost_subscribeId_fkey` FOREIGN KEY (`subscribeId`) REFERENCES `subscribe`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
