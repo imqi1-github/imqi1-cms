@@ -11,7 +11,8 @@ export default defineNuxtPlugin(nuxtApp => {
           $extend: "dropdown",
           triggers: ["hover", "pointer", "touch", "click", "focus"],
           placement: "bottom",
-          autoHide: false,
+          instantMove: true,
+          distance: 2,
         },
       },
     });

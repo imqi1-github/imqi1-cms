@@ -234,3 +234,11 @@
 .dark .v-popper--theme-dropdown .v-popper__arrow-outer {
   border-color: #1e1e1e
 }
+
+.v-popper__arrow-outer {
+  display: none;
+}
+
+.v-popper__arrow-inner {
+  display: none;
+}

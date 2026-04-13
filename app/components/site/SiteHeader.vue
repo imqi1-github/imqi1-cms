@@ -368,7 +368,7 @@ onMounted(() => {
         <!-- PC端菜单项 -->
         <div class="hidden md:flex items-center gap-2.5">
           <!-- 搜索按钮 -->
-          <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white" @click="goToSearch">
+          <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white" @click="goToSearch" v-tooltip="`搜索`">
             <Icon name="ri:search-line" class="text-[1.2em] relative z-1" />
             <span
               class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
@@ -401,6 +401,7 @@ onMounted(() => {
             v-for="item in navItems"
             :key="item.href"
             :to="item.href"
+            v-tooltip="item.name"
             class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative text-inherit hover:text-white no-underline">
             <Icon :name="item.icon" class="text-[1.2em] relative z-1" />
             <span
