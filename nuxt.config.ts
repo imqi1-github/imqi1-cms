@@ -1,3 +1,14 @@
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+
+// 读取构建 hash（如果存在）
+const buildHashDir = existsSync('.build-hash-dir')
+  ? `/${readFileSync('.build-hash-dir', 'utf-8').trim()}`
+  : '';
+
+const cdnBaseURL = 'https://cdn2.imqi1.com';
+const cdnURL = buildHashDir ? `${cdnBaseURL}${buildHashDir}` : cdnBaseURL;
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
@@ -12,7 +23,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      cdnURL: "https://cdn2.imqi1.com",
+      cdnURL: cdnURL,
+      buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
     },
   },
 
@@ -30,7 +42,9 @@ export default defineNuxtConfig({
   },
 
   app: {
-    cdnURL: "https://cdn2.imqi1.com",
+    baseURL: "/",
+    buildAssetsDir: "/_nuxt/",
+    cdnURL: cdnURL,
     head: {
       script: [
         {

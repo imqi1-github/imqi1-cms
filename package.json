@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
+    "prebuild": "node scripts/generate-build-hash.mjs",
+    "build": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
     "postbuild": "node scripts/copy-data.mjs",
     "dev": "node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs dev",
     "generate": "nuxt generate",

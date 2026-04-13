@@ -24,6 +24,13 @@ const __dirname = path.dirname(__filename)
 const ROOT_DIR = path.resolve(__dirname, '..')
 const BASE_DIR = path.join(ROOT_DIR, '.output', 'public')
 
+// 读取构建 hash 目录
+let buildHashPrefix = ''
+if (fs.existsSync(path.join(ROOT_DIR, '.build-hash-dir'))) {
+  buildHashPrefix = fs.readFileSync(path.join(ROOT_DIR, '.build-hash-dir'), 'utf-8').trim()
+  console.log(`📦 Build hash: ${buildHashPrefix}\n`)
+}
+
 // 从命令行参数获取子目录
 const args = process.argv.slice(2)
 const subDir = args.find(arg => !arg.startsWith('-'))
@@ -41,8 +48,8 @@ const cosConfig = {
   Region: process.env.COS_REGION,
 }
 
-// 上传路径前缀（可选）
-const UPLOAD_PREFIX = process.env.COS_PREFIX || ''
+// 上传路径前缀：构建 hash 目录 + 环境变量前缀
+const UPLOAD_PREFIX = buildHashPrefix || process.env.COS_PREFIX || ''
 
 if (!cosConfig.SecretId || !cosConfig.SecretKey || !cosConfig.Bucket || !cosConfig.Region) {
   console.error('❌ 缺少必要的 COS 配置，请检查 .env 文件')
@@ -211,7 +218,7 @@ async function clearRemoteDirectory() {
 }
 
 // 并发控制函数
-async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CONCURRENCY) || 10) {
+async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CONCURRENCY) || 15) {
   const results = {
     success: 0,
     failed: 0,

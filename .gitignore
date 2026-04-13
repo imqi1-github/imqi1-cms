@@ -36,3 +36,5 @@ pids
 public/uploads/*
 .sessions
 old_theme.sql
+.build-hash
+.build-hash-dir
