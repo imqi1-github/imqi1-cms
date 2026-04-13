@@ -10,16 +10,26 @@ const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path
 
 // 页面加载状态
 const showPageLoading = ref(false);
+let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 监听路由变化开始加载
-watch(() => route.path, () => {
+// 监听页面开始加载（更早的钩子，在路由导航一开始就触发）
+const nuxtApp = useNuxtApp();
+nuxtApp.hook("page:start", () => {
+  // 清除之前的隐藏定时器
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+
   showPageLoading.value = true;
 });
 
 // 监听页面加载完成
-const nuxtApp = useNuxtApp();
 nuxtApp.hook("page:finish", () => {
-  showPageLoading.value = false;
+  // 设置最小显示时间为 500ms，确保用户能看到加载动画
+  hideTimer = setTimeout(() => {
+    showPageLoading.value = false;
+  }, 500);
 });
 
 // 提供给子组件
