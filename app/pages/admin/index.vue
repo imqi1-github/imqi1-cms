@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const router = useRouter()
 const loading = ref(true)
 const stats = ref({
   posts: 0,
@@ -60,6 +61,14 @@ async function deletePost(cid: number) {
   }
 }
 
+function editPost(cid: number) {
+  router.push(`/admin/posts/edit?cid=${cid}`)
+}
+
+function createPost() {
+  router.push('/admin/posts/edit')
+}
+
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
@@ -74,7 +83,7 @@ onMounted(() => {
     <!-- 页面标题 -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold">仪表盘</h2>
-      <Button>
+      <Button @click="createPost">
         <Icon name="lucide:plus" class="mr-2 size-4" />
         新建文章
       </Button>
@@ -146,7 +155,7 @@ onMounted(() => {
               </div>
               <div class="flex items-center gap-2">
                 <Badge variant="outline">{{ post.status || '已发布' }}</Badge>
-                <Button variant="ghost" size="icon" class="size-8">
+                <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button
@@ -166,7 +175,7 @@ onMounted(() => {
         <div v-else class="text-center py-12">
           <Icon name="lucide:file-text" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
           <p class="text-muted-foreground">暂无文章</p>
-          <Button variant="outline" class="mt-4">
+          <Button variant="outline" class="mt-4" @click="createPost">
             <Icon name="lucide:plus" class="mr-2 size-4" />
             创建第一篇文章
           </Button>

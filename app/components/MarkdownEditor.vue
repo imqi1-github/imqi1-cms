@@ -599,6 +599,6 @@ const actions = {
 
 <style scoped>
 .markdown-editor {
-  min-height: 500px;
+  min-height: min(800px, calc(100vh - 200px));
 }
 </style>

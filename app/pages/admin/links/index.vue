@@ -2,7 +2,10 @@
 const loading = ref(true);
 const links = ref<any[]>([]);
 const showAddModal = ref(false);
+const showEditModal = ref(false);
 const newLink = ref({ name: "", link: "", desc: "", avatar: "" });
+const editingLink = ref<any>(null);
+const editLinkForm = ref({ name: "", link: "", desc: "", avatar: "" });
 
 async function fetchLinks() {
   loading.value = true;
@@ -36,6 +39,31 @@ async function toggleEnabled(link: any) {
     await fetchLinks();
   } catch (error) {
     console.error("操作失败:", error);
+  }
+}
+
+function openEditModal(link: any) {
+  editingLink.value = link;
+  editLinkForm.value = {
+    name: link.name || "",
+    link: link.link || "",
+    desc: link.desc || "",
+    avatar: link.avatar || "",
+  };
+  showEditModal.value = true;
+}
+
+async function saveEdit() {
+  if (!editingLink.value) return;
+  try {
+    await $fetch(`/api/admin/links/${editingLink.value.id}`, {
+      method: "PATCH",
+      body: editLinkForm.value,
+    });
+    showEditModal.value = false;
+    await fetchLinks();
+  } catch (error) {
+    console.error("更新失败:", error);
   }
 }
 
@@ -149,7 +177,7 @@ onMounted(() => {
                 <Button variant="outline" size="sm" @click="toggleEnabled(link)">
                   {{ link.enabled ? "禁用" : "启用" }}
                 </Button>
-                <Button variant="ghost" size="icon" class="size-8">
+                <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(link)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteLink(link.id)">
@@ -207,7 +235,7 @@ onMounted(() => {
             <Button variant="outline" size="sm" @click="toggleEnabled(link)">
               {{ link.enabled ? "禁用" : "启用" }}
             </Button>
-            <Button variant="ghost" size="icon" class="size-8">
+            <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(link)">
               <Icon name="lucide:pencil" class="size-4" />
             </Button>
             <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteLink(link.id)">
@@ -256,6 +284,43 @@ onMounted(() => {
           <DialogFooter>
             <Button type="button" variant="outline" @click="showAddModal = false"> 取消 </Button>
             <Button type="submit">确定</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 编辑链接弹窗 -->
+    <Dialog v-model:open="showEditModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>编辑友情链接</DialogTitle>
+          <DialogDescription>修改友情链接信息</DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="saveEdit">
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label for="editLinkName">名称</Label>
+              <Input id="editLinkName" v-model="editLinkForm.name" placeholder="网站名称" required />
+            </div>
+            <div class="space-y-2">
+              <Label for="editLinkUrl">链接</Label>
+              <Input id="editLinkUrl" v-model="editLinkForm.link" type="url" placeholder="https://example.com" required />
+            </div>
+            <div class="space-y-2">
+              <Label for="editLinkDesc">描述</Label>
+              <Input id="editLinkDesc" v-model="editLinkForm.desc" placeholder="网站描述" />
+            </div>
+            <div class="space-y-2">
+              <Label for="editLinkAvatar">头像 URL</Label>
+              <Input id="editLinkAvatar" v-model="editLinkForm.avatar" type="url" placeholder="https://example.com/avatar.png" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="showEditModal = false"> 取消 </Button>
+            <Button type="submit">
+              <Icon name="lucide:save" class="mr-2 size-4" />
+              保存
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

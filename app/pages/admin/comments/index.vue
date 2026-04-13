@@ -6,6 +6,7 @@ const loading = ref(true);
 const comments = ref<any[]>([]);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
+const filterCid = ref<number | null>(null); // 筛选的文章ID
 const pagination = ref({
   page: 1,
   pageSize: 20,
@@ -100,16 +101,21 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
   loading.value = true;
   selectedIds.value = [];
   try {
-    const res = (await $fetch(`/api/admin/comments?page=${page}&pageSize=20`)) as any;
+    // 构建查询参数
+    let url = `/api/admin/comments?page=${page}&pageSize=20`;
+    if (filterCid.value) {
+      url += `&cid=${filterCid.value}`;
+    }
+    const res = (await $fetch(url)) as any;
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
     // 更新 URL（如果需要）
-    if (updateUrl && page > 1) {
-      await router.push({ query: { page: page.toString() } });
-    } else if (updateUrl && page === 1) {
-      // 如果是第1页，移除 page 参数
-      await router.push({ query: {} });
+    if (updateUrl) {
+      const query: any = {};
+      if (page > 1) query.page = page.toString();
+      if (filterCid.value) query.cid = filterCid.value.toString();
+      await router.push({ query });
     }
   } catch (error) {
     console.error("获取评论失败:", error);
@@ -117,6 +123,18 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
   } finally {
     loading.value = false;
   }
+}
+
+// 按文章筛选评论
+function filterByPost(cid: number) {
+  filterCid.value = cid;
+  fetchComments(1);
+}
+
+// 清除筛选
+function clearFilter() {
+  filterCid.value = null;
+  fetchComments(1);
 }
 
 // 打开编辑对话框
@@ -233,8 +251,12 @@ function getStatusInfo(status: number) {
 }
 
 onMounted(() => {
-  // 从 URL 读取页码，默认第1页
+  // 从 URL 读取页码和筛选参数，默认第1页
   const pageFromUrl = parseInt(route.query.page as string) || 1;
+  const cidFromUrl = route.query.cid ? parseInt(route.query.cid as string) : null;
+  if (cidFromUrl) {
+    filterCid.value = cidFromUrl;
+  }
   fetchComments(pageFromUrl, false); // 不更新 URL，避免重复导航
 });
 </script>
@@ -244,12 +266,20 @@ onMounted(() => {
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
       <div>
         <h2 class="text-2xl font-bold">评论管理</h2>
-        <p class="text-sm text-muted-foreground mt-1">审核和管理用户评论</p>
+        <p class="text-sm text-muted-foreground mt-1">
+          {{ filterCid ? `筛选文章: ${comments[0]?.post?.title || ''}` : '审核和管理用户评论' }}
+        </p>
       </div>
-      <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete" class="w-full sm:w-auto">
-        <Icon name="lucide:trash-2" class="mr-2 size-4" />
-        {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
-      </Button>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <Button v-if="filterCid" variant="outline" @click="clearFilter" class="flex-1 sm:flex-none">
+          <Icon name="lucide:x" class="mr-2 size-4" />
+          显示所有评论
+        </Button>
+        <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete" class="flex-1 sm:flex-none">
+          <Icon name="lucide:trash-2" class="mr-2 size-4" />
+          {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
+        </Button>
+      </div>
     </div>
 
     <Card class="overflow-hidden">
@@ -343,7 +373,14 @@ onMounted(() => {
                 <p class="max-w-md line-clamp-2">{{ comment.content }}</p>
               </TableCell>
               <TableCell>
-                <span class="text-sm text-muted-foreground">{{ getPostTitle(comment) }}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-auto p-1 justify-start text-left font-normal hover:bg-muted"
+                  @click="filterByPost(comment.cid)">
+                  <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
+                  <span class="text-sm truncate">{{ getPostTitle(comment) }}</span>
+                </Button>
               </TableCell>
               <TableCell>
                 <Badge :variant="getStatusInfo(comment.status).variant">
@@ -448,10 +485,14 @@ onMounted(() => {
             <div class="pl-9 space-y-2">
               <p class="text-sm line-clamp-3 whitespace-pre-wrap break-words">{{ comment.content }}</p>
               <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span class="flex items-center">
-                  <Icon name="lucide:file-text" class="size-3 mr-1 flex-shrink-0" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-auto p-0.5 justify-start text-left font-normal hover:bg-muted"
+                  @click="filterByPost(comment.cid)">
+                  <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
-                </span>
+                </Button>
                 <span class="flex items-center">
                   <Icon name="lucide:clock" class="size-3 mr-1 flex-shrink-0" />
                   {{ formatDate(comment.create_time) }}
@@ -552,10 +593,14 @@ onMounted(() => {
             <div class="pl-7 sm:pl-9 space-y-2">
               <p class="text-sm line-clamp-4 whitespace-pre-wrap break-words">{{ comment.content }}</p>
               <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span class="flex items-center">
-                  <Icon name="lucide:file-text" class="size-3 mr-1 flex-shrink-0" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-auto p-0.5 justify-start text-left font-normal hover:bg-muted"
+                  @click="filterByPost(comment.cid)">
+                  <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
-                </span>
+                </Button>
                 <span class="flex items-center">
                   <Icon name="lucide:clock" class="size-3 mr-1 flex-shrink-0" />
                   {{ formatDate(comment.create_time) }}

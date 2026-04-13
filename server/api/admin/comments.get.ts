@@ -25,9 +25,14 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
     const page = Number(query.page) || 1;
     const pageSize = Number(query.pageSize) || 10;
+    const cid = query.cid ? Number(query.cid) : null;
+
+    // 构建查询条件
+    const where = cid ? { cid } : {};
 
     const [comments, total] = await Promise.all([
       prisma.comment.findMany({
+        where,
         orderBy: { create_time: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -51,7 +56,7 @@ export default defineEventHandler(async event => {
           },
         },
       }),
-      prisma.comment.count(),
+      prisma.comment.count({ where }),
     ]);
 
     // 在服务端生成头像 URL

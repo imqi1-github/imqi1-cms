@@ -13,6 +13,9 @@ export default defineEventHandler(async event => {
   }
   try {
     const posts = await prisma.post.findMany({
+      where: {
+        type: 0, // 0: 文章，排除页面（type=1）
+      },
       take: 5,
       orderBy: { create_time: "desc" },
     });

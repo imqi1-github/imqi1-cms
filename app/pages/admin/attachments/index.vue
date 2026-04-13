@@ -160,7 +160,7 @@ onMounted(() => {
         </div>
         <div class="flex-1 w-full sm:w-auto">
           <div class="relative">
-            <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Icon name="lucide:search" class="absolute left-3 top-2.5 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               v-model="searchQuery"
               placeholder="搜索附件名称..."
