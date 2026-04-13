@@ -237,22 +237,25 @@ onUnmounted(() => {
     <!-- 右下角按钮组 -->
     <div class="fixed bottom-8 right-8 z-9999 flex flex-col gap-3 items-end max-md:gap-1 max-md:bottom-4 max-md:right-4">
       <!-- PC端：页面加载图标 -->
-      <Transition name="fade">
-        <button
-          v-if="pageLoading"
-          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 max-md:hidden"
-          title="页面加载中">
-          <Icon name="lucide:loader-2" class="size-4 text-gray-600 dark:text-gray-300 animate-spin" />
-        </button>
-      </Transition>
+      <ClientOnly>
+        <Transition name="fade">
+          <button
+            v-if="pageLoading"
+            v-tooltip="'页面加载中'"
+            class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 max-md:hidden">
+            <Icon name="lucide:loader-2" class="size-4 text-gray-600 dark:text-gray-300 animate-spin" />
+          </button>
+        </Transition>
+      </ClientOnly>
 
       <!-- PC端：返回顶部/进度按钮 -->
-      <Transition name="fade">
-        <button
-          v-if="showProgress || showBackToTop"
-          @click="scrollToTop"
-          class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
-          title="返回顶部">
+      <ClientOnly>
+        <Transition name="fade">
+          <button
+            v-if="showProgress || showBackToTop"
+            @click="scrollToTop"
+            v-tooltip="'返回顶部'"
+            class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
           <!-- 进度圆环 -->
           <Transition name="icon-fade" mode="out-in">
             <svg v-if="showProgress" key="progress" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
@@ -280,39 +283,44 @@ onUnmounted(() => {
           </Transition>
         </button>
       </Transition>
+      </ClientOnly>
 
       <!-- 移动端：页面加载图标 -->
-      <Transition
-        enter-active-class="transition-all duration-300"
-        enter-from-class="opacity-0 translate-y-4 scale-75"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition-all duration-200"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 translate-y-4 scale-75">
-        <button
-          v-if="pageLoading"
-          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
-          data-tip="页面加载中">
-          <Icon name="lucide:loader-2" class="size-5 text-gray-600 dark:text-gray-300 animate-spin" />
-        </button>
-      </Transition>
+      <ClientOnly>
+        <Transition
+          enter-active-class="transition-all duration-300"
+          enter-from-class="opacity-0 translate-y-4 scale-75"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition-all duration-200"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-4 scale-75">
+          <button
+            v-if="pageLoading"
+            v-tooltip="'页面加载中'"
+            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+            <Icon name="lucide:loader-2" class="size-5 text-gray-600 dark:text-gray-300 animate-spin" />
+          </button>
+        </Transition>
+      </ClientOnly>
 
       <!-- 移动端：返回顶部按钮 -->
-      <Transition
-        enter-active-class="transition-all duration-300"
-        enter-from-class="opacity-0 translate-y-4 scale-75"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition-all duration-200"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 translate-y-4 scale-75">
-        <button
-          v-show="isMobileButtonsOpen"
-          @click="scrollToTop"
-          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
-          data-tip="返回顶部">
+      <ClientOnly>
+        <Transition
+          enter-active-class="transition-all duration-300"
+          enter-from-class="opacity-0 translate-y-4 scale-75"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition-all duration-200"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-4 scale-75">
+          <button
+            v-show="isMobileButtonsOpen"
+            @click="scrollToTop"
+            v-tooltip="'返回顶部'"
+            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
           <Icon name="ri:arrow-up-line" class="size-5 text-gray-600 dark:text-gray-300" />
         </button>
       </Transition>
+      </ClientOnly>
 
       <!-- 移动端：主题切换按钮 -->
       <ClientOnly>
@@ -326,8 +334,8 @@ onUnmounted(() => {
           <button
             v-show="isMobileButtonsOpen"
             @click="handleClick"
-            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
-            :data-tip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+            v-tooltip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'"
+            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
             <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 text-gray-600 dark:text-gray-300" />
             <Icon v-else name="ri:moon-line" class="size-5 text-gray-100 dark:text-gray-300" />
           </button>
@@ -351,8 +359,8 @@ onUnmounted(() => {
       <ClientOnly>
         <button
           @click="handleClick"
-          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
-          :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+          v-tooltip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'"
+          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
           <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-4 text-gray-600 dark:text-gray-300" />
           <Icon v-else name="ri:moon-line" class="size-4 text-gray-100 dark:text-gray-300" />
         </button>
@@ -362,16 +370,18 @@ onUnmounted(() => {
       <FooterMusic class="max-md:hidden" />
 
       <!-- 移动端：菜单切换按钮 -->
-      <button
-        @click="toggleMobileButtons"
-        class="rounded-full border p-2 flex items-center justify-center shadow-lg transition-all duration-300 md:hidden"
-        :class="isMobileButtonsOpen ? 'border-red-500 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'"
-        :data-tip="isMobileButtonsOpen ? '收起' : '展开'">
+      <ClientOnly>
+        <button
+          @click="toggleMobileButtons"
+          v-tooltip="isMobileButtonsOpen ? '收起' : '展开'"
+          class="rounded-full border p-2 flex items-center justify-center shadow-lg transition-all duration-300 md:hidden"
+          :class="isMobileButtonsOpen ? 'border-red-500 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'">
         <Icon
           :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
           class="size-5"
           :class="isMobileButtonsOpen ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'" />
       </button>
+      </ClientOnly>
     </div>
   </div>
 </template>
