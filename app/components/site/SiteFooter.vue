@@ -205,33 +205,35 @@ onUnmounted(() => {
         >
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
-        <NuxtLink to="/feed" target="_blank" title="RSS订阅">
-          <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
-        </NuxtLink>
-        <NuxtLink
-          to="https://creativecommons.org/licenses/by/4.0/deed.zh-hans"
-          target="_blank"
-          class="flex items-center **:size-4.5 **:fill-state-600 group"
-          title="CC BY 4.0">
-          <Icon name="ri:copyright-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-          <Icon name="ri:creative-commons-by-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-          <Icon name="ri:creative-commons-nc-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-          <Icon name="ri:creative-commons-nd-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-        </NuxtLink>
-        <!-- 技术栈图标 -->
-        <div class="border border-gray-300 dark:border-gray-600 h-3"></div>
-        <template v-for="iconItem in blogStackIcons" :key="iconItem.name">
-          <NuxtLink :to="iconItem.href" :target="iconItem.target" :title="iconItem.title" class="no-underline">
-            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+        <ClientOnly>
+          <NuxtLink to="/feed" target="_blank" v-tooltip="'RSS订阅'">
+            <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
           </NuxtLink>
-        </template>
-        <!-- 博客导航图标（仅首页显示） -->
-        <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
-        <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
-          <NuxtLink :to="iconItem.href" :target="iconItem.target" :title="iconItem.title" class="no-underline">
-            <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+          <NuxtLink
+            to="https://creativecommons.org/licenses/by/4.0/deed.zh-hans"
+            target="_blank"
+            class="flex items-center **:size-4.5 **:fill-state-600 group"
+            v-tooltip="'本站内容采用CC BY-NC-ND 4.0协议授权'">
+            <Icon name="ri:copyright-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:creative-commons-by-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:creative-commons-nc-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:creative-commons-nd-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
           </NuxtLink>
-        </template>
+          <!-- 技术栈图标 -->
+          <div class="border border-gray-300 dark:border-gray-600 h-3"></div>
+          <template v-for="iconItem in blogStackIcons" :key="iconItem.name">
+            <NuxtLink :to="iconItem.href" :target="iconItem.target" v-tooltip="iconItem.title" class="no-underline">
+              <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+            </NuxtLink>
+          </template>
+          <!-- 博客导航图标（仅首页显示） -->
+          <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
+          <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
+            <NuxtLink :to="iconItem.href" :target="iconItem.target" v-tooltip="iconItem.title" class="no-underline">
+              <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+            </NuxtLink>
+          </template>
+        </ClientOnly>
       </div>
     </div>
     <!-- 右下角按钮组 -->

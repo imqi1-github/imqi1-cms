@@ -59,23 +59,19 @@ export default defineEventHandler(async event => {
       include: {
         post: {
           include: {
-            attachment: {
+            user: {
               select: {
-                aid: true,
-                url: true,
-                type: true,
-                title: true,
-              },
-              take: 5,
-              orderBy: {
-                aid: "asc",
+                uid: true,
+                name: true,
+                nickname: true,
+                avatar: true,
               },
             },
             postrelation: {
-            select: {
-              cid: true,
-              mid: true,
-              metas: {
+              select: {
+                cid: true,
+                mid: true,
+                metas: {
                   select: {
                     slug: true,
                     name: true,
@@ -107,15 +103,29 @@ export default defineEventHandler(async event => {
       // 查找评论数量
       const commentsNum = post.comment_num || 0;
 
-      // 处理封面图
-      const covers = post.attachment
-        ? post.attachment
-            .filter(a => a.type === "image")
-            .map(a => ({
-              url: a.url,
-              desc: a.title || null,
-            }))
-        : [];
+      // 解析封面（从 post.covers 字段）
+      let covers = [];
+      if (post.covers) {
+        try {
+          const parsed = JSON.parse(post.covers);
+          if (Array.isArray(parsed)) {
+            covers = parsed.map(item => ({
+              url: item.url || item,
+              desc: item.title || item.desc || '',
+            }));
+          }
+        } catch {
+          covers = post.covers.split('\n').map(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return null;
+            if (trimmed.includes('||')) {
+              const [url, desc] = trimmed.split('||');
+              return { url: url.trim(), desc: desc?.trim() || '' };
+            }
+            return { url: trimmed, desc: '' };
+          }).filter(Boolean);
+        }
+      }
 
       // 获取分类信息（排除当前标签，只返回 type="category" 的）
       const categoryRelation = post.postrelation?.find(
@@ -136,6 +146,7 @@ export default defineEventHandler(async event => {
         covers,
         categoryName,
         categorySlug,
+        user: post.user,
       };
     });
 

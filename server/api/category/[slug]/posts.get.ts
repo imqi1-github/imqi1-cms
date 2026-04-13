@@ -100,6 +100,9 @@ export default defineEventHandler(async event => {
     const post = relation.post;
     let covers = [];
 
+    // 查找评论数量
+    const commentsNum = post.comment_num || 0;
+
     // 解析封面
     if (post.covers) {
       try {
@@ -136,7 +139,7 @@ export default defineEventHandler(async event => {
       created: post.create_time,
       updated: post.update_time,
       views: post.views,
-      commentsNum: post.commentsNum || 0,
+      commentsNum,
       many_covers: post.manyCovers === 'on',
       covers,
       tags: tagNames, // 保持为字符串数组，前端会处理

@@ -239,7 +239,7 @@ function handleCommentSubmitted() {
         <button
           v-if="canReply"
           class="absolute top-[-6px] right-[-6px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
-          title="回复"
+          v-tooltip="'回复'"
           @click="startReply(comment)">
           <Icon name="ri-reply-fill" class="size-4" />
         </button>

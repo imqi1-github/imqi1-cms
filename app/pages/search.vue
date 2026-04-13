@@ -73,11 +73,16 @@ function formatDate(date: string | Date) {
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
 
   if (days === 0) return "今天";
   if (days === 1) return "昨天";
-  if (days < 7) return `${days}天前`;
-  return d.toLocaleDateString("zh-CN");
+  if (years > 0) return `${years}年前`;
+  if (months > 0) return `${months}个月前`;
+  if (weeks > 0) return `${weeks}周前`;
+  return `${days}天前`;
 }
 
 // 高亮关键词

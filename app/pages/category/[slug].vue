@@ -48,7 +48,13 @@ function formatDate(date: string | Date): string {
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
 
+  if (years > 0) return `${years}年前`;
+  if (months > 0) return `${months}个月前`;
+  if (weeks > 0) return `${weeks}周前`;
   if (days > 0) return `${days}天前`;
   if (hours > 0) return `${hours}小时前`;
   if (minutes > 0) return `${minutes}分钟前`;
@@ -203,26 +209,26 @@ onMounted(() => {
           <div :class="['archive-article-box px-5 pb-2 pt-1 mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
             <NuxtLink
               :to="`/content/${slug}/${post.slug}`"
-              class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-3 block">
+              class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
               {{ post.title }}
             </NuxtLink>
 
-            <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-3 flex flex-wrap gap-4">
-              <span class="flex items-center gap-1" data-tip="最后更新时间">
+            <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-4">
+              <span class="flex items-center" v-datatip="`最后更新时间`">
                 <Icon name="ri-time-line" class="size-4" />
                 {{ formatDate(post.updated) }}
               </span>
-              <span v-if="post.tags.length > 0" class="flex items-center gap-1 flex-wrap" data-tip="标签">
-                <Icon name="ri-price-tag-3-line" class="size-4" />
+              <span v-if="post.tags.length > 0" class="flex items-center flex-wrap" v-datatip="`标签`">
+                <Icon name="ri-hashtag" class="size-4"  />
                 <NuxtLink
                   v-for="(tagName, index) in post.tags"
                   :key="index"
                   :to="`/tag/${tagSlugMap.get(tagName) || tagName}`"
-                  class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  class="hover:text-blue-600 dark:hover:text-blue-400 mr-1 transition-colors">
                   {{ tagName }}
                 </NuxtLink>
               </span>
-              <span class="flex items-center gap-1" data-tip="评论数量">
+              <span class="flex items-center" v-datatip="`评论数量`">
                 <Icon name="ri-chat-2-line" class="size-4" />
                 {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
               </span>

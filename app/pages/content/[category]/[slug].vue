@@ -13,6 +13,10 @@ const route = useRoute();
 const categorySlug = route.params.category as string;
 const slug = route.params.slug as string;
 
+// 从 URL 获取分类信息
+const { data: categoryData } = await useFetch(`/api/category/${categorySlug}`);
+const categoryFromUrl = computed(() => categoryData.value?.data || null);
+
 // 格式化日期
 function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -191,8 +195,16 @@ watch(
   newPost => {
     // 设置页面标题供导航栏使用
     if (newPost?.title) {
-      const { setPageTitle } = usePageTitle();
+      const { setPageTitle, setPageCategory } = usePageTitle();
       setPageTitle(newPost.title, "ri:file-edit-line");
+
+      // 设置分类信息（从 URL 查询的分类信息中获取）
+      if (categoryFromUrl.value) {
+        setPageCategory({
+          name: categoryFromUrl.value.name,
+          slug: categoryFromUrl.value.slug,
+        });
+      }
     }
 
     // 只在客户端执行

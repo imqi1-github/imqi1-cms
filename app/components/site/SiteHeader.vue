@@ -20,9 +20,10 @@ const { data: categoriesData } = useLazyAsyncData("categories", () => $fetch("/a
 const categories = computed(() => categoriesData.value?.data || []);
 
 // 获取页面标题（从页面组件设置）
-const { getPageTitle, getPageIcon } = usePageTitle();
+const { getPageTitle, getPageIcon, getPageCategory } = usePageTitle();
 const pageTitle = computed(() => getPageTitle().value || null);
 const pageIcon = computed(() => getPageIcon().value || null);
+const pageCategory = computed(() => getPageCategory().value || null);
 
 // 面包屑数据
 interface BreadcrumbItem {
@@ -55,6 +56,16 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 
   // 文章页
   if (path.startsWith("/content/")) {
+    // 添加分类（如果有）
+    if (pageCategory.value) {
+      items.push({
+        name: pageCategory.value.name,
+        icon: "ri:menu-line",
+        href: `/category/${pageCategory.value.slug}`,
+      });
+    }
+
+    // 添加文章标题
     items.push({
       name: pageTitle.value || "文章",
       icon: pageIcon.value || "ri:file-edit-line",

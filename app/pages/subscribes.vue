@@ -30,6 +30,9 @@ function formatDate(dateStr: string | Date | null) {
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
 
   if (days === 0) {
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -40,10 +43,14 @@ function formatDate(dateStr: string | Date | null) {
     return `${hours}小时前`;
   } else if (days === 1) {
     return '昨天';
-  } else if (days < 7) {
-    return `${days}天前`;
+  } else if (years > 0) {
+    return `${years}年前`;
+  } else if (months > 0) {
+    return `${months}个月前`;
+  } else if (weeks > 0) {
+    return `${weeks}周前`;
   } else {
-    return date.toLocaleDateString('zh-CN');
+    return `${days}天前`;
   }
 }
 
