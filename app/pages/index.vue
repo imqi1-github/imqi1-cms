@@ -34,7 +34,7 @@
           :href="link.url"
           :target="link.target ? '_blank' : undefined"
           class="index-contact-link group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
-          <Icon :name="link.icon" class="size-5" />
+          <Icon :name="link.icon" class="size-5" mode="svg" />
           <!-- 小程序二维码 -->
           <template v-if="link.name === 'miniprogram'">
             <img
