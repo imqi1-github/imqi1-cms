@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { getIpLocation } from "#server/utils/qqwry";
 
 export default defineEventHandler(async event => {
   try {
@@ -13,6 +14,9 @@ export default defineEventHandler(async event => {
         message: "缺少文章ID参数",
       });
     }
+
+    // IP 归属地缓存
+    const ipLocationCache = new Map<string, { location: string; isp: string }>();
 
     const comments = await prisma.comment.findMany({
       where: {
@@ -40,11 +44,52 @@ export default defineEventHandler(async event => {
     const commentMap = new Map<number, any>();
     const rootComments: any[] = [];
 
+    // 批量查询 IP 归属地
+    for (const comment of comments) {
+      if (comment.ip && !ipLocationCache.has(comment.ip)) {
+        const location = await getIpLocation(comment.ip);
+        ipLocationCache.set(comment.ip, location || { location: "", isp: "" });
+      }
+    }
+
+    // 处理 location 格式：只显示城市，没有城市则显示省份
+    const formatLocation = (location: string): string => {
+      if (!location) return "";
+
+      // 去掉"中国"前缀
+      let loc = location.replace(/^中国[–—\-]?/, "");
+
+      // 按"–"或"—"或"-"分割
+      const parts = loc.split(/[–—\-]/).map(p => p.trim()).filter(p => p);
+
+      if (parts.length === 0) return "";
+
+      // 优先返回城市（第2部分），没有城市则返回省份（第1部分）
+      // parts[0] 通常是省份，parts[1] 通常是城市，parts[2] 是区县
+      let result = "";
+      if (parts.length >= 2) {
+        result = parts[1]; // 例如：辽宁-沈阳-沈河区 → 沈阳
+      } else {
+        result = parts[0]; // 只有省份，例如：辽宁
+      }
+
+      // 去掉行政区划后缀
+      result = result
+        .replace(/(市|区|县|镇|乡|街道|地区|开发区|高新区|新区|新城|自治区|自治州|盟|旗)$/g, "")
+        .replace(/(特别行政区)$/g, "特区"); // 香港/澳门特别行政区 → 特区
+
+      return result;
+    };
+
     comments.forEach(comment => {
+      const ipInfo = ipLocationCache.get(comment.ip || "");
+      const rawLocation = ipInfo?.location || "";
       commentMap.set(comment.coid, {
         ...comment,
         children: [],
         parent_name: null,
+        location: formatLocation(rawLocation),
+        isp: ipInfo?.isp || "",
       });
     });
 

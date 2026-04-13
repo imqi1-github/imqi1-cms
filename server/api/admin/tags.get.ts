@@ -13,7 +13,6 @@ export default defineEventHandler(async event => {
   try {
     const tags = await prisma.metas.findMany({
       where: {
-        type: "category",
         type: "tag",
       },
       include: {

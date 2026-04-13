@@ -25,7 +25,6 @@ export default defineEventHandler(async event => {
     // 查询所有 type 为 tag 的记录
     const allTags = await prisma.metas.findMany({
       where: {
-        type: "category",
         type: "tag",
       },
       select: {

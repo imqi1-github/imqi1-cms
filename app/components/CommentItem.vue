@@ -280,7 +280,7 @@ function handleCommentSubmitted() {
         </div>
 
         <!-- 底部信息 -->
-        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded text-xs text-slate-700 dark:text-slate-600">
+        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-600">
           <span class="flex items-center gap-1">
             <Icon name="ri-time-fill" class="size-4" />
             {{ formatDate(comment.create_time) }}
@@ -292,6 +292,11 @@ function handleCommentSubmitted() {
           <span v-else class="flex items-center gap-1">
             <Icon name="ri-computer-line" class="size-4" />
           </span>
+          <span v-if="comment.location" class="flex items-center gap-1">
+            <Icon name="ri-map-pin-2-fill" class="size-4" />{{ comment.location }}
+          </span>
+          <span v-if="comment.isp" class="flex items-center gap-1">
+            <Icon name="ri-earth-fill" class="size-4" />{{ comment.isp }}</span>
         </div>
       </div>
     </div>
