@@ -22,7 +22,7 @@
 
         <!-- 滚动提示 -->
         <div class="index-scroll absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 dark:text-gray-500 animate-bounce max-md:-bottom-20">
-          <Icon name="ri:mouse-line" class="size-4" mode="svg" />
+          <Icon name="ri:mouse-line" class="size-4" />
         </div>
       </div>
 
@@ -34,7 +34,7 @@
           :href="link.url"
           :target="link.target ? '_blank' : undefined"
           class="index-contact-link group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
-          <Icon :name="link.icon" class="size-5" mode="svg" />
+          <Icon :name="link.icon" class="size-5" />
           <!-- 小程序二维码 -->
           <template v-if="link.name === 'miniprogram'">
             <img
@@ -81,21 +81,21 @@
           </div>
           <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col">
             <div class="index-framework-item flex flex-col relative">
-              <Icon name="devicon:nuxt" mode='svg' class="index-framework-pic size-25"  />
+              <Icon name="devicon:nuxt" mode="svg" class="index-framework-pic size-25" />
               <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Nuxt</span>
             </div>
             <div class="index-framework-arrow max-md:mt-7">
-              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" mode="svg" />
+              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
             <div class="index-framework-item flex flex-col relative">
-              <Icon name="file-icons:prisma" mode='svg' class="index-framework-pic size-25"  />
+              <Icon name="file-icons:prisma" mode="svg" class="index-framework-pic size-25" />
               <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">Prisma</span>
             </div>
             <div class="index-framework-arrow max-md:mt-7">
-              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" mode="svg" />
+              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
             <div class="index-framework-item flex flex-col relative">
-              <Icon name="logos:mysql" mode="svg" class="index-framework-pic size-25"  />
+              <Icon name="logos:mysql" class="index-framework-pic size-25" />
               <span class="absolute -bottom-6 left-0 right-0 text-center text-sm text-slate-500 dark:text-gray-400">MySQL</span>
             </div>
           </div>
@@ -177,17 +177,17 @@
                     </code>
                     <div
                       class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
-                      <span><Icon name="ri:attachment-line" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
-                      <span><Icon name="ri:file-zip-fill" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
-                      <span><Icon name="ri:video-fill" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
-                      <span><Icon name="ri:restart-line" class="text-slate-600 dark:text-gray-400" mode="svg" /></span>
+                      <span><Icon name="ri:attachment-line" class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><Icon name="ri:file-zip-fill" class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><Icon name="ri:video-fill" class="text-slate-600 dark:text-gray-400" /></span>
+                      <span><Icon name="ri:restart-line" class="text-slate-600 dark:text-gray-400" /></span>
                     </div>
                   </div>
 
                   <!-- 布局图片 -->
                   <div v-else-if="rightItem.type === 'layout'" class="index-theme-box relative h-75 w-75 group">
                     <div
-                      class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1  duration-200">
+                      class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
                       <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
                     </div>
                     <div
@@ -197,13 +197,7 @@
                   <!-- 音乐播放器 -->
                   <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
                     <div class="index-theme-music-box absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
-                      <MetingPlayer
-                        server="netease"
-                        type="song"
-                        id="2142943893"
-                        :listFolded="false"
-                        :mutex="true"
-                      />
+                      <MetingPlayer server="netease" type="song" id="2142943893" :listFolded="false" :mutex="true" />
                     </div>
                   </div>
 
@@ -285,25 +279,25 @@
                 </h3>
                 <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500 flex-wrap">
                   <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1">
-                    <Icon name="ri:menu-line" class="size-3.5" mode="svg" />
+                    <Icon name="ri:menu-line" class="size-3" />
                     <span v-for="(cat, idx) in post.categories" :key="cat.slug">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
                   <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-1">
-                    <Icon name="ri:hashtag" class="size-3.5" mode="svg" />
+                    <Icon name="ri:hashtag" class="size-3" />
                     <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                   </div>
                   <span class="flex items-center gap-1">
-                    <Icon name="ri:time-line" class="size-3.5" mode="svg" />
+                    <Icon name="ri:time-line" class="size-3" />
                     {{ formatDate(post.created) }}
                   </span>
                   <span class="flex items-center gap-1">
-                    <Icon name="ri:chat-2-line" class="size-3.5" mode="svg" />
-                    {{ post.commentsNum > 0 ? post.commentsNum : '暂无评论' }}
+                    <Icon name="ri:chat-2-line" class="size-3" />
+                    {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                   </span>
                 </div>
               </div>
@@ -320,7 +314,7 @@
         <div v-if="recentPosts.length > 0" class="text-center mt-8">
           <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部文章
-            <Icon name="ri:arrow-right-line" class="size-4" mode="svg" />
+            <Icon name="ri:arrow-right-line" class="size-4" />
           </NuxtLink>
         </div>
       </section>
@@ -338,7 +332,7 @@
               :to="`/category/${categoryData.category.slug}`"
               class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
               查看更多
-              <Icon name="ri:arrow-right-line" class="size-4" mode="svg" />
+              <Icon name="ri:arrow-right-line" class="size-4" />
             </NuxtLink>
           </div>
 
@@ -371,15 +365,19 @@
                   </h3>
                   <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500 flex-wrap">
                     <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-1">
-                      <Icon name="ri:hashtag" class="size-3.5" mode="svg" />
+                      <Icon name="ri:hashtag" class="size-3" />
                       <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                     </span>
                     <span class="flex items-center gap-1">
-                      <Icon name="ri:time-line" class="size-3.5" mode="svg" />
+                      <Icon name="ri:time-line" class="size-3" />
                       <span>{{ formatDate(post.created) }}</span>
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <Icon name="ri:chat-2-line" class="size-3" />
+                      <span>{{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}</span>
                     </span>
                   </div>
                 </div>
@@ -426,7 +424,7 @@
             :to="`/category/${photoCategorySlug}`"
             class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部图片
-            <Icon name="ri:arrow-right-line" class="size-4" mode="svg" />
+            <Icon name="ri:arrow-right-line" class="size-4" />
           </NuxtLink>
         </div>
       </section>

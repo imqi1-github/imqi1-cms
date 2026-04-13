@@ -78,12 +78,19 @@ export default defineEventHandler(async event => {
           orderBy: {
             create_time: "desc",
           },
-          include: {
+          select: {
+            cid: true,
+            title: true,
+            slug: true,
+            desc: true,
+            covers: true,
+            create_time: true,
+            comment_num: true,
             postrelation: {
-            select: {
-              cid: true,
-              mid: true,
-              metas: {
+              select: {
+                cid: true,
+                mid: true,
+                metas: {
                   select: {
                     mid: true,
                     name: true,
@@ -121,6 +128,7 @@ export default defineEventHandler(async event => {
             desc: post.desc,
             covers,
             created: post.create_time,
+            commentsNum: post.comment_num || 0,
             tags,
           };
         });
