@@ -42,9 +42,9 @@ export default defineNuxtConfig({
                 var style = document.createElement('style');
                 style.id = 'scrollbar-theme-init';
                 if (isDark) {
-                  style.textContent = '*{scrollbar-width:thin!important;scrollbar-color:#475569 #1e293b!important}::-webkit-scrollbar{width:8px!important;height:8px!important}::-webkit-scrollbar-track{background-color:#1e293b!important}::-webkit-scrollbar-thumb{background-color:#475569!important;border-radius:4px!important}::-webkit-scrollbar-thumb:hover{background-color:#64748b!important}';
+                  style.textContent = 'html{scrollbar-gutter:stable!important}*{scrollbar-width:thin!important;scrollbar-color:#475569 #1e293b!important}::-webkit-scrollbar{width:6px!important;height:6px!important}::-webkit-scrollbar-track{background-color:#1e293b!important}::-webkit-scrollbar-thumb{background-color:#475569!important;border-radius:3px!important}::-webkit-scrollbar-thumb:hover{background-color:#64748b!important}';
                 } else {
-                  style.textContent = '*{scrollbar-width:thin!important;scrollbar-color:#cbd5e1 #f1f5f9!important}::-webkit-scrollbar{width:8px!important;height:8px!important}::-webkit-scrollbar-track{background-color:#f1f5f9!important}::-webkit-scrollbar-thumb{background-color:#cbd5e1!important;border-radius:4px!important}::-webkit-scrollbar-thumb:hover{background-color:#94a3b8!important}';
+                  style.textContent = 'html{scrollbar-gutter:stable!important}*{scrollbar-width:thin!important;scrollbar-color:#cbd5e1 #f1f5f9!important}::-webkit-scrollbar{width:6px!important;height:6px!important}::-webkit-scrollbar-track{background-color:#f1f5f9!important}::-webkit-scrollbar-thumb{background-color:#cbd5e1!important;border-radius:3px!important}::-webkit-scrollbar-thumb:hover{background-color:#94a3b8!important}';
                 }
                 document.head.appendChild(style);
               } catch (e) {}

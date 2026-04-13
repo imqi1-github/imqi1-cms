@@ -4,6 +4,9 @@ const router = useRouter();
 
 const currentYear = new Date().getFullYear();
 
+// 获取页面加载状态
+const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
+
 // 判断是否为首页
 const isHomePage = computed(() => route.path === "/");
 
@@ -202,6 +205,16 @@ onUnmounted(() => {
     </div>
     <!-- 右下角按钮组 -->
     <div class="fixed bottom-8 right-8 z-9999 flex flex-col gap-3 items-end max-md:gap-1 max-md:bottom-4 max-md:right-4">
+      <!-- PC端：页面加载图标 -->
+      <Transition name="fade">
+        <button
+          v-if="pageLoading"
+          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 max-md:hidden"
+          title="页面加载中">
+          <Icon name="lucide:loader-2" class="size-4 text-gray-600 dark:text-gray-300 animate-spin" />
+        </button>
+      </Transition>
+
       <!-- PC端：返回顶部/进度按钮 -->
       <Transition name="fade">
         <button
@@ -234,6 +247,22 @@ onUnmounted(() => {
               {{ Math.round(scrollProgress) }}
             </span>
           </Transition>
+        </button>
+      </Transition>
+
+      <!-- 移动端：页面加载图标 -->
+      <Transition
+        enter-active-class="transition-all duration-300"
+        enter-from-class="opacity-0 translate-y-4 scale-75"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-75">
+        <button
+          v-if="pageLoading"
+          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden"
+          data-tip="页面加载中">
+          <Icon name="lucide:loader-2" class="size-5 text-gray-600 dark:text-gray-300 animate-spin" />
         </button>
       </Transition>
 

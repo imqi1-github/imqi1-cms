@@ -28,20 +28,23 @@ export function useScrollbarTheme() {
     if (isDark) {
       style.textContent = `
         /* 暗色模式滚动条 */
+        html {
+          scrollbar-gutter: stable !important;
+        }
         * {
           scrollbar-width: thin !important;
           scrollbar-color: #475569 #1e293b !important;
         }
         ::-webkit-scrollbar {
-          width: 8px !important;
-          height: 8px !important;
+          width: 6px !important;
+          height: 6px !important;
         }
         ::-webkit-scrollbar-track {
           background-color: #1e293b !important;
         }
         ::-webkit-scrollbar-thumb {
           background-color: #475569 !important;
-          border-radius: 4px !important;
+          border-radius: 3px !important;
         }
         ::-webkit-scrollbar-thumb:hover {
           background-color: #64748b !important;
@@ -50,20 +53,23 @@ export function useScrollbarTheme() {
     } else {
       style.textContent = `
         /* 亮色模式滚动条 */
+        html {
+          scrollbar-gutter: stable !important;
+        }
         * {
           scrollbar-width: thin !important;
           scrollbar-color: #cbd5e1 #f1f5f9 !important;
         }
         ::-webkit-scrollbar {
-          width: 8px !important;
-          height: 8px !important;
+          width: 6px !important;
+          height: 6px !important;
         }
         ::-webkit-scrollbar-track {
           background-color: #f1f5f9 !important;
         }
         ::-webkit-scrollbar-thumb {
           background-color: #cbd5e1 !important;
-          border-radius: 4px !important;
+          border-radius: 3px !important;
         }
         ::-webkit-scrollbar-thumb:hover {
           background-color: #94a3b8 !important;

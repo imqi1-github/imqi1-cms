@@ -8,6 +8,23 @@ useScrollbarTheme();
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
 
+// 页面加载状态
+const showPageLoading = ref(false);
+
+// 监听路由变化开始加载
+watch(() => route.path, () => {
+  showPageLoading.value = true;
+});
+
+// 监听页面加载完成
+const nuxtApp = useNuxtApp();
+nuxtApp.hook("page:finish", () => {
+  showPageLoading.value = false;
+});
+
+// 提供给子组件
+provide("pageLoading", readonly(showPageLoading));
+
 // 获取字体 CSS URL
 const fontCssUrl = computed(() => {
   const cdnURL = config.public.cdnURL as string;
