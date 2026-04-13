@@ -118,20 +118,21 @@ export default defineNuxtConfig({
         dir: './data',
         maxAge: 60 * 60 * 24 * 365 // 1 year cache
       }
-    ]
-  },
-  // 在构建时复制 data 目录到 .output/server/data
-  hooks: {
-    'build:done': () => {
-      const { mkdirSync, copyFileSync, existsSync } = require('fs');
-      const { join } = require('path');
+    ],
+    // Nitro 构建完成后复制 data 目录
+    hooks: {
+      'compiled': () => {
+        const { mkdirSync, copyFileSync, existsSync } = require('fs');
+        const { join } = require('path');
 
-      const sourceDir = join(process.cwd(), 'data');
-      const targetDir = join(process.cwd(), '.output', 'server', 'data');
+        const sourceDir = join(process.cwd(), 'data');
+        const targetDir = join(process.cwd(), '.output', 'server', 'data');
 
-      if (existsSync(sourceDir)) {
-        mkdirSync(targetDir, { recursive: true });
-        copyFileSync(join(sourceDir, 'qqwry.dat'), join(targetDir, 'qqwry.dat'));
+        if (existsSync(sourceDir)) {
+          mkdirSync(targetDir, { recursive: true });
+          copyFileSync(join(sourceDir, 'qqwry.dat'), join(targetDir, 'qqwry.dat'));
+          console.log('✓ Copied qqwry.dat to .output/server/data/');
+        }
       }
     }
   }
