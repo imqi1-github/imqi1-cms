@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   rootDir: ".",
 
+  // 禁用 sourcemap 以减少构建时间和内存占用
+  sourcemap: false,
+
   devServer: {
     port: 4000,
   },
@@ -50,10 +53,10 @@ export default defineNuxtConfig({
               } catch (e) {}
             })();
           `,
-          type: 'text/javascript',
-        }
-      ]
-    }
+          type: "text/javascript",
+        },
+      ],
+    },
   },
 
   css: ["~/assets/css/main.css", "~/assets/css/aplayer.css"],
@@ -68,8 +71,8 @@ export default defineNuxtConfig({
   vite: {
     server: {
       watch: {
-        ignored: ['**/node_modules/**', '**/.git/**', '**/.output/**']
-      }
+        ignored: ["**/node_modules/**", "**/.git/**", "**/.output/**"],
+      },
     },
     optimizeDeps: {
       include: [
@@ -106,4 +109,8 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 800,
     },
   },
+
+  nitro: {
+    compressPublicAssets: true
+  }
 });
