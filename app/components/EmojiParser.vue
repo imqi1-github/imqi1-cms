@@ -5,11 +5,11 @@ const props = defineProps<{
   content: string;
 }>();
 
-// 表情分类配置
-const categoryConfig: Record<string, { prefix: string; dataKey: string }> = {
-  "Heo-Sticker": { prefix: "heo-", dataKey: "Heo-Sticker" },
-  capoo: { prefix: "猫猫虫-", dataKey: "capoo" },
-  cat: { prefix: "cat-", dataKey: "Cat" },
+// 表情分类配置（通过前缀映射）
+const prefixConfig: Record<string, { dataKey: string; filePrefix: string }> = {
+  "heo": { dataKey: "Heo-Sticker", filePrefix: "heo-" },
+  "猫猫虫": { dataKey: "capoo", filePrefix: "猫猫虫-" },
+  "cat": { dataKey: "Cat", filePrefix: "cat-" },
 };
 
 // 解析表情占位符
@@ -17,14 +17,14 @@ const parsedContent = computed(() => {
   const text = props.content;
   if (!text) return "";
 
-  // 匹配 :[category-name] 格式
+  // 匹配 :[prefix-name] 格式
   const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
 
-  let result = text.replace(emojiRegex, (match, category, name) => {
-    const config = categoryConfig[category];
+  let result = text.replace(emojiRegex, (match, prefix, name) => {
+    const config = prefixConfig[prefix];
     if (!config) return match;
 
-    const key = config.prefix + name;
+    const key = config.filePrefix + name;
     const emojis = emojisData[config.dataKey as keyof typeof emojisData];
     if (!emojis || !emojis[key]) return match;
 

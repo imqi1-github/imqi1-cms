@@ -108,7 +108,7 @@ async function fetchTags() {
   }
 }
 
-async function fetchPosts(page: number = 1) {
+async function fetchPosts(page: number = 1, updateUrl: boolean = true) {
   loading.value = true;
   selectedIds.value = [];
   try {
@@ -132,6 +132,16 @@ async function fetchPosts(page: number = 1) {
     const res = (await $fetch(`/api/admin/posts?${params.toString()}`)) as any;
     posts.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
+
+    // 更新 URL（如果需要）
+    if (updateUrl) {
+      const query: Record<string, string> = {};
+      if (page > 1) query.page = page.toString();
+      if (selectedCategory.value) query.category = selectedCategory.value.toString();
+      if (selectedTag.value) query.tag = selectedTag.value.toString();
+      if (selectedStatus.value !== null) query.status = selectedStatus.value.toString();
+      await router.push({ query });
+    }
   } catch (error) {
     console.error("获取文章失败:", error);
     posts.value = [];
@@ -167,7 +177,7 @@ async function deletePost(cid: number) {
   if (confirmed) {
     try {
       await $fetch(`/api/admin/posts/${cid}`, { method: "DELETE" });
-      await fetchPosts(pagination.value.page);
+      await fetchPosts(pagination.value.page, false);
       toast.success({ message: "文章已删除" });
     } catch (error) {
       console.error("删除失败:", error);
@@ -192,7 +202,7 @@ async function batchDelete() {
       });
       toast.success({ message: (res as any).message || "批量删除成功" });
       selectedIds.value = [];
-      await fetchPosts(pagination.value.page);
+      await fetchPosts(pagination.value.page, false);
     } catch (error) {
       console.error("批量删除失败:", error);
       toast.error({ message: "批量删除失败" });
@@ -238,7 +248,9 @@ onMounted(() => {
     selectedTag.value = tagId;
   }
 
-  fetchPosts();
+  // 从 URL 读取页码，默认第1页
+  const pageFromUrl = parseInt(route.query.page as string) || 1;
+  fetchPosts(pageFromUrl, false); // 不更新 URL，避免重复导航
 });
 </script>
 

@@ -227,7 +227,8 @@ async function submitComment() {
 function insertEmoji(key: string) {
   const config = categoryConfig[activeCategory.value];
   const name = key.replace(config?.prefix || "", "");
-  const placeholder = `:[${activeCategory.value}-${name}]`;
+  // 使用 prefix 生成占位符，例如 :[heo-3d眼镜]、:[猫猫虫-加油]、:[cat-ablobcatattentionreverse]
+  const placeholder = `:[${config.prefix}${name}]`;
 
   const textarea = textareaRef.value;
   if (!textarea) {
@@ -251,14 +252,22 @@ function insertEmoji(key: string) {
 
 // 格式化表情占位符为图片
 function formatEmojiPlaceholder(text: string): string {
-  // 匹配 :[category-name] 格式
+  // 匹配 :[prefix-name] 格式
   const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
 
-  return text.replace(emojiRegex, (match, category, name) => {
-    const config = categoryConfig[category];
-    if (!config) return match;
+  return text.replace(emojiRegex, (match, prefix, name) => {
+    // 通过 prefix 查找对应的 category
+    let category: string | null = null;
+    for (const [cat, config] of Object.entries(categoryConfig)) {
+      if (config.prefix === prefix) {
+        category = cat;
+        break;
+      }
+    }
 
-    const key = config.prefix + name;
+    if (!category) return match;
+
+    const key = prefix + name;
     const emojis = emojisData[category as keyof typeof emojisData];
     if (!emojis || !emojis[key]) return match;
 

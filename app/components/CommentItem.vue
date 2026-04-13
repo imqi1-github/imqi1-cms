@@ -280,7 +280,7 @@ function handleCommentSubmitted() {
         </div>
 
         <!-- 底部信息 -->
-        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-600">
+        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-300">
           <span class="flex items-center gap-1">
             <Icon name="ri-time-fill" class="size-4" />
             {{ formatDate(comment.create_time) }}

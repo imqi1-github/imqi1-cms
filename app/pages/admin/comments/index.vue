@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const loading = ref(true);
 const comments = ref<any[]>([]);
@@ -94,13 +96,21 @@ function toggleSelect(coid: number) {
   }
 }
 
-async function fetchComments(page: number = 1) {
+async function fetchComments(page: number = 1, updateUrl: boolean = true) {
   loading.value = true;
   selectedIds.value = [];
   try {
     const res = (await $fetch(`/api/admin/comments?page=${page}&pageSize=20`)) as any;
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
+
+    // 更新 URL（如果需要）
+    if (updateUrl && page > 1) {
+      await router.push({ query: { page: page.toString() } });
+    } else if (updateUrl && page === 1) {
+      // 如果是第1页，移除 page 参数
+      await router.push({ query: {} });
+    }
   } catch (error) {
     console.error("获取评论失败:", error);
     comments.value = [];
@@ -135,7 +145,7 @@ async function saveEdit() {
       message: "评论更新成功",
     });
     editDialogOpen.value = false;
-    await fetchComments(pagination.value.page);
+    await fetchComments(pagination.value.page, false);
   } catch (error) {
     toast.error({
       message: "更新失败",
@@ -150,7 +160,7 @@ async function setStatus(coid: number, status: number) {
       method: "PATCH",
       body: { status },
     });
-    await fetchComments(pagination.value.page);
+    await fetchComments(pagination.value.page, false);
     toast.success({
       message: "状态已更新",
     });
@@ -166,7 +176,7 @@ async function deleteComment(coid: number) {
   if (confirmed) {
     try {
       await $fetch(`/api/admin/comments/${coid}`, { method: "DELETE" });
-      await fetchComments(pagination.value.page);
+      await fetchComments(pagination.value.page, false);
       toast.success({
         message: "评论已删除",
       });
@@ -194,7 +204,7 @@ async function batchDelete() {
       });
       toast.success({ message: (res as any).message || "批量删除成功" });
       selectedIds.value = [];
-      await fetchComments(pagination.value.page);
+      await fetchComments(pagination.value.page, false);
     } catch (error) {
       console.error("批量删除失败:", error);
       toast.error({ message: "批量删除失败" });
@@ -223,7 +233,9 @@ function getStatusInfo(status: number) {
 }
 
 onMounted(() => {
-  fetchComments();
+  // 从 URL 读取页码，默认第1页
+  const pageFromUrl = parseInt(route.query.page as string) || 1;
+  fetchComments(pageFromUrl, false); // 不更新 URL，避免重复导航
 });
 </script>
 

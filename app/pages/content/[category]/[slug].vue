@@ -1510,6 +1510,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p)) {
   margin: 1em 0;
+  text-indent: 2em;
 }
 
 .markdown-body :deep(h1):not(.markdown-callout h1):not(.markdown-card h1):not(.swiper-slide-title h1):not(.markdown-repo h1),

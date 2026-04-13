@@ -62,6 +62,21 @@ class QQWry {
   }
 
   /**
+   * 读取以 null 结尾的字符串，返回字符串和新的偏移量
+   */
+  private readStringWithOffset(offset: number): { str: string; newOffset: number } {
+    let end = offset;
+    while (this.buffer[end] !== 0) {
+      end++;
+    }
+    const bytes = this.buffer.subarray(offset, end);
+    return {
+      str: iconv.decode(bytes, "gbk"),
+      newOffset: end + 1, // 跳过 null 终止符
+    };
+  }
+
+  /**
    * 读取以 null 结尾的字符串
    */
   private readString(offset: number): string {
@@ -89,9 +104,9 @@ class QQWry {
         const area = this.getDataB(redirectOffset + 4);
         return { country, area };
       } else {
-        // dataA 无重定向
-        const country = this.readString(redirectOffset);
-        const area = this.getDataB(redirectOffset + country.length + 1);
+        // dataA 无重定向 - dataB 紧跟在 dataA 后面
+        const { str: country, newOffset } = this.readStringWithOffset(redirectOffset);
+        const area = this.getDataB(newOffset);
         return { country, area };
       }
     } else if (flag === 2) {
@@ -101,9 +116,9 @@ class QQWry {
       const area = this.getDataB(offset + 8);
       return { country, area };
     } else {
-      // 无重定向
-      const country = this.readString(offset + 4);
-      const area = this.getDataB(offset + 4 + country.length + 1);
+      // 无重定向 - dataB 紧跟在 dataA 后面
+      const { str: country, newOffset } = this.readStringWithOffset(offset + 4);
+      const area = this.getDataB(newOffset);
       return { country, area };
     }
   }
