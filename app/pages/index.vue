@@ -284,24 +284,24 @@
                   {{ post.title }}
                 </h3>
                 <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
-                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5">
+                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5" v-tooltip="'分类'">
                     <Icon name="ri:menu-line" class="size-3" />
                     <span v-for="(cat, idx) in post.categories" :key="cat.slug">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
-                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
+                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
                     <Icon name="ri:hashtag" class="size-3" />
                     <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                   </div>
-                  <span class="flex items-center gap-0.5">
+                  <span class="flex items-center gap-0.5" v-tooltip="'发布时间'">
                     <Icon name="ri:time-line" class="size-3" />
                     {{ formatDate(post.created) }}
                   </span>
-                  <span class="flex items-center gap-0.5">
+                  <span class="flex items-center gap-0.5" v-tooltip="'评论数量'">
                     <Icon name="ri:chat-2-line" class="size-3" />
                     {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                   </span>
@@ -332,7 +332,7 @@
           <div class="flex items-center justify-between mb-6">
             <div>
               <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">{{ categoryData.category.name }}</h2>
-              <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.name }}分类</div>
+              <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.desc }}</div>
             </div>
             <NuxtLink
               :to="`/category/${categoryData.category.slug}`"
@@ -370,18 +370,18 @@
                     {{ post.title }}
                   </h3>
                   <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
-                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
+                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
                       <Icon name="ri:hashtag" class="size-3" />
                       <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                     </span>
-                    <span class="flex items-center gap-0.5">
+                    <span class="flex items-center gap-0.5" v-tooltip="'发布时间'">
                       <Icon name="ri:time-line" class="size-3" />
                       <span>{{ formatDate(post.created) }}</span>
                     </span>
-                    <span class="flex items-center gap-0.5">
+                    <span class="flex items-center gap-0.5" v-tooltip="'评论数量'">
                       <Icon name="ri:chat-2-line" class="size-3" />
                       <span>{{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}</span>
                     </span>

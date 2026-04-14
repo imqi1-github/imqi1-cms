@@ -31,6 +31,7 @@ export default defineEventHandler(async event => {
       take: categoryCount,
       select: {
         mid: true,
+        desc: true,
         name: true,
         slug: true,
       },
@@ -137,6 +138,7 @@ export default defineEventHandler(async event => {
           category: {
             mid: category.mid,
             name: category.name,
+            desc: category.desc,
             slug: category.slug,
           },
           posts: mappedPosts,
