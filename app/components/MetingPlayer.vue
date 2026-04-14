@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { usePlayerManager } from '~/composables/usePlayerManager'
+
+// 获取播放器管理器
+const playerManager = usePlayerManager()
+
+// 播放器实例 ID（用于管理器）
+const playerId = `meting-${Date.now()}-${Math.random()}`
 
 const props = defineProps({
   server: String,
@@ -92,12 +99,43 @@ onMounted(async () => {
     if (props.listMaxHeight) options.listMaxHeight = parseFloat(props.listMaxHeight)
 
     aplayerInstance = new APlayer(options)
+
+    // 将实例引用存储到容器元素上，方便其他播放器访问
+    if (container.value) {
+      (container.value as any).__aplayer__ = aplayerInstance
+    }
+
+    // 注册到播放器管理器
+    if (playerManager) {
+      playerManager.registerPlayer('meting', playerId, () => {
+        if (aplayerInstance) {
+          aplayerInstance.pause()
+        }
+      })
+    }
+
+    // 监听播放事件，确保互斥
+    aplayerInstance.on('play', () => {
+      // 通知播放器管理器，暂停其他所有播放器
+      if (playerManager) {
+        playerManager.notifyPlay('meting', playerId)
+      }
+    })
   }
 })
 
 onBeforeUnmount(() => {
+  // 从播放器管理器中注销
+  if (playerManager) {
+    playerManager.unregisterPlayer('meting', playerId)
+  }
+
   if (aplayerInstance) {
     aplayerInstance.destroy()
+  }
+  // 清理容器上的引用
+  if (container.value) {
+    delete (container.value as any).__aplayer__
   }
 })
 </script>

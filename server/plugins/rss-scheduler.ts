@@ -9,7 +9,7 @@ function startScheduler() {
     return;
   }
 
-  // 立即执行一次更新（延迟1分钟，避免启动时负载过高）
+  // 服务器启动时立即执行一次更新
   setTimeout(async () => {
     try {
       console.log('[RSS订阅] 开始自动更新订阅...');
@@ -18,7 +18,7 @@ function startScheduler() {
     } catch (error) {
       console.error('[RSS订阅] 自动更新失败:', error);
     }
-  }, 60 * 1000);
+  }, 100);
 
   // 设置定时任务
   updateTimer = setInterval(async () => {

@@ -283,25 +283,25 @@
                   class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {{ post.title }}
                 </h3>
-                <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500 flex-wrap">
-                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-1">
+                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
+                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" class="size-3" />
                     <span v-for="(cat, idx) in post.categories" :key="cat.slug">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
-                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-1">
+                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:hashtag" class="size-3" />
                     <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                   </div>
-                  <span class="flex items-center gap-1">
+                  <span class="flex items-center gap-0.5">
                     <Icon name="ri:time-line" class="size-3" />
                     {{ formatDate(post.created) }}
                   </span>
-                  <span class="flex items-center gap-1">
+                  <span class="flex items-center gap-0.5">
                     <Icon name="ri:chat-2-line" class="size-3" />
                     {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                   </span>
@@ -369,19 +369,19 @@
                     class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {{ post.title }}
                   </h3>
-                  <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500 flex-wrap">
-                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-1">
+                  <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
+                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" class="size-3" />
                       <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                     </span>
-                    <span class="flex items-center gap-1">
+                    <span class="flex items-center gap-0.5">
                       <Icon name="ri:time-line" class="size-3" />
                       <span>{{ formatDate(post.created) }}</span>
                     </span>
-                    <span class="flex items-center gap-1">
+                    <span class="flex items-center gap-0.5">
                       <Icon name="ri:chat-2-line" class="size-3" />
                       <span>{{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}</span>
                     </span>
