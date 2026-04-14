@@ -5,10 +5,11 @@
   "scripts": {
     "prebuild": "node scripts/generate-build-hash.mjs",
     "build": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
+    "build:upload": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build && npm run upload:cos",
     "build:debug": "npm run prebuild && cross-env DEBUG=nuxt:*,nitro:* NODE_OPTIONS=--max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
     "build:verbose": "node scripts/build-verbose.mjs",
     "build:progress": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build --verbose",
-    "postbuild": "node scripts/copy-data.mjs",
+    "postbuild": "node scripts/copy-data.mjs && node scripts/update-sw-cdn.mjs",
     "dev": "node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",

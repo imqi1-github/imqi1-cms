@@ -56,9 +56,8 @@ export default defineNuxtConfig({
       background_color: "#ffffff",
       display: "fullscreen",
       lang: "zh-CN",
-      start_url: "/",
+      start_url: "https://imqi1.qi1.website",
       id: "/",
-      scope: "/",
       icons: [
         {
           src: "/imgs/imqi1.svg",
