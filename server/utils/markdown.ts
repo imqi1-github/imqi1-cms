@@ -118,7 +118,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
         mermaid,
       ],
       // 未找到语言时的 fallback
-      fallbackLanguage: "bash",
+      fallbackLanguage: "text",
       transformers: [transformerNotationHighlight(), transformerNotationDiff()],
     }),
   );

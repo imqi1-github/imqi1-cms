@@ -477,7 +477,7 @@ onUnmounted(() => {
   margin: auto;
 }
 
-.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p)) {
+.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p)) {
   margin: 1em 0;
   text-indent: 2em;
 }
@@ -662,7 +662,7 @@ onUnmounted(() => {
   counter-increment: line;
   content: counter(line);
   display: inline-block;
-  width: 1.5em;
+  width: 2em;
   margin-right: 1em;
   text-align: right;
   color: rgb(156 163 175);

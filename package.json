@@ -5,6 +5,9 @@
   "scripts": {
     "prebuild": "node scripts/generate-build-hash.mjs",
     "build": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
+    "build:debug": "npm run prebuild && cross-env DEBUG=nuxt:*,nitro:* NODE_OPTIONS=--max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
+    "build:verbose": "node scripts/build-verbose.mjs",
+    "build:progress": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build --verbose",
     "postbuild": "node scripts/copy-data.mjs",
     "dev": "node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs dev",
     "generate": "nuxt generate",
@@ -80,6 +83,7 @@
     "@types/node": "^25.5.0",
     "@vue/compiler-sfc": "^3.5.31",
     "autoprefixer": "^10.4.27",
+    "cross-env": "^10.1.0",
     "mysql2": "^3.22.0",
     "postcss": "^8.5.8",
     "prisma": "^7.6.0",

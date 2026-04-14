@@ -47,6 +47,18 @@ const siteUrl = "https://imqi1.qi1.website";
 const siteDescription = "做技术的分享者、生活的摄影师、时事的评论员。";
 const siteKeywords = "技术,摄影,时事,博客,编程,开发,Vue,Nuxt,JavaScript";
 
+// Favicon 路径（根据 CDN 配置动态生成）
+const faviconUrl = computed(() => {
+  const cdnURL = config.public.cdnURL as string;
+  return import.meta.env.PROD && cdnURL ? `${cdnURL}/favicon.ico` : "/favicon.ico";
+});
+
+// Apple Touch Icon 路径
+const appleTouchIconUrl = computed(() => {
+  const cdnURL = config.public.cdnURL as string;
+  return import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/apple-touch-icon.png` : "/imgs/apple-touch-icon.png";
+});
+
 useHead({
   htmlAttrs: {
     lang: "zh-CN",
@@ -70,6 +82,17 @@ useHead({
         }
         return siteUrl + route.path;
       }),
+    },
+    // Favicon
+    {
+      rel: "icon",
+      type: "image/x-icon",
+      href: faviconUrl,
+    },
+    {
+      rel: "apple-touch-icon",
+      sizes: "180x180",
+      href: appleTouchIconUrl,
     },
   ],
   meta: [
@@ -204,6 +227,9 @@ watch(() => route.hash, () => {
 
 <template>
   <div>
+    <!-- PWA Manifest 注入 -->
+    <VitePwaManifest />
+
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">

@@ -43,9 +43,9 @@ export default defineNuxtConfig({
 
   pwa: {
     registerType: "autoUpdate",
-    // 开发环境禁用 PWA
+    // 开发环境也启用 PWA（用于测试）
     devOptions: {
-      enabled: false,
+      enabled: true,
     },
     // 生产环境配置
     manifest: {

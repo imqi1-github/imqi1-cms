@@ -1372,7 +1372,7 @@ onUnmounted(() => {
         </h1>
 
         <!-- 描述/摘要 -->
-        <div v-if="post.desc" class="text-[1.1em] text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+        <div v-if="post.desc" class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
           {{ post.desc }}
         </div>
       </header>
@@ -1435,7 +1435,7 @@ onUnmounted(() => {
               v-for="(tag, index) in tags"
               :key="index"
               :to="tag.slug ? `/tag/${tag.slug}` : '#'"
-              :class="['hover:text-blue-600 dark:hover:text-blue-500 transition-colors', tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50']">
+              :class="['hover:text-blue-600 dark:hover:text-blue-500 transition-colors mr-2', tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50']">
               {{ typeof tag === "string" ? tag : tag.name }}
             </NuxtLink>
           </span>
@@ -1602,7 +1602,7 @@ onUnmounted(() => {
   margin: auto;
 }
 
-.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p)) {
+.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p)) {
   margin: 1em 0;
   text-indent: 2em;
 }
