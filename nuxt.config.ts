@@ -28,7 +28,7 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode"],
+  modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode", "@vite-pwa/nuxt"],
 
   colorMode: {
     classSuffix: "",
@@ -39,6 +39,117 @@ export default defineNuxtConfig({
   shadcn: {
     prefix: "",
     componentDir: "./app/components/ui",
+  },
+
+  pwa: {
+    registerType: "autoUpdate",
+    // 开发环境禁用 PWA
+    devOptions: {
+      enabled: false,
+    },
+    // 生产环境配置
+    manifest: {
+      name: "ImQi1",
+      short_name: "ImQi1",
+      description: "做技术的分享者、生活的摄影师、时事的评论员。",
+      theme_color: "#f9fafb",
+      background_color: "#ffffff",
+      display: "fullscreen",
+      lang: "zh-CN",
+      start_url: "https://imqi1.qi1.website",
+      id: "/",
+      scope: "/",
+      icons: [
+        {
+          src: "/imgs/imqi1-svg",
+          sizes: "192x192",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        },
+        {
+          src: "/imgs/imqi1-svg",
+          sizes: "512x512",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        },
+      ],
+      screenshots: [
+        {
+          src: "/imgs/frontend-screenshot1.png",
+          sizes: "1280x720",
+          type: "image/png",
+          form_factor: "wide",
+          label: "桌面端界面"
+        },
+        {
+          src: "/imgs/frontend-screenshot2.png",
+          sizes: "510x820",
+          type: "image/png",
+          form_factor: "narrow",
+          label: "移动端界面"
+        }
+      ],
+    },
+    workbox: {
+      // 缓存静态资源
+      runtimeCaching: [
+        {
+          urlPattern: /\.(?:css|js|mjs)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "static-resources",
+            expiration: {
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+          },
+        },
+        {
+          urlPattern: /\.(?:png|jpg|jpeg|gif|svg|webp|ico|bmp)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "images",
+            expiration: {
+              maxEntries: 200,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+          },
+        },
+        {
+          urlPattern: /\.(?:mp4|webm|ogg|mov|avi)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "videos",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+          },
+        },
+        {
+          urlPattern: /\.(?:mp3|wav|flac|aac)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "audio",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+          },
+        },
+        {
+          urlPattern: /\.(?:woff|woff2|ttf|eot|otf)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "fonts",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+          },
+        },
+      ],
+    },
   },
 
   app: {
@@ -58,7 +169,7 @@ export default defineNuxtConfig({
                 if (isDark) {
                   style.textContent = 'html{scrollbar-gutter:stable!important}*{scrollbar-width:thin!important;scrollbar-color:#475569 #1e293b!important}::-webkit-scrollbar{width:6px!important;height:6px!important}::-webkit-scrollbar-track{background-color:#1e293b!important}::-webkit-scrollbar-thumb{background-color:#475569!important;border-radius:3px!important}::-webkit-scrollbar-thumb:hover{background-color:#64748b!important}';
                 } else {
-                  style.textContent = 'html{scrollbar-gutter:stable!important}*{scrollbar-width:thin!important;scrollbar-color:#cbd5e1 #f1f5f9!important}::-webkit-scrollbar{width:6px!important;height:6px!important}::-webkit-scrollbar-track{background-color:#f1f5f9!important}::-webkit-scrollbar-thumb{background-color:#cbd5e1!important;border-radius:3px!important}::-webkit-scrollbar-thumb:hover{background-color:#94a3b8!important}';
+                  style.textContent = 'html{scrollbar-gutter:stable!important}*{scrollbar-width:thin!important;scrollbar-color:#cbd5e1 #f9fafb!important}::-webkit-scrollbar{width:6px!important;height:6px!important}::-webkit-scrollbar-track{background-color:#f9fafb!important}::-webkit-scrollbar-thumb{background-color:#cbd5e1!important;border-radius:3px!important}::-webkit-scrollbar-thumb:hover{background-color:#94a3b8!important}';
                 }
                 document.head.appendChild(style);
               } catch (e) {}

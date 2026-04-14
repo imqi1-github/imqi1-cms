@@ -56,6 +56,20 @@ useHead({
       href: fontCssUrl.value,
     },
   ],
+  meta: [
+    {
+      name: "theme-color",
+      content: "#f9fafb",
+    },
+    {
+      name: "mobile-web-app-capable",
+      content: "yes",
+    },
+    {
+      name: "apple-mobile-web-app-status-bar-style",
+      content: "default",
+    },
+  ],
 });
 
 // 滚动到 Hash 对应的元素
