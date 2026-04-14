@@ -255,5 +255,7 @@ watch(() => route.hash, () => {
     </template>
 
     <Toaster />
+    <ContextMenu class="right-button" />
+    <FrontNotification />
   </div>
 </template>

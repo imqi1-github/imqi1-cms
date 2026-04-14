@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 
+// 导入前台通知 composable
+const { success, error: showError } = useFrontNotification();
+
 // 导入表情数据
 import emojisData from "~/assets/emojis.json";
 
@@ -176,6 +179,7 @@ async function submitComment() {
       if (remaining > 0) {
         const remainingSeconds = Math.ceil(remaining / 1000);
         submitError.value = `评论太频繁，请 ${remainingSeconds} 秒后再试`;
+        showError(`评论太频繁，请 ${remainingSeconds} 秒后再试`);
         return;
       }
     }
@@ -184,21 +188,25 @@ async function submitComment() {
   // 验证必填项
   if (!formData.value.content.trim()) {
     submitError.value = "请输入评论内容";
+    showError("请输入评论内容");
     return;
   }
 
   if (!formData.value.name.trim()) {
     submitError.value = "请输入昵称";
+    showError("请输入昵称");
     return;
   }
 
   if (props.requireMail && !formData.value.mail.trim()) {
     submitError.value = "请输入邮箱";
+    showError("请输入邮箱");
     return;
   }
 
   if (props.requireLink && !formData.value.link.trim()) {
     submitError.value = "请输入链接";
+    showError("请输入链接");
     return;
   }
 
@@ -222,6 +230,13 @@ async function submitComment() {
       submitError.value = "";
       // 根据是否需要审核显示不同的提示
       successMessage.value = response.needModeration ? "评论提交成功，请等待审核" : "评论提交成功";
+
+      // 显示前台通知
+      if (response.needModeration) {
+        success("评论提交成功，请等待审核");
+      } else {
+        success("评论提交成功");
+      }
 
       // 保存用户信息到localStorage
       if (import.meta.client) {
@@ -248,9 +263,13 @@ async function submitComment() {
       }, 3000);
     } else {
       submitError.value = response.message || "评论失败，请重试";
+      // 显示前台错误通知
+      showError(response.message || "评论失败，请重试");
     }
   } catch (error: any) {
     submitError.value = error?.message || "网络错误，请稍后重试";
+    // 显示前台错误通知
+    showError(error?.message || "网络错误，请稍后重试");
     console.error("评论失败:", error);
   } finally {
     submitting.value = false;
@@ -377,22 +396,6 @@ function formatEmojiPlaceholder(text: string): string {
           {{ submitting ? "提交中..." : "提交评论" }}
         </button>
       </div>
-    </div>
-
-    <!-- 成功提示 -->
-    <div
-      v-if="submitSuccess"
-      class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
-      <Icon name="lucide:check-circle" class="size-4 flex-shrink-0" />
-      <span>{{ successMessage }}</span>
-    </div>
-
-    <!-- 错误提示 -->
-    <div
-      v-if="submitError"
-      class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-300 text-sm flex items-center gap-2">
-      <Icon name="lucide:alert-circle" class="size-4 flex-shrink-0" />
-      <span>{{ submitError }}</span>
     </div>
   </div>
 </template>

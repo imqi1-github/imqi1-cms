@@ -57,6 +57,7 @@ export default defineNuxtConfig({
       display: "fullscreen",
       lang: "zh-CN",
       start_url: "https://imqi1.qi1.website",
+      scope: "https://imqi1.qi1.website",
       id: "/",
       icons: [
         {

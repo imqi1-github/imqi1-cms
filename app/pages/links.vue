@@ -4,6 +4,9 @@ import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
 import { computed, onMounted, ref } from "vue";
 
+// 导入前台通知 composable
+const { success, error: showError } = useFrontNotification();
+
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
@@ -90,6 +93,8 @@ const handleSubmit = async () => {
 
     if (data.code === 200) {
       submitSuccess.value = true;
+      // 显示前台通知
+      success("友链申请成功，请等待审核");
       // 重置表单
       formData.value = {
         name: "",
@@ -99,9 +104,13 @@ const handleSubmit = async () => {
       };
     } else {
       submitError.value = data.message || "申请失败，请重试";
+      // 显示前台错误通知
+      showError(data.message || "申请失败，请重试");
     }
   } catch (error) {
     submitError.value = "网络错误，请稍后重试";
+    // 显示前台错误通知
+    showError("网络错误，请稍后重试");
   } finally {
     submitting.value = false;
   }
@@ -327,23 +336,6 @@ onUnmounted(() => {
               type="text"
               placeholder="头像"
               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
-          </div>
-        </div>
-
-        <!-- ✅ 提示统一位置（按钮上方） -->
-        <div
-          v-if="submitSuccess || submitError"
-          class="rounded-lg p-4 text-[0.95em]"
-          :class="
-            submitSuccess
-              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
-              : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
-          ">
-          <div class="flex items-center gap-2">
-            <Icon :name="submitSuccess ? 'lucide:check-circle' : 'lucide:alert-circle'" class="size-5" />
-            <span>
-              {{ submitSuccess ? "申请成功，请等待审核" : submitError }}
-            </span>
           </div>
         </div>
 
