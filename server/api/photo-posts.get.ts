@@ -64,7 +64,13 @@ export default defineEventHandler(async event => {
       let covers: { url: string; desc?: string }[] = [];
       if (post.covers) {
         try {
-          covers = JSON.parse(post.covers);
+          const parsed = JSON.parse(post.covers);
+          if (Array.isArray(parsed)) {
+            covers = parsed.map(item => ({
+              url: item.url || item,
+              desc: item.title || item.desc || '',
+            }));
+          }
         } catch {
           covers = [];
         }

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 
+// 获取路由
+const route = useRoute();
+const router = useRouter();
+
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
@@ -43,12 +47,17 @@ const extractToc = () => {
   const headings = content.querySelectorAll("h1, h2, h3");
   const items: TocItem[] = [];
 
-  headings.forEach((heading, index) => {
-    const id = `heading-${index}`;
-    heading.id = id;
+  headings.forEach((heading) => {
+    // 直接使用标题文本生成 id
+    const text = heading.textContent || "";
+    const id = generateSlug(text);
+
+    // 给标题元素设置 id
+    (heading as HTMLElement).id = id;
+
     items.push({
       id,
-      text: heading.textContent || "",
+      text,
       level: parseInt(heading.tagName.charAt(1)),
     });
   });
@@ -60,7 +69,7 @@ const extractToc = () => {
 const scrollToHeading = (id: string) => {
   const element = document.getElementById(id);
   if (element) {
-    const offset = 100; // 顶部偏移量
+    const offset = 100; // 顶部偏移量（导航栏高度 + 额外间距）
     const bodyRect = document.body.getBoundingClientRect().top;
     const elementRect = element.getBoundingClientRect().top;
     const elementPosition = elementRect - bodyRect;
@@ -70,6 +79,47 @@ const scrollToHeading = (id: string) => {
       top: offsetPosition,
       behavior: "smooth",
     });
+  }
+};
+
+// 点击目录项，只滚动不更新 URL
+const handleTocClick = (id: string, text: string) => {
+  scrollToHeading(id);
+};
+
+// 根据标题生成 slug（用于 id）
+const generateSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')           // 空格替换为短横线
+    .replace(/[^\w\u4e00-\u9fa5-]/g, ''); // 只保留字母、数字、中文和短横线
+};
+
+// 根据 URL hash 查找对应的标题 ID
+const findHeadingIdByHash = (hash: string): string | null => {
+  if (!hash) return null;
+
+  // 移除 # 符号
+  const hashText = hash.slice(1);
+
+  // 直接查找匹配的 id
+  const matchingItem = tocItems.value.find(item => item.id === hashText);
+
+  return matchingItem?.id || null;
+};
+
+// 处理 URL hash 滚动
+const handleHashScroll = async () => {
+  if (!import.meta.client || !route.hash) return;
+
+  // 等待 DOM 更新和目录提取完成
+  await nextTick();
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  const headingId = findHeadingIdByHash(route.hash);
+  if (headingId) {
+    scrollToHeading(headingId);
   }
 };
 
@@ -143,6 +193,13 @@ watch(page, (newPage) => {
   });
 });
 
+// 监听路由 hash 变化
+watch(() => route.hash, (newHash) => {
+  if (newHash) {
+    handleHashScroll();
+  }
+});
+
 // 初始化滚动渐入动画
 onMounted(() => {
   // 404 页面动画（初始状态）
@@ -175,10 +232,15 @@ onMounted(() => {
     fadeInObserver.observe(el);
   });
 
-  // 初始化目录
-  nextTick(() => {
+  // 初始化目录和处理 hash 滚动
+  nextTick(async () => {
     extractToc();
     window.addEventListener("scroll", handleTocScroll);
+
+    // 处理页面加载时的 hash
+    if (route.hash) {
+      await handleHashScroll();
+    }
   });
 });
 
@@ -232,7 +294,7 @@ onUnmounted(() => {
             <ul class="space-y-1" v-if="showToc">
               <li v-for="item in tocItems" :key="item.id" class="wrap-anywhere overflow-hidden text-ellipsis">
                 <button
-                  @click="scrollToHeading(item.id)"
+                  @click="handleTocClick(item.id, item.text)"
                   :class="[
                     'w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200',
                     'hover:bg-slate-100 dark:hover:bg-slate-800',

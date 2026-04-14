@@ -174,8 +174,8 @@ onMounted(() => {
           <template v-for="post in posts" :key="post.cid">
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
               <NuxtLink :to="`/content/${slug}/${post.slug}`" class="photo-item">
-                <img :src="cover.url" :alt="cover.desc || post.title" loading="lazy" />
-                <div class="photo-name">{{ cover.desc || post.title }}</div>
+                <img :src="cover.url" :alt="(cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title" loading="lazy" />
+                <div class="photo-name">{{ (cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title }}</div>
               </NuxtLink>
             </template>
           </template>

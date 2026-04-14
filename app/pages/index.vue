@@ -412,12 +412,18 @@
             class="block break-inside-avoid no-underline group">
             <div
               class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
-              <img :src="image.url" :alt="image.desc || image.title" class="w-full h-auto object-cover" loading="lazy" />
+              <img
+                :src="image.url"
+                :alt="image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title"
+                class="w-full h-auto object-cover"
+                loading="lazy" />
               <!-- 悬浮标题 -->
               <div
-                class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div class="absolute bottom-0 left-0 right-0 p-3">
-                  <p class="text-white text-sm font-medium line-clamp-2">{{ image.desc || image.title }}</p>
+                class="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="absolute bottom-0 left-0 right-0 px-2 py-1">
+                  <p class="text-white text-xs text-center font-medium line-clamp-2">
+                    {{ image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title }}
+                  </p>
                 </div>
               </div>
             </div>

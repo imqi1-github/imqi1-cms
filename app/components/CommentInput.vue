@@ -284,7 +284,7 @@ function formatEmojiPlaceholder(text: string): string {
       </h2>
       <button v-if="isReply" type="button" @click="cancelReply" class="cancel-reply-button">取消回复</button>
     </div>
-    <div class="comment-box-description">评论即代表你已阅读并同意<a href="/agreement" class="comment-link" target="_blank">评论协议</a>。</div>
+    <div class="comment-box-description">评论即代表你已阅读并同意<a href="/agreement#评论相关" class="comment-link" target="_blank">评论协议</a>。</div>
 
     <div class="comment-input-row">
       <label for="comment-content-input" class="sr-only">评论内容</label>
@@ -418,6 +418,7 @@ function formatEmojiPlaceholder(text: string): string {
   border-radius: 4px;
   background: rgb(255 255 255);
   line-height: 1.5;
+  color: rgb(23, 20, 20);
   resize: vertical;
   transition:
     border-color 0.15s,
@@ -427,6 +428,7 @@ function formatEmojiPlaceholder(text: string): string {
 .dark .comment-textarea {
   background: rgb(8, 14, 30);
   border-color: rgb(24, 35, 49);
+  color: rgb(203 213 225);
 }
 
 .comment-textarea:focus {
@@ -447,6 +449,7 @@ function formatEmojiPlaceholder(text: string): string {
   border: 1px solid rgb(226 232 240);
   border-radius: 4px;
   background: rgb(255 255 255);
+  color: rgb(23, 20, 20);
   font-size: 0.875em;
   transition:
     border-color 0.15s,
@@ -456,6 +459,7 @@ function formatEmojiPlaceholder(text: string): string {
 .dark .comment-input {
   background: rgb(8, 14, 30);
   border-color: rgb(24, 35, 49);
+  color: rgb(203 213 225);
 }
 
 .comment-input:focus {

@@ -251,7 +251,7 @@ onUnmounted(() => {
         </p>
         <p>
           本站只加熟悉的朋友的、频繁来本站评论的朋友的链接，不接受直接的友链申请，即使你申请了我也不会通过。详细规则请前往
-          <NuxtLink to="/agreement#title-5" class="text-blue-600 hover:underline">协议页面</NuxtLink>
+          <NuxtLink to="/agreement#友链" target="_blank" class="text-blue-600 hover:underline">协议页面</NuxtLink>
           查看。
         </p>
       </div>

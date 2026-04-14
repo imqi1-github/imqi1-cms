@@ -1914,7 +1914,7 @@ onUnmounted(() => {
 }
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".vue"]::before) {
-  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
+  background-image: url("/icons/vue.svg");
 }
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".css"]::before),
@@ -1931,7 +1931,11 @@ onUnmounted(() => {
 }
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".md"]::before) {
-  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
+  background-image: url("/icons/markdown.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".markdown"]::before) {
+  background-image: url("/icons/markdown.svg");
 }
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".py"]::before) {
@@ -1944,14 +1948,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".java"]::before) {
   background-image: url("/icons/java.svg");
-}
-
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".c"]::before) {
-  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
-}
-
-.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".cpp"]::before) {
-  background-image: url("/icons/svg.svg"); /* 暂用 svg 图标 */
 }
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".sh"]::before),
@@ -1987,18 +1983,6 @@ onUnmounted(() => {
 .markdown-body :deep(pre.shiki.has-file-name .copy-button) {
   top: 38px; /* 移到文件标签栏下方 */
 }
-
-/* 语言标签悬浮效果 */
-.markdown-body :deep(pre.shiki.has-file-name .lang-label:hover) {
-  background: rgb(255 255 255);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.dark .markdown-body :deep(pre.shiki.has-file-name .lang-label:hover) {
-  background: rgb(75 85 99);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-}
-
 
 .markdown-body :deep(table) {
   width: 100%;
