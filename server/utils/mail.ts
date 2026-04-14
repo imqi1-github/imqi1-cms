@@ -228,7 +228,8 @@ export async function sendCommentNotification(
     return false
   }
 
-  const commentUrl = `${process.env.SITE_URL || 'http://localhost'}/post/${comment.cid}`
+  const siteInfo = await getSiteInfo()
+  const postUrl = await getPostUrl(comment.cid)
 
   return await sendMail({
     to: config.adminEmail,
@@ -246,7 +247,7 @@ export async function sendCommentNotification(
           IP: ${comment.ip || '未知'}
         </p>
         <p style="margin-top: 20px;">
-          <a href="${commentUrl}" style="display: inline-block; padding: 10px 20px; background: #0070f3; color: white; text-decoration: none; border-radius: 5px;">
+          <a href="${postUrl}" style="display: inline-block; padding: 10px 20px; background: #0070f3; color: white; text-decoration: none; border-radius: 5px;">
             查看评论
           </a>
         </p>
@@ -349,13 +350,14 @@ function createEmailTemplate(title: string, content: string): string {
 }
 
 // 获取文章的完整 URL
-async function getPostUrl(cid: number): Promise<string> {
+async function getPostUrl(cid: number, commentId?: number): Promise<string> {
   const siteInfo = await getSiteInfo()
   const post = await prisma.post.findUnique({
     where: { cid },
     select: { slug: true },
   })
 
+  let url: string
   if (post?.slug) {
     // 优先使用 slug
     const category = await prisma.postrelation.findFirst({
@@ -369,10 +371,17 @@ async function getPostUrl(cid: number): Promise<string> {
       },
     })
     const categorySlug = category?.metas?.slug || 'posts'
-    return `${siteInfo.url}/content/${categorySlug}/${post.slug}`
+    url = `${siteInfo.url}/content/${categorySlug}/${post.slug}`
+  } else {
+    url = `${siteInfo.url}/content/posts/${cid}`
   }
 
-  return `${siteInfo.url}/content/posts/${cid}`
+  // 如果提供了评论ID，添加评论锚点
+  if (commentId) {
+    url += `#comment-${commentId}`
+  }
+
+  return url
 }
 
 // 获取文章标题
@@ -421,7 +430,8 @@ export async function notifyFriendLinkApplication(linkName: string, linkUrl: str
 export async function notifyAdminNewComment(
   postId: number,
   commenterName: string,
-  commentContent: string
+  commentContent: string,
+  commentId: number
 ): Promise<boolean> {
   const config = await getMailConfig()
 
@@ -433,7 +443,7 @@ export async function notifyAdminNewComment(
 
   const siteInfo = await getSiteInfo()
   const postTitle = await getPostTitle(postId)
-  const postUrl = await getPostUrl(postId)
+  const postUrl = await getPostUrl(postId, commentId)
   const subject = `[${siteInfo.name}] 文章新评论：${commenterName}`
 
   const content = `
@@ -460,7 +470,8 @@ export async function notifyCommentReply(
   parentCommenterEmail: string,
   parentCommentContent: string,
   replierName: string,
-  replyContent: string
+  replyContent: string,
+  commentId: number
 ): Promise<boolean> {
   const config = await getMailConfig()
 
@@ -486,7 +497,7 @@ export async function notifyCommentReply(
 
   const siteInfo = await getSiteInfo()
   const postTitle = await getPostTitle(postId)
-  const postUrl = await getPostUrl(postId)
+  const postUrl = await getPostUrl(postId, commentId)
   const subject = `[${siteInfo.name}] 您的评论收到了回复`
 
   const content = `
@@ -516,7 +527,8 @@ export async function notifyAdminPendingComment(
   postId: number,
   commenterName: string,
   commentContent: string,
-  status: number
+  status: number,
+  commentId: number
 ): Promise<boolean> {
   const config = await getMailConfig()
 
@@ -528,7 +540,7 @@ export async function notifyAdminPendingComment(
 
   const siteInfo = await getSiteInfo()
   const postTitle = await getPostTitle(postId)
-  const postUrl = await getPostUrl(postId)
+  const postUrl = await getPostUrl(postId, commentId)
 
   // status: 0-待审核, 1-已发布, 2-垃圾
   const isSpam = status === 2
@@ -543,6 +555,7 @@ export async function notifyAdminPendingComment(
       <p>${commentContent}</p>
       <p class="info-meta">状态：${isSpam ? '垃圾评论' : '等待审核'}</p>
     </div>
+    <p><a href="${postUrl}" class="link">查看评论</a></p>
     <p><a href="${siteInfo.url}/admin/comments" class="link">前往后台审核</a></p>
   `
 

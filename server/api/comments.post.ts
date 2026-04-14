@@ -84,7 +84,7 @@ export default defineEventHandler(async event => {
     // 如果评论状态不是已发布(status !== 1)，则通知站长
     if (commentStatus !== 1) {
       // 异步发送邮件，不阻塞响应
-      notifyAdminPendingComment(parseInt(cid), name, content, commentStatus);
+      notifyAdminPendingComment(parseInt(cid), name, content, commentStatus, comment.coid);
     }
 
     // 3. 评论回复通知 - 通知被回复的评论者
@@ -105,7 +105,8 @@ export default defineEventHandler(async event => {
           parentComment.mail,
           parentComment.content,
           name,
-          content
+          content,
+          comment.coid
         );
       }
     } else {
@@ -113,7 +114,7 @@ export default defineEventHandler(async event => {
       // 如果是顶级评论且已发布(status === 1)，通知站长有新评论
       if (commentStatus === 1) {
         // 异步发送邮件
-        notifyAdminNewComment(parseInt(cid), name, content);
+        notifyAdminNewComment(parseInt(cid), name, content, comment.coid);
       }
     }
 
