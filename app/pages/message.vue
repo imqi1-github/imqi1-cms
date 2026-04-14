@@ -16,6 +16,36 @@ const messagePostId = computed(() => messageConfig.value?.data?.postId);
 // 页面元数据
 useHead({
   title: computed(() => `留言 - ${siteName.value}`),
+  meta: [
+    {
+      name: "description",
+      content: "在 ImQi1 留言板留下你的足迹，说出你的想法。欢迎与我交流技术和生活。",
+    },
+    {
+      name: "keywords",
+      content: "留言,留言板,评论,交流,互动",
+    },
+    {
+      property: "og:title",
+      content: computed(() => `留言 - ${siteName.value}`),
+    },
+    {
+      property: "og:description",
+      content: "在 ImQi1 留言板留下你的足迹，说出你的想法。欢迎与我交流技术和生活。",
+    },
+    {
+      property: "og:type",
+      content: "website",
+    },
+    {
+      name: "twitter:title",
+      content: computed(() => `留言 - ${siteName.value}`),
+    },
+    {
+      name: "twitter:description",
+      content: "在 ImQi1 留言板留下你的足迹，说出你的想法。欢迎与我交流技术和生活。",
+    },
+  ],
 });
 
 // 初始化 Fancybox

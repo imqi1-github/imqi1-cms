@@ -42,8 +42,15 @@ const fontCssUrl = computed(() => {
   return import.meta.env.PROD && cdnURL ? `${cdnURL}/fonts/font.css` : "/fonts/font.css";
 });
 
-// 全局 RSS 订阅链接和字体
+// 全局 SEO 元信息
+const siteUrl = "https://imqi1.qi1.website";
+const siteDescription = "做技术的分享者、生活的摄影师、时事的评论员。";
+const siteKeywords = "技术,摄影,时事,博客,编程,开发,Vue,Nuxt,JavaScript";
+
 useHead({
+  htmlAttrs: {
+    lang: "zh-CN",
+  },
   link: [
     {
       rel: "alternate",
@@ -55,8 +62,89 @@ useHead({
       rel: "stylesheet",
       href: fontCssUrl.value,
     },
+    {
+      rel: "canonical",
+      href: computed(() => {
+        if (process.client) {
+          return window.location.href;
+        }
+        return siteUrl + route.path;
+      }),
+    },
   ],
   meta: [
+    // 基础元信息
+    {
+      name: "description",
+      content: siteDescription,
+    },
+    {
+      name: "keywords",
+      content: siteKeywords,
+    },
+    {
+      name: "author",
+      content: "ImQi1",
+    },
+
+    // Open Graph
+    {
+      property: "og:site_name",
+      content: "ImQi1",
+    },
+    {
+      property: "og:title",
+      content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
+    },
+    {
+      property: "og:description",
+      content: siteDescription,
+    },
+    {
+      property: "og:image",
+      content: `${siteUrl}/imgs/og-image.png`,
+    },
+    {
+      property: "og:url",
+      content: computed(() => {
+        if (process.client) {
+          return window.location.href;
+        }
+        return siteUrl + route.path;
+      }),
+    },
+    {
+      property: "og:type",
+      content: "website",
+    },
+    {
+      property: "og:locale",
+      content: "zh_CN",
+    },
+
+    // Twitter Card
+    {
+      name: "twitter:card",
+      content: "summary_large_image",
+    },
+    {
+      name: "twitter:title",
+      content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
+    },
+    {
+      name: "twitter:description",
+      content: siteDescription,
+    },
+    {
+      name: "twitter:image",
+      content: `${siteUrl}/imgs/og-image.png`,
+    },
+    {
+      name: "twitter:site",
+      content: "@imqi1",
+    },
+
+    // 其他
     {
       name: "theme-color",
       content: "#f9fafb",
@@ -68,6 +156,14 @@ useHead({
     {
       name: "apple-mobile-web-app-status-bar-style",
       content: "default",
+    },
+    {
+      name: "robots",
+      content: "index, follow",
+    },
+    {
+      name: "googlebot",
+      content: "index, follow",
     },
   ],
 });

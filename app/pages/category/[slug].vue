@@ -127,13 +127,43 @@ watch(
 );
 
 // 页面标题
-useHead({
-  title: computed(() => {
+useHead(() => ({
+  title: (() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
     if (isNotFound.value) return `分类不存在 - ${siteName.value}`;
     return `${category.value?.name} - ${siteName.value}`;
-  }),
-});
+  })(),
+  meta: category.value ? [
+    {
+      name: "description",
+      content: `浏览 ${category.value.name} 分类下的所有文章，${category.value.desc || '查看相关技术文章和教程'}`,
+    },
+    {
+      name: "keywords",
+      content: `${category.value.name},分类,博客,${category.value.desc || ''}`,
+    },
+    {
+      property: "og:title",
+      content: `${category.value.name} - ${siteName.value}`,
+    },
+    {
+      property: "og:description",
+      content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
+    },
+    {
+      property: "og:type",
+      content: "website",
+    },
+    {
+      name: "twitter:title",
+      content: `${category.value.name} - ${siteName.value}`,
+    },
+    {
+      name: "twitter:description",
+      content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
+    },
+  ] : [],
+}));
 
 // 初始化渐入动画
 onMounted(() => {

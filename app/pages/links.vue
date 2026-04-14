@@ -15,6 +15,36 @@ const links = computed(() => linksData.value?.data || []);
 // 页面元数据
 useHead({
   title: computed(() => `友情链接 - ${siteName.value}`),
+  meta: [
+    {
+      name: "description",
+      content: "查看 ImQi1 的友情链接，发现更多优秀的博客和网站。欢迎申请友链交换。",
+    },
+    {
+      name: "keywords",
+      content: "友情链接,友链,博客链接,网站推荐,链接交换",
+    },
+    {
+      property: "og:title",
+      content: computed(() => `友情链接 - ${siteName.value}`),
+    },
+    {
+      property: "og:description",
+      content: "查看 ImQi1 的友情链接，发现更多优秀的博客和网站。欢迎申请友链交换。",
+    },
+    {
+      property: "og:type",
+      content: "website",
+    },
+    {
+      name: "twitter:title",
+      content: computed(() => `友情链接 - ${siteName.value}`),
+    },
+    {
+      name: "twitter:description",
+      content: "查看 ImQi1 的友情链接，发现更多优秀的博客和网站。欢迎申请友链交换。",
+    },
+  ],
 });
 
 // 表单状态

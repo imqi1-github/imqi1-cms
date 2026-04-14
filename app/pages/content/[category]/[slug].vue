@@ -185,9 +185,69 @@ watch(
   { immediate: true },
 );
 
-useHead({
-  title: pageTitle,
+// SEO 元数据
+const seoMeta = computed(() => {
+  if (!post.value) return {};
+
+  const fullUrl = process.client
+    ? window.location.href
+    : `https://imqi1.qi1.website${route.path}`;
+
+  const keywords = tags.value.map(tag => typeof tag === 'string' ? tag : tag.name).join(', ');
+  const description = post.value.desc || post.value.excerpt || '';
+  const coverImage = firstCover.value || '';
+  const authorName = post.value.user?.nickname || post.value.user?.name || 'ImQi1';
+  const publishDate = post.value.create_time || post.value.update_time;
+  const modifyDate = post.value.update_time;
+
+  return {
+    title: pageTitle.value,
+    meta: [
+      // 基础元信息
+      { name: 'description', content: description },
+      { name: 'keywords', content: keywords },
+      { name: 'author', content: authorName },
+
+      // Open Graph
+      { property: 'og:type', content: 'article' },
+      { property: 'og:title', content: post.value.title },
+      { property: 'og:description', content: description },
+      { property: 'og:image', content: coverImage },
+      { property: 'og:url', content: fullUrl },
+      { property: 'og:site_name', content: siteName.value },
+      { property: 'article:published_time', content: publishDate },
+      { property: 'article:modified_time', content: modifyDate },
+      { property: 'article:author', content: authorName },
+      ...(categories.value.map(cat => ({
+        property: 'article:section',
+        content: cat.name,
+      }))),
+      ...(tags.value.map(tag => ({
+        property: 'article:tag',
+        content: typeof tag === 'string' ? tag : tag.name,
+      }))),
+
+      // Twitter Card
+      { name: 'twitter:card', content: coverImage ? 'summary_large_image' : 'summary' },
+      { name: 'twitter:title', content: post.value.title },
+      { name: 'twitter:description', content: description },
+      { name: 'twitter:image', content: coverImage },
+      { name: 'twitter:site', content: '@imqi1' },
+
+      // 其他
+      { name: 'robots', content: 'index, follow' },
+      { name: 'googlebot', content: 'index, follow' },
+    ],
+    link: [
+      {
+        rel: 'canonical',
+        href: fullUrl,
+      },
+    ],
+  };
 });
+
+useHead(() => seoMeta.value);
 
 // 监听文章数据变化，触发渐入动画
 watch(
@@ -216,15 +276,15 @@ watch(
 
         const header = article.querySelector("header.article-cover");
         const contentBody = article.querySelector(".content-body");
-        const ccLicenseSection = article.querySelector(".cc-license-section");
+        const metaLicenseBox = article.querySelector(".meta-license-box");
         const commentSection = article.querySelector("section.opacity-0");
 
         header?.classList.remove("opacity-0", "translate-y-8");
         header?.classList.add("opacity-100", "translate-y-0");
         contentBody?.classList.remove("opacity-0", "translate-y-8");
         contentBody?.classList.add("opacity-100", "translate-y-0");
-        ccLicenseSection?.classList.remove("opacity-0", "translate-y-8");
-        ccLicenseSection?.classList.add("opacity-100", "translate-y-0");
+        metaLicenseBox?.classList.remove("opacity-0", "translate-y-8");
+        metaLicenseBox?.classList.add("opacity-100", "translate-y-0");
         commentSection?.classList.remove("opacity-0", "translate-y-8");
         commentSection?.classList.add("opacity-100", "translate-y-0");
       }, 100);
@@ -1345,55 +1405,58 @@ onUnmounted(() => {
         <div class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
       </div>
 
-      <!-- 元信息 -->
-      <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2.5">
-        <span class="inline-flex items-center gap-0.5" v-tooltip="'作者'">
-          <Icon name="ri:user-line" class="size-4" />
-          <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
-        </span>
-        <span class="inline-flex items-center gap-0.5" v-tooltip="'发布时间'">
-          <Icon name="ri:edit-2-line" class="size-4" />
-          <time :datetime="post.update_time">
-            {{ formatDate(post.update_time) }}
-          </time>
-        </span>
-        <span v-if="categories.length > 0" class="inline-flex items-center gap-0.5" v-tooltip="'分类'">
-          <Icon name="ri:menu-line" class="size-4" />
-          <NuxtLink
-            v-for="(cat, index) in categories"
-            :key="cat.mid"
-            :to="`/category/${cat.slug}`"
-            class="text-inherit no-underline transition-colors hover:text-blue-600">
-            {{ cat.name }}{{ index < categories.length - 1 ? ", " : "" }}
-          </NuxtLink>
-        </span>
-        <span v-if="tags.length > 0" class="inline-flex items-center gap-0.5" v-tooltip="'标签'">
-          <Icon name="ri:hashtag" class="size-4" />
-          <NuxtLink
-            v-for="(tag, index) in tags"
-            :key="index"
-            :to="tag.slug ? `/tag/${tag.slug}` : '#'"
-            :class="['hover:text-blue-600 dark:hover:text-blue-500 transition-colors', tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50']">
-            {{ typeof tag === "string" ? tag : tag.name }}
-          </NuxtLink>
-        </span>
-      </div>
+      <!-- 元信息盒子和 CC 授权 -->
+      <div class="mt-4 p-4 borde rounded-lg w-full opacity-0 translate-y-8 duration-300 ease-out meta-license-box">
+        <!-- 元信息 -->
+        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+          <span class="inline-flex items-center gap-0.5" v-tooltip="'作者'">
+            <Icon name="ri:user-line" class="size-4" />
+            <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
+          </span>
+          <span class="inline-flex items-center gap-0.5" v-tooltip="'发布时间'">
+            <Icon name="ri:edit-2-line" class="size-4" />
+            <time :datetime="post.update_time">
+              {{ formatDate(post.update_time) }}
+            </time>
+          </span>
+          <span v-if="categories.length > 0" class="inline-flex items-center gap-0.5" v-tooltip="'分类'">
+            <Icon name="ri:menu-line" class="size-4" />
+            <NuxtLink
+              v-for="(cat, index) in categories"
+              :key="cat.mid"
+              :to="`/category/${cat.slug}`"
+              class="text-inherit no-underline transition-colors hover:text-blue-600">
+              {{ cat.name }}{{ index < categories.length - 1 ? ", " : "" }}
+            </NuxtLink>
+          </span>
+          <span v-if="tags.length > 0" class="inline-flex items-center gap-0.5" v-tooltip="'标签'">
+            <Icon name="ri:hashtag" class="size-4" />
+            <NuxtLink
+              v-for="(tag, index) in tags"
+              :key="index"
+              :to="tag.slug ? `/tag/${tag.slug}` : '#'"
+              :class="['hover:text-blue-600 dark:hover:text-blue-500 transition-colors', tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50']">
+              {{ typeof tag === "string" ? tag : tag.name }}
+            </NuxtLink>
+          </span>
+        </div>
 
-      <!-- CC 协议授权 -->
-      <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700 w-full opacity-0 translate-y-8 duration-300 ease-out cc-license-section">
-        <div class="cc-license flex items-center gap-1 dark:border-slate-700">
-          <Icon name="ri:copyright-line" class="text-xs text-slate-600 dark:text-slate-400"></Icon>
-          <p class="text-xs text-slate-600 dark:text-slate-400">
-            若无特别说明，本文采用
-            <a
-              href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
-              CC BY-NC-SA 4.0
-            </a>
-            协议授权。
-          </p>
+        <!-- CC 协议授权 -->
+        <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700">
+          <div class="cc-license flex items-center gap-1">
+            <Icon name="ri:copyright-line" class="text-xs text-slate-600 dark:text-slate-400"></Icon>
+            <p class="text-xs text-slate-600 dark:text-slate-400">
+              若无特别说明，本文采用
+              <a
+                href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                CC BY-NC-SA 4.0
+              </a>
+              协议授权。
+            </p>
+          </div>
         </div>
       </div>
 

@@ -604,6 +604,36 @@ const stats = computed(() => ({
 // 页面元数据
 useHead({
   title: computed(() => `关于 - ${siteName.value}`),
+  meta: [
+    {
+      name: "description",
+      content: "了解 ImQi1，一个热爱技术、摄影和时事的博主。查看我的技能栈、MBTI 性格类型和统计数据。",
+    },
+    {
+      name: "keywords",
+      content: "关于,关于我,个人介绍,技能栈,博主,ImQi1",
+    },
+    {
+      property: "og:title",
+      content: computed(() => `关于 - ${siteName.value}`),
+    },
+    {
+      property: "og:description",
+      content: "了解 ImQi1，一个热爱技术、摄影和时事的博主。查看我的技能栈、MBTI 性格类型和统计数据。",
+    },
+    {
+      property: "og:type",
+      content: "website",
+    },
+    {
+      name: "twitter:title",
+      content: computed(() => `关于 - ${siteName.value}`),
+    },
+    {
+      name: "twitter:description",
+      content: "了解 ImQi1，一个热爱技术、摄影和时事的博主。查看我的技能栈、MBTI 性格类型和统计数据。",
+    },
+  ],
 });
 
 // 动画用的统计数据

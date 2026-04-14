@@ -631,8 +631,39 @@ function formatDate(date: string | Date): string {
 }
 
 // 页面元数据
+const siteUrl = "https://imqi1.qi1.website";
 useHead({
   title: siteName,
+  meta: [
+    {
+      name: "description",
+      content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员。记录编程学习、生活点滴和时事评论的个人博客。",
+    },
+    {
+      name: "keywords",
+      content: "ImQi1,个人博客,技术博客,编程,Nuxt,Vue,JavaScript,摄影,时事评论",
+    },
+    {
+      property: "og:title",
+      content: siteName,
+    },
+    {
+      property: "og:description",
+      content: "做技术的分享者、生活的摄影师、时事的评论员。记录编程学习、生活点滴和时事评论的个人博客。",
+    },
+    {
+      property: "og:type",
+      content: "website",
+    },
+    {
+      name: "twitter:title",
+      content: siteName,
+    },
+    {
+      name: "twitter:description",
+      content: "做技术的分享者、生活的摄影师、时事的评论员。记录编程学习、生活点滴和时事评论的个人博客。",
+    },
+  ],
 });
 
 // 首页Hero下文字
