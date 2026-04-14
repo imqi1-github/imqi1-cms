@@ -48,6 +48,17 @@ const categoryConfig: Record<string, { name: string; prefix: string }> = {
   Cat: { name: "猫咪", prefix: "cat-" },
 };
 
+// 获取 CDN 配置
+const runtimeConfig = useRuntimeConfig();
+const cdnURL = (runtimeConfig.public.cdnURL as string) || "";
+
+// 获取表情图片URL（根据是否有CDN返回不同路径）
+const getEmojiUrl = (path: string) => {
+  if (!cdnURL) return path;
+  // 如果有CDN，将路径中的 /emojis/ 替换为 CDN URL + /emojis/
+  return path.replace(/^\/emojis\//, `${cdnURL}/emojis/`);
+};
+
 // 当前分类的表情列表
 const currentEmojis = computed(() => {
   const category = activeCategory.value;
@@ -59,7 +70,7 @@ const currentEmojis = computed(() => {
 
   return Object.entries(emojis).map(([key, path]) => ({
     key,
-    path,
+    path: getEmojiUrl(path), // 使用CDN处理后的路径
     name: key.replace(config.prefix, ""),
   }));
 });
