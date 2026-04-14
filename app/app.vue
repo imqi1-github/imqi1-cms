@@ -59,6 +59,12 @@ const appleTouchIconUrl = computed(() => {
   return import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/apple-touch-icon.png` : "/imgs/apple-touch-icon.png";
 });
 
+// PWA Manifest 路径（根据 CDN 配置动态生成）
+const manifestUrl = computed(() => {
+  const cdnURL = config.public.cdnURL as string;
+  return import.meta.env.PROD && cdnURL ? `${cdnURL}/manifest.webmanifest` : "/manifest.webmanifest";
+});
+
 useHead({
   htmlAttrs: {
     lang: "zh-CN",
@@ -82,6 +88,11 @@ useHead({
         }
         return siteUrl + route.path;
       }),
+    },
+    // PWA Manifest
+    {
+      rel: "manifest",
+      href: manifestUrl,
     },
     // Favicon
     {
@@ -227,9 +238,6 @@ watch(() => route.hash, () => {
 
 <template>
   <div>
-    <!-- PWA Manifest 注入 -->
-    <VitePwaManifest />
-
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">

@@ -56,18 +56,18 @@ export default defineNuxtConfig({
       background_color: "#ffffff",
       display: "fullscreen",
       lang: "zh-CN",
-      start_url: "https://imqi1.qi1.website",
+      start_url: "/",
       id: "/",
       scope: "/",
       icons: [
         {
-          src: "/imgs/imqi1-svg",
+          src: "/imgs/imqi1.svg",
           sizes: "192x192",
           type: "image/svg+xml",
           purpose: "any maskable"
         },
         {
-          src: "/imgs/imqi1-svg",
+          src: "/imgs/imqi1.svg",
           sizes: "512x512",
           type: "image/svg+xml",
           purpose: "any maskable"
