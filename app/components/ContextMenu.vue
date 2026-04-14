@@ -92,7 +92,7 @@ const handleContextMenu = (e: MouseEvent) => {
     const documentHeight = window.innerHeight;
 
     if (documentWidth - 20 < left + menuWidth) {
-      x.value = documentWidth - menuWidth - 20;
+      x.value = documentWidth - menuWidth - 60;
     }
 
     if (documentHeight - 20 < top + menuHeight) {
@@ -388,6 +388,11 @@ onUnmounted(() => {
         <Icon name="ri:printer-line" class="size-4" />
         <span>打印页面</span>
       </li>
+      <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+      <li class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-default">
+        <Icon name="ri:keyboard-line" class="size-3" />
+        <span>按住 Ctrl 可打开原始菜单</span>
+      </li>
     </ul>
 
     <!-- 文本菜单 -->
@@ -423,6 +428,11 @@ onUnmounted(() => {
         <Icon name="ri:checkbox-circle-line" class="size-4" />
         <span>全选</span>
       </li>
+      <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+      <li class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-default">
+        <Icon name="ri:keyboard-line" class="size-3" />
+        <span>按住 Ctrl 可打开原始菜单</span>
+      </li>
     </ul>
 
     <!-- 链接菜单 -->
@@ -444,6 +454,11 @@ onUnmounted(() => {
         class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
         <Icon name="ri:external-link-line" class="size-4" />
         <span>访问链接</span>
+      </li>
+      <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+      <li class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-default">
+        <Icon name="ri:keyboard-line" class="size-3" />
+        <span>按住 Ctrl 可打开原始菜单</span>
       </li>
     </ul>
 
@@ -498,6 +513,11 @@ onUnmounted(() => {
         class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
         <Icon name="ri:delete-bin-line" class="size-4" />
         <span>清空</span>
+      </li>
+      <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+      <li class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-default">
+        <Icon name="ri:keyboard-line" class="size-3" />
+        <span>按住 Ctrl 可打开原始菜单</span>
       </li>
     </ul>
   </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, watch } from "vue";
+import LivePhoto from "~/components/LivePhoto.vue";
 
 const route = useRoute();
 const slug = route.params.slug as string;
@@ -204,7 +205,11 @@ onMounted(() => {
           <template v-for="post in posts" :key="post.cid">
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
               <NuxtLink :to="`/content/${slug}/${post.slug}`" class="photo-item">
-                <img :src="cover.url" :alt="(cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title" loading="lazy" />
+                <LivePhoto
+                  :src="cover.url"
+                  :alt="(cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title"
+                  class="w-full h-full object-cover"
+                />
                 <div class="photo-name">{{ (cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title }}</div>
               </NuxtLink>
             </template>

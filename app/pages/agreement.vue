@@ -467,7 +467,7 @@ onUnmounted(() => {
   color: rgb(156 163 175);
 }
 
-.markdown-body :deep(img) {
+.markdown-body :deep(img:not(.swiper-container img)) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;

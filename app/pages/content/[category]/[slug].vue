@@ -2,12 +2,12 @@
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import Swiper from "swiper";
-import { Navigation, Pagination, Mousewheel } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import { Mousewheel, Navigation, Pagination } from "swiper/modules";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -48,6 +48,8 @@ const tags = computed(() => post.value?.tags || []);
 // 判断封面类型
 const hasCover = computed(() => covers.value.length > 0);
 const hasManyCovers = computed(() => post.value?.many_covers && covers.value.length > 1);
+
+const contentBody = ref<HTMLElement | null>(null);
 const firstCover = computed(() => covers.value[0]?.url || "");
 
 const { data: siteData } = await useFetch("/api/site");
@@ -189,14 +191,12 @@ watch(
 const seoMeta = computed(() => {
   if (!post.value) return {};
 
-  const fullUrl = process.client
-    ? window.location.href
-    : `https://imqi1.qi1.website${route.path}`;
+  const fullUrl = process.client ? window.location.href : `https://imqi1.qi1.website${route.path}`;
 
-  const keywords = tags.value.map(tag => typeof tag === 'string' ? tag : tag.name).join(', ');
-  const description = post.value.desc || post.value.excerpt || '';
-  const coverImage = firstCover.value || '';
-  const authorName = post.value.user?.nickname || post.value.user?.name || 'ImQi1';
+  const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
+  const description = post.value.desc || post.value.excerpt || "";
+  const coverImage = firstCover.value || "";
+  const authorName = post.value.user?.nickname || post.value.user?.name || "ImQi1";
   const publishDate = post.value.create_time || post.value.update_time;
   const modifyDate = post.value.update_time;
 
@@ -204,43 +204,43 @@ const seoMeta = computed(() => {
     title: pageTitle.value,
     meta: [
       // 基础元信息
-      { name: 'description', content: description },
-      { name: 'keywords', content: keywords },
-      { name: 'author', content: authorName },
+      { name: "description", content: description },
+      { name: "keywords", content: keywords },
+      { name: "author", content: authorName },
 
       // Open Graph
-      { property: 'og:type', content: 'article' },
-      { property: 'og:title', content: post.value.title },
-      { property: 'og:description', content: description },
-      { property: 'og:image', content: coverImage },
-      { property: 'og:url', content: fullUrl },
-      { property: 'og:site_name', content: siteName.value },
-      { property: 'article:published_time', content: publishDate },
-      { property: 'article:modified_time', content: modifyDate },
-      { property: 'article:author', content: authorName },
-      ...(categories.value.map(cat => ({
-        property: 'article:section',
+      { property: "og:type", content: "article" },
+      { property: "og:title", content: post.value.title },
+      { property: "og:description", content: description },
+      { property: "og:image", content: coverImage },
+      { property: "og:url", content: fullUrl },
+      { property: "og:site_name", content: siteName.value },
+      { property: "article:published_time", content: publishDate },
+      { property: "article:modified_time", content: modifyDate },
+      { property: "article:author", content: authorName },
+      ...categories.value.map(cat => ({
+        property: "article:section",
         content: cat.name,
-      }))),
-      ...(tags.value.map(tag => ({
-        property: 'article:tag',
-        content: typeof tag === 'string' ? tag : tag.name,
-      }))),
+      })),
+      ...tags.value.map(tag => ({
+        property: "article:tag",
+        content: typeof tag === "string" ? tag : tag.name,
+      })),
 
       // Twitter Card
-      { name: 'twitter:card', content: coverImage ? 'summary_large_image' : 'summary' },
-      { name: 'twitter:title', content: post.value.title },
-      { name: 'twitter:description', content: description },
-      { name: 'twitter:image', content: coverImage },
-      { name: 'twitter:site', content: '@imqi1' },
+      { name: "twitter:card", content: coverImage ? "summary_large_image" : "summary" },
+      { name: "twitter:title", content: post.value.title },
+      { name: "twitter:description", content: description },
+      { name: "twitter:image", content: coverImage },
+      { name: "twitter:site", content: "@imqi1" },
 
       // 其他
-      { name: 'robots', content: 'index, follow' },
-      { name: 'googlebot', content: 'index, follow' },
+      { name: "robots", content: "index, follow" },
+      { name: "googlebot", content: "index, follow" },
     ],
     link: [
       {
-        rel: 'canonical',
+        rel: "canonical",
         href: fullUrl,
       },
     ],
@@ -1263,7 +1263,6 @@ onMounted(() => {
       }
 
       .swiper-container[class*="markdown-swiper-instance"] :deep(.swiper-pagination-bullet-active) {
-        width: 16px;
         background: rgb(37 99 235);
       }
 
@@ -1308,6 +1307,260 @@ onMounted(() => {
       }
     `;
       document.head.appendChild(style);
+
+      // 初始化实况照片
+      const images = document.querySelectorAll(".markdown-body img");
+      images.forEach(img => {
+        const src = img.src;
+        const alt = img.alt;
+        const className = img.className;
+        const dataFancybox = img.getAttribute("data-fancybox");
+        const dataCaption = img.getAttribute("data-caption");
+
+        // 检查是否为实况照片
+        const isLive = src.includes("#live") || alt.includes("[live]");
+
+        if (isLive) {
+          // 为实况照片创建 LivePhoto 组件
+          const livePhotoContainer = document.createElement("div");
+          livePhotoContainer.className = "live-photo-container size-full";
+          if (dataFancybox) livePhotoContainer.setAttribute("data-fancybox", dataFancybox);
+          if (dataCaption) livePhotoContainer.setAttribute("data-caption", dataCaption);
+
+          // 使用 LivePhoto 组件的 HTML 结构
+          livePhotoContainer.innerHTML = `
+            <div class="live-photo-wrapper relative w-full h-auto rounded-lg overflow-hidden ${className}" onmouseenter="this.querySelector('button').classList.add('opacity-100'); this.querySelector('button').classList.remove('opacity-0');" onmouseleave="this.querySelector('button').classList.remove('opacity-100'); this.querySelector('button').classList.add('opacity-0');">
+              <!-- 静态图片 -->
+              <img
+                src="${src}"
+                alt="${alt}"
+                class="live-photo-image w-full h-full max-h-[inherit] rounded-lg transition-opacity duration-300 ease-in-out object-cover"
+                loading="lazy"
+              />
+              <!-- 视频元素 -->
+              <video
+                class="live-photo-video absolute w-full inset-0 rounded-lg max-h-[inherit] pointer-events-none transition-opacity duration-300 ease-in-out object-cover"
+                playsinline
+                muted
+                style="opacity: 0"
+              ></video>
+              <!-- 实况照片标识 -->
+              <div class="live-photo-tip absolute top-3 left-3 text-white text-sm flex items-center gap-1 z-10 pointer-events-none">
+                <svg data-v-5fc1731c="" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--ri size-4" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10M10.622 8.415a.4.4 0 0 0-.622.332v6.506a.4.4 0 0 0 .622.332l4.879-3.252a.4.4 0 0 0 0-.666z"></path></svg>
+                <span>实况</span>
+              </div>
+              <!-- 点击播放模式：播放按钮 -->
+              <button
+                class="absolute bottom-3 right-3 transition-opacity duration-200 z-20 bg-black/20 dark:bg-black/40 rounded-full backdrop-blur-sm border-none cursor-pointer size-8 flex items-center justify-center opacity-0"
+                type="button"
+              >
+                <svg data-v-5fc1731c="" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--ri size-5 text-white drop-shadow-lg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832"></path></svg>
+              </button>
+              <!-- 图片名字 -->
+              <div
+                class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              >
+                ${alt}
+              </div>
+            </div>
+          `;
+
+          // 替换原图片
+          img.replaceWith(livePhotoContainer);
+
+          // 添加实况照片的交互逻辑
+          const livePhotoWrapper = livePhotoContainer.querySelector(".relative");
+          const imgElement = livePhotoWrapper?.querySelector("img");
+          const videoElement = livePhotoWrapper?.querySelector("video");
+          const playButton = livePhotoWrapper?.querySelector("button");
+
+          if (livePhotoWrapper && imgElement && videoElement) {
+            // 提取视频数据
+            const extractMotionVideo = async (imgUrl: string): Promise<string | null> => {
+              try {
+                const res = await fetch(imgUrl, { cache: "force-cache" });
+                const buffer = await res.arrayBuffer();
+                const bytes = new Uint8Array(buffer);
+
+                // 查找 MP4 文件的起始标记 "ftyp"
+                let start = -1;
+                for (let i = 0; i < bytes.length - 8; i++) {
+                  if (
+                    bytes[i + 4] === 0x66 && // f
+                    bytes[i + 5] === 0x74 && // t
+                    bytes[i + 6] === 0x79 && // y
+                    bytes[i + 7] === 0x70 // p
+                  ) {
+                    start = i;
+                    break;
+                  }
+                }
+
+                if (start !== -1) {
+                  const videoBlob = new Blob([bytes.slice(start)], { type: "video/mp4" });
+                  const videoUrl = URL.createObjectURL(videoBlob);
+                  return videoUrl;
+                }
+                return null;
+              } catch (error) {
+                console.error("提取视频失败:", error);
+                return null;
+              }
+            };
+
+            // 加载视频
+            extractMotionVideo(src).then(videoUrl => {
+              if (videoUrl) {
+                videoElement.src = videoUrl;
+                videoElement.load();
+              }
+            });
+
+            // 播放状态
+            let isPlaying = false;
+            let imgOpacity = 100;
+            let videoOpacity = 0;
+            let imgOpacityTimer: number | null = null;
+            let videoOpacityTimer: number | null = null;
+
+            // 播放视频
+            const playVideo = () => {
+              if (!isPlaying && videoElement.src) {
+                // 清除所有之前的定时器
+                if (imgOpacityTimer !== null) {
+                  clearTimeout(imgOpacityTimer);
+                  imgOpacityTimer = null;
+                }
+                if (videoOpacityTimer !== null) {
+                  clearTimeout(videoOpacityTimer);
+                  videoOpacityTimer = null;
+                }
+
+                // 先设置视频到开头
+                videoElement.currentTime = 0;
+
+                // 交叉淡入淡出：
+                // 1. 先让视频淡入（0 -> 100）
+                videoOpacity = 100;
+                videoElement.style.opacity = (videoOpacity / 100).toString();
+
+                // 2. 等待一小段时间后，再让图片淡出
+                imgOpacityTimer = window.setTimeout(() => {
+                  imgOpacity = 0;
+                  imgElement.style.opacity = (imgOpacity / 100).toString();
+                }, 50); // 50ms 后让图片淡出
+
+                // 3. 开始播放视频
+                videoElement.play().catch(error => {
+                  console.error("播放视频失败:", error);
+                  // 播放失败时恢复显示图片
+                  imgOpacity = 100;
+                  videoOpacity = 0;
+                  imgElement.style.opacity = (imgOpacity / 100).toString();
+                  videoElement.style.opacity = (videoOpacity / 100).toString();
+                  isPlaying = false;
+                });
+
+                isPlaying = true;
+                if (playButton) {
+                  playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h2v14H6zm10 0h2v14h-2z"/></svg>`;
+                }
+              }
+            };
+
+            // 暂停视频
+            const pauseVideo = () => {
+              if (isPlaying) {
+                // 清除所有之前的定时器
+                if (imgOpacityTimer !== null) {
+                  clearTimeout(imgOpacityTimer);
+                  imgOpacityTimer = null;
+                }
+                if (videoOpacityTimer !== null) {
+                  clearTimeout(videoOpacityTimer);
+                  videoOpacityTimer = null;
+                }
+
+                // 交叉淡入淡出：
+                // 1. 先让图片淡入（0 -> 100）
+                imgOpacity = 100;
+                imgElement.style.opacity = (imgOpacity / 100).toString();
+
+                // 2. 等待一小段时间后，再让视频淡出
+                videoOpacityTimer = window.setTimeout(() => {
+                  videoOpacity = 0;
+                  videoElement.style.opacity = (videoOpacity / 100).toString();
+                }, 50); // 50ms 后让视频淡出
+
+                // 3. 暂停视频并重置进度
+                videoElement.pause();
+                videoElement.currentTime = 0;
+                isPlaying = false;
+
+                if (playButton) {
+                  playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--ri size-5 text-white drop-shadow-lg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832"></path></svg>`;
+                }
+              }
+            };
+
+            // 视频播放结束
+            const onVideoEnded = () => {
+              // 视频播放结束后自动暂停并显示图片
+              if (isPlaying) {
+                // 显示图片
+                imgOpacity = 100;
+                imgElement.style.opacity = (imgOpacity / 100).toString();
+
+                // 等待一小段时间后隐藏视频
+                setTimeout(() => {
+                  videoOpacity = 0;
+                  videoElement.style.opacity = (videoOpacity / 100).toString();
+                }, 25);
+
+                // 更新播放状态
+                isPlaying = false;
+
+                if (playButton) {
+                  playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--ri size-5 text-white drop-shadow-lg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832"></path></svg>`;
+                }
+              }
+            };
+
+            // 视频播放结束时暂停
+            videoElement.addEventListener("ended", onVideoEnded);
+
+            // 点击播放/暂停
+            if (playButton) {
+              playButton.addEventListener("click", e => {
+                e.stopPropagation();
+                if (isPlaying) {
+                  pauseVideo();
+                } else {
+                  playVideo();
+                }
+              });
+            }
+          }
+        } else {
+          // 普通照片，添加名字显示
+          const livePhotoContainer = document.createElement("div");
+          livePhotoContainer.className = "live-photo-container w-full h-full";
+          if (dataFancybox) livePhotoContainer.setAttribute("data-fancybox", dataFancybox);
+          if (dataCaption) livePhotoContainer.setAttribute("data-caption", dataCaption);
+
+          livePhotoContainer.innerHTML = `
+            <div class="live-photo-wrapper relative w-full h-auto overflow-hidden ${className}">
+              <img src="${src}" alt="${alt}" class="w-full h-full object-cover" />
+              <div class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                ${alt}
+              </div>
+            </div>
+          `;
+
+          // 替换原图片
+          img.replaceWith(livePhotoContainer);
+        }
+      });
     });
   } catch (error) {
     console.error("页面功能初始化失败:", error);
@@ -1354,14 +1607,15 @@ onUnmounted(() => {
         <CoverSwiper v-if="hasManyCovers" :covers="covers" :is-photo-category="isPhotoCategory" />
 
         <!-- 单封面 -->
-        <img
+        <LivePhoto
           v-else-if="hasCover"
           :src="firstCover"
           alt="封面"
+          :hover-play="false"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
           :class="[
-            'w-full h-auto object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
+            'w-full h-full object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
             isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5',
           ]"
           loading="lazy" />
@@ -1402,7 +1656,10 @@ onUnmounted(() => {
         </aside>
 
         <!-- 文章正文 -->
-        <div class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="post.renderedContent"></div>
+        <div
+          ref="contentBody"
+          class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body"
+          v-html="post.renderedContent"></div>
       </div>
 
       <!-- 元信息盒子和 CC 授权 -->
@@ -1435,7 +1692,10 @@ onUnmounted(() => {
               v-for="(tag, index) in tags"
               :key="index"
               :to="tag.slug ? `/tag/${tag.slug}` : '#'"
-              :class="['hover:text-blue-600 dark:hover:text-blue-500 transition-colors mr-2', tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50']">
+              :class="[
+                'hover:text-blue-600 dark:hover:text-blue-500 transition-colors mr-2',
+                tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50',
+              ]">
               {{ typeof tag === "string" ? tag : tag.name }}
             </NuxtLink>
           </span>
@@ -1515,6 +1775,56 @@ onUnmounted(() => {
   width: 100%;
 }
 
+/* 实况照片容器样式 */
+.live-photo-container {
+  display: inline-block;
+  width: 100%;
+  height: auto;
+}
+
+.live-photo-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.live-photo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.live-photo-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.live-photo-tip {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.live-photo-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+
 .content-constrained {
   max-width: 56.25rem; /* 900px - same as max-w-225 */
   width: 100%;
@@ -1592,7 +1902,7 @@ onUnmounted(() => {
   color: rgb(156 163 175);
 }
 
-.markdown-body :deep(img) {
+.markdown-body :deep(img:not(.swiper-container img)){
   max-width: 100%;
   height: auto;
   border-radius: 8px;

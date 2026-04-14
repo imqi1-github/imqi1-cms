@@ -94,7 +94,15 @@ watch(
   <div ref="swiperContainer" class="swiper-container">
     <div :class="['swiper-wrapper', !isPhotoCategory && 'noneed']">
       <div v-for="(cover, index) in covers" :key="index" class="swiper-slide">
-        <img :src="cover.url" :alt="cover.desc || '封面'" data-fancybox="gallery" :data-caption="cover.desc || '封面'" class="swiper-img" loading="lazy" />
+        <LivePhoto
+          :src="cover.url"
+          :alt="cover.desc || '封面'"
+          :hover-play="false"
+          class="swiper-img"
+          data-fancybox="gallery"
+          :data-caption="cover.desc || '封面'"
+          loading="lazy"
+        />
         <div v-if="cover.desc" class="swiper-slide-title">
           {{ cover.desc }}
         </div>
@@ -242,7 +250,6 @@ watch(
 }
 
 :deep(.swiper-pagination-bullet-active) {
-  width: 16px;
   background: rgb(37 99 235);
 }
 

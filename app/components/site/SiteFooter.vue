@@ -336,7 +336,7 @@ onUnmounted(() => {
           <button
             v-show="isMobileButtonsOpen"
             @click="handleClick"
-            v-tooltip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'"
+            v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
             <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 text-gray-600 dark:text-gray-300" />
             <Icon v-else name="ri:moon-line" class="size-5 text-gray-100 dark:text-gray-300" />
@@ -361,7 +361,7 @@ onUnmounted(() => {
       <ClientOnly>
         <button
           @click="handleClick"
-          v-tooltip="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'"
+          v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
           class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
           <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-4 text-gray-600 dark:text-gray-300" />
           <Icon v-else name="ri:moon-line" class="size-4 text-gray-100 dark:text-gray-300" />
