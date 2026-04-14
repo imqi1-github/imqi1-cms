@@ -66,6 +66,18 @@ export default defineEventHandler(async event => {
       },
     });
 
+    // 更新文章的评论计数（仅统计已发布的评论）
+    if (commentStatus === 1) {
+      await prisma.post.update({
+        where: { cid: parseInt(cid) },
+        data: {
+          comment_num: {
+            increment: 1,
+          },
+        },
+      });
+    }
+
     // ========== 邮件通知逻辑 ==========
 
     // 4. 待审核/垃圾评论通知 - 通知站长

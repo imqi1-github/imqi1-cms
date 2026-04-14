@@ -27,6 +27,14 @@ const replyState = ref({
   targetCommentId: null as number | null,
 });
 
+// 共享的表单数据（所有CommentInput实例共用）
+const formData = ref({
+  content: "",
+  name: "",
+  mail: "",
+  link: "",
+});
+
 function startReply(comment: any) {
   replyState.value = {
     isReplying: true,
@@ -165,6 +173,7 @@ function handleCommentSubmitted() {
       <!-- 默认评论框 -->
       <div v-if="!replyState.isReplying" class="mb-8">
         <CommentInput
+          :form-data="formData"
           :post-id="props.postId"
           :comment-interval="commentInterval"
           :require-mail="requireMail"
@@ -198,6 +207,7 @@ function handleCommentSubmitted() {
               :comment-interval="commentInterval"
               :require-mail="requireMail"
               :require-link="requireLink"
+              :form-data="formData"
               @start-reply="startReply"
               @cancel-reply="cancelReply"
               @comment-submitted="handleCommentSubmitted" />

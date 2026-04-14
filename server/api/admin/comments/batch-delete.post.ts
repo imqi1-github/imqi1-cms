@@ -12,11 +12,41 @@ export default defineEventHandler(async event => {
       });
     }
 
+    // 获取要删除的评论信息（用于更新文章计数）
+    const commentsToDelete = await prisma.comment.findMany({
+      where: {
+        coid: { in: ids },
+      },
+      select: { coid: true, cid: true, status: true },
+    });
+
+    // 删除评论
     const result = await prisma.comment.deleteMany({
       where: {
         coid: { in: ids },
       },
     });
+
+    // 更新文章评论计数（只统计已发布且被删除的评论）
+    const publishedCommentsToDelete = commentsToDelete.filter(c => c.status === 1);
+
+    if (publishedCommentsToDelete.length > 0) {
+      // 按文章分组统计需要减少的评论数
+      const postCommentCounts = {};
+      publishedCommentsToDelete.forEach(comment => {
+        postCommentCounts[comment.cid] = (postCommentCounts[comment.cid] || 0) + 1;
+      });
+
+      // 批量更新文章评论计数
+      await Promise.all(
+        Object.entries(postCommentCounts).map(([cid, count]) =>
+          prisma.post.update({
+            where: { cid: Number(cid) },
+            data: { comment_num: { decrement: count } },
+          })
+        )
+      );
+    }
 
     return {
       success: true,

@@ -15,6 +15,12 @@ const props = defineProps<{
   commentInterval: number;
   requireMail: boolean;
   requireLink: boolean;
+  formData?: {
+    content: string;
+    name: string;
+    mail: string;
+    link: string;
+  };
 }>();
 
 const emit = defineEmits<{
@@ -304,6 +310,7 @@ function handleCommentSubmitted() {
     <!-- 回复评论框 -->
     <div v-if="replyState.isReplying && replyState.targetCommentId === comment.coid" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
       <CommentInput
+        :form-data="formData"
         :post-id="postId"
         :is-reply="true"
         :reply-to="replyState.replyTo"
@@ -329,6 +336,7 @@ function handleCommentSubmitted() {
           :comment-interval="commentInterval"
           :require-mail="requireMail"
           :require-link="requireLink"
+          :form-data="formData"
           @start-reply="startReply"
           @cancel-reply="cancelReply"
           @comment-submitted="handleCommentSubmitted" />

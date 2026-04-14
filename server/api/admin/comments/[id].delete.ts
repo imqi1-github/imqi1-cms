@@ -22,9 +22,32 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    // 获取评论信息（用于更新文章计数）
+    const comment = await prisma.comment.findUnique({
+      where: { coid: Number(id) },
+      select: { coid: true, cid: true, status: true },
+    });
+
+    if (!comment) {
+      throw createError({
+        statusCode: 404,
+        message: "评论不存在",
+      });
+    }
+
+    // 删除评论
     await prisma.comment.delete({
       where: { coid: Number(id) },
     });
+
+    // 如果删除的是已发布的评论，减少文章评论计数
+    if (comment.status === 1) {
+      await prisma.post.update({
+        where: { cid: comment.cid },
+        data: { comment_num: { decrement: 1 } },
+      });
+    }
+
     return { success: true };
   } catch (error) {
     console.error("删除评论失败:", error);

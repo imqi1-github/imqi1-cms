@@ -14,6 +14,12 @@ const props = defineProps<{
   commentInterval?: number;
   requireMail?: boolean;
   requireLink?: boolean;
+  formData?: {
+    content: string;
+    name: string;
+    mail: string;
+    link: string;
+  };
 }>();
 
 const emit = defineEmits<{
@@ -30,12 +36,29 @@ const successMessage = ref("评论提交成功");
 // 用户登录状态
 const isLoggedIn = ref(false);
 
-// 表单数据
-const formData = ref({
+// 表单数据 - 如果传入了 formData 就使用它，否则创建本地状态
+const localFormData = ref({
   content: "",
   name: "",
   mail: "",
   link: "",
+});
+
+// 使用 computed 来统一访问，避免在代码中到处判断
+const formData = computed({
+  get: () => props.formData || localFormData.value,
+  set: (value) => {
+    if (props.formData) {
+      // 逐个属性修改，保持响应性
+      if (value.content !== undefined) props.formData.content = value.content;
+      if (value.name !== undefined) props.formData.name = value.name;
+      if (value.mail !== undefined) props.formData.mail = value.mail;
+      if (value.link !== undefined) props.formData.link = value.link;
+    } else {
+      // 修改本地状态
+      localFormData.value = value;
+    }
+  },
 });
 
 // 表情相关

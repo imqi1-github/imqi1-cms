@@ -25,6 +25,19 @@ export default defineEventHandler(async event => {
   const { name, mail, content, status } = body;
 
   try {
+    // 获取原评论信息（用于比较状态变化）
+    const oldComment = await prisma.comment.findUnique({
+      where: { coid: Number(id) },
+      select: { coid: true, cid: true, status: true },
+    });
+
+    if (!oldComment) {
+      throw createError({
+        statusCode: 404,
+        message: "评论不存在",
+      });
+    }
+
     const comment = await prisma.comment.update({
       where: { coid: Number(id) },
       data: {
@@ -34,6 +47,25 @@ export default defineEventHandler(async event => {
         ...(status !== undefined && { status }),
       },
     });
+
+    // 如果状态发生变化，更新文章评论计数
+    if (status !== undefined && status !== oldComment.status) {
+      // 从非已发布变为已发布：增加计数
+      if (status === 1 && oldComment.status !== 1) {
+        await prisma.post.update({
+          where: { cid: oldComment.cid },
+          data: { comment_num: { increment: 1 } },
+        });
+      }
+      // 从已发布变为非已发布：减少计数
+      else if (status !== 1 && oldComment.status === 1) {
+        await prisma.post.update({
+          where: { cid: oldComment.cid },
+          data: { comment_num: { decrement: 1 } },
+        });
+      }
+    }
+
     return {
       success: true,
       data: comment,

@@ -1,0 +1,15 @@
+{
+  "name": "ImQi1",
+  "short_name": "ImQi1",
+  "description": "做技术的分享者、生活的摄影师、时事的评论员。",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#f9fafb",
+  "lang": "zh-CN",
+  "id": "/",
+  "icons": [
+    { "src": "/imgs/imqi1.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/imgs/imqi1.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
