@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { nextTick, onMounted, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import LivePhoto from "~/components/LivePhoto.vue";
 
 const route = useRoute();
+const router = useRouter();
 const slug = route.params.slug as string;
 
 // 获取站点设置
@@ -11,8 +13,11 @@ const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
 const postPageSize = computed(() => siteData.value?.data?.postPageSize || 12);
 
+// 从 URL query 参数中获取页码
+const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
+const page = ref(initialPage > 0 ? initialPage : 1);
+
 // 获取分类文章数据
-const page = ref(1);
 const { data, pending, error, refresh } = await useFetch(`/api/category/${slug}/posts`, {
   query: { page, pageSize: postPageSize },
   watch: [page],
@@ -69,6 +74,14 @@ function goToPage(newPage: number) {
     el.classList.remove("opacity-100", "translate-y-0");
     el.classList.add("opacity-0", "translate-y-8");
   });
+
+  // 更新 URL 中的页码参数
+  router.push({
+    path: `/category/${slug}`,
+    query: { page: newPage.toString() },
+  });
+
+  // 更新页码值
   page.value = newPage;
 }
 
@@ -92,16 +105,53 @@ watch(pending, (newVal, oldVal) => {
       const { setPageTitle } = usePageTitle();
       setPageTitle(category.value.name, "ri:menu-line");
     }
-    triggerFadeIn();
+
+    // 强制触发渐入动画
+    setTimeout(() => {
+      triggerFadeIn();
+    }, 50);
   }
 });
+
+// 监听路由变化，确保 URL 参数变化时也能正确更新
+watch(
+  () => route.query.page,
+  newPage => {
+    // 确保用户仍然在分类页面
+    if (!route.path.startsWith(`/category/${slug}`)) {
+      return;
+    }
+
+    const pageNum = newPage ? parseInt(newPage as string) : 1;
+    if (pageNum > 0 && pageNum !== page.value) {
+      page.value = pageNum;
+
+      // 重置所有元素状态
+      document.querySelectorAll(".fade-in-element").forEach(el => {
+        el.classList.remove("opacity-100", "translate-y-0");
+        el.classList.add("opacity-0", "translate-y-8");
+      });
+
+      // 等待数据加载完成后触发动画
+      setTimeout(() => {
+        triggerFadeIn();
+      }, 300);
+    }
+  },
+);
 
 // 监听路由变化，重新触发动画
 watch(
   () => route.params.slug,
   async () => {
+    // 确保用户仍然在分类页面
+    if (!route.path.startsWith(`/category/${slug}`)) {
+      return;
+    }
+
     // 等待 DOM 更新
     await nextTick();
+
     // 等待浏览器渲染帧
     requestAnimationFrame(() => {
       // 先重置所有元素状态
@@ -109,6 +159,7 @@ watch(
         el.classList.remove("opacity-100", "translate-y-0");
         el.classList.add("opacity-0", "translate-y-8");
       });
+
       // 触发动画
       triggerFadeIn();
     });
@@ -224,7 +275,7 @@ onMounted(() => {
       <!-- 普通分类 - 网格布局 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="content-title-box title-no-cover mb-6 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        <header class="content-title-box title-no-cover my-12 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <h1 class="content-title text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:menu-line" class="inline-block size-12 mr-2" />{{ category?.name }}
           </h1>
