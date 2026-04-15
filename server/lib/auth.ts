@@ -49,7 +49,7 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
   setCookie(event, SESSION_COOKIE_NAME, sessionId, {
     secure: import.meta.env.PROD, // 生产环境使用 HTTPS 传输
     httpOnly: true, // 防止 JavaScript 访问，防止 XSS 窃取
-    sameSite: "strict", // 更严格的 CSRF 保护
+    sameSite: import.meta.env.PROD ? "strict" : "lax", // 开发环境使用 lax 以支持重定向，生产环境使用 strict
     maxAge: SESSION_MAX_AGE,
     path: "/",
   });

@@ -38,27 +38,26 @@ const redirectTo = computed(() => route.query.to as string || '/admin')
 
 const toast = useToast()
 
-// 如果已登录，跳转到 admin（避免 SSR 水合不匹配）
-onMounted(async () => {
-  const sessionCookie = useCookie('session')
-  if (sessionCookie.value) {
-    try {
-      const res = await $fetch('/api/auth/verify')
-      if ((res as any).valid) {
-        await navigateTo(redirectTo.value)
-      }
-    } catch {
-      // 忽略错误，继续显示登录页
-    }
-  }
-})
-
 const form = reactive({
   username: '',
   password: '',
 })
 
 const loading = ref(false)
+const csrfToken = ref('')
+
+// 在组件挂载时获取 CSRF token
+onMounted(async () => {
+  // 获取 CSRF token
+  try {
+    const csrfRes = await $fetch('/api/csrf/token')
+    if (csrfRes && (csrfRes as any).data?.token) {
+      csrfToken.value = (csrfRes as any).data.token
+    }
+  } catch (error) {
+    console.error('获取 CSRF token 失败:', error)
+  }
+})
 
 const handleLogin = async () => {
   if (!form.username || !form.password) {
@@ -66,13 +65,24 @@ const handleLogin = async () => {
     return
   }
 
+  if (!csrfToken.value) {
+    toast.error({ message: 'CSRF token 未加载，请刷新页面' })
+    return
+  }
+
   loading.value = true
 
   try {
+    console.log('开始登录，发送请求到 /api/auth/login')
     const res: any = await $fetch('/api/auth/login', {
       method: 'POST',
-      body: form,
+      body: {
+        ...form,
+        csrfToken: csrfToken.value,
+      },
     })
+
+    console.log('登录响应:', res)
 
     // 登录成功，显示欢迎消息
     toast.success({
@@ -80,9 +90,14 @@ const handleLogin = async () => {
       description: '登录成功，正在跳转...',
     })
 
+    console.log('准备跳转到:', redirectTo.value)
+
     // 延迟跳转，让用户看到 toast
     await new Promise(resolve => setTimeout(resolve, 500))
-    await navigateTo(redirectTo.value)
+
+    console.log('开始跳转')
+    // 使用 window.location.href 而不是 navigateTo，确保服务器端渲染时能读取到 cookie
+    window.location.href = redirectTo.value
   } catch (e: any) {
     toast.error({
       message: '登录失败',

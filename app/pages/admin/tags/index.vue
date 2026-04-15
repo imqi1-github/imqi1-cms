@@ -44,6 +44,41 @@ function openEditModal(tag: any) {
   showEditModal.value = true;
 }
 
+// 关闭添加弹窗
+function closeAddModal() {
+  showAddModal.value = false;
+  nextTick(() => {
+    newTag.value = { name: "", slug: "", desc: "" };
+  });
+}
+
+// 关闭编辑弹窗
+function closeEditModal() {
+  showEditModal.value = false;
+  nextTick(() => {
+    editingTag.value = null;
+  });
+}
+
+// 处理 Dialog open 状态变化
+function handleAddModalOpenChange(open: boolean) {
+  showAddModal.value = open;
+  if (!open) {
+    nextTick(() => {
+      newTag.value = { name: "", slug: "", desc: "" };
+    });
+  }
+}
+
+function handleEditModalOpenChange(open: boolean) {
+  showEditModal.value = open;
+  if (!open) {
+    nextTick(() => {
+      editingTag.value = null;
+    });
+  }
+}
+
 async function updateTag() {
   if (!editingTag.value) return;
 
@@ -57,9 +92,12 @@ async function updateTag() {
       },
     });
     showEditModal.value = false;
-    editingTag.value = null;
     toast.success({ message: "标签更新成功" });
     await fetchTags();
+    // 延迟清空编辑数据，避免 Dialog 关闭动画过程中出现渲染错误
+    nextTick(() => {
+      editingTag.value = null;
+    });
   } catch (error: any) {
     toast.error({
       message: "更新失败",
@@ -249,7 +287,7 @@ onMounted(() => {
     </Card>
 
     <!-- 添加标签弹窗 -->
-    <Dialog v-model:open="showAddModal">
+    <Dialog :open="showAddModal" @update:open="handleAddModalOpenChange">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>新建标签</DialogTitle>
@@ -271,7 +309,7 @@ onMounted(() => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showAddModal = false"> 取消 </Button>
+            <Button type="button" variant="outline" @click="closeAddModal"> 取消 </Button>
             <Button type="submit">确定</Button>
           </DialogFooter>
         </form>
@@ -279,7 +317,7 @@ onMounted(() => {
     </Dialog>
 
     <!-- 编辑标签弹窗 -->
-    <Dialog v-model:open="showEditModal">
+    <Dialog :open="showEditModal" @update:open="handleEditModalOpenChange">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>编辑标签</DialogTitle>
@@ -301,7 +339,7 @@ onMounted(() => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showEditModal = false"> 取消 </Button>
+            <Button type="button" variant="outline" @click="closeEditModal"> 取消 </Button>
             <Button type="submit">保存</Button>
           </DialogFooter>
         </form>

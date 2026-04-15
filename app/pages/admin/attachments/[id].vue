@@ -176,12 +176,10 @@ onMounted(() => {
               </div>
               <!-- 复制链接 -->
               <div class="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <Input
-                  :value="attachment?.url"
-                  readonly
-                  class="flex-1 bg-background"
-                />
-                <Button variant="outline" size="icon" @click="copyLink">
+                <div class="flex-1 font-mono text-xs bg-background border rounded-md px-3 py-2 truncate select-all cursor-text" :title="attachment?.url">
+                  {{ attachment?.url }}
+                </div>
+                <Button variant="outline" size="icon" @click="copyLink" title="复制链接">
                   <Icon name="lucide:copy" class="size-4" />
                 </Button>
               </div>
