@@ -1181,7 +1181,7 @@ onMounted(() => {
       }
 
       .swiper-container[class*="markdown-swiper-instance"] .swiper-wrapper.noneed {
-        height: 350px;
+        height: 400px;
       }
 
       .swiper-container[class*="markdown-swiper-instance"] .swiper-slide {
