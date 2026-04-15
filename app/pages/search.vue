@@ -27,21 +27,24 @@ useHead({
 // 触发渐入动画
 function triggerFadeIn() {
   setTimeout(() => {
-    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
       el.classList.add("fade-in-start");
     });
   }, 50);
 }
 
 // 监听搜索关键词变化
-watch(() => searchKeyword.value, () => {
-  if (!pending.value) {
-    triggerFadeIn();
-  }
-});
+watch(
+  () => searchKeyword.value,
+  () => {
+    if (!pending.value) {
+      triggerFadeIn();
+    }
+  },
+);
 
 // 监听 pending 状态变化
-watch(pending, (newPending) => {
+watch(pending, newPending => {
   if (!newPending) {
     triggerFadeIn();
   }
@@ -94,30 +97,29 @@ function highlightKeyword(text: string, keyword: string) {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-5 py-8">
+  <div class="max-w-3xl mx-auto">
     <!-- 页面标题 -->
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-4">搜索</h1>
 
       <!-- 搜索框 -->
       <div class="relative">
-        <Icon
-          name="ri:search-line"
-          class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+        <Icon name="ri:search-line" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
         <input
           v-model="searchKeyword"
           type="text"
           placeholder="搜索文章标题、内容..."
           class="w-full pl-12 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          @keydown="handleKeydown"
-        />
+          @keydown="handleKeydown" />
         <Button
           v-if="searchKeyword"
           variant="ghost"
           size="icon"
           class="absolute right-2 top-1/2 -translate-y-1/2"
-          @click="searchKeyword = ''; handleSearch()"
-        >
+          @click="
+            searchKeyword = '';
+            handleSearch();
+          ">
           <Icon name="ri:close-line" class="size-4" />
         </Button>
       </div>
@@ -142,7 +144,8 @@ function highlightKeyword(text: string, keyword: string) {
       <div v-else-if="total === 0" class="py-20 text-center">
         <Icon name="ri:search-line" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">
-          没有找到与 "<span class="font-medium text-foreground">{{ searchKeyword }}</span>" 相关的文章
+          没有找到与 "<span class="font-medium text-foreground">{{ searchKeyword }}</span
+          >" 相关的文章
         </p>
       </div>
 
@@ -153,37 +156,26 @@ function highlightKeyword(text: string, keyword: string) {
         </p>
 
         <div class="space-y-4">
-          <article
-            v-for="post in results"
-            :key="post.cid"
-            class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all"
-          >
+          <article v-for="post in results" :key="post.cid" class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all">
             <!-- 标题 -->
             <NuxtLink
               :to="post.categorySlug ? `/content/${post.categorySlug}/${post.slug || post.cid}` : `/content/${post.slug || post.cid}`"
-              class="block"
-            >
+              class="block">
               <h3
                 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2 line-clamp-2"
-                v-html="highlightKeyword(post.title, searchKeyword)"
-              />
+                v-html="highlightKeyword(post.title, searchKeyword)" />
             </NuxtLink>
 
             <!-- 摘要 -->
             <div class="mb-3 space-y-2">
               <!-- 描述高亮 -->
-              <p
-                v-if="post.desc"
-                class="text-sm text-muted-foreground line-clamp-2"
-                v-html="highlightKeyword(post.desc, searchKeyword)"
-              />
+              <p v-if="post.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(post.desc, searchKeyword)" />
 
               <!-- 内容摘要高亮 -->
               <p
                 v-if="post.contentSnippet"
                 class="text-sm text-muted-foreground italic line-clamp-2"
-                v-html="highlightKeyword(post.contentSnippet, searchKeyword)"
-              />
+                v-html="highlightKeyword(post.contentSnippet, searchKeyword)" />
             </div>
 
             <!-- 元信息 -->

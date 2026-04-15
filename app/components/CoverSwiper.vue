@@ -236,7 +236,6 @@ watch(
 .swiper-pagination {
   display: flex;
   flex-grow: 1;
-  gap: 8px;
 }
 
 :deep(.swiper-pagination-bullet) {

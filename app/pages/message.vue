@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { Fancybox } from "@fancyapps/ui";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "@/assets/css/fancybox.css";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import { Fancybox } from "@fancyapps/ui";
+import { computed, onMounted } from "vue";
 
 // 获取站点设置
 const { data: siteData } = await useFetch("/api/site");
@@ -109,7 +109,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-225 mx-auto px-5 py-8">
+  <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
     <header class="mb-5 animate-fade-in">
       <!-- 封面图片 -->

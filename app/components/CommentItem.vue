@@ -296,13 +296,13 @@ function handleCommentSubmitted() {
             <Icon :name="parsedAgent.browserIcon" class="size-4" v-tooltip="parsedAgent.browser" />
             <Icon :name="parsedAgent.osIcon" class="size-4" v-tooltip="parsedAgent.os" />
           </span>
-          <span v-else class="flex items-center gap-1">
+          <span v-else class="flex items-center gap-1" v-tooltip="'未知设备'">
             <Icon name="ri-computer-line" class="size-4" />
           </span>
-          <span v-if="comment.location" class="flex items-center gap-1">
+          <span v-if="comment.location" class="flex items-center gap-1" v-tooltip="'位置'">
             <Icon name="ri-map-pin-2-fill" class="size-4" />{{ comment.location }}
           </span>
-          <span v-if="comment.isp" class="flex items-center gap-1">
+          <span v-if="comment.isp" class="flex items-center gap-1" v-tooltip="'运营商'">
             <Icon name="ri-earth-fill" class="size-4" />{{ comment.isp }}</span>
         </div>
       </div>

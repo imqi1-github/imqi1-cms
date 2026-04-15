@@ -134,36 +134,38 @@ useHead(() => ({
     if (isNotFound.value) return `分类不存在 - ${siteName.value}`;
     return `${category.value?.name} - ${siteName.value}`;
   })(),
-  meta: category.value ? [
-    {
-      name: "description",
-      content: `浏览 ${category.value.name} 分类下的所有文章，${category.value.desc || '查看相关技术文章和教程'}`,
-    },
-    {
-      name: "keywords",
-      content: `${category.value.name},分类,博客,${category.value.desc || ''}`,
-    },
-    {
-      property: "og:title",
-      content: `${category.value.name} - ${siteName.value}`,
-    },
-    {
-      property: "og:description",
-      content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
-    },
-    {
-      property: "og:type",
-      content: "website",
-    },
-    {
-      name: "twitter:title",
-      content: `${category.value.name} - ${siteName.value}`,
-    },
-    {
-      name: "twitter:description",
-      content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
-    },
-  ] : [],
+  meta: category.value
+    ? [
+        {
+          name: "description",
+          content: `浏览 ${category.value.name} 分类下的所有文章，${category.value.desc || "查看相关技术文章和教程"}`,
+        },
+        {
+          name: "keywords",
+          content: `${category.value.name},分类,博客,${category.value.desc || ""}`,
+        },
+        {
+          property: "og:title",
+          content: `${category.value.name} - ${siteName.value}`,
+        },
+        {
+          property: "og:description",
+          content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:title",
+          content: `${category.value.name} - ${siteName.value}`,
+        },
+        {
+          name: "twitter:description",
+          content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
+        },
+      ]
+    : [],
 }));
 
 // 初始化渐入动画
@@ -177,7 +179,7 @@ onMounted(() => {
 
 <template>
   <ClientOnly>
-    <div :class="['mx-auto px-5 py-8', isPhotoCategory ? 'photo-category-container' : 'max-w-225 flex flex-col justify-center items-center']">
+    <div :class="['mx-auto', isPhotoCategory ? 'photo-category-container' : 'max-w-225 flex flex-col justify-center items-center']">
       <!-- 加载中 -->
       <div v-if="pending" class="py-20 text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -207,10 +209,9 @@ onMounted(() => {
               <NuxtLink :to="`/content/${slug}/${post.slug}`" class="photo-item">
                 <LivePhoto
                   :src="cover.url"
-                  :alt="(cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title"
-                  class="w-full h-full object-cover"
-                />
-                <div class="photo-name">{{ (cover.desc && cover.desc.trim()) ? `${cover.desc} - ${post.title}` : post.title }}</div>
+                  :alt="cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title"
+                  class="w-full h-full object-cover" />
+                <div class="photo-name">{{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}</div>
               </NuxtLink>
             </template>
           </template>
@@ -258,7 +259,7 @@ onMounted(() => {
                 {{ post.title }}
               </NuxtLink>
 
-              <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-4">
+              <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
                 <span class="flex items-center" v-tooltip="`最后更新时间`">
                   <Icon name="ri-time-line" class="size-4" />
                   {{ formatDate(post.updated) }}

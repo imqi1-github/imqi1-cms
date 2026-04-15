@@ -58,7 +58,7 @@ useHead({
 
 <template>
   <div class="min-h-screen bg-white dark:bg-[#0a0a0a]">
-    <div class="mx-auto max-w-4xl px-6 py-16 animate-fade-in">
+    <div class="mx-auto max-w-4xl  animate-fade-in">
       <!-- 标题 -->
       <header class="mb-12 text-center">
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">站点地图</h1>

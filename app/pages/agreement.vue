@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 // 获取路由
 const route = useRoute();
@@ -47,7 +47,7 @@ const extractToc = () => {
   const headings = content.querySelectorAll("h1, h2, h3");
   const items: TocItem[] = [];
 
-  headings.forEach((heading) => {
+  headings.forEach(heading => {
     // 直接使用标题文本生成 id
     const text = heading.textContent || "";
     const id = generateSlug(text);
@@ -92,8 +92,8 @@ const generateSlug = (text: string): string => {
   return text
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-')           // 空格替换为短横线
-    .replace(/[^\w\u4e00-\u9fa5-]/g, ''); // 只保留字母、数字、中文和短横线
+    .replace(/\s+/g, "-") // 空格替换为短横线
+    .replace(/[^\w\u4e00-\u9fa5-]/g, ""); // 只保留字母、数字、中文和短横线
 };
 
 // 根据 URL hash 查找对应的标题 ID
@@ -182,7 +182,7 @@ watch(isNotFound, () => {
 });
 
 // 监听页面数据加载完成，触发渐入动画
-watch(page, (newPage) => {
+watch(page, newPage => {
   if (!import.meta.client || !newPage) return;
 
   nextTick(() => {
@@ -194,11 +194,14 @@ watch(page, (newPage) => {
 });
 
 // 监听路由 hash 变化
-watch(() => route.hash, (newHash) => {
-  if (newHash) {
-    handleHashScroll();
-  }
-});
+watch(
+  () => route.hash,
+  newHash => {
+    if (newHash) {
+      handleHashScroll();
+    }
+  },
+);
 
 // 初始化滚动渐入动画
 onMounted(() => {
@@ -250,7 +253,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-275 mx-auto px-5 py-8">
+  <div class="max-w-275 mx-auto">
     <!-- 加载状态 -->
     <div v-if="pending" class="flex items-center justify-center py-20">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -300,7 +303,7 @@ onUnmounted(() => {
                     'hover:bg-slate-100 dark:hover:bg-slate-800',
                     activeTocId === item.id
                       ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium'
-                      : 'text-slate-600 dark:text-slate-400'
+                      : 'text-slate-600 dark:text-slate-400',
                   ]"
                   :style="{ paddingLeft: `${(item.level - 1) * 0.75 + 0.25}rem` }">
                   {{ item.text }}
@@ -801,5 +804,4 @@ onUnmounted(() => {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-
 </style>

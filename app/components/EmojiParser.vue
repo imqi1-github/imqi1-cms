@@ -18,7 +18,8 @@ const prefixConfig: Record<string, { dataKey: string; filePrefix: string }> = {
 
 // 获取表情图片URL（根据是否有CDN返回不同路径）
 const getEmojiUrl = (path: string) => {
-  if (!cdnURL) return path;
+  // 只在生产环境下使用 CDN
+  if (!import.meta.env.PROD || !cdnURL) return path;
   // 如果有CDN，将路径中的 /emojis/ 替换为 CDN URL + /emojis/
   return path.replace(/^\/emojis\//, `${cdnURL}/emojis/`);
 };

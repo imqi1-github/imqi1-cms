@@ -35,8 +35,8 @@ onMounted(() => {
     rootMargin: "0px 0px -50px 0px",
   };
 
-  const fadeInObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
+  const fadeInObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add("fade-in-start");
         fadeInObserver.unobserve(entry.target);
@@ -44,20 +44,18 @@ onMounted(() => {
     });
   }, observerOptions);
 
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
     fadeInObserver.observe(el);
   });
 });
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-5 py-8">
+  <div class="max-w-4xl mx-auto">
     <!-- 页面标题 -->
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">文章归档</h1>
-      <p class="text-[0.8em] text-slate-600 dark:text-slate-400">
-        共收录 {{ data?.data?.stats?.total || 0 }} 篇文章
-      </p>
+      <p class="text-[0.8em] text-slate-600 dark:text-slate-400">共收录 {{ data?.data?.stats?.total || 0 }} 篇文章</p>
     </header>
 
     <!-- 加载状态 -->
@@ -79,15 +77,12 @@ onMounted(() => {
         v-for="(group, index) in data.data.groups"
         :key="`${group.year}-${group.month}`"
         class="animate-fade-in"
-        :style="{ animationDelay: `${index * 50}ms` }"
-      >
+        :style="{ animationDelay: `${index * 50}ms` }">
         <!-- 月份标题 -->
         <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
           <Icon name="lucide:calendar" class="size-5 text-primary" />
           {{ group.year }}年{{ group.month }}月
-          <span class="text-sm font-normal text-muted-foreground">
-            ({{ group.posts.length }} 篇)
-          </span>
+          <span class="text-sm font-normal text-muted-foreground"> ({{ group.posts.length }} 篇) </span>
         </h2>
 
         <!-- 文章列表 -->
@@ -95,8 +90,7 @@ onMounted(() => {
           <div
             v-for="post in group.posts"
             :key="post.cid"
-            class="group flex items-center gap-3 py-2.5 px-4 rounded-lg hover:bg-muted/50 transition-colors"
-          >
+            class="group flex items-center gap-3 py-2.5 px-4 rounded-lg hover:bg-muted/50 transition-colors">
             <!-- 日期 -->
             <div class="text-sm text-muted-foreground w-16 flex-shrink-0">
               {{ formatDate(post.createTime) }}
@@ -105,16 +99,14 @@ onMounted(() => {
             <!-- 文章标题 -->
             <NuxtLink
               :to="post.categorySlug ? `/content/${post.categorySlug}/${post.slug || post.cid}` : `/content/${post.slug || post.cid}`"
-              class="flex-1 font-medium hover:text-primary transition-colors line-clamp-1"
-            >
+              class="flex-1 font-medium hover:text-primary transition-colors line-clamp-1">
               {{ post.title }}
             </NuxtLink>
 
             <!-- 箭头图标 -->
             <Icon
               name="lucide:chevron-right"
-              class="size-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-            />
+              class="size-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
           </div>
         </div>
       </section>

@@ -181,7 +181,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-225 mx-auto px-5 py-8">
+  <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
     <header class="mb-5 animate-fade-in">
       <!-- 封面图片 -->

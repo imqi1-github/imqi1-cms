@@ -58,7 +58,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-5 py-6">
+  <div class="max-w-4xl mx-auto">
     <!-- 页面标题 -->
     <header class="mb-6 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">更新日志</h1>

@@ -88,7 +88,7 @@ watch(posts, () => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-8 max-w-5xl">
+  <div class="container mx-auto max-w-5xl">
     <!-- 页面头部 -->
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">订阅文章</h1>

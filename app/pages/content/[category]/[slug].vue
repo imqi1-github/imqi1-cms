@@ -1584,7 +1584,7 @@ onUnmounted(() => {
 <template>
   <div
     :class="[
-      'mx-auto px-5 py-8 w-full',
+      'mx-auto w-full',
       isPhotoCategory ? (showToc ? 'max-w-[93.75rem]' : 'max-w-[87.5rem]') : showToc ? 'max-w-[62.5rem]' : 'max-w-[56.25rem]',
     ]">
     <div v-if="pending" class="py-20 text-center">
@@ -1909,7 +1909,7 @@ onUnmounted(() => {
   color: rgb(156 163 175);
 }
 
-.markdown-body :deep(img:not(.swiper-container img)){
+.markdown-body :deep(img:not(.swiper-container img)) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
