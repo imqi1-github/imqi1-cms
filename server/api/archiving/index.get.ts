@@ -13,7 +13,7 @@ export default defineEventHandler(async event => {
             select: {
               cid: true,
               mid: true,
-              metas: {
+              meta: {
               select: {
                 slug: true,
               },
@@ -43,7 +43,7 @@ export default defineEventHandler(async event => {
 
       // 获取第一个分类的 slug
       const categorySlug = post.postrelation && post.postrelation.length > 0
-        ? post.postrelation[0].metas?.slug
+        ? post.postrelation[0].meta?.slug
         : null;
 
       acc[key].posts.push({

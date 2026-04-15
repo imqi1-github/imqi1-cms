@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   const tagId = Number(id);
 
   try {
-    const tagToDelete = await prisma.metas.findUnique({
+    const tagToDelete = await prisma.meta.findUnique({
       where: { mid: tagId },
     });
 
@@ -44,7 +44,7 @@ export default defineEventHandler(async event => {
       where: { mid: tagId },
     });
 
-    await prisma.metas.delete({
+    await prisma.meta.delete({
       where: { mid: tagId },
     });
 

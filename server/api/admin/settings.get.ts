@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const metas = await prisma.informations.findMany();
+    const meta = await prisma.information.findMany();
 
     // 默认值
     const defaults: Record<string, any> = {
@@ -73,7 +73,7 @@ export default defineEventHandler(async event => {
     const settings: Record<string, any> = { ...defaults };
 
     // 从数据库覆盖值
-    metas.forEach((meta: any) => {
+    meta.forEach((meta: any) => {
       if (!settings.hasOwnProperty(meta.key)) return;
 
       const value = meta.value;

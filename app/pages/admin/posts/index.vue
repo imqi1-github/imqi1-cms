@@ -228,7 +228,7 @@ async function previewPost(post: any) {
   // 获取文章的第一个分类
   let categorySlug = 'uncategorized';
   if (post.postrelation && post.postrelation.length > 0) {
-    categorySlug = post.postrelation[0].metas.slug;
+    categorySlug = post.postrelation[0].meta.slug;
   }
 
   // 使用 slug 或 cid 构建 URL
@@ -418,8 +418,8 @@ onMounted(() => {
             <TableCell class="text-muted-foreground font-mono text-sm">{{ post.slug || "-" }}</TableCell>
             <TableCell>
               <div v-if="post.postrelation && post.postrelation.length > 0" class="flex flex-wrap gap-1">
-                <Badge v-for="rel in post.postrelation" :key="rel.metas.mid" variant="outline" class="text-xs">
-                  {{ rel.metas.name }}
+                <Badge v-for="rel in post.postrelation" :key="rel.meta.mid" variant="outline" class="text-xs">
+                  {{ rel.meta.name }}
                 </Badge>
               </div>
               <span v-else class="text-muted-foreground text-sm">-</span>
@@ -472,8 +472,8 @@ onMounted(() => {
 
           <div class="flex flex-wrap items-center gap-2">
             <div v-if="post.postrelation && post.postrelation.length > 0" class="flex flex-wrap gap-1">
-              <Badge v-for="rel in post.postrelation" :key="rel.metas.mid" variant="outline" class="text-xs">
-                {{ rel.metas.name }}
+              <Badge v-for="rel in post.postrelation" :key="rel.meta.mid" variant="outline" class="text-xs">
+                {{ rel.meta.name }}
               </Badge>
             </div>
             <Badge :variant="getStatusBadge(post.status).variant">

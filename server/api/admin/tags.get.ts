@@ -11,7 +11,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const tags = await prisma.metas.findMany({
+    const tags = await prisma.meta.findMany({
       where: {
         type: "tag",
       },

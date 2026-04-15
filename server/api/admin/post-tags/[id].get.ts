@@ -24,18 +24,18 @@ export default defineEventHandler(async event => {
     const relations = await prisma.postrelation.findMany({
       where: {
         cid: Number(id),
-        metas: {
+        meta: {
           type: "tag",
         },
       },
       include: {
-        metas: true,
+        meta: true,
       },
     });
 
     return {
       success: true,
-      data: relations.map(r => r.metas),
+      data: relations.map(r => r.meta),
     };
   } catch (error) {
     console.error("获取文章标签失败:", error);

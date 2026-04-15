@@ -18,14 +18,14 @@ export default defineEventHandler(async event => {
     });
 
     // 获取分类数
-    const categoriesNum = await prisma.metas.count({
+    const categoriesNum = await prisma.meta.count({
       where: {
         type: "category",
       },
     });
 
     // 获取标签数
-    const tagsNum = await prisma.metas.count({
+    const tagsNum = await prisma.meta.count({
       where: {
         type: "tag",
       },

@@ -1,12 +1,8 @@
-import { prisma } from "#server/utils/prisma";
-import { auditText, mapAuditResultToStatus, getAuditConfig } from "#server/utils/baidu-audit";
-import {
-  notifyAdminNewComment,
-  notifyCommentReply,
-  notifyAdminPendingComment,
-} from "#server/utils/mail";
-import DOMPurify from "isomorphic-dompurify";
+import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
+import { prisma } from "#server/utils/prisma";
+import DOMPurify from "isomorphic-dompurify";
 
 // HTML 净化配置 - 只允许安全的标签和属性
 const PURIFY_CONFIG = {
@@ -73,7 +69,7 @@ export default defineEventHandler(async event => {
       auditResult = await auditText(content);
       commentStatus = mapAuditResultToStatus(auditResult.conclusionType);
     } else {
-      const meta = await prisma.informations.findUnique({
+      const meta = await prisma.information.findUnique({
         where: { key: "commentModeration" },
       });
       const needModeration = meta?.value === "true";
@@ -129,15 +125,7 @@ export default defineEventHandler(async event => {
       // 如果父评论有邮箱，发送回复通知
       if (parentComment?.mail) {
         // 异步发送邮件
-        notifyCommentReply(
-          parseInt(cid),
-          parentComment.name,
-          parentComment.mail,
-          parentComment.content,
-          name,
-          content,
-          comment.coid
-        );
+        notifyCommentReply(parseInt(cid), parentComment.name, parentComment.mail, parentComment.content, name, content, comment.coid);
       }
     } else {
       // 2. 新评论通知 - 通知站长（仅顶级评论）

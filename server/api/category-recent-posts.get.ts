@@ -7,20 +7,20 @@ export default defineEventHandler(async event => {
     const categoryCount = 3; // 取前3个mid最小的分类
 
     // 获取图片分类设置，用于排除
-    const photoCategoryMeta = await prisma.informations.findUnique({
+    const photoCategoryMeta = await prisma.information.findUnique({
       where: { key: "photoCategorySlug" },
     });
     const photoCategorySlug = photoCategoryMeta?.value || "shot";
 
     // 获取图片分类的 mid
-    const photoCategory = await prisma.metas.findFirst({
+    const photoCategory = await prisma.meta.findFirst({
       where: { slug: photoCategorySlug },
       select: { mid: true },
     });
     const photoCategoryMid = photoCategory?.mid;
 
     // 获取 mid 最小的前3个分类（排除图片分类）
-    const categories = await prisma.metas.findMany({
+    const categories = await prisma.meta.findMany({
       where: {
         type: "category",
         ...(photoCategoryMid && { mid: { not: photoCategoryMid } }),
@@ -91,7 +91,7 @@ export default defineEventHandler(async event => {
               select: {
                 cid: true,
                 mid: true,
-                metas: {
+                meta: {
                   select: {
                     mid: true,
                     name: true,
@@ -107,10 +107,10 @@ export default defineEventHandler(async event => {
         const mappedPosts = posts.map(post => {
           // 只获取标签（不获取分类，因为已经在分类页面了）
           const tags = post.postrelation
-            .filter(r => r.metas.type === "tag")
+            .filter(r => r.meta.type === "tag")
             .map(r => ({
-              name: r.metas.name,
-              slug: r.metas.slug,
+              name: r.meta.name,
+              slug: r.meta.slug,
             }));
 
           let covers: { url: string; desc?: string }[] = [];
@@ -143,7 +143,7 @@ export default defineEventHandler(async event => {
           },
           posts: mappedPosts,
         };
-      })
+      }),
     );
 
     // 过滤掉没有文章的分类

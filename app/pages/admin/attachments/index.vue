@@ -1,132 +1,139 @@
 <script setup lang="ts">
-const toast = useToast()
-const loading = ref(true)
-const attachments = ref<any[]>([])
-const selectedType = ref('all')
-const searchQuery = ref('')
+const toast = useToast();
+const loading = ref(true);
+const attachments = ref<any[]>([]);
+const selectedType = ref("all");
+const searchQuery = ref("");
+const csrfToken = ref("");
 
 const attachmentTypes = [
-  { value: 'all', label: '全部' },
-  { value: 'image', label: '图片' },
-  { value: 'video', label: '视频' },
-]
+  { value: "all", label: "全部" },
+  { value: "image", label: "图片" },
+  { value: "video", label: "视频" },
+];
 
 // 分页
-const page = ref(1)
-const pageSize = ref(20)
-const total = ref(0)
+const page = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
 
 // 获取附件列表
 const fetchAttachments = async () => {
-  loading.value = true
+  loading.value = true;
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    if (csrfRes && (csrfRes as any).data?.token) {
+      csrfToken.value = (csrfRes as any).data.token;
+    }
+
     const params = new URLSearchParams({
       page: String(page.value),
       pageSize: String(pageSize.value),
-    })
-    if (selectedType.value !== 'all') {
-      params.append('type', selectedType.value)
+    });
+    if (selectedType.value !== "all") {
+      params.append("type", selectedType.value);
     }
     if (searchQuery.value) {
-      params.append('search', searchQuery.value)
+      params.append("search", searchQuery.value);
     }
 
-    const res = await $fetch(`/api/admin/attachments/all?${params}`) as any
+    const res = (await $fetch(`/api/admin/attachments/all?${params}`)) as any;
     if (res?.success) {
-      attachments.value = res.data.list || []
-      total.value = res.data.total || 0
+      attachments.value = res.data.list || [];
+      total.value = res.data.total || 0;
     }
   } catch (error) {
-    console.error('获取附件列表失败:', error)
+    console.error("获取附件列表失败:", error);
     toast.error({
-      message: '获取附件列表失败',
-    })
+      message: "获取附件列表失败",
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 监听筛选条件变化
 watch([selectedType, searchQuery, page], () => {
-  fetchAttachments()
-})
+  fetchAttachments();
+});
 
 // 防抖搜索
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 watch(searchQuery, () => {
-  if (searchTimeout) clearTimeout(searchTimeout)
+  if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    page.value = 1
-  }, 500)
-})
+    page.value = 1;
+  }, 500);
+});
 
 const getTypeLabel = (type: string) => {
   const map: Record<string, string> = {
-    image: '图片',
-    video: '视频',
-  }
-  return map[type] || type
-}
+    image: "图片",
+    video: "视频",
+  };
+  return map[type] || type;
+};
 
 const getTypeIcon = (type: string) => {
   const map: Record<string, string> = {
-    image: 'lucide:image',
-    video: 'lucide:film',
-  }
-  return map[type] || 'lucide:file'
-}
+    image: "lucide:image",
+    video: "lucide:film",
+  };
+  return map[type] || "lucide:file";
+};
 
 const formatFileSize = (size: string | number) => {
-  if (size === '-' || !size) return '-'
-  const bytes = Number(size)
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
+  if (size === "-" || !size) return "-";
+  const bytes = Number(size);
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+};
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('zh-CN')
-}
+  return new Date(date).toLocaleDateString("zh-CN");
+};
 
 async function deleteAttachment(item: any) {
-  const confirmed = confirm(`确定要删除附件 "${item.name}" 吗？`)
-  if (!confirmed) return
+  const confirmed = confirm(`确定要删除附件 "${item.name}" 吗？`);
+  if (!confirmed) return;
 
   try {
-    await $fetch(`/api/attachments/${item.id}`, {
-      method: 'DELETE',
-    })
+    await $fetch(`/api/attachments/${item.id}?csrfToken=${csrfToken.value}`, {
+      method: "DELETE",
+    });
     toast.success({
-      message: '删除成功',
-    })
-    await fetchAttachments()
+      message: "删除成功",
+    });
+    await fetchAttachments();
   } catch (error) {
-    console.error('删除附件失败:', error)
+    console.error("删除附件失败:", error);
     toast.error({
-      message: '删除失败',
-    })
+      message: "删除失败",
+    });
   }
 }
 
 // 复制链接
 const copyLink = async (url: string) => {
-  const fullUrl = `${window.location.origin}${url}`
+  const fullUrl = `${window.location.origin}${url}`;
   try {
-    await navigator.clipboard.writeText(fullUrl)
+    await navigator.clipboard.writeText(fullUrl);
     toast.success({
-      message: '已复制链接',
+      message: "已复制链接",
       description: fullUrl,
-    })
+    });
   } catch {
     toast.error({
-      message: '复制失败',
-    })
+      message: "复制失败",
+    });
   }
-}
+};
 
 onMounted(() => {
-  fetchAttachments()
-})
+  fetchAttachments();
+});
 </script>
 
 <template>
@@ -148,11 +155,7 @@ onMounted(() => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem
-                v-for="type in attachmentTypes"
-                :key="type.value"
-                :value="type.value"
-              >
+              <SelectItem v-for="type in attachmentTypes" :key="type.value" :value="type.value">
                 {{ type.label }}
               </SelectItem>
             </SelectContent>
@@ -161,16 +164,10 @@ onMounted(() => {
         <div class="flex-1 w-full sm:w-auto">
           <div class="relative">
             <Icon name="lucide:search" class="absolute left-3 top-2.5 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              v-model="searchQuery"
-              placeholder="搜索附件名称..."
-              class="pl-10"
-            />
+            <Input v-model="searchQuery" placeholder="搜索附件名称..." class="pl-10" />
           </div>
         </div>
-        <div class="text-sm text-muted-foreground whitespace-nowrap">
-          共 {{ total }} 个附件
-        </div>
+        <div class="text-sm text-muted-foreground whitespace-nowrap">共 {{ total }} 个附件</div>
       </div>
     </Card>
 
@@ -200,11 +197,7 @@ onMounted(() => {
       <!-- 附件网格 -->
       <div v-else class="p-4">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          <div
-            v-for="item in attachments"
-            :key="item.id"
-            class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-          >
+          <div v-for="item in attachments" :key="item.id" class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <!-- 预览图 -->
             <NuxtLink :to="`/admin/attachments/${item.id}`" class="block">
               <div class="aspect-square bg-muted flex items-center justify-center overflow-hidden">
@@ -212,8 +205,7 @@ onMounted(() => {
                   v-if="item.type === 'image'"
                   :src="item.url"
                   :alt="item.name"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 <div v-else class="flex flex-col items-center text-muted-foreground">
                   <Icon :name="getTypeIcon(item.type)" class="size-12 mb-2" />
                   <span class="text-xs">视频预览</span>
@@ -222,32 +214,15 @@ onMounted(() => {
             </NuxtLink>
 
             <!-- 操作遮罩 -->
-            <div class="absolute inset-0 top-[calc(100%-60px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                class="h-8"
-                @click.stop="copyLink(item.url)"
-                title="复制链接"
-              >
+            <div
+              class="absolute inset-0 top-[calc(100%-60px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
+              <Button variant="secondary" size="sm" class="h-8" @click.stop="copyLink(item.url)" title="复制链接">
                 <Icon name="lucide:copy" class="size-4" />
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                class="h-8"
-                @click.stop="navigateTo(`/admin/attachments/${item.id}`)"
-                title="编辑"
-              >
+              <Button variant="secondary" size="sm" class="h-8" @click.stop="navigateTo(`/admin/attachments/${item.id}`)" title="编辑">
                 <Icon name="lucide:settings" class="size-4" />
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                class="h-8"
-                @click.stop="deleteAttachment(item)"
-                title="删除"
-              >
+              <Button variant="destructive" size="sm" class="h-8" @click.stop="deleteAttachment(item)" title="删除">
                 <Icon name="lucide:trash-2" class="size-4" />
               </Button>
             </div>
@@ -264,10 +239,7 @@ onMounted(() => {
                 <span>{{ formatFileSize(item.size) }}</span>
               </div>
               <div v-if="item.post" class="mt-1">
-                <NuxtLink
-                  :to="`/admin/posts/edit?cid=${item.post.cid}`"
-                  class="text-xs text-muted-foreground hover:text-foreground"
-                >
+                <NuxtLink :to="`/admin/posts/edit?cid=${item.post.cid}`" class="text-xs text-muted-foreground hover:text-foreground">
                   {{ item.post.title }}
                 </NuxtLink>
               </div>
@@ -277,25 +249,9 @@ onMounted(() => {
 
         <!-- 分页 -->
         <div v-if="total > pageSize" class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-6">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="page === 1"
-            @click="page--"
-          >
-            上一页
-          </Button>
-          <span class="text-sm text-muted-foreground">
-            第 {{ page }} / {{ Math.ceil(total / pageSize) }} 页
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="page >= Math.ceil(total / pageSize)"
-            @click="page++"
-          >
-            下一页
-          </Button>
+          <Button variant="outline" size="sm" :disabled="page === 1" @click="page--"> 上一页 </Button>
+          <span class="text-sm text-muted-foreground"> 第 {{ page }} / {{ Math.ceil(total / pageSize) }} 页 </span>
+          <Button variant="outline" size="sm" :disabled="page >= Math.ceil(total / pageSize)" @click="page++"> 下一页 </Button>
         </div>
       </div>
     </Card>

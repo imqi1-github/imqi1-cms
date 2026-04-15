@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { getCookie, setCookie } from "h3";
 
 /**
  * 生成 CSRF Token
@@ -43,10 +44,7 @@ export function setCsrfToken(event: any): string {
  * @param providedToken 用户提供的 token
  * @returns 是否验证通过
  */
-export function validateCsrfToken(
-  event: any,
-  providedToken: string
-): boolean {
+export function validateCsrfToken(event: any, providedToken: string): boolean {
   const storedToken = getStoredCsrfToken(event);
 
   if (!storedToken) {

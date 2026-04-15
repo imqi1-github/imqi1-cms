@@ -13,16 +13,16 @@ CREATE TABLE `attachment` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `metas` (
+CREATE TABLE `meta` (
     `mid` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `slug` VARCHAR(191) NULL,
     `desc` VARCHAR(191) NULL,
     `type` VARCHAR(191) NOT NULL DEFAULT 'category',
 
-    UNIQUE INDEX `Metas_name_key`(`name`),
-    UNIQUE INDEX `Metas_slug_key`(`slug`),
-    INDEX `Metas_mid_type_idx`(`mid`, `type`),
+    UNIQUE INDEX `Meta_name_key`(`name`),
+    UNIQUE INDEX `Meta_slug_key`(`slug`),
+    INDEX `Meta_mid_type_idx`(`mid`, `type`),
     PRIMARY KEY (`mid`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -67,12 +67,12 @@ CREATE TABLE `link` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `informations` (
+CREATE TABLE `information` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `key` VARCHAR(191) NOT NULL,
     `value` VARCHAR(191) NOT NULL,
 
-    UNIQUE INDEX `Informations_key_key`(`key`),
+    UNIQUE INDEX `Information_key_key`(`key`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -181,7 +181,7 @@ ALTER TABLE `post` ADD CONSTRAINT `Post_uid_fkey` FOREIGN KEY (`uid`) REFERENCES
 ALTER TABLE `postrelation` ADD CONSTRAINT `PostRelation_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `post`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `postrelation` ADD CONSTRAINT `PostRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `metas`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `postrelation` ADD CONSTRAINT `PostRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `meta`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `subscribepost` ADD CONSTRAINT `SubscribePost_subscribeId_fkey` FOREIGN KEY (`subscribeId`) REFERENCES `subscribe`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -109,7 +109,7 @@ npx tsx prisma/seed/migrate.ts
 | status | status | 'approved'->1, 其他->0 |
 | parent | parent_id | 字段名变更 |
 
-### 分类/标签表 (metas -> category)
+### 分类/标签表 (meta -> category)
 
 | 旧字段 | 新字段 | 转换说明 |
 |--------|--------|----------|

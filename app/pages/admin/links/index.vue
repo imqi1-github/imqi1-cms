@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const toast = useToast();
 const loading = ref(true);
 const links = ref<any[]>([]);
 const showAddModal = ref(false);
@@ -27,18 +28,30 @@ async function addLink() {
     });
     newLink.value = { name: "", link: "", desc: "", avatar: "" };
     showAddModal.value = false;
+    toast.success({
+      message: "添加成功",
+    });
     await fetchLinks();
   } catch (error) {
     console.error("添加失败:", error);
+    toast.error({
+      message: "添加失败",
+    });
   }
 }
 
 async function toggleEnabled(link: any) {
   try {
     await $fetch(`/api/admin/links/${link.id}/toggle`, { method: "PATCH" });
+    toast.success({
+      message: link.enabled ? "已禁用" : "已启用",
+    });
     await fetchLinks();
   } catch (error) {
     console.error("操作失败:", error);
+    toast.error({
+      message: "操作失败",
+    });
   }
 }
 
@@ -61,9 +74,15 @@ async function saveEdit() {
       body: editLinkForm.value,
     });
     showEditModal.value = false;
+    toast.success({
+      message: "更新成功",
+    });
     await fetchLinks();
   } catch (error) {
     console.error("更新失败:", error);
+    toast.error({
+      message: "更新失败",
+    });
   }
 }
 
@@ -72,9 +91,15 @@ async function deleteLink(id: number) {
   if (confirmed) {
     try {
       await $fetch(`/api/admin/links/${id}`, { method: "DELETE" });
+      toast.success({
+        message: "删除成功",
+      });
       await fetchLinks();
     } catch (error) {
       console.error("删除失败:", error);
+      toast.error({
+        message: "删除失败",
+      });
     }
   }
 }

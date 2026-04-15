@@ -1,6 +1,6 @@
 import { getUser } from "#server/lib/auth";
-import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   const body = await readBody(event);
@@ -81,7 +81,7 @@ export default defineEventHandler(async event => {
     ];
 
     for (const update of updates) {
-      await prisma.informations.upsert({
+      await prisma.information.upsert({
         where: { key: update.key },
         create: { key: update.key, value: update.value },
         update: { value: update.value },

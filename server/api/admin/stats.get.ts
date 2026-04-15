@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
       prisma.post.count({ where: { type: 0 } }), // 文章数
       prisma.post.count({ where: { type: 1 } }), // 页面数
       prisma.comment.count(),
-      prisma.metas.count(),
+      prisma.meta.count(),
       prisma.user.count(),
     ]);
 

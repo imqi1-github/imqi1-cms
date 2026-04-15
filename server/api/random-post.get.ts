@@ -27,10 +27,10 @@ export default defineEventHandler(async event => {
       take: 1,
       include: {
         postrelation: {
-            select: {
-              cid: true,
-              mid: true,
-              metas: {
+          select: {
+            cid: true,
+            mid: true,
+            meta: {
               select: {
                 mid: true,
                 name: true,
@@ -51,7 +51,7 @@ export default defineEventHandler(async event => {
       };
     }
 
-    const category = post.postrelation[0]?.metas;
+    const category = post.postrelation[0]?.meta;
 
     let covers: { url: string; desc?: string }[] = [];
     if (post.covers) {

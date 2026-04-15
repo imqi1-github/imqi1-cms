@@ -6,13 +6,13 @@ export default defineEventHandler(async event => {
     const limit = Number(query.limit) || 4;
 
     // 获取图片分类设置
-    const photoCategoryMeta = await prisma.informations.findUnique({
+    const photoCategoryMeta = await prisma.information.findUnique({
       where: { key: "photoCategorySlug" },
     });
     const photoCategorySlug = photoCategoryMeta?.value || "shot";
 
     // 获取图片分类的 mid
-    const photoCategory = await prisma.metas.findFirst({
+    const photoCategory = await prisma.meta.findFirst({
       where: { slug: photoCategorySlug },
       select: { mid: true },
     });
@@ -40,10 +40,10 @@ export default defineEventHandler(async event => {
       },
       include: {
         postrelation: {
-            select: {
-              cid: true,
-              mid: true,
-              metas: {
+          select: {
+            cid: true,
+            mid: true,
+            meta: {
               select: {
                 mid: true,
                 name: true,
@@ -57,8 +57,8 @@ export default defineEventHandler(async event => {
 
     const data = posts.map(post => {
       const categories = post.postrelation.map(r => ({
-        name: r.metas.name,
-        slug: r.metas.slug,
+        name: r.meta.name,
+        slug: r.meta.slug,
       }));
 
       let covers: { url: string; desc?: string }[] = [];
@@ -68,7 +68,7 @@ export default defineEventHandler(async event => {
           if (Array.isArray(parsed)) {
             covers = parsed.map(item => ({
               url: item.url || item,
-              desc: item.title || item.desc || '',
+              desc: item.title || item.desc || "",
             }));
           }
         } catch {

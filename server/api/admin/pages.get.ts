@@ -53,7 +53,7 @@ export default defineEventHandler(async event => {
           select: {
             cid: true,
             mid: true,
-            metas: {
+            meta: {
               select: {
                 mid: true,
                 name: true,

@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取站点设置
-    const siteSettings = await prisma.informations.findUnique({
+    const siteSettings = await prisma.information.findUnique({
       where: { key: "siteSettings" },
     });
 
@@ -48,19 +48,20 @@ export default defineEventHandler(async event => {
     const baseUrl = siteUrl || `${protocol}://${host}`;
 
     // 生成 RSS XML
-    const rssItems = posts.map(post => {
-      const postUrl = `${baseUrl}/content/${post.slug || post.cid}`;
-      const author = post.user?.nickname || post.user?.name || "Admin";
-      const pubDate = new Date(post.create_time).toUTCString();
+    const rssItems = posts
+      .map(post => {
+        const postUrl = `${baseUrl}/content/${post.slug || post.cid}`;
+        const author = post.user?.nickname || post.user?.name || "Admin";
+        const pubDate = new Date(post.create_time).toUTCString();
 
-      // 清理描述，移除 HTML 标签
-      const description = post.desc
-        ? post.desc.replace(/<[^>]*>/g, "").substring(0, 200)
-        : post.content
-          ? post.content.replace(/<[^>]*>/g, "").substring(0, 200)
-          : "";
+        // 清理描述，移除 HTML 标签
+        const description = post.desc
+          ? post.desc.replace(/<[^>]*>/g, "").substring(0, 200)
+          : post.content
+            ? post.content.replace(/<[^>]*>/g, "").substring(0, 200)
+            : "";
 
-      return `
+        return `
     <item>
       <title><![CDATA[${post.title}]]></title>
       <link>${postUrl}</link>
@@ -69,11 +70,10 @@ export default defineEventHandler(async event => {
       <guid isPermaLink="true">${postUrl}</guid>
       <pubDate>${pubDate}</pubDate>
     </item>`;
-    }).join("\n");
+      })
+      .join("\n");
 
-    const lastBuildDate = posts.length > 0
-      ? new Date(posts[0].create_time).toUTCString()
-      : new Date().toUTCString();
+    const lastBuildDate = posts.length > 0 ? new Date(posts[0].create_time).toUTCString() : new Date().toUTCString();
 
     const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">

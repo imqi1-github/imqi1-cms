@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const adapter = new PrismaMariaDb({
@@ -918,7 +918,11 @@ const metaItems = [
   { key: "commentRequireLink", value: "false" },
   { key: "commentInterval", value: "60" },
   { key: "postPageSize", value: "12" },
-  { key: "homeCustomText", value: '<p>本站新架构上线，由 Nuxt 4 构建，你所看见的都是测试数据，测试完毕后友联和数据会同步，请不要删除友联，可以的话，帮我找找 bug，谢谢 🙏</p>' },
+  {
+    key: "homeCustomText",
+    value:
+      "<p>本站新架构上线，由 Nuxt 4 构建，你所看见的都是测试数据，测试完毕后友联和数据会同步，请不要删除友联，可以的话，帮我找找 bug，谢谢 🙏</p>",
+  },
   { key: "musicPlaylistId", value: "9255074836 || netease" },
   { key: "photoCategorySlug", value: "shot" },
   { key: "moderationApiType", value: "1" },
@@ -959,7 +963,7 @@ async function main() {
   await prisma.post.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
-  await prisma.informations.deleteMany();
+  await prisma.information.deleteMany();
   await prisma.subscribe.deleteMany();
   await prisma.changelog.deleteMany();
   await prisma.link.deleteMany();
@@ -1101,7 +1105,7 @@ async function main() {
   // 创建元数据
   console.log("⚙️  创建元数据...");
   for (const item of metaItems) {
-    await prisma.informations.upsert({
+    await prisma.information.upsert({
       where: { key: item.key },
       update: { value: item.value },
       create: item,

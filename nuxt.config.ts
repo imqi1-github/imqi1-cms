@@ -210,6 +210,9 @@ export default defineNuxtConfig({
         'promise-polyfill',
         'smoothscroll', // CJS
         'floating-vue',
+        'swiper',
+        'swiper/modules',
+        '@fancyapps/ui',
       ],
     },
     build: {

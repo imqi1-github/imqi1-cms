@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
             slug: true,
             postrelation: {
               select: {
-                metas: {
+                meta: {
                   select: {
                     slug: true,
                   },
@@ -48,10 +48,10 @@ export default defineEventHandler(async event => {
                comment.post.slug &&
                comment.post.postrelation &&
                comment.post.postrelation.length > 0 &&
-               comment.post.postrelation[0].metas;
+               comment.post.postrelation[0].meta;
       })
       .map(comment => {
-        const categorySlug = comment.post.postrelation[0].metas.slug;
+        const categorySlug = comment.post.postrelation[0].meta.slug;
         const postSlug = comment.post.slug;
         const postUrl = `/content/${categorySlug}/${postSlug}`;
 

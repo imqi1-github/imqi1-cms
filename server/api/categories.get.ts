@@ -8,7 +8,7 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
     const limit = Number(query.limit) || 4;
 
-    const categories = await prisma.metas.findMany({
+    const categories = await prisma.meta.findMany({
       where: {
         type: "category"
       },

@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const tag = await prisma.metas.create({
+    const tag = await prisma.meta.create({
       data: {
         name: body.name.trim(),
         slug: body.slug || null,

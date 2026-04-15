@@ -11,7 +11,7 @@ export default defineEventHandler(async event => {
   }
 
   // 获取分类信息
-  const category = await prisma.metas.findUnique({
+  const category = await prisma.meta.findUnique({
     where: {
       slug: categorySlug,
       type: 'category', // 确保只返回分类类型

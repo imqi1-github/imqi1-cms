@@ -19,15 +19,15 @@ model attachment {
   @@index([cid], map: "Attachment_cid_fkey")
 }
 
-model metas {
+model meta {
   mid          Int            @id @default(autoincrement())
-  name         String         @unique(map: "Metas_name_key")
-  slug         String?        @unique(map: "Metas_slug_key")
+  name         String         @unique(map: "Meta_name_key")
+  slug         String?        @unique(map: "Meta_slug_key")
   desc         String?
   type         String         @default("category")
   postrelation postrelation[]
 
-  @@index([mid, type], map: "Metas_mid_type_idx")
+  @@index([mid, type], map: "Meta_mid_type_idx")
 }
 
 model changelog {
@@ -63,9 +63,9 @@ model link {
   enabled Boolean @default(true)
 }
 
-model informations {
+model information {
   id    Int    @id @default(autoincrement())
-  key   String @unique(map: "Informations_key_key")
+  key   String @unique(map: "Information_key_key")
   value String
 }
 
@@ -99,7 +99,7 @@ model postrelation {
   cid   Int
   mid   Int
   post  post  @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
-  metas metas @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
+  meta meta @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
 
   @@id([cid, mid])
   @@index([mid], map: "PostRelation_mid_fkey")

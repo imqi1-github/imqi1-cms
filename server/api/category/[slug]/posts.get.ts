@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
   const skip = (page - 1) * pageSize;
 
   // 获取分类信息
-  const category = await prisma.metas.findUnique({
+  const category = await prisma.meta.findUnique({
     where: { slug: categorySlug },
     select: {
       mid: true,
@@ -36,7 +36,7 @@ export default defineEventHandler(async event => {
   // 获取该分类下的文章总数
   const total = await prisma.postrelation.count({
     where: {
-      metas: {
+      meta: {
         slug: categorySlug,
         type: "category",
       },
@@ -50,7 +50,7 @@ export default defineEventHandler(async event => {
   // 获取该分类下的文章列表
   const relations = await prisma.postrelation.findMany({
     where: {
-      metas: {
+      meta: {
         slug: categorySlug,
         type: "category",
       },
@@ -74,7 +74,7 @@ export default defineEventHandler(async event => {
             select: {
               cid: true,
               mid: true,
-              metas: {
+              meta: {
                 select: {
                   name: true,
                   slug: true,
@@ -128,8 +128,8 @@ export default defineEventHandler(async event => {
 
     // 从 postrelation 中获取标签（只取 type="tag" 的）
     const tagNames = post.postrelation
-      ?.filter(r => r.metas.type === "tag")
-      .map(r => r.metas.name) || [];
+      ?.filter(r => r.meta.type === "tag")
+      .map(r => r.meta.name) || [];
 
     return {
       cid: post.cid,

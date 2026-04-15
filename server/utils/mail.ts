@@ -1,137 +1,135 @@
-import nodemailer from 'nodemailer'
-import prisma from '#server/utils/prisma'
-import * as fs from 'fs'
-import * as path from 'path'
+import prisma from "#server/utils/prisma";
+import * as fs from "fs";
+import nodemailer from "nodemailer";
+import * as path from "path";
 
 // 邮件日志目录
-const LOG_DIR = path.join(process.cwd(), 'logs', 'mail')
+const LOG_DIR = path.join(process.cwd(), "logs", "mail");
 
 // 确保日志目录存在
 function ensureLogDir() {
   if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true })
+    fs.mkdirSync(LOG_DIR, { recursive: true });
   }
 }
 
 // 获取日志文件路径
 function getLogFilePath() {
-  const date = new Date().toISOString().split('T')[0]
-  return path.join(LOG_DIR, `${date}.log`)
+  const date = new Date().toISOString().split("T")[0];
+  return path.join(LOG_DIR, `${date}.log`);
 }
 
 // 写入日志
 function writeLog(level: string, message: string, data?: any) {
-  ensureLogDir()
-  const timestamp = new Date().toISOString()
+  ensureLogDir();
+  const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,
     level,
     message,
     ...data,
-  }
-  const logLine = JSON.stringify(logEntry) + '\n'
-  fs.appendFileSync(getLogFilePath(), logLine, 'utf-8')
+  };
+  const logLine = JSON.stringify(logEntry) + "\n";
+  fs.appendFileSync(getLogFilePath(), logLine, "utf-8");
 }
 
 // 获取邮件配置
 async function getMailConfig() {
-  const settings = await prisma.informations.findMany({
+  const settings = await prisma.information.findMany({
     where: {
       key: {
         in: [
-          'emailLogEnabled',
-          'emailPushType',
-          'smtpHost',
-          'smtpPort',
-          'smtpSecureMode',
-          'smtpUser',
-          'smtpPassword',
-          'smtpFromName',
-          'smtpAddress',
-          'adminEmail',
-          'notifyAdmin',
+          "emailLogEnabled",
+          "emailPushType",
+          "smtpHost",
+          "smtpPort",
+          "smtpSecureMode",
+          "smtpUser",
+          "smtpPassword",
+          "smtpFromName",
+          "smtpAddress",
+          "adminEmail",
+          "notifyAdmin",
         ],
       },
     },
-  })
+  });
 
-  const get = (key: string) => settings.find(s => s.key === key)?.value || ''
+  const get = (key: string) => settings.find(s => s.key === key)?.value || "";
 
   return {
-    logEnabled: get('emailLogEnabled') === 'true',
-    pushType: get('emailPushType') || 'none',
-    host: get('smtpHost'),
-    port: parseInt(get('smtpPort')) || 465,
-    secureMode: get('smtpSecureMode') || 'tls',
-    user: get('smtpUser'),
-    password: get('smtpPassword'),
-    fromName: get('smtpFromName') || 'Blog',
-    address: get('smtpAddress') || get('smtpUser'),
-    adminEmail: get('adminEmail'),
-    notifyAdmin: get('notifyAdmin') === 'true',
-  }
+    logEnabled: get("emailLogEnabled") === "true",
+    pushType: get("emailPushType") || "none",
+    host: get("smtpHost"),
+    port: parseInt(get("smtpPort")) || 465,
+    secureMode: get("smtpSecureMode") || "tls",
+    user: get("smtpUser"),
+    password: get("smtpPassword"),
+    fromName: get("smtpFromName") || "Blog",
+    address: get("smtpAddress") || get("smtpUser"),
+    adminEmail: get("adminEmail"),
+    notifyAdmin: get("notifyAdmin") === "true",
+  };
 }
 
 // 创建邮件传输器
 async function createTransporter() {
-  const config = await getMailConfig()
+  const config = await getMailConfig();
 
-  if (config.pushType === 'none' || !config.host) {
-    return null
+  if (config.pushType === "none" || !config.host) {
+    return null;
   }
 
   return nodemailer.createTransport({
     host: config.host,
     port: config.port,
-    secure: config.secureMode === 'ssl',
+    secure: config.secureMode === "ssl",
     auth: {
       user: config.user,
       pass: config.password,
     },
-  })
+  });
 }
 
 // 邮件接口
 export interface MailOptions {
-  to: string
-  subject: string
-  text?: string
-  html?: string
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
 }
 
 // 发送邮件
 export async function sendMail(options: MailOptions): Promise<boolean> {
-  const config = await getMailConfig()
+  const config = await getMailConfig();
 
   // 记录日志
   if (config.logEnabled) {
-    writeLog('info', '准备发送邮件', {
+    writeLog("info", "准备发送邮件", {
       to: options.to,
       subject: options.subject,
-    })
+    });
   }
 
   // 如果推送类型是 none，只记录日志
-  if (config.pushType === 'none') {
+  if (config.pushType === "none") {
     if (config.logEnabled) {
-      writeLog('warn', '邮件推送未启用，跳过发送', {
+      writeLog("warn", "邮件推送未启用，跳过发送", {
         to: options.to,
         subject: options.subject,
-      })
+      });
     }
-    return true
+    return true;
   }
 
   try {
-    const transporter = await createTransporter()
+    const transporter = await createTransporter();
 
     if (!transporter) {
-      throw new Error('无法创建邮件传输器，请检查 SMTP 配置')
+      throw new Error("无法创建邮件传输器，请检查 SMTP 配置");
     }
 
-    const from = config.address
-      ? `"${config.fromName}" <${config.address}>`
-      : config.user
+    const from = config.address ? `"${config.fromName}" <${config.address}>` : config.user;
 
     await transporter.sendMail({
       from,
@@ -139,97 +137,92 @@ export async function sendMail(options: MailOptions): Promise<boolean> {
       subject: options.subject,
       text: options.text,
       html: options.html,
-    })
+    });
 
     if (config.logEnabled) {
-      writeLog('info', '邮件发送成功', {
+      writeLog("info", "邮件发送成功", {
         to: options.to,
         subject: options.subject,
-      })
+      });
     }
 
-    return true
+    return true;
   } catch (error) {
     if (config.logEnabled) {
-      writeLog('error', '邮件发送失败', {
+      writeLog("error", "邮件发送失败", {
         to: options.to,
         subject: options.subject,
         error: error instanceof Error ? error.message : String(error),
-      })
+      });
     }
-    return false
+    return false;
   }
 }
 
 // 发送测试邮件
 export async function sendTestEmail(to: string): Promise<{ success: boolean; message: string }> {
-  const config = await getMailConfig()
+  const config = await getMailConfig();
 
-  if (config.pushType === 'none') {
-    return { success: false, message: '邮件推送未启用' }
+  if (config.pushType === "none") {
+    return { success: false, message: "邮件推送未启用" };
   }
 
   if (!config.host) {
-    return { success: false, message: 'SMTP 配置不完整' }
+    return { success: false, message: "SMTP 配置不完整" };
   }
 
   try {
-    const transporter = await createTransporter()
+    const transporter = await createTransporter();
 
     if (!transporter) {
-      return { success: false, message: '无法创建邮件传输器' }
+      return { success: false, message: "无法创建邮件传输器" };
     }
 
-    const from = config.address
-      ? `"${config.fromName}" <${config.address}>`
-      : config.user
+    const from = config.address ? `"${config.fromName}" <${config.address}>` : config.user;
 
     await transporter.sendMail({
       from,
       to,
-      subject: '测试邮件',
+      subject: "测试邮件",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">测试邮件</h2>
           <p>这是一封测试邮件，如果您收到此邮件，说明您的 SMTP 配置正确！</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="color: #999; font-size: 12px;">
-            发送时间: ${new Date().toLocaleString('zh-CN')}
+            发送时间: ${new Date().toLocaleString("zh-CN")}
           </p>
         </div>
       `,
-    })
+    });
 
-    writeLog('info', '测试邮件发送成功', { to })
-    return { success: true, message: '测试邮件发送成功' }
+    writeLog("info", "测试邮件发送成功", { to });
+    return { success: true, message: "测试邮件发送成功" };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error)
-    writeLog('error', '测试邮件发送失败', { to, error: errorMsg })
-    return { success: false, message: `发送失败: ${errorMsg}` }
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    writeLog("error", "测试邮件发送失败", { to, error: errorMsg });
+    return { success: false, message: `发送失败: ${errorMsg}` };
   }
 }
 
 // 发送新评论通知
-export async function sendCommentNotification(
-  comment: any,
-  postTitle: string
-): Promise<boolean> {
-  const config = await getMailConfig()
+export async function sendCommentNotification(comment: any, postTitle: string): Promise<boolean> {
+  const config = await getMailConfig();
 
   // 检查是否需要通知管理员
   if (!config.notifyAdmin || !config.adminEmail) {
-    return false
+    return false;
   }
 
-  if (config.pushType === 'none') {
-    writeLog('warn', '邮件推送未启用，跳过评论通知', {
+  if (config.pushType === "none") {
+    writeLog("warn", "邮件推送未启用，跳过评论通知", {
       commentId: comment.coid,
-    })
-    return false
+    });
+    return false;
   }
 
-  const siteInfo = await getSiteInfo()
-  const postUrl = await getPostUrl(comment.cid)
+  const siteInfo = await getSiteInfo();
+  const postUrl = await getPostUrl(comment.cid);
 
   return await sendMail({
     to: config.adminEmail,
@@ -243,8 +236,8 @@ export async function sendCommentNotification(
           <p style="margin: 0; color: #666;">${comment.content}</p>
         </div>
         <p style="color: #999; font-size: 12px;">
-          邮箱: ${comment.mail || '未填写'}<br>
-          IP: ${comment.ip || '未知'}
+          邮箱: ${comment.mail || "未填写"}<br>
+          IP: ${comment.ip || "未知"}
         </p>
         <p style="margin-top: 20px;">
           <a href="${postUrl}" style="display: inline-block; padding: 10px 20px; background: #0070f3; color: white; text-decoration: none; border-radius: 5px;">
@@ -253,61 +246,61 @@ export async function sendCommentNotification(
         </p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="color: #999; font-size: 12px;">
-          发送时间: ${new Date().toLocaleString('zh-CN')}
+          发送时间: ${new Date().toLocaleString("zh-CN")}
         </p>
       </div>
     `,
-  })
+  });
 }
 
 // 获取最近的邮件日志
 export function getRecentLogs(limit = 50): Array<{
-  timestamp: string
-  level: string
-  message: string
-  [key: string]: any
+  timestamp: string;
+  level: string;
+  message: string;
+  [key: string]: any;
 }> {
-  ensureLogDir()
+  ensureLogDir();
 
-  const today = new Date().toISOString().split('T')[0]
-  const logPath = path.join(LOG_DIR, `${today}.log`)
+  const today = new Date().toISOString().split("T")[0];
+  const logPath = path.join(LOG_DIR, `${today}.log`);
 
   if (!fs.existsSync(logPath)) {
-    return []
+    return [];
   }
 
-  const content = fs.readFileSync(logPath, 'utf-8')
-  const lines = content.trim().split('\n')
+  const content = fs.readFileSync(logPath, "utf-8");
+  const lines = content.trim().split("\n");
 
-  const logs: any[] = []
+  const logs: any[] = [];
   for (const line of lines.reverse()) {
     try {
-      logs.push(JSON.parse(line))
-      if (logs.length >= limit) break
+      logs.push(JSON.parse(line));
+      if (logs.length >= limit) break;
     } catch {
       // 忽略无法解析的行
     }
   }
 
-  return logs
+  return logs;
 }
 
 // 获取站点信息
 async function getSiteInfo() {
-  const settings = await prisma.informations.findMany({
+  const settings = await prisma.information.findMany({
     where: {
       key: {
-        in: ['siteName', 'siteUrl'],
+        in: ["siteName", "siteUrl"],
       },
     },
-  })
+  });
 
-  const get = (key: string) => settings.find(s => s.key === key)?.value || ''
+  const get = (key: string) => settings.find(s => s.key === key)?.value || "";
 
   return {
-    name: get('siteName') || 'ImQi1',
-    url: get('siteUrl') || 'https://imqi1.com',
-  }
+    name: get("siteName") || "ImQi1",
+    url: get("siteUrl") || "https://imqi1.com",
+  };
 }
 
 // 生成邮件基础模板
@@ -346,42 +339,42 @@ function createEmailTemplate(title: string, content: string): string {
   </div>
 </body>
 </html>
-  `
+  `;
 }
 
 // 获取文章的完整 URL
 async function getPostUrl(cid: number, commentId?: number): Promise<string> {
-  const siteInfo = await getSiteInfo()
+  const siteInfo = await getSiteInfo();
   const post = await prisma.post.findUnique({
     where: { cid },
     select: { slug: true },
-  })
+  });
 
-  let url: string
+  let url: string;
   if (post?.slug) {
     // 优先使用 slug
     const category = await prisma.postrelation.findFirst({
       where: { cid },
       select: {
-        metas: {
+        meta: {
           select: {
             slug: true,
           },
         },
       },
-    })
-    const categorySlug = category?.metas?.slug || 'posts'
-    url = `${siteInfo.url}/content/${categorySlug}/${post.slug}`
+    });
+    const categorySlug = category?.meta?.slug || "posts";
+    url = `${siteInfo.url}/content/${categorySlug}/${post.slug}`;
   } else {
-    url = `${siteInfo.url}/content/posts/${cid}`
+    url = `${siteInfo.url}/content/posts/${cid}`;
   }
 
   // 如果提供了评论ID，添加评论锚点
   if (commentId) {
-    url += `#comment-${commentId}`
+    url += `#comment-${commentId}`;
   }
 
-  return url
+  return url;
 }
 
 // 获取文章标题
@@ -389,24 +382,24 @@ async function getPostTitle(cid: number): Promise<string> {
   const post = await prisma.post.findUnique({
     where: { cid },
     select: { title: true },
-  })
-  return post?.title || '未知文章'
+  });
+  return post?.title || "未知文章";
 }
 
 // ========== 4类邮件通知功能 ==========
 
 // 1. 友链申请通知 - 通知站长
 export async function notifyFriendLinkApplication(linkName: string, linkUrl: string): Promise<boolean> {
-  const config = await getMailConfig()
+  const config = await getMailConfig();
 
   // 检查是否启用邮件通知
-  if (config.pushType === 'none' || !config.adminEmail) {
-    writeLog('warn', '邮件推送未启用，跳过友链申请通知', { linkName, linkUrl })
-    return false
+  if (config.pushType === "none" || !config.adminEmail) {
+    writeLog("warn", "邮件推送未启用，跳过友链申请通知", { linkName, linkUrl });
+    return false;
   }
 
-  const siteInfo = await getSiteInfo()
-  const subject = `[${siteInfo.name}] 新的友链申请`
+  const siteInfo = await getSiteInfo();
+  const subject = `[${siteInfo.name}] 新的友链申请`;
 
   const content = `
     <h2>友链申请通知</h2>
@@ -417,34 +410,29 @@ export async function notifyFriendLinkApplication(linkName: string, linkUrl: str
     </div>
     <p>请前往后台审核此友链申请。</p>
     <p><a href="${siteInfo.url}/admin/links" class="link">前往后台管理</a></p>
-  `
+  `;
 
   return await sendMail({
     to: config.adminEmail,
     subject,
-    html: createEmailTemplate('友链申请通知', content),
-  })
+    html: createEmailTemplate("友链申请通知", content),
+  });
 }
 
 // 2. 新评论通知 - 通知站长（顶级评论）
-export async function notifyAdminNewComment(
-  postId: number,
-  commenterName: string,
-  commentContent: string,
-  commentId: number
-): Promise<boolean> {
-  const config = await getMailConfig()
+export async function notifyAdminNewComment(postId: number, commenterName: string, commentContent: string, commentId: number): Promise<boolean> {
+  const config = await getMailConfig();
 
   // 检查是否启用邮件通知
-  if (config.pushType === 'none' || !config.adminEmail) {
-    writeLog('warn', '邮件推送未启用，跳过新评论通知', { postId, commenterName })
-    return false
+  if (config.pushType === "none" || !config.adminEmail) {
+    writeLog("warn", "邮件推送未启用，跳过新评论通知", { postId, commenterName });
+    return false;
   }
 
-  const siteInfo = await getSiteInfo()
-  const postTitle = await getPostTitle(postId)
-  const postUrl = await getPostUrl(postId, commentId)
-  const subject = `[${siteInfo.name}] 文章新评论：${commenterName}`
+  const siteInfo = await getSiteInfo();
+  const postTitle = await getPostTitle(postId);
+  const postUrl = await getPostUrl(postId, commentId);
+  const subject = `[${siteInfo.name}] 文章新评论：${commenterName}`;
 
   const content = `
     <h2>文章新评论通知</h2>
@@ -454,13 +442,13 @@ export async function notifyAdminNewComment(
       <p>${commentContent}</p>
     </div>
     <p><a href="${postUrl}" class="link">查看评论</a></p>
-  `
+  `;
 
   return await sendMail({
     to: config.adminEmail,
     subject,
-    html: createEmailTemplate('文章新评论通知', content),
-  })
+    html: createEmailTemplate("文章新评论通知", content),
+  });
 }
 
 // 3. 评论回复通知 - 通知被回复的评论者
@@ -471,34 +459,34 @@ export async function notifyCommentReply(
   parentCommentContent: string,
   replierName: string,
   replyContent: string,
-  commentId: number
+  commentId: number,
 ): Promise<boolean> {
-  const config = await getMailConfig()
+  const config = await getMailConfig();
 
   // 检查是否启用邮件通知
-  if (config.pushType === 'none') {
-    writeLog('warn', '邮件推送未启用，跳过评论回复通知', {
+  if (config.pushType === "none") {
+    writeLog("warn", "邮件推送未启用，跳过评论回复通知", {
       postId,
       parentCommenterName,
       replierName,
-    })
-    return false
+    });
+    return false;
   }
 
   // 如果被回复者就是自己（同一个邮箱），不发送通知
   if (parentCommenterEmail === config.address) {
-    writeLog('info', '被回复者为自己，跳过回复通知', {
+    writeLog("info", "被回复者为自己，跳过回复通知", {
       postId,
       parentCommenterName,
       replierName,
-    })
-    return false
+    });
+    return false;
   }
 
-  const siteInfo = await getSiteInfo()
-  const postTitle = await getPostTitle(postId)
-  const postUrl = await getPostUrl(postId, commentId)
-  const subject = `[${siteInfo.name}] 您的评论收到了回复`
+  const siteInfo = await getSiteInfo();
+  const postTitle = await getPostTitle(postId);
+  const postUrl = await getPostUrl(postId, commentId);
+  const subject = `[${siteInfo.name}] 您的评论收到了回复`;
 
   const content = `
     <h2>评论回复通知</h2>
@@ -513,13 +501,13 @@ export async function notifyCommentReply(
       <p>${replyContent}</p>
     </div>
     <p><a href="${postUrl}" class="link">查看回复</a></p>
-  `
+  `;
 
   return await sendMail({
     to: parentCommenterEmail,
     subject,
-    html: createEmailTemplate('评论回复通知', content),
-  })
+    html: createEmailTemplate("评论回复通知", content),
+  });
 }
 
 // 4. 待审核/垃圾评论通知 - 通知站长
@@ -528,24 +516,24 @@ export async function notifyAdminPendingComment(
   commenterName: string,
   commentContent: string,
   status: number,
-  commentId: number
+  commentId: number,
 ): Promise<boolean> {
-  const config = await getMailConfig()
+  const config = await getMailConfig();
 
   // 检查是否启用邮件通知
-  if (config.pushType === 'none' || !config.adminEmail) {
-    writeLog('warn', '邮件推送未启用，跳过待审核评论通知', { postId, commenterName, status })
-    return false
+  if (config.pushType === "none" || !config.adminEmail) {
+    writeLog("warn", "邮件推送未启用，跳过待审核评论通知", { postId, commenterName, status });
+    return false;
   }
 
-  const siteInfo = await getSiteInfo()
-  const postTitle = await getPostTitle(postId)
-  const postUrl = await getPostUrl(postId, commentId)
+  const siteInfo = await getSiteInfo();
+  const postTitle = await getPostTitle(postId);
+  const postUrl = await getPostUrl(postId, commentId);
 
   // status: 0-待审核, 1-已发布, 2-垃圾
-  const isSpam = status === 2
-  const typeLabel = isSpam ? '垃圾评论' : '待审核评论'
-  const subject = `[${siteInfo.name}] 新的${typeLabel}：${commenterName}`
+  const isSpam = status === 2;
+  const typeLabel = isSpam ? "垃圾评论" : "待审核评论";
+  const subject = `[${siteInfo.name}] 新的${typeLabel}：${commenterName}`;
 
   const content = `
     <h2>${typeLabel}通知</h2>
@@ -553,15 +541,15 @@ export async function notifyAdminPendingComment(
     <div class="info-box">
       <p><strong>${commenterName}</strong> 评论道：</p>
       <p>${commentContent}</p>
-      <p class="info-meta">状态：${isSpam ? '垃圾评论' : '等待审核'}</p>
+      <p class="info-meta">状态：${isSpam ? "垃圾评论" : "等待审核"}</p>
     </div>
     <p><a href="${postUrl}" class="link">查看评论</a></p>
     <p><a href="${siteInfo.url}/admin/comments" class="link">前往后台审核</a></p>
-  `
+  `;
 
   return await sendMail({
     to: config.adminEmail,
     subject,
     html: createEmailTemplate(`${typeLabel}通知`, content),
-  })
+  });
 }

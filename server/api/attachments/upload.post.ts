@@ -1,128 +1,128 @@
-import prisma from '#server/utils/prisma'
-import { getUser } from '#server/lib/auth'
-import { uploadToUpYun, type ImageProcessOptions } from '#server/utils/upyun'
-import { uploadToCOS } from '#server/utils/cos'
-import * as fs from 'fs'
-import * as path from 'path'
-import { randomUUID } from 'crypto'
-import { validateCsrfToken } from '#server/utils/csrf'
+import { getUser } from "#server/lib/auth";
+import { uploadToCOS } from "#server/utils/cos";
+import { validateCsrfToken } from "#server/utils/csrf";
+import prisma from "#server/utils/prisma";
+import { uploadToUpYun, type ImageProcessOptions } from "#server/utils/upyun";
+import { randomUUID } from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 
 // 允许的文件类型
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm']
-const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES]
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
+const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 
 // 文件魔数（Magic Number）映射
 const FILE_MAGIC_NUMBERS: Record<string, Buffer> = {
-  'image/jpeg': Buffer.from([0xFF, 0xD8, 0xFF]),
-  'image/png': Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
-  'image/gif': Buffer.from([0x47, 0x49, 0x46, 0x38]),
-  'image/webp': Buffer.from([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
-  'video/mp4': Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
-  'video/webm': Buffer.from([0x1A, 0x45, 0xDF, 0xA3]),
-}
+  "image/jpeg": Buffer.from([0xff, 0xd8, 0xff]),
+  "image/png": Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  "image/gif": Buffer.from([0x47, 0x49, 0x46, 0x38]),
+  "image/webp": Buffer.from([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+  "video/mp4": Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
+  "video/webm": Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+};
 
 // 验证文件魔数
 function validateFileMagicNumber(buffer: Buffer, mimeType: string): boolean {
-  const magicNumber = FILE_MAGIC_NUMBERS[mimeType]
-  if (!magicNumber) return true // 如果没有定义魔数，跳过检查
+  const magicNumber = FILE_MAGIC_NUMBERS[mimeType];
+  if (!magicNumber) return true; // 如果没有定义魔数，跳过检查
 
   // 检查文件开头是否匹配魔数
   for (let i = 0; i < magicNumber.length; i++) {
     if (buffer[i] !== magicNumber[i]) {
-      return false
+      return false;
     }
   }
-  return true
+  return true;
 }
 
 // 最大文件大小 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // 上传目录
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
+const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
 // 确保上传目录存在
 function ensureUploadDir() {
   if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   }
 }
 
 // 生成唯一文件名
 function generateFileName(originalName: string): string {
-  const ext = path.extname(originalName)
-  const uuid = randomUUID()
-  const date = new Date().toISOString().split('T')[0]
-  return `${date}-${uuid}${ext}`
+  const ext = path.extname(originalName);
+  const uuid = randomUUID();
+  const date = new Date().toISOString().split("T")[0];
+  return `${date}-${uuid}${ext}`;
 }
 
 // 获取文件类型分类
-function getFileCategory(mimeType: string): 'image' | 'video' {
-  if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return 'image'
-  if (ALLOWED_VIDEO_TYPES.includes(mimeType)) return 'video'
-  return 'image' // 默认
+function getFileCategory(mimeType: string): "image" | "video" {
+  if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return "image";
+  if (ALLOWED_VIDEO_TYPES.includes(mimeType)) return "video";
+  return "image"; // 默认
 }
 
 // 本地存储上传
 async function uploadToLocal(fileBuffer: Buffer, fileName: string): Promise<string> {
-  ensureUploadDir()
-  const filePath = path.join(UPLOAD_DIR, fileName)
-  fs.writeFileSync(filePath, fileBuffer)
-  return `/uploads/${fileName}`
+  ensureUploadDir();
+  const filePath = path.join(UPLOAD_DIR, fileName);
+  fs.writeFileSync(filePath, fileBuffer);
+  return `/uploads/${fileName}`;
 }
 
 export default defineEventHandler(async event => {
   try {
     // 检查是否登录
-    const user = await getUser(event)
+    const user = await getUser(event);
     if (!user) {
       throw createError({
         statusCode: 401,
-        message: '未登录',
-      })
+        message: "未登录",
+      });
     }
 
     // 获取文章 ID
-    const cid = Number(getQuery(event).cid)
+    const cid = Number(getQuery(event).cid);
 
     if (!cid) {
       throw createError({
         statusCode: 400,
-        message: '缺少文章 ID',
-      })
+        message: "缺少文章 ID",
+      });
     }
 
     // 检查文章是否存在
     const post = await prisma.post.findUnique({
       where: { cid },
-    })
+    });
 
     if (!post) {
       throw createError({
         statusCode: 404,
-        message: '文章不存在',
-      })
+        message: "文章不存在",
+      });
     }
 
     // 读取表单数据
-    const formData = await readFormData(event)
-    const file = formData.get('file') as File
-    const csrfToken = formData.get('csrfToken') as string
+    const formData = await readFormData(event);
+    const file = formData.get("file") as File;
+    const csrfToken = formData.get("csrfToken") as string;
 
     // CSRF 验证
     if (!validateCsrfToken(event, csrfToken)) {
       throw createError({
         statusCode: 403,
-        message: 'CSRF token 验证失败，请刷新页面重试',
-      })
+        message: "CSRF token 验证失败，请刷新页面重试",
+      });
     }
 
     if (!file) {
       throw createError({
         statusCode: 400,
-        message: '未选择文件',
-      })
+        message: "未选择文件",
+      });
     }
 
     // 验证文件类型
@@ -130,94 +130,94 @@ export default defineEventHandler(async event => {
       throw createError({
         statusCode: 400,
         message: `不支持的文件类型: ${file.type}`,
-      })
+      });
     }
 
     // 读取文件内容（用于魔数验证）
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // 验证文件魔数，防止伪造文件类型
     if (!validateFileMagicNumber(buffer, file.type)) {
       throw createError({
         statusCode: 400,
         message: `文件内容与声明的类型不匹配，可能是恶意文件`,
-      })
+      });
     }
 
     // 验证文件大小
     if (file.size > MAX_FILE_SIZE) {
       throw createError({
         statusCode: 400,
-        message: `文件大小超过限制 (最大 ${MAX_FILE_SIZE / 1024 / 1024 }MB)`,
-      })
+        message: `文件大小超过限制 (最大 ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+      });
     }
 
     // 生成文件名
-    const fileName = generateFileName(file.name)
+    const fileName = generateFileName(file.name);
 
     // 获取上传位置配置
-    const uploadLocationMeta = await prisma.informations.findUnique({
-      where: { key: 'uploadLocation' },
-    })
-    const uploadLocation = uploadLocationMeta?.value || 'local'
+    const uploadLocationMeta = await prisma.information.findUnique({
+      where: { key: "uploadLocation" },
+    });
+    const uploadLocation = uploadLocationMeta?.value || "local";
 
-    let fileUrl: string
+    let fileUrl: string;
 
     // 根据配置选择上传方式
-    if (uploadLocation === 'upyun') {
+    if (uploadLocation === "upyun") {
       // 获取图片处理配置
-      const imageProcessMetas = await prisma.informations.findMany({
+      const imageProcessMeta = await prisma.information.findMany({
         where: {
           key: {
-            in: ['upyunImageProcess', 'upyunThumbnailVersion', 'upyunOutputMode'],
+            in: ["upyunImageProcess", "upyunThumbnailVersion", "upyunOutputMode"],
           },
         },
-      })
+      });
 
-      const imageProcessConfig: Record<string, string> = {}
-      imageProcessMetas.forEach((meta) => {
-        imageProcessConfig[meta.key] = meta.value
-      })
+      const imageProcessConfig: Record<string, string> = {};
+      imageProcessMeta.forEach(meta => {
+        imageProcessConfig[meta.key] = meta.value;
+      });
 
       // 构建图片处理参数
       const imageProcess: ImageProcessOptions = {
-        enabled: imageProcessConfig.upyunImageProcess === 'true',
+        enabled: imageProcessConfig.upyunImageProcess === "true",
         thumbnailVersion: imageProcessConfig.upyunThumbnailVersion || undefined,
         outputMode: imageProcessConfig.upyunOutputMode || undefined,
-      }
+      };
 
-      console.log('[上传] 图片处理配置:', {
+      console.log("[上传] 图片处理配置:", {
         原始值: imageProcessConfig,
         解析后: imageProcess,
-      })
+      });
 
       // 又拍云上传
-      const result = await uploadToUpYun(buffer, fileName, file.type, imageProcess)
+      const result = await uploadToUpYun(buffer, fileName, file.type, imageProcess);
       if (!result.success) {
         throw createError({
           statusCode: 500,
-          message: result.error || '又拍云上传失败',
-        })
+          message: result.error || "又拍云上传失败",
+        });
       }
-      fileUrl = result.url!
-    } else if (uploadLocation === 'cos') {
+      fileUrl = result.url!;
+    } else if (uploadLocation === "cos") {
       // 腾讯云COS上传
-      const result = await uploadToCOS(buffer, fileName, file.type)
+      const result = await uploadToCOS(buffer, fileName, file.type);
       if (!result.success) {
         throw createError({
           statusCode: 500,
-          message: result.error || 'COS上传失败',
-        })
+          message: result.error || "COS上传失败",
+        });
       }
-      fileUrl = result.url!
+      fileUrl = result.url!;
     } else {
       // 本地存储
-      fileUrl = await uploadToLocal(buffer, fileName)
+      fileUrl = await uploadToLocal(buffer, fileName);
     }
 
     // 保存到数据库
-    const category = getFileCategory(file.type)
+    const category = getFileCategory(file.type);
     const attachment = await prisma.attachment.create({
       data: {
         cid,
@@ -226,7 +226,7 @@ export default defineEventHandler(async event => {
         url: fileUrl,
         storage: uploadLocation,
       },
-    })
+    });
 
     return {
       success: true,
@@ -239,22 +239,22 @@ export default defineEventHandler(async event => {
         create_time: attachment.create_time,
         storage: uploadLocation,
       },
-    }
+    };
   } catch (error: any) {
     // 如果是已知的错误，直接抛出
     if (error.statusCode) {
-      throw error
+      throw error;
     }
 
     throw createError({
       statusCode: 500,
-      message: error.message || '上传失败',
-    })
+      message: error.message || "上传失败",
+    });
   }
-})
+});
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }

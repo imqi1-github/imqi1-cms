@@ -6,7 +6,7 @@ const defaults: Record<string, any> = {
   siteUrl: "https://imqi1.com",
   siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
   siteIcp: "",
-  homeCustomText: '<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>',
+  homeCustomText: "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>",
   photoCategorySlug: "shot",
   commentEnabled: true,
   commentAvatarService: "gravatar",
@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
   try {
-    const metas = await prisma.informations.findMany({
+    const meta = await prisma.information.findMany({
       where: {
         key: { in: Object.keys(defaults) },
       },
@@ -32,7 +32,7 @@ export default defineEventHandler(async event => {
     const settings: Record<string, any> = { ...defaults };
 
     // 从数据库覆盖值
-    metas.forEach((meta: any) => {
+    meta.forEach((meta: any) => {
       if (settings.hasOwnProperty(meta.key)) {
         // 布尔值转换
         if (typeof defaults[meta.key] === "boolean") {

@@ -1,7 +1,7 @@
-import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import "dotenv/config";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST || "localhost",
@@ -114,7 +114,7 @@ async function main() {
   console.log("⚙️  配置网站元数据...");
   for (const [key, value] of Object.entries(SITE_META)) {
     if (value) {
-      await prisma.informations.upsert({
+      await prisma.information.upsert({
         where: { key },
         update: { value },
         create: { key, value },
@@ -207,7 +207,7 @@ async function main() {
 
   // 创建标签
   console.log("🏷️  创建标签...");
-  const tag = await prisma.informations.create({
+  const tag = await prisma.information.create({
     data: {
       key: "tags",
       value: JSON.stringify([

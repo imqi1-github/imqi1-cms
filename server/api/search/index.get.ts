@@ -59,7 +59,7 @@ export default defineEventHandler(async event => {
             select: {
               cid: true,
               mid: true,
-              metas: {
+              meta: {
               select: {
                 slug: true,
                 name: true,
@@ -78,7 +78,7 @@ export default defineEventHandler(async event => {
     const results = posts.map(post => {
       // 获取第一个分类
       const category = post.postrelation && post.postrelation.length > 0
-        ? post.postrelation[0].metas
+        ? post.postrelation[0].meta
         : null;
 
       // 从内容中提取摘要（去掉 HTML 标签）

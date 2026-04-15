@@ -29,7 +29,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const tag = await prisma.metas.update({
+    const tag = await prisma.meta.update({
       where: { mid: Number(id) },
       data: {
         name: body.name.trim(),

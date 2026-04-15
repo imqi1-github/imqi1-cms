@@ -27,7 +27,7 @@ export default defineEventHandler(async event => {
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
       postrelation: {
         some: {
-          metas: {
+          meta: {
             slug: categorySlug,
             type: "category",
           },
@@ -47,7 +47,7 @@ export default defineEventHandler(async event => {
             select: {
               cid: true,
               mid: true,
-              metas: {
+              meta: {
             select: {
               mid: true,
               name: true,
@@ -69,12 +69,12 @@ export default defineEventHandler(async event => {
 
   // 过滤 postrelation，只保留分类（type = "category"）
   const categoryRelations = post.postrelation.filter(
-    relation => relation.metas.type === "category"
+    relation => relation.meta.type === "category"
   );
 
   // 过滤出标签关系（type = "tag"）
   const tagRelations = post.postrelation.filter(
-    relation => relation.metas.type === "tag"
+    relation => relation.meta.type === "tag"
   );
 
   // 解析封面 - 支持 JSON 数组或换行分隔格式
@@ -103,8 +103,8 @@ export default defineEventHandler(async event => {
 
   // 从 tagRelations 构建标签信息
   const tags = tagRelations.map(relation => ({
-    name: relation.metas.name,
-    slug: relation.metas.slug,
+    name: relation.meta.name,
+    slug: relation.meta.slug,
   }));
 
   // 在服务端渲染 Markdown 内容

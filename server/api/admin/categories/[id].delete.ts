@@ -33,7 +33,7 @@ export default defineEventHandler(async event => {
   const categoryId = Number(id);
 
   // 检查分类总数，至少保留一个分类
-  const categoryCount = await prisma.metas.count({
+  const categoryCount = await prisma.meta.count({
     where: { type: "category" },
   });
 
@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取要删除的分类
-    const categoryToDelete = await prisma.metas.findUnique({
+    const categoryToDelete = await prisma.meta.findUnique({
       where: { mid: categoryId },
     });
 
@@ -66,7 +66,7 @@ export default defineEventHandler(async event => {
     // 如果有关联文章，需要转移到其他分类
     if (postrelations.length > 0) {
       // 获取第一个可用的目标分类（不是要删除的分类）
-      const targetCategory = await prisma.metas.findFirst({
+      const targetCategory = await prisma.meta.findFirst({
         where: {
           type: "category",
           mid: { not: categoryId },
@@ -109,7 +109,7 @@ export default defineEventHandler(async event => {
     }
 
     // 删除分类
-    await prisma.metas.delete({
+    await prisma.meta.delete({
       where: { mid: categoryId },
     });
 

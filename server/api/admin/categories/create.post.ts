@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查分类名称是否已存在
-    const existingByName = await prisma.metas.findFirst({
+    const existingByName = await prisma.meta.findFirst({
       where: {
         name: name.trim(),
         type: "category",
@@ -50,7 +50,7 @@ export default defineEventHandler(async event => {
 
     // 如果提供了 slug，检查是否已存在
     if (slug && slug.trim() !== "") {
-      const existingBySlug = await prisma.metas.findFirst({
+      const existingBySlug = await prisma.meta.findFirst({
         where: {
           slug: slug.trim(),
           type: "category",
@@ -66,7 +66,7 @@ export default defineEventHandler(async event => {
     }
 
     // 创建分类
-    const category = await prisma.metas.create({
+    const category = await prisma.meta.create({
       data: {
         name: name.trim(),
         slug: slug && slug.trim() !== "" ? slug.trim() : null,

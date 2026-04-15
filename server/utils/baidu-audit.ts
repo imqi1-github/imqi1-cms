@@ -29,12 +29,15 @@ async function getAccessToken(apiKey: string, secretKey: string): Promise<string
   }
 
   try {
-    const response = await fetch(`https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     const data = await response.json();
 
@@ -55,12 +58,12 @@ async function getAccessToken(apiKey: string, secretKey: string): Promise<string
 
 export async function getAuditConfig(): Promise<AuditConfig> {
   const keys = ["moderationApiType", "baiduApiKey", "baiduSecretKey", "baiduCheckAdmin"];
-  const metas = await prisma.informations.findMany({
+  const meta = await prisma.information.findMany({
     where: { key: { in: keys } },
   });
 
   const config: Record<string, string> = {};
-  metas.forEach(meta => {
+  meta.forEach(meta => {
     config[meta.key] = meta.value;
   });
 

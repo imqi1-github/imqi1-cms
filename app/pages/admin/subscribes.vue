@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const toast = useToast();
 const subscribes = ref<any[]>([]);
 const loading = ref(false);
 const showAddForm = ref(false);
@@ -28,18 +29,30 @@ async function addSubscribe() {
     });
     newSubscribe.value = { name: "", url: "", avatar: "" };
     showAddForm.value = false;
+    toast.success({
+      message: "添加成功",
+    });
     await loadSubscribes();
   } catch (error) {
     console.error("添加失败:", error);
+    toast.error({
+      message: "添加失败",
+    });
   }
 }
 
 async function deleteSubscribe(id: number) {
   try {
     await $fetch(`/api/admin/subscribes/${id}`, { method: "DELETE" });
+    toast.success({
+      message: "删除成功",
+    });
     await loadSubscribes();
   } catch (error) {
     console.error("删除失败:", error);
+    toast.error({
+      message: "删除失败",
+    });
   }
 }
 
@@ -47,13 +60,20 @@ async function updateSubscribes() {
   updating.value = true;
   updateResult.value = null;
   try {
-    const response = await $fetch("/api/admin/subscribes/update", {
+    const response = (await $fetch("/api/admin/subscribes/update", {
       method: "POST",
-    }) as any;
+    })) as any;
     updateResult.value = response.data;
+    toast.success({
+      message: "更新完成",
+      description: `成功 ${response.data.success}/${response.data.total} 个订阅源${response.data.failed > 0 ? `，失败 ${response.data.failed} 个` : ""}`,
+    });
     await loadSubscribes();
   } catch (error) {
     console.error("更新失败:", error);
+    toast.error({
+      message: "更新失败",
+    });
   } finally {
     updating.value = false;
     setTimeout(() => {
@@ -120,17 +140,9 @@ onMounted(() => {
             <CardDescription>管理和配置 RSS 订阅源</CardDescription>
           </div>
           <div class="flex gap-2">
-            <Button
-              variant="outline"
-              :disabled="updating"
-              @click="updateSubscribes"
-            >
-              <Icon
-                :name="updating ? 'lucide:loader-2' : 'lucide:refresh-cw'"
-                :class="{ 'animate-spin': updating }"
-                class="mr-2 size-4"
-              />
-              {{ updating ? '更新中...' : '手动更新' }}
+            <Button variant="outline" :disabled="updating" @click="updateSubscribes">
+              <Icon :name="updating ? 'lucide:loader-2' : 'lucide:refresh-cw'" :class="{ 'animate-spin': updating }" class="mr-2 size-4" />
+              {{ updating ? "更新中..." : "手动更新" }}
             </Button>
             <Button @click="showAddForm = true">
               <Icon name="lucide:plus" class="mr-2 size-4" />
