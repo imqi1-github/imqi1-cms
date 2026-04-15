@@ -224,6 +224,23 @@ function editPost(cid: number) {
   router.push(`/admin/posts/edit?cid=${cid}`);
 }
 
+async function previewPost(post: any) {
+  // 获取文章的第一个分类
+  let categorySlug = 'uncategorized';
+  if (post.postrelation && post.postrelation.length > 0) {
+    categorySlug = post.postrelation[0].metas.slug;
+  }
+
+  // 使用 slug 或 cid 构建 URL
+  const postSlug = post.slug || post.cid;
+
+  // 构建文章 URL
+  const url = `/content/${categorySlug}/${postSlug}`;
+
+  // 在新窗口打开
+  window.open(url, '_blank');
+}
+
 function createPost() {
   router.push("/admin/posts/edit");
 }
@@ -416,10 +433,13 @@ onMounted(() => {
             <TableCell>{{ formatDate(post.create_time) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
+                <Button variant="ghost" size="icon" class="size-8" title="预览" @click="previewPost(post)">
+                  <Icon name="lucide:eye" class="size-4" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="editPost(post.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
-                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deletePost(post.cid)">
+                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" title="删除" @click="deletePost(post.cid)">
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
               </div>
@@ -468,10 +488,13 @@ onMounted(() => {
           <div class="flex items-center justify-between pt-2 border-t">
             <span class="text-xs text-muted-foreground">{{ formatDate(post.create_time) }}</span>
             <div class="flex items-center gap-1">
-              <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
+              <Button variant="ghost" size="icon" class="size-8" title="预览" @click="previewPost(post)">
+                <Icon name="lucide:eye" class="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="editPost(post.cid)">
                 <Icon name="lucide:pencil" class="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deletePost(post.cid)">
+              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" title="删除" @click="deletePost(post.cid)">
                 <Icon name="lucide:trash-2" class="size-4" />
               </Button>
             </div>
