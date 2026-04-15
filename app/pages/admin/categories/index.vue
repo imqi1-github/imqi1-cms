@@ -30,19 +30,27 @@ async function fetchCategories() {
 
 async function addCategory() {
   try {
-    await $fetch("/api/admin/categories", {
+    console.log("准备创建分类，CSRF token:", csrfToken.value);
+    console.log("分类数据:", newCategory.value);
+
+    const result = await $fetch("/api/admin/categories/create", {
       method: "POST",
       body: {
         csrfToken: csrfToken.value,
         ...newCategory.value,
       },
     });
-    newCategory.value = { name: "", slug: "", desc: "" };
-    showAddModal.value = false;
+
+    console.log("创建分类成功，返回结果:", result);
+    closeAddModal();
     toast.success({ message: "分类创建成功" });
     await fetchCategories();
   } catch (error: any) {
-    console.error("添加失败:", error);
+    console.error("添加失败 - 完整错误对象:", error);
+    console.error("错误状态码:", error?.statusCode);
+    console.error("错误消息:", error?.message);
+    console.error("错误数据:", error?.data);
+
     let errorMessage = "添加失败";
     if (error?.data?.message) {
       errorMessage = error.data.message;
@@ -61,6 +69,41 @@ function openEditModal(category: any) {
   showEditModal.value = true;
 }
 
+// 关闭添加弹窗
+function closeAddModal() {
+  showAddModal.value = false;
+  nextTick(() => {
+    newCategory.value = { name: "", slug: "", desc: "" };
+  });
+}
+
+// 关闭编辑弹窗
+function closeEditModal() {
+  showEditModal.value = false;
+  nextTick(() => {
+    editingCategory.value = null;
+  });
+}
+
+// 处理 Dialog open 状态变化
+function handleAddModalOpenChange(open: boolean) {
+  showAddModal.value = open;
+  if (!open) {
+    nextTick(() => {
+      newCategory.value = { name: "", slug: "", desc: "" };
+    });
+  }
+}
+
+function handleEditModalOpenChange(open: boolean) {
+  showEditModal.value = open;
+  if (!open) {
+    nextTick(() => {
+      editingCategory.value = null;
+    });
+  }
+}
+
 async function updateCategory() {
   if (!editingCategory.value) return;
 
@@ -74,8 +117,7 @@ async function updateCategory() {
         desc: editingCategory.value.desc,
       },
     });
-    showEditModal.value = false;
-    editingCategory.value = null;
+    closeEditModal();
     toast.success({ message: "分类更新成功" });
     await fetchCategories();
   } catch (error: any) {
@@ -313,7 +355,7 @@ onMounted(() => {
     </Card>
 
     <!-- 添加分类弹窗 -->
-    <Dialog v-model:open="showAddModal">
+    <Dialog :open="showAddModal" @update:open="handleAddModalOpenChange">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>新建分类</DialogTitle>
@@ -335,7 +377,7 @@ onMounted(() => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showAddModal = false"> 取消 </Button>
+            <Button type="button" variant="outline" @click="closeAddModal"> 取消 </Button>
             <Button type="submit">确定</Button>
           </DialogFooter>
         </form>
@@ -343,7 +385,7 @@ onMounted(() => {
     </Dialog>
 
     <!-- 编辑分类弹窗 -->
-    <Dialog v-model:open="showEditModal">
+    <Dialog :open="showEditModal" @update:open="handleEditModalOpenChange">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>编辑分类</DialogTitle>
@@ -365,7 +407,7 @@ onMounted(() => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showEditModal = false"> 取消 </Button>
+            <Button type="button" variant="outline" @click="closeEditModal"> 取消 </Button>
             <Button type="submit">保存</Button>
           </DialogFooter>
         </form>

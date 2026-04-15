@@ -1,7 +1,10 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 
+console.log("===== 文章 POST API 已加载 =====");
+
 export default defineEventHandler(async event => {
+  console.log("===== 文章 POST API 被调用 =====");
   const user = await getUser(event);
 
   if (!user) {
