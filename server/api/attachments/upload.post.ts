@@ -5,11 +5,36 @@ import { uploadToCOS } from '#server/utils/cos'
 import * as fs from 'fs'
 import * as path from 'path'
 import { randomUUID } from 'crypto'
+import { validateCsrfToken } from '#server/utils/csrf'
 
 // 允许的文件类型
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm']
 const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES]
+
+// 文件魔数（Magic Number）映射
+const FILE_MAGIC_NUMBERS: Record<string, Buffer> = {
+  'image/jpeg': Buffer.from([0xFF, 0xD8, 0xFF]),
+  'image/png': Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+  'image/gif': Buffer.from([0x47, 0x49, 0x46, 0x38]),
+  'image/webp': Buffer.from([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+  'video/mp4': Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
+  'video/webm': Buffer.from([0x1A, 0x45, 0xDF, 0xA3]),
+}
+
+// 验证文件魔数
+function validateFileMagicNumber(buffer: Buffer, mimeType: string): boolean {
+  const magicNumber = FILE_MAGIC_NUMBERS[mimeType]
+  if (!magicNumber) return true // 如果没有定义魔数，跳过检查
+
+  // 检查文件开头是否匹配魔数
+  for (let i = 0; i < magicNumber.length; i++) {
+    if (buffer[i] !== magicNumber[i]) {
+      return false
+    }
+  }
+  return true
+}
 
 // 最大文件大小 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -83,6 +108,15 @@ export default defineEventHandler(async event => {
     // 读取表单数据
     const formData = await readFormData(event)
     const file = formData.get('file') as File
+    const csrfToken = formData.get('csrfToken') as string
+
+    // CSRF 验证
+    if (!validateCsrfToken(event, csrfToken)) {
+      throw createError({
+        statusCode: 403,
+        message: 'CSRF token 验证失败，请刷新页面重试',
+      })
+    }
 
     if (!file) {
       throw createError({
@@ -99,6 +133,18 @@ export default defineEventHandler(async event => {
       })
     }
 
+    // 读取文件内容（用于魔数验证）
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // 验证文件魔数，防止伪造文件类型
+    if (!validateFileMagicNumber(buffer, file.type)) {
+      throw createError({
+        statusCode: 400,
+        message: `文件内容与声明的类型不匹配，可能是恶意文件`,
+      })
+    }
+
     // 验证文件大小
     if (file.size > MAX_FILE_SIZE) {
       throw createError({
@@ -106,10 +152,6 @@ export default defineEventHandler(async event => {
         message: `文件大小超过限制 (最大 ${MAX_FILE_SIZE / 1024 / 1024 }MB)`,
       })
     }
-
-    // 读取文件内容
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
 
     // 生成文件名
     const fileName = generateFileName(file.name)

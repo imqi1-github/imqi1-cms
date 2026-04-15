@@ -1,7 +1,19 @@
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
+  const body = await readBody(event);
+  const { csrfToken, ...settingsBody } = body;
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
+
   // 验证用户登录
   const user = await getUser(event);
 
@@ -12,62 +24,60 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
-
   try {
     const updates = [
-      { key: "siteName", value: body.siteName || "ImQi1" },
-      { key: "siteUrl", value: body.siteUrl || "https://imqi1.com" },
-      { key: "siteDesc", value: body.siteDesc || "做技术的分享者、生活的摄影师、时事的评论员。" },
-      { key: "siteKeywords", value: body.siteKeywords || "棋,ImQi1,棋的小站,生活,科技,编程,学习" },
-      { key: "siteIcp", value: body.siteIcp || "" },
-      { key: "commentEnabled", value: String(body.commentEnabled ?? true) },
-      { key: "commentModeration", value: String(body.commentModeration ?? false) },
-      { key: "commentAvatarService", value: body.commentAvatarService || "gravatar" },
-      { key: "commentPageSize", value: String(body.commentPageSize ?? 10) },
-      { key: "commentMaxLevel", value: String(body.commentMaxLevel ?? 4) },
-      { key: "commentRequireMail", value: String(body.commentRequireMail ?? true) },
-      { key: "commentRequireLink", value: String(body.commentRequireLink ?? false) },
-      { key: "commentInterval", value: String(body.commentInterval ?? 60) },
-      { key: "postPageSize", value: String(body.postPageSize ?? 12) },
-      { key: "homeCustomText", value: body.homeCustomText ?? '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' },
-      { key: "musicPlaylistId", value: body.musicPlaylistId ?? "9255074836 || netease" },
-      { key: "photoCategorySlug", value: body.photoCategorySlug ?? "shot" },
-      { key: "moderationApiType", value: String(body.moderationApiType ?? "1") },
-      { key: "baiduAppId", value: body.baiduAppId ?? "" },
-      { key: "baiduApiKey", value: body.baiduApiKey ?? "" },
-      { key: "baiduSecretKey", value: body.baiduSecretKey ?? "" },
-      { key: "baiduCheckAdmin", value: String(body.baiduCheckAdmin ?? false) },
-      { key: "emailLogEnabled", value: String(body.emailLogEnabled ?? true) },
-      { key: "emailPushType", value: body.emailPushType ?? "none" },
-      { key: "smtpHost", value: body.smtpHost ?? "" },
-      { key: "smtpUser", value: body.smtpUser ?? "" },
-      { key: "smtpAddress", value: body.smtpAddress ?? "" },
-      { key: "smtpPassword", value: body.smtpPassword ?? "" },
-      { key: "smtpSecureMode", value: body.smtpSecureMode ?? "tls" },
-      { key: "smtpPort", value: String(body.smtpPort ?? 465) },
-      { key: "smtpFromName", value: body.smtpFromName ?? "" },
-      { key: "adminEmail", value: body.adminEmail ?? "" },
-      { key: "notifyAdmin", value: String(body.notifyAdmin ?? false) },
-      { key: "uploadLocation", value: body.uploadLocation ?? "local" },
-      { key: "upyunDomain", value: body.upyunDomain ?? "https://cdn.imqi1.com" },
-      { key: "upyunService", value: body.upyunService ?? "" },
-      { key: "upyunOperator", value: body.upyunOperator ?? "" },
-      { key: "upyunPassword", value: body.upyunPassword ?? "" },
-      { key: "upyunImageProcess", value: String(body.upyunImageProcess ?? false) },
-      { key: "upyunThumbnailVersion", value: body.upyunThumbnailVersion ?? "" },
-      { key: "upyunOutputMode", value: body.upyunOutputMode ?? "" },
-      { key: "upyunTokenEnabled", value: String(body.upyunTokenEnabled ?? false) },
-      { key: "upyunTokenKey", value: body.upyunTokenKey ?? "" },
-      { key: "upyunTokenExpire", value: String(body.upyunTokenExpire ?? 1800) },
-      { key: "cosSecretId", value: body.cosSecretId ?? "" },
-      { key: "cosSecretKey", value: body.cosSecretKey ?? "" },
-      { key: "cosBucket", value: body.cosBucket ?? "" },
-      { key: "cosRegion", value: body.cosRegion ?? "" },
-      { key: "cosSourceDomain", value: body.cosSourceDomain ?? "" },
-      { key: "cosCdnDomain", value: body.cosCdnDomain ?? "" },
-      { key: "sessionStoreType", value: body.sessionStoreType || "memory" },
-      { key: "messagePostId", value: body.messagePostId ?? "" },
+      { key: "siteName", value: settingsBody.siteName || "ImQi1" },
+      { key: "siteUrl", value: settingsBody.siteUrl || "https://imqi1.com" },
+      { key: "siteDesc", value: settingsBody.siteDesc || "做技术的分享者、生活的摄影师、时事的评论员。" },
+      { key: "siteKeywords", value: settingsBody.siteKeywords || "棋,ImQi1,棋的小站,生活,科技,编程,学习" },
+      { key: "siteIcp", value: settingsBody.siteIcp || "" },
+      { key: "commentEnabled", value: String(settingsBody.commentEnabled ?? true) },
+      { key: "commentModeration", value: String(settingsBody.commentModeration ?? false) },
+      { key: "commentAvatarService", value: settingsBody.commentAvatarService || "gravatar" },
+      { key: "commentPageSize", value: String(settingsBody.commentPageSize ?? 10) },
+      { key: "commentMaxLevel", value: String(settingsBody.commentMaxLevel ?? 4) },
+      { key: "commentRequireMail", value: String(settingsBody.commentRequireMail ?? true) },
+      { key: "commentRequireLink", value: String(settingsBody.commentRequireLink ?? false) },
+      { key: "commentInterval", value: String(settingsBody.commentInterval ?? 60) },
+      { key: "postPageSize", value: String(settingsBody.postPageSize ?? 12) },
+      { key: "homeCustomText", value: settingsBody.homeCustomText ?? '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' },
+      { key: "musicPlaylistId", value: settingsBody.musicPlaylistId ?? "9255074836 || netease" },
+      { key: "photoCategorySlug", value: settingsBody.photoCategorySlug ?? "shot" },
+      { key: "moderationApiType", value: String(settingsBody.moderationApiType ?? "1") },
+      { key: "baiduAppId", value: settingsBody.baiduAppId ?? "" },
+      { key: "baiduApiKey", value: settingsBody.baiduApiKey ?? "" },
+      { key: "baiduSecretKey", value: settingsBody.baiduSecretKey ?? "" },
+      { key: "baiduCheckAdmin", value: String(settingsBody.baiduCheckAdmin ?? false) },
+      { key: "emailLogEnabled", value: String(settingsBody.emailLogEnabled ?? true) },
+      { key: "emailPushType", value: settingsBody.emailPushType ?? "none" },
+      { key: "smtpHost", value: settingsBody.smtpHost ?? "" },
+      { key: "smtpUser", value: settingsBody.smtpUser ?? "" },
+      { key: "smtpAddress", value: settingsBody.smtpAddress ?? "" },
+      { key: "smtpPassword", value: settingsBody.smtpPassword ?? "" },
+      { key: "smtpSecureMode", value: settingsBody.smtpSecureMode ?? "tls" },
+      { key: "smtpPort", value: String(settingsBody.smtpPort ?? 465) },
+      { key: "smtpFromName", value: settingsBody.smtpFromName ?? "" },
+      { key: "adminEmail", value: settingsBody.adminEmail ?? "" },
+      { key: "notifyAdmin", value: String(settingsBody.notifyAdmin ?? false) },
+      { key: "uploadLocation", value: settingsBody.uploadLocation ?? "local" },
+      { key: "upyunDomain", value: settingsBody.upyunDomain ?? "https://cdn.imqi1.com" },
+      { key: "upyunService", value: settingsBody.upyunService ?? "" },
+      { key: "upyunOperator", value: settingsBody.upyunOperator ?? "" },
+      { key: "upyunPassword", value: settingsBody.upyunPassword ?? "" },
+      { key: "upyunImageProcess", value: String(settingsBody.upyunImageProcess ?? false) },
+      { key: "upyunThumbnailVersion", value: settingsBody.upyunThumbnailVersion ?? "" },
+      { key: "upyunOutputMode", value: settingsBody.upyunOutputMode ?? "" },
+      { key: "upyunTokenEnabled", value: String(settingsBody.upyunTokenEnabled ?? false) },
+      { key: "upyunTokenKey", value: settingsBody.upyunTokenKey ?? "" },
+      { key: "upyunTokenExpire", value: String(settingsBody.upyunTokenExpire ?? 1800) },
+      { key: "cosSecretId", value: settingsBody.cosSecretId ?? "" },
+      { key: "cosSecretKey", value: settingsBody.cosSecretKey ?? "" },
+      { key: "cosBucket", value: settingsBody.cosBucket ?? "" },
+      { key: "cosRegion", value: settingsBody.cosRegion ?? "" },
+      { key: "cosSourceDomain", value: settingsBody.cosSourceDomain ?? "" },
+      { key: "cosCdnDomain", value: settingsBody.cosCdnDomain ?? "" },
+      { key: "sessionStoreType", value: settingsBody.sessionStoreType || "memory" },
+      { key: "messagePostId", value: settingsBody.messagePostId ?? "" },
     ];
 
     for (const update of updates) {

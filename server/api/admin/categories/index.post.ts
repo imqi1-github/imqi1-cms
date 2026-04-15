@@ -13,26 +13,17 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const id = getRouterParam(event, "id");
-  if (!id) {
-    throw createError({
-      statusCode: 400,
-      message: "缺少分类 ID",
-    });
-  }
-
   const body = await readBody(event);
-  const { csrfToken, ...updateData } = body;
+  const { name, slug, desc } = body;
 
   // CSRF 验证
+  const csrfToken = body.csrfToken;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
       message: "CSRF token 验证失败，请刷新页面重试",
     });
   }
-
-  const { name, slug, desc } = updateData;
 
   // 验证必填字段
   if (!name || name.trim() === "") {
@@ -43,24 +34,11 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    // 检查分类是否存在
-    const existingCategory = await prisma.metas.findUnique({
-      where: { mid: Number(id) },
-    });
-
-    if (!existingCategory) {
-      throw createError({
-        statusCode: 404,
-        message: "分类不存在",
-      });
-    }
-
-    // 检查分类名称是否被其他分类占用
+    // 检查分类名称是否已存在
     const existingByName = await prisma.metas.findFirst({
       where: {
         name: name.trim(),
         type: "category",
-        mid: { not: Number(id) },
       },
     });
 
@@ -71,13 +49,12 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 如果提供了 slug，检查是否被其他分类占用
+    // 如果提供了 slug，检查是否已存在
     if (slug && slug.trim() !== "") {
       const existingBySlug = await prisma.metas.findFirst({
         where: {
           slug: slug.trim(),
           type: "category",
-          mid: { not: Number(id) },
         },
       });
 
@@ -89,13 +66,13 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // 更新分类
-    const category = await prisma.metas.update({
-      where: { mid: Number(id) },
+    // 创建分类
+    const category = await prisma.metas.create({
       data: {
         name: name.trim(),
         slug: slug && slug.trim() !== "" ? slug.trim() : null,
         desc: desc && desc.trim() !== "" ? desc.trim() : null,
+        type: "category",
       },
     });
 
@@ -115,11 +92,11 @@ export default defineEventHandler(async event => {
     }
 
     // 记录详细的错误信息
-    console.error("更新分类失败:", error);
+    console.error("创建分类失败:", error);
 
     throw createError({
       statusCode: 500,
-      message: "更新分类失败: " + (error.message || "未知错误"),
+      message: "创建分类失败: " + (error.message || "未知错误"),
     });
   }
 });

@@ -56,7 +56,7 @@ const faviconUrl = computed(() => {
 // Apple Touch Icon 路径
 const appleTouchIconUrl = computed(() => {
   const cdnURL = config.public.cdnURL as string;
-  return import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/apple-touch-icon.png` : "/imgs/apple-touch-icon.png";
+  return import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/imqi1-144.png` : "/imgs/imqi1-144.png";
 });
 
 // PWA Manifest 路径（根据 CDN 配置动态生成）
@@ -224,16 +224,35 @@ function scrollToHash() {
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }
   });
 }
 
 // 监听路由变化，处理 Hash 滚动
-watch(() => route.hash, () => {
-  scrollToHash();
-}, { immediate: true });
+watch(
+  () => route.hash,
+  () => {
+    scrollToHash();
+  },
+  { immediate: true },
+);
+
+onMounted(() => {
+  console.log(
+    "%c ImQi1\u6B22\u8FCE\u4F60\u7684\u6765\u8BBF\u3002",
+    "background: linear-gradient(270deg,#f9fafb,#eaecf0,#dddddd);padding:8px 15px;border-radius:8px;color:#222",
+  );
+  console.log(
+    "██╗███╗   ███╗ ██████╗ ██╗ ██╗    ██████╗ ██████╗ ███╗   ███╗\n" +
+      "██║████╗ ████║██╔═══██╗██║███║   ██╔════╝██╔═══██╗████╗ ████║\n" +
+      "██║██╔████╔██║██║   ██║██║╚██║   ██║     ██║   ██║██╔████╔██║\n" +
+      "██║██║╚██╔╝██║██║▄▄ ██║██║ ██║   ██║     ██║   ██║██║╚██╔╝██║\n" +
+      "██║██║ ╚═╝ ██║╚██████╔╝██║ ██║██╗╚██████╗╚██████╔╝██║ ╚═╝ ██║\n" +
+      "╚═╝╚═╝     ╚═╝ ╚══▀▀═╝ ╚═╝ ╚═╝╚═╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝",
+  );
+});
 </script>
 
 <template>

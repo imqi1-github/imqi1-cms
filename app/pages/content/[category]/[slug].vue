@@ -2354,6 +2354,10 @@ onUnmounted(() => {
   background-image: url("/icons/bash.svg");
 }
 
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".ps1"]::before) {
+  background-image: url("/icons/powershell.svg");
+}
+
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".sql"]::before) {
   background-image: url("/icons/sql.svg");
 }
@@ -2365,6 +2369,10 @@ onUnmounted(() => {
 
 .markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".xml"]::before) {
   background-image: url("/icons/xml.svg");
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label[data-file$=".ini"]::before) {
+  background-image: url("/icons/ini.svg");
 }
 
 /* 没有匹配图标时的默认样式 */

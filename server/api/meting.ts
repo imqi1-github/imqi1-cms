@@ -1,5 +1,34 @@
 import Meting from '@meting/core';
 
+// 允许的音乐服务域名白名单
+const ALLOWED_REDIRECT_DOMAINS = [
+  'music.126.net', // 网易云
+  'qq.com', // 腾讯
+  'kuwo.cn', // 酷我
+  'kugou.com', // 酷狗
+  'baidu.com', // 百度
+  'xiami.com', // 虾米（已停止服务，但保留）
+];
+
+// 验证重定向 URL 是否安全
+function validateRedirectUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    // 检查域名是否在白名单中
+    return ALLOWED_REDIRECT_DOMAINS.some(domain =>
+      urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
+    );
+  } catch {
+    return false;
+  }
+}
+
+// 验证 JSONP callback 参数（防止 XSS）
+function validateCallback(callback: string): boolean {
+  // 只允许字母、数字、下划线、美元符号，且必须以字母或下划线开头
+  return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(callback);
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
@@ -28,6 +57,14 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // 验证 callback 参数（如果使用 JSONP）
+  if (format === 'jsonp' && callback && !validateCallback(callback)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid callback parameter. Only alphanumeric characters, $, and _ are allowed.',
+    });
+  }
+
   // 初始化 Meting 实例并启用格式化
   const api = new Meting(server).format(true);
 
@@ -36,7 +73,15 @@ export default defineEventHandler(async (event) => {
     switch (type) {
       case 'playlist': {
         const data = await api.playlist(id);
-        const songs = JSON.parse(data);
+        let songs;
+        try {
+          songs = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
         const playlist = songs.map((song: any) => ({
           name: song.name,
           artist: Array.isArray(song.artist) ? song.artist.join('/') : song.artist,
@@ -50,7 +95,15 @@ export default defineEventHandler(async (event) => {
 
       case 'song': {
         const data = await api.song(id);
-        const songs = JSON.parse(data);
+        let songs;
+        try {
+          songs = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
         const song = songs.map((s: any) => ({
           name: s.name,
           artist: Array.isArray(s.artist) ? s.artist.join('/') : s.artist,
@@ -72,7 +125,24 @@ export default defineEventHandler(async (event) => {
         // }
 
         const data = await api.url(id);
-        const urlData = JSON.parse(data);
+        let urlData;
+        try {
+          urlData = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
+
+        // 验证重定向 URL 是否在白名单中
+        if (!validateRedirectUrl(urlData.url)) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'Invalid redirect URL',
+          });
+        }
+
         return sendRedirect(event, urlData.url);
       }
 
@@ -86,7 +156,24 @@ export default defineEventHandler(async (event) => {
         // }
 
         const data = await api.pic(id);
-        const picData = JSON.parse(data);
+        let picData;
+        try {
+          picData = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
+
+        // 验证重定向 URL 是否在白名单中
+        if (!validateRedirectUrl(picData.url)) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'Invalid redirect URL',
+          });
+        }
+
         return sendRedirect(event, picData.url);
       }
 
@@ -100,7 +187,15 @@ export default defineEventHandler(async (event) => {
         // }
 
         const data = await api.lyric(id);
-        const lyricData = JSON.parse(data);
+        let lyricData;
+        try {
+          lyricData = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
         const lyrics = lyricData.lyric || '';
 
         // 设置纯文本响应
@@ -110,7 +205,15 @@ export default defineEventHandler(async (event) => {
 
       case 'name': {
         const data = await api.song(id);
-        const songs = JSON.parse(data);
+        let songs;
+        try {
+          songs = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
         const songName = songs.map((s: any) => s.name).join('\n');
 
         setResponseHeader(event, 'content-type', 'text/plain; charset=utf-8');
@@ -119,7 +222,15 @@ export default defineEventHandler(async (event) => {
 
       case 'artist': {
         const data = await api.song(id);
-        const songs = JSON.parse(data);
+        let songs;
+        try {
+          songs = JSON.parse(data);
+        } catch (parseError) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Failed to parse music API response',
+          });
+        }
         const artistNames = songs
           .map((s: any) =>
             Array.isArray(s.artist) ? s.artist.join('/') : s.artist
@@ -137,6 +248,11 @@ export default defineEventHandler(async (event) => {
         });
     }
   } catch (error: any) {
+    // 如果是我们已经处理过的错误，直接抛出
+    if (error.statusCode) {
+      throw error;
+    }
+    // 其他未知错误
     throw createError({
       statusCode: 500,
       statusMessage: `Meting API error: ${error.message}`,

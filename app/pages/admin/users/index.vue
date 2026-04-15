@@ -4,10 +4,32 @@ const loading = ref(true)
 const users = ref<any[]>([])
 const showAddModal = ref(false)
 const newUser = ref({ name: '', nickname: '', mail: '', password: '', role: 0 })
+const toast = useToast()
+const currentUser = ref<any>(null)
+
+// 计算是否只有一个用户
+const isOnlyUser = computed(() => users.value.length <= 1)
+
+// 判断是否可以删除用户（不是自己且不是唯一用户）
+function canDeleteUser(userId: number) {
+  if (isOnlyUser.value) return false
+  if (currentUser.value && currentUser.value.uid === userId) return false
+  return true
+}
+
+// 获取禁用删除按钮的提示信息
+function getDeleteDisabledMessage(userId: number) {
+  if (isOnlyUser.value) return '系统中只有一个用户，不允许删除'
+  if (currentUser.value && currentUser.value.uid === userId) return '不允许删除自己的账号'
+  return ''
+}
 
 async function fetchUsers() {
   loading.value = true
   try {
+    // 获取当前用户信息
+    currentUser.value = await $fetch('/api/user/me')
+
     users.value = await $fetch('/api/admin/users') as any[]
   } catch (error) {
     console.error('获取用户失败:', error)
@@ -26,19 +48,50 @@ async function addUser() {
     newUser.value = { name: '', nickname: '', mail: '', password: '', role: 0 }
     showAddModal.value = false
     await fetchUsers()
-  } catch (error) {
+    toast.success({
+      message: '用户创建成功',
+    })
+  } catch (error: any) {
     console.error('添加失败:', error)
+    toast.error({
+      message: error.message || '添加失败',
+    })
   }
 }
 
 async function deleteUser(id: number) {
+  // 检查是否可以删除
+  if (!canDeleteUser(id)) {
+    toast.error({
+      message: getDeleteDisabledMessage(id),
+    })
+    return
+  }
+
   const confirmed = confirm('确定要删除这个用户吗？')
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+      await $fetch(`/api/admin/users/${id}?csrfToken=${encodeURIComponent((await $fetch('/api/csrf/token', { credentials: 'include' }) as any).data.token)}`, { method: 'DELETE' })
       await fetchUsers()
-    } catch (error) {
+      toast.success({
+        message: '用户已删除',
+      })
+    } catch (error: any) {
       console.error('删除失败:', error)
+
+      // 提取错误信息
+      let errorMessage = '删除失败'
+      if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+
+      toast.error({
+        message: errorMessage,
+      })
     }
   }
 }
@@ -154,6 +207,8 @@ onMounted(() => {
                   variant="ghost"
                   size="icon"
                   class="size-8 text-destructive hover:text-destructive"
+                  :disabled="!canDeleteUser(user.uid)"
+                  :title="getDeleteDisabledMessage(user.uid)"
                   @click="deleteUser(user.uid)"
                 >
                   <Icon name="lucide:trash-2" class="size-4" />
@@ -203,7 +258,14 @@ onMounted(() => {
               <Button variant="ghost" size="icon" class="size-8" @click="router.push(`/admin/users/${user.uid}`)">
                 <Icon name="lucide:pencil" class="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteUser(user.uid)">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 text-destructive hover:text-destructive"
+                :disabled="!canDeleteUser(user.uid)"
+                :title="getDeleteDisabledMessage(user.uid)"
+                @click="deleteUser(user.uid)"
+              >
                 <Icon name="lucide:trash-2" class="size-4" />
               </Button>
             </div>

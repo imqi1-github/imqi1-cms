@@ -1,10 +1,32 @@
 import { prisma } from "#server/utils/prisma";
 
+// 搜索关键词净化
+function sanitizeSearchKeyword(keyword: string): string {
+  // 1. 移除前后空格
+  let sanitized = keyword.trim();
+
+  // 2. 限制长度（防止超长字符串攻击）
+  const MAX_KEYWORD_LENGTH = 100;
+  if (sanitized.length > MAX_KEYWORD_LENGTH) {
+    sanitized = sanitized.substring(0, MAX_KEYWORD_LENGTH);
+  }
+
+  // 3. 移除危险的 SQL/NoSQL 特殊字符（保留中文、英文、数字、常用符号）
+  // 允许：中文、字母、数字、空格、常用标点
+  sanitized = sanitized.replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s\-_.,!?@#%&*()]/g, "");
+
+  // 4. 防止多个连续空格
+  sanitized = sanitized.replace(/\s+/g, " ");
+
+  return sanitized;
+}
+
 export default defineEventHandler(async event => {
   const query = getQuery(event);
-  const keyword = query.q as string;
+  const rawKeyword = query.q as string || "";
+  const keyword = sanitizeSearchKeyword(rawKeyword);
 
-  if (!keyword || !keyword.trim()) {
+  if (!keyword) {
     return {
       success: true,
       data: {

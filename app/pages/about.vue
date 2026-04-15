@@ -320,19 +320,19 @@
               <div class="about-bold-mbti-traits flex flex-wrap gap-2">
                 <span
                   class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
-                  >富有创意</span
+                  >完美主义</span
                 >
                 <span
                   class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
-                  >思维敏捷</span
+                  >志向</span
                 >
                 <span
                   class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
-                  >善于辩论</span
+                  >内在动力</span
                 >
                 <span
                   class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
-                  >追求知识</span
+                  >领导欲望</span
                 >
               </div>
             </div>
@@ -352,7 +352,7 @@
               </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
-              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">直觉</div>
+              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">天马行空  </div>
               <div
                 class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
@@ -365,7 +365,7 @@
               </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
-              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">思维</div>
+              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">情感细腻  </div>
               <div
                 class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
@@ -378,7 +378,7 @@
               </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
-              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">展望</div>
+              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">运筹帷幄</div>
               <div
                 class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
@@ -391,7 +391,7 @@
               </div>
             </div>
             <div class="about-bold-mbti-bar flex items-center gap-4">
-              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">坚决</div>
+              <div class="about-bold-mbti-bar-label text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">自信果断</div>
               <div
                 class="about-bold-mbti-bar-track bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
@@ -648,11 +648,11 @@ const content = ref("");
 
 // MBTI数据
 const mbtiData = ref({
-  extroversion: 78,
-  intuition: 64,
-  thinking: 71,
-  prospecting: 76,
-  assertive: 69,
+  extroversion: 70,
+  intuition: 51,
+  thinking: 53,
+  prospecting: 71,
+  assertive: 76,
 });
 
 // MBTI动画数据

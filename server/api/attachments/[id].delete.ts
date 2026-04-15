@@ -4,6 +4,7 @@ import { deleteFromUpYun } from '#server/utils/upyun'
 import { deleteFromCOS } from '#server/utils/cos'
 import * as fs from 'fs'
 import * as path from 'path'
+import { validateCsrfToken } from '#server/utils/csrf'
 
 export default defineEventHandler(async event => {
   try {
@@ -24,15 +25,39 @@ export default defineEventHandler(async event => {
       })
     }
 
+    // CSRF 验证 - 从查询参数获取
+    const csrfToken = getQuery(event).csrfToken as string
+    if (!validateCsrfToken(event, csrfToken)) {
+      throw createError({
+        statusCode: 403,
+        message: 'CSRF token 验证失败，请刷新页面重试',
+      })
+    }
+
     // 获取附件信息
     const attachment = await prisma.attachment.findUnique({
       where: { aid: id },
+      include: {
+        post: {
+          select: {
+            uid: true,
+          },
+        },
+      },
     })
 
     if (!attachment) {
       throw createError({
         statusCode: 404,
         message: '附件不存在',
+      })
+    }
+
+    // 验证附件所有权：只有文章作者才能删除附件
+    if (attachment.post.uid !== user.uid) {
+      throw createError({
+        statusCode: 403,
+        message: '无权删除此附件',
       })
     }
 

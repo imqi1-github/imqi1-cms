@@ -8,10 +8,17 @@ const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newCategory = ref({ name: "", slug: "", desc: "" });
 const editingCategory = ref<any>(null);
+const csrfToken = ref("");
 
 async function fetchCategories() {
   loading.value = true;
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    if (csrfRes && (csrfRes as any).data?.token) {
+      csrfToken.value = (csrfRes as any).data.token;
+    }
+
     categories.value = (await $fetch("/api/admin/categories")) as any[];
   } catch (error) {
     console.error("获取分类失败:", error);
@@ -25,16 +32,26 @@ async function addCategory() {
   try {
     await $fetch("/api/admin/categories", {
       method: "POST",
-      body: newCategory.value,
+      body: {
+        csrfToken: csrfToken.value,
+        ...newCategory.value,
+      },
     });
     newCategory.value = { name: "", slug: "", desc: "" };
     showAddModal.value = false;
     toast.success({ message: "分类创建成功" });
     await fetchCategories();
   } catch (error: any) {
+    console.error("添加失败:", error);
+    let errorMessage = "添加失败";
+    if (error?.data?.message) {
+      errorMessage = error.data.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
     toast.error({
-      message: "添加失败",
-      description: error?.data?.message || "请稍后重试",
+      message: errorMessage,
+      description: "请稍后重试",
     });
   }
 }
@@ -51,6 +68,7 @@ async function updateCategory() {
     await $fetch(`/api/admin/categories/${editingCategory.value.mid}`, {
       method: "PUT",
       body: {
+        csrfToken: csrfToken.value,
         name: editingCategory.value.name,
         slug: editingCategory.value.slug,
         desc: editingCategory.value.desc,
@@ -61,9 +79,16 @@ async function updateCategory() {
     toast.success({ message: "分类更新成功" });
     await fetchCategories();
   } catch (error: any) {
+    console.error("更新失败:", error);
+    let errorMessage = "更新失败";
+    if (error?.data?.message) {
+      errorMessage = error.data.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
     toast.error({
-      message: "更新失败",
-      description: error?.data?.message || "请稍后重试",
+      message: errorMessage,
+      description: "请稍后重试",
     });
   }
 }
@@ -81,13 +106,20 @@ async function deleteCategory(mid: number) {
   const confirmed = confirm("确定要删除这个分类吗？删除后文章将不再关联此分类。");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/categories/${mid}`, { method: "DELETE" });
+      await $fetch(`/api/admin/categories/${mid}?csrfToken=${encodeURIComponent(csrfToken.value)}`, { method: "DELETE" });
       toast.success({ message: "分类删除成功" });
       await fetchCategories();
     } catch (error: any) {
+      console.error("删除失败:", error);
+      let errorMessage = "删除失败";
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
       toast.error({
-        message: "删除失败",
-        description: error?.data?.message || "请稍后重试",
+        message: errorMessage,
+        description: "请稍后重试",
       });
     }
   }

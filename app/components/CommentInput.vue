@@ -36,6 +36,9 @@ const submitSuccess = ref(false);
 const submitError = ref("");
 const successMessage = ref("评论提交成功");
 
+// CSRF Token
+const csrfToken = ref("");
+
 // 用户登录状态
 const isLoggedIn = ref(false);
 
@@ -117,11 +120,17 @@ const textareaRef = ref<HTMLTextAreaElement>();
 onMounted(async () => {
   if (import.meta.client) {
     try {
-      // 并行获取用户信息和站点设置
-      const [userRes, settingsRes] = await Promise.allSettled([
+      // 并行获取用户信息、站点设置和 CSRF token
+      const [userRes, settingsRes, csrfRes] = await Promise.allSettled([
         $fetch("/api/user", { credentials: "include" }),
         $fetch("/api/settings"),
+        $fetch("/api/csrf/token", { credentials: "include" }),
       ]);
+
+      // 获取 CSRF token
+      if (csrfRes.status === "fulfilled" && csrfRes.value?.data?.token) {
+        csrfToken.value = csrfRes.value.data.token;
+      }
 
       // 处理用户信息
       if (userRes.status === "fulfilled" && userRes.value?.user) {
@@ -217,6 +226,7 @@ async function submitComment() {
       method: "POST",
       credentials: "include",
       body: {
+        csrfToken: csrfToken.value,
         cid: props.postId,
         content: formData.value.content,
         name: formData.value.name,

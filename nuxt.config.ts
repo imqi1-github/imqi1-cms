@@ -259,4 +259,23 @@ export default defineNuxtConfig({
       },
     },
   },
+  // 安全头配置（仅生产环境）
+  routeRules: {
+    "/**": {
+      headers: import.meta.env.PROD ? {
+        // 生产环境下的 CSP 配置
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn2.imqi1.com; style-src 'self' 'unsafe-inline' https://cdn2.imqi1.com; img-src 'self' data: https: https://cdn2.imqi1.com; font-src 'self' data: https://cdn2.imqi1.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "X-XSS-Protection": "1; mode=block",
+      } : {
+        // 开发环境下只配置必要的安全头，不设置 CSP
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Content-Type-Options": "nosniff",
+      }
+    }
+  },
 });

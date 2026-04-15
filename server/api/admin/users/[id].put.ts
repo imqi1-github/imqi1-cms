@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import bcrypt from "bcryptjs";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -22,7 +23,17 @@ export default defineEventHandler(async event => {
   }
 
   const body = await readBody(event);
-  const { name, nickname, mail, password, avatar, role } = body;
+  const { csrfToken, ...updateBody } = body;
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
+
+  const { name, nickname, mail, password, avatar, role } = updateBody;
 
   if (!name || !mail) {
     throw createError({

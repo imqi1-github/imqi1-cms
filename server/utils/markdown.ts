@@ -29,6 +29,8 @@ import vue from "@shikijs/langs/vue";
 import tsx from "@shikijs/langs/tsx";
 import jsx from "@shikijs/langs/jsx";
 import mermaid from "@shikijs/langs/mermaid";
+import ini from "@shikijs/langs/ini";
+import powershell from "@shikijs/langs/powershell";
 
 // 单例模式的 markdown 实例
 let mdInstance: MarkdownIt | null = null;
@@ -116,6 +118,8 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
         tsx,
         jsx,
         mermaid,
+        ini,
+        powershell,
       ],
       // 未找到语言时的 fallback
       fallbackLanguage: "text",

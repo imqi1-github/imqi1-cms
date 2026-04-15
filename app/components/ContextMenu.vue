@@ -35,17 +35,14 @@ const isBrowsableLink = (str: string): boolean => {
 const handleContextMenu = (e: MouseEvent) => {
   // 只在PC端显示，移动端不显示
   if (window.innerWidth < 768) {
-    console.log("[ContextMenu] 移动端，不显示菜单");
     return;
   }
 
   // 按住Ctrl键时不显示自定义菜单
   if (e.ctrlKey) {
-    console.log("[ContextMenu] 按住Ctrl键，使用系统菜单");
     return;
   }
 
-  console.log("[ContextMenu] 显示右键菜单", e.target);
   e.preventDefault();
 
   // fixed 定位使用视口坐标，不需要加滚动距离
@@ -115,8 +112,6 @@ const handleContextMenu = (e: MouseEvent) => {
     if (documentHeight - 20 < top + menuHeight) {
       y.value = documentHeight - menuHeight - 20;
     }
-
-    console.log("[ContextMenu] 菜单位置", { x: x.value, y: y.value, menuType: menuType.value, isCommentArea: isCommentArea.value });
   });
 };
 
@@ -333,7 +328,6 @@ const handleCapitalize = () => {
 
 // 监听全局右键事件
 onMounted(() => {
-  console.log("[ContextMenu] 组件已挂载，开始监听右键事件");
   document.addEventListener("contextmenu", handleContextMenu);
   document.addEventListener("click", closeMenu);
   document.addEventListener("scroll", closeMenu);

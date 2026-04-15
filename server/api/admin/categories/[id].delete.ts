@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -20,10 +21,22 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // CSRF 验证 - 从查询参数获取
+  const csrfToken = getQuery(event).csrfToken as string;
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
+
   const categoryId = Number(id);
 
   // 检查分类总数，至少保留一个分类
-  const categoryCount = await prisma.metas.count();
+  const categoryCount = await prisma.metas.count({
+    where: { type: "category" },
+  });
+
   if (categoryCount <= 1) {
     throw createError({
       statusCode: 400,
@@ -54,7 +67,10 @@ export default defineEventHandler(async event => {
     if (postrelations.length > 0) {
       // 获取第一个可用的目标分类（不是要删除的分类）
       const targetCategory = await prisma.metas.findFirst({
-        where: { mid: { not: categoryId } },
+        where: {
+          type: "category",
+          mid: { not: categoryId },
+        },
         select: { mid: true },
       });
 
@@ -99,12 +115,17 @@ export default defineEventHandler(async event => {
 
     return { success: true };
   } catch (error: any) {
+    // 如果是我们抛出的错误，直接传递
     if (error.statusCode) {
       throw error;
     }
+
+    // 记录详细的错误信息
+    console.error("删除分类失败:", error);
+
     throw createError({
       statusCode: 500,
-      message: "删除分类失败",
+      message: "删除分类失败: " + (error.message || "未知错误"),
     });
   }
 });

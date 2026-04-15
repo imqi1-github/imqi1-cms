@@ -3,6 +3,7 @@ const loading = ref(true);
 const activeTab = ref("basic");
 const showResetDialog = ref(false);
 const toast = useToast();
+const csrfToken = ref("");
 
 const settings = ref({
   siteName: "ImQi1",
@@ -180,6 +181,12 @@ const defaultSettings = {
 async function loadSettings() {
   loading.value = true;
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    if (csrfRes && (csrfRes as any).data?.token) {
+      csrfToken.value = (csrfRes as any).data.token;
+    }
+
     settings.value = (await $fetch("/api/admin/settings")) as any;
   } catch (error) {
     console.error("获取设置失败:", error);
@@ -193,7 +200,10 @@ async function saveSettings() {
   try {
     await $fetch("/api/admin/settings", {
       method: "POST",
-      body: settings.value,
+      body: {
+        csrfToken: csrfToken.value,
+        ...settings.value,
+      },
     });
     toast.success({
       message: "设置已保存",
@@ -213,7 +223,10 @@ async function resetToDefaults() {
   try {
     await $fetch("/api/admin/settings", {
       method: "POST",
-      body: defaultSettings,
+      body: {
+        csrfToken: csrfToken.value,
+        ...defaultSettings,
+      },
     });
     toast.success({
       message: "已重置为默认值",

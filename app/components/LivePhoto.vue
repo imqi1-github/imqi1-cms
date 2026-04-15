@@ -16,7 +16,7 @@ const props = withDefaults(
   }>(),
   {
     hoverPlay: true,
-  }
+  },
 );
 
 const attrs = useAttrs();
@@ -25,7 +25,7 @@ const attrs = useAttrs();
 const fancyboxAttrs = computed(() => {
   const result: Record<string, any> = {};
   (Object.keys(attrs) as Array<keyof typeof attrs>).forEach(key => {
-    if (key.startsWith('data-') || key === 'id' || key === 'title' || key === 'loading') {
+    if (key.startsWith("data-") || key === "id" || key === "title" || key === "loading") {
       result[key] = attrs[key];
     }
   });
@@ -42,7 +42,7 @@ const videoRef = ref<HTMLVideoElement | null>(null);
 const wrapperRef = ref<HTMLDivElement | null>(null);
 const imageNaturalWidth = ref<number | null>(null);
 const imageNaturalHeight = ref<number | null>(null);
-const imageFitMode = ref<'width' | 'height' | 'scale'>('scale');
+const imageFitMode = ref<"width" | "height" | "scale">("scale");
 const isHovering = ref(false);
 
 // 两个独立的透明度状态，用于交叉淡入淡出
@@ -58,33 +58,24 @@ const isLive = computed(() => isLivePhoto(props.src));
 // 计算包裹容器的样式
 const wrapperStyle = computed(() => {
   // 如果是轮播图中的图片（有 swiper-img 类），需要特殊处理
-  if (props.class?.includes('swiper-img')) {
+  if (props.class?.includes("swiper-img")) {
     // 如果有图片自然尺寸，计算容器宽度
     if (imageNaturalWidth.value && imageNaturalHeight.value) {
-      const swiperWrapper = wrapperRef.value?.closest('.swiper-wrapper');
+      const swiperWrapper = wrapperRef.value?.closest(".swiper-wrapper");
       if (swiperWrapper) {
         const containerHeight = swiperWrapper.clientHeight || 650;
         const imageRatio = imageNaturalWidth.value / imageNaturalHeight.value;
         const calculatedWidth = Math.round(containerHeight * imageRatio);
 
-        console.log('[LivePhoto] 计算容器宽度:', {
-          naturalWidth: imageNaturalWidth.value,
-          naturalHeight: imageNaturalHeight.value,
-          containerHeight,
-          imageRatio,
-          calculatedWidth,
-          fitMode: imageFitMode.value,
-        });
-
         return {
           width: `${calculatedWidth}px`,
-          height: '100%',
+          height: "100%",
         };
       }
     }
     return {
-      width: 'auto',
-      height: '100%',
+      width: "auto",
+      height: "100%",
     };
   }
   return {};
@@ -92,26 +83,26 @@ const wrapperStyle = computed(() => {
 
 // 计算图片/视频的样式
 const mediaStyle = computed(() => {
-  if (props.class?.includes('swiper-img')) {
+  if (props.class?.includes("swiper-img")) {
     // 根据填充模式返回不同的样式
-    if (imageFitMode.value === 'width') {
+    if (imageFitMode.value === "width") {
       return {
-        width: '100%',
-        height: 'auto',
-        objectFit: 'cover',
+        width: "100%",
+        height: "auto",
+        objectFit: "cover",
       };
-    } else if (imageFitMode.value === 'height') {
+    } else if (imageFitMode.value === "height") {
       return {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
       };
     } else {
       // scale 模式：都小于容器，需要缩放
       return {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
       };
     }
   }
@@ -121,16 +112,12 @@ const mediaStyle = computed(() => {
 // 初始化实况照片
 onMounted(async () => {
   if (!isLive.value) {
-    console.log("[LivePhoto] 不是实况照片:", props.src);
     return;
   }
 
-  console.log("[LivePhoto] 开始初始化实况照片:", cleanSrc.value);
-  console.log("[LivePhoto] wrapperRef:", !!wrapperRef.value);
-
   // 获取图片自然宽高并计算填充模式
   const calculateFitMode = () => {
-    if (!imgRef.value || !props.class?.includes('swiper-img')) return;
+    if (!imgRef.value || !props.class?.includes("swiper-img")) return;
 
     const naturalWidth = imgRef.value.naturalWidth;
     const naturalHeight = imgRef.value.naturalHeight;
@@ -142,7 +129,7 @@ onMounted(async () => {
     // 我们需要根据图片和容器的宽高比来决定填充方式
 
     // 获取容器高度（从 swiper-wrapper）
-    const swiperWrapper = wrapperRef.value?.closest('.swiper-wrapper');
+    const swiperWrapper = wrapperRef.value?.closest(".swiper-wrapper");
     if (swiperWrapper) {
       const containerHeight = swiperWrapper.clientHeight || 650; // 默认 650px
       const containerWidth = containerHeight; // 容器是正方形或接近正方形
@@ -150,22 +137,15 @@ onMounted(async () => {
       const imageRatio = naturalWidth / naturalHeight;
       const containerRatio = containerWidth / containerHeight;
 
-      console.log("[LivePhoto] 图片尺寸:", naturalWidth, "x", naturalHeight, "ratio:", imageRatio);
-      console.log("[LivePhoto] 容器尺寸:", containerWidth, "x", containerHeight, "ratio:", containerRatio);
-
       // 判断填充模式
       if (imageRatio > containerRatio) {
-        // 图片更宽 → 宽度过长，高度不够 → 高度100%
-        imageFitMode.value = 'height';
-        console.log("[LivePhoto] 使用高度填充模式");
+        imageFitMode.value = "height";
       } else if (imageRatio < containerRatio) {
         // 图片更高 → 宽度不够 → 宽度100%
-        imageFitMode.value = 'width';
-        console.log("[LivePhoto] 使用宽度填充模式");
+        imageFitMode.value = "width";
       } else {
         // 比例相同 → 都小于容器，需要缩放
-        imageFitMode.value = 'scale';
-        console.log("[LivePhoto] 使用缩放模式");
+        imageFitMode.value = "scale";
       }
     }
   };
@@ -185,9 +165,6 @@ onMounted(async () => {
   const videoUrl = await extractMotionVideo(cleanSrc.value);
   if (videoUrl) {
     videoBlobUrl.value = videoUrl;
-    console.log("[LivePhoto] 视频提取成功:", videoUrl);
-  } else {
-    console.log("[LivePhoto] 视频提取失败或没有嵌入视频");
   }
 });
 
@@ -202,11 +179,8 @@ const handleMouseEnter = async () => {
 
   if (!props.hoverPlay) return; // 点击播放模式不处理悬浮
 
-  console.log("[LivePhoto] 鼠标悬浮, videoBlobUrl:", !!videoBlobUrl.value, "videoRef:", !!videoRef.value);
-
   // 检查是否有视频 URL
   if (!videoBlobUrl.value) {
-    console.log("[LivePhoto] 没有视频 URL，跳过播放");
     return;
   }
 
@@ -241,16 +215,17 @@ const handleMouseEnter = async () => {
     }, 50); // 50ms 后让图片淡出
 
     // 3. 开始播放视频
-    videoRef.value.play().then(() => {
-      console.log("[LivePhoto] 视频开始播放");
-      isPlaying.value = true;
-    }).catch((err) => {
-      console.error("[LivePhoto] 视频播放失败:", err);
-      // 播放失败时恢复显示图片
-      imgOpacity.value = 100;
-      videoOpacity.value = 0;
-      isPlaying.value = false;
-    });
+    videoRef.value
+      .play()
+      .then(() => {
+        isPlaying.value = true;
+      })
+      .catch(err => {
+        // 播放失败时恢复显示图片
+        imgOpacity.value = 100;
+        videoOpacity.value = 0;
+        isPlaying.value = false;
+      });
   }
 };
 
@@ -300,8 +275,6 @@ const handleMouseLeave = () => {
 const handlePlayClick = async () => {
   if (props.hoverPlay) return; // 悬浮播放模式不处理点击
 
-  console.log("[LivePhoto] 点击播放, videoBlobUrl:", !!videoBlobUrl.value, "videoRef:", !!videoRef.value);
-
   if (!videoBlobUrl.value) return;
 
   // 清除所有之前的定时器
@@ -336,15 +309,17 @@ const handlePlayClick = async () => {
       imgOpacityTimer = window.setTimeout(() => {
         imgOpacity.value = 0;
       }, 50);
-      videoRef.value.play().then(() => {
-        console.log("[LivePhoto] 视频开始播放");
-        isPlaying.value = true;
-      }).catch((err) => {
-        console.error("[LivePhoto] 视频播放失败:", err);
-        imgOpacity.value = 100;
-        videoOpacity.value = 0;
-        isPlaying.value = false;
-      });
+      videoRef.value
+        .play()
+        .then(() => {
+          isPlaying.value = true;
+        })
+        .catch(err => {
+          console.error("[LivePhoto] 视频播放失败:", err);
+          imgOpacity.value = 100;
+          videoOpacity.value = 0;
+          isPlaying.value = false;
+        });
     }
   }
 };
@@ -365,8 +340,6 @@ const onVideoEnded = () => {
 
     // 更新播放状态
     isPlaying.value = false;
-
-    console.log("[LivePhoto] 视频播放完成，自动暂停");
   }
 };
 </script>
@@ -390,9 +363,8 @@ const onVideoEnded = () => {
       class="live-photo-image w-full h-full max-h-[inherit] transition-opacity duration-300 ease-in-out object-cover"
       :style="{
         opacity: imgOpacity / 100,
-        ...mediaStyle
-      }"
-    />
+        ...mediaStyle,
+      }" />
 
     <!-- 视频容器 -->
     <video
@@ -405,10 +377,9 @@ const onVideoEnded = () => {
       class="live-photo-video absolute w-full inset-0 max-h-[inherit] pointer-events-none transition-opacity duration-300 ease-in-out object-cover"
       :style="{
         opacity: videoOpacity / 100,
-        ...mediaStyle
+        ...mediaStyle,
       }"
-      @ended="onVideoEnded"
-    />
+      @ended="onVideoEnded" />
 
     <!-- 实况照片标识 -->
     <div
@@ -425,18 +396,13 @@ const onVideoEnded = () => {
       :class="isHovering ? 'opacity-100' : 'opacity-0'"
       type="button"
       @click.stop="handlePlayClick">
-      <Icon
-        v-if="!isPlaying"
-        name="ri:play-fill"
-        class="size-6 text-white drop-shadow-lg" />
-      <Icon
-        v-else
-        name="ri:pause-fill"
-        class="size-6 text-white drop-shadow-lg" />
+      <Icon v-if="!isPlaying" name="ri:play-fill" class="size-6 text-white drop-shadow-lg" />
+      <Icon v-else name="ri:pause-fill" class="size-6 text-white drop-shadow-lg" />
     </button>
 
     <!-- 图片名字 -->
-    <div v-if="alt"
+    <div
+      v-if="alt"
       class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
       {{ alt }}
     </div>

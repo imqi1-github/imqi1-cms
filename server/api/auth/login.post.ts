@@ -1,10 +1,18 @@
 import { setSession, verifyPassword } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   const body = await readBody(event);
+  const { csrfToken, username, password } = body;
 
-  const { username, password } = body;
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
 
   if (!username || !password) {
     throw createError({

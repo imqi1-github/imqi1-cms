@@ -5,11 +5,38 @@ import {
   notifyCommentReply,
   notifyAdminPendingComment,
 } from "#server/utils/mail";
+import DOMPurify from "isomorphic-dompurify";
+import { validateCsrfToken } from "#server/utils/csrf";
+
+// HTML 净化配置 - 只允许安全的标签和属性
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: ["p", "br", "strong", "em", "a", "img", "code", "pre"],
+  ALLOWED_ATTR: ["href", "src", "alt", "class", "title"],
+  ALLOW_DATA_ATTR: false,
+  ALLOW_UNKNOWN_PROTOCOLS: false,
+  ALLOW_SELF_CLOSE_IN_ATTR: false,
+  SAFE_FOR_TEMPLATES: true,
+  WHOLE_DOCUMENT: false,
+  CUSTOM_ELEMENT_HANDLING: {
+    tagNameCheck: null,
+    attributeNameCheck: null,
+    allowCustomizedBuiltInElements: false,
+  },
+};
 
 export default defineEventHandler(async event => {
   try {
+    // CSRF 验证
     const body = await readBody(event);
-    const { cid, content, name, mail, link, parent_id } = body;
+    const { csrfToken, cid, content, name, mail, link, parent_id } = body;
+
+    // 验证 CSRF token
+    if (!validateCsrfToken(event, csrfToken)) {
+      throw createError({
+        statusCode: 403,
+        message: "CSRF token 验证失败，请刷新页面重试",
+      });
+    }
 
     if (!cid || !content || !name) {
       throw createError({
@@ -53,10 +80,13 @@ export default defineEventHandler(async event => {
       commentStatus = needModeration ? 0 : 1;
     }
 
+    // 净化评论内容，防止 XSS 攻击
+    const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG);
+
     const comment = await prisma.comment.create({
       data: {
         cid: parseInt(cid),
-        content,
+        content: sanitizedContent,
         name,
         mail: mail || null,
         link: link || null,
