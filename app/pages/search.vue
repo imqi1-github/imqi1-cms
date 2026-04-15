@@ -104,7 +104,7 @@ function highlightKeyword(text: string, keyword: string) {
 
       <!-- 搜索框 -->
       <div class="relative">
-        <Icon name="ri:search-line" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+        <Icon name="ri:search-line" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" mode="svg" />
         <input
           v-model="searchKeyword"
           type="text"

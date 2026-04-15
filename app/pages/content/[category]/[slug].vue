@@ -62,6 +62,10 @@ const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 const commentEnabled = computed(() => siteData.value?.data?.commentEnabled ?? true);
 
+// 用户登录状态
+const isLoggedIn = ref(false);
+const isLoadingAuth = ref(true);
+
 // 判断是否为图片分类
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
@@ -353,8 +357,24 @@ watch(
   { immediate: true },
 );
 
+// 检查用户登录状态
+const checkAuthStatus = async () => {
+  if (import.meta.client) {
+    try {
+      const res = await $fetch('/api/auth/verify');
+      isLoggedIn.value = (res as any).valid || false;
+    } catch {
+      isLoggedIn.value = false;
+    } finally {
+      isLoadingAuth.value = false;
+    }
+  }
+};
+
 // 初始化 Fancybox 和其他功能
 onMounted(() => {
+  // 检查登录状态
+  checkAuthStatus();
   try {
     // 404 页面动画（初始状态）
     if (isNotFound.value) {
@@ -1606,8 +1626,21 @@ onUnmounted(() => {
         </h1>
 
         <!-- 描述/摘要 -->
-        <div v-if="post.desc" class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
-          {{ post.desc }}
+        <div class="mb-5">
+          <div v-if="post.desc" class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            {{ post.desc }}
+          </div>
+          <!-- 编辑按钮（仅登录时显示） -->
+          <ClientOnly>
+            <a
+              v-if="isLoggedIn && !isLoadingAuth"
+              :href="`/admin/posts/edit?cid=${post.cid}`"
+              target="_blank"
+              class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2">
+              <Icon name="lucide:edit" class="size-3" />
+              编辑此文章
+            </a>
+          </ClientOnly>
         </div>
       </header>
 

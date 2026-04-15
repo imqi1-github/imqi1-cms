@@ -7,6 +7,10 @@ const currentYear = new Date().getFullYear();
 // 获取页面加载状态
 const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
 
+// 用户登录状态
+const isLoggedIn = ref(false);
+const isLoadingAuth = ref(true);
+
 // 判断是否为首页
 const isHomePage = computed(() => route.path === "/");
 
@@ -185,9 +189,30 @@ const toggleMobileButtons = () => {
   isMobileButtonsOpen.value = !isMobileButtonsOpen.value;
 };
 
+// 检查用户登录状态
+const checkAuthStatus = async () => {
+  if (import.meta.client) {
+    try {
+      const res = await $fetch('/api/auth/verify');
+      isLoggedIn.value = (res as any).valid || false;
+    } catch {
+      isLoggedIn.value = false;
+    } finally {
+      isLoadingAuth.value = false;
+    }
+  }
+};
+
+// 跳转到后台
+const goToAdmin = () => {
+  window.open('/admin');
+};
+
 onMounted(() => {
   window.addEventListener("scroll", updateScrollProgress);
   updateScrollProgress();
+  // 检查登录状态
+  checkAuthStatus();
 });
 
 onUnmounted(() => {
@@ -344,6 +369,17 @@ onUnmounted(() => {
         </Transition>
       </ClientOnly>
 
+      <!-- 移动端：后台管理按钮（仅登录时显示） -->
+      <ClientOnly>
+        <button
+          v-show="isMobileButtonsOpen && isLoggedIn && !isLoadingAuth"
+          @click="goToAdmin"
+          v-tooltip="'后台管理'"
+          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+          <Icon name="lucide:layout-dashboard" class="size-5 text-gray-600 dark:text-gray-300" />
+        </button>
+      </ClientOnly>
+
       <!-- 音乐播放器 -->
       <Transition
         enter-active-class="transition-all duration-300"
@@ -365,6 +401,17 @@ onUnmounted(() => {
           class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
           <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-4 text-gray-600 dark:text-gray-300" />
           <Icon v-else name="ri:moon-line" class="size-4 text-gray-100 dark:text-gray-300" />
+        </button>
+      </ClientOnly>
+
+      <!-- PC端：后台管理按钮（仅登录时显示） -->
+      <ClientOnly>
+        <button
+          v-if="isLoggedIn && !isLoadingAuth"
+          @click="goToAdmin"
+          v-tooltip="'后台管理'"
+          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
+          <Icon name="lucide:layout-dashboard" class="size-4 text-gray-600 dark:text-gray-300" />
         </button>
       </ClientOnly>
 

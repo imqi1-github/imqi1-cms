@@ -15,6 +15,10 @@ const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 const { data: linksData, pending, error } = await useFetch("/api/links");
 const links = computed(() => linksData.value?.data || []);
 
+// 用户登录状态
+const isLoggedIn = ref(false);
+const isLoadingAuth = ref(true);
+
 // 页面元数据
 useHead({
   title: computed(() => `友情链接 - ${siteName.value}`),
@@ -116,8 +120,24 @@ const handleSubmit = async () => {
   }
 };
 
+// 检查用户登录状态
+const checkAuthStatus = async () => {
+  if (import.meta.client) {
+    try {
+      const res = await $fetch('/api/auth/verify');
+      isLoggedIn.value = (res as any).valid || false;
+    } catch {
+      isLoggedIn.value = false;
+    } finally {
+      isLoadingAuth.value = false;
+    }
+  }
+};
+
 // 初始化滚动渐入动画
 onMounted(() => {
+  // 检查登录状态
+  checkAuthStatus();
   const observerOptions = {
     threshold: 0.1,
     rootMargin: "0px 0px -50px 0px",
@@ -197,7 +217,20 @@ onUnmounted(() => {
       <h1 class="text-[3em] font-extrabold mb-2.5">友链</h1>
 
       <!-- 描述 -->
-      <div class="text-[0.8em] text-slate-600 dark:text-slate-400 mb-4">海内存知已，天涯若比邻。</div>
+      <div class="mb-4">
+        <div class="text-[0.8em] text-slate-600 dark:text-slate-400">海内存知已，天涯若比邻。</div>
+        <!-- 编辑按钮（仅登录时显示） -->
+        <ClientOnly>
+          <a
+            v-if="isLoggedIn && !isLoadingAuth"
+            href="/admin/links"
+            target="_blank"
+            class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
+            <Icon name="lucide:edit" class="size-3" />
+            编辑友链
+          </a>
+        </ClientOnly>
+      </div>
     </header>
 
     <!-- 友链列表区域 -->

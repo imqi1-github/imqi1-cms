@@ -5,6 +5,10 @@ const { data, pending, error } = await useFetch("/api/changelog");
 const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 
+// 用户登录状态
+const isLoggedIn = ref(false);
+const isLoadingAuth = ref(true);
+
 // 页面元数据
 useHead({
   title: computed(() => `更新日志 - ${siteName.value}`),
@@ -34,7 +38,23 @@ function formatDate(dateStr: string | Date) {
   return `${month}月${day}日 ${hour}:${minute}`;
 }
 
+// 检查用户登录状态
+const checkAuthStatus = async () => {
+  if (import.meta.client) {
+    try {
+      const res = await $fetch('/api/auth/verify');
+      isLoggedIn.value = (res as any).valid || false;
+    } catch {
+      isLoggedIn.value = false;
+    } finally {
+      isLoadingAuth.value = false;
+    }
+  }
+};
+
 onMounted(() => {
+  // 检查登录状态
+  checkAuthStatus();
   // 初始化滚动渐入动画
   const observerOptions = {
     threshold: 0.1,
@@ -62,9 +82,20 @@ onMounted(() => {
     <!-- 页面标题 -->
     <header class="mb-6 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">更新日志</h1>
-      <p class="text-[0.8em] text-slate-600 dark:text-slate-400">
-        记录每一次迭代与改进
-      </p>
+      <div class="text-[0.8em] text-slate-600 dark:text-slate-400">
+        <p>记录每一次迭代与改进</p>
+        <!-- 编辑按钮（仅登录时显示） -->
+        <ClientOnly>
+          <a
+            v-if="isLoggedIn && !isLoadingAuth"
+            href="/admin/changelogs"
+            target="_blank"
+            class="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <Icon name="lucide:edit" class="size-3" />
+            编辑日志
+          </a>
+        </ClientOnly>
+      </div>
     </header>
 
     <!-- 加载状态 -->
