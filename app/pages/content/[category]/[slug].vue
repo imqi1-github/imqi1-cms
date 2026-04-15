@@ -26,7 +26,13 @@ function formatDate(date: string | Date): string {
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
 
+  if (years > 0) return `${years}年前`;
+  if (months > 0) return `${months}个月前`;
+  if (weeks > 0) return `${weeks}周前`;
   if (days > 0) return `${days}天前`;
   if (hours > 0) return `${hours}小时前`;
   if (minutes > 0) return `${minutes}分钟前`;
@@ -787,7 +793,7 @@ onMounted(() => {
               <img
                 src="${slide.url}"
                 alt="${slide.title || "图片"}"
-                data-fancybox="markdown-swiper-${wrapperIndex}"
+                data-fancybox="gallery"
                 data-caption="${slide.title || "图片"}"
                 class="swiper-img"
                 loading="lazy"
@@ -1321,19 +1327,22 @@ onMounted(() => {
         const isLive = src.includes("#live") || alt.includes("[live]");
 
         if (isLive) {
+          // 清理URL，移除 #live 标记
+          const cleanSrc = src.split("#")[0];
+
           // 为实况照片创建 LivePhoto 组件
           const livePhotoContainer = document.createElement("div");
           livePhotoContainer.className = "live-photo-container size-full";
-          if (dataFancybox) livePhotoContainer.setAttribute("data-fancybox", dataFancybox);
-          if (dataCaption) livePhotoContainer.setAttribute("data-caption", dataCaption);
 
           // 使用 LivePhoto 组件的 HTML 结构
           livePhotoContainer.innerHTML = `
             <div class="live-photo-wrapper relative w-full h-auto rounded-lg overflow-hidden ${className}" onmouseenter="this.querySelector('button').classList.add('opacity-100'); this.querySelector('button').classList.remove('opacity-0');" onmouseleave="this.querySelector('button').classList.remove('opacity-100'); this.querySelector('button').classList.add('opacity-0');">
               <!-- 静态图片 -->
               <img
-                src="${src}"
+                src="${cleanSrc}"
                 alt="${alt}"
+                ${dataFancybox ? `data-fancybox="${dataFancybox}"` : ""}
+                ${dataCaption ? `data-caption="${dataCaption}"` : ""}
                 class="live-photo-image w-full h-full max-h-[inherit] rounded-lg transition-opacity duration-300 ease-in-out object-cover"
                 loading="lazy"
               />
@@ -1545,12 +1554,10 @@ onMounted(() => {
           // 普通照片，添加名字显示
           const livePhotoContainer = document.createElement("div");
           livePhotoContainer.className = "live-photo-container w-full h-full";
-          if (dataFancybox) livePhotoContainer.setAttribute("data-fancybox", dataFancybox);
-          if (dataCaption) livePhotoContainer.setAttribute("data-caption", dataCaption);
 
           livePhotoContainer.innerHTML = `
             <div class="live-photo-wrapper relative w-full h-auto overflow-hidden ${className}">
-              <img src="${src}" alt="${alt}" class="w-full h-full object-cover" />
+              <img src="${src}" alt="${alt}" ${dataFancybox ? `data-fancybox="${dataFancybox}"` : ""} ${dataCaption ? `data-caption="${dataCaption}"` : ""} class="w-full h-full object-cover" />
               <div class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                 ${alt}
               </div>

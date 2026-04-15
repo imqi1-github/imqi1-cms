@@ -273,6 +273,7 @@ function handleCommentSubmitted() {
           <a
             v-if="comment.link"
             :href="comment.link"
+            v-tooltip="'点击前往'"
             class="text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 transition-colors no-underline"
             target="_blank"
             rel="noreferrer noopener nofollow">
@@ -287,13 +288,13 @@ function handleCommentSubmitted() {
 
         <!-- 底部信息 -->
         <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-300">
-          <span class="flex items-center gap-1">
+          <span class="flex items-center gap-1" v-tooltip="'评论时间'">
             <Icon name="ri-time-fill" class="size-4" />
             {{ formatDate(comment.create_time) }}
           </span>
           <span v-if="parsedAgent.browser || parsedAgent.os" class="flex items-center gap-1">
-            <Icon :name="parsedAgent.browserIcon" class="size-4" />
-            <Icon :name="parsedAgent.osIcon" class="size-4" />
+            <Icon :name="parsedAgent.browserIcon" class="size-4" v-tooltip="parsedAgent.browser" />
+            <Icon :name="parsedAgent.osIcon" class="size-4" v-tooltip="parsedAgent.os" />
           </span>
           <span v-else class="flex items-center gap-1">
             <Icon name="ri-computer-line" class="size-4" />

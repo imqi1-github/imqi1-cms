@@ -119,7 +119,7 @@
       <!-- 样式选择 -->
       <div ref="sectionStyle" class="index-theme -mt-5 mx-auto max-w-200 animate-fade-in">
         <div class="index-theme-inner">
-          <div class="index-theme-themes mb-50 max-md:text-center">
+          <div class="index-theme-themes mb-30 max-md:text-center">
             <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
             <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">保持界面清爽，同时不牺牲功能丰富度</div>
             <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">选择字体类型，合理规划布局，注意颜色搭配，添加边框圆角。</div>
@@ -471,10 +471,10 @@
           class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
           >协议</NuxtLink
         >
-        <a
+        <NuxtLink
           href="/sitemap"
           class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >站点地图</a
+          >站点地图</NuxtLink
         >
         <NuxtLink
           href="/archiving"
