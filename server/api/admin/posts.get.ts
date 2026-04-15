@@ -69,6 +69,7 @@ export default defineEventHandler(async event => {
                 select: {
                   mid: true,
                   name: true,
+                  slug: true,
                   type: true,
                 },
               },
