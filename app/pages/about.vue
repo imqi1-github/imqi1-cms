@@ -310,13 +310,13 @@
         <div class="about-bold-mbti bg-slate-100 dark:bg-slate-800 rounded-2xl p-8 transition-colors duration-300">
           <div class="about-bold-mbti-header flex items-center gap-8 mb-8">
             <div class="about-bold-mbti-type shrink-0">
-              <img src="/imgs/entp.svg" alt="ENTP" class="w-32 h-32 object-contain" />
+              <img src="/imgs/enfj.svg" alt="ENTJ" class="w-32 h-32 object-contain" />
             </div>
             <div class="about-bold-mbti-info flex-1">
               <div class="about-bold-mbti-name text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">
-                辩论家 · ENTP-A
+                主人公 · ENTJ-A
               </div>
-              <div class="about-bold-mbti-desc text-slate-600 dark:text-slate-400 mb-4 transition-colors duration-300">外向 · 直觉 · 思维 · 展望</div>
+              <div class="about-bold-mbti-desc text-slate-600 dark:text-slate-400 mb-4 transition-colors duration-300">外向 · 思维 · 展望</div>
               <div class="about-bold-mbti-traits flex flex-wrap gap-2">
                 <span
                   class="about-bold-mbti-trait bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"

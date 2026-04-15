@@ -66,6 +66,18 @@ const commentEnabled = computed(() => siteData.value?.data?.commentEnabled ?? tr
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
+// 获取相关文章（使用最新文章作为相关文章）
+const { data: relatedPostsData, pending: relatedPostsPending } = await useFetch(`/api/recent-posts`, {
+  params: {
+    limit: 4,
+  },
+});
+
+const relatedPosts = computed(() => {
+  if (!relatedPostsData.value?.success || !post.value) return [];
+  return relatedPostsData.value.data.filter((p: any) => p.cid !== post.value?.cid).slice(0, 4);
+});
+
 // 目录相关
 interface TocItem {
   id: string;
@@ -1727,8 +1739,39 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- 相关文章 -->
+      <section v-if="relatedPosts.length > 0" class="w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
+        <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
+        <div class="flex flex-wrap gap-4">
+          <div
+            v-for="relatedPost in relatedPosts"
+            :key="relatedPost.cid"
+            class="flex-1 min-w-50 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden transition-transform hover:border-blue-400 min-h-50">
+            <NuxtLink :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`" class="flex flex-col">
+              <div v-if="relatedPost.covers && relatedPost.covers.length > 0" class="overflow-hidden">
+                <img
+                  :src="relatedPost.covers[0]?.url"
+                  :alt="relatedPost.title"
+                  class="w-full h-30 object-cover transition-transform duration-300 hover:scale-105"
+                  loading="lazy" />
+              </div>
+              <div v-else class="flex h-30 items-center justify-center bg-gray-200 dark:bg-gray-800">
+                <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>
+              </div>
+              <div class="px-4 py-2">
+                <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1 line-clamp-1">{{ relatedPost.title }}</h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">{{ relatedPost.desc || "暂无描述" }}</p>
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                  {{ formatDate(relatedPost.created) }}
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
+      </section>
+
       <!-- 评论区 -->
-      <section v-if="commentEnabled" class="mt-10 w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
+      <section v-if="commentEnabled" class="w-full duration-300 ease-out animate-fade-in content-constrained">
         <CommentList :post-id="post.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
     </article>
