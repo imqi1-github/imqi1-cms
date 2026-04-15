@@ -279,7 +279,7 @@ onUnmounted(() => {
     <!-- 页面内容 -->
     <div v-else-if="page" class="animate-fade-in">
       <!-- 标题区域 -->
-      <header class="mb-5 text-center">
+      <header class="text-center">
         <h1 class="text-[3em] font-extrabold mb-2.5">{{ page.title }}</h1>
 
         <!-- 描述 -->
@@ -289,7 +289,7 @@ onUnmounted(() => {
       </header>
 
       <!-- 协议内容区域 - 带目录 -->
-      <div class="mt-8 flex gap-8 relative w-full max-w-7xl mx-auto">
+      <div class="flex gap-8 relative w-full max-w-7xl mx-auto">
         <!-- 目录侧边栏 - 左侧 -->
         <aside class="toc-sidebar hidden lg:block w-39 shrink-0 order-first">
           <nav class="toc-nav sticky top-24">

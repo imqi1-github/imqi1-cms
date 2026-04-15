@@ -10,6 +10,22 @@ const postId = computed(() => (route.query.cid ? Number(route.query.cid) : null)
 const activeTab = ref("content");
 const loading = ref(false);
 
+// 跟踪是否有未保存的更改
+const hasUnsavedChanges = ref(false);
+
+// 保存初始内容用于比较
+const initialContent = ref("");
+const initialTitle = ref("");
+const initialDescription = ref("");
+const initialSlug = ref("");
+const initialCoversInput = ref("");
+const initialStatus = ref("");
+const initialPublishDate = ref("");
+const initialShowToc = ref(false);
+const initialManyCovers = ref(false);
+const initialCategoryIds = ref<number[]>([]);
+const initialTagIds = ref<number[]>([]);
+
 const title = ref("");
 const description = ref("");
 const slug = ref("");
@@ -334,6 +350,10 @@ const fetchPost = async () => {
 
       // 同时获取附件列表和分类
       await Promise.all([fetchAttachments(), fetchPostCategories(), fetchPostTags()]);
+
+      // 保存初始内容用于比较
+      await nextTick();
+      saveInitialContent();
     }
   } catch (e: any) {
     toast.error({
@@ -342,6 +362,65 @@ const fetchPost = async () => {
     });
   } finally {
     loading.value = false;
+  }
+};
+
+// 保存初始内容
+const saveInitialContent = () => {
+  initialContent.value = content.value;
+  initialTitle.value = title.value;
+  initialDescription.value = description.value;
+  initialSlug.value = slug.value;
+  initialCoversInput.value = coversInput.value;
+  initialStatus.value = status.value;
+  initialPublishDate.value = publishDate.value;
+  initialShowToc.value = showToc.value;
+  initialManyCovers.value = manyCovers.value;
+  initialCategoryIds.value = [...selectedCategoryIds.value];
+  initialTagIds.value = [...selectedTagIds.value];
+  hasUnsavedChanges.value = false;
+};
+
+// 检查是否有未保存的更改
+const checkUnsavedChanges = () => {
+  return (
+    content.value !== initialContent.value ||
+    title.value !== initialTitle.value ||
+    description.value !== initialDescription.value ||
+    slug.value !== initialSlug.value ||
+    coversInput.value !== initialCoversInput.value ||
+    status.value !== initialStatus.value ||
+    publishDate.value !== initialPublishDate.value ||
+    showToc.value !== initialShowToc.value ||
+    manyCovers.value !== initialManyCovers.value ||
+    JSON.stringify(selectedCategoryIds.value.sort()) !== JSON.stringify(initialCategoryIds.value.sort()) ||
+    JSON.stringify(selectedTagIds.value.sort()) !== JSON.stringify(initialTagIds.value.sort())
+  );
+};
+
+// 监听所有字段变化
+watch([
+  content,
+  title,
+  description,
+  slug,
+  coversInput,
+  status,
+  publishDate,
+  showToc,
+  manyCovers,
+  selectedCategoryIds,
+  selectedTagIds,
+], () => {
+  hasUnsavedChanges.value = checkUnsavedChanges();
+}, { deep: true });
+
+// beforeunload 事件处理
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges.value) {
+    e.preventDefault();
+    e.returnValue = ""; // Chrome 需要设置 returnValue
+    return "";
   }
 };
 
@@ -433,6 +512,10 @@ const savePost = async () => {
       await savePostCategories();
       // 保存标签
       await savePostTags();
+
+      // 更新初始内容（保存成功后）
+      await nextTick();
+      saveInitialContent();
     }
   } catch (e: any) {
     toast.error({
@@ -496,7 +579,20 @@ onMounted(() => {
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     publishDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    // 新建文章时也保存初始内容
+    nextTick(() => {
+      saveInitialContent();
+    });
   }
+
+  // 添加 beforeunload 事件监听器
+  window.addEventListener("beforeunload", handleBeforeUnload);
+});
+
+// 组件卸载时移除事件监听器
+onUnmounted(() => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
 });
 
 // 监听 postId 变化，自动填充 slug

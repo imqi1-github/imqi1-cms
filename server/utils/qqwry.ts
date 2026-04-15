@@ -285,8 +285,8 @@ export async function queryIpLocation(ip: string): Promise<IpDetail | null> {
   try {
     const qqwry = await getInstance();
     return qqwry.getDetail(ip);
-  } catch (error) {
-    console.error("查询 IP 归属地失败:", error);
+  } catch {
+    // 静默失败，不打印错误日志
     return null;
   }
 }
@@ -316,8 +316,7 @@ export async function getQQWryVersion(): Promise<string> {
   try {
     const qqwry = await getInstance();
     return qqwry.getVersion();
-  } catch (error) {
-    console.error("获取 QQWry 版本失败:", error);
+  } catch {
     return "未知";
   }
 }

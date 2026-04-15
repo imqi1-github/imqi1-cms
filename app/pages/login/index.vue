@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-muted/40">
-    <Card class="w-95">
+    <Card class="w-full max-w-md">
       <CardHeader>
         <CardTitle>登录</CardTitle>
         <CardDescription>请输入账号密码</CardDescription>
@@ -46,8 +46,20 @@ const form = reactive({
 const loading = ref(false)
 const csrfToken = ref('')
 
-// 在组件挂载时获取 CSRF token
+// 在组件挂载时获取 CSRF token 并检查登录状态
 onMounted(async () => {
+  // 检查是否已经登录
+  try {
+    const verifyRes = await $fetch('/api/auth/verify')
+    if ((verifyRes as any).valid) {
+      // 已经登录，跳转到后台
+      await navigateTo(redirectTo.value)
+      return
+    }
+  } catch {
+    // 未登录，继续获取 CSRF token
+  }
+
   // 获取 CSRF token
   try {
     const csrfRes = await $fetch('/api/csrf/token')

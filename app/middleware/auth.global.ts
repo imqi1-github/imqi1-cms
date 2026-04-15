@@ -4,21 +4,30 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return
   }
 
-  // 在服务器端，通过 API 验证 session
+  // 在服务器端，验证 session 有效性
   if (import.meta.server) {
     try {
-      // 在服务器端，我们需要直接检查 event 而不是 useCookie
-      // 但由于中间件运行在渲染之前，我们暂时使用简单的 cookie 检查
-      const sessionCookie = useCookie('session')
-      const hasCookie = sessionCookie.value !== undefined && sessionCookie.value !== ''
+      const { getUser } = await import('#server/lib/auth')
+      const event = useRequestEvent()
 
-      if (!hasCookie) {
+      if (!event) {
         return navigateTo('/login?to=' + encodeURIComponent(to.path))
       }
 
-      // TODO: 在服务器端验证 session 有效性
-      // 目前先通过简单的 cookie 检查，后续可以改进为调用 getUser(event)
-    } catch {
+      // 调用 getUser 验证 session
+      // 如果 session 无效或不存在，getUser 会返回 null
+      const user = await getUser(event)
+
+      if (!user) {
+        // session 无效，重定向到登录页
+        // 这会在服务器端就拦截，不会渲染 AdminLayout
+        return navigateTo('/login?to=' + encodeURIComponent(to.path))
+      }
+
+      // session 有效，继续渲染页面
+      return
+    } catch (error) {
+      // 验证出错，重定向到登录页
       return navigateTo('/login?to=' + encodeURIComponent(to.path))
     }
   }

@@ -226,27 +226,6 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     },
   });
 
-  // 悬浮解释容器
-  md.use(container, "tooltip", {
-    validate: (params: string) => {
-      // 匹配 "tooltip 解释文本" 格式
-      return params.trim().match(/^tooltip\s+(.+)$/);
-    },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取解释文本（去掉 "tooltip" 前缀）
-      let tooltipText = info.replace(/^tooltip\s+/, "").trim();
-
-      if (tokens[idx].nesting === 1) {
-        // 开始容器
-        return `<span class="markdown-tooltip-wrapper" data-tooltip="${tooltipText}">`;
-      } else {
-        // 结束容器
-        return `</span>`;
-      }
-    },
-  });
-
   // 卡片容器（用于展示超链接卡片）
   md.use(container, "card", {
     validate: (params: string) => {

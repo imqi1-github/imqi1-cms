@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getSessionStore, resetSessionStore } from "#server/utils/session-store";
+import { setCookie, getCookie, deleteCookie } from "h3";
 
 export interface SessionUser {
   uid: number;
@@ -52,6 +53,8 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
     sameSite: import.meta.env.PROD ? "strict" : "lax", // 开发环境使用 lax 以支持重定向，生产环境使用 strict
     maxAge: SESSION_MAX_AGE,
     path: "/",
+    // 开发环境额外添加 domain 属性（如果需要）
+    ...(import.meta.env.DEV && { domain: undefined }),
   });
 
   return { ...user, authCode };

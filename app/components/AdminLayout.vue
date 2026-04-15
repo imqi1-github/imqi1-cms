@@ -66,19 +66,8 @@ useHead({
   title: computed(() => `${pageTitle.value} - 后台管理`),
 })
 
-// 验证会话是否有效（检查是否在其他设备登录）
-onMounted(async () => {
-  try {
-    const res = await $fetch('/api/auth/verify')
-    if (!(res as any).valid) {
-      // 会话已失效，跳转到登录页
-      await navigateTo('/login')
-    }
-  } catch {
-    // 验证失败，跳转到登录页
-    await navigateTo('/login?to=' + encodeURIComponent(route.path))
-  }
-})
+// 注意：会话验证已在 app/middleware/auth.global.ts 中处理
+// 这里不再需要重复验证，避免 hydration mismatch
 
 const navItems = [
   {

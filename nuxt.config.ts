@@ -261,6 +261,10 @@ export default defineNuxtConfig({
   },
   // 安全头配置（仅生产环境）
   routeRules: {
+    // 登录页面禁用 SSR，避免 hydration 不匹配
+    "/login": {
+      ssr: false,
+    },
     "/**": {
       headers: import.meta.env.PROD ? {
         // 生产环境下的 CSP 配置

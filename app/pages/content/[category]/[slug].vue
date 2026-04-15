@@ -581,10 +581,10 @@ onMounted(() => {
 
         // 创建 video 元素
         const videoContainer = document.createElement("div");
-        videoContainer.className = "markdown-video-container my-6";
+        videoContainer.className = "markdown-video-container my-6 w-fit m-auto";
         videoContainer.innerHTML = `
         <video
-          class="w-full rounded-lg shadow-lg"
+          class="w-full rounded-lg shadow-lg max-h-150"
           controls
           preload="metadata">
           <source src="${url}" type="video/mp4">
@@ -652,45 +652,6 @@ onMounted(() => {
 
         // 替换原容器
         wrapper.replaceWith(calloutContainer);
-      });
-
-      // 初始化悬浮解释容器
-      const tooltipWrappers = document.querySelectorAll(".markdown-tooltip-wrapper");
-      tooltipWrappers.forEach(wrapper => {
-        const tooltipText = wrapper.getAttribute("data-tooltip") || "";
-        const content = wrapper.innerHTML;
-
-        // 创建悬浮解释元素
-        const tooltipElement = document.createElement("span");
-        tooltipElement.className =
-          "markdown-tooltip relative inline-block border-b border-dashed border-blue-500 dark:border-blue-400 cursor-help text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300";
-        tooltipElement.innerHTML = `
-        <span class="tooltip-content">${content}</span>
-        <span class="tooltip-popup invisible absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none">
-          ${tooltipText}
-          <span class="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900 dark:border-t-slate-100"></span>
-        </span>
-      `;
-
-        // 添加悬浮事件
-        tooltipElement.addEventListener("mouseenter", () => {
-          const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
-          if (popup) {
-            popup.classList.remove("invisible", "opacity-0");
-            popup.classList.add("visible", "opacity-100");
-          }
-        });
-
-        tooltipElement.addEventListener("mouseleave", () => {
-          const popup = tooltipElement.querySelector(".tooltip-popup") as HTMLElement;
-          if (popup) {
-            popup.classList.add("invisible", "opacity-0");
-            popup.classList.remove("visible", "opacity-100");
-          }
-        });
-
-        // 替换原容器
-        wrapper.replaceWith(tooltipElement);
       });
 
       // 初始化卡片容器
@@ -1621,7 +1582,7 @@ onUnmounted(() => {
 
     <article v-else class="flex flex-col w-full animate-fade-in">
       <!-- 标题区域 -->
-      <header :class="['mb-5 opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
+      <header :class="['opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
         <CoverSwiper v-if="hasManyCovers" :covers="covers" :is-photo-category="isPhotoCategory" />
 
@@ -1651,7 +1612,7 @@ onUnmounted(() => {
       </header>
 
       <!-- 文章内容区域 - 带目录 -->
-      <div class="mt-8 flex gap-8 relative w-full">
+      <div class="flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
         <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 flex-shrink-0 order-first w-fit">
           <nav class="toc-nav sticky top-24 w-fit">

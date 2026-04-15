@@ -111,7 +111,7 @@ onUnmounted(() => {
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header class="mb-5 animate-fade-in">
+    <header class="animate-fade-in">
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"

@@ -22,14 +22,18 @@ const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string
   const end = textarea.selectionEnd
   const text = props.modelValue
 
+  // 保存滚动位置
+  const scrollTop = textarea.scrollTop
+
   // 有选中文本
   if (start !== end) {
     const selectedText = text.slice(start, end)
     const newText = text.slice(0, start) + prefix + selectedText + suffix + text.slice(end)
     emit('update:modelValue', newText)
-    // 恢复选中状态
+    // 恢复选中状态和滚动位置
     nextTick(() => {
       textarea.focus()
+      textarea.scrollTop = scrollTop
       textarea.setSelectionRange(start + prefix.length, end + prefix.length)
     })
   }
@@ -38,9 +42,10 @@ const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string
     const insertText = prefix + placeholder + suffix
     const newText = text.slice(0, start) + insertText + text.slice(end)
     emit('update:modelValue', newText)
-    // 光标移动到占位符中间
+    // 光标移动到占位符中间，恢复滚动位置
     nextTick(() => {
       textarea.focus()
+      textarea.scrollTop = scrollTop
       textarea.setSelectionRange(start + prefix.length, start + prefix.length + placeholder.length)
     })
   }
@@ -153,42 +158,42 @@ const handlePaste = async (event: ClipboardEvent) => {
 
 // 工具栏按钮操作
 const actions = {
-  bold: () => insertMarkdown('**', '**', '粗体文本'),
-  italic: () => insertMarkdown('*', '*', '斜体文本'),
-  strikethrough: () => insertMarkdown('~~', '~~', '删除线文本'),
-  heading1: () => insertMarkdown('# ', '', '标题 1'),
-  heading2: () => insertMarkdown('## ', '', '标题 2'),
-  heading3: () => insertMarkdown('### ', '', '标题 3'),
-  heading4: () => insertMarkdown('#### ', '', '标题 4'),
-  heading5: () => insertMarkdown('##### ', '', '标题 5'),
-  heading6: () => insertMarkdown('###### ', '', '标题 6'),
-  quote: () => insertMarkdown('> ', '', '引用内容'),
-  code: () => insertMarkdown('`', '`', '代码'),
-  codeBlock: () => insertMarkdown('```\n', '\n```', '代码块'),
-  link: () => insertMarkdown('[', '](url)', '链接文本'),
-  image: () => insertMarkdown('![', '](url)', '图片描述'),
-  ul: () => insertMarkdown('- ', '', '列表项'),
-  ol: () => insertMarkdown('1. ', '', '列表项'),
+  bold: () => insertMarkdown('**', '**', ''),
+  italic: () => insertMarkdown('*', '*', ''),
+  strikethrough: () => insertMarkdown('~~', '~~', ''),
+  heading1: () => insertMarkdown('# ', '', ''),
+  heading2: () => insertMarkdown('## ', '', ''),
+  heading3: () => insertMarkdown('### ', '', ''),
+  heading4: () => insertMarkdown('#### ', '', ''),
+  heading5: () => insertMarkdown('##### ', '', ''),
+  heading6: () => insertMarkdown('###### ', '', ''),
+  quote: () => insertMarkdown('> ', '', ''),
+  code: () => insertMarkdown('`', '`', ''),
+  codeBlock: () => insertMarkdown('```\n', '\n```', ''),
+  link: () => insertMarkdown('[', '](url)', ''),
+  image: () => insertMarkdown('![', '](url)', ''),
+  ul: () => insertMarkdown('- ', '', ''),
+  ol: () => insertMarkdown('1. ', '', ''),
   hr: () => insertMarkdown('\n---\n', '', ''),
   table: () => insertMarkdown(
     '| 标题1 | 标题2 | 标题3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n| 内容4 | 内容5 | 内容6 |\n',
     '',
     ''
   ),
-  details: () => insertMarkdown(':::details 标题\n', '\n:::\n', '折叠内容'),
+  details: () => insertMarkdown(':::details 标题\n', '\n:::\n', ''),
   video: () => insertMarkdown(':::video 视频URL\n', '\n:::', ''),
-  success: () => insertMarkdown(':::callout success\n', '\n:::\n', '成功消息'),
-  warning: () => insertMarkdown(':::callout warning\n', '\n:::\n', '警告消息'),
-  error: () => insertMarkdown(':::callout error\n', '\n:::\n', '错误消息'),
-  info: () => insertMarkdown(':::callout info\n', '\n:::\n', '信息消息'),
-  tooltip: () => insertMarkdown(':::tooltip 解释文本\n', '\n:::', '文本'),
-  card: () => insertMarkdown(':::card https://example.com | 标题 | 描述文本 | https://example.com/image.jpg\n', '\n:::', ''),
-  swiper: () => insertMarkdown(':::swiper\nhttps://example.com/image1.jpg | 图片标题1\nhttps://example.com/image2.jpg | 图片标题2\nhttps://example.com/image3.jpg | 图片标题3\n:::', ''),
-  githubRepo: () => insertMarkdown(':::repo https://github.com/owner/repo\n:::', ''),
-  giteeRepo: () => insertMarkdown(':::repo https://gitee.com/owner/repo\n:::', ''),
-  musicAuto: () => insertMarkdown(':::music auto https://music.163.com/song?id=347230\n:::', ''),
-  musicSong: () => insertMarkdown(':::music song netease 347230\n:::', ''),
-  musicPlaylist: () => insertMarkdown(':::music playlist netease 3778678\n:::', ''),
+  success: () => insertMarkdown(':::callout success\n', '\n:::\n', ''),
+  warning: () => insertMarkdown(':::callout warning\n', '\n:::\n', ''),
+  error: () => insertMarkdown(':::callout error\n', '\n:::\n', ''),
+  info: () => insertMarkdown(':::callout info\n', '\n:::\n', ''),
+  tooltip: () => insertMarkdown(':::tooltip \n', '\n:::', ''),
+  card: () => insertMarkdown(':::card \n', '\n:::', ''),
+  swiper: () => insertMarkdown(':::swiper\n\n:::', ''),
+  githubRepo: () => insertMarkdown(':::repo \n:::', ''),
+  giteeRepo: () => insertMarkdown(':::repo \n:::', ''),
+  musicAuto: () => insertMarkdown(':::music auto \n:::', ''),
+  musicSong: () => insertMarkdown(':::music song netease \n:::', ''),
+  musicPlaylist: () => insertMarkdown(':::music playlist netease \n:::', ''),
 }
 </script>
 
@@ -474,19 +479,6 @@ const actions = {
         @click="actions.info"
       >
         <Icon name="lucide:info" class="size-4" />
-      </Button>
-
-      <Separator orientation="vertical" class="h-6 mx-1" />
-
-      <!-- 悬浮解释 -->
-      <Button
-        variant="ghost"
-        size="icon"
-        class="size-8"
-        title="悬浮解释"
-        @click="actions.tooltip"
-      >
-        <Icon name="lucide:help-circle" class="size-4" />
       </Button>
 
       <Separator orientation="vertical" class="h-6 mx-1" />
