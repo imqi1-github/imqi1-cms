@@ -1647,7 +1647,7 @@ onUnmounted(() => {
       <!-- 文章内容区域 - 带目录 -->
       <div class="flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
-        <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 flex-shrink-0 order-first w-fit">
+        <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 flex-shrink-0 order-first w-fit mt-6">
           <nav class="toc-nav sticky top-24 w-fit">
             <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 w-fit max-w-full">目录</h3>
             <ul class="space-y-1 w-fit max-w-48">
