@@ -27,14 +27,16 @@ const remove = (id: string) => {
 };
 
 // 监听自定义事件
+const handleNotification = ((e: CustomEvent) => {
+  show(e.detail.message, e.detail.type);
+}) as EventListener;
+
 onMounted(() => {
-  window.addEventListener("front-notification", ((e: CustomEvent) => {
-    show(e.detail.message, e.detail.type);
-  }) as EventListener);
+  window.addEventListener("front-notification", handleNotification);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("front-notification", (() => {}) as EventListener);
+  window.removeEventListener("front-notification", handleNotification);
 });
 
 // 图标映射

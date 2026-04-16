@@ -1571,6 +1571,30 @@ onMounted(() => {
 onUnmounted(() => {
   Fancybox.destroy();
   window.removeEventListener("scroll", handleTocScroll);
+
+  // 清理所有代码块的复制按钮监听器
+  const copyButtons = document.querySelectorAll(".copy-button");
+  copyButtons.forEach(button => {
+    button.replaceWith(button.cloneNode(true));
+  });
+
+  // 清理所有代码块的点击监听器
+  const codeBlocks = document.querySelectorAll("pre[class*='language-']");
+  codeBlocks.forEach(pre => {
+    pre.replaceWith(pre.cloneNode(true));
+  });
+
+  // 清理所有折叠容器的点击监听器
+  const detailButtons = document.querySelectorAll(".markdown-details-summary");
+  detailButtons.forEach(button => {
+    button.replaceWith(button.cloneNode(true));
+  });
+
+  // 清理所有实况照片的监听器
+  const liveVideos = document.querySelectorAll("video.live-photo-video");
+  liveVideos.forEach(video => {
+    video.replaceWith(video.cloneNode(true));
+  });
 });
 </script>
 

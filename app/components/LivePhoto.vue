@@ -342,6 +342,29 @@ const onVideoEnded = () => {
     isPlaying.value = false;
   }
 };
+
+// 组件卸载时清理定时器和事件监听
+onUnmounted(() => {
+  // 清理所有定时器
+  if (imgOpacityTimer !== null) {
+    clearTimeout(imgOpacityTimer);
+    imgOpacityTimer = null;
+  }
+  if (videoOpacityTimer !== null) {
+    clearTimeout(videoOpacityTimer);
+    videoOpacityTimer = null;
+  }
+  if (resetTimer !== null) {
+    clearTimeout(resetTimer);
+    resetTimer = null;
+  }
+
+  // 释放视频 Blob URL
+  if (videoBlobUrl.value) {
+    URL.revokeObjectURL(videoBlobUrl.value);
+    videoBlobUrl.value = null;
+  }
+});
 </script>
 
 <template>
