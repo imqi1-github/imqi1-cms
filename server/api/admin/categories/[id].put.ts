@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { validateMetaData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -41,6 +42,9 @@ export default defineEventHandler(async event => {
       message: "分类名称不能为空",
     });
   }
+
+  // 验证字段长度
+  validateMetaData({ name, slug, desc });
 
   try {
     // 检查分类是否存在

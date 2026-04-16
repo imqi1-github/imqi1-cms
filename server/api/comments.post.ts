@@ -2,6 +2,7 @@ import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
+import { validateCommentData } from "#server/utils/validation";
 import DOMPurify from "isomorphic-dompurify";
 
 // HTML 净化配置 - 只允许安全的标签和属性
@@ -40,6 +41,9 @@ export default defineEventHandler(async event => {
         message: "缺少必填参数",
       });
     }
+
+    // 验证字段长度
+    validateCommentData({ name, mail, link });
 
     if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
       throw createError({

@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCommentData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -23,6 +24,11 @@ export default defineEventHandler(async event => {
   }
 
   const { name, mail, content, status } = body;
+
+  // 验证字段长度
+  if (name !== undefined || mail !== undefined) {
+    validateCommentData({ name, mail });
+  }
 
   try {
     // 获取原评论信息（用于比较状态变化）

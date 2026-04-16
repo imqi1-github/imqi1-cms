@@ -1,6 +1,7 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
+import { validateSettingsData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   const body = await readBody(event);
@@ -23,6 +24,9 @@ export default defineEventHandler(async event => {
       message: "请先登录",
     });
   }
+
+  // 验证字段长度
+  validateSettingsData(settingsBody);
 
   try {
     const updates = [

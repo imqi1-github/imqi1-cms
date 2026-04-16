@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateLinkData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -23,6 +24,14 @@ export default defineEventHandler(async event => {
   const body = await readBody(event);
 
   try {
+    // 验证字段长度
+    validateLinkData({
+      name: body.name,
+      link: body.link,
+      desc: body.desc,
+      avatar: body.avatar,
+    });
+
     // 检查链接是否存在
     const link = await prisma.link.findUnique({
       where: { id: Number(id) },

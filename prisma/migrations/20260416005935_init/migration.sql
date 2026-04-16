@@ -30,7 +30,7 @@ CREATE TABLE `meta` (
 CREATE TABLE `changelog` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `class` VARCHAR(191) NOT NULL,
-    `desc` VARCHAR(191) NOT NULL,
+    `desc` TEXT NOT NULL,
     `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)

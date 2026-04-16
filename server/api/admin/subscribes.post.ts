@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateSubscribeData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -15,6 +16,13 @@ export default defineEventHandler(async event => {
   const body = await readBody(event);
 
   try {
+    // 验证字段长度
+    validateSubscribeData({
+      name: body.name,
+      url: body.url,
+      avatar: body.avatar,
+    });
+
     const subscribe = await prisma.subscribe.create({
       data: {
         name: body.name,

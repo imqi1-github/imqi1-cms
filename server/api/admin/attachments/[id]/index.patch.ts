@@ -1,5 +1,6 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
+import { validateAttachmentData } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
   try {
@@ -32,6 +33,13 @@ export default defineEventHandler(async event => {
         message: '附件不存在',
       })
     }
+
+    // 验证字段长度
+    validateAttachmentData({
+      title: body.name,
+      type: existing.type,
+      url: existing.url,
+    })
 
     // 更新附件
     const attachment = await prisma.attachment.update({

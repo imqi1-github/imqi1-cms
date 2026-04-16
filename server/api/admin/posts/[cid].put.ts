@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validatePostData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -42,6 +43,9 @@ export default defineEventHandler(async event => {
       message: "标题不能为空",
     });
   }
+
+  // 验证字段长度
+  validatePostData({ title, slug, tags });
 
   // 检查文章是否存在
   const existing = await prisma.post.findUnique({

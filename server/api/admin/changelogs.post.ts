@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateChangelogData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -15,6 +16,9 @@ export default defineEventHandler(async event => {
   const body = await readBody(event);
 
   try {
+    // 验证字段长度
+    validateChangelogData({ class: body.class, desc: body.desc });
+
     const changelog = await prisma.changelog.create({
       data: {
         class: body.class,

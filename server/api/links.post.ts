@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { notifyFriendLinkApplication } from "#server/utils/mail";
+import { validateLinkData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   try {
@@ -12,6 +13,14 @@ export default defineEventHandler(async event => {
         message: "名称和链接为必填项",
       });
     }
+
+    // 验证字段长度
+    validateLinkData({
+      name: body.name,
+      link: body.link,
+      desc: body.sort,
+      avatar: body.avatar,
+    });
 
     // 验证链接格式
     const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;

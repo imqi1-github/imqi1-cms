@@ -7,6 +7,7 @@ const userId = route.params.id as string
 const loading = ref(true)
 const saving = ref(false)
 const user = ref<any>(null)
+const csrfToken = ref('')
 
 // 表单数据
 const formData = ref({
@@ -18,10 +19,16 @@ const formData = ref({
   role: 0,
 })
 
-// 获取用户详情
+// 获取用户详情和CSRF token
 async function fetchUser() {
   loading.value = true
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch('/api/csrf/token', { credentials: 'include' })
+    if (csrfRes && (csrfRes as any).data?.token) {
+      csrfToken.value = (csrfRes as any).data.token
+    }
+
     const data = await $fetch(`/api/admin/users/${userId}`)
     user.value = data
     formData.value = {
@@ -50,6 +57,7 @@ async function saveUser() {
     await $fetch(`/api/admin/users/${userId}`, {
       method: 'PUT',
       body: {
+        csrfToken: csrfToken.value,
         name: formData.value.name,
         nickname: formData.value.nickname || undefined,
         mail: formData.value.mail,

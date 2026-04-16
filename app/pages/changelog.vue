@@ -154,8 +154,8 @@ onMounted(() => {
 
               <!-- 描述内容 -->
               <div
-                class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs prose-p:leading-relaxed"
-                v-html="log.desc"
+                class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs prose-p:leading-relaxed markdown-content"
+                v-html="log.descHtml"
               />
             </div>
           </div>
@@ -184,5 +184,71 @@ onMounted(() => {
 .animate-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Markdown 内容样式 */
+.markdown-content > * {
+  line-height: 1.6;
+}
+
+.markdown-content :deep(p) {
+  line-height: 1.6;
+}
+
+.markdown-content :deep(strong) {
+  font-weight: 700;
+  color: rgb(15 23 42); /* slate-900 */
+}
+
+.markdown-content :deep(.dark strong) {
+  color: rgb(226 232 240); /* slate-200 */
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
+}
+
+.markdown-content :deep(s) {
+  text-decoration: line-through;
+  color: rgb(100 116 139); /* slate-500 */
+}
+
+.markdown-content :deep(.dark s) {
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+.markdown-content :deep(code) {
+  background-color: rgb(241 245 249); /* slate-100 */
+  color: rgb(15 23 42); /* slate-900 */
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: JetBrains Mono, monospace;
+}
+
+.markdown-content :deep(.dark code) {
+  background-color: rgb(30 41 59); /* slate-800 */
+  color: rgb(226 232 240); /* slate-200 */
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  padding-left: 1.5em;
+}
+
+.markdown-content :deep(ul) {
+  list-style-type: disc;
+}
+
+.markdown-content :deep(ol) {
+  list-style-type: decimal;
+}
+
+.markdown-content :deep(li::marker) {
+  color: rgb(100 116 139); /* slate-500 */
+}
+
+.markdown-content :deep(.dark li::marker) {
+  color: rgb(148 163 184); /* slate-400 */
 }
 </style>

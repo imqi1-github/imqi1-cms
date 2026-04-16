@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateChangelogData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -30,6 +31,9 @@ export default defineEventHandler(async event => {
       message: "内容不能为空",
     });
   }
+
+  // 验证字段长度
+  validateChangelogData({ class: classType, desc });
 
   // 检查日志是否存在
   const existing = await prisma.changelog.findUnique({

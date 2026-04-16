@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validatePostData } from "#server/utils/validation";
 
 console.log("===== 文章 POST API 已加载 =====");
 
@@ -36,6 +37,9 @@ export default defineEventHandler(async event => {
       message: "标题不能为空",
     });
   }
+
+  // 验证字段长度
+  validatePostData({ title, slug, tags });
 
   // 处理发布日期
   let createTime: Date | undefined = undefined;

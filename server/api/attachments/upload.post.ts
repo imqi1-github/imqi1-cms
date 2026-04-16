@@ -3,6 +3,7 @@ import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
 import { uploadToUpYun, type ImageProcessOptions } from "#server/utils/upyun";
+import { validateAttachmentData } from "#server/utils/validation";
 import { randomUUID } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -215,6 +216,13 @@ export default defineEventHandler(async event => {
       // 本地存储
       fileUrl = await uploadToLocal(buffer, fileName);
     }
+
+    // 验证字段长度
+    validateAttachmentData({
+      title: file.name,
+      type: category,
+      url: fileUrl,
+    });
 
     // 保存到数据库
     const category = getFileCategory(file.type);

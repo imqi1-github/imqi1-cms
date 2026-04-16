@@ -1,4 +1,21 @@
 import { prisma } from "#server/utils/prisma";
+import MarkdownIt from "markdown-it";
+
+// 创建简化版 Markdown 实例（仅支持基础格式）
+const md = new MarkdownIt({
+  html: false,
+  linkify: false,
+  typographer: false,
+  breaks: true,
+});
+
+// 简化版 Markdown 渲染（仅支持：粗体、斜体、删除线、行内代码、有序/无序列表）
+function renderSimpleMarkdown(content: string): string {
+  if (!content) {
+    return "";
+  }
+  return md.render(content);
+}
 
 export default defineEventHandler(async event => {
   try {
@@ -9,8 +26,14 @@ export default defineEventHandler(async event => {
       },
     });
 
+    // 渲染所有 Markdown 内容（简化版，仅支持基础格式）
+    const changelogsHtml = changelogs.map(log => ({
+      ...log,
+      descHtml: renderSimpleMarkdown(log.desc || ""),
+    }));
+
     // 按月份分组
-    const grouped = changelogs.reduce((acc, log) => {
+    const grouped = changelogsHtml.reduce((acc, log) => {
       const date = new Date(log.create_time);
       const year = date.getFullYear();
       const month = date.getMonth(); // 0-11
@@ -28,6 +51,7 @@ export default defineEventHandler(async event => {
         id: log.id,
         class: log.class,
         desc: log.desc,
+        descHtml: log.descHtml,
         createTime: log.create_time,
       });
 

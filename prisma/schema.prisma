@@ -33,7 +33,7 @@ model meta {
 model changelog {
   id          Int      @id @default(autoincrement())
   class       String
-  desc        String
+  desc        String   @db.Text
   create_time DateTime @default(now())
 }
 

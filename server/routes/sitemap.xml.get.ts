@@ -2,12 +2,21 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
+    // 获取CDN配置
+    const config = useRuntimeConfig();
+    const cdnURL = config.public.cdnURL as string;
+
     // 获取请求的协议和主机
     const host = event.node.req.headers.host || "";
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${host}`;
 
+    // 确定样式表URL：生产环境使用CDN，开发环境使用本地路径
+    const isProd = import.meta.env.PROD;
+    const stylesheetUrl = isProd && cdnURL ? `${cdnURL}/sitemap.xsl` : "/sitemap.xsl";
+
     console.log('[sitemap] 开始生成 sitemap, baseUrl:', baseUrl);
+    console.log('[sitemap] 使用样式表:', stylesheetUrl);
 
     // 获取所有已发布的文章
     const posts = await prisma.post.findMany({
@@ -223,7 +232,7 @@ export default defineEventHandler(async event => {
 
     // 构建 XML
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<?xml-stylesheet type="text/xsl" href="${stylesheetUrl}"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.join('\n')}
 </urlset>`;
@@ -241,8 +250,14 @@ ${urls.join('\n')}
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${host}`;
 
+    // 获取CDN配置
+    const config = useRuntimeConfig();
+    const cdnURL = config.public.cdnURL as string;
+    const isProd = import.meta.env.PROD;
+    const stylesheetUrl = isProd && cdnURL ? `${cdnURL}/sitemap.xsl` : "/sitemap.xsl";
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
+<?xml-stylesheet type="text/xsl" href="${stylesheetUrl}"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>

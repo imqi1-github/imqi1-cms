@@ -1,5 +1,6 @@
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
+import { validateMetaData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -27,6 +28,13 @@ export default defineEventHandler(async event => {
       message: "标签名称不能为空",
     });
   }
+
+  // 验证字段长度
+  validateMetaData({
+    name: body.name,
+    slug: body.slug,
+    desc: body.desc,
+  });
 
   try {
     const tag = await prisma.meta.update({

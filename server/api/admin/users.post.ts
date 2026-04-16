@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateUserData } from "#server/utils/validation";
 import bcrypt from "bcryptjs";
 
 export default defineEventHandler(async event => {
@@ -22,6 +23,9 @@ export default defineEventHandler(async event => {
       message: "用户名、邮箱和密码不能为空",
     });
   }
+
+  // 验证字段长度
+  validateUserData({ name, mail, nickname });
 
   try {
     // 检查邮箱是否已被使用
