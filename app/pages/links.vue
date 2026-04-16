@@ -432,6 +432,37 @@ onUnmounted(() => {
       </div>
     </section>
 
+    <!-- 本站信息卡片 -->
+    <section class="my-8 animate-fade-in">
+      <h2 class="text-xl font-bold mb-4">本站信息</h2>
+      <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800/50 dark:to-slate-900/50 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+        <div class="flex flex-col md:flex-row gap-6">
+          <!-- 头像 -->
+          <div class="shrink-0">
+            <img
+              src="https://cn.cravatar.com/avatar/2841d29eeabab633ae116c7b2c97e3bf?size=512"
+              alt="ImQi1"
+              class="w-20 h-20 rounded-xl object-cover" />
+          </div>
+          <!-- 信息 -->
+          <div class="flex-1 space-y-3">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">ImQi1 / 棋</h3>
+              <p class="text-slate-600 dark:text-slate-400 text-sm mt-1">做技术的分享者 · 生活的摄影师 · 时事的评论员</p>
+            </div>
+            <div class="flex flex-wrap gap-4 text-sm">
+              <div class="flex items-center gap-2">
+                <Icon name="ri:link" class="text-blue-600" />
+                <a href="https://imqi1.com" target="_blank" rel="noopener" class="text-blue-600 hover:underline">
+                  https://imqi1.com
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 友链申请说明 -->
     <section class="mt-12 animate-fade-in">
       <h2 class="text-xl font-bold mb-4">申请友链</h2>

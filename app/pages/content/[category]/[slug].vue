@@ -696,15 +696,15 @@ onMounted(() => {
           target="_blank"
           rel="noopener noreferrer"
           class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
-          <div class="flex flex-col md:flex-row">
+          <div class="flex">
             ${
               image
                 ? `
-              <div class="md:w-1/3 h-48 md:h-auto overflow-hidden bg-slate-100 dark:bg-slate-900">
+              <div class="w-36 h-36 overflow-hidden bg-slate-100 dark:bg-slate-900">
                 <img
                   src="${image}"
                   alt="${title}"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  class="size-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                 />
               </div>

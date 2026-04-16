@@ -409,7 +409,7 @@ const onVideoEnded = () => {
   </div>
 
   <!-- 非实况照片，直接显示图片 -->
-  <img v-else :src="src" :alt="alt" :class="props.class" />
+  <img v-else :src="src" :alt="alt" :class="props.class" v-bind="fancyboxAttrs" />
 </template>
 
 <style scoped>
