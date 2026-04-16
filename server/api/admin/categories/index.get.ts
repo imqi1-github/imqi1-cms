@@ -18,6 +18,11 @@ export default defineEventHandler(async event => {
       where: {
         type: "category",
       },
+      include: {
+        _count: {
+          select: { postrelation: true },
+        },
+      },
       orderBy: {
         mid: "asc",
       },
@@ -28,6 +33,7 @@ export default defineEventHandler(async event => {
       name: category.name,
       slug: category.slug,
       desc: category.desc,
+      postCount: category._count.postrelation,
     }));
   } catch (error: any) {
     console.error("获取分类失败:", error);
