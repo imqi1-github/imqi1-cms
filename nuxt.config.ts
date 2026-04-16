@@ -1,12 +1,11 @@
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
 
 // 读取构建 hash（如果存在）
 const buildHashDir = existsSync('.build-hash-dir')
   ? `/${readFileSync('.build-hash-dir', 'utf-8').trim()}`
   : '';
 
-const cdnBaseURL = 'https://cdn2.imqi1.com';
+const cdnBaseURL = 'https://cdn.imqi1.com';
 const cdnURL = buildHashDir ? `${cdnBaseURL}${buildHashDir}` : cdnBaseURL;
 
 export default defineNuxtConfig({
@@ -56,8 +55,8 @@ export default defineNuxtConfig({
       background_color: "#ffffff",
       display: "fullscreen",
       lang: "zh-CN",
-      start_url: "https://imqi1.qi1.website",
-      scope: "https://imqi1.qi1.website",
+      start_url: "https://imqi1.com",
+      scope: "https://imqi1.com",
       id: "/",
       icons: [
         {
@@ -271,7 +270,7 @@ export default defineNuxtConfig({
     "/**": {
       headers: import.meta.env.PROD ? {
         // 生产环境下的 CSP 配置
-        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn2.imqi1.com; style-src 'self' 'unsafe-inline' https://cdn2.imqi1.com; img-src 'self' data: https: https://cdn2.imqi1.com; font-src 'self' data: https://cdn2.imqi1.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.imqi1.com; style-src 'self' 'unsafe-inline' https://cdn.imqi1.com; img-src 'self' data: https: https://cdn.imqi1.com; font-src 'self' data: https://cdn.imqi1.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';",
         "X-Frame-Options": "DENY",
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "strict-origin-when-cross-origin",

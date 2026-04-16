@@ -415,8 +415,7 @@
               <LivePhoto
                 :src="image.url"
                 :alt="image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title"
-                class="w-full h-auto object-cover"
-              />
+                class="w-full h-auto object-cover" />
               <!-- 悬浮标题 -->
               <div
                 class="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
@@ -499,15 +498,16 @@
     <div class="h-37.5"></div>
 
     <!-- 订阅文章 -->
-    <section v-if="subscribePosts.length > 0" class="index-subscribe-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-subscribe-posts-title">
+    <section
+      v-if="subscribePosts.length > 0"
+      class="index-subscribe-posts mx-auto max-w-275 animate-fade-in"
+      aria-labelledby="index-subscribe-posts-title">
       <div class="flex items-center justify-between mb-6">
         <div>
           <h2 id="index-subscribe-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
           <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
         </div>
-        <NuxtLink
-          to="/subscribes"
-          class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+        <NuxtLink to="/subscribes" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
           查看更多
           <Icon name="ri:arrow-right-line" class="size-4" />
         </NuxtLink>
@@ -526,7 +526,7 @@
             <!-- 订阅源头像 -->
             <Avatar class="size-10 flex-shrink-0">
               <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />
-              <AvatarFallback>{{ post.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
+              <AvatarFallback>{{ post.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
 
             <!-- 文章内容 -->
@@ -562,9 +562,7 @@
           <h2 id="index-changelogs-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
           <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">站点最新更新</div>
         </div>
-        <NuxtLink
-          to="/changelog"
-          class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+        <NuxtLink to="/changelog" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
           查看更多
           <Icon name="ri:arrow-right-line" class="size-4" />
         </NuxtLink>
@@ -572,10 +570,7 @@
 
       <!-- 日志列表 -->
       <div class="space-y-4">
-        <div
-          v-for="log in recentChangelogs"
-          :key="log.id"
-          class="border rounded-lg p-4 hover:shadow-md transition-all">
+        <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-md transition-all">
           <div class="flex items-start gap-3">
             <!-- 类型图标 -->
             <div :class="`size-10 rounded-full flex items-center justify-center flex-shrink-0 ${getChangelogClass(log.class)}`">
@@ -589,8 +584,7 @@
               </div>
               <div
                 class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content"
-                v-html="log.descHtml"
-              />
+                v-html="log.descHtml" />
             </div>
           </div>
         </div>
@@ -743,37 +737,37 @@ function formatDate(date: string | Date): string {
 // 格式化更新日志日期
 function formatChangelogDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
+  return d.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
 }
 
 // 获取更新日志类型对应的图标
 function getChangelogIcon(type: string): string {
   const iconMap: Record<string, string> = {
-    'new': 'lucide:sparkles',
-    'improve': 'lucide:trending-up',
-    'fix': 'lucide:wrench',
-    'remove': 'lucide:trash-2',
+    new: "lucide:sparkles",
+    improve: "lucide:trending-up",
+    fix: "lucide:wrench",
+    remove: "lucide:trash-2",
   };
-  return iconMap[type] || 'lucide:circle';
+  return iconMap[type] || "lucide:circle";
 }
 
 // 获取更新日志类型对应的样式
 function getChangelogClass(type: string): string {
   const classMap: Record<string, string> = {
-    'new': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    'improve': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    'fix': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    'remove': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    new: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    improve: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    fix: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+    remove: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
-  return classMap[type] || 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+  return classMap[type] || "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 }
 
 // 页面元数据
-const siteUrl = "https://imqi1.qi1.website";
+const siteUrl = "https://imqi1.com";
 useHead({
   title: siteName,
   meta: [
@@ -1068,7 +1062,9 @@ onUnmounted(() => {
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
-  font-family: JetBrains Mono, monospace;
+  font-family:
+    JetBrains Mono,
+    monospace;
 }
 
 .markdown-content :deep(ul),

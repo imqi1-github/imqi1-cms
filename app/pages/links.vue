@@ -12,12 +12,108 @@ const { data: siteData } = await useFetch("/api/site");
 const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
 
 // 获取友链数据
-const { data: linksData, pending, error } = await useFetch("/api/links");
+const { data: linksData, pending, error, refresh } = await useFetch("/api/links");
 const links = computed(() => linksData.value?.data || []);
 
 // 用户登录状态
 const isLoggedIn = ref(false);
 const isLoadingAuth = ref(true);
+
+// 友链检测状态
+const isCheckingLinks = ref(false);
+const linkStatuses = ref<Record<string, { status: "up" | "down" | "checking"; checkedAt: number }>>({});
+const lastCheckTime = ref<number>(0);
+const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
+
+// 从localStorage加载检测结果
+const loadLinkStatuses = () => {
+  if (import.meta.client) {
+    try {
+      const storedStatuses = localStorage.getItem("linkStatuses");
+      if (storedStatuses) {
+        linkStatuses.value = JSON.parse(storedStatuses);
+      }
+      const storedLastCheck = localStorage.getItem("lastLinkCheck");
+      if (storedLastCheck) {
+        lastCheckTime.value = parseInt(storedLastCheck, 10);
+      }
+    } catch (err) {
+      console.error("加载友链状态失败:", err);
+    }
+  }
+};
+
+// 保存检测结果到localStorage
+const saveLinkStatuses = () => {
+  if (import.meta.client) {
+    try {
+      localStorage.setItem("linkStatuses", JSON.stringify(linkStatuses.value));
+      localStorage.setItem("lastLinkCheck", lastCheckTime.value.toString());
+    } catch (err) {
+      console.error("保存友链状态失败:", err);
+    }
+  }
+};
+
+// 检测单个友链
+const checkLink = async (link: any) => {
+  if (!link.link) return;
+
+  linkStatuses.value[link.id] = {
+    status: "checking",
+    checkedAt: Date.now(),
+  };
+
+  try {
+    const response = await fetch(`/api/check-link?url=${encodeURIComponent(link.link)}`, {
+      method: "GET",
+      timeout: 10000, // 10秒超时
+    });
+
+    const result = await response.json();
+
+    linkStatuses.value[link.id] = {
+      status: result.status === "up" ? "up" : "down",
+      checkedAt: Date.now(),
+    };
+  } catch (err) {
+    linkStatuses.value[link.id] = {
+      status: "down",
+      checkedAt: Date.now(),
+    };
+  }
+};
+
+// 批量检测友链
+const checkAllLinks = async () => {
+  if (isCheckingLinks.value) return;
+
+  isCheckingLinks.value = true;
+
+  try {
+    for (const link of links.value) {
+      await checkLink(link);
+      // 避免请求过于频繁
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    lastCheckTime.value = Date.now();
+    saveLinkStatuses();
+    success("友链检测完成");
+  } catch (err) {
+    showError("检测友链失败");
+  } finally {
+    isCheckingLinks.value = false;
+  }
+};
+
+// 检查是否需要自动检测
+const checkIfNeedAutoCheck = () => {
+  const now = Date.now();
+  if (now - lastCheckTime.value >= CHECK_INTERVAL) {
+    checkAllLinks();
+  }
+};
 
 // 页面元数据
 useHead({
@@ -124,7 +220,7 @@ const handleSubmit = async () => {
 const checkAuthStatus = async () => {
   if (import.meta.client) {
     try {
-      const res = await $fetch('/api/auth/verify');
+      const res = await $fetch("/api/auth/verify");
       isLoggedIn.value = (res as any).valid || false;
     } catch {
       isLoggedIn.value = false;
@@ -138,6 +234,11 @@ const checkAuthStatus = async () => {
 onMounted(() => {
   // 检查登录状态
   checkAuthStatus();
+  // 加载友链状态
+  loadLinkStatuses();
+  // 检查是否需要自动检测
+  checkIfNeedAutoCheck();
+
   const observerOptions = {
     threshold: 0.1,
     rootMargin: "0px 0px -50px 0px",
@@ -236,10 +337,20 @@ onUnmounted(() => {
     <!-- 友链列表区域 -->
     <section class="my-8 animate-fade-in">
       <h2 class="sr-only">友链列表</h2>
-      <blockquote
-        class="border-l-4 border-blue-600 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[0.95em] px-4 py-3 my-4 rounded-sm">
-        友链顺序不分先后，每一个都值得一看。
-      </blockquote>
+      <div class="flex justify-between items-center mb-4">
+        <blockquote
+          class="border-l-4 border-blue-600 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[0.95em] px-4 py-3 rounded-sm">
+          友链顺序不分先后，每一个都值得一看。
+        </blockquote>
+        <button
+          @click="checkAllLinks"
+          :disabled="isCheckingLinks"
+          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5">
+          <Icon name="lucide:refresh-cw" class="size-4" />
+          <span v-if="isCheckingLinks">检测中...</span>
+          <span v-else>检测友链</span>
+        </button>
+      </div>
 
       <!-- 加载状态 -->
       <div v-if="pending" class="py-10 text-center">
@@ -268,8 +379,14 @@ onUnmounted(() => {
           target="_blank"
           rel="noopener"
           class="group relative flex flex-col bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
-          <!-- 左侧蓝色竖条 -->
-          <span class="absolute left-0 top-0 h-full w-1 bg-blue-600 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
+          <!-- 左侧状态条 -->
+          <span
+            class="absolute left-0 top-0 h-full w-1 transition-colors duration-300 ease-out"
+            :class="{
+              'bg-green-500': linkStatuses[link.id]?.status === 'up',
+              'bg-red-500': linkStatuses[link.id]?.status === 'down',
+              'bg-blue-600 opacity-0 group-hover:opacity-100': !linkStatuses[link.id] || linkStatuses[link.id].status === 'checking',
+            }" />
 
           <!-- 卡片头部 -->
           <div class="flex items-center gap-4 mb-4">
@@ -290,8 +407,14 @@ onUnmounted(() => {
             </div>
             <!-- 信息 -->
             <div class="flex-1 min-w-0">
-              <div class="text-[1.05em] font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">
+              <div class="text-[1.05em] font-semibold text-gray-900 dark:text-gray-100 truncate mb-1 flex items-center gap-1.5">
                 {{ link.name }}
+                <!-- 状态图标 -->
+                <div v-if="linkStatuses[link.id]" class="flex-shrink-0">
+                  <Icon v-if="linkStatuses[link.id].status === 'up'" name="lucide:check-circle-2" class="size-3 text-green-500" title="可访问" />
+                  <Icon v-else-if="linkStatuses[link.id].status === 'down'" name="lucide:x-circle" class="size-3 text-red-500" title="不可访问" />
+                  <Icon v-else name="lucide:loader-2" class="size-3 text-blue-500 animate-spin" title="检测中" />
+                </div>
               </div>
               <span
                 v-if="link.desc"
@@ -303,9 +426,15 @@ onUnmounted(() => {
 
           <!-- URL -->
           <div
-            class="flex items-center gap-1.5 text-[0.85em] text-slate-500 dark:text-slate-400 border-t border-gray-200 dark:border-gray-700 pt-3 mt-auto group-hover:text-blue-600">
-            <Icon name="ri:link" class="text-base opacity-60 transition-opacity duration-300 group-hover:opacity-100" />
-            <span class="truncate">{{ formatUrl(link.link) }}</span>
+            class="flex items-center justify-between gap-1.5 text-[0.85em] text-slate-500 dark:text-slate-400 border-t border-gray-200 dark:border-gray-700 pt-3 mt-auto group-hover:text-blue-600">
+            <div class="flex items-center gap-1.5">
+              <Icon name="ri:link" class="text-base opacity-60 transition-opacity duration-300 group-hover:opacity-100" />
+              <span class="truncate">{{ formatUrl(link.link) }}</span>
+            </div>
+            <!-- 检测时间 -->
+            <span v-if="linkStatuses[link.id]" class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+              {{ new Date(linkStatuses[link.id].checkedAt).toLocaleTimeString() }}
+            </span>
           </div>
         </a>
       </div>

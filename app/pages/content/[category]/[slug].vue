@@ -213,7 +213,7 @@ watch(
 const seoMeta = computed(() => {
   if (!post.value) return {};
 
-  const fullUrl = process.client ? window.location.href : `https://imqi1.qi1.website${route.path}`;
+  const fullUrl = process.client ? window.location.href : `https://imqi1.com${route.path}`;
 
   const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
   const description = post.value.desc || post.value.excerpt || "";
@@ -361,7 +361,7 @@ watch(
 const checkAuthStatus = async () => {
   if (import.meta.client) {
     try {
-      const res = await $fetch('/api/auth/verify');
+      const res = await $fetch("/api/auth/verify");
       isLoggedIn.value = (res as any).valid || false;
     } catch {
       isLoggedIn.value = false;

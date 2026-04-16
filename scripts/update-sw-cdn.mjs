@@ -14,7 +14,7 @@ if (existsSync(buildHashDirPath)) {
   buildHashDir = readFileSync(buildHashDirPath, 'utf-8').trim();
 }
 
-const cdnBaseURL = 'https://cdn2.imqi1.com';
+const cdnBaseURL = 'https://cdn.imqi1.com';
 const cdnURL = buildHashDir ? `${cdnBaseURL}/${buildHashDir}` : cdnBaseURL;
 
 console.log('✓ CDN URL:', cdnURL);

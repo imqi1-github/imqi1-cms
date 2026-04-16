@@ -112,7 +112,7 @@ const fontCssUrl = computed(() => {
 });
 
 // 全局 SEO 元信息
-const siteUrl = "https://imqi1.qi1.website";
+const siteUrl = "https://imqi1.com";
 const siteDescription = "做技术的分享者、生活的摄影师、时事的评论员。";
 const siteKeywords = "技术,摄影,时事,博客,编程,开发,Vue,Nuxt,JavaScript";
 
