@@ -80,6 +80,7 @@ export default defineEventHandler(async event => {
       { key: "cosRegion", value: settingsBody.cosRegion ?? "" },
       { key: "cosSourceDomain", value: settingsBody.cosSourceDomain ?? "" },
       { key: "cosCdnDomain", value: settingsBody.cosCdnDomain ?? "" },
+      { key: "cosImageSuffix", value: settingsBody.cosImageSuffix ?? "webp" },
       { key: "sessionStoreType", value: settingsBody.sessionStoreType || "memory" },
       { key: "messagePostId", value: settingsBody.messagePostId ?? "" },
     ];

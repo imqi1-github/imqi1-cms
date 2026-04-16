@@ -86,7 +86,13 @@ async function deleteAttachment() {
   if (!confirmed) return
 
   try {
-    await $fetch(`/api/attachments/${route.params.id}`, {
+    // 获取 CSRF token
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrf_token='))
+      ?.split('=')[1];
+
+    await $fetch(`/api/attachments/${route.params.id}${csrfToken ? `?csrfToken=${csrfToken}` : ''}`, {
       method: 'DELETE',
     })
     toast.success({
@@ -104,7 +110,11 @@ async function deleteAttachment() {
 // 复制链接
 const copyLink = async () => {
   if (!attachment.value?.url) return
-  const fullUrl = `${window.location.origin}${attachment.value.url}`
+
+  // 判断是否已经是完整的 URL（云存储）
+  const isFullUrl = attachment.value.url.startsWith('http://') || attachment.value.url.startsWith('https://')
+  const fullUrl = isFullUrl ? attachment.value.url : `${window.location.origin}${attachment.value.url}`
+
   try {
     await navigator.clipboard.writeText(fullUrl)
     toast.success({

@@ -195,7 +195,7 @@ function generateSignature(method: string, path: string, headers: Record<string,
 }
 
 // 上传文件到COS
-export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentType: string): Promise<CosUploadResult> {
+export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentType: string, imageSuffix?: string): Promise<CosUploadResult> {
   try {
     // 验证配置
     const validation = await validateCosConfig();
@@ -223,11 +223,40 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
       };
     }
 
+    // 处理图片后缀转换
+    let finalFileName = fileName;
+    let finalContentType = contentType;
+
+    // 检查是否是图片且需要转换后缀
+    const isImage = contentType.startsWith("image/");
+    if (isImage && imageSuffix) {
+      // 移除原扩展名，添加新后缀
+      const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+      finalFileName = `${nameWithoutExt}.${imageSuffix}`;
+
+      // 更新 Content-Type（根据新后缀）
+      const mimeTypes: Record<string, string> = {
+        webp: "image/webp",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        gif: "image/gif",
+      };
+      finalContentType = mimeTypes[imageSuffix] || contentType;
+
+      console.log("[COS上传] 图片后缀转换:", {
+        原文件名: fileName,
+        新文件名: finalFileName,
+        原类型: contentType,
+        新类型: finalContentType,
+      });
+    }
+
     // 文件路径：/uploads/年/月/文件名
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
-    const filePath = `/uploads/${year}/${month}/${fileName}`;
+    const filePath = `/uploads/${year}/${month}/${finalFileName}`;
     const url = `${domains.source}${filePath}`;
 
     // 生成Date头部（必须使用GMT格式）
@@ -239,7 +268,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
 
     // 构造请求头
     const headers: Record<string, string> = {
-      "Content-Type": contentType,
+      "Content-Type": finalContentType,
       Date: date,
       Host: host,
     };
@@ -256,7 +285,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
       url,
       filePath,
       size: fileBuffer.length,
-      contentType,
+      contentType: finalContentType,
     });
 
     // 发送PUT请求上传文件

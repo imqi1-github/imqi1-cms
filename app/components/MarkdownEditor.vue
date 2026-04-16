@@ -111,8 +111,17 @@ const handlePaste = async (event: ClipboardEvent) => {
 
       if (!file) continue
 
+      // 获取 CSRF token
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1]
+
       const formData = new FormData()
       formData.append('file', file)
+      if (csrfToken) {
+        formData.append('csrfToken', csrfToken)
+      }
 
       try {
         const res = await $fetch(`/api/attachments/upload?cid=${props.postId}`, {

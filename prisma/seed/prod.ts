@@ -76,6 +76,7 @@ const SITE_META = {
   upyunOutputMode: process.env.SEED_UPYUN_OUTPUT_MODE || "",
   upyunTokenKey: process.env.SEED_UPYUN_TOKEN_KEY || "",
   upyunTokenExpire: process.env.SEED_UPYUN_TOKEN_EXPIRE || "1800",
+  cosImageSuffix: process.env.SEED_COS_IMAGE_SUFFIX || "webp",
 };
 
 async function main() {

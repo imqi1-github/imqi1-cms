@@ -106,6 +106,15 @@ const uploadFiles = async (files: File[]) => {
       const formData = new FormData();
       formData.append("file", file);
 
+      // 获取 CSRF token
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1];
+      if (csrfToken) {
+        formData.append('csrfToken', csrfToken);
+      }
+
       try {
         const res = (await $fetch(`/api/attachments/upload?cid=${pageId.value}`, {
           method: "POST",
@@ -140,7 +149,13 @@ const deleteAttachment = async (attachment: any) => {
   if (!confirmed) return;
 
   try {
-    await $fetch(`/api/attachments/${attachment.id}`, {
+    // 获取 CSRF token
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrf_token='))
+      ?.split('=')[1];
+
+    await $fetch(`/api/attachments/${attachment.id}${csrfToken ? `?csrfToken=${csrfToken}` : ''}`, {
       method: "DELETE",
     });
 
@@ -312,7 +327,14 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // 获取 CSRF token
+  try {
+    await $fetch('/api/csrf/token');
+  } catch (error) {
+    console.error('获取 CSRF token 失败:', error);
+  }
+
   if (isEdit.value) {
     fetchPage();
   }

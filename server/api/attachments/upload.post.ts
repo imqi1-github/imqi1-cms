@@ -219,7 +219,22 @@ export default defineEventHandler(async event => {
       fileUrl = result.url!;
     } else if (uploadLocation === "cos") {
       // 腾讯云COS上传
-      const result = await uploadToCOS(buffer, fileName, file.type);
+
+      // 获取图片后缀配置
+      const imageSuffixMeta = await prisma.information.findUnique({
+        where: { key: "cosImageSuffix" },
+      });
+      const imageSuffix = imageSuffixMeta?.value || undefined;
+
+      // 如果是图片且配置了后缀，传递给上传函数
+      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+      const result = await uploadToCOS(
+        buffer,
+        fileName,
+        file.type,
+        isImage ? imageSuffix : undefined
+      );
+
       if (!result.success) {
         throw createError({
           statusCode: 500,
@@ -232,6 +247,9 @@ export default defineEventHandler(async event => {
       fileUrl = await uploadToLocal(buffer, fileName);
     }
 
+    // 获取文件类型分类
+    const category = getFileCategory(file.type);
+
     // 验证字段长度
     validateAttachmentData({
       title: file.name,
@@ -240,7 +258,6 @@ export default defineEventHandler(async event => {
     });
 
     // 保存到数据库
-    const category = getFileCategory(file.type);
     const attachment = await prisma.attachment.create({
       data: {
         cid,

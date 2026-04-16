@@ -3,20 +3,15 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取CDN配置
-    const config = useRuntimeConfig();
-    const cdnURL = config.public.cdnURL as string;
+    // const config = useRuntimeConfig();
+    // const cdnURL = config.public.cdnURL as string;
 
     // 获取请求的协议和主机
     const host = event.node.req.headers.host || "";
+    // 移除端口号，特别是443（HTTPS默认端口）和80（HTTP默认端口）
+    const hostWithoutPort = host.replace(/:(443|80)$/, "");
     const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${host}`;
-
-    // 确定样式表URL：生产环境使用CDN，开发环境使用本地路径
-    const isProd = process.env.NODE_ENV === "production";
-    const stylesheetUrl = isProd && cdnURL ? `${cdnURL}/sitemap.xsl` : "/sitemap.xsl";
-
-    console.log("[sitemap] 开始生成 sitemap, baseUrl:", baseUrl);
-    console.log("[sitemap] 使用样式表:", stylesheetUrl);
+    const baseUrl = `${protocol}://${hostWithoutPort}`;
 
     // 获取所有已发布的文章
     const posts = await prisma.post.findMany({
@@ -237,7 +232,6 @@ export default defineEventHandler(async event => {
 
     // 构建 XML
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="${stylesheetUrl}"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.join("\n")}
 </urlset>`;
@@ -252,17 +246,12 @@ ${urls.join("\n")}
 
     // 即使出错也返回基本的 sitemap
     const host = event.node.req.headers.host || "";
+    // 移除端口号，特别是443（HTTPS默认端口）和80（HTTP默认端口）
+    const hostWithoutPort = host.replace(/:(443|80)$/, "");
     const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${host}`;
-
-    // 获取CDN配置
-    const config = useRuntimeConfig();
-    const cdnURL = config.public.cdnURL as string;
-    const isProd = process.env.NODE_ENV === "production";
-    const stylesheetUrl = isProd && cdnURL ? `${cdnURL}/sitemap.xsl` : "/sitemap.xsl";
+    const baseUrl = `${protocol}://${hostWithoutPort}`;
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="${stylesheetUrl}"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>

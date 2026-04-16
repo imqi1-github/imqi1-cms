@@ -66,6 +66,7 @@ export default defineEventHandler(async event => {
       cosRegion: "",
       cosSourceDomain: "",
       cosCdnDomain: "",
+      cosImageSuffix: "webp",
       sessionStoreType: "memory",
       messagePostId: "",
     };

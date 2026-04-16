@@ -2197,7 +2197,7 @@ onUnmounted(() => {
   counter-increment: line;
   content: counter(line);
   display: inline-block;
-  width: 1.5em;
+  width: 2em;
   margin-right: 1em;
   text-align: right;
   color: rgb(156 163 175);

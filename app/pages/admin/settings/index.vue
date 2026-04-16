@@ -56,6 +56,7 @@ const settings = ref({
   cosRegion: "",
   cosSourceDomain: "",
   cosCdnDomain: "",
+  cosImageSuffix: "webp",
   sessionStoreType: "memory",
 });
 
@@ -174,6 +175,7 @@ const defaultSettings = {
   cosRegion: "",
   cosSourceDomain: "",
   cosCdnDomain: "",
+  cosImageSuffix: "webp",
   sessionStoreType: "memory",
 };
 
@@ -909,6 +911,11 @@ onMounted(() => {
                     <Label for="cosCdnDomain">CDN 加速域名（可选）</Label>
                     <Input id="cosCdnDomain" v-model="settings.cosCdnDomain" placeholder="https://cdn.example.com" />
                     <p class="text-xs text-muted-foreground">配置的 CDN 加速域名，用于外部访问文件。留空则使用源站域名</p>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="cosImageSuffix">上传后的图片后缀（可选）</Label>
+                    <Input id="cosImageSuffix" v-model="settings.cosImageSuffix" placeholder="webp" />
+                    <p class="text-xs text-muted-foreground">用于云存储自动处理图片格式。将所有上传的图片转换为该后缀，不影响视频。留空则保持原格式。默认值: webp</p>
                   </div>
                 </div>
 

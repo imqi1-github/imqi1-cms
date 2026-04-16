@@ -951,6 +951,7 @@ const metaItems = [
   { key: "upyunOutputMode", value: "" },
   { key: "upyunTokenKey", value: "" },
   { key: "upyunTokenExpire", value: "1800" },
+  { key: "cosImageSuffix", value: "webp" },
 ];
 
 async function main() {
