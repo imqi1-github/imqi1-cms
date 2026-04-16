@@ -2,8 +2,8 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
-    // 设置缓存头：CDN和浏览器缓存5分钟
-    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+    // 禁用缓存（每次都要随机，不能缓存）
+    setHeader(event, "Cache-Control", "no-cache, no-store, must-revalidate");
 
     const total = await prisma.post.count({
       where: {

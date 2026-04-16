@@ -200,46 +200,60 @@
                       class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"></div>
                   </div>
 
-                  <!-- 音乐播放器 -->
+                  <!-- 音乐播放器 - 延迟加载 -->
                   <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                    <div class="index-theme-music-box absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
-                      <MetingPlayer server="netease" type="song" id="2142943893" :listFolded="false" :mutex="true" />
-                    </div>
+                    <ClientOnly>
+                      <div class="index-theme-music-box absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
+                        <MetingPlayer server="netease" type="song" id="2142943893" :listFolded="false" :mutex="true" />
+                      </div>
+                      <template #fallback>
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-sm">
+                          音乐播放器加载中...
+                        </div>
+                      </template>
+                    </ClientOnly>
                   </div>
 
-                  <!-- 文章预览 -->
-                  <div v-else-if="rightItem.type === 'article'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                    <div v-if="randomPost" class="index-theme-article-box flex flex-col w-full h-full justify-center">
-                      <!-- 封面 -->
-                      <div
-                        v-if="randomPost.covers && randomPost.covers.length > 0"
-                        class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
-                        <img
-                          :src="randomPost.covers[0].url || randomPost.covers[0]"
-                          :alt="randomPost.title"
-                          class="w-full h-full object-cover"
-                          loading="lazy" />
+                  <!-- 文章预览 - 客户端渲染以确保随机性 -->
+                  <ClientOnly>
+                    <div v-if="rightItem.type === 'article'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
+                      <div v-if="randomPost" class="index-theme-article-box flex flex-col w-full h-full justify-center">
+                        <!-- 封面 -->
+                        <div
+                          v-if="randomPost.covers && randomPost.covers.length > 0"
+                          class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
+                          <img
+                            :src="randomPost.covers[0].url || randomPost.covers[0]"
+                            :alt="randomPost.title"
+                            class="w-full h-full object-cover"
+                            loading="lazy" />
+                        </div>
+                        <!-- 标题 -->
+                        <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-2 mb-2">
+                          {{ randomPost.title }}
+                        </h3>
+                        <!-- 描述 -->
+                        <p v-if="randomPost.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-3">
+                          {{ randomPost.desc }}
+                        </p>
+                        <p v-else class="text-slate-400 dark:text-gray-500 text-sm italic">暂无描述</p>
+                        <!-- 链接 -->
+                        <NuxtLink
+                          :to="`/content/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
+                          class="pt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline">
+                          阅读全文 →
+                        </NuxtLink>
                       </div>
-                      <!-- 标题 -->
-                      <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-2 mb-2">
-                        {{ randomPost.title }}
-                      </h3>
-                      <!-- 描述 -->
-                      <p v-if="randomPost.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-3">
-                        {{ randomPost.desc }}
-                      </p>
-                      <p v-else class="text-slate-400 dark:text-gray-500 text-sm italic">暂无描述</p>
-                      <!-- 链接 -->
-                      <NuxtLink
-                        :to="`/content/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
-                        class="pt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline">
-                        阅读全文 →
-                      </NuxtLink>
+                      <div v-else class="index-theme-article-box flex flex-col items-center justify-center h-full w-full">
+                        <div class="text-slate-500 dark:text-gray-400 text-sm">暂无文章</div>
+                      </div>
                     </div>
-                    <div v-else class="index-theme-article-box flex flex-col items-center justify-center h-full w-full">
-                      <div class="text-slate-500 dark:text-gray-400 text-sm">暂无文章</div>
-                    </div>
-                  </div>
+                    <template #fallback>
+                      <div class="index-theme-box relative h-75 w-75 flex items-center justify-center">
+                        <div class="text-slate-400 dark:text-gray-500 text-sm">文章加载中...</div>
+                      </div>
+                    </template>
+                  </ClientOnly>
                 </div>
               </div>
             </div>
@@ -669,8 +683,9 @@ const siteName = computed(() => homeData.value?.data?.site?.siteName || "ImQi1")
 // 分类信息
 const categories = computed(() => homeData.value?.data?.categories || []);
 
-// 随机文章
-const randomPost = computed(() => homeData.value?.data?.randomPost);
+// 随机文章 - 客户端单独加载（避免ISR缓存导致不随机）
+const { data: randomPostData } = await useFetch("/api/random-post");
+const randomPost = computed(() => randomPostData.value?.data);
 
 // 最新文章
 const recentPosts = computed(() => homeData.value?.data?.recentPosts || []);

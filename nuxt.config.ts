@@ -13,6 +13,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   rootDir: ".",
 
+  // 禁用开发环境的ISR payload缓存（避免目录错误）
+  experimental: {
+    payloadExtraction: false,
+  },
+
   // 禁用 sourcemap 以减少构建时间和内存占用
   sourcemap: false,
 
@@ -156,6 +161,21 @@ export default defineNuxtConfig({
     buildAssetsDir: "/_nuxt/",
     cdnURL: cdnURL,
     head: {
+      link: [
+        {
+          rel: "preconnect",
+          href: "https://cdn.imqi1.com"
+        },
+        {
+          rel: "dns-prefetch",
+          href: "https://cdn.imqi1.com"
+        },
+        {
+          rel: "preload",
+          as: "image",
+          href: "/imgs/avatar.webp"
+        }
+      ],
       script: [
         {
           innerHTML: `
@@ -263,10 +283,63 @@ export default defineNuxtConfig({
   },
   // 安全头配置（仅生产环境）
   routeRules: {
+    // ========== ISR（增量静态再生成）配置 ==========
+    // 注意：ISR在开发环境可能不稳定，建议生产环境启用
+    ...(import.meta.env.PROD ? {
+      // 首页：每5分钟重新生成一次（推荐）
+      "/": { isr: 300 },
+
+      // 文章归档：每10分钟重新生成
+      "/archiving": { isr: 600 },
+
+      // 分类页：每10分钟重新生成
+      "/category/**": { isr: 600 },
+
+      // 文章详情：完全静态（发布后内容不变，永久缓存）
+      "/content/**": { isr: true },
+
+      // 标签页：每15分钟重新生成
+      "/tag/**": { isr: 900 },
+
+      // 订阅页：每10分钟重新生成
+      "/subscribes": { isr: 600 },
+
+      // 更新日志：每30分钟重新生成
+      "/changelog": { isr: 1800 },
+
+      // 协议页面：完全静态
+      "/agreement": { isr: true },
+
+      // 站点地图：每小时重新生成
+      "/sitemap": { isr: 3600 },
+      "/sitemap.xml": { isr: 3600 },
+    } : {
+      // 开发环境：禁用ISR，使用普通SSR
+      "/": { isr: false },
+      "/archiving": { isr: false },
+      "/category/**": { isr: false },
+      "/content/**": { isr: false },
+      "/tag/**": { isr: false },
+      "/subscribes": { isr: false },
+      "/changelog": { isr: false },
+      "/agreement": { isr: false },
+      "/sitemap": { isr: false },
+      "/sitemap.xml": { isr: false },
+    }),
+
+    // ========== SSR配置 ==========
     // 登录页面禁用 SSR，避免 hydration 不匹配
     "/login": {
       ssr: false,
     },
+
+    // 管理后台：禁用ISR，保持实时数据
+    "/admin/**": {
+      isr: false,
+      ssr: true,
+    },
+
+    // ========== 全局安全头配置 ==========
     "/**": {
       headers: import.meta.env.PROD ? {
         // 生产环境下的 CSP 配置

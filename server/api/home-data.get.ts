@@ -64,7 +64,7 @@ export default defineEventHandler(async event => {
         }))
       ),
 
-      // 3. 获取最新6篇文章
+      // 3. 获取最新6篇文章（排除图片分类）
       (async () => {
         const photoCategoryMeta = await prisma.information.findUnique({
           where: { key: "photoCategorySlug" },
@@ -144,7 +144,7 @@ export default defineEventHandler(async event => {
         });
       })(),
 
-      // 4. 获取分类文章（3个分类，每个4篇）
+      // 4. 获取分类文章（3个分类，每个4篇，排除最新6篇中已展示的）
       (async () => {
         const photoCategoryMeta = await prisma.information.findUnique({
           where: { key: "photoCategorySlug" },
@@ -157,16 +157,7 @@ export default defineEventHandler(async event => {
         });
         const photoCategoryMid = photoCategory?.mid;
 
-        const categories = await prisma.meta.findMany({
-          where: {
-            type: "category",
-            ...(photoCategoryMid && { mid: { not: photoCategoryMid } }),
-          },
-          orderBy: { mid: "asc" },
-          take: 3,
-          select: { mid: true, name: true, slug: true, desc: true },
-        });
-
+        // 先获取最新6篇文章的cid（用于排除）
         const recentPosts = await prisma.post.findMany({
           where: {
             type: 0,
@@ -183,52 +174,57 @@ export default defineEventHandler(async event => {
         });
         const excludeCids = recentPosts.map(p => p.cid);
 
-        const allPosts = await prisma.post.findMany({
+        const categories = await prisma.meta.findMany({
           where: {
-            type: 0,
-            status: 1,
-            cid: { notIn: excludeCids },
-            postrelation: {
-              some: {
-                mid: { in: categories.map(c => c.mid) },
-              },
-            },
+            type: "category",
+            ...(photoCategoryMid && { mid: { not: photoCategoryMid } }),
           },
-          take: 12,
-          orderBy: { create_time: "desc" },
-          select: {
-            cid: true,
-            title: true,
-            slug: true,
-            desc: true,
-            covers: true,
-            create_time: true,
-            comment_num: true,
-            postrelation: {
+          orderBy: { mid: "asc" },
+          take: 3,
+          select: { mid: true, name: true, slug: true, desc: true },
+        });
+
+        // 为每个分类独立获取最新的4篇文章（排除最新6篇）
+        const result = await Promise.all(
+          categories.map(async category => {
+            const posts = await prisma.post.findMany({
+              where: {
+                type: 0,
+                status: 1,
+                cid: { notIn: excludeCids }, // 排除最新6篇
+                postrelation: {
+                  some: { mid: category.mid },
+                },
+              },
+              take: 4,
+              orderBy: { create_time: "desc" },
               select: {
-                mid: true,
-                meta: {
+                cid: true,
+                title: true,
+                slug: true,
+                desc: true,
+                covers: true,
+                create_time: true,
+                comment_num: true,
+                postrelation: {
                   select: {
                     mid: true,
-                    name: true,
-                    slug: true,
-                    type: true,
+                    meta: {
+                      select: {
+                        mid: true,
+                        name: true,
+                        slug: true,
+                        type: true,
+                      },
+                    },
                   },
                 },
               },
-            },
-          },
-        });
+            });
 
-        return categories
-          .map(category => {
-            const categoryPosts = allPosts
-              .filter(post => post.postrelation.some(r => r.mid === category.mid))
-              .slice(0, 4);
+            if (posts.length === 0) return null;
 
-            if (categoryPosts.length === 0) return null;
-
-            const mappedPosts = categoryPosts.map(post => {
+            const mappedPosts = posts.map(post => {
               const tags = post.postrelation
                 .filter(r => r.meta.type === "tag")
                 .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
@@ -264,7 +260,9 @@ export default defineEventHandler(async event => {
               posts: mappedPosts,
             };
           })
-          .filter(r => r !== null);
+        );
+
+        return result.filter(r => r !== null);
       })(),
 
       // 5. 获取图片文章（4篇）
@@ -360,60 +358,7 @@ export default defineEventHandler(async event => {
         ),
     ]);
 
-    // 8. 获取随机文章（需要总文章数）
-    const total = await prisma.post.count({
-      where: { type: 0, status: 1 },
-    });
-
-    let randomPostData = null;
-    if (total > 0) {
-      const skip = Math.floor(Math.random() * total);
-      const posts = await prisma.post.findMany({
-        where: { type: 0, status: 1 },
-        skip,
-        take: 1,
-        include: {
-          postrelation: {
-            select: {
-              meta: {
-                select: {
-                  name: true,
-                  slug: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      const post = posts[0];
-      if (post) {
-        const category = post.postrelation[0]?.meta;
-
-        let covers: { url: string; desc?: string }[] = [];
-        if (post.covers) {
-          try {
-            covers = JSON.parse(post.covers);
-          } catch {
-            covers = [];
-          }
-        }
-
-        randomPostData = {
-          cid: post.cid,
-          title: post.title,
-          slug: post.slug,
-          desc: post.desc,
-          covers,
-          category: category
-            ? {
-                name: category.name,
-                slug: category.slug,
-              }
-            : null,
-        };
-      }
-    }
+    // 注意：随机文章已移除（在客户端单独加载，避免ISR缓存导致不随机）
 
     // 返回所有数据
     return {
@@ -426,7 +371,7 @@ export default defineEventHandler(async event => {
         photoPosts: photoPostsData,
         subscribePosts: subscribePostsData,
         changelogs: changelogsData,
-        randomPost: randomPostData,
+        // randomPost 已移除，改为客户端单独请求
       },
     };
   } catch (error) {
