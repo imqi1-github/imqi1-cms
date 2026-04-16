@@ -408,11 +408,11 @@ onUnmounted(() => {
               <div class="text-[1.05em] font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">
                 {{ link.name }}
               </div>
-              <span
+              <div
                 v-if="link.desc"
-                class="inline-block bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-[0.75em] rounded px-1.5 py-0.5">
+                class="text-slate-600 dark:text-slate-400 text-[0.75em]">
                 {{ link.desc }}
-              </span>
+              </div>
             </div>
           </div>
 

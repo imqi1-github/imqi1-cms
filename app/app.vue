@@ -37,7 +37,7 @@ nuxtApp.hook("page:start", () => {
   // 设置定时器，1秒后显示加载提示
   loadingTimeoutTimer = setTimeout(() => {
     showLoadingTimeout.value = true;
-  }, 100);
+  }, 1000);
 });
 
 // 监听页面加载完成
