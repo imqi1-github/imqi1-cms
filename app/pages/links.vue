@@ -379,14 +379,12 @@ onUnmounted(() => {
           target="_blank"
           rel="noopener"
           class="group relative flex flex-col bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
-          <!-- 左侧状态条 -->
-          <span
-            class="absolute left-0 top-0 h-full w-1 transition-colors duration-300 ease-out"
-            :class="{
-              'bg-green-500': linkStatuses[link.id]?.status === 'up',
-              'bg-red-500': linkStatuses[link.id]?.status === 'down',
-              'bg-blue-600 opacity-0 group-hover:opacity-100': !linkStatuses[link.id] || linkStatuses[link.id].status === 'checking',
-            }" />
+          <!-- 状态图标 -->
+          <div v-if="linkStatuses[link.id]" class="absolute top-3 right-3 flex-shrink-0 z-10">
+            <Icon v-if="linkStatuses[link.id].status === 'up'" name="lucide:check-circle-2" class="size-4 text-green-500" title="可访问" />
+            <Icon v-else-if="linkStatuses[link.id].status === 'down'" name="lucide:x-circle" class="size-4 text-red-500" title="不可访问" />
+            <Icon v-else name="lucide:loader-2" class="size-4 text-blue-500 animate-spin" title="检测中" />
+          </div>
 
           <!-- 卡片头部 -->
           <div class="flex items-center gap-4 mb-4">
@@ -407,14 +405,8 @@ onUnmounted(() => {
             </div>
             <!-- 信息 -->
             <div class="flex-1 min-w-0">
-              <div class="text-[1.05em] font-semibold text-gray-900 dark:text-gray-100 truncate mb-1 flex items-center gap-1.5">
+              <div class="text-[1.05em] font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">
                 {{ link.name }}
-                <!-- 状态图标 -->
-                <div v-if="linkStatuses[link.id]" class="flex-shrink-0">
-                  <Icon v-if="linkStatuses[link.id].status === 'up'" name="lucide:check-circle-2" class="size-3 text-green-500" title="可访问" />
-                  <Icon v-else-if="linkStatuses[link.id].status === 'down'" name="lucide:x-circle" class="size-3 text-red-500" title="不可访问" />
-                  <Icon v-else name="lucide:loader-2" class="size-3 text-blue-500 animate-spin" title="检测中" />
-                </div>
               </div>
               <span
                 v-if="link.desc"
