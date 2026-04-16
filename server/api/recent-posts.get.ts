@@ -5,6 +5,9 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
     const limit = Number(query.limit) || 6;
 
+    // 设置缓存头：CDN和浏览器缓存5分钟
+    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+
     // 获取图片分类设置
     const photoCategoryMeta = await prisma.information.findUnique({
       where: { key: "photoCategorySlug" },

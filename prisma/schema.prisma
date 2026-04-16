@@ -35,6 +35,8 @@ model changelog {
   class       String
   desc        String   @db.Text
   create_time DateTime @default(now())
+
+  @@index([create_time], map: "Changelog_create_time_idx")
 }
 
 model comment {
@@ -102,7 +104,8 @@ model postrelation {
   meta meta @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
 
   @@id([cid, mid])
-  @@index([mid], map: "PostRelation_mid_fkey")
+  @@index([mid, cid], map: "PostRelation_mid_cid_idx")
+  @@index([cid], map: "PostRelation_cid_fkey")
 }
 
 model session {

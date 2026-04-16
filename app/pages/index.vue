@@ -660,37 +660,32 @@ const handleTocScroll = () => {
   }
 };
 
-// 获取站点信息
-const { data } = await useFetch("/api/site");
-const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+// 优化：使用聚合API一次性获取所有首页数据
+const { data: homeData } = await useFetch("/api/home-data");
 
-// 获取分类信息（前4个）
-const { data: categoriesData } = await useFetch("/api/categories?limit=4");
-const categories = computed(() => categoriesData.value?.data || []);
+// 站点信息
+const siteName = computed(() => homeData.value?.data?.site?.siteName || "ImQi1");
 
-// 获取随机文章
-const { data: randomPostData } = await useFetch("/api/random-post");
-const randomPost = computed(() => randomPostData.value?.data);
+// 分类信息
+const categories = computed(() => homeData.value?.data?.categories || []);
 
-// 获取最新文章
-const { data: recentPostsData } = await useFetch("/api/recent-posts?limit=6");
-const recentPosts = computed(() => recentPostsData.value?.data || []);
+// 随机文章
+const randomPost = computed(() => homeData.value?.data?.randomPost);
 
-// 获取图片文章
-const { data: photoPostsData } = await useFetch("/api/photo-posts?limit=4");
-const photoPosts = computed(() => photoPostsData.value?.data || []);
+// 最新文章
+const recentPosts = computed(() => homeData.value?.data?.recentPosts || []);
 
-// 获取分类文章（mid最小的3个分类，每个分类最新4篇，排除最新发布中的文章）
-const { data: categoryRecentPostsData } = await useFetch("/api/category-recent-posts?limit=4");
-const categoryRecentPosts = computed(() => categoryRecentPostsData.value?.data || []);
+// 图片文章
+const photoPosts = computed(() => homeData.value?.data?.photoPosts || []);
 
-// 获取订阅文章（最新3篇）
-const { data: subscribePostsData } = await useFetch("/api/subscribes?limit=3");
-const subscribePosts = computed(() => subscribePostsData.value?.data || []);
+// 分类文章
+const categoryRecentPosts = computed(() => homeData.value?.data?.categoryRecentPosts || []);
 
-// 获取更新日志（最新4条，简化格式）
-const { data: changelogsData } = await useFetch("/api/changelog?limit=4&simple=true");
-const recentChangelogs = computed(() => changelogsData.value?.data || []);
+// 订阅文章
+const subscribePosts = computed(() => homeData.value?.data?.subscribePosts || []);
+
+// 更新日志
+const recentChangelogs = computed(() => homeData.value?.data?.changelogs || []);
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
@@ -793,10 +788,10 @@ useHead({
 });
 
 // 首页Hero下文字
-const homeAnnounce = computed(() => data.value?.data?.homeCustomText || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>");
+const homeAnnounce = computed(() => homeData.value?.data?.site?.homeCustomText || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>");
 
 // 图片分类slug
-const photoCategorySlug = computed(() => data.value?.data?.photoCategorySlug || "shot");
+const photoCategorySlug = computed(() => homeData.value?.data?.site?.photoCategorySlug || "shot");
 
 // 联系链接配置
 const contactLinks = ref([

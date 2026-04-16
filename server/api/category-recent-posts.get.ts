@@ -6,6 +6,9 @@ export default defineEventHandler(async event => {
     const limit = Number(query.limit) || 4; // 每个分类的文章数量
     const categoryCount = 3; // 取前3个mid最小的分类
 
+    // 设置缓存头：CDN和浏览器缓存10分钟
+    setHeader(event, "Cache-Control", "public, max-age=600, s-maxage=600");
+
     // 获取图片分类设置，用于排除
     const photoCategoryMeta = await prisma.information.findUnique({
       where: { key: "photoCategorySlug" },
@@ -61,90 +64,95 @@ export default defineEventHandler(async event => {
     });
     const excludeCids = recentPosts.map(p => p.cid);
 
-    // 为每个分类获取最新文章
-    const result = await Promise.all(
-      categories.map(async category => {
-        const posts = await prisma.post.findMany({
-          where: {
-            type: 0, // 0: 文章
-            status: 1,
-            cid: { notIn: excludeCids },
-            postrelation: {
-              some: {
-                mid: category.mid,
-              },
-            },
+    // 优化：一次性获取所有分类的文章，而不是为每个分类单独查询
+    const allPosts = await prisma.post.findMany({
+      where: {
+        type: 0, // 0: 文章
+        status: 1,
+        cid: { notIn: excludeCids },
+        postrelation: {
+          some: {
+            mid: { in: categories.map(c => c.mid) },
           },
-          take: limit,
-          orderBy: {
-            create_time: "desc",
-          },
+        },
+      },
+      take: limit * categories.length, // 最多获取所有分类的文章数
+      orderBy: {
+        create_time: "desc",
+      },
+      select: {
+        cid: true,
+        title: true,
+        slug: true,
+        desc: true,
+        covers: true,
+        create_time: true,
+        comment_num: true,
+        postrelation: {
           select: {
             cid: true,
-            title: true,
-            slug: true,
-            desc: true,
-            covers: true,
-            create_time: true,
-            comment_num: true,
-            postrelation: {
+            mid: true,
+            meta: {
               select: {
-                cid: true,
                 mid: true,
-                meta: {
-                  select: {
-                    mid: true,
-                    name: true,
-                    slug: true,
-                    type: true,
-                  },
-                },
+                name: true,
+                slug: true,
+                type: true,
               },
             },
           },
-        });
+        },
+      },
+    });
 
-        const mappedPosts = posts.map(post => {
-          // 只获取标签（不获取分类，因为已经在分类页面了）
-          const tags = post.postrelation
-            .filter(r => r.meta.type === "tag")
-            .map(r => ({
-              name: r.meta.name,
-              slug: r.meta.slug,
-            }));
+    // 在应用层进行分组和处理
+    const result = categories.map(category => {
+      // 过滤出属于当前分类的文章
+      const categoryPosts = allPosts.filter(post =>
+        post.postrelation.some(r => r.mid === category.mid)
+      ).slice(0, limit); // 每个分类只取指定数量
 
-          let covers: { url: string; desc?: string }[] = [];
-          if (post.covers) {
-            try {
-              covers = JSON.parse(post.covers);
-            } catch {
-              covers = [];
-            }
+      // 处理文章数据
+      const mappedPosts = categoryPosts.map(post => {
+        // 只获取标签（不获取分类，因为已经在分类页面了）
+        const tags = post.postrelation
+          .filter(r => r.meta.type === "tag")
+          .map(r => ({
+            name: r.meta.name,
+            slug: r.meta.slug,
+          }));
+
+        let covers: { url: string; desc?: string }[] = [];
+        if (post.covers) {
+          try {
+            covers = JSON.parse(post.covers);
+          } catch {
+            covers = [];
           }
-
-          return {
-            cid: post.cid,
-            title: post.title,
-            slug: post.slug,
-            desc: post.desc,
-            covers,
-            created: post.create_time,
-            commentsNum: post.comment_num || 0,
-            tags,
-          };
-        });
+        }
 
         return {
-          category: {
-            mid: category.mid,
-            name: category.name,
-            desc: category.desc,
-            slug: category.slug,
-          },
-          posts: mappedPosts,
+          cid: post.cid,
+          title: post.title,
+          slug: post.slug,
+          desc: post.desc,
+          covers,
+          created: post.create_time,
+          commentsNum: post.comment_num || 0,
+          tags,
         };
-      }),
-    );
+      });
+
+      return {
+        category: {
+          mid: category.mid,
+          name: category.name,
+          desc: category.desc,
+          slug: category.slug,
+        },
+        posts: mappedPosts,
+      };
+    });
 
     // 过滤掉没有文章的分类
     const filteredResult = result.filter(r => r.posts.length > 0);
