@@ -572,9 +572,9 @@
       <div class="space-y-4">
         <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-md transition-all">
           <div class="flex items-start gap-3">
-            <!-- 类型图标 -->
-            <div :class="`size-10 rounded-full flex items-center justify-center flex-shrink-0 ${getChangelogClass(log.class)}`">
-              <Icon :name="getChangelogIcon(log.class)" class="size-5" />
+            <!-- 类型文字标签 -->
+            <div :class="`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${getClassInfo(log.class).color}`">
+              {{ getClassInfo(log.class).label }}
             </div>
 
             <!-- 日志内容 -->
@@ -744,26 +744,16 @@ function formatChangelogDate(date: string | Date): string {
   });
 }
 
-// 获取更新日志类型对应的图标
-function getChangelogIcon(type: string): string {
-  const iconMap: Record<string, string> = {
-    new: "lucide:sparkles",
-    improve: "lucide:trending-up",
-    fix: "lucide:wrench",
-    remove: "lucide:trash-2",
+function getClassInfo(classType: string) {
+  const classMap: Record<string, { color: string; icon: string; label: string }> = {
+    新增: { color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: "lucide:plus-circle", label: "新增" },
+    优化: { color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", icon: "lucide:zap", label: "优化" },
+    修复: { color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: "lucide:bug", label: "修复" },
+    删除: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "lucide:trash-2", label: "删除" },
+    重构: { color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "lucide:refresh-cw", label: "重构" },
   };
-  return iconMap[type] || "lucide:circle";
-}
 
-// 获取更新日志类型对应的样式
-function getChangelogClass(type: string): string {
-  const classMap: Record<string, string> = {
-    new: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    improve: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    fix: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-    remove: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  };
-  return classMap[type] || "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
+  return classMap[classType] || { color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400", icon: "lucide:circle", label: classType };
 }
 
 // 页面元数据
@@ -1067,9 +1057,46 @@ onUnmounted(() => {
     monospace;
 }
 
-.markdown-content :deep(ul),
+.markdown-content :deep(ul) {
+  padding-left: 1.5em;
+  list-style-type: disc;
+}
+
 .markdown-content :deep(ol) {
   padding-left: 1.5em;
+  list-style-type: decimal;
+}
+
+.markdown-content :deep(li) {
+  line-height: 1.6;
+}
+
+.markdown-content :deep(ul ul),
+.markdown-content :deep(ol ul) {
+  list-style-type: circle;
+}
+
+.markdown-content :deep(ul ul ul),
+.markdown-content :deep(ol ul ul) {
+  list-style-type: square;
+}
+
+.markdown-content :deep(ol ol ol) {
+  list-style-type: lower-roman;
+}
+
+/* 深色模式 Markdown 样式 */
+.dark .markdown-content :deep(strong) {
+  color: rgb(255 255 255);
+}
+
+.dark .markdown-content :deep(s) {
+  color: rgb(148 163 184);
+}
+
+.dark .markdown-content :deep(code) {
+  background-color: rgb(30 41 59);
+  color: rgb(255 255 255);
 }
 
 /* 响应式调整 */
