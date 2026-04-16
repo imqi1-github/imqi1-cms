@@ -91,6 +91,10 @@ export class FileSessionStore implements SessionStore {
   }
 
   async set(sessionId: string, data: SessionData): Promise<void> {
+    // 确保目录存在
+    if (!fs.existsSync(this.sessionsDir)) {
+      fs.mkdirSync(this.sessionsDir, { recursive: true });
+    }
     const filePath = this.getFilePath(sessionId);
     fs.writeFileSync(filePath, JSON.stringify(data), "utf-8");
   }
@@ -103,6 +107,10 @@ export class FileSessionStore implements SessionStore {
   }
 
   async clearUserSessions(userId: number): Promise<void> {
+    // 确保目录存在
+    if (!fs.existsSync(this.sessionsDir)) {
+      return;
+    }
     const files = fs.readdirSync(this.sessionsDir);
     for (const file of files) {
       if (file.endsWith(".json")) {
@@ -121,6 +129,10 @@ export class FileSessionStore implements SessionStore {
   }
 
   async cleanup(): Promise<void> {
+    // 确保目录存在
+    if (!fs.existsSync(this.sessionsDir)) {
+      return;
+    }
     const now = Date.now();
     const files = fs.readdirSync(this.sessionsDir);
     for (const file of files) {
