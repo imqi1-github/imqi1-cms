@@ -255,7 +255,33 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    compressPublicAssets: true,
+    // 禁用资源预压缩（不生成 .br 和 .gz 文件）
+    compressPublicAssets: false,
+
+    // ISR 缓存存储配置：Redis 优先，文件系统后备
+    storage: {
+      // Redis 缓存（主存储）
+      redis: {
+        driver: 'redis',
+        // 从环境变量读取配置
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD,
+        db: Number(process.env.REDIS_DB) || 0,
+        // 连接池配置
+        maxRetriesPerRequest: 3,
+        retryStrategy(times) {
+          if (times > 3) return null;
+          return Math.min(times * 100, 3000);
+        }
+      },
+      // 文件系统缓存（后备存储）
+      cache: {
+        driver: 'fs',
+        base: './.data/cache'
+      }
+    },
+
     // 复制根目录的 data 文件夹到构建输出（不经过 Vite 处理）
     publicAssets: [
       {

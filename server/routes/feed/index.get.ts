@@ -28,12 +28,29 @@ export default defineEventHandler(async event => {
         status: 1,
         type: 0,
       },
-      include: {
+      select: {
+        cid: true,
+        slug: true,
+        title: true,
+        desc: true,
+        content: true,
+        create_time: true,
+        covers: true,
         user: {
           select: {
             nickname: true,
             name: true,
           },
+        },
+        postrelation: {
+          select: {
+            meta: {
+              select: {
+                slug: true,
+              },
+            },
+          },
+          take: 1, // 只取第一个分类
         },
       },
       orderBy: {
@@ -43,14 +60,19 @@ export default defineEventHandler(async event => {
     });
 
     // 获取请求的协议和主机
-    const host = event.node.req.headers.host || "";
+    let host = event.node.req.headers.host || "";
+    // 移除标准端口号（443 和 80）
+    host = host.replace(/:(443|80)$/, "");
+
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = siteUrl || `${protocol}://${host}`;
 
     // 生成 RSS XML
     const rssItems = posts
       .map(post => {
-        const postUrl = `${baseUrl}/content/${post.slug || post.cid}`;
+        // 获取第一个关联分类的 slug，如果没有则使用 'default'
+        const categorySlug = post.postrelation?.[0]?.meta?.slug || "default";
+        const postUrl = `${baseUrl}/content/${categorySlug}/${post.slug || post.cid}`;
         const author = post.user?.nickname || post.user?.name || "Admin";
         const pubDate = new Date(post.create_time).toUTCString();
 
@@ -61,6 +83,34 @@ export default defineEventHandler(async event => {
             ? post.content.replace(/<[^>]*>/g, "").substring(0, 200)
             : "";
 
+        // 解析封面图片
+        let coverImage = "";
+        let mediaContent = "";
+        let enclosure = "";
+
+        if (post.covers) {
+          try {
+            const covers = JSON.parse(post.covers);
+            if (Array.isArray(covers) && covers.length > 0) {
+              // 获取第一张封面
+              const firstCover = typeof covers[0] === "string" ? covers[0] : covers[0]?.url;
+              if (firstCover) {
+                coverImage = firstCover;
+
+                // Media RSS 内容标签
+                mediaContent = `    <media:content url="${coverImage}" medium="image" type="image/jpeg">
+      <media:title><![CDATA[${post.title}]]></media:title>
+    </media:content>`;
+
+                // 标准 enclosure 标签（用于兼容性）
+                enclosure = `    <enclosure url="${coverImage}" type="image/jpeg" length="0" />`;
+              }
+            }
+          } catch (e) {
+            // 解析失败，忽略封面
+          }
+        }
+
         return `
     <item>
       <title><![CDATA[${post.title}]]></title>
@@ -69,6 +119,8 @@ export default defineEventHandler(async event => {
       <author><![CDATA[${author}]]></author>
       <guid isPermaLink="true">${postUrl}</guid>
       <pubDate>${pubDate}</pubDate>
+${enclosure}
+${mediaContent}
     </item>`;
       })
       .join("\n");
@@ -76,7 +128,9 @@ export default defineEventHandler(async event => {
     const lastBuildDate = posts.length > 0 ? new Date(posts[0].create_time).toUTCString() : new Date().toUTCString();
 
     const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title><![CDATA[${siteName}]]></title>
     <link>${baseUrl}</link>

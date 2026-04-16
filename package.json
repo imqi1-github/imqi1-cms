@@ -53,6 +53,7 @@
     "dotenv": "^17.4.1",
     "fast-xml-parser": "^5.5.10",
     "floating-vue": "^5.2.2",
+    "ioredis": "^5.10.1",
     "isomorphic-dompurify": "^3.8.0",
     "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.1.1",
