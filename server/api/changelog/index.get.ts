@@ -19,18 +19,37 @@ function renderSimpleMarkdown(content: string): string {
 
 export default defineEventHandler(async event => {
   try {
-    // 获取所有更新日志，按时间倒序
-    const changelogs = await prisma.changelog.findMany({
+    const query = getQuery(event);
+    const limit = query.limit ? parseInt(query.limit as string) : undefined;
+    const simple = query.simple === 'true'; // 是否返回简化格式（不分组）
+
+    // 获取更新日志，按时间倒序
+    const changelogsQuery: any = {
       orderBy: {
         create_time: "desc",
       },
-    });
+    };
+
+    // 如果指定了limit，只获取前N条
+    if (limit) {
+      changelogsQuery.take = limit;
+    }
+
+    const changelogs = await prisma.changelog.findMany(changelogsQuery);
 
     // 渲染所有 Markdown 内容（简化版，仅支持基础格式）
     const changelogsHtml = changelogs.map(log => ({
       ...log,
       descHtml: renderSimpleMarkdown(log.desc || ""),
     }));
+
+    // 如果是simple模式，直接返回未分组的数组
+    if (simple) {
+      return {
+        success: true,
+        data: changelogsHtml,
+      };
+    }
 
     // 按月份分组
     const grouped = changelogsHtml.reduce((acc, log) => {

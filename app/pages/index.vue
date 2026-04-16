@@ -495,6 +495,108 @@
       </div>
     </section>
 
+    <!-- 间隔 -->
+    <div class="h-37.5"></div>
+
+    <!-- 订阅文章 -->
+    <section v-if="subscribePosts.length > 0" class="index-subscribe-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-subscribe-posts-title">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 id="index-subscribe-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
+          <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
+        </div>
+        <NuxtLink
+          to="/subscribes"
+          class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+          查看更多
+          <Icon name="ri:arrow-right-line" class="size-4" />
+        </NuxtLink>
+      </div>
+
+      <!-- 文章列表 -->
+      <div class="space-y-4">
+        <a
+          v-for="post in subscribePosts"
+          :key="post.id"
+          :href="post.link"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all no-underline group">
+          <div class="flex items-start gap-3">
+            <!-- 订阅源头像 -->
+            <Avatar class="size-10 flex-shrink-0">
+              <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />
+              <AvatarFallback>{{ post.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
+            </Avatar>
+
+            <!-- 文章内容 -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm text-muted-foreground">{{ post.subscribeName }}</span>
+                <span v-if="post.pubDate" class="text-xs text-muted-foreground">
+                  {{ formatDate(post.pubDate) }}
+                </span>
+              </div>
+              <h3 class="text-base font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                {{ post.title }}
+              </h3>
+              <p v-if="post.description" class="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {{ post.description }}
+              </p>
+            </div>
+
+            <!-- 外部链接图标 -->
+            <Icon name="lucide:external-link" class="size-5 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 间隔 -->
+    <div v-if="subscribePosts.length > 0" class="h-37.5"></div>
+
+    <!-- 更新日志 -->
+    <section v-if="recentChangelogs.length > 0" class="index-changelogs mx-auto max-w-275 animate-fade-in" aria-labelledby="index-changelogs-title">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 id="index-changelogs-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
+          <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">站点最新更新</div>
+        </div>
+        <NuxtLink
+          to="/changelog"
+          class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+          查看更多
+          <Icon name="ri:arrow-right-line" class="size-4" />
+        </NuxtLink>
+      </div>
+
+      <!-- 日志列表 -->
+      <div class="space-y-4">
+        <div
+          v-for="log in recentChangelogs"
+          :key="log.id"
+          class="border rounded-lg p-4 hover:shadow-md transition-all">
+          <div class="flex items-start gap-3">
+            <!-- 类型图标 -->
+            <div :class="`size-10 rounded-full flex items-center justify-center flex-shrink-0 ${getChangelogClass(log.class)}`">
+              <Icon :name="getChangelogIcon(log.class)" class="size-5" />
+            </div>
+
+            <!-- 日志内容 -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm text-muted-foreground">{{ formatChangelogDate(log.create_time) }}</span>
+              </div>
+              <div
+                class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content"
+                v-html="log.descHtml"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 底部间隔 -->
     <div class="h-37.5"></div>
   </div>
@@ -588,6 +690,14 @@ const photoPosts = computed(() => photoPostsData.value?.data || []);
 const { data: categoryRecentPostsData } = await useFetch("/api/category-recent-posts?limit=4");
 const categoryRecentPosts = computed(() => categoryRecentPostsData.value?.data || []);
 
+// 获取订阅文章（最新3篇）
+const { data: subscribePostsData } = await useFetch("/api/subscribes?limit=3");
+const subscribePosts = computed(() => subscribePostsData.value?.data || []);
+
+// 获取更新日志（最新4条，简化格式）
+const { data: changelogsData } = await useFetch("/api/changelog?limit=4&simple=true");
+const recentChangelogs = computed(() => changelogsData.value?.data || []);
+
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
   const images: { url: string; desc?: string; title: string; slug: string; cid: number; categorySlug?: string }[] = [];
@@ -628,6 +738,38 @@ function formatDate(date: string | Date): string {
   if (hours > 0) return `${hours}小时前`;
   if (minutes > 0) return `${minutes}分钟前`;
   return "刚刚";
+}
+
+// 格式化更新日志日期
+function formatChangelogDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+}
+
+// 获取更新日志类型对应的图标
+function getChangelogIcon(type: string): string {
+  const iconMap: Record<string, string> = {
+    'new': 'lucide:sparkles',
+    'improve': 'lucide:trending-up',
+    'fix': 'lucide:wrench',
+    'remove': 'lucide:trash-2',
+  };
+  return iconMap[type] || 'lucide:circle';
+}
+
+// 获取更新日志类型对应的样式
+function getChangelogClass(type: string): string {
+  const classMap: Record<string, string> = {
+    'new': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    'improve': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'fix': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    'remove': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  };
+  return classMap[type] || 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
 }
 
 // 页面元数据
@@ -903,6 +1045,35 @@ onUnmounted(() => {
 .animate-float-delay-2 {
   animation: float 3s ease-in-out infinite;
   animation-delay: 1s;
+}
+
+/* Markdown内容样式 */
+.markdown-content :deep(strong) {
+  font-weight: 700;
+  color: rgb(15 23 42);
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
+}
+
+.markdown-content :deep(s) {
+  text-decoration: line-through;
+  color: rgb(100 116 139);
+}
+
+.markdown-content :deep(code) {
+  background-color: rgb(241 245 249);
+  color: rgb(15 23 42);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: JetBrains Mono, monospace;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  padding-left: 1.5em;
 }
 
 /* 响应式调整 */
