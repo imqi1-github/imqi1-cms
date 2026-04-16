@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const config = useRuntimeConfig();
+const router = useRouter();
 
 // 应用滚动条主题
 useScrollbarTheme();
@@ -10,7 +11,9 @@ const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path
 
 // 页面加载状态
 const showPageLoading = ref(false);
+const showLoadingTimeout = ref(false);
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
+let loadingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 监听页面开始加载（更早的钩子，在路由导航一开始就触发）
 const nuxtApp = useNuxtApp();
@@ -21,15 +24,81 @@ nuxtApp.hook("page:start", () => {
     hideTimer = null;
   }
 
+  // 清除之前的加载超时定时器
+  if (loadingTimeoutTimer) {
+    clearTimeout(loadingTimeoutTimer);
+    loadingTimeoutTimer = null;
+  }
+
+  // 重置状态
   showPageLoading.value = true;
+  showLoadingTimeout.value = false;
+
+  // 设置定时器，1秒后显示加载提示
+  loadingTimeoutTimer = setTimeout(() => {
+    showLoadingTimeout.value = true;
+  }, 100);
 });
 
 // 监听页面加载完成
 nuxtApp.hook("page:finish", () => {
+  // 清除加载超时定时器
+  if (loadingTimeoutTimer) {
+    clearTimeout(loadingTimeoutTimer);
+    loadingTimeoutTimer = null;
+  }
+
+  // 重置状态
+  showLoadingTimeout.value = false;
+
+  // 重置页面内容的样式，确保新页面能正确显示
+  const mainContent = document.querySelector("main");
+  if (mainContent) {
+    mainContent.style.transition = "";
+    mainContent.style.opacity = "";
+    mainContent.style.transform = "";
+  }
+
+  // 重置 index-hero 元素的样式
+  const heroElement = document.querySelector(".index-hero");
+  if (heroElement) {
+    heroElement.style.transition = "";
+    heroElement.style.opacity = "";
+    heroElement.style.transform = "";
+  }
+
   // 设置最小显示时间为 500ms，确保用户能看到加载动画
-  hideTimer = setTimeout(() => {
-    showPageLoading.value = false;
-  }, 500);
+  showPageLoading.value = false;
+});
+
+// 路由导航守卫，添加渐出效果
+router.beforeEach(async (to, from) => {
+  // 只有前台页面需要渐出效果
+  if (isFrontend.value && from.path !== to.path) {
+    // 获取当前页面的主要内容元素
+    const mainContent = document.querySelector("main");
+    if (mainContent) {
+      // 添加渐出效果
+      mainContent.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      mainContent.style.opacity = "0";
+      // mainContent.style.transform = "translateY(20px)";
+    }
+
+    // 处理 fixed 定位的 index-hero 元素
+    // const heroElement = document.querySelector(".index-hero");
+    // if (heroElement) {
+    // 添加渐出效果，使用更具体的样式
+    // heroElement.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    // heroElement.style.opacity = "0";
+    // heroElement.style.transform = "scale(0.9)";
+    // heroElement.style.pointerEvents = "none";
+  }
+
+  // 等待渐出效果完成，延长时间确保效果可见
+  // await new Promise(resolve => setTimeout(resolve, 300000));
+  // }
+  // 直接返回，不需要调用next()
+  return true;
 });
 
 // 提供给子组件
@@ -272,6 +341,18 @@ onMounted(() => {
     <template v-else>
       <NuxtPage />
     </template>
+
+    <!-- 页面加载超时提示 -->
+    <div v-if="showLoadingTimeout" class="fixed inset-0 flex items-center justify-center">
+      <div class="flex items-center gap-4">
+        <div class="animate-spin">
+          <Icon name="lucide:loader-2" class="size-5 text-blue-600 dark:text-blue-400" mode="svg" />
+        </div>
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 font-serif">页面加载中...</h3>
+        </div>
+      </div>
+    </div>
 
     <Toaster />
     <ContextMenu class="right-button" />

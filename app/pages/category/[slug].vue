@@ -290,7 +290,7 @@ onMounted(() => {
             v-for="post in posts"
             :key="post.cid"
             :class="[
-              'archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow',
+              'archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
               post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover',
             ]">
             <!-- 封面 -->
@@ -298,7 +298,7 @@ onMounted(() => {
               <img
                 :src="post.covers[0].url"
                 :alt="post.title"
-                class="archive-article-cover absolute inset-0 w-full h-full object-cover"
+                class="archive-article-cover absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
                 loading="lazy" />
             </NuxtLink>
 
