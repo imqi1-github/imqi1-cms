@@ -58,6 +58,14 @@ function generateFileName(originalName: string): string {
   return `${date}-${uuid}${ext}`;
 }
 
+// 生成上传路径（包含年月目录）
+function generateUploadPath(fileName: string): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return path.join("uploads", String(year), month, fileName);
+}
+
 // 获取文件类型分类
 function getFileCategory(mimeType: string): "image" | "video" {
   if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return "image";
@@ -67,10 +75,17 @@ function getFileCategory(mimeType: string): "image" | "video" {
 
 // 本地存储上传
 async function uploadToLocal(fileBuffer: Buffer, fileName: string): Promise<string> {
-  ensureUploadDir();
-  const filePath = path.join(UPLOAD_DIR, fileName);
-  fs.writeFileSync(filePath, fileBuffer);
-  return `/uploads/${fileName}`;
+  const uploadPath = generateUploadPath(fileName);
+  const fullPath = path.join(process.cwd(), "public", uploadPath);
+
+  // 确保目录存在
+  const dirPath = path.dirname(fullPath);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+
+  fs.writeFileSync(fullPath, fileBuffer);
+  return `/${uploadPath.replace(/\\/g, "/")}`;
 }
 
 export default defineEventHandler(async event => {

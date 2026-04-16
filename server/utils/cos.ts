@@ -223,8 +223,11 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
       };
     }
 
-    // 文件路径
-    const filePath = `/uploads/${fileName}`;
+    // 文件路径：/uploads/年/月/文件名
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const filePath = `/uploads/${year}/${month}/${fileName}`;
     const url = `${domains.source}${filePath}`;
 
     // 生成Date头部（必须使用GMT格式）
