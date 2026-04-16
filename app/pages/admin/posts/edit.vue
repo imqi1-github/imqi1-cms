@@ -309,7 +309,10 @@ const deleteAttachment = async (attachment: any) => {
 
 // 复制链接
 const copyLink = async (url: string) => {
-  const fullUrl = `${window.location.origin}${url}`;
+  // 判断是否已经是完整的 URL（云存储）
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  const fullUrl = isFullUrl ? url : `${window.location.origin}${url}`;
+
   try {
     await navigator.clipboard.writeText(fullUrl);
     toast.success({
