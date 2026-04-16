@@ -258,28 +258,32 @@ export default defineNuxtConfig({
     // 禁用资源预压缩（不生成 .br 和 .gz 文件）
     compressPublicAssets: false,
 
-    // ISR 缓存存储配置：Redis 优先，文件系统后备
+    // ISR 缓存存储配置
     storage: {
-      // Redis 缓存（主存储）
+      // Redis 存储点配置
       redis: {
         driver: 'redis',
         // 从环境变量读取配置
-        host: process.env.REDIS_HOST || 'localhost',
+        host: process.env.REDIS_HOST || '127.0.0.1',
         port: Number(process.env.REDIS_PORT) || 6379,
         password: process.env.REDIS_PASSWORD,
         db: Number(process.env.REDIS_DB) || 0,
-        // 连接池配置
-        maxRetriesPerRequest: 3,
-        retryStrategy(times) {
-          if (times > 3) return null;
-          return Math.min(times * 100, 3000);
-        }
+        username: process.env.REDIS_USERNAME,
       },
-      // 文件系统缓存（后备存储）
-      cache: {
+
+      // cache 存储点：如果配置了Redis则使用redis存储点，否则用文件系统
+      cache: process.env.REDIS_HOST ? {
+        driver: 'redis',
+      } : {
         driver: 'fs',
-        base: './.data/cache'
-      }
+        base: './.nitro/cache',
+      },
+
+      // 文件系统存储（用于其他数据持久化）
+      fs: {
+        driver: 'fs',
+        base: './.data/storage',
+      },
     },
 
     // 复制根目录的 data 文件夹到构建输出（不经过 Vite 处理）
@@ -290,6 +294,7 @@ export default defineNuxtConfig({
         maxAge: 60 * 60 * 24 * 365, // 1 year cache
       },
     ],
+
     // Nitro 构建完成后复制 data 目录
     hooks: {
       compiled: () => {
@@ -313,44 +318,143 @@ export default defineNuxtConfig({
     // 注意：ISR在开发环境可能不稳定，建议生产环境启用
     ...(import.meta.env.PROD ? {
       // 首页：每5分钟重新生成一次（推荐）
-      "/": { isr: 300 },
+      "/": {
+        isr: 300,
+        // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
+        ...(process.env.REDIS_HOST ? {
+          cache: {
+            maxAge: 300,
+            base: 'redis'
+          }
+        } : {})
+      },
 
       // 文章归档：每10分钟重新生成
-      "/archiving": { isr: 600 },
+      "/archiving": {
+        isr: 600,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 600, base: 'redis' }
+        } : {})
+      },
 
       // 分类页：每10分钟重新生成
-      "/category/**": { isr: 600 },
+      "/category/**": {
+        isr: 600,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 600, base: 'redis' }
+        } : {})
+      },
 
       // 文章详情：完全静态（发布后内容不变，永久缓存）
-      "/content/**": { isr: true },
+      "/content/**": {
+        isr: true,
+        ...(process.env.REDIS_HOST ? {
+          cache: { base: 'redis' }
+        } : {})
+      },
 
       // 标签页：每15分钟重新生成
-      "/tag/**": { isr: 900 },
+      "/tag/**": {
+        isr: 900,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 900, base: 'redis' }
+        } : {})
+      },
 
       // 订阅页：每10分钟重新生成
-      "/subscribes": { isr: 600 },
+      "/subscribes": {
+        isr: 600,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 600, base: 'redis' }
+        } : {})
+      },
 
       // 更新日志：每30分钟重新生成
-      "/changelog": { isr: 1800 },
+      "/changelog": {
+        isr: 1800,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 1800, base: 'redis' }
+        } : {})
+      },
 
       // 协议页面：完全静态
-      "/agreement": { isr: true },
+      "/agreement": {
+        isr: true,
+        ...(process.env.REDIS_HOST ? {
+          cache: { base: 'redis' }
+        } : {})
+      },
 
       // 站点地图：每小时重新生成
-      "/sitemap": { isr: 3600 },
-      "/sitemap.xml": { isr: 3600 },
+      "/sitemap": {
+        isr: 3600,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 3600, base: 'redis' }
+        } : {})
+      },
+      "/sitemap.xml": {
+        isr: 3600,
+        ...(process.env.REDIS_HOST ? {
+          cache: { maxAge: 3600, base: 'redis' }
+        } : {})
+      },
     } : {
-      // 开发环境：禁用ISR，使用普通SSR
-      "/": { isr: false },
-      "/archiving": { isr: false },
-      "/category/**": { isr: false },
-      "/content/**": { isr: false },
-      "/tag/**": { isr: false },
-      "/subscribes": { isr: false },
-      "/changelog": { isr: false },
-      "/agreement": { isr: false },
-      "/sitemap": { isr: false },
-      "/sitemap.xml": { isr: false },
+      // 开发环境：如果配置了Redis则启用ISR，否则使用普通SSR
+      ...(process.env.REDIS_HOST ? {
+        // 有Redis时启用ISR
+        "/": {
+          isr: 300, // 5分钟
+          cache: { maxAge: 300, base: 'redis' }
+        },
+        "/archiving": {
+          isr: 600, // 10分钟
+          cache: { maxAge: 600, base: 'redis' }
+        },
+        "/category/**": {
+          isr: 600,
+          cache: { maxAge: 600, base: 'redis' }
+        },
+        "/content/**": {
+          isr: true,
+          cache: { base: 'redis' }
+        },
+        "/tag/**": {
+          isr: 900, // 15分钟
+          cache: { maxAge: 900, base: 'redis' }
+        },
+        "/subscribes": {
+          isr: 600,
+          cache: { maxAge: 600, base: 'redis' }
+        },
+        "/changelog": {
+          isr: 1800, // 30分钟
+          cache: { maxAge: 1800, base: 'redis' }
+        },
+        "/agreement": {
+          isr: true,
+          cache: { base: 'redis' }
+        },
+        "/sitemap": {
+          isr: 3600, // 1小时
+          cache: { maxAge: 3600, base: 'redis' }
+        },
+        "/sitemap.xml": {
+          isr: 3600,
+          cache: { maxAge: 3600, base: 'redis' }
+        },
+      } : {
+        // 没有Redis时禁用ISR，使用普通SSR
+        "/": { isr: false },
+        "/archiving": { isr: false },
+        "/category/**": { isr: false },
+        "/content/**": { isr: false },
+        "/tag/**": { isr: false },
+        "/subscribes": { isr: false },
+        "/changelog": { isr: false },
+        "/agreement": { isr: false },
+        "/sitemap": { isr: false },
+        "/sitemap.xml": { isr: false },
+      })
     }),
 
     // ========== SSR配置 ==========
