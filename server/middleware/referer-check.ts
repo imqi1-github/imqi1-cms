@@ -18,10 +18,7 @@ export default defineEventHandler(event => {
 
   // 如果没有referer，允许请求（某些浏览器或工具可能不发送referer）
   if (!referer) {
-    throw createError({
-      statusCode: 403,
-      message: "Missing referer",
-    });
+    return
   }
 
   try {
