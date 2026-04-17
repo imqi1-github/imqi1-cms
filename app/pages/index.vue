@@ -30,21 +30,7 @@
       <ClientOnly>
         <div class="index-contact flex mt-3 self-start max-md:mx-auto animate-fade-in">
           <template v-for="link in contactLinks" :key="link.name">
-            <!-- 小程序使用 button，其他使用 NuxtLink -->
-            <button
-              v-if="link.name === 'miniprogram'"
-              v-tooltip="link.title"
-              class="index-contact-link group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white cursor-pointer border-none bg-transparent">
-              <Icon :name="link.icon" class="size-5" mode="svg" />
-              <!-- 小程序二维码 -->
-              <img
-                src="/imgs/miniprogram.jpg"
-                alt="小程序码"
-                style="width: 192px; height: 192px; max-width: none; max-height: none"
-                class="absolute bottom-full left-1/2 -translate-x-1/2 border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto rounded-full" />
-            </button>
             <NuxtLink
-              v-else
               :href="link.url"
               :target="link.target ? '_blank' : undefined"
               v-tooltip="link.title"
@@ -816,7 +802,6 @@ const contactLinks = ref([
   { name: "x", url: "https://x.com/imqi1_X", icon: "ri:twitter-x-fill", target: true, title: "X" },
   { name: "home", url: "https://qi1.website", icon: "ri:home-2-fill", target: true, title: "个人首页" },
   { name: "link", url: "/links", icon: "ri:links-fill", target: false, title: "友情链接" },
-  { name: "miniprogram", url: "", icon: "ri:mini-program-fill", target: false },
 ]);
 
 // 样式选择区域数据
