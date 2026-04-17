@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const { name, mail, content, status } = body;
+  const { name, mail, link, content, status } = body;
 
   // 验证字段长度
   if (name !== undefined || mail !== undefined) {
@@ -49,6 +49,7 @@ export default defineEventHandler(async event => {
       data: {
         ...(name !== undefined && { name }),
         ...(mail !== undefined && { mail }),
+        ...(link !== undefined && { link }),
         ...(content !== undefined && { content }),
         ...(status !== undefined && { status }),
       },

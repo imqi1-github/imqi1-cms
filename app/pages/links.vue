@@ -337,7 +337,7 @@ onUnmounted(() => {
     <!-- 友链列表区域 -->
     <section class="my-8 animate-fade-in">
       <h2 class="sr-only">友链列表</h2>
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between sm:items-center mb-4 max-sm:flex-col gap-3">
         <blockquote
           class="border-l-4 border-blue-600 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-[0.95em] px-4 py-3 rounded-sm">
           友链顺序不分先后，每一个都值得一看。
@@ -345,7 +345,7 @@ onUnmounted(() => {
         <button
           @click="checkAllLinks"
           :disabled="isCheckingLinks"
-          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5">
+          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5 w-fit">
           <Icon name="lucide:refresh-cw" class="size-4" />
           <span v-if="isCheckingLinks">检测中...</span>
           <span v-else>检测友链</span>

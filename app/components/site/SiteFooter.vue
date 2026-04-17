@@ -222,7 +222,7 @@ onUnmounted(() => {
 
 <template>
   <div class="bg-slate-50 dark:bg-slate-900 z-9999">
-    <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400">
+    <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400 max-sm:flex-col gap-3">
       <div class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
         <span v-if="siteIcp && isHomePage" class="max-md:hidden"

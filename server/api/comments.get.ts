@@ -110,7 +110,7 @@ export default defineEventHandler(async event => {
       }
     });
 
-    const total = rootComments.length;
+    const total = comments.length;
     const totalPages = Math.ceil(total / pageSize);
     const startIndex = (page - 1) * pageSize;
     const paginatedRootComments = rootComments.slice(startIndex, startIndex + pageSize);

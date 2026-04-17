@@ -20,6 +20,7 @@ const editingComment = ref<any>(null);
 const editForm = ref({
   name: "",
   mail: "",
+  link: "",
   content: "",
   status: 0,
 });
@@ -143,6 +144,7 @@ function openEditDialog(comment: any) {
   editForm.value = {
     name: comment.name || "",
     mail: comment.mail || "",
+    link: comment.link || "",
     content: comment.content || "",
     status: comment.status ?? 0,
   };
@@ -693,6 +695,12 @@ onMounted(() => {
           <div class="space-y-2">
             <Label for="edit-mail">邮箱</Label>
             <Input id="edit-mail" v-model="editForm.mail" type="email" placeholder="邮箱地址" />
+          </div>
+
+          <!-- 链接 -->
+          <div class="space-y-2">
+            <Label for="edit-link">链接</Label>
+            <Input id="edit-link" v-model="editForm.link" type="url" placeholder="网站链接（可选）" />
           </div>
 
           <!-- 状态 -->
