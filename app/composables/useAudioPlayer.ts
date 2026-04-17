@@ -27,6 +27,37 @@ const playedIndices = ref<number[]>([]);
 // 初始化标志
 let isInitialized = false;
 
+// Meting API 失败计数相关常量
+const METING_FAILURE_COUNT_KEY = 'meting_api_failure_count';
+const MAX_FAILURE_COUNT = 5;
+
+// 获取失败次数
+function getFailureCount(): number {
+  if (import.meta.client) {
+    const count = localStorage.getItem(METING_FAILURE_COUNT_KEY);
+    return count ? parseInt(count, 10) : 0;
+  }
+  return 0;
+}
+
+// 增加失败次数
+function incrementFailureCount() {
+  if (import.meta.client) {
+    const currentCount = getFailureCount();
+    const newCount = currentCount + 1;
+    localStorage.setItem(METING_FAILURE_COUNT_KEY, newCount.toString());
+    return newCount;
+  }
+  return 0;
+}
+
+// 重置失败次数
+function resetFailureCount() {
+  if (import.meta.client) {
+    localStorage.removeItem(METING_FAILURE_COUNT_KEY);
+  }
+}
+
 // 播放器实例 ID（用于管理器）
 const playerId = `footer-${Date.now()}-${Math.random()}`;
 
@@ -63,6 +94,13 @@ async function initPlayer(playlistConfig: { id: string; server: string }) {
 
   if (!playlistConfig.id) return;
 
+  // 检查失败次数，如果超过最大次数则不初始化播放器
+  const failureCount = getFailureCount();
+  if (failureCount >= MAX_FAILURE_COUNT) {
+    console.warn(`Meting API 已连续失败 ${failureCount} 次，不再加载音乐播放器。如需重试，请清除 localStorage 中的 ${METING_FAILURE_COUNT_KEY}`);
+    return;
+  }
+
   // 注册到播放器管理器
   const manager = getPlayerManager();
   if (manager) {
@@ -77,6 +115,9 @@ async function initPlayer(playlistConfig: { id: string; server: string }) {
     const response = await $fetch<any>(`/api/meting?type=playlist&server=${playlistConfig.server}&id=${playlistConfig.id}`);
 
     if (response && Array.isArray(response)) {
+      // 请求成功，重置失败计数
+      resetFailureCount();
+
       playlist.value = response;
       // 准备第一首歌
       const firstSong = getNextSong();
@@ -88,6 +129,14 @@ async function initPlayer(playlistConfig: { id: string; server: string }) {
     }
   } catch (error) {
     console.error("加载音乐列表失败:", error);
+    // 增加失败计数
+    const newCount = incrementFailureCount();
+    console.warn(`Meting API 失败次数: ${newCount}/${MAX_FAILURE_COUNT}`);
+
+    // 如果达到最大失败次数，不显示播放器
+    if (newCount >= MAX_FAILURE_COUNT) {
+      console.warn(`Meting API 已连续失败 ${MAX_FAILURE_COUNT} 次，音乐播放器已禁用`);
+    }
   }
 }
 

@@ -21,6 +21,10 @@ const commentInterval = ref(60);
 const requireMail = ref(true);
 const requireLink = ref(false);
 
+// 用户登录状态
+const isLoggedIn = ref(false);
+const isLoadingAuth = ref(true);
+
 const replyState = ref({
   isReplying: false,
   replyTo: null as { id: number; name: string } | null,
@@ -95,6 +99,20 @@ const loadMore = () => {
   }
 };
 
+// 检查用户登录状态
+const checkAuthStatus = async () => {
+  if (import.meta.client) {
+    try {
+      const res = await $fetch('/api/auth/verify');
+      isLoggedIn.value = (res as any).valid || false;
+    } catch {
+      isLoggedIn.value = false;
+    } finally {
+      isLoadingAuth.value = false;
+    }
+  }
+};
+
 const fetchSettings = async () => {
   try {
     const response = await fetch("/api/site");
@@ -125,6 +143,8 @@ const fetchSettings = async () => {
 };
 
 onMounted(async () => {
+  // 检查登录状态
+  checkAuthStatus();
   await fetchSettings();
   // 如果需要加载所有评论，使用大 pageSize
   if (props.loadAllComments) {
@@ -182,7 +202,21 @@ function handleCommentSubmitted() {
       </div>
 
       <!-- 评论统计 -->
-      <div v-if="totalComments > 0" class="mb-4 text-sm text-slate-500 dark:text-slate-400">共 {{ totalComments }} 条评论</div>
+      <div v-if="totalComments > 0" class="mb-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+        <span>共 {{ totalComments }} 条评论</span>
+        <!-- 管理评论链接（仅登录时显示） -->
+        <ClientOnly>
+          <a
+            v-if="isLoggedIn && !isLoadingAuth"
+            :href="`/admin/comments?cid=${props.postId}`"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <Icon name="lucide:settings" class="size-3" />
+            管理此文章评论
+          </a>
+        </ClientOnly>
+      </div>
 
       <!-- 评论列表容器 -->
       <Transition name="comment-fade" mode="out-in">

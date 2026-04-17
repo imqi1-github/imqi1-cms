@@ -480,7 +480,7 @@ onUnmounted(() => {
   margin: auto;
 }
 
-.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p)) {
+.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
   margin: 1em 0;
   text-indent: 2em;
 }

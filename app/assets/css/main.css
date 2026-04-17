@@ -85,6 +85,7 @@ span.iconify {
 @layer base {
   * {
     border-color: hsl(var(--border));
+    word-break: break-word;
   }
   body {
     background-color: hsl(var(--background));
