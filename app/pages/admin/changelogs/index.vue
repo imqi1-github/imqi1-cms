@@ -18,15 +18,9 @@ const classOptions = ["新增", "优化", "修复", "删除", "重构"];
 async function loadLogs() {
   loading.value = true;
   try {
-    const response = (await $fetch("/api/changelog")) as any;
-    // 展开所有月份的日志
-    logs.value = response.data.flatMap((group: any) =>
-      group.logs.map((log: any) => ({
-        ...log,
-        year: group.year,
-        month: group.month,
-      })),
-    );
+    // 调用管理员专用 API，无缓存，返回原始数据
+    const response = (await $fetch("/api/admin/changelogs")) as any;
+    logs.value = response;
   } catch (err) {
     console.error("加载失败:", err);
   } finally {
@@ -144,18 +138,18 @@ onMounted(() => {
 
 <template>
   <AdminLayout>
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- 页面标题 -->
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold">更新日志管理</h1>
       </div>
 
       <!-- 添加/编辑表单 -->
-      <Card v-if="editingId === null" class="p-6">
-        <form @submit.prevent="save" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card v-if="editingId === null" class="p-4">
+        <form @submit.prevent="save" class="space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-              <label class="block text-sm font-medium mb-2">分类</label>
+              <label class="block text-sm font-medium mb-1.5">分类</label>
               <Select v-model="editForm.class">
                 <SelectTrigger>
                   <SelectValue />
@@ -168,8 +162,8 @@ onMounted(() => {
               </Select>
             </div>
             <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-2">内容</label>
-              <Textarea v-model="editForm.desc" placeholder="输入更新内容，支持 Markdown 格式" rows="3" required />
+              <label class="block text-sm font-medium mb-1.5">内容</label>
+              <Textarea v-model="editForm.desc" placeholder="输入更新内容，支持 Markdown 格式" rows="2" required />
             </div>
           </div>
           <div class="flex justify-end">
@@ -187,13 +181,13 @@ onMounted(() => {
       </div>
 
       <!-- 日志列表 -->
-      <div v-else-if="logs.length > 0" class="space-y-4">
-        <Card v-for="log in logs" :key="log.id" class="p-6" :class="{ 'ring-2 ring-primary': editingId === log.id }">
+      <div v-else-if="logs.length > 0" class="space-y-2">
+        <Card v-for="log in logs" :key="log.id" class="p-3" :class="{ 'ring-2 ring-primary': editingId === log.id }">
           <!-- 编辑模式 -->
-          <form v-if="editingId === log.id" @submit.prevent="save" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form v-if="editingId === log.id" @submit.prevent="save" class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
-                <label class="block text-sm font-medium mb-2">分类</label>
+                <label class="block text-sm font-medium mb-1.5">分类</label>
                 <Select v-model="editForm.class">
                   <SelectTrigger>
                     <SelectValue />
@@ -206,8 +200,8 @@ onMounted(() => {
                 </Select>
               </div>
               <div class="md:col-span-3">
-                <label class="block text-sm font-medium mb-2">内容</label>
-                <Textarea v-model="editForm.desc" placeholder="输入更新内容，支持 Markdown 格式" rows="3" required />
+                <label class="block text-sm font-medium mb-1.5">内容</label>
+                <Textarea v-model="editForm.desc" placeholder="输入更新内容，支持 Markdown 格式" rows="2" required />
               </div>
             </div>
             <div class="flex justify-end gap-2">
@@ -220,24 +214,24 @@ onMounted(() => {
           </form>
 
           <!-- 显示模式 -->
-          <div v-else class="flex items-start justify-between gap-4">
-            <div class="flex-1">
-              <div class="flex items-center gap-3 mb-2">
-                <span :class="['px-2.5 py-1 rounded-md text-xs font-medium', getClassColor(log.class)]">
+          <div v-else class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1.5">
+                <span :class="['px-2 py-0.5 rounded text-xs font-medium', getClassColor(log.class)]">
                   {{ log.class }}
                 </span>
-                <span class="text-sm text-muted-foreground">
-                  {{ formatDate(log.createTime) }}
+                <span class="text-xs text-muted-foreground">
+                  {{ formatDate(log.create_time) }}
                 </span>
               </div>
-              <div class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm markdown-content" v-html="log.descHtml" />
+              <div class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content" v-html="log.descHtml" />
             </div>
-            <div class="flex gap-2">
-              <Button variant="ghost" size="icon" @click="startEdit(log)">
-                <Icon name="lucide:pencil" class="size-4" />
+            <div class="flex gap-1 flex-shrink-0">
+              <Button variant="ghost" size="icon" class="size-8" @click="startEdit(log)">
+                <Icon name="lucide:pencil" class="size-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" @click="deleteLog(log.id)">
-                <Icon name="lucide:trash-2" class="size-4 text-destructive" />
+              <Button variant="ghost" size="icon" class="size-8" @click="deleteLog(log.id)">
+                <Icon name="lucide:trash-2" class="size-3.5 text-destructive" />
               </Button>
             </div>
           </div>
@@ -256,7 +250,16 @@ onMounted(() => {
 <style scoped>
 /* Markdown 内容样式 */
 .markdown-content > * {
-  line-height: 1.6;
+  line-height: 1.5;
+}
+
+.markdown-content :deep(p) {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content :deep(p:last-child) {
+  margin-bottom: 0;
 }
 
 .markdown-content :deep(strong) {
@@ -286,7 +289,7 @@ onMounted(() => {
   color: rgb(15 23 42); /* slate-900 */
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
-  font-size: 0.875em;
+  font-size: 0.8em;
   font-family: JetBrains Mono, monospace;
 }
 
@@ -297,7 +300,8 @@ onMounted(() => {
 
 .markdown-content :deep(ul),
 .markdown-content :deep(ol) {
-  padding-left: 1.5em;
+  padding-left: 1.25em;
+  margin-top: 0;
 }
 
 .markdown-content :deep(ul) {
