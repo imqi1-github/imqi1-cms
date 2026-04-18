@@ -1,11 +1,9 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync } from "fs";
 
 // 读取构建 hash（如果存在）
-const buildHashDir = existsSync('.build-hash-dir')
-  ? `/${readFileSync('.build-hash-dir', 'utf-8').trim()}`
-  : '';
+const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
 
-const cdnBaseURL = 'https://cdn.imqi1.com';
+const cdnBaseURL = "https://cdn.imqi1.com";
 const cdnURL = buildHashDir ? `${cdnBaseURL}${buildHashDir}` : cdnBaseURL;
 
 export default defineNuxtConfig({
@@ -68,13 +66,13 @@ export default defineNuxtConfig({
           src: "/imgs/imqi1.svg",
           sizes: "192x192",
           type: "image/svg+xml",
-          purpose: "any maskable"
+          purpose: "any maskable",
         },
         {
           src: "/imgs/imqi1.svg",
           sizes: "512x512",
           type: "image/svg+xml",
-          purpose: "any maskable"
+          purpose: "any maskable",
         },
       ],
       screenshots: [
@@ -83,15 +81,15 @@ export default defineNuxtConfig({
           sizes: "1280x720",
           type: "image/png",
           form_factor: "wide",
-          label: "桌面端界面"
+          label: "桌面端界面",
         },
         {
           src: "/imgs/frontend-screenshot2.png",
           sizes: "510x820",
           type: "image/png",
           form_factor: "narrow",
-          label: "移动端界面"
-        }
+          label: "移动端界面",
+        },
       ],
     },
     workbox: {
@@ -164,17 +162,17 @@ export default defineNuxtConfig({
       link: [
         {
           rel: "preconnect",
-          href: "https://cdn.imqi1.com"
+          href: "https://cdn.imqi1.com",
         },
         {
           rel: "dns-prefetch",
-          href: "https://cdn.imqi1.com"
+          href: "https://cdn.imqi1.com",
         },
         {
           rel: "preload",
           as: "image",
-          href: "/imgs/avatar.webp"
-        }
+          href: "/imgs/avatar.webp",
+        },
       ],
       script: [
         {
@@ -217,21 +215,21 @@ export default defineNuxtConfig({
     },
     optimizeDeps: {
       include: [
-        '@vue/devtools-core',
-        '@vue/devtools-kit',
-        'class-variance-authority',
-        '@vueuse/core',
-        'clsx',
-        'tailwind-merge',
-        'reka-ui',
-        'lucide-vue-next',
-        'vue-sonner',
-        'promise-polyfill',
-        'smoothscroll', // CJS
-        'floating-vue',
-        'swiper',
-        'swiper/modules',
-        '@fancyapps/ui',
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+        "class-variance-authority",
+        "@vueuse/core",
+        "clsx",
+        "tailwind-merge",
+        "reka-ui",
+        "lucide-vue-next",
+        "vue-sonner",
+        "promise-polyfill",
+        "smoothscroll", // CJS
+        "floating-vue",
+        "swiper",
+        "swiper/modules",
+        "@fancyapps/ui",
       ],
     },
     build: {
@@ -259,30 +257,28 @@ export default defineNuxtConfig({
     compressPublicAssets: false,
 
     // ISR 缓存存储配置
+
     storage: {
-      // Redis 存储点配置
       redis: {
-        driver: 'redis',
-        // 从环境变量读取配置
-        host: process.env.REDIS_HOST || '127.0.0.1',
+        driver: "redis",
+        host: process.env.REDIS_HOST || "127.0.0.1",
         port: Number(process.env.REDIS_PORT) || 6379,
         password: process.env.REDIS_PASSWORD,
         db: Number(process.env.REDIS_DB) || 0,
-        username: process.env.REDIS_USERNAME,
       },
 
-      // cache 存储点：如果配置了Redis则使用redis存储点，否则用文件系统
-      cache: process.env.REDIS_HOST ? {
-        driver: 'redis',
-      } : {
-        driver: 'fs',
-        base: './.nitro/cache',
-      },
+      cache: process.env.REDIS_HOST
+        ? {
+            driver: "redis",
+          }
+        : {
+            driver: "fs",
+            base: "./.nitro/cache",
+          },
 
-      // 文件系统存储（用于其他数据持久化）
       fs: {
-        driver: 'fs',
-        base: './.data/storage',
+        driver: "fs",
+        base: "./.data/storage",
       },
     },
 
@@ -316,146 +312,170 @@ export default defineNuxtConfig({
   routeRules: {
     // ========== ISR（增量静态再生成）配置 ==========
     // 注意：ISR在开发环境可能不稳定，建议生产环境启用
-    ...(import.meta.env.PROD ? {
-      // 首页：每5分钟重新生成一次（推荐）
-      "/": {
-        isr: 300,
-        // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
-        ...(process.env.REDIS_HOST ? {
-          cache: {
-            maxAge: 300,
-            base: 'redis'
-          }
-        } : {})
-      },
+    ...(import.meta.env.PROD
+      ? {
+          // 首页：每5分钟重新生成一次（推荐）
+          "/": {
+            isr: 300,
+            // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: {
+                    maxAge: 300,
+                    base: "redis",
+                  },
+                }
+              : {}),
+          },
 
-      // 文章归档：每10分钟重新生成
-      "/archiving": {
-        isr: 600,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 600, base: 'redis' }
-        } : {})
-      },
+          // 文章归档：每10分钟重新生成
+          "/archiving": {
+            isr: 600,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
 
-      // 分类页：每10分钟重新生成
-      "/category/**": {
-        isr: 600,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 600, base: 'redis' }
-        } : {})
-      },
+          // 分类页：每10分钟重新生成
+          "/category/**": {
+            isr: 600,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
 
-      // 文章详情：完全静态（发布后内容不变，永久缓存）
-      "/content/**": {
-        isr: true,
-        ...(process.env.REDIS_HOST ? {
-          cache: { base: 'redis' }
-        } : {})
-      },
+          // 文章详情：完全静态（发布后内容不变，永久缓存）
+          "/content/**": {
+            isr: true,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { base: "redis" },
+                }
+              : {}),
+          },
 
-      // 标签页：每15分钟重新生成
-      "/tag/**": {
-        isr: 900,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 900, base: 'redis' }
-        } : {})
-      },
+          // 标签页：每15分钟重新生成
+          "/tag/**": {
+            isr: 900,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 900, base: "redis" },
+                }
+              : {}),
+          },
 
-      // 订阅页：每10分钟重新生成
-      "/subscribes": {
-        isr: 600,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 600, base: 'redis' }
-        } : {})
-      },
+          // 订阅页：每10分钟重新生成
+          "/subscribes": {
+            isr: 600,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
 
-      // 更新日志：每30分钟重新生成
-      "/changelog": {
-        isr: 1800,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 1800, base: 'redis' }
-        } : {})
-      },
+          // 更新日志：每30分钟重新生成
+          "/changelog": {
+            isr: 1800,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 1800, base: "redis" },
+                }
+              : {}),
+          },
 
-      // 协议页面：完全静态
-      "/agreement": {
-        isr: true,
-        ...(process.env.REDIS_HOST ? {
-          cache: { base: 'redis' }
-        } : {})
-      },
+          // 协议页面：完全静态
+          "/agreement": {
+            isr: true,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { base: "redis" },
+                }
+              : {}),
+          },
 
-      // 站点地图：每小时重新生成
-      "/sitemap": {
-        isr: 3600,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 3600, base: 'redis' }
-        } : {})
-      },
-      "/sitemap.xml": {
-        isr: 3600,
-        ...(process.env.REDIS_HOST ? {
-          cache: { maxAge: 3600, base: 'redis' }
-        } : {})
-      },
-    } : {
-      // 开发环境：如果配置了Redis则启用ISR，否则使用普通SSR
-      ...(process.env.REDIS_HOST ? {
-        // 有Redis时启用ISR
-        "/": {
-          isr: 300, // 5分钟
-          cache: { maxAge: 300, base: 'redis' }
-        },
-        "/archiving": {
-          isr: 600, // 10分钟
-          cache: { maxAge: 600, base: 'redis' }
-        },
-        "/category/**": {
-          isr: 600,
-          cache: { maxAge: 600, base: 'redis' }
-        },
-        "/content/**": {
-          isr: true,
-          cache: { base: 'redis' }
-        },
-        "/tag/**": {
-          isr: 900, // 15分钟
-          cache: { maxAge: 900, base: 'redis' }
-        },
-        "/subscribes": {
-          isr: 600,
-          cache: { maxAge: 600, base: 'redis' }
-        },
-        "/changelog": {
-          isr: 1800, // 30分钟
-          cache: { maxAge: 1800, base: 'redis' }
-        },
-        "/agreement": {
-          isr: true,
-          cache: { base: 'redis' }
-        },
-        "/sitemap": {
-          isr: 3600, // 1小时
-          cache: { maxAge: 3600, base: 'redis' }
-        },
-        "/sitemap.xml": {
-          isr: 3600,
-          cache: { maxAge: 3600, base: 'redis' }
-        },
-      } : {
-        // 没有Redis时禁用ISR，使用普通SSR
-        "/": { isr: false },
-        "/archiving": { isr: false },
-        "/category/**": { isr: false },
-        "/content/**": { isr: false },
-        "/tag/**": { isr: false },
-        "/subscribes": { isr: false },
-        "/changelog": { isr: false },
-        "/agreement": { isr: false },
-        "/sitemap": { isr: false },
-        "/sitemap.xml": { isr: false },
-      })
-    }),
+          // 站点地图：每小时重新生成
+          "/sitemap": {
+            isr: 3600,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 3600, base: "redis" },
+                }
+              : {}),
+          },
+          "/sitemap.xml": {
+            isr: 3600,
+            ...(process.env.REDIS_HOST
+              ? {
+                  cache: { maxAge: 3600, base: "redis" },
+                }
+              : {}),
+          },
+        }
+      : {
+          // 开发环境：如果配置了Redis则启用ISR，否则使用普通SSR
+          ...(process.env.REDIS_HOST
+            ? {
+                // 有Redis时启用ISR
+                "/": {
+                  isr: 300, // 5分钟
+                  cache: { maxAge: 300, base: "redis" },
+                },
+                "/archiving": {
+                  isr: 600, // 10分钟
+                  cache: { maxAge: 600, base: "redis" },
+                },
+                "/category/**": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
+                "/content/**": {
+                  isr: true,
+                  cache: { base: "redis" },
+                },
+                "/tag/**": {
+                  isr: 900, // 15分钟
+                  cache: { maxAge: 900, base: "redis" },
+                },
+                "/subscribes": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
+                "/changelog": {
+                  isr: 1800, // 30分钟
+                  cache: { maxAge: 1800, base: "redis" },
+                },
+                "/agreement": {
+                  isr: true,
+                  cache: { base: "redis" },
+                },
+                "/sitemap": {
+                  isr: 3600, // 1小时
+                  cache: { maxAge: 3600, base: "redis" },
+                },
+                "/sitemap.xml": {
+                  isr: 3600,
+                  cache: { maxAge: 3600, base: "redis" },
+                },
+              }
+            : {
+                // 没有Redis时禁用ISR，使用普通SSR
+                "/": { isr: false },
+                "/archiving": { isr: false },
+                "/category/**": { isr: false },
+                "/content/**": { isr: false },
+                "/tag/**": { isr: false },
+                "/subscribes": { isr: false },
+                "/changelog": { isr: false },
+                "/agreement": { isr: false },
+                "/sitemap": { isr: false },
+                "/sitemap.xml": { isr: false },
+              }),
+        }),
 
     // ========== SSR配置 ==========
     // 登录页面禁用 SSR，避免 hydration 不匹配
@@ -471,20 +491,23 @@ export default defineNuxtConfig({
 
     // ========== 全局安全头配置 ==========
     "/**": {
-      headers: import.meta.env.PROD ? {
-        // 生产环境下的 CSP 配置
-        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.imqi1.com; style-src 'self' 'unsafe-inline' https://cdn.imqi1.com; img-src 'self' data: https: https://cdn.imqi1.com; font-src 'self' data: https://cdn.imqi1.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';",
-        "X-Frame-Options": "DENY",
-        "X-Content-Type-Options": "nosniff",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
-        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-        "X-XSS-Protection": "1; mode=block",
-      } : {
-        // 开发环境下只配置必要的安全头，不设置 CSP
-        "X-Frame-Options": "SAMEORIGIN",
-        "X-Content-Type-Options": "nosniff",
-      }
-    }
+      headers: import.meta.env.PROD
+        ? {
+            // 生产环境下的 CSP 配置
+            "Content-Security-Policy":
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.imqi1.com; style-src 'self' 'unsafe-inline' https://cdn.imqi1.com; img-src 'self' data: https: https://cdn.imqi1.com; font-src 'self' data: https://cdn.imqi1.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';",
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+            "X-XSS-Protection": "1; mode=block",
+          }
+        : {
+            // 开发环境下只配置必要的安全头，不设置 CSP
+            "X-Frame-Options": "SAMEORIGIN",
+            "X-Content-Type-Options": "nosniff",
+          },
+    },
   },
 });
