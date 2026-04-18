@@ -316,12 +316,12 @@ export default defineNuxtConfig({
       ? {
           // 首页：每5分钟重新生成一次（推荐）
           "/": {
-            isr: 300,
+            isr: 3600,
             // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
             ...(process.env.REDIS_HOST
               ? {
                   cache: {
-                    maxAge: 300,
+                    maxAge: 3600,
                     base: "redis",
                   },
                 }
@@ -330,20 +330,20 @@ export default defineNuxtConfig({
 
           // 文章归档：每10分钟重新生成
           "/archiving": {
-            isr: 600,
+            isr: 43200,
             ...(process.env.REDIS_HOST
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: 43200, base: "redis" },
                 }
               : {}),
           },
 
           // 分类页：每10分钟重新生成
           "/category/**": {
-            isr: 600,
+            isr: 3600,
             ...(process.env.REDIS_HOST
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: 3600, base: "redis" },
                 }
               : {}),
           },
@@ -360,30 +360,30 @@ export default defineNuxtConfig({
 
           // 标签页：每15分钟重新生成
           "/tag/**": {
-            isr: 900,
+            isr: 3600,
             ...(process.env.REDIS_HOST
               ? {
-                  cache: { maxAge: 900, base: "redis" },
+                  cache: { maxAge: 3600, base: "redis" },
                 }
               : {}),
           },
 
           // 订阅页：每10分钟重新生成
           "/subscribes": {
-            isr: 600,
+            isr: 3600,
             ...(process.env.REDIS_HOST
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: 3600, base: "redis" },
                 }
               : {}),
           },
 
           // 更新日志：每30分钟重新生成
           "/changelog": {
-            isr: 1800,
+            isr: 3600,
             ...(process.env.REDIS_HOST
               ? {
-                  cache: { maxAge: 1800, base: "redis" },
+                  cache: { maxAge: 3600, base: "redis" },
                 }
               : {}),
           },
@@ -422,44 +422,44 @@ export default defineNuxtConfig({
             ? {
                 // 有Redis时启用ISR
                 "/": {
-                  isr: 300, // 5分钟
-                  cache: { maxAge: 300, base: "redis" },
+                  isr: 30, // 5分钟
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/archiving": {
-                  isr: 600, // 10分钟
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: 30, // 10分钟
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/category/**": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: 30,
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/content/**": {
-                  isr: true,
-                  cache: { base: "redis" },
+                  isr: 30,
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/tag/**": {
-                  isr: 900, // 15分钟
-                  cache: { maxAge: 900, base: "redis" },
+                  isr: 30, // 15分钟
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/subscribes": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: 30,
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/changelog": {
-                  isr: 1800, // 30分钟
-                  cache: { maxAge: 1800, base: "redis" },
+                  isr: 30, // 30分钟
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/agreement": {
-                  isr: true,
-                  cache: { base: "redis" },
+                  isr: 30,
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/sitemap": {
-                  isr: 3600, // 1小时
-                  cache: { maxAge: 3600, base: "redis" },
+                  isr: 30, // 1小时
+                  cache: { maxAge: 30, base: "redis" },
                 },
                 "/sitemap.xml": {
-                  isr: 3600,
-                  cache: { maxAge: 3600, base: "redis" },
+                  isr: 30,
+                  cache: { maxAge: 30, base: "redis" },
                 },
               }
             : {
