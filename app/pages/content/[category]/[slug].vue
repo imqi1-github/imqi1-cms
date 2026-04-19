@@ -70,16 +70,33 @@ const isLoadingAuth = ref(true);
 const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
-// 获取相关文章（使用最新文章作为相关文章）
-const { data: relatedPostsData, pending: relatedPostsPending } = await useFetch(`/api/recent-posts`, {
-  params: {
-    limit: 4,
+// 获取相关文章（根据标签筛选）
+const relatedPostsData = ref<any>(null);
+const relatedPostsPending = ref(false);
+
+// 监听文章数据，加载后再获取相关文章
+watch(
+  () => post.value?.cid,
+  async (postId) => {
+    if (postId) {
+      relatedPostsPending.value = true;
+      try {
+        const data = await $fetch(`/api/related-posts/${postId}?limit=3`);
+        relatedPostsData.value = data;
+      } catch (error) {
+        console.error("获取相关文章失败:", error);
+        relatedPostsData.value = { success: false, data: [] };
+      } finally {
+        relatedPostsPending.value = false;
+      }
+    }
   },
-});
+  { immediate: true }
+);
 
 const relatedPosts = computed(() => {
   if (!relatedPostsData.value?.success || !post.value) return [];
-  return relatedPostsData.value.data.filter((p: any) => p.cid !== post.value?.cid).slice(0, 4);
+  return relatedPostsData.value.data.slice(0, 3);
 });
 
 // 目录相关
@@ -313,6 +330,22 @@ watch(
     }
   },
   { immediate: true },
+);
+
+// 监听相关文章数据，触发渐入动画
+watch(
+  () => relatedPosts.value,
+  (posts) => {
+    if (import.meta.client && posts && posts.length > 0) {
+      nextTick(() => {
+        const relatedSection = document.querySelector(".related-posts-section");
+        if (relatedSection && relatedSection.classList.contains("opacity-0")) {
+          relatedSection.classList.remove("opacity-0", "translate-y-8");
+          relatedSection.classList.add("opacity-100", "translate-y-0");
+        }
+      });
+    }
+  }
 );
 
 // 监听 404 状态，触发错误页动画
@@ -1758,7 +1791,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 相关文章 -->
-      <section v-if="relatedPosts.length > 0" class="w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
+      <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
           <div

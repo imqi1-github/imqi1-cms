@@ -8,6 +8,13 @@ useScrollbarTheme();
 
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
+const showFirstLoading = ref(true);
+const siteHost = ref("");
+
+// 从 window.location 解析域名
+if (import.meta.client) {
+  siteHost.value = window.location.hostname.toUpperCase();
+}
 
 // 页面加载状态
 const showPageLoading = ref(false);
@@ -309,6 +316,11 @@ watch(
 );
 
 onMounted(() => {
+  // 页面加载完成后，延迟隐藏首次加载遮罩
+  setTimeout(() => {
+    showFirstLoading.value = false;
+  }, 800);
+
   console.log(
     "%c ImQi1\u6B22\u8FCE\u4F60\u7684\u6765\u8BBF\u3002",
     "background: linear-gradient(270deg,#f9fafb,#eaecf0,#dddddd);padding:8px 15px;border-radius:8px;color:#222",
@@ -326,6 +338,21 @@ onMounted(() => {
 
 <template>
   <div>
+    <!-- 首次加载遮罩 -->
+    <Transition name="first-loading">
+      <div v-if="showFirstLoading && isFrontend" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-slate-950">
+        <div class="flex flex-col items-center gap-6">
+          <div class="animate-spin">
+            <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />
+          </div>
+          <div class="text-center">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 font-serif mb-2">正在加载中...</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 font-serif">IMQI1.COM</p>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
@@ -357,5 +384,29 @@ onMounted(() => {
     <Toaster />
     <ContextMenu class="right-button" />
     <FrontNotification />
+
   </div>
 </template>
+
+<style scoped>
+/* 首次加载遮罩过渡动画 */
+.first-loading-enter-active,
+.first-loading-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.first-loading-enter-from,
+.first-loading-leave-to {
+  opacity: 0;
+}
+
+.first-loading-enter-to,
+.first-loading-leave-from {
+  opacity: 1;
+}
+
+/* 首次加载遮罩的淡出效果 */
+.first-loading-leave-active {
+  transition: opacity 0.3s ease;
+}
+</style>
