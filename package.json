@@ -31,7 +31,8 @@
     "pm2:logs": "pm2 logs imqi1-nuxt",
     "pm2:monit": "pm2 monit",
     "pm2:status": "pm2 status",
-    "deploy": "npm run build && npm run upload:cos"
+    "deploy": "npm run build && npm run upload:cos",
+    "reset:password": "tsx scripts/reset-password.ts"
   },
   "dependencies": {
     "@fancyapps/ui": "^6.1.13",
