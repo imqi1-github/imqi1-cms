@@ -85,7 +85,7 @@ const isDarkMode = computed(() => colorMode.value === "dark");
 // 防抖锁，避免快速点击导致性能问题
 let isTransitioning = false;
 
-// 切换亮暗模式（极致性能优化 + 圆形扩散动画）
+// 切换亮暗模式（优化的圆形扩散动画）
 const handleClick = async (event: MouseEvent) => {
   // 防抖：如果在过渡中，直接返回
   if (isTransitioning) return;
@@ -101,48 +101,51 @@ const handleClick = async (event: MouseEvent) => {
   // 设置锁
   isTransitioning = true;
 
+  // 检查浏览器是否支持 View Transition API
   if (!document.startViewTransition) {
     colorMode.preference = newMode;
-    // 300ms 后释放锁（动画时间）
     setTimeout(() => {
       isTransitioning = false;
     }, 300);
     return;
   }
 
+  // 使用 View Transition API
   const transition = document.startViewTransition(async () => {
     colorMode.preference = newMode;
     await nextTick();
   });
 
-  transition.ready.then(() => {
-    // 切换到暗色：isToDark = true，old（亮色）收缩
-    // 切换到亮色：isToDark = false，new（亮色）扩散
+  try {
+    await transition.ready;
+
+    // 判断切换方向
     const isToDark = newMode === "dark";
+
+    // 使用 clip-path 实现圆形扩散
     const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
 
-    const animation = document.documentElement.animate(
+    // 纯 clip-path 动画，不使用缩放
+    document.documentElement.animate(
       {
         clipPath: isToDark ? clipPath.reverse() : clipPath,
       },
       {
-        duration: 300,
-        easing: "ease-in-out",
+        duration: 350,
+        easing: "cubic-bezier(0.4, 0.0, 0.2, 1)",
         fill: "forwards",
-        pseudoElement: isToDark ? "::view-transition-old(root)" : "::view-transition-new(root)",
-      },
-    );
-
-    // 动画完成后释放锁
-    animation.finished.then(() => {
+        pseudoElement: isToDark
+          ? "::view-transition-old(root)"
+          : "::view-transition-new(root)",
+      }
+    ).finished.then(() => {
       isTransitioning = false;
     });
-  });
-
-  // 如果 transition 失败，也要释放锁
-  transition.finished.catch(() => {
+  } catch (error) {
+    // 如果 transition 失败，确保释放锁
     isTransitioning = false;
-  });
+    console.error("View transition failed:", error);
+  }
 };
 
 // 滚动进度

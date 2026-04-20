@@ -1,9 +1,9 @@
-import { onMounted, onUnmounted, watch } from "vue";
+import { onMounted, watch } from "vue";
 
 export function useScrollbarTheme() {
   const colorMode = useColorMode();
 
-  // 更新滚动条颜色
+  // 更新滚动条颜色 - 使用 CSS 类切换
   const updateScrollbarColor = (isDark: boolean) => {
     if (!import.meta.client) return;
 
@@ -73,7 +73,7 @@ export function useScrollbarTheme() {
         }
         ::-webkit-scrollbar-thumb:hover {
           background-color: #94a3b8 !important;
-        }
+    }
       `;
     }
 
@@ -92,13 +92,5 @@ export function useScrollbarTheme() {
   onMounted(() => {
     // 初始化时应用
     updateScrollbarColor(colorMode.preference === "dark");
-  });
-
-  onUnmounted(() => {
-    // 清理样式
-    const style = document.getElementById("scrollbar-theme-style");
-    if (style) {
-      style.remove();
-    }
   });
 }
