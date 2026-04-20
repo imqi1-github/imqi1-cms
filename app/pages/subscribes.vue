@@ -6,12 +6,11 @@ useHead({
 });
 
 const posts = ref<any[]>([]);
-const loading = ref(true);
 const error = ref<string | null>(null);
+const isLoaded = ref(false);
 
 // 加载订阅文章
 async function loadPosts() {
-  loading.value = true;
   error.value = null;
   try {
     const response = await $fetch('/api/subscribes') as any;
@@ -20,7 +19,7 @@ async function loadPosts() {
     error.value = err.message || '获取订阅文章失败';
     posts.value = [];
   } finally {
-    loading.value = false;
+    isLoaded.value = true;
   }
 }
 
@@ -95,36 +94,22 @@ watch(posts, () => {
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每8小时自动更新</p>
     </header>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="space-y-6">
-      <div v-for="i in 5" :key="i" class="border rounded-lg p-6 space-y-3">
-        <div class="flex items-center gap-3">
-          <div class="size-10 bg-muted rounded-full animate-pulse" />
-          <div class="h-4 bg-muted rounded w-32 animate-pulse" />
-          <div class="h-3 bg-muted rounded w-20 animate-pulse ml-auto" />
-        </div>
-        <div class="h-5 bg-muted rounded w-3/4 animate-pulse" />
-        <div class="h-4 bg-muted rounded w-full animate-pulse" />
-        <div class="h-4 bg-muted rounded w-1/2 animate-pulse" />
-      </div>
-    </div>
-
     <!-- 错误状态 -->
-    <div v-else-if="error" class="text-center py-16">
+    <div v-if="isLoaded && error" class="text-center py-16 animate-fade-in">
       <Icon name="lucide:alert-circle" class="size-16 text-destructive/50 mx-auto mb-4" />
       <p class="text-muted-foreground mb-4">{{ error }}</p>
       <Button variant="outline" @click="loadPosts">重试</Button>
     </div>
 
     <!-- 空状态 -->
-    <div v-else-if="posts.length === 0" class="text-center py-16">
+    <div v-if="isLoaded && posts.length === 0 && !error" class="text-center py-16 animate-fade-in">
       <Icon name="lucide:rss" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
       <p class="text-muted-foreground">暂无订阅文章</p>
       <p class="text-sm text-muted-foreground mt-2">请先在后台添加订阅源并更新</p>
     </div>
 
     <!-- 文章列表 -->
-    <div v-else class="space-y-6">
+    <div v-if="isLoaded && posts.length > 0" class="space-y-6">
       <article
         v-for="post in posts"
         :key="post.id"
