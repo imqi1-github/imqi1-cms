@@ -728,7 +728,7 @@ onMounted(() => {
           href="${url}"
           target="_blank"
           rel="noopener noreferrer"
-          class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800">
+          class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800">
           <div class="flex">
             ${
               image
@@ -746,12 +746,12 @@ onMounted(() => {
             }
             <div class="flex-1 p-5 flex flex-col justify-center">
               <div class="flex items-start justify-between gap-3 mb-2">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 line-clamp-2">
                   ${title}
                 </h3>
                 <Icon
                   name="lucide:external-link"
-                  class="size-5 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5 group-hover:text-blue-500 transition-colors"
+                  class="size-5 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5"
                 />
               </div>
               ${
@@ -774,6 +774,42 @@ onMounted(() => {
 
         // 替换原容器
         wrapper.replaceWith(cardContainer);
+      });
+
+      // 初始化简单外链卡片容器
+      const simpleCardWrappers = document.querySelectorAll(".markdown-simple-card-wrapper");
+      simpleCardWrappers.forEach(wrapper => {
+        const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+        // 解析参数：url | title
+        const parts = paramsStr.split("|").map(p => p.trim());
+
+        const url = parts[0] || "";
+        const title = parts[1] || "链接标题";
+
+        // 创建简单卡片元素
+        const simpleCardContainer = document.createElement("div");
+        simpleCardContainer.className = "markdown-simple-card my-4";
+
+        simpleCardContainer.innerHTML = `
+        <a
+          href="${url}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block group border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800">
+          <div class="flex items-center justify-between px-4 py-3">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
+              ${title}
+            </h3>
+            <div class="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+              <span class="text-xs truncate max-w-xs">${url}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 flex-shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </div>
+          </div>
+        </a>
+      `;
+
+        // 替换原容器
+        wrapper.replaceWith(simpleCardContainer);
       });
 
       // 初始化轮播图容器
@@ -954,7 +990,7 @@ onMounted(() => {
             target="_blank"
             rel="noopener noreferrer"
             class="block group">
-            <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300">
+            <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300">
               <!-- 顶部栏 -->
               <div class="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                 <div class="flex items-center gap-2">
@@ -984,10 +1020,10 @@ onMounted(() => {
               <div class="p-4">
                 <!-- 标题行 -->
                 <div class="flex items-start justify-between gap-2 mb-3">
-                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-1">
                     ${repoName}
                   </h3>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-0.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </div>
 
                 <!-- 描述 -->
@@ -1057,6 +1093,68 @@ onMounted(() => {
           </div>
         `;
         }
+      });
+
+      // 初始化瀑布流图片容器
+      const waterfallWrappers = document.querySelectorAll(".markdown-waterfall-wrapper");
+      waterfallWrappers.forEach(wrapper => {
+        // 获取容器的完整文本内容，按行分割
+        const fullText = wrapper.textContent || "";
+        const lines = fullText
+          .split("\n")
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        const images: { url: string; caption?: string }[] = [];
+
+        // 解析每一行，提取图片 URL 和标题（格式：url | caption）
+        lines.forEach(line => {
+          const parts = line.split("|").map(s => s.trim());
+          if (parts.length >= 1 && parts[0].length > 0) {
+            images.push({
+              url: parts[0],
+              caption: parts[1] || "",
+            });
+          }
+        });
+
+        if (images.length === 0) {
+          wrapper.remove();
+          return;
+        }
+
+        // 创建瀑布流容器
+        const waterfallContainer = document.createElement("div");
+        waterfallContainer.className = "markdown-waterfall my-6";
+
+        // 创建图片网格
+        const imagesGrid = document.createElement("div");
+        imagesGrid.className = "waterfall-grid";
+
+        images.forEach(img => {
+          const imageItem = document.createElement("div");
+          imageItem.className = "waterfall-item";
+
+          imageItem.innerHTML = `
+            <div class="waterfall-img-wrapper">
+              <img
+                src="${img.url}"
+                alt="${img.caption || "图片"}"
+                data-fancybox="gallery"
+                data-caption="${img.caption || "图片"}"
+                class="waterfall-img"
+                loading="lazy"
+              />
+              ${img.caption ? `<div class="waterfall-caption">${img.caption}</div>` : ""}
+            </div>
+          `;
+
+          imagesGrid.appendChild(imageItem);
+        });
+
+        waterfallContainer.appendChild(imagesGrid);
+
+        // 替换原容器
+        wrapper.replaceWith(waterfallContainer);
       });
 
       // 初始化音乐播放器容器
@@ -1336,6 +1434,71 @@ onMounted(() => {
         .swiper-container[class*="markdown-swiper-instance"] .swiper-wrapper.noneed {
           height: 250px;
         }
+      }
+
+      /* 瀑布流图片样式 */
+      .markdown-waterfall .waterfall-grid {
+        column-count: 3;
+        column-gap: 16px;
+      }
+
+      @media (max-width: 1024px) {
+        .markdown-waterfall .waterfall-grid {
+          column-count: 2;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .markdown-waterfall .waterfall-grid {
+          column-count: 1;
+        }
+      }
+
+      .markdown-waterfall .waterfall-item {
+        break-inside: avoid;
+        margin-bottom: 16px;
+      }
+
+      .markdown-waterfall .waterfall-img-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        background: rgb(243 244 246);
+        dark:background: rgb(31 41 55);
+      }
+
+      .markdown-waterfall .waterfall-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
+      }
+
+      .markdown-waterfall .waterfall-img:hover {
+        transform: scale(1.05);
+      }
+
+      .markdown-waterfall .waterfall-caption {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 8px 12px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        color: white;
+        font-size: 13px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .markdown-waterfall .waterfall-img-wrapper:hover .waterfall-caption {
+        opacity: 1;
+      }
+
+      .dark .markdown-waterfall .waterfall-img-wrapper {
+        background: rgb(31 41 55);
       }
     `;
       document.head.appendChild(style);
@@ -2024,7 +2187,7 @@ onUnmounted(() => {
 .markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4):not(.markdown-repo h4),
 .markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5):not(.markdown-repo h5),
 .markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6):not(.markdown-repo h6) {
-  margin-bottom: 0.5em;
+  margin-block: 0.5em;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -2062,7 +2225,7 @@ onUnmounted(() => {
   text-decoration: none;
 }
 
-.markdown-body :deep(a:hover) {
+.markdown-body :deep(a:hover):not(.markdown-card a):not(.markdown-simple-card a):not(.markdown-repo a) {
   text-decoration: underline;
 }
 

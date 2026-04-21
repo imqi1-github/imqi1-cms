@@ -309,6 +309,44 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     },
   });
 
+  // 简单外链卡片容器（只包含标题和链接）
+  md.use(container, "simple-card", {
+    validate: (params: string) => {
+      // 匹配 "simple-card url | title" 格式
+      return params.trim().match(/^simple-card\s+(.+)$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      const info = tokens[idx].info.trim();
+      // 提取参数（去掉 "simple-card" 前缀）
+      let paramsStr = info.replace(/^simple-card\s+/, "").trim();
+
+      if (tokens[idx].nesting === 1) {
+        // 开始容器，将参数存储在 data 属性中
+        return `<div class="markdown-simple-card-wrapper" data-params="${encodeURIComponent(paramsStr)}">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
+  // 瀑布流图片容器（使用 columns 布局）
+  md.use(container, "waterfall", {
+    validate: (params: string) => {
+      // 匹配 "waterfall" 格式（不需要额外参数）
+      return params.trim().match(/^waterfall$/);
+    },
+    render: (tokens: any[], idx: number) => {
+      if (tokens[idx].nesting === 1) {
+        // 开始容器
+        return `<div class="markdown-waterfall-wrapper">`;
+      } else {
+        // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
   mdInstance = md;
   return md;
 }

@@ -491,7 +491,7 @@ onUnmounted(() => {
 .markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4):not(.markdown-repo h4),
 .markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5):not(.markdown-repo h5),
 .markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6):not(.markdown-repo h6) {
-  margin-bottom: 0.5em;
+  margin-block: 0.5em;
   font-weight: 700;
   line-height: 1.3;
 }

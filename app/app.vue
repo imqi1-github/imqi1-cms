@@ -357,7 +357,7 @@ onMounted(() => {
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
         <SiteHeader />
-        <main class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow">
+        <main class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1">
           <NuxtPage class="font-serif font-[450] grow" />
         </main>
         <SiteFooter class="font-serif font-[450]" />
