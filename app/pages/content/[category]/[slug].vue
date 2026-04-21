@@ -1336,6 +1336,10 @@ onMounted(() => {
         cursor: zoom-in;
       }
 
+      .swiper-img {
+        height: 100%;
+      }
+
       .swiper-container[class*="markdown-swiper-instance"] .swiper-slide-title {
         text-align: center;
         color: white;
