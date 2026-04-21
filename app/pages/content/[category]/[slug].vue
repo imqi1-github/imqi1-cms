@@ -1476,11 +1476,6 @@ onMounted(() => {
         height: auto;
         display: block;
         cursor: zoom-in;
-        transition: transform 0.3s ease;
-      }
-
-      .markdown-waterfall .waterfall-img:hover {
-        transform: scale(1.05);
       }
 
       .markdown-waterfall .waterfall-caption {
@@ -1489,7 +1484,7 @@ onMounted(() => {
         left: 0;
         right: 0;
         padding: 8px 12px;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
         color: white;
         font-size: 13px;
         text-align: center;
@@ -1529,7 +1524,7 @@ onMounted(() => {
 
           // 使用 LivePhoto 组件的 HTML 结构
           livePhotoContainer.innerHTML = `
-            <div class="live-photo-wrapper relative w-full h-auto rounded-lg overflow-hidden ${className}" onmouseenter="this.querySelector('button').classList.add('opacity-100'); this.querySelector('button').classList.remove('opacity-0');" onmouseleave="this.querySelector('button').classList.remove('opacity-100'); this.querySelector('button').classList.add('opacity-0');">
+            <div class="live-photo-wrapper relative w-full h-auto rounded-lg overflow-hidden ${className}">
               <!-- 静态图片 -->
               <img
                 src="${cleanSrc}"
@@ -1544,7 +1539,6 @@ onMounted(() => {
                 class="live-photo-video absolute w-full inset-0 rounded-lg max-h-[inherit] pointer-events-none transition-opacity duration-300 ease-in-out object-cover"
                 playsinline
                 muted
-                style="opacity: 0"
               ></video>
               <!-- 实况照片标识 -->
               <div class="live-photo-tip absolute top-3 left-3 text-white text-sm flex items-center gap-1 z-10 pointer-events-none">
@@ -1577,6 +1571,21 @@ onMounted(() => {
           const playButton = livePhotoWrapper?.querySelector("button");
 
           if (livePhotoWrapper && imgElement && videoElement) {
+            // 鼠标悬停控制按钮显示/隐藏（仅在暂停时）
+            livePhotoWrapper.addEventListener("mouseenter", () => {
+              if (playButton && !isPlaying) {
+                playButton.classList.remove("opacity-0");
+                playButton.classList.add("opacity-100");
+              }
+            });
+
+            livePhotoWrapper.addEventListener("mouseleave", () => {
+              if (playButton && !isPlaying) {
+                playButton.classList.add("opacity-0");
+                playButton.classList.remove("opacity-100");
+              }
+            });
+
             // 提取视频数据
             const extractMotionVideo = async (imgUrl: string): Promise<string | null> => {
               try {
@@ -1625,6 +1634,10 @@ onMounted(() => {
             let imgOpacityTimer: number | null = null;
             let videoOpacityTimer: number | null = null;
 
+            // 初始化透明度（确保图片显示，视频隐藏）
+            imgElement.style.opacity = "1";
+            videoElement.style.opacity = "0";
+
             // 播放视频
             const playVideo = () => {
               if (!isPlaying && videoElement.src) {
@@ -1642,15 +1655,15 @@ onMounted(() => {
                 videoElement.currentTime = 0;
 
                 // 交叉淡入淡出：
-                // 1. 先让视频淡入（0 -> 100）
+                // 1. 先让视频快速淡入（0 -> 100，150ms）
                 videoOpacity = 100;
                 videoElement.style.opacity = (videoOpacity / 100).toString();
 
-                // 2. 等待一小段时间后，再让图片淡出
+                // 2. 等待视频完全淡入后，再让图片淡出
                 imgOpacityTimer = window.setTimeout(() => {
                   imgOpacity = 0;
                   imgElement.style.opacity = (imgOpacity / 100).toString();
-                }, 50); // 50ms 后让图片淡出
+                }, 250); // 150ms 后让图片淡出（等待视频完全淡入）
 
                 // 3. 开始播放视频
                 videoElement.play().catch(error => {
@@ -1664,8 +1677,10 @@ onMounted(() => {
                 });
 
                 isPlaying = true;
+                // 播放时隐藏按钮
                 if (playButton) {
-                  playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h2v14H6zm10 0h2v14h-2z"/></svg>`;
+                  playButton.classList.add("opacity-0");
+                  playButton.classList.remove("opacity-100");
                 }
               }
             };
@@ -1688,19 +1703,21 @@ onMounted(() => {
                 imgOpacity = 100;
                 imgElement.style.opacity = (imgOpacity / 100).toString();
 
-                // 2. 等待一小段时间后，再让视频淡出
+                // 2. 等待一小段时间后，再让视频快速淡出
                 videoOpacityTimer = window.setTimeout(() => {
                   videoOpacity = 0;
                   videoElement.style.opacity = (videoOpacity / 100).toString();
-                }, 50); // 50ms 后让视频淡出
+                }, 25); // 25ms 后让视频淡出（视频淡出只需150ms，所以25ms足够）
 
                 // 3. 暂停视频并重置进度
                 videoElement.pause();
                 videoElement.currentTime = 0;
                 isPlaying = false;
 
-                if (playButton) {
-                  playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--ri size-5 text-white drop-shadow-lg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832"></path></svg>`;
+                // 暂停时显示按钮（如果鼠标正在悬停）
+                if (playButton && livePhotoWrapper.matches(":hover")) {
+                  playButton.classList.remove("opacity-0");
+                  playButton.classList.add("opacity-100");
                 }
               }
             };
@@ -1722,8 +1739,10 @@ onMounted(() => {
                 // 更新播放状态
                 isPlaying = false;
 
-                if (playButton) {
-                  playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--ri size-5 text-white drop-shadow-lg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832"></path></svg>`;
+                // 播放结束时显示按钮（如果鼠标正在悬停）
+                if (playButton && livePhotoWrapper.matches(":hover")) {
+                  playButton.classList.remove("opacity-0");
+                  playButton.classList.add("opacity-100");
                 }
               }
             };
@@ -2178,6 +2197,11 @@ onUnmounted(() => {
   cursor: zoom-in;
   max-height: 600px;
   margin: auto;
+  transition: transform 0.3s ease;
+}
+
+.markdown-body :deep(img:not(.swiper-container img):not(.waterfall-img):hover) {
+  transform: scale(1.02);
 }
 
 .markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
