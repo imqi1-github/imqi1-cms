@@ -306,6 +306,10 @@ function scrollToHash() {
   });
 }
 
+function hideFirstLoading() {
+  showFirstLoading.value = false;
+}
+
 // 监听路由变化，处理 Hash 滚动
 watch(
   () => route.hash,
@@ -317,9 +321,7 @@ watch(
 
 onMounted(() => {
   // 页面加载完成后，延迟隐藏首次加载遮罩
-  setTimeout(() => {
-    showFirstLoading.value = false;
-  }, 800);
+  showFirstLoading.value = false;
 
   console.log(
     "%c ImQi1\u6B22\u8FCE\u4F60\u7684\u6765\u8BBF\u3002",
@@ -340,7 +342,7 @@ onMounted(() => {
   <div>
     <!-- 首次加载遮罩 -->
     <Transition name="first-loading">
-      <div v-if="showFirstLoading && isFrontend" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-slate-950">
+      <div v-if="showFirstLoading && isFrontend" @click="hideFirstLoading()" class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950">
         <div class="flex flex-col items-center gap-6">
           <div class="animate-spin">
             <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />
