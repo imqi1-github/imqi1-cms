@@ -330,7 +330,7 @@ onMounted(() => {
       </div>
 
       <!-- 右侧导航菜单 -->
-      <SiteNavMenu />
+      <SiteNavMenu :siteName="siteName" />
     </div>
   </nav>
 </template>

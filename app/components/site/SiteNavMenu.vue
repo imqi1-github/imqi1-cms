@@ -2,6 +2,12 @@
 import { Menu } from "lucide-vue-next";
 
 const router = useRouter();
+const props = defineProps({
+  siteName: {
+    type: String,
+    default: "默认站点",
+  },
+});
 
 // 移动端侧边栏开关
 const isMobileMenuOpen = ref(false);
@@ -56,12 +62,16 @@ onMounted(() => {
 <template>
   <div
     key="site-nav-menu"
-    class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] ml-auto"
+    class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] ml-auto mr-3"
     :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
     <!-- PC端菜单项 -->
     <div key="pc-nav-items" class="hidden md:flex items-center gap-2.5">
       <!-- 搜索按钮 -->
-      <div key="search-button" class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white" @click="navigate('/search')" v-tooltip="`搜索`">
+      <div
+        key="search-button"
+        class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white"
+        @click="navigate('/search')"
+        v-tooltip="`搜索`">
         <Icon name="ri:search-line" class="text-[1.2em] relative z-1" />
         <span
           class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
@@ -102,6 +112,12 @@ onMounted(() => {
     </div>
 
     <!-- 移动端汉堡菜单按钮 -->
+
+    <NuxtLink to="/" class="text-inherit font-serif font-bold flex items-center justify-center gap-1 md:hidden">
+      <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
+      <div class="text-[0.95em] font-black -top-px relative">{{ siteName }}</div>
+    </NuxtLink>
+
     <button
       @click="isMobileMenuOpen = true"
       class="md:hidden flex items-center justify-center rounded-full transition-all duration-300 hover:bg-white/50 dark:hover:bg-gray-800/50"
