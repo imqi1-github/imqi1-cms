@@ -22,24 +22,38 @@ const showLoadingTimeout = ref(false);
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 let loadingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 监听页面开始加载（更早的钩子，在路由导航一开始就触发）
+// 页面过渡状态
+const isPageTransitioning = ref(false);
+const mainOpacity = ref(1);
+let transitionStartTime = 0;
+let fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
+const FADE_OUT_DURATION = 300; // 淡出动画时长
+
+// 监听页面开始加载
 const nuxtApp = useNuxtApp();
 nuxtApp.hook("page:start", () => {
-  // 清除之前的隐藏定时器
+  // 清除之前的定时器
   if (hideTimer) {
     clearTimeout(hideTimer);
     hideTimer = null;
   }
-
-  // 清除之前的加载超时定时器
   if (loadingTimeoutTimer) {
     clearTimeout(loadingTimeoutTimer);
     loadingTimeoutTimer = null;
+  }
+  if (fadeOutTimer) {
+    clearTimeout(fadeOutTimer);
+    fadeOutTimer = null;
   }
 
   // 重置状态
   showPageLoading.value = true;
   showLoadingTimeout.value = false;
+  isPageTransitioning.value = true;
+  transitionStartTime = Date.now();
+
+  // 立即开始淡出
+  mainOpacity.value = 0;
 
   // 设置定时器，1秒后显示加载提示
   loadingTimeoutTimer = setTimeout(() => {
@@ -55,56 +69,34 @@ nuxtApp.hook("page:finish", () => {
     loadingTimeoutTimer = null;
   }
 
-  // 重置状态
-  showLoadingTimeout.value = false;
+  // 计算已过时间
+  const elapsedTime = Date.now() - transitionStartTime;
+  const remainingFadeOutTime = Math.max(0, FADE_OUT_DURATION - elapsedTime);
 
-  // 重置页面内容的样式，确保新页面能正确显示
-  const mainContent = document.querySelector("main");
-  if (mainContent) {
-    mainContent.style.transition = "";
-    mainContent.style.opacity = "";
-    mainContent.style.transform = "";
+  // 如果页面加载很快（淡出动画未完成），需要等待淡出完成
+  if (remainingFadeOutTime > 0 && isFrontend.value) {
+    fadeOutTimer = setTimeout(() => {
+      finishPageTransition();
+    }, remainingFadeOutTime);
+  } else {
+    // 淡出已完成或后台页面，直接显示内容
+    finishPageTransition();
   }
 
-  // 重置 index-hero 元素的样式
-  const heroElement = document.querySelector(".index-hero");
-  if (heroElement) {
-    heroElement.style.transition = "";
-    heroElement.style.opacity = "";
-    heroElement.style.transform = "";
+  function finishPageTransition() {
+    // 等待 Vue 更新 DOM 后再淡入，避免样式冲突
+    nextTick(() => {
+      // 重置状态，触发淡入动画
+      showLoadingTimeout.value = false;
+      showPageLoading.value = false;
+      isPageTransitioning.value = false;
+      mainOpacity.value = 1;
+    });
   }
-
-  // 设置最小显示时间为 500ms，确保用户能看到加载动画
-  showPageLoading.value = false;
 });
 
-// 路由导航守卫，添加渐出效果
+// 路由导航守卫（不再需要，逻辑已移到 page:start 钩子）
 router.beforeEach(async (to, from) => {
-  // 只有前台页面需要渐出效果
-  if (isFrontend.value && from.path !== to.path) {
-    // 获取当前页面的主要内容元素
-    const mainContent = document.querySelector("main");
-    if (mainContent) {
-      // 添加渐出效果
-      mainContent.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-      mainContent.style.opacity = "0";
-      // mainContent.style.transform = "translateY(20px)";
-    }
-
-    // 处理 fixed 定位的 index-hero 元素
-    // const heroElement = document.querySelector(".index-hero");
-    // if (heroElement) {
-    // 添加渐出效果，使用更具体的样式
-    // heroElement.style.transition = "opacity 0.5s ease, transform 0.5s ease";
-    // heroElement.style.opacity = "0";
-    // heroElement.style.transform = "scale(0.9)";
-    // heroElement.style.pointerEvents = "none";
-  }
-
-  // 等待渐出效果完成，延长时间确保效果可见
-  // await new Promise(resolve => setTimeout(resolve, 300000));
-  // }
-  // 直接返回，不需要调用next()
   return true;
 });
 
@@ -359,7 +351,12 @@ onMounted(() => {
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
         <SiteHeader />
-        <main class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1">
+        <main
+          class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
+          :style="{
+            transition: isPageTransitioning ? 'opacity 0.3s ease' : 'opacity 0.2s ease',
+            opacity: mainOpacity
+          }">
           <NuxtPage class="font-serif font-[450] grow" />
         </main>
         <SiteFooter class="font-serif font-[450]" />
