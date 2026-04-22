@@ -32,6 +32,11 @@ import mermaid from "@shikijs/langs/mermaid";
 import ini from "@shikijs/langs/ini";
 import powershell from "@shikijs/langs/powershell";
 
+import fs from 'fs'
+
+const islandLightTheme = JSON.parse(fs.readFileSync('./app/assets/shiki/Islands_Light-theme.json', 'utf-8'))
+const islandDarkTheme = JSON.parse(fs.readFileSync('./app/assets/shiki/Islands_Dark-theme.json', 'utf-8'))
+
 // 单例模式的 markdown 实例
 let mdInstance: MarkdownIt | null = null;
 
@@ -89,8 +94,8 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   md.use(
     await Shiki({
       themes: {
-        light: "min-light",
-        dark: "one-dark-pro",
+        light: islandLightTheme,
+        dark: islandDarkTheme,
       },
       langs: [
         javascript,
@@ -405,7 +410,7 @@ const musicPlatforms: MusicPlatform[] = [
 // 检测并转换音乐链接
 function transformMusicLinks(content: string): string {
   let transformedContent = content;
-  
+
   musicPlatforms.forEach(platform => {
     const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, 'g');
     transformedContent = transformedContent.replace(regex, (match, linkText, ...args) => {
@@ -413,14 +418,14 @@ function transformMusicLinks(content: string): string {
       const server = platform.getServer();
       const type = platform.getType(matchArray);
       const id = platform.getId(matchArray);
-      
+
       if (id) {
         return `:::music ${server} | ${type} | ${id}:::`;
       }
       return match;
     });
   });
-  
+
   return transformedContent;
 }
 
@@ -432,7 +437,7 @@ export async function renderMarkdown(content: string): Promise<string> {
 
   // 转换音乐链接为播放器容器
   const transformedContent = transformMusicLinks(content);
-  
+
   const md = await createMarkdownInstance();
   return md.render(transformedContent);
 }

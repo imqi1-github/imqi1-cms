@@ -212,7 +212,7 @@ const handleMouseEnter = async () => {
     // 2. 等待一小段时间后，再让图片淡出
     imgOpacityTimer = window.setTimeout(() => {
       imgOpacity.value = 0;
-    }, 50); // 50ms 后让图片淡出
+    }, 150); // 150ms 后让图片淡出
 
     // 3. 开始播放视频
     videoRef.value
