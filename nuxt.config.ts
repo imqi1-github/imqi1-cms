@@ -6,6 +6,30 @@ const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-ha
 const cdnBaseURL = "https://cdn.imqi1.com";
 const cdnURL = buildHashDir ? `${cdnBaseURL}${buildHashDir}` : cdnBaseURL;
 
+// 获取当前环境的 Redis 配置
+function getRedisConfig() {
+  const isDev = import.meta.env?.DEV ?? process.env.NODE_ENV !== "production";
+  const host = isDev ? process.env.REDIS_HOST_DEV : process.env.REDIS_HOST_PROD;
+
+  if (!host) {
+    return null;
+  }
+
+  const portKey = isDev ? "REDIS_PORT_DEV" : "REDIS_PORT_PROD";
+  const passwordKey = isDev ? "REDIS_PASSWORD_DEV" : "REDIS_PASSWORD_PROD";
+  const dbKey = isDev ? "REDIS_DB_DEV" : "REDIS_DB_PROD";
+
+  return {
+    host,
+    port: Number(process.env[portKey]) || 6379,
+    password: process.env[passwordKey],
+    db: Number(process.env[dbKey]) || 0,
+    lazyConnect: false,
+  };
+}
+
+const redisConfig = getRedisConfig();
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
@@ -259,23 +283,17 @@ export default defineNuxtConfig({
     // ISR 缓存存储配置
 
     storage: {
-      redis: {
-        driver: "redis",
-        host: process.env.REDIS_HOST || "127.0.0.1",
-        port: Number(process.env.REDIS_PORT) || 6379,
-        password: process.env.REDIS_PASSWORD,
-        db: Number(process.env.REDIS_DB) || 0,
-        lazyConnect: false,
-      },
-
-      cache: process.env.REDIS_HOST
+      redis: redisConfig
         ? {
             driver: "redis",
-            host: process.env.REDIS_HOST,
-            port: Number(process.env.REDIS_PORT) || 6379,
-            password: process.env.REDIS_PASSWORD,
-            db: Number(process.env.REDIS_DB) || 0,
-            lazyConnect: false,
+            ...redisConfig,
+          }
+        : undefined,
+
+      cache: redisConfig
+        ? {
+            driver: "redis",
+            ...redisConfig,
           }
         : {
             driver: "fs",
@@ -324,7 +342,7 @@ export default defineNuxtConfig({
           "/": {
             isr: 3600,
             // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: {
                     maxAge: 3600,
@@ -337,7 +355,7 @@ export default defineNuxtConfig({
           // 文章归档：每10分钟重新生成
           "/archiving": {
             isr: 43200,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 43200, base: "redis" },
                 }
@@ -347,7 +365,7 @@ export default defineNuxtConfig({
           // 分类页：每10分钟重新生成
           "/category/**": {
             isr: 3600,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 3600, base: "redis" },
                 }
@@ -357,7 +375,7 @@ export default defineNuxtConfig({
           // 文章详情：完全静态（发布后内容不变，永久缓存）
           "/content/**": {
             isr: true,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { base: "redis" },
                 }
@@ -367,7 +385,7 @@ export default defineNuxtConfig({
           // 标签页：每15分钟重新生成
           "/tag/**": {
             isr: 3600,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 3600, base: "redis" },
                 }
@@ -377,7 +395,7 @@ export default defineNuxtConfig({
           // 订阅页：每10分钟重新生成
           "/subscribes": {
             isr: 3600,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 3600, base: "redis" },
                 }
@@ -387,7 +405,7 @@ export default defineNuxtConfig({
           // 更新日志：每30分钟重新生成
           "/changelog": {
             isr: 3600,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 3600, base: "redis" },
                 }
@@ -397,7 +415,7 @@ export default defineNuxtConfig({
           // 协议页面：完全静态
           "/agreement": {
             isr: true,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { base: "redis" },
                 }
@@ -407,7 +425,7 @@ export default defineNuxtConfig({
           // 站点地图：每小时重新生成
           "/sitemap": {
             isr: 3600,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 3600, base: "redis" },
                 }
@@ -415,7 +433,7 @@ export default defineNuxtConfig({
           },
           "/sitemap.xml": {
             isr: 3600,
-            ...(process.env.REDIS_HOST
+            ...(redisConfig
               ? {
                   cache: { maxAge: 3600, base: "redis" },
                 }
@@ -424,7 +442,7 @@ export default defineNuxtConfig({
         }
       : {
           // 开发环境：如果配置了Redis则启用ISR，否则使用普通SSR
-          ...(process.env.REDIS_HOST
+          ...(redisConfig
             ? {
                 // 有Redis时启用ISR
                 "/": {
