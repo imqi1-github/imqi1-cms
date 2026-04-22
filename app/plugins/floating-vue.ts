@@ -9,7 +9,8 @@ export default defineNuxtPlugin(nuxtApp => {
       themes: {
         tooltip: {
           $extend: "dropdown",
-          triggers: ["hover", "pointer", "touch", "click", "focus"],
+          triggers: ["hover", "focus"],
+          hideOnTargetClick: false,
           placement: "bottom",
           instantMove: true,
           distance: 2,

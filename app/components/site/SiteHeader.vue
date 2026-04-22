@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { Menu } from "lucide-vue-next";
-
 const route = useRoute();
-const router = useRouter();
-
-// 移动端侧边栏开关
-const isMobileMenuOpen = ref(false);
 
 // 获取站点设置 - 使用非阻塞加载，不阻塞首屏渲染
 const { data } = useLazyAsyncData("site-settings", () => $fetch("/api/site"), {
   server: true,
 });
 const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
-
-// 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
-const { data: categoriesData } = useLazyAsyncData("categories", () => $fetch("/api/categories"), {
-  server: true,
-});
-const categories = computed(() => categoriesData.value?.data || []);
 
 // 获取页面标题（从页面组件设置）
 const { getPageTitle, getPageIcon, getPageCategory } = usePageTitle();
@@ -194,13 +182,6 @@ const currentPageTitle = computed(() => {
   return pageName ? `${pageName} - ${siteName.value}` : siteName.value;
 });
 
-// 导航项数据
-const navItems = [
-  { name: "留言", href: "/message", icon: "ri:chat-1-line" },
-  { name: "友链", href: "/links", icon: "ri:links-line" },
-  { name: "关于", href: "/about", icon: "ri:user-line" },
-];
-
 // 滚动监听
 const isScrolled = ref(false);
 // 滚动方向：true=向下，false=向上（默认为true，让页面加载时显示标题）
@@ -238,22 +219,6 @@ watch(
     }, 500);
   },
 );
-
-// 跳转到搜索页面
-function goToSearch() {
-  router.push("/search");
-}
-
-// 关闭移动端菜单
-function closeMobileMenu() {
-  isMobileMenuOpen.value = false;
-}
-
-// 跳转并关闭菜单
-function navigateAndClose(href: string) {
-  router.push(href);
-  closeMobileMenu();
-}
 
 onMounted(() => {
   const handleScroll = () => {
@@ -364,119 +329,10 @@ onMounted(() => {
         </ClientOnly>
       </div>
 
-      <!-- 右侧胶囊菜单 -->
-      <div
-        class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] ml-auto"
-        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
-        <!-- 移动端Logo -->
-        <NuxtLink
-          to="/"
-          class="md:hidden flex items-center gap-1 rounded-full relative overflow-hidden transition-all duration-300 font-serif font-[450]">
-          <img src="/imgs/imqi1.svg" alt="favicon" class="w-5.5 h-5.5" />
-          <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
-        </NuxtLink>
-
-        <!-- PC端菜单项 -->
-        <div class="hidden md:flex items-center gap-2.5">
-          <!-- 搜索按钮 -->
-          <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white" @click="goToSearch" v-tooltip="`搜索`">
-            <Icon name="ri:search-line" class="text-[1.2em] relative z-1" />
-            <span
-              class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
-          </div>
-
-          <!-- 分类下拉 -->
-          <div class="group/dropdown relative">
-            <div class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white">
-              <Icon name="ri:book-shelf-line" class="text-[1.2em] relative z-1" />
-              <span
-                class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
-            </div>
-
-            <!-- 分类下拉菜单 -->
-            <div
-              class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all duration-200 before:left-0 before:right-0 before:-top-5 before:h-5 before:absolute">
-              <NuxtLink
-                v-for="cat in categories"
-                :key="cat.slug"
-                :to="`/category/${cat.slug}`"
-                class="block px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 no-underline text-sm font-medium font-serif"
-                :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400': route.path === `/category/${cat.slug}` }">
-                {{ cat.name }}
-              </NuxtLink>
-            </div>
-          </div>
-
-          <!-- 其他导航项 -->
-          <NuxtLink
-            v-for="item in navItems"
-            :key="item.href"
-            :to="item.href"
-            v-tooltip="item.name"
-            class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative text-inherit hover:text-white no-underline">
-            <Icon :name="item.icon" class="text-[1.2em] relative z-1" />
-            <span
-              class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
-          </NuxtLink>
-        </div>
-
-        <!-- 移动端汉堡菜单按钮 -->
-        <button
-          @click="isMobileMenuOpen = true"
-          class="md:hidden flex items-center justify-center rounded-full transition-all duration-300 hover:bg-white/50 dark:hover:bg-gray-800/50"
-          aria-label="打开菜单">
-          <Menu class="size-4" />
-        </button>
-      </div>
+      <!-- 右侧导航菜单 -->
+      <SiteNavMenu />
     </div>
   </nav>
-
-  <!-- 移动端侧边栏菜单 -->
-  <Sheet :open="isMobileMenuOpen" @update:open="isMobileMenuOpen = $event">
-    <SheetContent side="right" class="w-80 font-serif font-[450]">
-      <SheetHeader>
-        <SheetTitle>菜单</SheetTitle>
-        <SheetDescription class="sr-only"> 网站导航菜单，包含搜索、分类和其他页面链接 </SheetDescription>
-      </SheetHeader>
-
-      <div class="flex flex-col gap-2 mt-6">
-        <!-- 搜索 -->
-        <button
-          @click="navigateAndClose('/search')"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left">
-          <Icon name="ri:search-line" class="size-5" />
-          <span class="font-medium">搜索</span>
-        </button>
-
-        <!-- 分类列表 -->
-        <div v-if="categories.length > 0" class="space-y-1">
-          <div class="px-4 py-2 text-sm font-medium text-muted-foreground">分类</div>
-          <button
-            v-for="cat in categories"
-            :key="cat.slug"
-            @click="navigateAndClose(`/category/${cat.slug}`)"
-            class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400': route.path === `/category/${cat.slug}` }">
-            <Icon name="ri:book-shelf-line" class="size-5" />
-            <span class="font-medium">{{ cat.name }}</span>
-          </button>
-        </div>
-
-        <Separator class="my-2" />
-
-        <!-- 其他导航项 -->
-        <button
-          v-for="item in navItems"
-          :key="item.href"
-          @click="navigateAndClose(item.href)"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left"
-          :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400': route.path === item.href }">
-          <Icon :name="item.icon" class="size-5" />
-          <span class="font-medium">{{ item.name }}</span>
-        </button>
-      </div>
-    </SheetContent>
-  </Sheet>
 </template>
 
 <style scoped>
