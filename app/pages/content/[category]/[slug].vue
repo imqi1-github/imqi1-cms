@@ -2200,10 +2200,6 @@ onUnmounted(() => {
   transition: transform 0.3s ease;
 }
 
-.markdown-body :deep(img:not(.swiper-container img):not(.waterfall-img):hover) {
-  transform: scale(1.02);
-}
-
 .markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
   margin: 1em 0;
   text-indent: 2em;

@@ -32,10 +32,8 @@ import mermaid from "@shikijs/langs/mermaid";
 import ini from "@shikijs/langs/ini";
 import powershell from "@shikijs/langs/powershell";
 
-import fs from 'fs'
-
-const islandLightTheme = JSON.parse(fs.readFileSync('./app/assets/shiki/Islands_Light-theme.json', 'utf-8'))
-const islandDarkTheme = JSON.parse(fs.readFileSync('./app/assets/shiki/Islands_Dark-theme.json', 'utf-8'))
+import islandLightTheme from '@/shiki/island_light'
+import islandDarkTheme from '@/shiki/island_dark'
 
 // 单例模式的 markdown 实例
 let mdInstance: MarkdownIt | null = null;
