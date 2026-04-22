@@ -51,6 +51,7 @@ export default defineNuxtConfig({
     public: {
       cdnURL: cdnURL,
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
+      rootDomain: process.env.ROOT_DOMAIN || "", // 防止反向代理的根域名
     },
   },
 
