@@ -474,15 +474,15 @@
           <a
             href="https://qi1.website"
             target="_blank"
-            class="about-bold-contact-link flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:*:fill-white hover:shadow hover:text-white">
-            <Icon name="ri:home-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400" mode="svg" />
+            class="about-bold-contact-link flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
+            <Icon name="ri:home-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white" mode="svg" />
             主页
           </a>
           <a
             href="https://github.com/imqi1-github"
             target="_blank"
-            class="about-bold-contact-link flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:*:fill-white hover:shadow hover:text-white">
-            <Icon name="ri:github-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400" mode="svg" />
+            class="about-bold-contact-link flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
+            <Icon name="ri:github-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white" mode="svg" />
             GitHub
           </a>
         </div>

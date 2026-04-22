@@ -77,7 +77,7 @@ const relatedPostsPending = ref(false);
 // 监听文章数据，加载后再获取相关文章
 watch(
   () => post.value?.cid,
-  async (postId) => {
+  async postId => {
     if (postId) {
       relatedPostsPending.value = true;
       try {
@@ -91,7 +91,7 @@ watch(
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const relatedPosts = computed(() => {
@@ -335,7 +335,7 @@ watch(
 // 监听相关文章数据，触发渐入动画
 watch(
   () => relatedPosts.value,
-  (posts) => {
+  posts => {
     if (import.meta.client && posts && posts.length > 0) {
       nextTick(() => {
         const relatedSection = document.querySelector(".related-posts-section");
@@ -345,7 +345,7 @@ watch(
         }
       });
     }
-  }
+  },
 );
 
 // 监听 404 状态，触发错误页动画
@@ -1629,23 +1629,23 @@ onMounted(() => {
 
             // 播放状态
             let isPlaying = false;
-            let imgOpacity = 100;
+            // let imgOpacity = 100;
             let videoOpacity = 0;
-            let imgOpacityTimer: number | null = null;
+            // let imgOpacityTimer: number | null = null;
             let videoOpacityTimer: number | null = null;
 
             // 初始化透明度（确保图片显示，视频隐藏）
-            imgElement.style.opacity = "1";
+            // imgElement.style.opacity = "1";
             videoElement.style.opacity = "0";
 
             // 播放视频
             const playVideo = () => {
               if (!isPlaying && videoElement.src) {
                 // 清除所有之前的定时器
-                if (imgOpacityTimer !== null) {
-                  clearTimeout(imgOpacityTimer);
-                  imgOpacityTimer = null;
-                }
+                // if (imgOpacityTimer !== null) {
+                //   clearTimeout(imgOpacityTimer);
+                //   imgOpacityTimer = null;
+                // }
                 if (videoOpacityTimer !== null) {
                   clearTimeout(videoOpacityTimer);
                   videoOpacityTimer = null;
@@ -1660,18 +1660,18 @@ onMounted(() => {
                 videoElement.style.opacity = (videoOpacity / 100).toString();
 
                 // 2. 等待视频完全淡入后，再让图片淡出
-                imgOpacityTimer = window.setTimeout(() => {
-                  imgOpacity = 0;
-                  imgElement.style.opacity = (imgOpacity / 100).toString();
-                }, 250); // 150ms 后让图片淡出（等待视频完全淡入）
+                // imgOpacityTimer = window.setTimeout(() => {
+                //   imgOpacity = 0;
+                //   imgElement.style.opacity = (imgOpacity / 100).toString();
+                // }, 150); // 150ms 后让图片淡出（等待视频完全淡入）
 
                 // 3. 开始播放视频
                 videoElement.play().catch(error => {
                   console.error("播放视频失败:", error);
                   // 播放失败时恢复显示图片
-                  imgOpacity = 100;
+                  // imgOpacity = 100;
                   videoOpacity = 0;
-                  imgElement.style.opacity = (imgOpacity / 100).toString();
+                  // imgElement.style.opacity = (imgOpacity / 100).toString();
                   videoElement.style.opacity = (videoOpacity / 100).toString();
                   isPlaying = false;
                 });
@@ -1689,10 +1689,10 @@ onMounted(() => {
             const pauseVideo = () => {
               if (isPlaying) {
                 // 清除所有之前的定时器
-                if (imgOpacityTimer !== null) {
-                  clearTimeout(imgOpacityTimer);
-                  imgOpacityTimer = null;
-                }
+                // if (imgOpacityTimer !== null) {
+                //   clearTimeout(imgOpacityTimer);
+                //   imgOpacityTimer = null;
+                // }
                 if (videoOpacityTimer !== null) {
                   clearTimeout(videoOpacityTimer);
                   videoOpacityTimer = null;
@@ -1700,14 +1700,14 @@ onMounted(() => {
 
                 // 交叉淡入淡出：
                 // 1. 先让图片淡入（0 -> 100）
-                imgOpacity = 100;
-                imgElement.style.opacity = (imgOpacity / 100).toString();
+                // imgOpacity = 100;
+                // imgElement.style.opacity = (imgOpacity / 100).toString();
 
                 // 2. 等待一小段时间后，再让视频快速淡出
-                videoOpacityTimer = window.setTimeout(() => {
-                  videoOpacity = 0;
-                  videoElement.style.opacity = (videoOpacity / 100).toString();
-                }, 25); // 25ms 后让视频淡出（视频淡出只需150ms，所以25ms足够）
+                // videoOpacityTimer = window.setTimeout(() => {
+                videoOpacity = 0;
+                videoElement.style.opacity = (videoOpacity / 100).toString();
+                // }, 75); // 75ms 后让视频淡出（视频淡出只需150ms，所以75ms足够）
 
                 // 3. 暂停视频并重置进度
                 videoElement.pause();
@@ -1727,14 +1727,14 @@ onMounted(() => {
               // 视频播放结束后自动暂停并显示图片
               if (isPlaying) {
                 // 显示图片
-                imgOpacity = 100;
-                imgElement.style.opacity = (imgOpacity / 100).toString();
+                // imgOpacity = 100;
+                // imgElement.style.opacity = (imgOpacity / 100).toString();
 
                 // 等待一小段时间后隐藏视频
-                setTimeout(() => {
-                  videoOpacity = 0;
-                  videoElement.style.opacity = (videoOpacity / 100).toString();
-                }, 25);
+                // setTimeout(() => {
+                videoOpacity = 0;
+                videoElement.style.opacity = (videoOpacity / 100).toString();
+                // }, 75);
 
                 // 更新播放状态
                 isPlaying = false;
@@ -2200,7 +2200,8 @@ onUnmounted(() => {
   transition: transform 0.3s ease;
 }
 
-.markdown-body :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
+.markdown-body
+  :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
   margin: 1em 0;
   text-indent: 2em;
 }

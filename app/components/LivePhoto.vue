@@ -169,7 +169,7 @@ onMounted(async () => {
 });
 
 // 存储定时器 ID，用于清除
-let imgOpacityTimer: number | null = null;
+// let imgOpacityTimer: number | null = null;
 let videoOpacityTimer: number | null = null;
 let resetTimer: number | null = null;
 
@@ -185,10 +185,10 @@ const handleMouseEnter = async () => {
   }
 
   // 清除所有之前的定时器
-  if (imgOpacityTimer !== null) {
-    clearTimeout(imgOpacityTimer);
-    imgOpacityTimer = null;
-  }
+  // if (imgOpacityTimer !== null) {
+  //   clearTimeout(imgOpacityTimer);
+  //   imgOpacityTimer = null;
+  // }
   if (videoOpacityTimer !== null) {
     clearTimeout(videoOpacityTimer);
     videoOpacityTimer = null;
@@ -210,9 +210,9 @@ const handleMouseEnter = async () => {
     videoOpacity.value = 100;
 
     // 2. 等待一小段时间后，再让图片淡出
-    imgOpacityTimer = window.setTimeout(() => {
-      imgOpacity.value = 0;
-    }, 150); // 150ms 后让图片淡出
+    // imgOpacityTimer = window.setTimeout(() => {
+    //   imgOpacity.value = 0;
+    // }, 150); // 150ms 后让图片淡出
 
     // 3. 开始播放视频
     videoRef.value
@@ -222,7 +222,7 @@ const handleMouseEnter = async () => {
       })
       .catch(err => {
         // 播放失败时恢复显示图片
-        imgOpacity.value = 100;
+        // imgOpacity.value = 100;
         videoOpacity.value = 0;
         isPlaying.value = false;
       });
@@ -238,10 +238,10 @@ const handleMouseLeave = () => {
   if (!videoRef.value) return;
 
   // 清除所有之前的定时器
-  if (imgOpacityTimer !== null) {
-    clearTimeout(imgOpacityTimer);
-    imgOpacityTimer = null;
-  }
+  // if (imgOpacityTimer !== null) {
+  //   clearTimeout(imgOpacityTimer);
+  //   imgOpacityTimer = null;
+  // }
   if (videoOpacityTimer !== null) {
     clearTimeout(videoOpacityTimer);
     videoOpacityTimer = null;
@@ -253,12 +253,12 @@ const handleMouseLeave = () => {
 
   // 交叉淡入淡出：
   // 1. 先让图片淡入（0 -> 100）
-  imgOpacity.value = 100;
+  // imgOpacity.value = 100;
 
   // 2. 等待一小段时间后，再让视频淡出
-  videoOpacityTimer = window.setTimeout(() => {
+  // videoOpacityTimer = window.setTimeout(() => {
     videoOpacity.value = 0;
-  }, 50); // 50ms 后让视频淡出
+  // }, 150); // 50ms 后让视频淡出
 
   // 3. 暂停视频并重置进度
   videoRef.value.pause();
@@ -268,7 +268,7 @@ const handleMouseLeave = () => {
     if (videoRef.value) {
       videoRef.value.currentTime = 0;
     }
-  }, 350); // 等待过渡完成后重置
+  }, 150); // 等待过渡完成后重置
 };
 
 // 点击播放/暂停（点击播放模式）
@@ -278,10 +278,10 @@ const handlePlayClick = async () => {
   if (!videoBlobUrl.value) return;
 
   // 清除所有之前的定时器
-  if (imgOpacityTimer !== null) {
-    clearTimeout(imgOpacityTimer);
-    imgOpacityTimer = null;
-  }
+  // if (imgOpacityTimer !== null) {
+  //   clearTimeout(imgOpacityTimer);
+  //   imgOpacityTimer = null;
+  // }
   if (videoOpacityTimer !== null) {
     clearTimeout(videoOpacityTimer);
     videoOpacityTimer = null;
@@ -296,7 +296,7 @@ const handlePlayClick = async () => {
   if (videoRef.value) {
     if (isPlaying.value) {
       // 暂停
-      imgOpacity.value = 100;
+      // imgOpacity.value = 100;
       videoOpacityTimer = window.setTimeout(() => {
         videoOpacity.value = 0;
       }, 50);
@@ -306,9 +306,9 @@ const handlePlayClick = async () => {
       // 播放
       videoRef.value.currentTime = 0;
       videoOpacity.value = 100;
-      imgOpacityTimer = window.setTimeout(() => {
-        imgOpacity.value = 0;
-      }, 50);
+      // imgOpacityTimer = window.setTimeout(() => {
+      //   imgOpacity.value = 0;
+      // }, 50);
       videoRef.value
         .play()
         .then(() => {
@@ -316,7 +316,7 @@ const handlePlayClick = async () => {
         })
         .catch(err => {
           console.error("[LivePhoto] 视频播放失败:", err);
-          imgOpacity.value = 100;
+          // imgOpacity.value = 100;
           videoOpacity.value = 0;
           isPlaying.value = false;
         });
@@ -329,14 +329,14 @@ const onVideoEnded = () => {
   // 视频播放结束后自动暂停并显示图片
   if (videoRef.value && isPlaying.value) {
     // 显示图片
-    imgOpacity.value = 100;
+    // imgOpacity.value = 100;
 
     // 等待一小段时间后隐藏视频
-    setTimeout(() => {
-      if (videoRef.value) {
-        videoOpacity.value = 0;
-      }
-    }, 25);
+    // setTimeout(() => {
+    if (videoRef.value) {
+      videoOpacity.value = 0;
+    }
+    // }, 25);
 
     // 更新播放状态
     isPlaying.value = false;
@@ -346,10 +346,10 @@ const onVideoEnded = () => {
 // 组件卸载时清理定时器和事件监听
 onUnmounted(() => {
   // 清理所有定时器
-  if (imgOpacityTimer !== null) {
-    clearTimeout(imgOpacityTimer);
-    imgOpacityTimer = null;
-  }
+  // if (imgOpacityTimer !== null) {
+  //   clearTimeout(imgOpacityTimer);
+  //   imgOpacityTimer = null;
+  // }
   if (videoOpacityTimer !== null) {
     clearTimeout(videoOpacityTimer);
     videoOpacityTimer = null;
