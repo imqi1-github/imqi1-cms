@@ -4,6 +4,8 @@
 
 一个使用 Nuxt 4 + Nitro + Prisma 构建的现代化全栈博客系统，支持 ISR（增量静态再生成）、Redis 缓存、PWA 等特性。
 
+本项目不开源。
+
 ## ✨ 特性
 
 - 🚀 **现代化技术栈** - Nuxt 4 + Vue 3 + TypeScript + Tailwind CSS
@@ -370,9 +372,9 @@ location = /favicon.ico {
 
 完整的数据模型定义请查看 `prisma/schema.prisma`
 
-## 📄 许可证
+## 📄 文档
 
-本项目不开源，仅用于个人使用。
+- [宝塔面板部署](docs/baota.md)
 
 ## 👤 作者
 
