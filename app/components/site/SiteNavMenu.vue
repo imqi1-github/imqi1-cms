@@ -92,7 +92,7 @@ onMounted(() => {
             v-for="cat in categories"
             :key="cat.slug"
             @click="navigate(`/category/${cat.slug}`)"
-            class="block w-full text-left px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 text-sm font-medium font-serif">
+            class="block w-full text-left px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 text-sm font-medium cursor-pointer font-serif">
             {{ cat.name }}
           </button>
         </div>
