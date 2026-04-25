@@ -47,6 +47,7 @@ export default defineEventHandler(async event => {
   const sessionUser = await setSession(event, {
     uid: user.uid,
     name: user.name,
+    nickname: user.nickname,
     mail: user.mail,
     avatar: user.avatar,
     role: user.role,

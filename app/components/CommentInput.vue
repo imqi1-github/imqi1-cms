@@ -136,7 +136,7 @@ onMounted(async () => {
       if (userRes.status === "fulfilled" && userRes.value?.user) {
         const user = userRes.value.user;
         isLoggedIn.value = true;
-        formData.value.name = user.name || "";
+        formData.value.name = user.nickname || user.name || "";
         formData.value.mail = user.mail || "";
       } else {
         // 未登录，从localStorage读取

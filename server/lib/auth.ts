@@ -5,6 +5,7 @@ import { setCookie, getCookie, deleteCookie } from "h3";
 export interface SessionUser {
   uid: number;
   name: string;
+  nickname: string | null;
   mail: string;
   avatar: string | null;
   role: number;
@@ -80,6 +81,7 @@ export async function getUser(event: any): Promise<SessionUser | null> {
     select: {
       uid: true,
       name: true,
+      nickname: true,
       mail: true,
       avatar: true,
       role: true,
@@ -103,6 +105,7 @@ export async function getUser(event: any): Promise<SessionUser | null> {
   return {
     uid: user.uid,
     name: user.name,
+    nickname: user.nickname,
     mail: user.mail,
     avatar: user.avatar,
     role: user.role,

@@ -98,7 +98,7 @@ const handleLogin = async () => {
 
     // 登录成功，显示欢迎消息
     toast.success({
-      message: `欢迎回来，${res.user?.name || '管理员'}！`,
+      message: `欢迎回来，${res.user?.nickname || res.user?.name || '管理员'}！`,
       description: '登录成功，正在跳转...',
     })
 
