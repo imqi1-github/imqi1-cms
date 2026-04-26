@@ -233,6 +233,16 @@ const handleLogout = async () => {
               <h2 class="text-base font-semibold lg:text-lg">{{ pageTitle }}</h2>
             </div>
 
+            <!-- 返回主页按钮 -->
+            <Button
+              variant="ghost"
+              size="icon"
+              class="mr-2"
+              v-tooltip="'返回主页'"
+              @click="() => navigateTo('/', { open: { target: '_blank' } })">
+              <Icon name="lucide:home" class="size-5" />
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
                 <Button variant="ghost" size="icon" class="rounded-full">

@@ -374,13 +374,21 @@ onUnmounted(() => {
 
       <!-- 移动端：后台管理按钮（仅登录时显示） -->
       <ClientOnly>
-        <button
-          v-show="isMobileButtonsOpen && isLoggedIn && !isLoadingAuth"
-          @click="goToAdmin"
-          v-tooltip="'后台管理'"
-          class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
-          <Icon name="lucide:layout-dashboard" class="size-5 text-gray-600 dark:text-gray-300" />
-        </button>
+        <Transition
+          enter-active-class="transition-all duration-300"
+          enter-from-class="opacity-0 translate-y-4 scale-75"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition-all duration-200"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-4 scale-75">
+          <button
+            v-show="isMobileButtonsOpen && isLoggedIn && !isLoadingAuth"
+            @click="goToAdmin"
+            v-tooltip="'后台管理'"
+            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+            <Icon name="lucide:layout-dashboard" class="size-5 text-gray-600 dark:text-gray-300" />
+          </button>
+        </Transition>
       </ClientOnly>
 
       <!-- 音乐播放器 -->
