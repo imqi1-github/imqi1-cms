@@ -236,6 +236,7 @@ async function submitComment() {
       },
     });
 
+    // 检查响应状态码
     if (response.code === 200) {
       submitSuccess.value = true;
       submitError.value = "";
@@ -268,19 +269,29 @@ async function submitComment() {
       setTimeout(() => {
         submitSuccess.value = false;
       }, 3000);
-      // 通知父组件刷新评论列表（延迟1.5秒）
+      // 通知父组件刷新评论列表（延迟3秒）
       setTimeout(() => {
         emit("comment-submitted");
       }, 3000);
     } else {
-      submitError.value = response.message || "评论失败，请重试";
+      // 处理错误响应（包括429频率限制）
+      const errorMsg = response.message || "评论失败，请重试";
+      submitError.value = errorMsg;
       // 显示前台错误通知
-      showError(response.message || "评论失败，请重试");
+      showError(errorMsg);
     }
   } catch (error: any) {
-    submitError.value = error?.message || "网络错误，请稍后重试";
+    // 提取错误消息 - 网络错误或其他异常
+    let errorMessage = "网络错误，请稍后重试";
+    if (error?.data?.message) {
+      errorMessage = error.data.message;
+    } else if (error?.message && !error.message.includes("[POST]")) {
+      errorMessage = error.message;
+    }
+
+    submitError.value = errorMessage;
     // 显示前台错误通知
-    showError(error?.message || "网络错误，请稍后重试");
+    showError(errorMessage);
     console.error("评论失败:", error);
   } finally {
     submitting.value = false;

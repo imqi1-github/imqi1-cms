@@ -8,7 +8,8 @@ const isEdit = computed(() => !!route.query.cid);
 const postId = computed(() => (route.query.cid ? Number(route.query.cid) : null));
 
 const activeTab = ref("content");
-const loading = ref(false);
+// 编辑模式下初始 loading 为 true，避免先显示编辑器再显示骨架屏
+const loading = ref(!!route.query.cid);
 
 // 跟踪是否有未保存的更改
 const hasUnsavedChanges = ref(false);

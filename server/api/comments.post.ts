@@ -42,6 +42,46 @@ export default defineEventHandler(async event => {
       });
     }
 
+    // ========== 检查评论间隔 ==========
+    // 获取客户端IP
+    const clientIP = getHeader(event, "x-forwarded-for")?.split(",")[0].trim() ||
+                     getHeader(event, "x-real-ip") ||
+                     event.node.req.socket.remoteAddress ||
+                     "unknown";
+
+    // 获取评论间隔设置
+    const intervalMeta = await prisma.information.findUnique({
+      where: { key: "commentInterval" },
+    });
+    const commentInterval = intervalMeta ? parseInt(intervalMeta.value) : 60;
+
+    if (commentInterval > 0) {
+      // 计算间隔时间点
+      const intervalTime = new Date(Date.now() - commentInterval * 1000);
+
+      // 查找该IP在间隔时间内是否有评论
+      // agent字段格式: IP||User-Agent
+      const recentComment = await prisma.comment.findFirst({
+        where: {
+          agent: { startsWith: `${clientIP}||` },
+          create_time: { gte: intervalTime },
+        },
+        orderBy: { create_time: "desc" },
+      });
+
+      if (recentComment) {
+        // 计算剩余秒数
+        const lastCommentTime = new Date(recentComment.create_time).getTime();
+        const elapsed = Date.now() - lastCommentTime;
+        const remaining = Math.ceil((commentInterval * 1000 - elapsed) / 1000);
+
+        return {
+          code: 429,
+          message: `评论太频繁，请 ${remaining} 秒后再试`,
+        };
+      }
+    }
+
     // 验证字段长度
     validateCommentData({ name, mail, link });
 
@@ -63,7 +103,12 @@ export default defineEventHandler(async event => {
       }
     }
 
+    // 获取User-Agent
     const userAgent = getHeader(event, "user-agent") || "unknown";
+
+    // 将IP地址存储到agent字段，用于评论间隔检查
+    // clientIP 变量已在前面声明
+    const agentValue = `${clientIP}||${userAgent}`;
 
     const auditConfig = await getAuditConfig();
     let commentStatus = 1;
@@ -92,7 +137,7 @@ export default defineEventHandler(async event => {
         link: link || null,
         parent_id: parent_id || null,
         status: commentStatus,
-        agent: userAgent,
+        agent: agentValue,
       },
     });
 
@@ -160,7 +205,7 @@ export default defineEventHandler(async event => {
       needModeration: commentStatus === 0,
       auditResult: auditConfig.enabled ? auditResult : null,
     };
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Error) {
       throw createError({
         statusCode: 400,

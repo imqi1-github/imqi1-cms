@@ -316,16 +316,14 @@ watch(
         const header = article.querySelector("header.article-cover");
         const contentBody = article.querySelector(".content-body");
         const metaLicenseBox = article.querySelector(".meta-license-box");
-        const commentSection = article.querySelector("section.opacity-0");
 
+        // 首先渐入文章主要内容
         header?.classList.remove("opacity-0", "translate-y-8");
         header?.classList.add("opacity-100", "translate-y-0");
         contentBody?.classList.remove("opacity-0", "translate-y-8");
         contentBody?.classList.add("opacity-100", "translate-y-0");
         metaLicenseBox?.classList.remove("opacity-0", "translate-y-8");
         metaLicenseBox?.classList.add("opacity-100", "translate-y-0");
-        commentSection?.classList.remove("opacity-0", "translate-y-8");
-        commentSection?.classList.add("opacity-100", "translate-y-0");
       }, 100);
     }
   },
@@ -338,11 +336,38 @@ watch(
   posts => {
     if (import.meta.client && posts && posts.length > 0) {
       nextTick(() => {
-        const relatedSection = document.querySelector(".related-posts-section");
-        if (relatedSection && relatedSection.classList.contains("opacity-0")) {
-          relatedSection.classList.remove("opacity-0", "translate-y-8");
-          relatedSection.classList.add("opacity-100", "translate-y-0");
-        }
+        setTimeout(() => {
+          const relatedSection = document.querySelector(".related-posts-section");
+          if (relatedSection && relatedSection.classList.contains("opacity-0")) {
+            relatedSection.classList.remove("opacity-0", "translate-y-8");
+            relatedSection.classList.add("opacity-100", "translate-y-0");
+          }
+
+          // 同时触发评论区的渐入动画
+          const commentSection = document.querySelector(".comment-section");
+          if (commentSection && commentSection.classList.contains("opacity-0")) {
+            commentSection.classList.remove("opacity-0", "translate-y-8");
+            commentSection.classList.add("opacity-100", "translate-y-0");
+          }
+        }, 200);
+      });
+    }
+  },
+);
+
+// 独立监听评论区，确保即使没有相关文章也能渐入
+watch(
+  () => [post.value?.cid, commentEnabled.value],
+  ([postId, enabled]) => {
+    if (import.meta.client && postId && enabled) {
+      nextTick(() => {
+        setTimeout(() => {
+          const commentSection = document.querySelector(".comment-section");
+          if (commentSection && commentSection.classList.contains("opacity-0")) {
+            commentSection.classList.remove("opacity-0", "translate-y-8");
+            commentSection.classList.add("opacity-100", "translate-y-0");
+          }
+        }, 300);
       });
     }
   },
@@ -2008,7 +2033,7 @@ onUnmounted(() => {
       </section>
 
       <!-- 评论区 -->
-      <section v-if="commentEnabled" class="w-full duration-300 ease-out animate-fade-in content-constrained">
+      <section v-if="commentEnabled" class="w-full opacity-0 translate-y-8 duration-300 ease-out animate-fade-in content-constrained comment-section">
         <CommentList :post-id="post.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
     </article>
