@@ -3,7 +3,6 @@
     <Card class="w-full max-w-md">
       <CardHeader>
         <CardTitle>登录</CardTitle>
-        <CardDescription>请输入账号密码</CardDescription>
       </CardHeader>
 
       <CardContent class="space-y-4">

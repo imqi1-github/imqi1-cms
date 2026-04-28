@@ -60,10 +60,9 @@ export default defineEventHandler(async event => {
       const intervalTime = new Date(Date.now() - commentInterval * 1000);
 
       // 查找该IP在间隔时间内是否有评论
-      // agent字段格式: IP||User-Agent
       const recentComment = await prisma.comment.findFirst({
         where: {
-          agent: { startsWith: `${clientIP}||` },
+          ip: clientIP,
           create_time: { gte: intervalTime },
         },
         orderBy: { create_time: "desc" },
@@ -106,9 +105,8 @@ export default defineEventHandler(async event => {
     // 获取User-Agent
     const userAgent = getHeader(event, "user-agent") || "unknown";
 
-    // 将IP地址存储到agent字段，用于评论间隔检查
-    // clientIP 变量已在前面声明
-    const agentValue = `${clientIP}||${userAgent}`;
+    // agent字段存储User-Agent，ip字段存储IP地址
+    const agentValue = userAgent;
 
     const auditConfig = await getAuditConfig();
     let commentStatus = 1;
@@ -138,6 +136,7 @@ export default defineEventHandler(async event => {
         parent_id: parent_id || null,
         status: commentStatus,
         agent: agentValue,
+        ip: clientIP,
       },
     });
 
