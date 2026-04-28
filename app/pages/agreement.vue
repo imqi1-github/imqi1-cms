@@ -5,9 +5,9 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 const route = useRoute();
 const router = useRouter();
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 获取协议页面数据
 const { data, pending, error } = await useFetch("/api/page/agreement");

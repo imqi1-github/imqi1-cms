@@ -2,9 +2,9 @@
 const route = useRoute();
 const router = useRouter();
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 搜索关键词
 const searchKeyword = ref((route.query.q as string) || "");

@@ -7,17 +7,17 @@ const currentYear = new Date().getFullYear();
 // 获取页面加载状态
 const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
 
-// 用户登录状态
-const isLoggedIn = ref(false);
-const isLoadingAuth = ref(true);
+// 使用全局认证状态
+const { isLoggedIn, isLoadingAuth, checkAuthStatus } = useAuth();
+
+// 使用全局站点设置
+const { siteSettings, fetchSiteSettings } = useSiteSettings();
 
 // 判断是否为首页
 const isHomePage = computed(() => route.path === "/");
 
-// 获取站点设置
-const { data } = await useFetch("/api/site");
-const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
-const siteIcp = computed(() => data.value?.data?.siteIcp || "");
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteIcp = computed(() => siteSettings.value?.siteIcp || "");
 
 // 页脚图标数据
 interface FooterIcon {
@@ -192,20 +192,6 @@ const toggleMobileButtons = () => {
   isMobileButtonsOpen.value = !isMobileButtonsOpen.value;
 };
 
-// 检查用户登录状态
-const checkAuthStatus = async () => {
-  if (import.meta.client) {
-    try {
-      const res = await $fetch('/api/auth/verify');
-      isLoggedIn.value = (res as any).valid || false;
-    } catch {
-      isLoggedIn.value = false;
-    } finally {
-      isLoadingAuth.value = false;
-    }
-  }
-};
-
 // 跳转到后台
 const goToAdmin = () => {
   window.open('/admin');
@@ -216,6 +202,10 @@ onMounted(() => {
   updateScrollProgress();
   // 检查登录状态
   checkAuthStatus();
+  // 获取站点设置（每个页面都会调用，但只会实际请求一次）
+  fetchSiteSettings().catch(() => {
+    // 静默失败，不影响页面显示
+  });
 });
 
 onUnmounted(() => {

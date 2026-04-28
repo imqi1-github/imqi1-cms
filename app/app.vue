@@ -76,12 +76,12 @@ nuxtApp.hook("page:finish", () => {
   // 如果页面加载很快（淡出动画未完成），需要等待淡出完成
   if (remainingFadeOutTime > 0 && isFrontend.value) {
     fadeOutTimer = setTimeout(() => {
-      finishPageTransition();
+        finishPageTransition();
     }, remainingFadeOutTime);
-  } else {
+    } else {
     // 淡出已完成或后台页面，直接显示内容
-    finishPageTransition();
-  }
+      finishPageTransition();
+    }
 
   function finishPageTransition() {
     // 等待 Vue 更新 DOM 后再淡入，避免样式冲突
@@ -298,10 +298,6 @@ function scrollToHash() {
   });
 }
 
-function hideFirstLoading() {
-  showFirstLoading.value = false;
-}
-
 // 监听路由变化，处理 Hash 滚动
 watch(
   () => route.hash,
@@ -334,7 +330,7 @@ onMounted(() => {
   <div>
     <!-- 首次加载遮罩 -->
     <Transition name="first-loading">
-      <div v-if="showFirstLoading && isFrontend" @click="hideFirstLoading()" class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950">
+      <div v-if="showFirstLoading && isFrontend" class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950">
         <div class="flex flex-col items-center gap-6">
           <div class="animate-spin">
             <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />

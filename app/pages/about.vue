@@ -588,9 +588,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-// 获取站点信息
-const { data } = await useFetch("/api/site");
-const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+
+// 注入页面加载状态
+const pageLoading = inject<"pageLoading", Ref<boolean>>("pageLoading", ref(false));
 
 // 获取统计数据
 const { data: statsData } = await useFetch("/api/stats");
@@ -732,55 +735,66 @@ onMounted(() => {
     });
   };
 
-  // 立即执行首屏检查
-  checkInitialElements();
+  // 等待页面过渡完成后再执行元素动画
+  const initAnimations = () => {
+    if (pageLoading.value) {
+      // 页面还在加载中，等待100ms后再检查
+      setTimeout(initAnimations, 100);
+    } else {
+      // 页面加载完成，执行首屏检查
+      checkInitialElements();
 
-  // 继续使用IntersectionObserver监听滚动
-  scrollObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && entry.target.classList.contains("ready")) {
-          entry.target.classList.add("fadeIn");
+      // 继续使用IntersectionObserver监听滚动
+      scrollObserver = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && entry.target.classList.contains("ready")) {
+              entry.target.classList.add("fadeIn");
 
-          // 监听动画完成事件，移除ready类
-          entry.target.addEventListener(
-            "animationend",
-            () => {
-              entry.target.classList.remove("ready");
-            },
-            { once: true },
-          );
+              // 监听动画完成事件，移除ready类
+              entry.target.addEventListener(
+                "animationend",
+                () => {
+                  entry.target.classList.remove("ready");
+                },
+                { once: true },
+              );
 
-          // 站点统计数字动画
-          if (entry.target.querySelector(".about-bold-stats")) {
-            animateNumber(0, stats.value.publishedPostsNum, 2000, value => {
-              animatedStats.value.publishedPostsNum = value;
-            });
-            animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
-              animatedStats.value.publishedCommentsNum = value;
-            });
-            animateNumber(0, 30, 2000, value => {
-              animatedStats.value.techStack = value;
-            });
-          }
+              // 站点统计数字动画
+              if (entry.target.querySelector(".about-bold-stats")) {
+                animateNumber(0, stats.value.publishedPostsNum, 2000, value => {
+                  animatedStats.value.publishedPostsNum = value;
+                });
+                animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
+                  animatedStats.value.publishedCommentsNum = value;
+                });
+                animateNumber(0, 30, 2000, value => {
+                  animatedStats.value.techStack = value;
+                });
+              }
 
-          // MBTI进度条动画
-          if (entry.target.querySelector(".about-bold-mbti-bars")) {
-            setTimeout(() => {
-              animatedMbtiData.value = { ...mbtiData.value };
-            }, 300);
-          }
-        }
+              // MBTI进度条动画
+              if (entry.target.querySelector(".about-bold-mbti-bars")) {
+                setTimeout(() => {
+                  animatedMbtiData.value = { ...mbtiData.value };
+                }, 300);
+              }
+            }
+          });
+        },
+        {
+          threshold: 0.1,
+        },
+      );
+
+      document.querySelectorAll(".ready").forEach(el => {
+        scrollObserver?.observe(el);
       });
-    },
-    {
-      threshold: 0.1,
-    },
-  );
+    }
+  };
 
-  document.querySelectorAll(".ready").forEach(el => {
-    scrollObserver?.observe(el);
-  });
+  // 启动动画初始化
+  initAnimations();
 });
 
 onUnmounted(() => {

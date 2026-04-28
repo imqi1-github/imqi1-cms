@@ -5,8 +5,21 @@ const loading = ref(false);
 const showAddForm = ref(false);
 const updating = ref(false);
 const updateResult = ref<{ success: number; failed: number; total: number } | null>(null);
+const feedCacheInterval = ref(8); // 默认8小时
 
 const newSubscribe = ref({ name: "", url: "", avatar: "" });
+
+// 加载站点设置
+async function loadSettings() {
+  try {
+    const settings = await $fetch("/api/admin/settings") as any;
+    if (settings?.feedCacheInterval) {
+      feedCacheInterval.value = settings.feedCacheInterval;
+    }
+  } catch (error) {
+    console.error("获取设置失败:", error);
+  }
+}
 
 // 加载订阅列表
 async function loadSubscribes() {
@@ -107,6 +120,7 @@ function formatDate(date: string | null) {
 }
 
 onMounted(() => {
+  loadSettings();
   loadSubscribes();
 });
 </script>
@@ -115,7 +129,7 @@ onMounted(() => {
   <AdminLayout>
     <div class="mb-6">
       <h2 class="text-2xl font-bold">订阅列表</h2>
-      <p class="text-sm text-muted-foreground mt-1">管理 RSS 订阅源，每8小时自动更新</p>
+      <p class="text-sm text-muted-foreground mt-1">管理 RSS 订阅源，每{{ feedCacheInterval }}小时自动更新</p>
     </div>
 
     <!-- 更新结果提示 -->

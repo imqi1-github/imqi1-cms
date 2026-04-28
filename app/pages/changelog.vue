@@ -1,13 +1,12 @@
 <script setup lang="ts">
 const { data, pending, error } = await useFetch("/api/changelog");
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
-// 用户登录状态
-const isLoggedIn = ref(false);
-const isLoadingAuth = ref(true);
+// 使用全局认证状态
+const { isLoggedIn, isLoadingAuth } = useAuth();
 
 // 页面元数据
 useHead({
@@ -38,23 +37,7 @@ function formatDate(dateStr: string | Date) {
   return `${month}月${day}日 ${hour}:${minute}`;
 }
 
-// 检查用户登录状态
-const checkAuthStatus = async () => {
-  if (import.meta.client) {
-    try {
-      const res = await $fetch('/api/auth/verify');
-      isLoggedIn.value = (res as any).valid || false;
-    } catch {
-      isLoggedIn.value = false;
-    } finally {
-      isLoadingAuth.value = false;
-    }
-  }
-};
-
 onMounted(() => {
-  // 检查登录状态
-  checkAuthStatus();
   // 初始化滚动渐入动画
   const observerOptions = {
     threshold: 0.1,

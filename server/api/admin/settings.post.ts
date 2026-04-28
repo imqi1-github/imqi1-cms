@@ -44,6 +44,7 @@ export default defineEventHandler(async event => {
       { key: "commentRequireLink", value: String(settingsBody.commentRequireLink ?? false) },
       { key: "commentInterval", value: String(settingsBody.commentInterval ?? 60) },
       { key: "postPageSize", value: String(settingsBody.postPageSize ?? 12) },
+      { key: "feedCacheInterval", value: String(settingsBody.feedCacheInterval ?? 8) },
       { key: "homeCustomText", value: settingsBody.homeCustomText ?? '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' },
       { key: "musicPlaylistId", value: settingsBody.musicPlaylistId ?? "9255074836 || netease" },
       { key: "photoCategorySlug", value: settingsBody.photoCategorySlug ?? "shot" },

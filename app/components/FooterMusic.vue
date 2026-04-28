@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 
-// 获取站点设置
-const { data: settingsData } = await useFetch("/api/site");
-const settings = computed(() => settingsData.value?.data);
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const settings = computed(() => siteSettings.value);
 
 // 解析音乐播放列表 ID
 const playlistConfig = computed(() => {

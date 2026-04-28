@@ -1,11 +1,9 @@
 <script setup lang="ts">
 const route = useRoute();
 
-// 获取站点设置 - 使用非阻塞加载，不阻塞首屏渲染
-const { data } = useLazyAsyncData("site-settings", () => $fetch("/api/site"), {
-  server: true,
-});
-const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 获取页面标题（从页面组件设置）
 const { getPageTitle, getPageIcon, getPageCategory } = usePageTitle();

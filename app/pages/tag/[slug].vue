@@ -6,10 +6,10 @@ const route = useRoute();
 const router = useRouter();
 const slug = route.params.slug as string;
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
-const postPageSize = computed(() => siteData.value?.data?.postPageSize || 12);
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const postPageSize = computed(() => siteSettings.value?.postPageSize || 12);
 
 // 从 URL query 参数中获取页码
 const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
@@ -27,6 +27,44 @@ const pagination = computed(() => data.value?.data?.pagination);
 
 // 判断是否为404
 const isNotFound = computed(() => !pending.value && (!tag.value || error.value));
+
+// 骨架屏显示状态
+const showSkeleton = ref(false);
+const isPaginating = ref(false);
+let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
+
+// 骨架屏数量 - 根据每页文章数量和当前页码动态调整
+const skeletonCount = computed(() => {
+  // 如果已经有数据，使用当前文章数量
+  if (posts.value.length > 0) {
+    return posts.value.length;
+  }
+  // 否则使用每页显示数量
+  return postPageSize.value || 12;
+});
+
+// 监听 pending，控制骨架屏显示
+watch(pending, (isLoading) => {
+  if (skeletonTimer) {
+    clearTimeout(skeletonTimer);
+    skeletonTimer = null;
+  }
+
+  if (isLoading) {
+    // 如果是翻页操作，立即显示骨架屏
+    if (isPaginating.value) {
+      showSkeleton.value = true;
+    } else if (tag.value) {
+      // 首次加载，1秒后显示骨架屏
+      skeletonTimer = setTimeout(() => {
+        showSkeleton.value = true;
+      }, 1000);
+    }
+  } else {
+    showSkeleton.value = false;
+    isPaginating.value = false;
+  }
+});
 
 // 格式化日期
 function formatDate(date: string | Date): string {
@@ -52,19 +90,14 @@ function formatDate(date: string | Date): string {
 
 // 翻页
 function goToPage(newPage: number) {
-  // 先重置所有元素状态
-  document.querySelectorAll(".fade-in-element").forEach(el => {
-    el.classList.remove("opacity-100", "translate-y-0");
-    el.classList.add("opacity-0", "translate-y-8");
-  });
+  // 标记为翻页操作，立即显示骨架屏
+  isPaginating.value = true;
 
-  // 更新 URL 中的页码参数
+  // 直接更新页码，不进行渐出动画
   router.push({
     path: `/tag/${slug}`,
     query: { page: newPage.toString() },
   });
-
-  // 更新页码值
   page.value = newPage;
 }
 
@@ -80,8 +113,9 @@ function triggerFadeIn() {
   });
 }
 
-// 监听数据加载完成，触发动画
+// 监听数据加载状态，触发渐入渐出动画
 watch(pending, (newVal, oldVal) => {
+  // 数据加载完成，触发渐入动画
   if (oldVal === true && newVal === false) {
     // 设置页面标题供导航栏使用
     if (tag.value?.name) {
@@ -93,6 +127,14 @@ watch(pending, (newVal, oldVal) => {
     setTimeout(() => {
       triggerFadeIn();
     }, 50);
+  }
+
+  // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
+  if (oldVal === false && newVal === true && tag.value) {
+    document.querySelectorAll(".fade-in-element").forEach(el => {
+      el.classList.remove("opacity-100");
+      el.classList.add("opacity-0");
+    });
   }
 });
 
@@ -109,10 +151,10 @@ watch(
     if (pageNum > 0 && pageNum !== page.value) {
       page.value = pageNum;
 
-      // 重置所有元素状态
+      // 重置所有元素状态（只改变透明度）
       document.querySelectorAll(".fade-in-element").forEach(el => {
-        el.classList.remove("opacity-100", "translate-y-0");
-        el.classList.add("opacity-0", "translate-y-8");
+        el.classList.remove("opacity-100");
+        el.classList.add("opacity-0");
       });
 
       // 等待数据加载完成后触发动画
@@ -123,7 +165,7 @@ watch(
   },
 );
 
-// 监听路由变化，重新触发动画
+// 监听路由变化，重新触发动画（切换到不同标签时）
 watch(
   () => route.params.slug,
   async () => {
@@ -137,7 +179,7 @@ watch(
 
     // 等待浏览器渲染帧
     requestAnimationFrame(() => {
-      // 先重置所有元素状态
+      // 先重置所有元素状态为初始状态
       document.querySelectorAll(".fade-in-element").forEach(el => {
         el.classList.remove("opacity-100", "translate-y-0");
         el.classList.add("opacity-0", "translate-y-8");
@@ -214,8 +256,8 @@ onMounted(() => {
 <template>
   <ClientOnly>
     <div class="max-w-225 mx-auto">
-      <!-- 加载中 -->
-      <div v-if="pending" class="py-20 text-center">
+      <!-- 加载中 - 仅首次加载时显示 -->
+      <div v-if="pending && !tag" class="py-20 text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         <p class="mt-2 text-slate-500">加载中...</p>
       </div>
@@ -247,7 +289,7 @@ onMounted(() => {
 
         <!-- 文章列表 -->
         <div
-          v-if="posts.length > 0"
+          v-if="posts.length > 0 && !showSkeleton"
           class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <div
             v-for="post in posts"
@@ -300,8 +342,35 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- 骨架屏 -->
+        <div v-else-if="showSkeleton" class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5">
+          <div
+            v-for="i in skeletonCount"
+            :key="`skeleton-${i}`"
+            class="archive-article archive-has-cover rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm overflow-hidden">
+            <!-- 封面骨架 -->
+            <div class="h-70 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-15"></div>
+
+            <!-- 文章信息骨架 -->
+            <div class="archive-article-box px-5 pb-2 pt-1 mt-auto">
+              <!-- 标题骨架 -->
+              <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"></div>
+
+              <!-- 信息骨架 -->
+              <div class="flex items-center flex-wrap gap-2 my-1">
+                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
+                <div class="h-3 w-20 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
+                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
+              </div>
+
+              <!-- 描述骨架 -->
+              <div class="h-3.5 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse overflow-wrap break-word"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- 空状态 -->
-        <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
+        <div v-else-if="posts.length === 0 && !pending" class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
       </template>
 
       <!-- 分页 -->

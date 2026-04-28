@@ -2,28 +2,31 @@
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 // 导入前台通知 composable
 const { success, error: showError } = useFrontNotification();
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 获取友链数据
 const { data: linksData, pending, error, refresh } = await useFetch("/api/links");
 const links = computed(() => linksData.value?.data || []);
 
-// 用户登录状态
-const isLoggedIn = ref(false);
-const isLoadingAuth = ref(true);
+// 使用全局认证状态
+const { isLoggedIn, isLoadingAuth } = useAuth();
 
 // 友链检测状态
 const isCheckingLinks = ref(false);
 const linkStatuses = ref<Record<string, { status: "up" | "down" | "checking"; checkedAt: number }>>({});
 const lastCheckTime = ref<number>(0);
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
+
+// 检测中断控制
+const shouldStopChecking = ref(false);
+let abortController: AbortController | null = null;
 
 // 从localStorage加载检测结果
 const loadLinkStatuses = () => {
@@ -57,7 +60,7 @@ const saveLinkStatuses = () => {
 
 // 检测单个友链
 const checkLink = async (link: any) => {
-  if (!link.link) return;
+  if (!link.link || shouldStopChecking.value) return;
 
   linkStatuses.value[link.id] = {
     status: "checking",
@@ -65,10 +68,20 @@ const checkLink = async (link: any) => {
   };
 
   try {
+    // 创建新的 AbortController
+    const controller = new AbortController();
+    abortController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+
     const response = await fetch(`/api/check-link?url=${encodeURIComponent(link.link)}`, {
       method: "GET",
-      timeout: 10000, // 10秒超时
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
+
+    // 检查是否已中断
+    if (shouldStopChecking.value) return;
 
     const result = await response.json();
 
@@ -76,11 +89,20 @@ const checkLink = async (link: any) => {
       status: result.status === "up" ? "up" : "down",
       checkedAt: Date.now(),
     };
+
+    // 每检测完一个友链就立即保存
+    saveLinkStatuses();
   } catch (err) {
+    // 如果是主动中断，不显示错误
+    if (shouldStopChecking.value) return;
+
     linkStatuses.value[link.id] = {
       status: "down",
       checkedAt: Date.now(),
     };
+
+    // 即使失败也保存状态
+    saveLinkStatuses();
   }
 };
 
@@ -89,21 +111,52 @@ const checkAllLinks = async () => {
   if (isCheckingLinks.value) return;
 
   isCheckingLinks.value = true;
+  shouldStopChecking.value = false;
+  let hasCheckedAnyLink = false; // 标记是否真正检测了任何友链
 
   try {
     for (const link of links.value) {
+      // 检查是否应该停止
+      if (shouldStopChecking.value) {
+        break;
+      }
+
+      // 检查是否已经检测过且未过期（1小时）
+      const existingStatus = linkStatuses.value[link.id];
+      const now = Date.now();
+      const statusAge = existingStatus ? now - existingStatus.checkedAt : Infinity;
+
+      // 如果检测结果还存在且未过期（1小时内），跳过检测
+      if (existingStatus && existingStatus.status !== "checking" && statusAge < 60 * 60 * 1000) {
+        continue;
+      }
+
+      hasCheckedAnyLink = true;
       await checkLink(link);
+
+      // 检查是否应该停止（延迟后也要检查）
+      if (shouldStopChecking.value) {
+        break;
+      }
       // 避免请求过于频繁
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
+    // 无论正常完成还是中断，都更新最后检测时间
     lastCheckTime.value = Date.now();
     saveLinkStatuses();
-    success("友链检测完成");
+
+    // 只有正常完成且真正检测了友链时，才显示提示
+    if (!shouldStopChecking.value && hasCheckedAnyLink) {
+      success("友链检测完成");
+    }
   } catch (err) {
-    showError("检测友链失败");
+    if (!shouldStopChecking.value) {
+      showError("检测友链失败");
+    }
   } finally {
     isCheckingLinks.value = false;
+    abortController = null;
   }
 };
 
@@ -216,24 +269,8 @@ const handleSubmit = async () => {
   }
 };
 
-// 检查用户登录状态
-const checkAuthStatus = async () => {
-  if (import.meta.client) {
-    try {
-      const res = await $fetch("/api/auth/verify");
-      isLoggedIn.value = (res as any).valid || false;
-    } catch {
-      isLoggedIn.value = false;
-    } finally {
-      isLoadingAuth.value = false;
-    }
-  }
-};
-
 // 初始化滚动渐入动画
 onMounted(() => {
-  // 检查登录状态
-  checkAuthStatus();
   // 加载友链状态
   loadLinkStatuses();
   // 检查是否需要自动检测
@@ -297,6 +334,17 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  // 停止友链检测
+  shouldStopChecking.value = true;
+  isCheckingLinks.value = false;
+
+  // 取消正在进行的请求
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
+
+  // 清理 Fancybox
   Fancybox.destroy();
 });
 </script>

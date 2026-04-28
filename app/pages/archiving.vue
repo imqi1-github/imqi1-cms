@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const { data, pending, error } = await useFetch("/api/archiving");
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 页面元数据
 useHead({

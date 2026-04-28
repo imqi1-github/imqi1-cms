@@ -58,16 +58,16 @@ const hasManyCovers = computed(() => post.value?.many_covers && covers.value.len
 const contentBody = ref<HTMLElement | null>(null);
 const firstCover = computed(() => covers.value[0]?.url || "");
 
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
-const commentEnabled = computed(() => siteData.value?.data?.commentEnabled ?? true);
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true);
 
-// 用户登录状态
-const isLoggedIn = ref(false);
-const isLoadingAuth = ref(true);
+// 使用全局认证状态
+const { isLoggedIn, isLoadingAuth } = useAuth();
 
 // 判断是否为图片分类
-const photoCategorySlug = computed(() => siteData.value?.data?.photoCategorySlug || "shot");
+const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug || "shot");
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
 // 获取相关文章（根据标签筛选）
@@ -415,24 +415,8 @@ watch(
   { immediate: true },
 );
 
-// 检查用户登录状态
-const checkAuthStatus = async () => {
-  if (import.meta.client) {
-    try {
-      const res = await $fetch("/api/auth/verify");
-      isLoggedIn.value = (res as any).valid || false;
-    } catch {
-      isLoggedIn.value = false;
-    } finally {
-      isLoadingAuth.value = false;
-    }
-  }
-};
-
 // 初始化 Fancybox 和其他功能
 onMounted(() => {
-  // 检查登录状态
-  checkAuthStatus();
   try {
     // 404 页面动画（初始状态）
     if (isNotFound.value) {

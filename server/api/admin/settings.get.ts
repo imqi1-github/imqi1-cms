@@ -30,6 +30,7 @@ export default defineEventHandler(async event => {
       commentRequireLink: false,
       commentInterval: 60,
       postPageSize: 12,
+      feedCacheInterval: 8,
       homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
       musicPlaylistId: "9255074836 || netease",
       photoCategorySlug: "shot",

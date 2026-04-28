@@ -4,10 +4,10 @@ import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
 import { computed, onMounted } from "vue";
 
-// 获取站点设置
-const { data: siteData } = await useFetch("/api/site");
-const siteName = computed(() => siteData.value?.data?.siteName || "ImQi1");
-const commentEnabled = computed(() => siteData.value?.data?.commentEnabled ?? true);
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true);
 
 // 获取留言板配置
 const { data: messageConfig } = await useFetch("/api/message/config");

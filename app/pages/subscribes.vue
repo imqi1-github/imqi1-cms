@@ -1,5 +1,8 @@
 <script setup lang="ts">
-const siteName = ref("ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const feedCacheInterval = computed(() => siteSettings.value?.feedCacheInterval || 8);
 
 useHead({
   title: computed(() => `我的订阅 - ${siteName.value}`)
@@ -91,7 +94,7 @@ watch(posts, () => {
     <!-- 页面头部 -->
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">订阅文章</h1>
-      <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每8小时自动更新</p>
+      <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每{{ feedCacheInterval }}小时自动更新</p>
     </header>
 
     <!-- 错误状态 -->

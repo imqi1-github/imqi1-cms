@@ -16,6 +16,7 @@ const defaults: Record<string, any> = {
   commentRequireMail: true,
   commentRequireLink: false,
   postPageSize: 12,
+  feedCacheInterval: 8,
 };
 
 export default defineEventHandler(async event => {
@@ -34,11 +35,19 @@ export default defineEventHandler(async event => {
     // 从数据库覆盖值
     meta.forEach((meta: any) => {
       if (settings.hasOwnProperty(meta.key)) {
+        const value = meta.value;
+
         // 布尔值转换
         if (typeof defaults[meta.key] === "boolean") {
-          settings[meta.key] = meta.value === "true";
-        } else {
-          settings[meta.key] = meta.value;
+          settings[meta.key] = value === "true";
+        }
+        // 数字值转换
+        else if (typeof defaults[meta.key] === "number") {
+          settings[meta.key] = Number(value) || defaults[meta.key];
+        }
+        // 其他类型直接使用
+        else {
+          settings[meta.key] = value;
         }
       }
     });

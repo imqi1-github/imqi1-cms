@@ -4,6 +4,7 @@ const activeTab = ref("basic");
 const showResetDialog = ref(false);
 const toast = useToast();
 const csrfToken = ref("");
+const initializing = ref(false);
 
 const settings = ref({
   siteName: "ImQi1",
@@ -20,6 +21,7 @@ const settings = ref({
   commentRequireLink: false,
   commentInterval: 60,
   postPageSize: 12,
+  feedCacheInterval: 8,
   homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
@@ -139,6 +141,7 @@ const defaultSettings = {
   commentRequireLink: false,
   commentInterval: 60,
   postPageSize: 12,
+  feedCacheInterval: 8,
   homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
@@ -241,6 +244,35 @@ async function resetToDefaults() {
   }
 }
 
+// 初始化缺失的配置项
+async function initializeMissingSettings() {
+  initializing.value = true;
+  try {
+    const result = (await $fetch("/api/admin/settings/init", {
+      method: "POST",
+    })) as any;
+
+    if (result.success) {
+      toast.success({
+        message: result.message,
+      });
+      // 重新加载设置
+      await loadSettings();
+    } else {
+      toast.error({
+        message: result.message || "初始化失败",
+      });
+    }
+  } catch (error) {
+    console.error("初始化失败:", error);
+    toast.error({
+      message: "初始化失败",
+    });
+  } finally {
+    initializing.value = false;
+  }
+}
+
 onMounted(() => {
   loadSettings();
 });
@@ -253,10 +285,23 @@ onMounted(() => {
         <h2 class="text-2xl font-bold">系统设置</h2>
         <p class="text-sm text-muted-foreground mt-1">管理系统配置和参数</p>
       </div>
-      <Button variant="outline" @click="showResetDialog = true">
-        <Icon name="lucide:rotate-ccw" class="mr-2 size-4" />
-        重置为默认
-      </Button>
+      <div class="flex gap-2">
+        <Button
+          variant="outline"
+          @click="initializeMissingSettings"
+          :disabled="initializing">
+          <Icon
+            :name="initializing ? 'lucide:loader-2' : 'lucide:database-zap'"
+            :class="{ 'animate-spin': initializing }"
+            class="mr-2 size-4"
+          />
+          {{ initializing ? '初始化中...' : '初始化配置项' }}
+        </Button>
+        <Button variant="outline" @click="showResetDialog = true">
+          <Icon name="lucide:rotate-ccw" class="mr-2 size-4" />
+          重置为默认
+        </Button>
+      </div>
     </div>
 
     <div v-if="loading" class="space-y-6">
@@ -580,11 +625,17 @@ onMounted(() => {
               <CardTitle>阅读设置</CardTitle>
               <CardDescription>配置文章列表的显示方式</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent class="space-y-4">
               <div class="space-y-2">
                 <Label for="postPageSize">每页显示文章数</Label>
                 <Input id="postPageSize" v-model.number="settings.postPageSize" type="number" min="1" max="100" />
                 <p class="text-xs text-muted-foreground">文章列表每页显示的文章数量，默认为 12 篇</p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="feedCacheInterval">订阅信息更新间隔</Label>
+                <Input id="feedCacheInterval" v-model.number="settings.feedCacheInterval" type="number" min="1" max="168" />
+                <p class="text-xs text-muted-foreground">RSS 订阅信息缓存更新时间，单位为小时，默认为 8 小时</p>
               </div>
             </CardContent>
           </Card>

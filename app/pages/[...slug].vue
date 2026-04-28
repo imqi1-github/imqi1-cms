@@ -13,9 +13,9 @@ definePageMeta({
   layout: false, // 不使用 layout，直接在 app.vue 中渲染
 });
 
-// 获取站点信息
-const { data } = await useFetch("/api/site");
-const siteName = computed(() => data.value?.data?.siteName || "ImQi1");
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 useHead({
   title: computed(() => `页面未找到 - ${siteName.value}`),

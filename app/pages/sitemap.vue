@@ -2,21 +2,20 @@
 const loading = ref(true);
 const sitemapData = ref<any>(null);
 const recentComments = ref<any[]>([]);
-const siteName = ref("ImQi1");
+
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 async function fetchSitemap() {
   loading.value = true;
   try {
-    const [sitemapRes, commentsRes, siteRes] = await Promise.all([
+    const [sitemapRes, commentsRes] = await Promise.all([
       $fetch("/api/sitemap") as Promise<any>,
       $fetch("/api/recent-comments?limit=10") as Promise<any>,
-      $fetch("/api/site") as Promise<any>,
     ]);
     sitemapData.value = sitemapRes.data;
     recentComments.value = commentsRes.data || [];
-    if (siteRes?.data?.siteName) {
-      siteName.value = siteRes.data.siteName;
-    }
   } catch (error) {
     console.error("获取站点地图失败:", error);
   } finally {

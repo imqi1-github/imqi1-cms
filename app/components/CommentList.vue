@@ -21,9 +21,11 @@ const commentInterval = ref(60);
 const requireMail = ref(true);
 const requireLink = ref(false);
 
-// 用户登录状态
-const isLoggedIn = ref(false);
-const isLoadingAuth = ref(true);
+// 使用全局认证状态
+const { isLoggedIn, isLoadingAuth } = useAuth();
+
+// 使用全局站点设置
+const { siteSettings } = useSiteSettings();
 
 const replyState = ref({
   isReplying: false,
@@ -99,53 +101,35 @@ const loadMore = () => {
   }
 };
 
-// 检查用户登录状态
-const checkAuthStatus = async () => {
-  if (import.meta.client) {
-    try {
-      const res = await $fetch('/api/auth/verify');
-      isLoggedIn.value = (res as any).valid || false;
-    } catch {
-      isLoggedIn.value = false;
-    } finally {
-      isLoadingAuth.value = false;
-    }
-  }
-};
-
-const fetchSettings = async () => {
-  try {
-    const response = await fetch("/api/site");
-    const data = await response.json();
-    if (data.success && data.data) {
-      if (data.data.commentAvatarService) {
-        avatarService.value = data.data.commentAvatarService;
+// 监听站点设置变化，更新评论配置
+watch(
+  () => siteSettings.value,
+  (settings) => {
+    if (settings) {
+      if (settings.commentAvatarService) {
+        avatarService.value = settings.commentAvatarService;
       }
-      if (data.data.commentPageSize) {
-        pageSize.value = Number(data.data.commentPageSize);
+      if (settings.commentPageSize) {
+        pageSize.value = Number(settings.commentPageSize);
       }
-      if (data.data.commentMaxLevel !== undefined) {
-        maxLevel.value = Number(data.data.commentMaxLevel);
+      if (settings.commentMaxLevel !== undefined) {
+        maxLevel.value = Number(settings.commentMaxLevel);
       }
-      if (data.data.commentInterval !== undefined) {
-        commentInterval.value = Number(data.data.commentInterval);
+      if (settings.commentInterval !== undefined) {
+        commentInterval.value = Number(settings.commentInterval);
       }
-      if (data.data.commentRequireMail !== undefined) {
-        requireMail.value = data.data.commentRequireMail === true || data.data.commentRequireMail === 'true';
+      if (settings.commentRequireMail !== undefined) {
+        requireMail.value = settings.commentRequireMail === true || settings.commentRequireMail === 'true';
       }
-      if (data.data.commentRequireLink !== undefined) {
-        requireLink.value = data.data.commentRequireLink === true || data.data.commentRequireLink === 'true';
+      if (settings.commentRequireLink !== undefined) {
+        requireLink.value = settings.commentRequireLink === true || settings.commentRequireLink === 'true';
       }
     }
-  } catch (err) {
-    console.error("获取设置失败:", err);
-  }
-};
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
-  // 检查登录状态
-  checkAuthStatus();
-  await fetchSettings();
   // 如果需要加载所有评论，使用大 pageSize
   if (props.loadAllComments) {
     const actualPageSize = 10000;
