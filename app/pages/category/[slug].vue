@@ -50,13 +50,22 @@ const showSkeleton = ref(false);
 const isPaginating = ref(false);
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 骨架屏数量 - 根据每页文章数量和当前页码动态调整
+// 生成骨架屏随机高度 - 模拟真实瀑布流的随机效果
+const skeletonHeights = [200, 240, 280, 220, 260, 230, 270, 250, 210, 290, 215, 265, 235, 275, 225, 285];
+function getSkeletonHeight(index: number): number {
+  return skeletonHeights[(index - 1) % skeletonHeights.length];
+}
+
+// 骨架屏数量 - 根据分类类型动态调整
 const skeletonCount = computed(() => {
-  // 如果已经有数据，使用当前文章数量
+  // 图片分类固定显示16个
+  if (isPhotoCategory.value) {
+    return 16;
+  }
+  // 普通分类：如果已经有数据，使用当前文章数量；否则使用每页显示数量
   if (posts.value.length > 0) {
     return posts.value.length;
   }
-  // 否则使用每页显示数量
   return postPageSize.value || 12;
 });
 
@@ -68,11 +77,11 @@ watch(pending, (isLoading) => {
   }
 
   if (isLoading) {
-    // 如果是翻页操作，立即显示骨架屏
-    if (isPaginating.value) {
+    // 图片分类：立即显示骨架屏
+    // 普通分类：如果是翻页操作，立即显示；首次加载1秒后显示
+    if (isPhotoCategory.value || isPaginating.value) {
       showSkeleton.value = true;
     } else if (category.value) {
-      // 首次加载，1秒后显示骨架屏
       skeletonTimer = setTimeout(() => {
         showSkeleton.value = true;
       }, 1000);
@@ -191,6 +200,11 @@ watch(
       return;
     }
 
+    // 图片分类切换时立即显示骨架屏
+    if (isPhotoCategory.value) {
+      showSkeleton.value = true;
+    }
+
     // 等待 DOM 更新
     await nextTick();
 
@@ -295,8 +309,23 @@ onMounted(() => {
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">
+        <!-- 骨架屏（加载时显示16个占位符） -->
+        <div v-if="showSkeleton || (pending && posts.length === 0)" class="photos-container">
+          <div
+            v-for="i in 16"
+            :key="`skeleton-${i}`"
+            class="photo-item photo-skeleton"
+            :style="{
+              animationDelay: `${(i - 1) * 80}ms`,
+              minHeight: getSkeletonHeight(i) + 'px'
+            }">
+            <!-- 图片占位 -->
+            <div class="photo-skeleton-image w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse" :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
+          </div>
+        </div>
+
         <!-- 图片列表 -->
-        <div v-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        <div v-else-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <template v-for="post in posts" :key="post.cid">
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
               <NuxtLink :to="`/content/${slug}/${post.slug}`" class="photo-item">
@@ -434,6 +463,54 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 骨架屏脉冲动画 */
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton-pulse {
+  animation: skeletonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 图片分类骨架屏样式 */
+.photo-skeleton {
+  background-color: rgb(255 255 255 / 0.95);
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 10px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  break-inside: avoid;
+  backdrop-filter: blur(12px);
+  min-height: 200px;
+}
+
+.dark .photo-skeleton {
+  background-color: rgb(17 24 39 / 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.photo-skeleton-image {
+  width: 100%;
+  position: relative;
+}
+
+.photo-skeleton-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
+}
+
 /* 图片分类容器 */
 .photo-category-container {
   max-width: 1600px;
