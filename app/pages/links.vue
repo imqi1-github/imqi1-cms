@@ -429,8 +429,8 @@ onUnmounted(() => {
           class="group relative flex flex-col bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
           <!-- 状态图标 -->
           <div v-if="linkStatuses[link.id]" class="absolute top-3 right-3 flex-shrink-0 z-10">
-            <Icon v-if="linkStatuses[link.id].status === 'up'" name="lucide:check-circle-2" class="size-4 text-green-500" title="可访问" />
-            <Icon v-else-if="linkStatuses[link.id].status === 'down'" name="lucide:x-circle" class="size-4 text-red-500" title="不可访问" />
+            <Icon v-if="linkStatuses[link.id].status === 'up'" name="ri:check-fill" class="size-4 text-green-500" title="可访问" />
+            <Icon v-else-if="linkStatuses[link.id].status === 'down'" name="ri:close-line" class="size-4 text-red-500" title="不可访问" />
             <Icon v-else name="lucide:loader-2" class="size-4 text-blue-500 animate-spin" title="检测中" />
           </div>
 
