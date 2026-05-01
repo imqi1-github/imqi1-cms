@@ -193,11 +193,6 @@ export default defineNuxtConfig({
           rel: "dns-prefetch",
           href: "https://cdn.imqi1.com",
         },
-        {
-          rel: "preload",
-          as: "image",
-          href: "/imgs/avatar.webp",
-        },
       ],
       script: [
         {
