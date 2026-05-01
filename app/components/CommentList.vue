@@ -81,7 +81,8 @@ const fetchComments = async (isRefresh = false, page = 1) => {
         comments.value = [...comments.value, ...data.data];
       }
       currentPage.value = page;
-      totalComments.value = data.pagination.total;
+      // 使用 totalAllComments 显示所有评论总数（包括子评论）
+      totalComments.value = data.pagination.totalAllComments;
       hasMore.value = data.pagination.hasMore;
     } else {
       error.value = data.message || "获取评论失败";
@@ -130,6 +131,31 @@ watch(
 );
 
 onMounted(async () => {
+  // 等待站点设置加载完成，确保使用正确的 pageSize
+  const settings = await useSiteSettings().fetchSiteSettings();
+
+  // 直接从设置中读取配置，而不是依赖 watch
+  if (settings) {
+    if (settings.commentPageSize) {
+      pageSize.value = Number(settings.commentPageSize);
+    }
+    if (settings.commentAvatarService) {
+      avatarService.value = settings.commentAvatarService;
+    }
+    if (settings.commentMaxLevel !== undefined) {
+      maxLevel.value = Number(settings.commentMaxLevel);
+    }
+    if (settings.commentInterval !== undefined) {
+      commentInterval.value = Number(settings.commentInterval);
+    }
+    if (settings.commentRequireMail !== undefined) {
+      requireMail.value = settings.commentRequireMail === true || settings.commentRequireMail === 'true';
+    }
+    if (settings.commentRequireLink !== undefined) {
+      requireLink.value = settings.commentRequireLink === true || settings.commentRequireLink === 'true';
+    }
+  }
+
   // 如果需要加载所有评论，使用大 pageSize
   if (props.loadAllComments) {
     const actualPageSize = 10000;
@@ -137,7 +163,8 @@ onMounted(async () => {
     const data = await response.json();
     if (data.code === 200) {
       comments.value = data.data;
-      totalComments.value = data.pagination.total;
+      // 使用 totalAllComments 显示所有评论总数（包括子评论）
+      totalComments.value = data.pagination.totalAllComments;
       hasMore.value = data.pagination.hasMore;
     }
     loading.value = false;

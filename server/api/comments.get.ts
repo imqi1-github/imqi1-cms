@@ -110,10 +110,14 @@ export default defineEventHandler(async event => {
       }
     });
 
-    const total = comments.length;
-    const totalPages = Math.ceil(total / pageSize);
+    // 分页使用根评论数量
+    const totalRootComments = rootComments.length;
+    const totalPages = Math.ceil(totalRootComments / pageSize);
     const startIndex = (page - 1) * pageSize;
     const paginatedRootComments = rootComments.slice(startIndex, startIndex + pageSize);
+
+    // 所有评论总数（包括子评论）用于显示
+    const totalAllComments = comments.length;
 
     return {
       code: 200,
@@ -122,7 +126,8 @@ export default defineEventHandler(async event => {
       pagination: {
         page,
         pageSize,
-        total,
+        total: totalRootComments,
+        totalAllComments,
         totalPages,
         hasMore: page < totalPages,
       },
