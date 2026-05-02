@@ -67,8 +67,8 @@ const blogStackIcons: FooterIcon[] = [
     href: "https://www.mysql.com/",
     title: "MySQL",
     target: "_blank",
-  }
-]
+  },
+];
 
 // 使用官方 colorMode 模块
 const colorMode = useColorMode();
@@ -101,12 +101,19 @@ const handleClick = async (event: MouseEvent) => {
   // 设置锁
   isTransitioning = true;
 
-  // 检查浏览器是否支持 View Transition API
-  if (!document.startViewTransition) {
+  // Firefox 使用 CSS 过渡作为替代方案
+  const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
+
+  if (!document.startViewTransition || isFirefox) {
+    // Firefox 降级方案：使用 CSS 类控制平滑过渡
+    document.documentElement.classList.add("theme-transitioning");
+
     colorMode.preference = newMode;
+
     setTimeout(() => {
+      document.documentElement.classList.remove("theme-transitioning");
       isTransitioning = false;
-    }, 300);
+    }, 350);
     return;
   }
 
@@ -126,21 +133,21 @@ const handleClick = async (event: MouseEvent) => {
     const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
 
     // 纯 clip-path 动画，不使用缩放
-    document.documentElement.animate(
-      {
-        clipPath: isToDark ? clipPath.reverse() : clipPath,
-      },
-      {
-        duration: 350,
-        easing: "cubic-bezier(0.4, 0.0, 0.2, 1)",
-        fill: "forwards",
-        pseudoElement: isToDark
-          ? "::view-transition-old(root)"
-          : "::view-transition-new(root)",
-      }
-    ).finished.then(() => {
-      isTransitioning = false;
-    });
+    document.documentElement
+      .animate(
+        {
+          clipPath: isToDark ? clipPath.reverse() : clipPath,
+        },
+        {
+          duration: 350,
+          easing: "cubic-bezier(0.4, 0.0, 0.2, 1)",
+          fill: "forwards",
+          pseudoElement: isToDark ? "::view-transition-old(root)" : "::view-transition-new(root)",
+        },
+      )
+      .finished.then(() => {
+        isTransitioning = false;
+      });
   } catch (error) {
     // 如果 transition 失败，确保释放锁
     isTransitioning = false;
@@ -194,7 +201,7 @@ const toggleMobileButtons = () => {
 
 // 跳转到后台
 const goToAdmin = () => {
-  window.open('/admin');
+  window.open("/admin");
 };
 
 onMounted(() => {
@@ -215,7 +222,8 @@ onUnmounted(() => {
 
 <template>
   <div class="bg-slate-50 dark:bg-slate-900 z-9">
-    <div class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400 max-sm:flex-col gap-3">
+    <div
+      class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400 max-sm:flex-col gap-3">
       <div class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
         <span v-if="siteIcp && isHomePage" class="max-md:hidden"
@@ -276,33 +284,33 @@ onUnmounted(() => {
             @click="scrollToTop"
             v-tooltip="'返回顶部'"
             class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
-          <!-- 进度圆环 -->
-          <Transition name="icon-fade" mode="out-in">
-            <svg v-if="showProgress" key="progress" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
-              <circle
-                cx="14"
-                cy="14"
-                r="12"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                class="text-gray-900 dark:text-gray-100"
-                :stroke-dasharray="75.4"
-                :stroke-dashoffset="75.4 - (75.4 * scrollProgress) / 100" />
-            </svg>
-            <div v-else-if="showBackToTop" key="arrow" class="absolute inset-0 flex items-center justify-center">
-              <Icon name="ri:arrow-up-line" class="size-4 text-gray-600 dark:text-gray-300" />
-            </div>
-          </Transition>
-          <!-- 进度数字 -->
-          <Transition name="icon-fade" mode="out-in">
-            <span v-if="showProgress" key="number" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
-              {{ Math.round(scrollProgress) }}
-            </span>
-          </Transition>
-        </button>
-      </Transition>
+            <!-- 进度圆环 -->
+            <Transition name="icon-fade" mode="out-in">
+              <svg v-if="showProgress" key="progress" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+                <circle
+                  cx="14"
+                  cy="14"
+                  r="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  class="text-gray-900 dark:text-gray-100"
+                  :stroke-dasharray="75.4"
+                  :stroke-dashoffset="75.4 - (75.4 * scrollProgress) / 100" />
+              </svg>
+              <div v-else-if="showBackToTop" key="arrow" class="absolute inset-0 flex items-center justify-center">
+                <Icon name="ri:arrow-up-line" class="size-4 text-gray-600 dark:text-gray-300" />
+              </div>
+            </Transition>
+            <!-- 进度数字 -->
+            <Transition name="icon-fade" mode="out-in">
+              <span v-if="showProgress" key="number" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
+                {{ Math.round(scrollProgress) }}
+              </span>
+            </Transition>
+          </button>
+        </Transition>
       </ClientOnly>
 
       <!-- 移动端：页面加载图标 -->
@@ -337,9 +345,9 @@ onUnmounted(() => {
             @click="scrollToTop"
             v-tooltip="'返回顶部'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
-          <Icon name="ri:arrow-up-line" class="size-5 text-gray-600 dark:text-gray-300" />
-        </button>
-      </Transition>
+            <Icon name="ri:arrow-up-line" class="size-5 text-gray-600 dark:text-gray-300" />
+          </button>
+        </Transition>
       </ClientOnly>
 
       <!-- 移动端：主题切换按钮 -->
@@ -425,12 +433,14 @@ onUnmounted(() => {
           @click="toggleMobileButtons"
           v-tooltip="isMobileButtonsOpen ? '收起' : '展开'"
           class="rounded-full border p-2 flex items-center justify-center shadow-lg transition-all duration-300 md:hidden"
-          :class="isMobileButtonsOpen ? 'border-red-500 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'">
-        <Icon
-          :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
-          class="size-5"
-          :class="isMobileButtonsOpen ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'" />
-      </button>
+          :class="
+            isMobileButtonsOpen ? 'border-red-500 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'
+          ">
+          <Icon
+            :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
+            class="size-5"
+            :class="isMobileButtonsOpen ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'" />
+        </button>
       </ClientOnly>
     </div>
   </div>

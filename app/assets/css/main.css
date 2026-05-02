@@ -120,6 +120,22 @@ span.iconify {
   z-index: 100;
 }
 
+/* Firefox 主题切换过渡动画 */
+html.theme-transitioning,
+html.theme-transitioning body,
+html.theme-transitioning body * {
+  transition:
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 确保 Firefox 下 view-transition 伪元素不会产生闪烁 */
+::view-transition-none(*) {
+  animation: none !important;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
