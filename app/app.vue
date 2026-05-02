@@ -9,12 +9,7 @@ useScrollbarTheme();
 // 判断是否是前台页面（非后台）
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
 const showFirstLoading = ref(true);
-const siteHost = ref("");
 
-// 从 window.location 解析域名
-if (import.meta.client) {
-  siteHost.value = window.location.hostname.toUpperCase();
-}
 
 // 页面加载状态
 const showPageLoading = ref(false);
@@ -103,51 +98,11 @@ router.beforeEach(async (to, from) => {
 // 提供给子组件
 provide("pageLoading", readonly(showPageLoading));
 
-// 获取字体 CSS URL
-const fontCssUrl = computed(() => {
-  const cdnURL = config.public.cdnURL as string;
-  // 生产环境且配置了 CDN 时使用 CDN，否则使用本地路径
-  return import.meta.env.PROD && cdnURL ? `${cdnURL}/fonts/font.css` : "/fonts/font.css";
-});
-
-// 全局 SEO 元信息
+// 全局 SEO 元信息（仅动态内容）
 const siteUrl = "https://imqi1.com";
-const siteDescription = "做技术的分享者、生活的摄影师、时事的评论员。";
-const siteKeywords = "技术,摄影,时事,博客,编程,开发,Vue,Nuxt,JavaScript";
-
-// Favicon 路径（根据 CDN 配置动态生成）
-const faviconUrl = computed(() => {
-  const cdnURL = config.public.cdnURL as string;
-  return import.meta.env.PROD && cdnURL ? `${cdnURL}/favicon.ico` : "/favicon.ico";
-});
-
-// Apple Touch Icon 路径
-const appleTouchIconUrl = computed(() => {
-  const cdnURL = config.public.cdnURL as string;
-  return import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/imqi1-144.png` : "/imgs/imqi1-144.png";
-});
-
-// PWA Manifest 路径（根据 CDN 配置动态生成）
-const manifestUrl = computed(() => {
-  const cdnURL = config.public.cdnURL as string;
-  return import.meta.env.PROD && cdnURL ? `${cdnURL}/manifest.webmanifest` : "/manifest.webmanifest";
-});
 
 useHead({
-  htmlAttrs: {
-    lang: "zh-CN",
-  },
   link: [
-    {
-      rel: "alternate",
-      type: "application/rss+xml",
-      title: "RSS 订阅",
-      href: "/feed",
-    },
-    {
-      rel: "stylesheet",
-      href: fontCssUrl.value,
-    },
     {
       rel: "canonical",
       href: computed(() => {
@@ -157,55 +112,8 @@ useHead({
         return siteUrl + route.path;
       }),
     },
-    // PWA Manifest
-    {
-      rel: "manifest",
-      href: manifestUrl,
-    },
-    // Favicon
-    {
-      rel: "icon",
-      type: "image/x-icon",
-      href: faviconUrl,
-    },
-    {
-      rel: "apple-touch-icon",
-      sizes: "180x180",
-      href: appleTouchIconUrl,
-    },
   ],
   meta: [
-    // 基础元信息
-    {
-      name: "description",
-      content: siteDescription,
-    },
-    {
-      name: "keywords",
-      content: siteKeywords,
-    },
-    {
-      name: "author",
-      content: "ImQi1",
-    },
-
-    // Open Graph
-    {
-      property: "og:site_name",
-      content: "ImQi1",
-    },
-    {
-      property: "og:title",
-      content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
-    },
-    {
-      property: "og:description",
-      content: siteDescription,
-    },
-    {
-      property: "og:image",
-      content: `${siteUrl}/imgs/og-image.png`,
-    },
     {
       property: "og:url",
       content: computed(() => {
@@ -214,58 +122,6 @@ useHead({
         }
         return siteUrl + route.path;
       }),
-    },
-    {
-      property: "og:type",
-      content: "website",
-    },
-    {
-      property: "og:locale",
-      content: "zh_CN",
-    },
-
-    // Twitter Card
-    {
-      name: "twitter:card",
-      content: "summary_large_image",
-    },
-    {
-      name: "twitter:title",
-      content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
-    },
-    {
-      name: "twitter:description",
-      content: siteDescription,
-    },
-    {
-      name: "twitter:image",
-      content: `${siteUrl}/imgs/og-image.png`,
-    },
-    {
-      name: "twitter:site",
-      content: "@imqi1",
-    },
-
-    // 其他
-    {
-      name: "theme-color",
-      content: "#f9fafb",
-    },
-    {
-      name: "mobile-web-app-capable",
-      content: "yes",
-    },
-    {
-      name: "apple-mobile-web-app-status-bar-style",
-      content: "default",
-    },
-    {
-      name: "robots",
-      content: "index, follow",
-    },
-    {
-      name: "googlebot",
-      content: "index, follow",
     },
   ],
 });

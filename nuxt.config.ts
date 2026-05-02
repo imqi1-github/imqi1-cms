@@ -184,6 +184,9 @@ export default defineNuxtConfig({
     buildAssetsDir: "/_nuxt/",
     cdnURL: cdnURL,
     head: {
+      htmlAttrs: {
+        lang: "zh-CN",
+      },
       link: [
         {
           rel: "preconnect",
@@ -192,6 +195,117 @@ export default defineNuxtConfig({
         {
           rel: "dns-prefetch",
           href: "https://cdn.imqi1.com",
+        },
+        // RSS 订阅
+        {
+          rel: "alternate",
+          type: "application/rss+xml",
+          title: "RSS 订阅",
+          href: "/feed",
+        },
+        // 字体样式表（根据 CDN 配置动态生成）
+        {
+          rel: "stylesheet",
+          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/fonts/font.css` : "/fonts/font.css",
+        },
+        // PWA Manifest（根据 CDN 配置动态生成）
+        {
+          rel: "manifest",
+          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/manifest.webmanifest` : "/manifest.webmanifest",
+        },
+        // Favicon（根据 CDN 配置动态生成）
+        {
+          rel: "icon",
+          type: "image/x-icon",
+          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/favicon.ico` : "/favicon.ico",
+        },
+        // Apple Touch Icon（根据 CDN 配置动态生成）
+        {
+          rel: "apple-touch-icon",
+          sizes: "180x180",
+          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/imqi1-144.png` : "/imgs/imqi1-144.png",
+        },
+      ],
+      meta: [
+        // 基础元信息
+        {
+          name: "description",
+          content: "做技术的分享者、生活的摄影师、时事的评论员。",
+        },
+        {
+          name: "keywords",
+          content: "技术,摄影,时事,博客,编程,开发,Vue,Nuxt,JavaScript",
+        },
+        {
+          name: "author",
+          content: "ImQi1",
+        },
+        // Open Graph
+        {
+          property: "og:site_name",
+          content: "ImQi1",
+        },
+        {
+          property: "og:title",
+          content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
+        },
+        {
+          property: "og:description",
+          content: "做技术的分享者、生活的摄影师、时事的评论员。",
+        },
+        {
+          property: "og:image",
+          content: "https://imqi1.com/imgs/og-image.png",
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          property: "og:locale",
+          content: "zh_CN",
+        },
+        // Twitter Card
+        {
+          name: "twitter:card",
+          content: "summary_large_image",
+        },
+        {
+          name: "twitter:title",
+          content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
+        },
+        {
+          name: "twitter:description",
+          content: "做技术的分享者、生活的摄影师、时事的评论员。",
+        },
+        {
+          name: "twitter:image",
+          content: "https://imqi1.com/imgs/og-image.png",
+        },
+        {
+          name: "twitter:site",
+          content: "@imqi1",
+        },
+        // 其他
+        {
+          name: "theme-color",
+          content: "#f9fafb",
+        },
+        {
+          name: "mobile-web-app-capable",
+          content: "yes",
+        },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "default",
+        },
+        {
+          name: "robots",
+          content: "index, follow",
+        },
+        {
+          name: "googlebot",
+          content: "index, follow",
         },
       ],
       script: [
