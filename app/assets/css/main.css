@@ -93,24 +93,42 @@ span.iconify {
   }
 }
 
-/* 禁用 View Transitions，所有浏览器使用统一过渡效果 */
+/* View Transitions 动画优化 */
 ::view-transition-new(root),
 ::view-transition-old(root) {
+  /* 禁用默认动画 */
   animation: none !important;
-  display: none !important;
 }
 
-/* 所有浏览器统一的主题切换过渡 - 优化性能 */
-/* 主题切换时只过渡背景色，不过渡文字颜色 */
-html.theme-transitioning body {
-  transition: background-color 0.3s ease-out !important;
+/* 优化 GPU 加速 */
+::view-transition-new(root) {
+  /* 新视图使用 GPU 加速 - 只优化 clip-path */
+  will-change: clip-path;
+  /* 提示浏览器这个元素会频繁变化 */
+  contain: layout style paint;
 }
 
-/* 主题切换时禁用所有元素的过渡效果，避免慢慢变色 */
-html.theme-transitioning *,
-html.theme-transitioning *::before,
-html.theme-transitioning *::after {
-  transition: none !important;
+::view-transition-old(root) {
+  /* 旧视图使用 GPU 加速 - 只优化 clip-path */
+  will-change: clip-path;
+  /* 提示浏览器这个元素会频繁变化 */
+  contain: layout style paint;
+}
+
+/* 暗色模式下，旧视图在上层 */
+:root.dark::view-transition-old(root) {
+  z-index: 100;
+}
+
+/* Firefox 主题切换过渡动画 */
+html.theme-transitioning,
+html.theme-transitioning body,
+html.theme-transitioning body * {
+  transition:
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* 确保 Firefox 下 view-transition 伪元素不会产生闪烁 */
@@ -278,3 +296,47 @@ html.theme-transitioning *::after {
   }
 }
 
+/* 滚动条主题样式 - 使用 CSS 类切换，性能优于动态创建 style 元素 */
+.scrollbar-light {
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+.scrollbar-dark {
+  --scrollbar-track: #1e293b;
+  --scrollbar-thumb: #475569;
+  --scrollbar-thumb-hover: #64748b;
+}
+
+/* 应用滚动条 CSS 变量 */
+.scrollbar-light,
+.scrollbar-dark {
+  scrollbar-gutter: stable;
+}
+
+.scrollbar-light,
+.scrollbar-dark {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+}

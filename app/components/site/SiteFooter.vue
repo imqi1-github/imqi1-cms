@@ -70,11 +70,90 @@ const blogStackIcons: FooterIcon[] = [
   },
 ];
 
-// 使用统一的主题切换 composable
-const { isDark: isDarkMode, toggleTheme } = useThemeToggle();
+// 使用官方 colorMode 模块
+const colorMode = useColorMode();
 
 // 移动端按钮组展开状态
 const isMobileButtonsOpen = ref(false);
+
+// 按钮引用
+const themeButtonRef = ref<HTMLElement | null>(null);
+
+// 使用 computed 替代 ref + watch，减少响应式开销
+const isDarkMode = computed(() => colorMode.value === "dark");
+
+// 防抖锁，避免快速点击导致性能问题
+let isTransitioning = false;
+
+// 切换亮暗模式（优化的圆形扩散动画）
+const handleClick = async (event: MouseEvent) => {
+  // 防抖：如果在过渡中，直接返回
+  if (isTransitioning) return;
+
+  const x = event.clientX;
+  const y = event.clientY;
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+  // 判断当前是否为暗色模式
+  const isCurrentDark = colorMode.preference === "dark";
+  const newMode = isCurrentDark ? "light" : "dark";
+
+  // 设置锁
+  isTransitioning = true;
+
+  // Firefox 使用 CSS 过渡作为替代方案
+  const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
+
+  if (!document.startViewTransition || isFirefox) {
+    // Firefox 降级方案：使用 CSS 类控制平滑过渡
+    document.documentElement.classList.add("theme-transitioning");
+
+    colorMode.preference = newMode;
+
+    setTimeout(() => {
+      document.documentElement.classList.remove("theme-transitioning");
+      isTransitioning = false;
+    }, 350);
+    return;
+  }
+
+  // 使用 View Transition API
+  const transition = document.startViewTransition(async () => {
+    colorMode.preference = newMode;
+    await nextTick();
+  });
+
+  try {
+    await transition.ready;
+
+    // 判断切换方向
+    const isToDark = newMode === "dark";
+
+    // 使用 clip-path 实现圆形扩散
+    const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
+
+    // 纯 clip-path 动画，不使用缩放
+    document.documentElement
+      .animate(
+        {
+          clipPath: isToDark ? clipPath.reverse() : clipPath,
+        },
+        {
+          duration: 350,
+          easing: "cubic-bezier(0.4, 0.0, 0.2, 1)",
+          fill: "forwards",
+          pseudoElement: isToDark ? "::view-transition-old(root)" : "::view-transition-new(root)",
+        },
+      )
+      .finished.then(() => {
+        isTransitioning = false;
+      });
+  } catch (error) {
+    // 如果 transition 失败，确保释放锁
+    isTransitioning = false;
+    console.error("View transition failed:", error);
+  }
+};
 
 // 滚动进度
 const scrollProgress = ref(0);
@@ -282,7 +361,7 @@ onUnmounted(() => {
           leave-to-class="opacity-0 translate-y-4 scale-75">
           <button
             v-show="isMobileButtonsOpen"
-            @click="toggleTheme"
+            @click="handleClick"
             v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
             <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 text-gray-600 dark:text-gray-300" />
@@ -326,7 +405,7 @@ onUnmounted(() => {
       <!-- PC端：暗黑模式切换按钮 -->
       <ClientOnly>
         <button
-          @click="toggleTheme"
+          @click="handleClick"
           v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
           class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
           <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-4 text-gray-600 dark:text-gray-300" />
