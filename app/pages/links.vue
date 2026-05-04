@@ -426,7 +426,7 @@ onUnmounted(() => {
           :href="link.link"
           target="_blank"
           rel="noopener"
-          class="group relative flex flex-col bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
+          class="group relative flex flex-col bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
           <!-- 状态图标 -->
           <div v-if="linkStatuses[link.id]" class="absolute top-3 right-3 flex-shrink-0 z-10">
             <Icon v-if="linkStatuses[link.id].status === 'up'" name="ri:check-fill" class="size-4 text-green-500" title="可访问" />
@@ -480,6 +480,82 @@ onUnmounted(() => {
       </div>
     </section>
 
+    <!-- 本站加入的博客组织 -->
+    <section class="my-8 animate-fade-in">
+      <h2 class="text-xl font-bold mb-4">本站已加入的博客组织</h2>
+      <div class="flex flex-wrap gap-4">
+        <!-- 十年之约 -->
+        <a
+          href="https://www.foreverblog.cn/blog/5868.html"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
+          <img
+            src="/imgs/foreverblog.png"
+            alt="十年之约"
+            class="w-6 h-6 object-contain rounded-full"
+            loading="lazy" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">十年之约</span>
+        </a>
+
+        <!-- 开往 -->
+        <a
+          href="https://list.travellings.cn/"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
+          <img
+            src="/imgs/travelling.png"
+            alt="开往"
+            class="w-6 h-6 object-contain rounded-full"
+            loading="lazy" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">开往</span>
+        </a>
+
+        <!-- 博友圈 -->
+        <a
+          href="https://www.boyouquan.com/blogs/imqi1.com"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
+          <img
+            src="/imgs/boyouquan.png"
+            alt="博友圈"
+            class="w-6 h-6 object-contain rounded-full"
+            loading="lazy" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">博友圈</span>
+        </a>
+
+        <!-- Blogfinder -->
+        <a
+          href="https://bf.zzxworld.com/s/976"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
+          <img
+            src="/imgs/blogfinder.png"
+            alt="Blogfinder"
+            class="w-6 h-6 object-contain rounded-full"
+            loading="lazy" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">Blogfinder</span>
+        </a>
+
+        <!-- 个站商店 -->
+        <a
+          href="https://storeweb.cn/member/o/2146"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
+          <img
+            src="/imgs/storeweb.png"
+            alt="个站商店"
+            class="w-6 h-6 object-contain rounded-full"
+            loading="lazy" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">个站商店</span>
+        </a>
+      </div>
+    </section>
+
     <!-- 本站信息卡片 -->
     <section class="my-8 animate-fade-in">
       <h2 class="text-xl font-bold mb-4">本站信息</h2>
@@ -493,7 +569,7 @@ onUnmounted(() => {
               class="w-20 h-20 rounded-xl object-cover" />
           </div>
           <!-- 信息 -->
-          <div class="flex-1 space-y-3">
+          <div class="flex-1 space-y-1">
             <div>
               <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">ImQi1 / 棋</h3>
               <p class="text-slate-600 dark:text-slate-400 text-sm mt-1">做技术的分享者 · 生活的摄影师 · 时事的评论员</p>
@@ -505,6 +581,9 @@ onUnmounted(() => {
                   https://imqi1.com
                 </a>
               </div>
+            </div>
+            <div class="text-slate-400 dark:text-slate-500 text-xs mt-3">
+              * 名称二选一，头像右击后复制链接
             </div>
           </div>
         </div>

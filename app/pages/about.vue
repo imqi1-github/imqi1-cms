@@ -248,7 +248,7 @@
           class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           兴趣广泛
         </h2>
-        <div class="about-bold-hobbies flex gap-4 pt-3">
+        <div class="about-bold-hobbies flex flex-wrap gap-4 pt-3">
           <div
             class="about-bold-hobby bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="about-bold-hobby-emoji block text-2xl mb-2">💻</span>
@@ -301,7 +301,7 @@
       </div>
 
       <!-- 16 Personality -->
-      <div class="about-bold-section about-bold-section-right ready ml-50% mb-24">
+      <div class="about-bold-section about-bold-section-right ready ml-[40%] mb-24">
         <div class="about-bold-number text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">04</div>
         <h2
           class="about-bold-section-title text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
@@ -309,7 +309,7 @@
         </h2>
         <div class="about-bold-mbti bg-slate-100 dark:bg-slate-800 rounded-2xl p-8 transition-colors duration-300">
           <div class="about-bold-mbti-header flex items-center gap-8 mb-8">
-            <div class="about-bold-mbti-type shrink-0">
+            <div class="about-bold-mbti-type shrink-0 max-sm:hidden">
               <img src="/imgs/enfj.svg" alt="ENTJ" class="w-32 h-32 object-contain" />
             </div>
             <div class="about-bold-mbti-info flex-1">
