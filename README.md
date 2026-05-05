@@ -353,6 +353,10 @@ location ~ ^/(emojis|fonts|icons|imgs|skills)/ {
 location = /favicon.ico {
     return 302 https://cdn.imqi1.com/favicon.ico;
 }
+
+location = /manifest.webmanifest {
+    return 302 https://cdn.imqi1.com/manifest.webmanifest;
+}
 ```
 
 ## 🗄️ 数据模型
