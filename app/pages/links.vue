@@ -3,9 +3,10 @@ import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import type { MenuItems } from "~/directives/contextMenu";
 
 // 导入前台通知 composable
-const { success, error: showError } = useFrontNotification();
+const { success, error: showError, notify } = useFrontNotification();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -215,6 +216,19 @@ const formData = ref({
   sort: "",
   avatar: "",
 });
+
+// 本站头像右键菜单配置
+const avatarContextMenu: MenuItems = [
+  {
+    icon: "ri:file-copy-line",
+    label: "复制头像链接",
+    action: () => {
+      const avatarUrl = "https://cn.cravatar.com/avatar/2841d29eeabab633ae116c7b2c97e3bf?size=512";
+      navigator.clipboard.writeText(avatarUrl);
+      notify("复制头像链接成功", "success");
+    },
+  },
+];
 
 // 处理链接显示
 const formatUrl = (url: string) => {
@@ -564,9 +578,10 @@ onUnmounted(() => {
           <!-- 头像 -->
           <div class="shrink-0">
             <img
+              v-context-menu="avatarContextMenu"
               src="https://cn.cravatar.com/avatar/2841d29eeabab633ae116c7b2c97e3bf?size=512"
               alt="ImQi1"
-              class="w-20 h-20 rounded-xl object-cover" />
+              class="w-20 h-20 rounded-xl object-cover cursor-context-menu" />
           </div>
           <!-- 信息 -->
           <div class="flex-1 space-y-1">
