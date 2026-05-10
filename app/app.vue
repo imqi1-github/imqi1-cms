@@ -206,7 +206,7 @@ onMounted(() => {
         <main
           class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
           :style="{
-            transition: isPageTransitioning ? 'opacity 0.3s ease' : 'opacity 0.2s ease',
+            transition: 'opacity 0.3s ease',
             opacity: mainOpacity
           }">
           <NuxtPage class="font-serif font-[450] grow" />
