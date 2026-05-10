@@ -173,9 +173,9 @@ watch(isNotFound, () => {
 
   if (isNotFound.value) {
     nextTick(() => {
-      const notFound = document.querySelector(".not-found-fade-in");
-      if (notFound) {
-        notFound.classList.add("fade-in-start");
+      const notFoundElement = document.querySelector(".animate-fade-in");
+      if (notFoundElement && !notFoundElement.classList.contains("fade-in-start")) {
+        notFoundElement.classList.add("fade-in-start");
       }
     });
   }
@@ -205,20 +205,10 @@ watch(
 
 // 初始化滚动渐入动画
 onMounted(() => {
-  // 404 页面动画（初始状态）
-  if (isNotFound.value) {
-    nextTick(() => {
-      const notFound = document.querySelector(".not-found-fade-in");
-      if (notFound) {
-        notFound.classList.add("fade-in-start");
-      }
-    });
-  }
-
   // 初始化滚动渐入动画
   const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
+    threshold: 0.01,
+    rootMargin: "0px",
   };
 
   const fadeInObserver = new IntersectionObserver(entries => {
@@ -230,9 +220,11 @@ onMounted(() => {
     });
   }, observerOptions);
 
-  // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-    fadeInObserver.observe(el);
+  // 观察所有需要滚动渐入的元素（包括404和正常内容）
+  nextTick(() => {
+    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
+      fadeInObserver.observe(el);
+    });
   });
 
   // 初始化目录和处理 hash 滚动
@@ -263,7 +255,7 @@ onUnmounted(() => {
     <!-- 404 状态 -->
     <div
       v-else-if="isNotFound"
-      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
+      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full animate-fade-in">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
         <Icon name="ri:close-large-fill" class="text-red-500" />
         <span>页面未找到</span>
@@ -321,25 +313,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* 404 页面淡入动画 */
-.not-found-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.not-found-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* 渐入动画基础类 */
 .animate-fade-in {
   opacity: 0;
@@ -350,20 +323,6 @@ onUnmounted(() => {
 }
 
 .animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* 404 页面淡入动画 */
-.not-found-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.not-found-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
 }

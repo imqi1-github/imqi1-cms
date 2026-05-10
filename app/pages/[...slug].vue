@@ -21,25 +21,19 @@ useHead({
   title: computed(() => `页面未找到 - ${siteName.value}`),
 });
 
-// 初始化滚动渐入动画
+// 初始化404页面动画
 onMounted(() => {
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  const fadeInObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-    fadeInObserver.observe(el);
+  nextTick(() => {
+    const element = document.querySelector(".animate-fade-in:not(.fade-in-start)");
+    if (element) {
+      // 延迟触发动画，等待 app.vue 的页面过渡完成
+      // app.vue 的页面过渡包括：淡出 0.3s + 淡入 0.3s = 0.6s
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          element.classList.add("fade-in-start");
+        });
+      }, 300); // 正好在页面过渡完成后触发
+    }
   });
 });
 </script>
