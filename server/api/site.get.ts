@@ -41,9 +41,15 @@ export default defineEventHandler(async event => {
         if (typeof defaults[meta.key] === "boolean") {
           settings[meta.key] = value === "true";
         }
-        // 数字值转换
+        // 数字值转换 - 使用 isNaN 检查而不是 || 运算符，避免 0 被当作 falsy 值
         else if (typeof defaults[meta.key] === "number") {
-          settings[meta.key] = Number(value) || defaults[meta.key];
+          // 空字符串或 null 应该使用默认值
+          if (value === "" || value === null || value === undefined) {
+            settings[meta.key] = defaults[meta.key];
+          } else {
+            const numValue = Number(value);
+            settings[meta.key] = isNaN(numValue) ? defaults[meta.key] : numValue;
+          }
         }
         // 其他类型直接使用
         else {
