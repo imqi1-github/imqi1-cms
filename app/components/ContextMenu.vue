@@ -231,12 +231,6 @@ const handleScrollToTop = () => {
   closeMenu();
 };
 
-// 打印页面
-const handlePrint = () => {
-  window.print();
-  closeMenu();
-};
-
 // 全选
 const handleSelectAll = () => {
   const selection = window.getSelection();
@@ -446,13 +440,6 @@ onUnmounted(() => {
           class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Icon name="ri:file-text-line" class="size-4" />
           <span>复制标题和链接</span>
-        </li>
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
-        <li
-          @click="handlePrint"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
-          <Icon name="ri:printer-line" class="size-4" />
-          <span>打印页面</span>
         </li>
       </template>
 
