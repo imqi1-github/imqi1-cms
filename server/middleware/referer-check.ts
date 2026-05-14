@@ -24,8 +24,21 @@ export default defineEventHandler(event => {
     ? process.env.ALLOWED_REFERER_DOMAINS.split(",").map(d => d.trim())
     : ["imqi1.com"];
 
-  // 如果没有referer，拒绝请求
+  // 如果没有referer，检查是否为 SSR 请求（服务端预渲染）
+  // SSR 请求来自服务端内部，没有 referer，需要允许通过
   if (!referer) {
+    // 检查是否为服务端发起的请求（通过 x-forwarded-for 或判断是否为本地回环）
+    const xForwardedFor = event.node.req.headers["x-forwarded-for"] as string;
+    const isInternalRequest =
+      !xForwardedFor ||
+      xForwardedFor.includes("127.0.0.1") ||
+      xForwardedFor.includes("localhost") ||
+      xForwardedFor.includes("::1");
+
+    if (isInternalRequest) {
+      return;
+    }
+
     setResponseStatus(event, 403);
     return { message: "Forbidden" };
   }
