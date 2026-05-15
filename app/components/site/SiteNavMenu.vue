@@ -13,7 +13,11 @@ const props = defineProps({
 const isMobileMenuOpen = ref(false);
 
 // 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
-const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch("/api/categories"), {
+const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch("/api/categories", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+}), {
   server: true,
 });
 const categories = computed(() => categoriesData.value?.data || []);

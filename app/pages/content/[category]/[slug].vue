@@ -89,7 +89,11 @@ watch(
     if (postId) {
       relatedPostsPending.value = true;
       try {
-        const data = await $fetch(`/api/related-posts/${postId}?limit=3`);
+        const data = await $fetch(`/api/related-posts/${postId}?limit=3`, {
+          headers: {
+            "x-ssr-internal-request": "true",
+          },
+        });
         relatedPostsData.value = data;
       } catch (error) {
         console.error("获取相关文章失败:", error);
@@ -342,16 +346,19 @@ watch(
 watch(
   () => relatedPosts.value,
   posts => {
-    if (import.meta.client && posts && posts.length > 0) {
+    if (import.meta.client) {
       nextTick(() => {
         setTimeout(() => {
-          const relatedSection = document.querySelector(".related-posts-section");
-          if (relatedSection && relatedSection.classList.contains("opacity-0")) {
-            relatedSection.classList.remove("opacity-0", "translate-y-8");
-            relatedSection.classList.add("opacity-100", "translate-y-0");
+          // 只有当相关文章有数据时才触发相关文章区域的动画
+          if (posts && posts.length > 0) {
+            const relatedSection = document.querySelector(".related-posts-section");
+            if (relatedSection && relatedSection.classList.contains("opacity-0")) {
+              relatedSection.classList.remove("opacity-0", "translate-y-8");
+              relatedSection.classList.add("opacity-100", "translate-y-0");
+            }
           }
 
-          // 同时触发评论区的渐入动画
+          // 无论是否有相关文章，都触发评论区的渐入动画
           const commentSection = document.querySelector(".comment-section");
           if (commentSection && commentSection.classList.contains("opacity-0")) {
             commentSection.classList.remove("opacity-0", "translate-y-8");
