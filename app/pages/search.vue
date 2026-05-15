@@ -11,6 +11,9 @@ const searchKeyword = ref((route.query.q as string) || "");
 
 // 搜索结果
 const { data, pending, error, refresh } = await useFetch("/api/search", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
   query: {
     q: searchKeyword,
   },

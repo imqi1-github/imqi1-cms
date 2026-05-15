@@ -10,7 +10,11 @@ const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true);
 
 // 获取留言板配置
-const { data: messageConfig } = await useFetch("/api/message/config");
+const { data: messageConfig } = await useFetch("/api/message/config", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 const messagePostId = computed(() => messageConfig.value?.data?.postId);
 
 // 页面元数据

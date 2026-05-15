@@ -14,7 +14,11 @@ const categorySlug = route.params.category as string;
 const slug = route.params.slug as string;
 
 // 从 URL 获取分类信息
-const { data: categoryData } = await useFetch(`/api/category/${categorySlug}`);
+const { data: categoryData } = await useFetch(`/api/category/${categorySlug}`, {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 const categoryFromUrl = computed(() => categoryData.value?.data || null);
 
 // 格式化日期
@@ -40,7 +44,11 @@ function formatDate(date: string | Date): string {
 }
 
 // 获取文章数据 - 使用新的 API 格式
-const { data, pending, error } = await useFetch(`/api/posts/${categorySlug}/${slug}`);
+const { data, pending, error } = await useFetch(`/api/posts/${categorySlug}/${slug}`, {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 
 const post = computed(() => data.value?.data);
 

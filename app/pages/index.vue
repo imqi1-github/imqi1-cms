@@ -661,7 +661,11 @@ const handleTocScroll = () => {
 };
 
 // 优化：使用聚合API一次性获取所有首页数据
-const { data: homeData } = await useFetch("/api/home-data");
+const { data: homeData } = await useFetch("/api/home-data", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 
 // 站点信息
 const siteName = computed(() => homeData.value?.data?.site?.siteName || "ImQi1");
@@ -670,7 +674,11 @@ const siteName = computed(() => homeData.value?.data?.site?.siteName || "ImQi1")
 const categories = computed(() => homeData.value?.data?.categories || []);
 
 // 随机文章 - 客户端单独加载（避免ISR缓存导致不随机）
-const { data: randomPostData } = await useFetch("/api/random-post");
+const { data: randomPostData } = await useFetch("/api/random-post", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 const randomPost = computed(() => randomPostData.value?.data);
 
 // 最新文章

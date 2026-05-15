@@ -17,6 +17,9 @@ const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取标签文章数据
 const { data, pending, error, refresh } = await useFetch(`/api/tag/${slug}/posts`, {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
   query: { page, pageSize: postPageSize },
   watch: [page],
 });

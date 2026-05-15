@@ -10,7 +10,11 @@ const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 获取协议页面数据
-const { data, pending, error } = await useFetch("/api/page/agreement");
+const { data, pending, error } = await useFetch("/api/page/agreement", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 
 const page = computed(() => data.value?.data);
 

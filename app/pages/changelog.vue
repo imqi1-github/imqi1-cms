@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const { data, pending, error } = await useFetch("/api/changelog");
+const { data, pending, error } = await useFetch("/api/changelog", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();

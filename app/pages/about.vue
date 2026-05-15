@@ -596,7 +596,11 @@ const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 const pageLoading = inject<"pageLoading", Ref<boolean>>("pageLoading", ref(false));
 
 // 获取统计数据
-const { data: statsData } = await useFetch("/api/stats");
+const { data: statsData } = await useFetch("/api/stats", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 const stats = computed(() => ({
   publishedPostsNum: statsData.value?.data?.publishedPostsNum || 0,
   publishedCommentsNum: statsData.value?.data?.publishedCommentsNum || 0,

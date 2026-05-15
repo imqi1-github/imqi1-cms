@@ -13,7 +13,11 @@ const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 获取友链数据
-const { data: linksData, pending, error, refresh } = await useFetch("/api/links");
+const { data: linksData, pending, error, refresh } = await useFetch("/api/links", {
+  headers: {
+    "x-ssr-internal-request": "true",
+  },
+});
 const links = computed(() => linksData.value?.data || []);
 
 // 使用全局认证状态
