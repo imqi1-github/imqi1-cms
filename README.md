@@ -333,6 +333,24 @@ server
 伪静态：
 
 ```nginx
+location = /feed {
+    proxy_pass http://127.0.0.1:4000;
+    proxy_set_header Host $host:$server_port;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header REMOTE-HOST $remote_addr;
+    proxy_set_header X-Host $host:$server_port;
+    proxy_set_header X-Scheme $scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    # 关键：绕过缓存
+    proxy_no_cache 1;
+    proxy_cache_bypass 1;
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+}
+
 location = /sw.js {
     root /www/wwwroot/glass;
     add_header Cache-Control "no-cache";
@@ -358,6 +376,8 @@ location = /manifest.webmanifest {
     return 302 https://cdn.imqi1.com/manifest.webmanifest;
 }
 ```
+
+> 2026年5月24日更新：feed禁止缓存。
 
 ## 🗄️ 数据模型
 
