@@ -86,7 +86,8 @@ export default defineEventHandler(async event => {
       }
       // 数字值转换
       else if (typeof defaults[meta.key] === "number") {
-        settings[meta.key] = Number(value) || defaults[meta.key];
+        const numValue = Number(value);
+        settings[meta.key] = isNaN(numValue) ? defaults[meta.key] : numValue;
       }
       // 其他类型直接使用
       else {
