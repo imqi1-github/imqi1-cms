@@ -63,28 +63,28 @@ function truncateDescription(desc: string | null, maxLength = 150) {
 
 onMounted(() => {
   loadPosts();
-});
 
-// 监听 posts 变化，初始化渐入动画
-watch(posts, () => {
+  // 等待全局页面过渡完成后再初始化淡入动画
   nextTick(() => {
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: "0px 0px -50px 0px",
-    };
+    setTimeout(() => {
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
 
-    const fadeInObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("fade-in-start");
-          fadeInObserver.unobserve(entry.target);
-        }
+      const fadeInObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("fade-in-start");
+            fadeInObserver.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+        fadeInObserver.observe(el);
       });
-    }, observerOptions);
-
-    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-      fadeInObserver.observe(el);
-    });
+    }, 350); // 等待全局页面淡入完成（300ms + 50ms 缓冲）
   });
 });
 </script>

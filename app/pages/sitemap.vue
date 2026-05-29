@@ -48,6 +48,29 @@ function formatDateTime(date: string | Date): string {
 
 onMounted(() => {
   fetchSitemap();
+
+  // 等待全局页面过渡完成后再初始化淡入动画
+  nextTick(() => {
+    setTimeout(() => {
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
+
+      const fadeInObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("fade-in-start");
+            fadeInObserver.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+        fadeInObserver.observe(el);
+      });
+    }, 350); // 等待全局页面淡入完成（300ms + 50ms 缓冲）
+  });
 });
 
 useHead({
@@ -230,17 +253,17 @@ useHead({
 </template>
 
 <style scoped>
-/* 渐入动画 */
+/* 滚动淡入动画 */
 .animate-fade-in {
   opacity: 0;
-  transform: translateY(20px);
-  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform: translateY(30px);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes fade-in {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.animate-fade-in.fade-in-start {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>

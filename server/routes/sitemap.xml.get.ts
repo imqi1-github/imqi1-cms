@@ -3,15 +3,23 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取CDN配置
-    // const config = useRuntimeConfig();
-    // const cdnURL = config.public.cdnURL as string;
+    const config = useRuntimeConfig();
+    const cdnURL = config.public.cdnURL as string;
 
     // 获取请求的协议和主机
     const host = event.node.req.headers.host || "";
     // 移除端口号，特别是443（HTTPS默认端口）和80（HTTP默认端口）
     const hostWithoutPort = host.replace(/:(443|80)$/, "");
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${hostWithoutPort}`;
+
+    // 使用配置的根域名作为 fallback（防止内部请求时 host 为空）
+    const rootDomain = config.public.rootDomain as string;
+    const finalHost = hostWithoutPort || rootDomain || "imqi1.com";
+
+    const protocol = finalHost.includes("localhost") ? "http" : "https";
+    const baseUrl = `${protocol}://${finalHost}`;
+
+    console.log("[sitemap] 请求 host:", host);
+    console.log("[sitemap] 最终 baseUrl:", baseUrl);
 
     // 获取所有已发布的文章
     const posts = await prisma.post.findMany({
@@ -245,11 +253,16 @@ ${urls.join("\n")}
     console.error("[sitemap] 生成 sitemap 失败:", error);
 
     // 即使出错也返回基本的 sitemap
+    const config = useRuntimeConfig();
+    const rootDomain = config.public.rootDomain as string;
+
     const host = event.node.req.headers.host || "";
     // 移除端口号，特别是443（HTTPS默认端口）和80（HTTP默认端口）
     const hostWithoutPort = host.replace(/:(443|80)$/, "");
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${hostWithoutPort}`;
+    const finalHost = hostWithoutPort || rootDomain || "imqi1.com";
+
+    const protocol = finalHost.includes("localhost") ? "http" : "https";
+    const baseUrl = `${protocol}://${finalHost}`;
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
