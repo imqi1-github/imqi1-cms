@@ -104,6 +104,33 @@ async function deleteLink(id: number) {
   }
 }
 
+async function approveModification(link: any, approve: boolean) {
+  const action = approve ? "批准" : "拒绝";
+  const confirmed = confirm(
+    approve
+      ? `确定要批准此修改吗？\n\n原友链"${link.originalLink?.name}"将被更新为新信息。`
+      : "确定要拒绝此修改申请吗？"
+  );
+
+  if (confirmed) {
+    try {
+      await $fetch(`/api/admin/links/${link.id}/approve-modification`, {
+        method: "PATCH",
+        body: { action: approve ? "approve" : "reject" },
+      });
+      toast.success({
+        message: approve ? "已批准修改" : "已拒绝修改",
+      });
+      await fetchLinks();
+    } catch (error) {
+      console.error(`${action}失败:`, error);
+      toast.error({
+        message: `${action}失败`,
+      });
+    }
+  }
+}
+
 onMounted(() => {
   fetchLinks();
 });
@@ -176,38 +203,68 @@ onMounted(() => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="link in links" :key="link.id">
+          <TableRow v-for="link in links" :key="link.id" :class="{ 'bg-amber-50 dark:bg-amber-950/20': link.isModification }">
             <TableCell>
               <div class="flex items-center gap-3">
                 <Avatar class="size-8">
                   <AvatarImage v-if="link.avatar" :src="link.avatar" />
                   <AvatarFallback>{{ link.name?.charAt(0) || "?" }}</AvatarFallback>
                 </Avatar>
-                <span class="font-medium">{{ link.name }}</span>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ link.name }}</span>
+                    <Badge v-if="link.isModification" variant="outline" class="text-xs">
+                      修改申请
+                    </Badge>
+                  </div>
+                  <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground">
+                    替代: {{ link.originalLink.name }}
+                  </div>
+                </div>
               </div>
             </TableCell>
             <TableCell>
               <a :href="link.link" target="_blank" class="text-primary hover:underline truncate block max-w-[200px]">
                 {{ link.link }}
               </a>
+              <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground mt-1">
+                原链接: {{ link.originalLink.link }}
+              </div>
             </TableCell>
             <TableCell class="text-muted-foreground">{{ link.desc || "-" }}</TableCell>
             <TableCell>
-              <Badge :variant="link.enabled ? 'default' : 'secondary'">
-                {{ link.enabled ? "启用" : "禁用" }}
-              </Badge>
+              <div class="flex items-center gap-2">
+                <Badge :variant="link.enabled ? 'default' : 'secondary'">
+                  {{ link.enabled ? "启用" : "禁用" }}
+                </Badge>
+                <Badge v-if="link.isModification" variant="secondary" class="text-xs">
+                  {{ link.modificationStatus === 'pending' ? '待审核' : link.modificationStatus === 'approved' ? '已批准' : '已拒绝' }}
+                </Badge>
+              </div>
             </TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="outline" size="sm" @click="toggleEnabled(link)">
-                  {{ link.enabled ? "禁用" : "启用" }}
-                </Button>
-                <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(link)">
-                  <Icon name="lucide:pencil" class="size-4" />
-                </Button>
-                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteLink(link.id)">
-                  <Icon name="lucide:trash-2" class="size-4" />
-                </Button>
+                <template v-if="link.isModification && link.modificationStatus === 'pending'">
+                  <Button variant="outline" size="sm" @click="approveModification(link, true)" class="text-green-600 hover:text-green-700">
+                    <Icon name="lucide:check" class="size-4 mr-1" />
+                    批准
+                  </Button>
+                  <Button variant="outline" size="sm" @click="approveModification(link, false)" class="text-red-600 hover:text-red-700">
+                    <Icon name="lucide:x" class="size-4 mr-1" />
+                    拒绝
+                  </Button>
+                </template>
+                <template v-else>
+                  <Button variant="outline" size="sm" @click="toggleEnabled(link)">
+                    {{ link.enabled ? "禁用" : "启用" }}
+                  </Button>
+                  <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(link)">
+                    <Icon name="lucide:pencil" class="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteLink(link.id)">
+                    <Icon name="lucide:trash-2" class="size-4" />
+                  </Button>
+                </template>
               </div>
             </TableCell>
           </TableRow>
@@ -234,38 +291,61 @@ onMounted(() => {
 
       <!-- 数据列表 - 移动端卡片 -->
       <div v-else class="p-4 lg:hidden space-y-4">
-        <div v-for="link in links" :key="link.id" class="border rounded-lg p-4 space-y-3">
+        <div v-for="link in links" :key="link.id" :class="{ 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800': link.isModification }" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <Avatar class="size-8">
               <AvatarImage v-if="link.avatar" :src="link.avatar" />
               <AvatarFallback class="text-xs">{{ link.name?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
             <div class="flex-1 min-w-0">
-              <h3 class="font-medium text-base truncate">{{ link.name }}</h3>
+              <div class="flex items-center gap-2">
+                <h3 class="font-medium text-base truncate">{{ link.name }}</h3>
+                <Badge v-if="link.isModification" variant="outline" class="text-xs">
+                  修改申请
+                </Badge>
+              </div>
               <a :href="link.link" target="_blank" class="text-xs text-primary hover:underline truncate block">
                 {{ link.link }}
               </a>
+              <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground">
+                替代: {{ link.originalLink.name }}
+              </div>
             </div>
           </div>
 
           <p class="text-sm text-muted-foreground">{{ link.desc || "暂无描述" }}</p>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <Badge :variant="link.enabled ? 'default' : 'secondary'" class="text-xs">
               {{ link.enabled ? "启用" : "禁用" }}
+            </Badge>
+            <Badge v-if="link.isModification" variant="secondary" class="text-xs">
+              {{ link.modificationStatus === 'pending' ? '待审核' : link.modificationStatus === 'approved' ? '已批准' : '已拒绝' }}
             </Badge>
           </div>
 
           <div class="flex items-center justify-end pt-2 border-t gap-1">
-            <Button variant="outline" size="sm" @click="toggleEnabled(link)">
-              {{ link.enabled ? "禁用" : "启用" }}
-            </Button>
-            <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(link)">
-              <Icon name="lucide:pencil" class="size-4" />
-            </Button>
-            <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteLink(link.id)">
-              <Icon name="lucide:trash-2" class="size-4" />
-            </Button>
+            <template v-if="link.isModification && link.modificationStatus === 'pending'">
+              <Button variant="outline" size="sm" @click="approveModification(link, true)" class="text-green-600 hover:text-green-700">
+                <Icon name="lucide:check" class="size-4 mr-1" />
+                批准
+              </Button>
+              <Button variant="outline" size="sm" @click="approveModification(link, false)" class="text-red-600 hover:text-red-700">
+                <Icon name="lucide:x" class="size-4 mr-1" />
+                拒绝
+              </Button>
+            </template>
+            <template v-else>
+              <Button variant="outline" size="sm" @click="toggleEnabled(link)">
+                {{ link.enabled ? "禁用" : "启用" }}
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(link)">
+                <Icon name="lucide:pencil" class="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteLink(link.id)">
+                <Icon name="lucide:trash-2" class="size-4" />
+              </Button>
+            </template>
           </div>
         </div>
       </div>

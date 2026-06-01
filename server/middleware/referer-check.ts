@@ -1,8 +1,8 @@
 export default defineEventHandler(event => {
   // 跳过开发环境
-  // if (process.env.NODE_ENV === "development") {
-  //   return;
-  // }
+  if (process.env.NODE_ENV === "development") {
+    return;
+  }
 
   // 非 API 端点跳过
   const path = event.node.req.url;

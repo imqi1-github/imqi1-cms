@@ -63,6 +63,15 @@ model link {
   link    String
   avatar  String?
   enabled Boolean @default(true)
+
+  // 友链修改相关字段
+  originalLinkId    Int?    // 要替换的原始友链ID
+  isModification    Boolean @default(false)  // 是否为修改请求
+  modificationStatus String? @default("pending")  // 修改状态: pending/approved/rejected
+
+  // 关联原友链
+  originalLink      link?   @relation("LinkModifications", fields: [originalLinkId], references: [id])
+  modifications     link[]  @relation("LinkModifications")
 }
 
 model information {

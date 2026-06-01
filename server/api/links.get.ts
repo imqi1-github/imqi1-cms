@@ -4,7 +4,12 @@ export default defineEventHandler(async event => {
   try {
     const links = await prisma.link.findMany({
       where: {
-        enabled: true
+        enabled: true,
+        // 排除未审核的修改请求
+        OR: [
+          { isModification: false },
+          { isModification: true, modificationStatus: "approved" }
+        ]
       }
     });
 

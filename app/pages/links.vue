@@ -2,7 +2,7 @@
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { Fancybox } from "@fancyapps/ui";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { MenuItems } from "~/directives/contextMenu";
 
 // 导入前台通知 composable
@@ -213,12 +213,85 @@ const submitting = ref(false);
 const submitSuccess = ref(false);
 const submitError = ref("");
 
+// 表单模式：apply=申请, edit=修改
+const formMode = ref<"apply" | "edit">("apply");
+
+// 修改友链：搜索和筛选
+const linkSearchQuery = ref("");
+const selectedFilterLetter = ref<string>("全部");
+
 // 表单数据
 const formData = ref({
   name: "",
   link: "",
   sort: "",
   avatar: "",
+  email: "", // 用于查询已有申请
+});
+
+// 过滤后的友链列表
+const filteredLinks = computed(() => {
+  let result = links.value;
+
+  // 按首字母筛选
+  if (selectedFilterLetter.value !== "全部") {
+    result = result.filter(link =>
+      link.name && link.name.charAt(0).toUpperCase() === selectedFilterLetter.value
+    );
+  }
+
+  // 按搜索关键词筛选
+  if (linkSearchQuery.value.trim()) {
+    const query = linkSearchQuery.value.toLowerCase();
+    result = result.filter(link =>
+      link.name?.toLowerCase().includes(query) ||
+      link.link?.toLowerCase().includes(query)
+    );
+  }
+
+  return result;
+});
+
+// 获取友链首字母列表
+const linkFirstLetters = computed(() => {
+  const letters = new Set<string>();
+  links.value.forEach(link => {
+    if (link.name && link.name.charAt(0)) {
+      letters.add(link.name.charAt(0).toUpperCase());
+    }
+  });
+  return Array.from(letters).sort();
+});
+
+// 选中的友链
+const selectedLink = ref<any>(null);
+
+// 选择友链
+const selectLink = (link: any) => {
+  selectedLink.value = link;
+  formData.value.name = link.name || "";
+  formData.value.link = link.link || "";
+  formData.value.sort = link.desc || "";
+  formData.value.avatar = link.avatar || "";
+};
+
+// 取消选择
+const cancelSelection = () => {
+  selectedLink.value = null;
+  formData.value = {
+    name: "",
+    link: "",
+    sort: "",
+    avatar: "",
+    email: "",
+  };
+  linkSearchQuery.value = "";
+  selectedFilterLetter.value = "全部";
+};
+
+// 监听模式切换，重置状态
+watch(formMode, () => {
+  cancelSelection();
 });
 
 // 本站头像右键菜单配置
@@ -252,35 +325,69 @@ const handleSubmit = async () => {
   submitting.value = true;
 
   try {
-    const response = await fetch("/api/links", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData.value),
-    });
+    let response;
+    let data;
 
-    const data = await response.json();
+    if (formMode.value === "apply") {
+      // 申请友链
+      response = await fetch("/api/links", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.value.name,
+          link: formData.value.link,
+          sort: formData.value.sort,
+          avatar: formData.value.avatar,
+        }),
+      });
+      data = await response.json();
 
-    if (data.code === 200) {
-      submitSuccess.value = true;
-      // 显示前台通知
-      success("友链申请成功，请等待审核");
-      // 重置表单
-      formData.value = {
-        name: "",
-        link: "",
-        sort: "",
-        avatar: "",
-      };
+      if (data.code === 200) {
+        submitSuccess.value = true;
+        success("友链申请成功，请等待审核");
+        // 重置表单
+        cancelSelection();
+      } else {
+        submitError.value = data.message || "申请失败，请重试";
+        showError(data.message || "申请失败，请重试");
+      }
     } else {
-      submitError.value = data.message || "申请失败，请重试";
-      // 显示前台错误通知
-      showError(data.message || "申请失败，请重试");
+      // 修改友链
+      if (!selectedLink.value) {
+        showError("请先选择要修改的友链");
+        submitting.value = false;
+        return;
+      }
+
+      response = await fetch("/api/links/patch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          originalLinkId: selectedLink.value.id,
+          name: formData.value.name,
+          link: formData.value.link,
+          desc: formData.value.sort,
+          avatar: formData.value.avatar,
+        }),
+      });
+      data = await response.json();
+
+      if (data.code === 200) {
+        submitSuccess.value = true;
+        success("友链修改请求已提交，等待管理员审核");
+        // 重置表单和选择
+        cancelSelection();
+      } else {
+        submitError.value = data.message || "提交失败，请重试";
+        showError(data.message || "提交失败，请重试");
+      }
     }
   } catch (error) {
     submitError.value = "网络错误，请稍后重试";
-    // 显示前台错误通知
     showError("网络错误，请稍后重试");
   } finally {
     submitting.value = false;
@@ -611,9 +718,31 @@ onUnmounted(() => {
 
     <!-- 友链申请说明 -->
     <section class="mt-12 animate-fade-in">
-      <h2 class="text-xl font-bold mb-4">申请友链</h2>
+      <h2 class="text-xl font-bold mb-4">{{ formMode === "apply" ? "申请友链" : "修改友链" }}</h2>
 
+      <!-- 模式切换单选按钮 -->
+      <div class="flex items-center gap-6 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            v-model="formMode"
+            value="apply"
+            class="w-4 h-4 text-blue-600" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">申请友链</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            v-model="formMode"
+            value="edit"
+            class="w-4 h-4 text-blue-600" />
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">修改友链</span>
+        </label>
+      </div>
+
+      <!-- 申请模式说明 -->
       <div
+        v-if="formMode === 'apply'"
         class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-amber-800 dark:text-amber-200 text-[0.95em] mb-6">
         <p class="mb-2">
           <Icon name="lucide:alert-triangle" class="size-4 inline mr-1" />
@@ -626,8 +755,121 @@ onUnmounted(() => {
         </p>
       </div>
 
+      <!-- 修改模式说明 -->
+      <div
+        v-else
+        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-blue-800 dark:text-blue-200 text-[0.95em] mb-6">
+        <p class="mb-2">
+          <Icon name="lucide:info" class="size-4 inline mr-1" />
+          <strong>修改友链说明：</strong>
+        </p>
+        <p class="mb-2">修改友链为敏感操作，需确保原站符合以下三种情况之一：</p>
+        <ul class="list-disc list-inside space-y-1 ml-2">
+          <li>原站发布了换站公告；</li>
+          <li>原站重定向到新站；</li>
+          <li>原站无法访问。</li>
+        </ul>
+      </div>
+
       <!-- 申请表单 -->
       <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- 修改模式：选择要修改的友链 -->
+        <div v-if="formMode === 'edit'" class="mb-4">
+          <!-- 已选择友链时显示 -->
+          <div v-if="selectedLink" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-semibold text-lg shrink-0 overflow-hidden">
+                  <template v-if="selectedLink.avatar">
+                    <img :src="selectedLink.avatar" :alt="selectedLink.name" class="w-full h-full object-cover" />
+                  </template>
+                  <template v-else>
+                    {{ selectedLink.name?.charAt(0).toUpperCase() }}
+                  </template>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-900 dark:text-gray-100">{{ selectedLink.name }}</div>
+                  <div class="text-sm text-slate-600 dark:text-slate-400">{{ formatUrl(selectedLink.link) }}</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                @click="cancelSelection"
+                class="px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                重新选择
+              </button>
+            </div>
+          </div>
+
+          <!-- 未选择时显示搜索和筛选 -->
+          <div v-else>
+            <!-- 搜索框 -->
+            <div class="mb-3">
+              <input
+                v-model="linkSearchQuery"
+                type="text"
+                placeholder="搜索友链名称或链接..."
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+            </div>
+
+            <!-- 首字母筛选 -->
+            <div class="flex flex-wrap gap-2 mb-3">
+              <button
+                type="button"
+                @click="selectedFilterLetter = '全部'"
+                :class="[
+                  'px-3 py-1 text-sm rounded transition-colors',
+                  selectedFilterLetter === '全部'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-slate-300 dark:hover:bg-slate-600'
+                ]">
+                全部
+              </button>
+              <button
+                v-for="letter in linkFirstLetters"
+                :key="letter"
+                type="button"
+                @click="selectedFilterLetter = letter"
+                :class="[
+                  'px-3 py-1 text-sm rounded transition-colors',
+                  selectedFilterLetter === letter
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-slate-300 dark:hover:bg-slate-600'
+                ]">
+                {{ letter }}
+              </button>
+            </div>
+
+            <!-- 友链列表 -->
+            <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+              <div
+                v-for="link in filteredLinks"
+                :key="link.id"
+                @click="selectLink(link)"
+                class="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-semibold shrink-0 overflow-hidden">
+                  <template v-if="link.avatar">
+                    <img :src="link.avatar" :alt="link.name" class="w-full h-full object-cover" />
+                  </template>
+                  <template v-else>
+                    {{ link.name?.charAt(0).toUpperCase() }}
+                  </template>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ link.name }}</div>
+                  <div class="text-sm text-slate-600 dark:text-slate-400 truncate">{{ formatUrl(link.link) }}</div>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-if="filteredLinks.length === 0" class="p-6 text-center text-slate-500 dark:text-slate-400">
+                <Icon name="lucide:search" class="size-8 mx-auto mb-2 opacity-50" />
+                <p>未找到匹配的友链</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="link-name" class="sr-only">名称</label>
@@ -635,7 +877,7 @@ onUnmounted(() => {
               id="link-name"
               v-model="formData.name"
               type="text"
-              placeholder="名称 *"
+              :placeholder="formMode === 'edit' ? '新名称 *' : '名称 *'"
               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
           </div>
           <div>
@@ -644,7 +886,7 @@ onUnmounted(() => {
               id="link-url"
               v-model="formData.link"
               type="text"
-              placeholder="链接 *"
+              :placeholder="formMode === 'edit' ? '新链接 *' : '链接 *'"
               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
           </div>
         </div>
@@ -674,8 +916,8 @@ onUnmounted(() => {
           type="submit"
           :disabled="submitting"
           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-          <span v-if="submitting">提交中...</span>
-          <span v-else>申请友链</span>
+          <span v-if="submitting">{{ formMode === "apply" ? "提交中..." : "修改中..." }}</span>
+          <span v-else>{{ formMode === "apply" ? "申请友链" : "提交修改" }}</span>
         </button>
       </form>
     </section>

@@ -553,3 +553,48 @@ export async function notifyAdminPendingComment(
     html: createEmailTemplate(`${typeLabel}通知`, content),
   });
 }
+
+// 5. 友链修改请求通知 - 通知站长
+export async function notifyFriendLinkModification(
+  originalLink: { name: string; link: string },
+  newLink: { name: string; link: string; desc?: string | null; avatar?: string | null },
+): Promise<boolean> {
+  const config = await getMailConfig();
+
+  // 检查是否启用邮件通知
+  if (config.pushType === "none" || !config.adminEmail) {
+    writeLog("warn", "邮件推送未启用，跳过友链修改通知", { originalLink, newLink });
+    return false;
+  }
+
+  const siteInfo = await getSiteInfo();
+  const subject = `[${siteInfo.name}] 友链修改请求：${originalLink.name}`;
+
+  const content = `
+    <h2>友链修改请求通知</h2>
+    <p>有人在 <strong>${siteInfo.name}</strong> 提交了友链修改请求：</p>
+
+    <div class="info-box">
+      <p><strong>原友链信息：</strong></p>
+      <p>名称：${originalLink.name}</p>
+      <p>链接：<a href="${originalLink.link}" target="_blank">${originalLink.link}</a></p>
+    </div>
+
+    <div class="info-box">
+      <p><strong>新友链信息：</strong></p>
+      <p>名称：${newLink.name}</p>
+      <p>链接：<a href="${newLink.link}" target="_blank">${newLink.link}</a></p>
+      ${newLink.desc ? `<p>描述：${newLink.desc}</p>` : ''}
+      ${newLink.avatar ? `<p>头像：<a href="${newLink.avatar}" target="_blank">${newLink.avatar}</a></p>` : ''}
+    </div>
+
+    <p>请前往后台审核此修改请求。批准后将更新原友链，拒绝后将删除此请求。</p>
+    <p><a href="${siteInfo.url}/admin/links" class="link">前往后台管理</a></p>
+  `;
+
+  return await sendMail({
+    to: config.adminEmail,
+    subject,
+    html: createEmailTemplate("友链修改请求通知", content),
+  });
+}

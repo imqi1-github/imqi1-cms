@@ -49,7 +49,7 @@ export default defineEventHandler(async event => {
       where: { id: Number(id) },
       data: {
         name: body.name,
-        url: body.url,
+        link: body.link,
         desc: body.desc,
         avatar: body.avatar,
         enabled: body.enabled,

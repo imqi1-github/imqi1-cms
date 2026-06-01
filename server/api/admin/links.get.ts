@@ -12,7 +12,23 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const links = await prisma.link.findMany();
+    const links = await prisma.link.findMany({
+      include: {
+        // 包含原友链信息（如果是修改请求）
+        originalLink: {
+          select: {
+            id: true,
+            name: true,
+            link: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        id: "desc",
+      },
+    });
+
     return links;
   } catch (error) {
     throw createError({
