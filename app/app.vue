@@ -186,7 +186,18 @@ onMounted(() => {
   <div>
     <!-- 首次加载遮罩 -->
     <Transition name="first-loading">
-      <div v-if="showFirstLoading && isFrontend" class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950">
+      <div
+        v-if="showFirstLoading && isFrontend"
+        id="first-loading"
+        class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950"
+        onclick="
+          const fadeElements = document.querySelectorAll('.animate-fade-in:not(.fade-in-start)');
+          fadeElements.forEach(el => {
+            el.classList.add('fade-in-start');
+          });
+          this.style.display = 'none';
+        "
+      >
         <div class="flex flex-col items-center gap-6">
           <div class="animate-spin">
             <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />
