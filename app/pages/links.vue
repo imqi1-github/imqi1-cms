@@ -790,11 +790,12 @@ onUnmounted(() => {
           <strong>修改友链说明：</strong>
         </p>
         <p class="mb-2">修改友链为敏感操作，需确保原站符合以下三种情况之一：</p>
-        <ul class="list-disc list-inside space-y-1 ml-2">
+        <ul class="list-disc list-inside space-y-1 ml-2 mb-2">
           <li>原站发布了换站公告；</li>
           <li>原站重定向到新站；</li>
           <li>原站无法访问。</li>
         </ul>
+        <p>请在下方选择你的原站，然后填写修改后的信息。</p>
       </div>
 
       <!-- 申请表单 -->
@@ -938,8 +939,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- 友链地址输入框（仅当后台开启时显示） -->
-        <div v-if="showLinkUrlInput">
+        <!-- 友链地址输入框（仅当后台开启时显示，且仅在申请模式下） -->
+        <div v-if="showLinkUrlInput && formMode === 'apply'">
           <label for="blog-link-url" class="sr-only">能看到友情链接的地址</label>
           <input
             id="blog-link-url"
