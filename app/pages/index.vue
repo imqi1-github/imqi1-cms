@@ -56,11 +56,8 @@
       </div>
     </section>
 
-    <!-- 间隔 -->
-    <div class="h-37.5"></div>
-
     <!-- 四个内容的父盒子 -->
-    <div class="index-content-box">
+    <div class="index-content-box pt-37.5">
       <!-- 网站架构 -->
       <section ref="sectionFramework" class="index-website-framework animate-fade-in" aria-labelledby="index-framework-title">
         <div class="index-website-framework-content max-w-fit w-full mx-auto">
@@ -430,7 +427,7 @@
         </div>
 
         <!-- 查看更多 -->
-        <div class="text-center mt-8">
+        <div class="text-center mt-8 mb-36">
           <NuxtLink
             :to="`/category/${photoCategorySlug}`"
             class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
@@ -442,7 +439,7 @@
 
       <!-- 目录 -->
       <div
-        class="max-sm:hidden flex mt-24 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
+        class="max-sm:hidden flex -mt-16 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
         <div
           v-for="(item, index) in tocItems"
           :key="item.id"
@@ -454,7 +451,7 @@
       </div>
     </div>
     <!-- 间隔 -->
-    <div class="h-62.5"></div>
+    <div class="h-36"></div>
 
     <!-- 阅读更多 -->
     <section class="index-read-more mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
