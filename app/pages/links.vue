@@ -945,7 +945,7 @@ onUnmounted(() => {
             id="blog-link-url"
             v-model="formData.blogLinkUrl"
             type="text"
-            placeholder="能看到友情链接的地址"
+            placeholder="能看到友情链接的地址 *"
             class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
         </div>
 
