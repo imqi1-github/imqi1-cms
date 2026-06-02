@@ -389,33 +389,39 @@ async function getPostTitle(cid: number): Promise<string> {
 // ========== 4类邮件通知功能 ==========
 
 // 1. 友链申请通知 - 通知站长
-export async function notifyFriendLinkApplication(linkName: string, linkUrl: string): Promise<boolean> {
+export async function notifyFriendLinkApplication(linkName: string, linkUrl: string, autoApproved = false): Promise<boolean> {
   const config = await getMailConfig();
 
   // 检查是否启用邮件通知
   if (config.pushType === "none" || !config.adminEmail) {
-    writeLog("warn", "邮件推送未启用，跳过友链申请通知", { linkName, linkUrl });
+    writeLog("warn", "邮件推送未启用，跳过友链申请通知", { linkName, linkUrl, autoApproved });
     return false;
   }
 
   const siteInfo = await getSiteInfo();
-  const subject = `[${siteInfo.name}] 新的友链申请`;
+  const subject = `[${siteInfo.name}] ${autoApproved ? "友链已自动添加" : "新的友链申请"}`;
 
   const content = `
-    <h2>友链申请通知</h2>
-    <p>有人在 <strong>${siteInfo.name}</strong> 申请了友链：</p>
+    <h2>${autoApproved ? "友链已自动添加" : "友链申请通知"}</h2>
+    ${autoApproved
+      ? `<p>系统检测到 <strong>${siteInfo.name}</strong> 的友链已在对方网站添加，已自动通过：</p>`
+      : `<p>有人在 <strong>${siteInfo.name}</strong> 申请了友链：</p>`
+    }
     <div class="info-box">
       <p><strong>网站名称：</strong>${linkName}</p>
       <p><strong>网站链接：</strong><a href="${linkUrl}" target="_blank">${linkUrl}</a></p>
     </div>
-    <p>请前往后台审核此友链申请。</p>
+    ${autoApproved
+      ? `<p>此友链已自动启用，您可以前往后台进行管理。</p>`
+      : `<p>请前往后台审核此友链申请。</p>`
+    }
     <p><a href="${siteInfo.url}/admin/links" class="link">前往后台管理</a></p>
   `;
 
   return await sendMail({
     to: config.adminEmail,
     subject,
-    html: createEmailTemplate("友链申请通知", content),
+    html: createEmailTemplate(autoApproved ? "友链已自动添加" : "友链申请通知", content),
   });
 }
 

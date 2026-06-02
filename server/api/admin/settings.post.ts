@@ -84,6 +84,7 @@ export default defineEventHandler(async event => {
       { key: "cosImageSuffix", value: settingsBody.cosImageSuffix ?? "webp" },
       { key: "sessionStoreType", value: settingsBody.sessionStoreType || "memory" },
       { key: "messagePostId", value: settingsBody.messagePostId ?? "" },
+      { key: "linkAutoApprove", value: String(settingsBody.linkAutoApprove ?? false) },
     ];
 
     for (const update of updates) {

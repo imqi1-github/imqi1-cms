@@ -28,9 +28,6 @@ export function useScrollbarTheme() {
     if (isDark) {
       style.textContent = `
         /* 暗色模式滚动条 */
-        html {
-          scrollbar-gutter: stable !important;
-        }
         * {
           scrollbar-width: thin !important;
           scrollbar-color: #475569 #1e293b !important;
@@ -53,9 +50,6 @@ export function useScrollbarTheme() {
     } else {
       style.textContent = `
         /* 亮色模式滚动条 */
-        html {
-          scrollbar-gutter: stable !important;
-        }
         * {
           scrollbar-width: thin !important;
           scrollbar-color: #cbd5e1 #f1f5f9 !important;

@@ -70,6 +70,7 @@ export default defineEventHandler(async event => {
       cosImageSuffix: "webp",
       sessionStoreType: "memory",
       messagePostId: "",
+      linkAutoApprove: false,
     };
 
     const settings: Record<string, any> = { ...defaults };

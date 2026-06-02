@@ -17,6 +17,7 @@ const defaults: Record<string, any> = {
   commentRequireLink: false,
   postPageSize: 12,
   feedCacheInterval: 8,
+  linkAutoApprove: false,
 };
 
 export default defineEventHandler(async event => {

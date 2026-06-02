@@ -12,6 +12,9 @@ const { success, error: showError, notify } = useFrontNotification();
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
+// 是否显示友链地址输入框
+const showLinkUrlInput = computed(() => siteSettings.value?.linkAutoApprove === true);
+
 // 获取友链数据
 const { data: linksData, pending, error, refresh } = await useFetch("/api/links", {
   headers: {
@@ -212,6 +215,7 @@ useHead({
 const submitting = ref(false);
 const submitSuccess = ref(false);
 const submitError = ref("");
+const showForceSubmit = ref(false); // 是否显示"仍然提交"按钮
 
 // 表单模式：apply=申请, edit=修改
 const formMode = ref<"apply" | "edit">("apply");
@@ -226,7 +230,7 @@ const formData = ref({
   link: "",
   sort: "",
   avatar: "",
-  email: "", // 用于查询已有申请
+  blogLinkUrl: "", // 本站在对方博客的友链地址
 });
 
 // 过滤后的友链列表
@@ -283,7 +287,7 @@ const cancelSelection = () => {
     link: "",
     sort: "",
     avatar: "",
-    email: "",
+    blogLinkUrl: "",
   };
   linkSearchQuery.value = "";
   selectedFilterLetter.value = "全部";
@@ -318,11 +322,12 @@ const formatUrl = (url: string) => {
 };
 
 // 提交表单
-const handleSubmit = async () => {
+const handleSubmit = async (forceSubmit = false) => {
   // 重置状态
   submitSuccess.value = false;
   submitError.value = "";
   submitting.value = true;
+  showForceSubmit.value = false;
 
   try {
     let response;
@@ -340,18 +345,27 @@ const handleSubmit = async () => {
           link: formData.value.link,
           sort: formData.value.sort,
           avatar: formData.value.avatar,
+          blogLinkUrl: formData.value.blogLinkUrl,
+          forceSubmit: forceSubmit, // 是否强制提交（跳过检测）
         }),
       });
       data = await response.json();
 
       if (data.code === 200) {
         submitSuccess.value = true;
-        success("友链申请成功，请等待审核");
+        success(data.message || "友链申请成功，请等待审核");
         // 重置表单
         cancelSelection();
       } else {
-        submitError.value = data.message || "申请失败，请重试";
-        showError(data.message || "申请失败，请重试");
+        // 如果检测失败且返回了 needRetry 标识，显示"仍然提交"按钮
+        if (data.needRetry) {
+          showForceSubmit.value = true;
+          submitError.value = data.message || "链接检测失败，请检查是否正确添加本站友链";
+          showError(data.message || "链接检测失败，请检查是否正确添加本站友链");
+        } else {
+          submitError.value = data.message || "申请失败，请重试";
+          showError(data.message || "申请失败，请重试");
+        }
       }
     } else {
       // 修改友链
@@ -743,12 +757,24 @@ onUnmounted(() => {
       <!-- 申请模式说明 -->
       <div
         v-if="formMode === 'apply'"
-        class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-amber-800 dark:text-amber-200 text-[0.95em] mb-6">
+        :class="[
+          'rounded-lg p-4 text-[0.95em] mb-6',
+          showLinkUrlInput
+            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+            : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+        ]">
         <p class="mb-2">
-          <Icon name="lucide:alert-triangle" class="size-4 inline mr-1" />
-          <strong>注意：</strong>
+          <Icon :name="showLinkUrlInput ? 'lucide:info' : 'lucide:alert-triangle'" class="size-4 inline mr-1" />
+          <strong>{{ showLinkUrlInput ? '提示：' : '注意：' }}</strong>
         </p>
-        <p>
+
+        <!-- 自动友链模式说明 -->
+        <p v-if="showLinkUrlInput">
+          站长已开启友链自动添加功能，申请前请确保你已在贵站添加本站为友链，并在“能看到友情链接的地址”处正确填写贵站友情链接页面URL。若申请后后台检测到贵站已添加友链会自动通过，若未识别成功请检查贵站友情链接，或点击“仍然提交”。
+        </p>
+
+        <!-- 普通模式说明 -->
+        <p v-else>
           本站只加熟悉的朋友的、频繁来本站评论的朋友的链接，不接受直接的友链申请，即使你申请了我也不会通过。详细规则请前往
           <NuxtLink to="/agreement#友链" target="_blank" class="text-blue-600 hover:underline">协议页面</NuxtLink>
           查看。
@@ -912,12 +938,32 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- 友链地址输入框（仅当后台开启时显示） -->
+        <div v-if="showLinkUrlInput">
+          <label for="blog-link-url" class="sr-only">能看到友情链接的地址</label>
+          <input
+            id="blog-link-url"
+            v-model="formData.blogLinkUrl"
+            type="text"
+            placeholder="能看到友情链接的地址"
+            class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+        </div>
+
         <button
           type="submit"
           :disabled="submitting"
           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
           <span v-if="submitting">{{ formMode === "apply" ? "提交中..." : "修改中..." }}</span>
-          <span v-else>{{ formMode === "apply" ? "申请友链" : "提交修改" }}</span>
+          <span v-else>{{ formMode === "apply" ? (showForceSubmit ? "重试" : "申请友链") : "提交修改" }}</span>
+        </button>
+
+        <!-- 仍然提交按钮（当检测失败时显示） -->
+        <button
+          v-if="showForceSubmit && formMode === 'apply' && !submitting"
+          type="button"
+          @click="() => handleSubmit(true)"
+          class="ml-2 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors">
+          仍然提交
         </button>
       </form>
     </section>

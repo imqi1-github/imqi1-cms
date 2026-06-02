@@ -60,6 +60,7 @@ const settings = ref({
   cosCdnDomain: "",
   cosImageSuffix: "webp",
   sessionStoreType: "memory",
+  linkAutoApprove: false,
 });
 
 const avatarServices = [
@@ -180,6 +181,7 @@ const defaultSettings = {
   cosCdnDomain: "",
   cosImageSuffix: "webp",
   sessionStoreType: "memory",
+  linkAutoApprove: false,
 };
 
 // 加载设置
@@ -371,22 +373,10 @@ onMounted(() => {
                   评论设置
                 </div>
               </SelectItem>
-              <SelectItem value="reading">
-                <div class="flex items-center gap-2">
-                  <Icon name="lucide:book-open" class="size-4" />
-                  阅读设置
-                </div>
-              </SelectItem>
               <SelectItem value="appearance">
                 <div class="flex items-center gap-2">
                   <Icon name="lucide:palette" class="size-4" />
                   外观设置
-                </div>
-              </SelectItem>
-              <SelectItem value="email">
-                <div class="flex items-center gap-2">
-                  <Icon name="lucide:mail" class="size-4" />
-                  邮件配置
                 </div>
               </SelectItem>
               <SelectItem value="upload">
@@ -401,12 +391,18 @@ onMounted(() => {
                   高级设置
                 </div>
               </SelectItem>
+              <SelectItem value="links">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:link" class="size-4" />
+                  其他
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <!-- 桌面端：标签栏 -->
-        <TabsList class="hidden sm:grid w-full max-w-3xl grid-cols-7">
+        <TabsList class="hidden sm:grid w-full max-w-3xl grid-cols-6">
           <TabsTrigger value="basic">
             <Icon name="lucide:settings" class="mr-2 size-4" />
             基本信息
@@ -415,17 +411,9 @@ onMounted(() => {
             <Icon name="lucide:message-square" class="mr-2 size-4" />
             评论设置
           </TabsTrigger>
-          <TabsTrigger value="reading">
-            <Icon name="lucide:book-open" class="mr-2 size-4" />
-            阅读设置
-          </TabsTrigger>
           <TabsTrigger value="appearance">
             <Icon name="lucide:palette" class="mr-2 size-4" />
             外观设置
-          </TabsTrigger>
-          <TabsTrigger value="email">
-            <Icon name="lucide:mail" class="mr-2 size-4" />
-            邮件配置
           </TabsTrigger>
           <TabsTrigger value="upload">
             <Icon name="lucide:upload-cloud" class="mr-2 size-4" />
@@ -434,6 +422,10 @@ onMounted(() => {
           <TabsTrigger value="advanced">
             <Icon name="lucide:shield" class="mr-2 size-4" />
             高级设置
+          </TabsTrigger>
+          <TabsTrigger value="links">
+            <Icon name="lucide:link" class="mr-2 size-4" />
+            其他
           </TabsTrigger>
         </TabsList>
 
@@ -618,29 +610,6 @@ onMounted(() => {
           </Card>
         </TabsContent>
 
-        <!-- 阅读设置 Tab -->
-        <TabsContent value="reading" class="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>阅读设置</CardTitle>
-              <CardDescription>配置文章列表的显示方式</CardDescription>
-            </CardHeader>
-            <CardContent class="space-y-4">
-              <div class="space-y-2">
-                <Label for="postPageSize">每页显示文章数</Label>
-                <Input id="postPageSize" v-model.number="settings.postPageSize" type="number" min="1" max="100" />
-                <p class="text-xs text-muted-foreground">文章列表每页显示的文章数量，默认为 12 篇</p>
-              </div>
-
-              <div class="space-y-2">
-                <Label for="feedCacheInterval">订阅信息更新间隔</Label>
-                <Input id="feedCacheInterval" v-model.number="settings.feedCacheInterval" type="number" min="1" max="168" />
-                <p class="text-xs text-muted-foreground">RSS 订阅信息缓存更新时间，单位为小时，默认为 8 小时</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <!-- 外观设置 Tab -->
         <TabsContent value="appearance" class="space-y-6 mt-6">
           <Card>
@@ -685,126 +654,6 @@ onMounted(() => {
                   <Input id="photoCategorySlug" v-model="settings.photoCategorySlug" placeholder="shot" />
                   <p class="text-xs text-muted-foreground">图片作品分类在 URL 中的标识符</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <!-- 邮件配置 Tab -->
-        <TabsContent value="email" class="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>邮件配置</CardTitle>
-              <CardDescription>配置邮件发送和通知功能</CardDescription>
-            </CardHeader>
-            <CardContent class="space-y-6">
-              <!-- 基础设置 -->
-              <div class="space-y-4">
-                <h4 class="text-sm font-medium">基础设置</h4>
-                <div class="flex items-center justify-between">
-                  <div class="space-y-0.5">
-                    <Label for="emailLogEnabled">记录邮件日志</Label>
-                    <p class="text-sm text-muted-foreground">是否记录邮件发送日志到数据库</p>
-                  </div>
-                  <Switch id="emailLogEnabled" v-model="settings.emailLogEnabled" />
-                </div>
-                <div class="space-y-2">
-                  <Label for="emailPushType">邮件推送方式</Label>
-                  <Select v-model="settings.emailPushType">
-                    <SelectTrigger id="emailPushType">
-                      <SelectValue placeholder="选择推送方式" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="type in emailPushTypes" :key="type.value" :value="type.value">
-                        {{ type.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p class="text-xs text-muted-foreground">选择邮件发送方式，SMTP 支持自定义邮件服务器</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <!-- SMTP 配置 -->
-              <div v-if="settings.emailPushType === 'smtp'" class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <h4 class="text-sm font-medium">SMTP 服务器配置</h4>
-                  <Button variant="outline" size="sm" :disabled="testingEmail" @click="testEmail">
-                    <Icon name="lucide:send" class="mr-2 size-4" />
-                    {{ testingEmail ? "发送中..." : "发送测试邮件" }}
-                  </Button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="space-y-2">
-                    <Label for="smtpHost">SMTP 服务器地址</Label>
-                    <Input id="smtpHost" v-model="settings.smtpHost" placeholder="smtp.example.com" />
-                  </div>
-                  <div class="space-y-2">
-                    <Label for="smtpPort">SMTP 服务端口</Label>
-                    <Input id="smtpPort" v-model.number="settings.smtpPort" type="number" min="1" max="65535" placeholder="465" />
-                  </div>
-                  <div class="space-y-2">
-                    <Label for="smtpUser">SMTP 登录用户</Label>
-                    <Input id="smtpUser" v-model="settings.smtpUser" placeholder="username@example.com" />
-                  </div>
-                  <div class="space-y-2">
-                    <Label for="smtpPassword">SMTP 登录密码</Label>
-                    <Input id="smtpPassword" v-model="settings.smtpPassword" type="password" placeholder="••••••••" />
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div class="space-y-2">
-                    <Label for="smtpSecureMode">SMTP 加密模式</Label>
-                    <Select v-model="settings.smtpSecureMode">
-                      <SelectTrigger id="smtpSecureMode">
-                        <SelectValue placeholder="选择加密模式" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="mode in smtpSecureModes" :key="mode.value" :value="mode.value">
-                          {{ mode.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div class="space-y-2 md:col-span-2">
-                    <Label for="smtpAddress">SMTP 邮箱地址</Label>
-                    <Input id="smtpAddress" v-model="settings.smtpAddress" placeholder="noreply@example.com" />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <!-- 发件人设置 -->
-                <div class="space-y-4">
-                  <h4 class="text-sm font-medium">发件人设置</h4>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                      <Label for="smtpFromName">发件人昵称</Label>
-                      <Input id="smtpFromName" v-model="settings.smtpFromName" placeholder="ImQi1 博客" />
-                      <p class="text-xs text-muted-foreground">邮件接收人看到的发件人名称</p>
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="adminEmail">站长收件邮箱</Label>
-                      <Input id="adminEmail" v-model="settings.adminEmail" placeholder="admin@example.com" />
-                    </div>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="space-y-0.5">
-                      <Label for="notifyAdmin">通知站长</Label>
-                      <p class="text-sm text-muted-foreground">新评论或通知时是否发送邮件给站长</p>
-                    </div>
-                    <Switch id="notifyAdmin" v-model="settings.notifyAdmin" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- 不使用 SMTP 时的提示 -->
-              <div v-if="settings.emailPushType === 'none'" class="p-8 bg-muted/30 rounded-lg text-center">
-                <Icon name="material-symbols:mail-off-outline" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p class="text-muted-foreground">未启用邮件推送功能，系统将不发送任何通知邮件</p>
               </div>
             </CardContent>
           </Card>
@@ -1034,6 +883,164 @@ onMounted(() => {
                       <p class="text-amber-600 dark:text-amber-500">⚠️ 更改存储方式后，所有用户需要重新登录</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- 邮件配置 Card -->
+          <Card>
+            <CardHeader>
+              <CardTitle>邮件配置</CardTitle>
+              <CardDescription>配置邮件发送和通知功能</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+              <!-- 基础设置 -->
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">基础设置</h4>
+                <div class="flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <Label for="emailLogEnabled">记录邮件日志</Label>
+                    <p class="text-sm text-muted-foreground">是否记录邮件发送日志到数据库</p>
+                  </div>
+                  <Switch id="emailLogEnabled" v-model="settings.emailLogEnabled" />
+                </div>
+                <div class="space-y-2">
+                  <Label for="emailPushType">邮件推送方式</Label>
+                  <Select v-model="settings.emailPushType">
+                    <SelectTrigger id="emailPushType">
+                      <SelectValue placeholder="选择推送方式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="type in emailPushTypes" :key="type.value" :value="type.value">
+                        {{ type.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p class="text-xs text-muted-foreground">选择邮件发送方式，SMTP 支持自定义邮件服务器</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <!-- SMTP 配置 -->
+              <div v-if="settings.emailPushType === 'smtp'" class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-medium">SMTP 服务器配置</h4>
+                  <Button variant="outline" size="sm" :disabled="testingEmail" @click="testEmail">
+                    <Icon name="lucide:send" class="mr-2 size-4" />
+                    {{ testingEmail ? "发送中..." : "发送测试邮件" }}
+                  </Button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <Label for="smtpHost">SMTP 服务器地址</Label>
+                    <Input id="smtpHost" v-model="settings.smtpHost" placeholder="smtp.example.com" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="smtpPort">SMTP 服务端口</Label>
+                    <Input id="smtpPort" v-model.number="settings.smtpPort" type="number" min="1" max="65535" placeholder="465" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="smtpUser">SMTP 登录用户</Label>
+                    <Input id="smtpUser" v-model="settings.smtpUser" placeholder="username@example.com" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="smtpPassword">SMTP 登录密码</Label>
+                    <Input id="smtpPassword" v-model="settings.smtpPassword" type="password" placeholder="••••••••" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="space-y-2">
+                    <Label for="smtpSecureMode">SMTP 加密模式</Label>
+                    <Select v-model="settings.smtpSecureMode">
+                      <SelectTrigger id="smtpSecureMode">
+                        <SelectValue placeholder="选择加密模式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="mode in smtpSecureModes" :key="mode.value" :value="mode.value">
+                          {{ mode.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div class="space-y-2 md:col-span-2">
+                    <Label for="smtpAddress">SMTP 邮箱地址</Label>
+                    <Input id="smtpAddress" v-model="settings.smtpAddress" placeholder="noreply@example.com" />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <!-- 发件人设置 -->
+                <div class="space-y-4">
+                  <h4 class="text-sm font-medium">发件人设置</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <Label for="smtpFromName">发件人昵称</Label>
+                      <Input id="smtpFromName" v-model="settings.smtpFromName" placeholder="ImQi1 博客" />
+                      <p class="text-xs text-muted-foreground">邮件接收人看到的发件人名称</p>
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="adminEmail">站长收件邮箱</Label>
+                      <Input id="adminEmail" v-model="settings.adminEmail" placeholder="admin@example.com" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="space-y-0.5">
+                      <Label for="notifyAdmin">通知站长</Label>
+                      <p class="text-sm text-muted-foreground">新评论或通知时是否发送邮件给站长</p>
+                    </div>
+                    <Switch id="notifyAdmin" v-model="settings.notifyAdmin" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 不使用 SMTP 时的提示 -->
+              <div v-if="settings.emailPushType === 'none'" class="p-8 bg-muted/30 rounded-lg text-center">
+                <Icon name="material-symbols:mail-off-outline" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p class="text-muted-foreground">未启用邮件推送功能，系统将不发送任何通知邮件</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- 其他设置 Tab -->
+        <TabsContent value="links" class="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>其他设置</CardTitle>
+              <CardDescription>配置其他功能选项</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+              <!-- 内容设置 -->
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">内容设置</h4>
+                <div class="space-y-2">
+                  <Label for="postPageSize">每页显示文章数</Label>
+                  <Input id="postPageSize" v-model.number="settings.postPageSize" type="number" min="1" max="100" />
+                  <p class="text-xs text-muted-foreground">文章列表每页显示的文章数量，默认为 12 篇</p>
+                </div>
+                <div class="space-y-2">
+                  <Label for="feedCacheInterval">订阅信息更新间隔</Label>
+                  <Input id="feedCacheInterval" v-model.number="settings.feedCacheInterval" type="number" min="1" max="168" />
+                  <p class="text-xs text-muted-foreground">RSS 订阅信息缓存更新时间，单位为小时，默认为 8 小时</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <!-- 友情链接设置 -->
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">友情链接</h4>
+                <div class="flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <Label for="linkAutoApprove">自动同意友情链接申请</Label>
+                    <p class="text-sm text-muted-foreground">开启后，在前台友情链接的表单会新增一个可以看到友情链接的输入框，可自动同意友情链接申请</p>
+                  </div>
+                  <Switch id="linkAutoApprove" v-model="settings.linkAutoApprove" />
                 </div>
               </div>
             </CardContent>

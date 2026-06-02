@@ -309,14 +309,13 @@ html.theme-transitioning body * {
   --scrollbar-thumb-hover: #64748b;
 }
 
-/* 应用滚动条 CSS 变量 */
 .scrollbar-light,
 .scrollbar-dark {
-  scrollbar-gutter: stable;
-}
+  html {
+    /* 正常状态下使用 scrollbar-gutter 防止布局偏移 */
+    scrollbar-gutter: stable;
+  }
 
-.scrollbar-light,
-.scrollbar-dark {
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
@@ -339,4 +338,14 @@ html.theme-transitioning body * {
   ::-webkit-scrollbar-thumb:hover {
     background-color: var(--scrollbar-thumb-hover);
   }
+}
+
+/* 当 fancybox 打开时，移除 scrollbar-gutter 以避免滚动条背景显示 */
+html.with-fancybox {
+  scrollbar-gutter: auto !important;
+}
+
+/* 当 fancybox 打开且隐藏滚动条时，补偿滚动条宽度防止页面偏移 */
+html.with-fancybox body.hide-scrollbar {
+  margin-right: 8px !important;
 }

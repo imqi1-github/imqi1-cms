@@ -880,7 +880,7 @@ html.with-fancybox body {
 }
 
 html.with-fancybox body.hide-scrollbar {
-  margin-right: calc(var(--f-body-margin, 0px) + var(--f-scrollbar-compensate, 0px));
+  /* margin-right: calc(var(--f-body-margin, 0px) + var(--f-scrollbar-compensate, 0px)); */
   overflow: hidden !important;
   overscroll-behavior-y: none;
   width: auto
