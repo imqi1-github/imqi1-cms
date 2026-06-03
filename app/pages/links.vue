@@ -763,7 +763,7 @@ onUnmounted(() => {
             ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
             : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
         ]">
-        <p class="mb-2">
+        <p class="mb-2 flex items-center gap-0.5">
           <Icon :name="showLinkUrlInput ? 'lucide:info' : 'lucide:alert-triangle'" class="size-4 inline mr-1" />
           <strong>{{ showLinkUrlInput ? '提示：' : '注意：' }}</strong>
         </p>
@@ -785,7 +785,7 @@ onUnmounted(() => {
       <div
         v-else
         class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-blue-800 dark:text-blue-200 text-[0.95em] mb-6">
-        <p class="mb-2">
+        <p class="mb-2 flex items-center gap-0.5">
           <Icon name="lucide:info" class="size-4 inline mr-1" />
           <strong>修改友链说明：</strong>
         </p>
