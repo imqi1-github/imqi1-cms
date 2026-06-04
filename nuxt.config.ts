@@ -549,6 +549,46 @@ export default defineNuxtConfig({
                 }
               : {}),
           },
+
+          // 关于页：静态内容，每10分钟重新生成
+          "/about": {
+            isr: 600,
+            ...(redisConfig
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
+
+          // 友链页：静态内容，每10分钟重新生成
+          "/links": {
+            isr: 600,
+            ...(redisConfig
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
+
+          // 留言板：动态内容，每10分钟重新生成
+          "/message": {
+            isr: 600,
+            ...(redisConfig
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
+
+          // 搜索页：每10分钟重新生成
+          "/search": {
+            isr: 600,
+            ...(redisConfig
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
         }
       : {
           // 开发环境：如果配置了Redis则启用ISR，否则使用普通SSR
@@ -595,6 +635,22 @@ export default defineNuxtConfig({
                   isr: 30,
                   cache: { maxAge: 30, base: "redis" },
                 },
+                "/about": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
+                "/links": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
+                "/message": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
+                "/search": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
               }
             : {
                 // 没有Redis时禁用ISR，使用普通SSR
@@ -608,6 +664,10 @@ export default defineNuxtConfig({
                 "/agreement": { isr: false },
                 "/sitemap": { isr: false },
                 "/sitemap.xml": { isr: false },
+                "/about": { isr: false },
+                "/links": { isr: false },
+                "/message": { isr: false },
+                "/search": { isr: false },
               }),
         }),
 

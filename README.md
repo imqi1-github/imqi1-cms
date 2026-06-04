@@ -101,7 +101,7 @@ DB_NAME="imqi1"
 
 ### Redis 缓存配置（可选）
 
-Redis 用于 ISR 缓存，可显著提升性能。如不配置，将自动降级到文件系统缓存。
+Redis 用于 ISR 缓存和搜索结果缓存，可显著提升性能。如不配置，将自动降级到文件系统缓存。
 
 **开发环境**（npm run dev）配置：
 ```env
@@ -118,6 +118,19 @@ REDIS_PORT_PROD="6379"
 REDIS_PASSWORD_PROD="your_password"
 REDIS_DB_PROD="0"
 ```
+
+> 💡 **提示**：详细配置说明请参考 [Redis 配置文档](docs/redis.md)
+
+**环境自动判断**：
+- 开发环境自动读取 `REDIS_HOST_DEV` 等配置
+- 生产环境自动读取 `REDIS_HOST_PROD` 等配置
+- 配置后 ISR 缓存自动启用，无需额外设置
+
+**ISR 缓存页面**：
+- 首页、分类、标签、订阅：1小时
+- 文章详情：永久缓存
+- 关于、友链、留言、搜索：10分钟
+- 管理后台：禁用缓存，保持实时
 
 ### 腾讯云 COS 配置（可选）
 
@@ -399,6 +412,7 @@ location = /manifest.webmanifest {
 ## 📄 文档
 
 - [宝塔面板部署](docs/baota.md)
+- [Redis 配置指南](docs/redis.md)
 
 ## 👤 作者
 
