@@ -9,7 +9,7 @@
       <div class="index-hero-box flex items-center justify-between w-full opacity-0 animate-fade-in">
         <!-- 标题区域 -->
         <div class="index-hero-title p-1.5">
-          <h1 class="index-first-line text-slate-900 dark:text-white text-[6em] font-black leading-none">
+          <h1 class="index-first-line text-slate-900 dark:text-white text-[5em] font-black leading-none">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
           </h1>
           <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"></div>
