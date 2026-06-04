@@ -174,11 +174,11 @@ function highlightKeyword(text: string, keyword: string) {
               <!-- 描述高亮 -->
               <p v-if="post.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(post.desc, searchKeyword)" />
 
-              <!-- 内容摘要高亮 -->
+              <!-- 正文高亮摘要（使用后端返回的 highlight 字段） -->
               <p
-                v-if="post.contentSnippet"
-                class="text-sm text-muted-foreground italic line-clamp-2"
-                v-html="highlightKeyword(post.contentSnippet, searchKeyword)" />
+                v-if="post.highlight"
+                class="text-sm text-muted-foreground italic line-clamp-3"
+                v-html="post.highlight" />
             </div>
 
             <!-- 元信息 -->

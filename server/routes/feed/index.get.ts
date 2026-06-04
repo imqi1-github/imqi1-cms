@@ -76,12 +76,16 @@ export default defineEventHandler(async event => {
         const author = post.user?.nickname || post.user?.name || "Admin";
         const pubDate = new Date(post.create_time).toUTCString();
 
-        // 清理描述，移除 HTML 标签
-        const description = post.desc
-          ? post.desc.replace(/<[^>]*>/g, "").substring(0, 200)
-          : post.content
-            ? post.content.replace(/<[^>]*>/g, "").substring(0, 200)
-            : "";
+        // 清理描述，移除 HTML 标签，并截断添加省略号
+        let description = "";
+        const rawDesc = post.desc || post.content || "";
+        const cleanDesc = rawDesc.replace(/<[^>]*>/g, "");
+
+        if (cleanDesc.length > 200) {
+          description = cleanDesc.substring(0, 200) + "...";
+        } else {
+          description = cleanDesc;
+        }
 
         // 解析封面图片
         let coverImage = "";

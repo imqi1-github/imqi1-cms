@@ -85,6 +85,8 @@ export default defineEventHandler(async event => {
       { key: "sessionStoreType", value: settingsBody.sessionStoreType || "memory" },
       { key: "messagePostId", value: settingsBody.messagePostId ?? "" },
       { key: "linkAutoApprove", value: String(settingsBody.linkAutoApprove ?? false) },
+      { key: "searchCacheEnabled", value: String(settingsBody.searchCacheEnabled ?? false) },
+      { key: "searchCacheExpire", value: String(settingsBody.searchCacheExpire ?? 300) },
     ];
 
     for (const update of updates) {

@@ -15,6 +15,13 @@ function getTextValue(value: any): string | undefined {
   return String(value);
 }
 
+// 截断文本并添加省略号
+function truncateWithEllipsis(text: string | undefined, maxLength: number): string | undefined {
+  if (!text) return undefined;
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
 // 带超时的fetch
 async function fetchWithTimeout(url: string, timeout = 30000): Promise<Response> {
   const controller = new AbortController();
@@ -145,8 +152,8 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
             subscribeId,
             title: item.title,
             link: item.link,
-            description: item.description?.substring(0, 1000), // 限制描述长度
-            content: item.content?.substring(0, 5000), // 限制内容长度
+            description: truncateWithEllipsis(item.description, 1000), // 限制描述长度并添加省略号
+            content: truncateWithEllipsis(item.content, 5000), // 限制内容长度并添加省略号
             author: item.author,
             pubDate: item.pubDate,
           },

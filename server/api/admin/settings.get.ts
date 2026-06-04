@@ -71,6 +71,8 @@ export default defineEventHandler(async event => {
       sessionStoreType: "memory",
       messagePostId: "",
       linkAutoApprove: false,
+      searchCacheEnabled: false,
+      searchCacheExpire: 300,
     };
 
     const settings: Record<string, any> = { ...defaults };

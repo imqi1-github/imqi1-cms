@@ -20,9 +20,25 @@ export default defineEventHandler(async event => {
     // 设置缓存头：CDN和浏览器缓存5分钟
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
-    // 并行获取所有数据
+    // ========== 优化：先查询一次图片分类信息，后续复用 ==========
+    // 1. 获取站点信息和图片分类slug（一次查询）
+    const siteInfoList = await prisma.information.findMany();
+    const infoMap = siteInfoList.reduce((acc, item) => {
+      acc[item.key] = item.value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const photoCategorySlug = infoMap["photoCategorySlug"] || "shot";
+
+    // 2. 获取图片分类的 mid（一次查询）
+    const photoCategory = await prisma.meta.findFirst({
+      where: { slug: photoCategorySlug },
+      select: { mid: true },
+    });
+    const photoCategoryMid = photoCategory?.mid;
+
+    // ========== 并行获取所有数据（复用上面的查询结果）==========
     const [
-      siteData,
       categoriesData,
       recentPostsData,
       categoryRecentPostsData,
@@ -30,21 +46,7 @@ export default defineEventHandler(async event => {
       subscribePostsData,
       changelogsData,
     ] = await Promise.all([
-      // 1. 获取站点信息
-      prisma.information.findMany().then(infos => {
-        const infoMap = infos.reduce((acc, item) => {
-          acc[item.key] = item.value;
-          return acc;
-        }, {} as Record<string, string>);
-
-        return {
-          siteName: infoMap["siteName"] || "ImQi1",
-          homeCustomText: infoMap["homeCustomText"] || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>",
-          photoCategorySlug: infoMap["photoCategorySlug"] || "shot",
-        };
-      }),
-
-      // 2. 获取分类信息（前4个）
+      // 1. 获取分类信息（前4个）
       prisma.meta.findMany({
         where: { type: "category" },
         take: 4,
@@ -64,99 +66,73 @@ export default defineEventHandler(async event => {
         }))
       ),
 
-      // 3. 获取最新6篇文章（排除图片分类）
-      (async () => {
-        const photoCategoryMeta = await prisma.information.findUnique({
-          where: { key: "photoCategorySlug" },
-        });
-        const photoCategorySlug = photoCategoryMeta?.value || "shot";
-
-        const photoCategory = await prisma.meta.findFirst({
-          where: { slug: photoCategorySlug },
-          select: { mid: true },
-        });
-        const photoCategoryMid = photoCategory?.mid;
-
-        const posts = await prisma.post.findMany({
-          where: {
-            type: 0,
-            status: 1,
-            ...(photoCategoryMid && {
-              postrelation: {
-                none: { mid: photoCategoryMid },
-              },
-            }),
-          },
-          take: 6,
-          orderBy: { create_time: "desc" },
-          select: {
-            cid: true,
-            title: true,
-            slug: true,
-            desc: true,
-            covers: true,
-            create_time: true,
-            comment_num: true,
+      // 2. 获取最新6篇文章（排除图片分类）
+      prisma.post.findMany({
+        where: {
+          type: 0,
+          status: 1,
+          ...(photoCategoryMid && {
             postrelation: {
-              select: {
-                meta: {
-                  select: {
-                    mid: true,
-                    name: true,
-                    slug: true,
-                    type: true,
-                  },
+              none: { mid: photoCategoryMid },
+            },
+          }),
+        },
+        take: 6,
+        orderBy: { create_time: "desc" },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          desc: true,
+          covers: true,
+          create_time: true,
+          comment_num: true,
+          postrelation: {
+            select: {
+              meta: {
+                select: {
+                  mid: true,
+                  name: true,
+                  slug: true,
+                  type: true,
                 },
               },
             },
           },
-        });
+        },
+      }).then(posts => posts.map(post => {
+        const categories = post.postrelation
+          .filter(r => r.meta.type === "category")
+          .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
 
-        return posts.map(post => {
-          const categories = post.postrelation
-            .filter(r => r.meta.type === "category")
-            .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
+        const tags = post.postrelation
+          .filter(r => r.meta.type === "tag")
+          .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
 
-          const tags = post.postrelation
-            .filter(r => r.meta.type === "tag")
-            .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
-
-          let covers: { url: string; desc?: string }[] = [];
-          if (post.covers) {
-            try {
-              covers = JSON.parse(post.covers);
-            } catch {
-              covers = [];
-            }
+        let covers: { url: string; desc?: string }[] = [];
+        if (post.covers) {
+          try {
+            covers = JSON.parse(post.covers);
+          } catch {
+            covers = [];
           }
+        }
 
-          return {
-            cid: post.cid,
-            title: post.title,
-            slug: post.slug,
-            desc: post.desc,
-            covers,
-            created: post.create_time,
-            commentsNum: post.comment_num || 0,
-            categories,
-            tags,
-          };
-        });
-      })(),
+        return {
+          cid: post.cid,
+          title: post.title,
+          slug: post.slug,
+          desc: post.desc,
+          covers,
+          created: post.create_time,
+          commentsNum: post.comment_num || 0,
+          categories,
+          tags,
+        };
+      })),
 
-      // 4. 获取分类文章（3个分类，每个4篇，排除最新6篇中已展示的）
+      // 3. 获取分类文章（3个分类，每个4篇，排除最新6篇中已展示的）
       (async () => {
-        const photoCategoryMeta = await prisma.information.findUnique({
-          where: { key: "photoCategorySlug" },
-        });
-        const photoCategorySlug = photoCategoryMeta?.value || "shot";
-
-        const photoCategory = await prisma.meta.findFirst({
-          where: { slug: photoCategorySlug },
-          select: { mid: true },
-        });
-        const photoCategoryMid = photoCategory?.mid;
-
         // 先获取最新6篇文章的cid（用于排除）
         const recentPosts = await prisma.post.findMany({
           where: {
@@ -265,18 +241,8 @@ export default defineEventHandler(async event => {
         return result.filter(r => r !== null);
       })(),
 
-      // 5. 获取图片文章（4篇）
+      // 4. 获取图片文章（4篇）
       (async () => {
-        const photoCategoryMeta = await prisma.information.findUnique({
-          where: { key: "photoCategorySlug" },
-        });
-        const photoCategorySlug = photoCategoryMeta?.value || "shot";
-
-        const photoCategory = await prisma.meta.findFirst({
-          where: { slug: photoCategorySlug },
-          select: { mid: true },
-        });
-
         if (!photoCategory) return [];
 
         const posts = await prisma.post.findMany({
@@ -338,10 +304,10 @@ export default defineEventHandler(async event => {
         });
       })(),
 
-      // 6. 获取订阅文章（3篇）
+      // 5. 获取订阅文章（3篇）
       getSubscribePosts().then(posts => posts.slice(0, 3)),
 
-      // 7. 获取更新日志（4条）
+      // 6. 获取更新日志（4条）
       prisma.changelog
         .findMany({
           take: 4,
@@ -364,7 +330,11 @@ export default defineEventHandler(async event => {
     return {
       success: true,
       data: {
-        site: siteData,
+        site: {
+          siteName: infoMap["siteName"] || "ImQi1",
+          homeCustomText: infoMap["homeCustomText"] || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>",
+          photoCategorySlug: photoCategorySlug,
+        },
         categories: categoriesData,
         recentPosts: recentPostsData,
         categoryRecentPosts: categoryRecentPostsData,
