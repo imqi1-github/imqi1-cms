@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, watch } from "vue";
 
 // 导入前台通知 composable
 const { success, error: showError } = useFrontNotification();
@@ -149,6 +149,12 @@ onMounted(async () => {
         if (savedLink) formData.value.link = savedLink;
       }
 
+      // 加载保存的评论内容
+      const savedContent = localStorage.getItem("comment_content");
+      if (savedContent) {
+        formData.value.content = savedContent;
+      }
+
       // 处理站点设置（获取链接）
       if (settingsRes.status === "fulfilled" && settingsRes.value?.siteUrl) {
         // 如果已登录，自动填充站点链接
@@ -165,9 +171,30 @@ onMounted(async () => {
       if (savedName) formData.value.name = savedName;
       if (savedMail) formData.value.mail = savedMail;
       if (savedLink) formData.value.link = savedLink;
+
+      // 加载保存的评论内容
+      const savedContent = localStorage.getItem("comment_content");
+      if (savedContent) {
+        formData.value.content = savedContent;
+      }
     }
   }
 });
+
+// 监听评论内容变化，自动保存到 localStorage
+watch(
+  () => formData.value.content,
+  (newContent) => {
+    if (import.meta.client) {
+      if (newContent.trim()) {
+        localStorage.setItem("comment_content", newContent);
+      } else {
+        localStorage.removeItem("comment_content");
+      }
+    }
+  },
+  { deep: true }
+);
 
 // 取消回复
 function cancelReply() {
@@ -261,6 +288,8 @@ async function submitComment() {
         }
         // 记录评论时间
         localStorage.setItem("last_comment_time", Date.now().toString());
+        // 清除保存的评论内容
+        localStorage.removeItem("comment_content");
       }
 
       // 重置表单（只重置内容，保留用户信息）

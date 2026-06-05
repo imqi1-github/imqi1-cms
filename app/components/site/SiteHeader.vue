@@ -247,7 +247,7 @@ onMounted(() => {
 
 <template>
   <nav class="sticky top-5 z-50 h-0 transition-all duration-300 max-md:top-4 max-md:right-2" :class="{ sticked: isScrolled }" aria-label="主导航">
-    <div class="flex justify-between items-center max-w-225 mx-auto relative">
+    <div class="flex justify-between items-center max-w-225 mx-auto relative pointer-events-none *:pointer-events-auto">
       <!-- 左侧Logo - PC端显示 -->
       <NuxtLink
         to="/"

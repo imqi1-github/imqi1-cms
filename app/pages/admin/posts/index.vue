@@ -345,7 +345,7 @@ onMounted(() => {
     <!-- 文章列表 -->
     <Card>
       <!-- 加载状态 - 桌面端表格 -->
-      <div v-if="loading" class="p-4 hidden lg:block">
+      <div v-if="loading" class="p-4 hidden min-[1175px]:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -394,7 +394,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 桌面端表格 -->
-      <Table v-else class="hidden lg:table">
+      <Table v-else class="hidden min-[1175px]:table">
         <TableHeader>
           <TableRow>
             <TableHead class="w-12">
@@ -449,7 +449,7 @@ onMounted(() => {
       </Table>
 
       <!-- 加载状态 - 移动端卡片 -->
-      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+      <div v-if="loading" class="p-4 min-[1175px]:hidden space-y-4">
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="space-y-2">
             <div class="h-5 bg-muted rounded w-3/4 animate-pulse" />
@@ -463,7 +463,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 移动端卡片 -->
-      <div v-else class="p-4 lg:hidden space-y-4">
+      <div v-else class="p-4 min-[1175px]:hidden space-y-4">
         <div v-for="post in posts" :key="post.cid" class="border rounded-lg p-4 space-y-3">
           <div>
             <h3 class="font-medium text-base">{{ post.title }}</h3>
@@ -513,7 +513,7 @@ onMounted(() => {
       </div>
 
       <!-- 分页 - 桌面端 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="hidden lg:flex items-center justify-between pt-4 pb-2 border-t">
+      <div v-if="!loading && pagination.totalPages > 1" class="hidden min-[1175px]:flex items-center justify-between pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
         <div class="flex items-center gap-2">
           <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
@@ -542,7 +542,7 @@ onMounted(() => {
       <!-- 分页 - 移动端 -->
       <div
         v-if="!loading && pagination.totalPages > 1"
-        class="lg:hidden flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-2 border-t">
+        class="min-[1175px]:hidden flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground text-center sm:text-left">
           第 {{ pagination.page }} / {{ pagination.totalPages }} 页，共 {{ pagination.total }} 篇
         </p>
