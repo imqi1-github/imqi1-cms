@@ -296,7 +296,7 @@ onMounted(() => {
 
 <template>
   <ClientOnly>
-    <div :class="['mx-auto', isPhotoCategory ? 'photo-category-container' : 'max-w-225 flex flex-col justify-center items-center']">
+    <div :class="['mx-auto', isPhotoCategory ? 'max-w-1600' : 'max-w-225 flex flex-col justify-center items-center']">
       <!-- 加载中 - 仅首次加载时显示 -->
       <div v-if="pending && !category" class="py-20 text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -324,13 +324,13 @@ onMounted(() => {
           <div
             v-for="i in 16"
             :key="`skeleton-${i}`"
-            class="photo-item photo-skeleton"
+            class="block mb-2.5 overflow-hidden relative rounded-lg bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm"
             :style="{
               animationDelay: `${(i - 1) * 80}ms`,
               minHeight: getSkeletonHeight(i) + 'px'
             }">
             <!-- 图片占位 -->
-            <div class="photo-skeleton-image w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse" :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
+            <div class="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse" :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
           </div>
         </div>
 
@@ -338,12 +338,12 @@ onMounted(() => {
         <div v-else-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <template v-for="post in posts" :key="post.cid">
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
-              <NuxtLink :to="`/content/${slug}/${post.slug}`" class="photo-item">
+              <NuxtLink :to="`/content/${slug}/${post.slug}`" class="image-card rounded-lg overflow-hidden relative group block mb-2.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow">
                 <LivePhoto
                   :src="cover.url"
                   :alt="cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title"
                   class="w-full h-full object-cover" />
-                <div class="photo-name">{{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}</div>
+                <div class="image-title text-xs p-3 text-center text-shadow-lg text-white w-full opacity-0 transition-opacity duration-200 absolute bottom-0 left-0">{{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}</div>
               </NuxtLink>
             </template>
           </template>
@@ -356,42 +356,42 @@ onMounted(() => {
       <!-- 普通分类 - 网格布局 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="content-title-box title-no-cover my-12 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
-          <h1 class="content-title text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
+        <header class="my-12 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:menu-line" class="inline-block size-12 mr-2" />{{ category?.name }}
           </h1>
-          <p v-if="category?.desc" class="content-description text-slate-600 dark:text-slate-400 mt-2">{{ category.desc }}</p>
+          <p v-if="category?.desc" class="text-slate-600 dark:text-slate-400 mt-2">{{ category.desc }}</p>
         </header>
 
         <!-- 文章列表 -->
         <div
           v-if="posts.length > 0 && !showSkeleton"
-          class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          class="articles-grid grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <div
             v-for="post in posts"
             :key="post.cid"
             :class="[
-              'archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
-              post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover',
+              'flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
+              post.covers.length > 0 ? 'h-[280px] overflow-hidden' : '',
             ]">
             <!-- 封面 -->
-            <NuxtLink v-if="post.covers.length > 0" :to="`/content/${slug}/${post.slug}`" class="relative h-70 overflow-hidden rounded-t-15">
+            <NuxtLink v-if="post.covers.length > 0" :to="`/content/${slug}/${post.slug}`" class="relative h-[280px] max-md:h-[200px] overflow-hidden rounded-t-[15px]">
               <img
                 :src="post.covers[0].url"
                 :alt="post.title"
-                class="archive-article-cover absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
                 loading="lazy" />
             </NuxtLink>
 
             <!-- 文章信息 -->
-            <div :class="['archive-article-box px-5 pb-2 pt-1 mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
+            <div :class="['px-5 pb-2 pt-1', post.covers.length > 0 ? 'mt-auto' : '']">
               <NuxtLink
                 :to="`/content/${slug}/${post.slug}`"
-                class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
+                class="text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
                 {{ post.title }}
               </NuxtLink>
 
-              <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
+              <div class="text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
                 <span class="flex items-center" v-tooltip="`最后更新时间`">
                   <Icon name="ri-time-line" class="size-4" />
                   {{ formatDate(post.updated) }}
@@ -412,7 +412,7 @@ onMounted(() => {
                 </span>
               </div>
 
-              <p v-if="post.desc" class="archive-article-brief text-[0.9em] text-slate-600 dark:text-slate-400 overflow-wrap break-word">
+              <p v-if="post.desc" class="text-[0.9em] text-slate-600 dark:text-slate-400 overflow-wrap break-word">
                 {{ post.desc }}
               </p>
             </div>
@@ -420,16 +420,16 @@ onMounted(() => {
         </div>
 
         <!-- 骨架屏 -->
-        <div v-else-if="showSkeleton" class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5">
+        <div v-else-if="showSkeleton" class="grid grid-cols-1 md:grid-cols-2 w-full gap-5">
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="archive-article archive-has-cover rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm overflow-hidden">
+            class="flex flex-col h-[280px] overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
-            <div class="h-70 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-15"></div>
+            <div class="h-[280px] max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
 
             <!-- 文章信息骨架 -->
-            <div class="archive-article-box px-5 pb-2 pt-1 mt-auto">
+            <div class="px-5 pb-2 pt-1 mt-auto">
               <!-- 标题骨架 -->
               <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"></div>
 
@@ -488,44 +488,6 @@ onMounted(() => {
   animation: skeletonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* 图片分类骨架屏样式 */
-.photo-skeleton {
-  background-color: rgb(255 255 255 / 0.95);
-  border-radius: 8px;
-  display: block;
-  margin-bottom: 10px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  break-inside: avoid;
-  backdrop-filter: blur(12px);
-  min-height: 200px;
-}
-
-.dark .photo-skeleton {
-  background-color: rgb(17 24 39 / 0.95);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.photo-skeleton-image {
-  width: 100%;
-  position: relative;
-}
-
-.photo-skeleton-title {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 40px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
-}
-
-/* 图片分类容器 */
-.photo-category-container {
-  max-width: 1600px;
-}
-
 /* 渐入动画 */
 .fade-in-element {
   transition:
@@ -581,105 +543,24 @@ onMounted(() => {
   }
 }
 
-.photo-item {
-  background-color: rgb(255 255 255 / 0.95);
-  border-radius: 8px;
-  display: block;
-  margin-bottom: 10px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.image-card {
   break-inside: avoid;
-  backdrop-filter: blur(12px);
 }
 
-.dark .photo-item {
-  background-color: rgb(17 24 39 / 0.95);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.photo-item:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-}
-
-.dark .photo-item:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-}
-
-.photo-item img {
-  /* aspect-ratio: 4/3; */
-  display: block;
-  width: 100%;
-  height: auto;
+.image-card img {
   transition: transform 0.3s ease;
 }
 
-.photo-item:hover img {
+.image-card:hover img {
   transform: scale(1.02);
 }
 
-.photo-name {
-  font-size: 0.8em;
-  padding: 8px 12px;
-  text-align: center;
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
-  color: white;
-  width: 100%;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-}
-
-.photo-item:hover .photo-name {
+.image-card:hover .image-title {
   opacity: 1;
 }
 
-/* 普通分类 - 文章卡片 */
-.archive-article {
-  display: flex;
-  flex-direction: column;
-}
-
-.rounded-15 {
-  border-radius: 15px;
-}
-
-.h-70 {
-  height: 280px;
-}
-
-.archive-has-cover {
-  height: 280px;
-  overflow: hidden;
-}
-
-.archive-has-cover .archive-article-box {
-  margin-top: auto;
-}
-
-.rounded-t-15 {
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-}
-
-.transition-shadow {
-  transition: box-shadow 0.2s ease;
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .archive-articles {
-    grid-template-columns: 1fr !important;
-  }
-
-  .h-70 {
-    height: 200px;
-  }
-
-  .archive-has-cover {
-    height: auto;
-  }
+/* 文字阴影 */
+.text-shadow-lg {
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
 }
 </style>

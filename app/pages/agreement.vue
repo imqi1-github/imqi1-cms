@@ -310,7 +310,7 @@ onUnmounted(() => {
         </aside>
 
         <!-- 协议正文 -->
-        <div class="min-w-0 flex-1 opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body" v-html="page.renderedContent"></div>
+        <div class="min-w-0 flex-1 opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body" v-html="page.renderedContent"></div>
       </div>
     </div>
   </div>
@@ -356,7 +356,7 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.content-constrained {
+.article-constrained {
   max-width: 56.25rem; /* 900px - same as max-w-225 */
   width: 100%;
   margin-left: auto;
@@ -751,11 +751,11 @@ onUnmounted(() => {
 }
 
 /* 正文内容动画 */
-.content-body {
-  animation: content-fade-in 0.5s ease-out forwards;
+.article-body {
+  animation: article-fade-in 0.5s ease-out forwards;
 }
 
-@keyframes content-fade-in {
+@keyframes article-fade-in {
   to {
     opacity: 1;
     transform: translateY(0);

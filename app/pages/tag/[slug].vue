@@ -282,46 +282,46 @@ onMounted(() => {
       <!-- 标签文章页 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="content-title-box title-no-cover my-12 fade-in-element opacity-0 translate-y-8 duration-300 ease-out w-fit m-auto">
-          <h1 class="content-title text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
+        <header class="my-12 mx-auto w-fit fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:hashtag" class="inline-block size-8.5 mr-2" />
             {{ tag?.name }}
           </h1>
-          <p v-if="tag?.desc" class="content-description text-slate-600 dark:text-slate-400 mt-2">{{ tag.desc }}</p>
+          <p v-if="tag?.desc" class="text-slate-600 dark:text-slate-400 mt-2">{{ tag.desc }}</p>
         </header>
 
         <!-- 文章列表 -->
         <div
           v-if="posts.length > 0 && !showSkeleton"
-          class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          class="grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <div
             v-for="post in posts"
             :key="post.cid"
             :class="[
-              'archive-article rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
-              post.covers.length > 0 ? 'archive-has-cover' : 'archive-no-cover',
+              'flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
+              post.covers.length > 0 ? 'h-[280px] overflow-hidden' : '',
             ]">
             <!-- 封面 -->
             <NuxtLink
               v-if="post.covers.length > 0"
               :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
-              class="relative h-70 overflow-hidden rounded-t-15">
+              class="relative h-[280px] max-md:h-[200px] overflow-hidden rounded-t-[15px]">
               <img
                 :src="post.covers[0].url"
                 :alt="post.title"
-                class="archive-article-cover absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                 loading="lazy" />
             </NuxtLink>
 
             <!-- 文章信息 -->
-            <div :class="['archive-article-box px-5 pb-2 pt-1 mt-auto', post.covers.length > 0 ? 'mt-auto' : '']">
+            <div :class="['px-5 pb-2 pt-1', post.covers.length > 0 ? 'mt-auto' : '']">
               <NuxtLink
                 :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
-                class="archive-article-title text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
+                class="text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
                 {{ post.title }}
               </NuxtLink>
 
-              <div class="archive-article-info text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
+              <div class="text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
                 <span class="flex items-center" v-tooltip="`最后更新时间`">
                   <Icon name="ri-time-line" class="size-4" />
                   {{ formatDate(post.updated) }}
@@ -338,7 +338,7 @@ onMounted(() => {
                 </span>
               </div>
 
-              <p v-if="post.desc" class="archive-article-brief text-[0.9em] text-slate-600 dark:text-slate-400 overflow-wrap break-word">
+              <p v-if="post.desc" class="text-[0.9em] text-slate-600 dark:text-slate-400 overflow-wrap break-word">
                 {{ post.desc }}
               </p>
             </div>
@@ -346,16 +346,16 @@ onMounted(() => {
         </div>
 
         <!-- 骨架屏 -->
-        <div v-else-if="showSkeleton" class="archive-articles grid grid-cols-1 md:grid-cols-2 w-full gap-5">
+        <div v-else-if="showSkeleton" class="grid grid-cols-1 md:grid-cols-2 w-full gap-5">
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="archive-article archive-has-cover rounded-15 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm overflow-hidden">
+            class="flex flex-col h-[280px] overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
-            <div class="h-70 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-15"></div>
+            <div class="h-[280px] max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
 
             <!-- 文章信息骨架 -->
-            <div class="archive-article-box px-5 pb-2 pt-1 mt-auto">
+            <div class="px-5 pb-2 pt-1 mt-auto">
               <!-- 标题骨架 -->
               <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"></div>
 
@@ -430,50 +430,4 @@ onMounted(() => {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 文章卡片 */
-.archive-article {
-  display: flex;
-  flex-direction: column;
-}
-
-.rounded-15 {
-  border-radius: 15px;
-}
-
-.h-70 {
-  height: 280px;
-}
-
-.archive-has-cover {
-  height: 280px;
-  overflow: hidden;
-}
-
-.archive-has-cover .archive-article-box {
-  margin-top: auto;
-}
-
-.rounded-t-15 {
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-}
-
-.transition-shadow {
-  transition: box-shadow 0.2s ease;
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .archive-articles {
-    grid-template-columns: 1fr !important;
-  }
-
-  .h-70 {
-    height: 200px;
-  }
-
-  .archive-has-cover {
-    height: auto;
-  }
-}
 </style>

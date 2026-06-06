@@ -131,7 +131,7 @@ const extractToc = () => {
   // 只在客户端执行
   if (!import.meta.client) return;
 
-  const contentBody = document.querySelector(".content-body");
+  const contentBody = document.querySelector(".article-body");
   if (!contentBody) return;
 
   const headings = contentBody.querySelectorAll("h2, h3");
@@ -203,7 +203,7 @@ const handleTocScroll = () => {
   if (!import.meta.client) return;
 
   try {
-    const headings = document.querySelectorAll(".content-body h2, .content-body h3");
+    const headings = document.querySelectorAll(".article-body h2, .article-body h3");
     let currentId = "";
 
     headings.forEach(heading => {
@@ -326,7 +326,7 @@ watch(
         if (!article) return;
 
         const header = article.querySelector("header.article-cover");
-        const contentBody = article.querySelector(".content-body");
+        const contentBody = article.querySelector(".article-body");
         const metaLicenseBox = article.querySelector(".meta-license-box");
 
         // 首先渐入文章主要内容
@@ -1466,17 +1466,23 @@ onMounted(() => {
 
       /* 瀑布流图片样式 */
       .markdown-waterfall .waterfall-grid {
-        column-count: 3;
+        column-count: 4;
         column-gap: 16px;
       }
 
-      @media (max-width: 1024px) {
+      @media (max-width: 1100px) {
+        .markdown-waterfall .waterfall-grid {
+          column-count: 3;
+        }
+      }
+
+      @media (max-width: 750px) {
         .markdown-waterfall .waterfall-grid {
           column-count: 2;
         }
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 500px) {
         .markdown-waterfall .waterfall-grid {
           column-count: 1;
         }
@@ -1938,7 +1944,7 @@ onUnmounted(() => {
         <!-- 文章正文 -->
         <div
           ref="contentBody"
-          class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body content-body"
+          class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body"
           v-html="post.renderedContent"></div>
       </div>
 
@@ -2001,7 +2007,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 相关文章 -->
-      <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out content-constrained">
+      <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
           <div
@@ -2032,7 +2038,7 @@ onUnmounted(() => {
       </section>
 
       <!-- 评论区 -->
-      <section v-if="commentEnabled" class="w-full opacity-0 translate-y-8 duration-300 ease-out animate-fade-in content-constrained comment-section">
+      <section v-if="commentEnabled" class="w-full opacity-0 translate-y-8 duration-300 ease-out animate-fade-in article-constrained comment-section">
         <CommentList :post-id="post.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
     </article>
@@ -2136,7 +2142,7 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.content-constrained {
+.article-constrained {
   max-width: 56.25rem; /* 900px - same as max-w-225 */
   width: 100%;
   margin-left: auto;

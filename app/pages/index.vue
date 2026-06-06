@@ -1,40 +1,40 @@
 <template>
-  <div class="index-box min-h-screen relative w-full bg-white dark:bg-[#0a0a0a]">
+  <div class="min-h-screen relative w-full bg-white dark:bg-[#0a0a0a]">
     <!-- 英雄区 - fixed定位，独立于section -->
     <h1 id="index-hero-title" class="sr-only">欢迎来到 ImQi1</h1>
     <div
       ref="heroRef"
-      class="index-hero fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0"
+      class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0"
       :style="heroStyle">
-      <div class="index-hero-box flex items-center justify-between w-full opacity-0 animate-fade-in">
+      <div class="flex items-center justify-between w-full opacity-0 animate-fade-in max-md:flex-col max-md:text-center max-md:gap-8">
         <!-- 标题区域 -->
-        <div class="index-hero-title p-1.5">
-          <h1 class="index-first-line text-slate-900 dark:text-white text-[5em] font-black leading-none">
+        <div class="p-1.5">
+          <h1 class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
           </h1>
-          <div class="index-second-line mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"></div>
+          <div class="mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"></div>
         </div>
 
         <!-- 头像区域 -->
-        <div class="index-avatar-box h-fit max-md:hidden">
-          <img src="/imgs/avatar.webp" alt="头像" class="index-avatar rounded-full max-w-50 w-50 h-50 object-cover" />
+        <div class="h-fit max-md:hidden">
+          <img src="/imgs/avatar.webp" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-[120px] max-md:w-[120px] max-md:h-[120px]" />
         </div>
 
         <!-- 滚动提示 -->
-        <div class="index-scroll absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 dark:text-gray-500 animate-bounce max-md:-bottom-20">
+        <div class="absolute -bottom-20 left-1/2 -translate-x-1/2 text-gray-600 dark:text-gray-500 animate-bounce max-md:-bottom-20">
           <Icon name="ri:mouse-line" class="size-4" />
         </div>
       </div>
 
       <!-- 联系链接 -->
       <ClientOnly>
-        <div class="index-contact flex mt-3 self-start max-md:mx-auto animate-fade-in">
+        <div class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center animate-fade-in">
           <template v-for="link in contactLinks" :key="link.name">
             <NuxtLink
               :href="link.url"
               :target="link.target ? '_blank' : undefined"
               v-tooltip="link.title"
-              class="index-contact-link group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
+              class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
               <Icon :name="link.icon" class="size-5" mode="svg" />
             </NuxtLink>
           </template>
@@ -46,9 +46,9 @@
     <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true"></section>
 
     <!-- 为什么要做这个网站 -->
-    <section class="index-about-this mx-auto max-w-275 animate-fade-in" aria-labelledby="index-why-title">
-      <h2 id="index-why-title" class="index-why-this text-slate-500 dark:text-gray-400 text-sm">？ 为什么要做这个网站</h2>
-      <div class="index-why-reason tracking-[0.1ch] leading-[1.7em] mt-2.5 max-w-187.5">
+    <section class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-why-title">
+      <h2 id="index-why-title" class="text-slate-500 dark:text-gray-400 text-sm">？ 为什么要做这个网站</h2>
+      <div class="tracking-[0.1ch] leading-[1.7em] mt-2.5 max-w-187.5">
         <p class="my-2.5 text-slate-700 dark:text-gray-300">
           起初建站只是一时兴起，和大多数人一样，我只是想记录下自己学习编程的心路历程和笔记，供自己以后有个参考。刚开始我以为有一个自己的网站是一个小众爱好，直到后来我才发现网络上有很多对此感兴趣的伙伴，于是我开始和他们保持联系。随着时间的增长，我对软件开发有了更浓厚的兴趣，我开始和同学、朋友交流，也有了自己独立开发的想法。在这之前我曾换过多个框架、主题，最终还是觉得自己开发一个主题最有成就感，也最能证明自己真正地学到了东西，所以你能在这里看到这些文字，也能看到我在此记录的其他内容。
         </p>
@@ -57,38 +57,38 @@
     </section>
 
     <!-- 四个内容的父盒子 -->
-    <div class="index-content-box pt-37.5">
+    <div class="pt-37.5">
       <!-- 网站架构 -->
-      <section ref="sectionFramework" class="index-website-framework animate-fade-in" aria-labelledby="index-framework-title">
-        <div class="index-website-framework-content max-w-fit w-full mx-auto">
-          <div class="index-framework-title mb-10">
-            <h2 id="index-framework-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">网站架构</h2>
-            <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">高开发效率 + 类型安全 + 全栈统一</div>
-            <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
+      <section ref="sectionFramework" class="animate-fade-in" aria-labelledby="index-framework-title">
+        <div class="max-w-fit w-full mx-auto">
+          <div class="mb-10">
+            <h2 id="index-framework-title" class="text-blue-700 dark:text-blue-500 text-sm">网站架构</h2>
+            <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">高开发效率 + 类型安全 + 全栈统一</div>
+            <div class="text-slate-500 dark:text-gray-400 text-sm inline">
               <p>Nuxt4 为本站提供了快速、简单、可维护的网站架构</p>
             </div>
-            <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm inline">
+            <div class="text-slate-500 dark:text-gray-400 text-sm inline">
               <p>Prisma 提供了类型安全的数据库操作，确保数据的一致性和完整性</p>
             </div>
           </div>
-          <div class="index-website-framework-box flex items-center justify-center gap-8 flex-wrap max-md:flex-col">
-            <div class="index-framework-item flex flex-col relative">
-              <Icon name="devicon:nuxtjs-wordmark" mode="svg" class="index-framework-pic size-25" />
+          <div class="flex items-center justify-center gap-8 flex-wrap max-md:flex-col">
+            <div class="flex flex-col relative">
+              <Icon name="devicon:nuxtjs-wordmark" mode="svg" class="size-25" />
             </div>
-            <div class="index-framework-arrow max-md:mt-7">
+            <div class="max-md:mt-7">
               <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
-            <div class="index-framework-item flex flex-col relative">
-              <Icon name="devicon:prisma-wordmark" mode="svg" class="index-framework-pic size-25" />
+            <div class="flex flex-col relative">
+              <Icon name="devicon:prisma-wordmark" mode="svg" class="size-25" />
             </div>
-            <div class="index-framework-arrow max-md:mt-7">
+            <div class="max-md:mt-7">
               <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
-            <div class="index-framework-item flex flex-col relative">
-              <Icon name="logos:mysql" mode="svg" class="index-framework-pic size-25" />
+            <div class="flex flex-col relative">
+              <Icon name="logos:mysql" mode="svg" class="size-25" />
             </div>
           </div>
-          <div class="index-framework-introduction mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
+          <div class="mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
             本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，到现在仍持续更新中。这一版主题前后端采用 Nuxt4 搭建，配合
             Tailwindcss，构建了现代化的响应式布局，同时集成了 APlayer 音乐播放器、Fancy Apps
             图片灯箱等富媒体组件，为文章内容提供更丰富的交互体验。整个系统支持完整的博客功能，并具备完善的后台管理系统，实现了真正意义上的全栈内容管理系统。
@@ -100,72 +100,72 @@
       <div class="h-62.5"></div>
 
       <!-- 样式选择 -->
-      <div ref="sectionStyle" class="index-theme -mt-5 mx-auto max-w-200 animate-fade-in">
-        <div class="index-theme-inner">
-          <div class="index-theme-themes mb-30 max-md:text-center">
-            <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
-            <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">保持界面清爽，同时不牺牲功能丰富度</div>
-            <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">选择字体类型，合理规划布局，注意颜色搭配，添加边框圆角。</div>
+      <div ref="sectionStyle" class="-mt-5 mx-auto max-w-200 animate-fade-in">
+        <div>
+          <div class="mb-30 max-md:text-center">
+            <h2 class="text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
+            <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">保持界面清爽，同时不牺牲功能丰富度</div>
+            <div class="text-slate-500 dark:text-gray-400 text-sm">选择字体类型，合理规划布局，注意颜色搭配，添加边框圆角。</div>
           </div>
-          <div class="index-theme-introduction flex max-md:justify-center">
+          <div class="flex max-md:justify-center">
             <!-- 左侧选项 -->
-            <div class="index-theme-left flex flex-col gap-12.5">
+            <div class="flex flex-col gap-12.5">
               <div
                 v-for="(item, index) in themeItems"
                 :key="index"
                 :ref="setThemeItemRef"
-                class="index-theme-item flex flex-col items-start justify-center h-75 max-w-75">
-                <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm">{{ item.title }}</div>
-                <div v-if="item.type === 'grid'" class="index-theme-content grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
+                class="flex flex-col items-start justify-center h-75 max-w-75">
+                <div class="text-slate-500 dark:text-gray-400 text-sm">{{ item.title }}</div>
+                <div v-if="item.type === 'grid'" class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 mt-2.5 max-w-75">
                   <template v-for="(grid, gIndex) in item.grids" :key="gIndex">
-                    <div v-if="grid.isLink" class="index-theme-grid">
+                    <div v-if="grid.isLink">
                       <a :href="grid.href" class="hover:underline text-blue-600 dark:text-blue-400 font-weight" target="_blank">{{ grid.text }}</a>
                     </div>
-                    <div v-else-if="grid.isCode" class="index-theme-grid">
+                    <div v-else-if="grid.isCode">
                       <code class="bg-slate-100 dark:bg-gray-800 px-1 rounded text-sm text-slate-800 dark:text-gray-200">{{ grid.text }}</code>
                     </div>
-                    <div v-else-if="grid.hasIcon" class="index-theme-grid flex items-center gap-1 text-slate-700 dark:text-gray-300">
+                    <div v-else-if="grid.hasIcon" class="flex items-center gap-1 text-slate-700 dark:text-gray-300">
                       {{ grid.text }}
                     </div>
-                    <div v-else-if="grid.isCategory" class="index-theme-grid text-slate-800 dark:text-gray-200">
+                    <div v-else-if="grid.isCategory" class="text-slate-800 dark:text-gray-200">
                       {{ grid.text }}
                     </div>
-                    <NuxtLink v-else-if="grid.href" :to="grid.href" class="index-theme-grid hover:underline text-blue-600 dark:text-blue-400">
+                    <NuxtLink v-else-if="grid.href" :to="grid.href" class="hover:underline text-blue-600 dark:text-blue-400">
                       {{ grid.text }}
                     </NuxtLink>
-                    <div v-else class="index-theme-grid text-slate-700 dark:text-gray-300">{{ grid.text }}</div>
+                    <div v-else class="text-slate-700 dark:text-gray-300">{{ grid.text }}</div>
                   </template>
                 </div>
-                <div v-else class="index-theme-content2 tracking-[0.1ch] mt-5 text-slate-700 dark:text-gray-300">
+                <div v-else class="tracking-[0.1ch] mt-5 text-slate-700 dark:text-gray-300">
                   {{ item.content }}
                 </div>
               </div>
             </div>
 
             <!-- 右侧展示 -->
-            <div class="index-theme-right flex-1 flex justify-end relative max-md:hidden">
-              <div class="index-theme-right-items flex items-center justify-center w-full h-0 sticky top-1/2 my-38">
+            <div class="flex-1 flex justify-end relative max-md:hidden">
+              <div class="flex items-center justify-center w-full h-0 sticky top-1/2 my-38">
                 <div
                   v-for="(rightItem, index) in themeRightItems"
                   :key="index"
-                  class="index-theme-right-item h-75 opacity-0 invisible absolute transition-opacity duration-300"
+                  class="h-75 opacity-0 invisible absolute transition-opacity duration-300"
                   :class="{ 'opacity-100 pointer-events-auto visible': activeThemeIndex === index }">
                   <!-- 字体展示 -->
-                  <div v-if="rightItem.type === 'fonts'" class="index-theme-box relative h-75 w-75">
+                  <div v-if="rightItem.type === 'fonts'" class="relative h-75 w-75">
                     <div
-                      class="index-theme-serif grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-[2.5em] font-bold border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl shadow-sm h-38 w-38 absolute left-28 top-19 animate-float text-slate-900 dark:text-white">
+                      class="grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-[2.5em] font-bold border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl shadow-sm h-38 w-38 absolute left-28 top-19 animate-float text-slate-900 dark:text-white">
                       <span>之</span>
                       <span>的</span>
                       <span>事</span>
                       <span>以</span>
                     </div>
                     <code
-                      class="index-theme-mono bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm px-2 py-1 absolute left-2.5 bottom-14 animate-float-delay-1 text-slate-800 dark:text-gray-200">
+                      class="bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm px-2 py-1 absolute left-2.5 bottom-14 animate-float-delay-1 text-slate-800 dark:text-gray-200">
                       <span class="text-blue-700 dark:text-blue-400">print</span>(<span class="text-green-700 dark:text-green-400">"Hello World"</span
                       >)
                     </code>
                     <div
-                      class="index-theme-icon grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
+                      class="grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
                       <span><Icon name="ri:attachment-line" class="text-slate-600 dark:text-gray-400" /></span>
                       <span><Icon name="ri:file-zip-fill" class="text-slate-600 dark:text-gray-400" /></span>
                       <span><Icon name="ri:video-fill" class="text-slate-600 dark:text-gray-400" /></span>
@@ -174,19 +174,19 @@
                   </div>
 
                   <!-- 布局图片 -->
-                  <div v-else-if="rightItem.type === 'layout'" class="index-theme-box relative h-75 w-75 group">
+                  <div v-else-if="rightItem.type === 'layout'" class="relative h-75 w-75 group">
                     <div
-                      class="index-theme-img absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
+                      class="absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
                       <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
                     </div>
                     <div
-                      class="index-theme-border absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"></div>
+                      class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"></div>
                   </div>
 
                   <!-- 音乐播放器 - 延迟加载 -->
-                  <div v-else-if="rightItem.type === 'music'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
+                  <div v-else-if="rightItem.type === 'music'" class="relative h-75 w-75 flex items-center justify-center">
                     <ClientOnly>
-                      <div class="index-theme-music-box absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
+                      <div class="absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
                         <MetingPlayer server="netease" type="song" id="2142943893" :listFolded="false" :mutex="true" />
                       </div>
                       <template #fallback>
@@ -199,8 +199,8 @@
 
                   <!-- 文章预览 - 客户端渲染以确保随机性 -->
                   <ClientOnly>
-                    <div v-if="rightItem.type === 'article'" class="index-theme-box relative h-75 w-75 flex items-center justify-center">
-                      <div v-if="randomPost" class="index-theme-article-box flex flex-col w-full h-full justify-center">
+                    <div v-if="rightItem.type === 'article'" class="relative h-75 w-75 flex items-center justify-center">
+                      <div v-if="randomPost" class="flex flex-col w-full h-full justify-center">
                         <!-- 封面 -->
                         <div
                           v-if="randomPost.covers && randomPost.covers.length > 0"
@@ -227,12 +227,12 @@
                           阅读全文 →
                         </NuxtLink>
                       </div>
-                      <div v-else class="index-theme-article-box flex flex-col items-center justify-center h-full w-full">
+                      <div v-else class="flex flex-col items-center justify-center h-full w-full">
                         <div class="text-slate-500 dark:text-gray-400 text-sm">暂无文章</div>
                       </div>
                     </div>
                     <template #fallback>
-                      <div class="index-theme-box relative h-75 w-75 flex items-center justify-center">
+                      <div class="relative h-75 w-75 flex items-center justify-center">
                         <div class="text-slate-400 dark:text-gray-500 text-sm">文章加载中...</div>
                       </div>
                     </template>
@@ -248,10 +248,10 @@
       <div class="h-62.5"></div>
 
       <!-- 最新文章 -->
-      <section ref="sectionContent" class="index-recent-posts mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
-        <h2 id="index-recent-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
-        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
-        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
+      <section ref="sectionContent" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
+        <h2 id="index-recent-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
+        <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
+        <div class="text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
 
         <!-- 文章列表 -->
         <div v-if="recentPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -323,12 +323,12 @@
       </section>
 
       <!-- 分类文章 -->
-      <section v-if="categoryRecentPosts.length > 0" class="index-category-posts mx-auto max-w-275 animate-fade-in">
+      <section v-if="categoryRecentPosts.length > 0" class="mx-auto max-w-275 animate-fade-in">
         <template v-for="(categoryData, index) in categoryRecentPosts" :key="categoryData.category.slug">
           <!-- 分类标题 -->
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h2 class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">{{ categoryData.category.name }}</h2>
+              <h2 class="text-blue-700 dark:text-blue-500 text-sm">{{ categoryData.category.name }}</h2>
               <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.desc }}</div>
             </div>
             <NuxtLink
@@ -394,11 +394,11 @@
       <section
         ref="sectionPhotos"
         v-if="photoImages.length > 0"
-        class="index-photo-posts mt-12 mx-auto max-w-275 animate-fade-in"
+        class="mt-12 mx-auto max-w-275 animate-fade-in"
         aria-labelledby="index-photo-posts-title">
-        <h2 id="index-photo-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
-        <div class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最近发布的图片</div>
-        <div class="index-theme-title3 text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">小物件，风景，合照，值得记录的瞬间</div>
+        <h2 id="index-photo-posts-title" class="text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
+        <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最近发布的图片</div>
+        <div class="text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">小物件，风景，合照，值得记录的瞬间</div>
 
         <!-- 图片瀑布流 -->
         <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
@@ -454,9 +454,9 @@
     <div class="h-36"></div>
 
     <!-- 阅读更多 -->
-    <section class="index-read-more mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
-      <h2 id="index-read-more-title" class="index-theme-title2 text-slate-800 dark:text-white text-[1.6em] font-bold text-center">阅读更多</h2>
-      <div class="index-read-more-inner flex flex-wrap justify-center gap-4 mt-8">
+    <section class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
+      <h2 id="index-read-more-title" class="text-slate-800 dark:text-white text-[1.6em] font-bold text-center">阅读更多</h2>
+      <div class="flex flex-wrap justify-center gap-4 mt-8">
         <NuxtLink
           to="/subscribes"
           class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
@@ -497,11 +497,11 @@
     <!-- 订阅文章 -->
     <section
       v-if="subscribePosts.length > 0"
-      class="index-subscribe-posts mx-auto max-w-275 animate-fade-in"
+      class="mx-auto max-w-275 animate-fade-in"
       aria-labelledby="index-subscribe-posts-title">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 id="index-subscribe-posts-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
+          <h2 id="index-subscribe-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
           <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
         </div>
         <NuxtLink to="/subscribes" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
@@ -553,10 +553,10 @@
     <div v-if="subscribePosts.length > 0" class="h-37.5"></div>
 
     <!-- 更新日志 -->
-    <section v-if="recentChangelogs.length > 0" class="index-changelogs mx-auto max-w-275 animate-fade-in" aria-labelledby="index-changelogs-title">
+    <section v-if="recentChangelogs.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-changelogs-title">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 id="index-changelogs-title" class="index-theme-title1 text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
+          <h2 id="index-changelogs-title" class="text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
           <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">站点最新更新</div>
         </div>
         <NuxtLink to="/changelog" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
@@ -1097,29 +1097,5 @@ onUnmounted(() => {
 .dark .markdown-content :deep(code) {
   background-color: rgb(30 41 59);
   color: rgb(255 255 255);
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .index-first-line {
-    font-size: 3em !important;
-  }
-
-  .index-avatar {
-    max-width: 120px !important;
-    width: 120px !important;
-    height: 120px !important;
-  }
-
-  .index-hero-box {
-    flex-direction: column;
-    text-align: center;
-    gap: 2rem;
-  }
-
-  .index-contact {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
 }
 </style>
