@@ -20,12 +20,12 @@ model attachments {
 }
 
 model metas {
-  mid            Int            @id @default(autoincrement())
-  name           String         @unique(map: "Metas_name_key")
-  slug           String?        @unique(map: "Metas_slug_key")
-  desc           String?
-  type           String         @default("category")
-  postrelations  postrelations[]
+  mid           Int             @id @default(autoincrement())
+  name          String          @unique(map: "Metas_name_key")
+  slug          String?         @unique(map: "Metas_slug_key")
+  desc          String?
+  type          String          @default("category")
+  postrelations postrelations[]
 
   @@index([mid, type], map: "Metas_mid_type_idx")
 }
@@ -65,13 +65,13 @@ model links {
   enabled Boolean @default(true)
 
   // 友链修改相关字段
-  originalLinkId    Int?    // 要替换的原始友链ID
-  isModification    Boolean @default(false)  // 是否为修改请求
-  modificationStatus String? @default("pending")  // 修改状态: pending/approved/rejected
+  originalLinkId     Int? // 要替换的原始友链ID
+  isModification     Boolean @default(false) // 是否为修改请求
+  modificationStatus String? @default("pending") // 修改状态: pending/approved/rejected
 
   // 关联原友链
-  originalLink      links?   @relation("LinkModifications", fields: [originalLinkId], references: [id])
-  modifications     links[]  @relation("LinkModifications")
+  originalLink  links?  @relation("LinkModifications", fields: [originalLinkId], references: [id])
+  modifications links[] @relation("LinkModifications")
 }
 
 model informations {
@@ -81,21 +81,21 @@ model informations {
 }
 
 model posts {
-  cid           Int            @id @default(autoincrement())
-  title         String         @db.VarChar(255)
-  slug          String?        @db.VarChar(255)
-  desc          String?        @db.Text
-  content       String?        @db.LongText
-  create_time   DateTime       @default(now())
+  cid           Int             @id @default(autoincrement())
+  title         String          @db.VarChar(255)
+  slug          String?         @db.VarChar(255)
+  desc          String?         @db.Text
+  content       String?         @db.LongText
+  create_time   DateTime        @default(now())
   update_time   DateTime
-  status        Int            @default(1)
-  comment_num   Int            @default(0)
-  many_covers   Boolean        @default(false)
-  covers        String?        @db.Text
-  show_toc      Boolean        @default(false)
-  tags          String?        @db.VarChar(500)
-  type          Int            @default(0)
-  uid           Int            @default(1)
+  status        Int             @default(1)
+  comment_num   Int             @default(0)
+  many_covers   Boolean         @default(false)
+  covers        String?         @db.Text
+  show_toc      Boolean         @default(false)
+  tags          String?         @db.VarChar(500)
+  type          Int             @default(0)
+  uid           Int             @default(1)
   attachments   attachments[]
   comments      comments[]
   user          users           @relation(fields: [uid], references: [uid], map: "Posts_uid_fkey")
@@ -130,24 +130,24 @@ model sessions {
 }
 
 model subscribes {
-  id            Int             @id @default(autoincrement())
-  url           String
-  name          String
-  avatar        String?
-  lastUpdated   DateTime?
+  id             Int              @id @default(autoincrement())
+  url            String
+  name           String
+  avatar         String?
+  lastUpdated    DateTime?
   subscribeposts subscribeposts[]
 }
 
 model subscribeposts {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   subscribeId Int
-  title       String    @db.VarChar(500)
-  link        String    @unique(map: "SubscribePost_link_key") @db.VarChar(500)
-  description String?   @db.Text
-  content     String?   @db.LongText
-  author      String?   @db.VarChar(255)
+  title       String     @db.VarChar(500)
+  link        String     @unique(map: "SubscribePost_link_key") @db.VarChar(500)
+  description String?    @db.Text
+  content     String?    @db.LongText
+  author      String?    @db.VarChar(255)
   pubDate     DateTime?
-  create_time DateTime  @default(now())
+  create_time DateTime   @default(now())
   subscribe   subscribes @relation(fields: [subscribeId], references: [id], onDelete: Cascade, map: "SubscribePost_subscribeId_fkey")
 
   @@index([subscribeId], map: "SubscribePost_subscribeId_fkey")

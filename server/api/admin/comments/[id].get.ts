@@ -36,7 +36,7 @@ export default defineEventHandler(async event => {
         parent_id: true,
         agent: true,
         ip: true,
-        post: {
+        posts: {
           select: {
             cid: true,
             title: true,

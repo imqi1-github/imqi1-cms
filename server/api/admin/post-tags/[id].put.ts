@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
     await prisma.postrelations.deleteMany({
       where: {
         cid: Number(id),
-        meta: {
+        metas: {
           type: "tag",
         },
       },
