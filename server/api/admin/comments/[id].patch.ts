@@ -32,7 +32,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取原评论信息（用于比较状态变化）
-    const oldComment = await prisma.comment.findUnique({
+    const oldComment = await prisma.comments.findUnique({
       where: { coid: Number(id) },
       select: { coid: true, cid: true, status: true },
     });
@@ -44,7 +44,7 @@ export default defineEventHandler(async event => {
       });
     }
 
-    const comment = await prisma.comment.update({
+    const comment = await prisma.comments.update({
       where: { coid: Number(id) },
       data: {
         ...(name !== undefined && { name }),
@@ -59,14 +59,14 @@ export default defineEventHandler(async event => {
     if (status !== undefined && status !== oldComment.status) {
       // 从非已发布变为已发布：增加计数
       if (status === 1 && oldComment.status !== 1) {
-        await prisma.post.update({
+        await prisma.posts.update({
           where: { cid: oldComment.cid },
           data: { comment_num: { increment: 1 } },
         });
       }
       // 从已发布变为非已发布：减少计数
       else if (status !== 1 && oldComment.status === 1) {
-        await prisma.post.update({
+        await prisma.posts.update({
           where: { cid: oldComment.cid },
           data: { comment_num: { decrement: 1 } },
         });

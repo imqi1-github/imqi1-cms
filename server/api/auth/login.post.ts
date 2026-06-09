@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   // 查找用户
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { name: username },
   });
 

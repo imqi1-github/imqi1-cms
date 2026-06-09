@@ -23,6 +23,13 @@ async function loadPosts() {
     posts.value = [];
   } finally {
     isLoaded.value = true;
+    // 等待 DOM 更新后触发动画
+    await nextTick();
+    setTimeout(() => {
+      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+        el.classList.add("fade-in-start");
+      });
+    }, 50);
   }
 }
 
@@ -34,7 +41,7 @@ function formatDate(dateStr: string | Date | null) {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const weeks = Math.floor(days / 7);
   const months = Math.floor(days / 30);
-  const years = Math.floor(days / 365);
+  const years = Math.floor(diff / (1000 * 60 * 60 * 24));
 
   if (days === 0) {
     const hours = Math.floor(diff / (1000 * 60 * 60));

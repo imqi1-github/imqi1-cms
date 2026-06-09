@@ -29,7 +29,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const changelogs = await prisma.changelog.findMany({
+    const changelogs = await prisma.changelogs.findMany({
       orderBy: { create_time: "desc" },
     });
 

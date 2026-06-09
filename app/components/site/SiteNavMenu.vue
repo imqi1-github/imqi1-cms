@@ -24,7 +24,7 @@ const categories = computed(() => categoriesData.value?.data || []);
 
 // 导航项数据
 const navItems = [
-  { name: "留言", href: "/message", icon: "ri:chat-1-line" },
+  { name: "留言", href: "/messages", icon: "ri:chat-1-line" },
   { name: "友链", href: "/links", icon: "ri:links-line" },
   { name: "关于", href: "/about", icon: "ri:user-line" },
 ];

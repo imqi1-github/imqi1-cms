@@ -77,8 +77,8 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   // 标签页
   else if (path.startsWith("/tag/")) {
     items.push({
-      name: route.meta.title || "标签",
-      icon: "ri:hashtag",
+      name: pageTitle.value || "标签",
+      icon: pageIcon.value || "ri:hashtag",
       isCurrent: true,
     });
   }
@@ -91,7 +91,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     });
   }
   // 留言页
-  else if (path === "/message") {
+  else if (path === "/messages") {
     items.push({
       name: "留言",
       icon: "ri:chat-1-line",
@@ -131,7 +131,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     });
   }
   // 更新日志页
-  else if (path === "/changelog") {
+  else if (path === "/changelogs") {
     items.push({
       name: "更新日志",
       icon: "ri:git-commit-line",

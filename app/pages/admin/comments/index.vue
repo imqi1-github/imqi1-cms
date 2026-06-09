@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { parseUserAgent } from "~/utils/parseUserAgent";
+
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -241,11 +243,28 @@ function goToPage(page: number) {
 }
 
 function getPostTitle(comment: any) {
-  return comment.post?.title || "未知";
+  return comment.posts?.title || "未知";
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleString("zh-CN");
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (years > 0) return `${years}年前`;
+  if (months > 0) return `${months}个月前`;
+  if (weeks > 0) return `${weeks}周前`;
+  if (days > 0) return `${days}天前`;
+  if (hours > 0) return `${hours}小时前`;
+  if (minutes > 0) return `${minutes}分钟前`;
+  return "刚刚";
 }
 
 function getStatusInfo(status: number) {
@@ -297,7 +316,7 @@ onMounted(() => {
                 <TableHead>内容</TableHead>
                 <TableHead>文章</TableHead>
                 <TableHead>状态</TableHead>
-                <TableHead>时间</TableHead>
+                <TableHead>时间/信息</TableHead>
                 <TableHead class="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -325,7 +344,7 @@ onMounted(() => {
                   <div class="h-6 bg-muted rounded w-16 animate-pulse" />
                 </TableCell>
                 <TableCell>
-                  <div class="h-4 bg-muted rounded w-32 animate-pulse" />
+                  <div class="h-4 bg-muted rounded w-48 animate-pulse" />
                 </TableCell>
                 <TableCell class="text-right">
                   <div class="size-8 bg-muted rounded-lg animate-pulse ms-auto" />
@@ -346,7 +365,7 @@ onMounted(() => {
               <TableHead>内容</TableHead>
               <TableHead>文章</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead>时间</TableHead>
+              <TableHead>时间/信息</TableHead>
               <TableHead class="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -390,7 +409,7 @@ onMounted(() => {
                 </Badge>
               </TableCell>
               <TableCell>
-                <span class="text-sm text-muted-foreground">{{ formatDate(comment.create_time) }}</span>
+                <span class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-1">
@@ -486,7 +505,7 @@ onMounted(() => {
             <!-- 评论内容 -->
             <div class="pl-9 space-y-2">
               <p class="text-sm line-clamp-3 whitespace-pre-wrap break-words">{{ comment.content }}</p>
-              <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground items-center">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -495,10 +514,7 @@ onMounted(() => {
                   <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
-                <span class="flex items-center">
-                  <Icon name="lucide:clock" class="size-3 mr-1 flex-shrink-0" />
-                  {{ formatDate(comment.create_time) }}
-                </span>
+                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
               </div>
             </div>
 
@@ -594,7 +610,7 @@ onMounted(() => {
             <!-- 评论内容 -->
             <div class="pl-7 sm:pl-9 space-y-2">
               <p class="text-sm line-clamp-4 whitespace-pre-wrap break-words">{{ comment.content }}</p>
-              <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground items-center">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -603,10 +619,7 @@ onMounted(() => {
                   <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
-                <span class="flex items-center">
-                  <Icon name="lucide:clock" class="size-3 mr-1 flex-shrink-0" />
-                  {{ formatDate(comment.create_time) }}
-                </span>
+                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
               </div>
             </div>
 

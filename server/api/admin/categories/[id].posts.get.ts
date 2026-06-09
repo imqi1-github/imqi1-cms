@@ -30,10 +30,10 @@ export default defineEventHandler(async event => {
 
     // 获取分类下的文章
     const [relations, total] = await Promise.all([
-      prisma.postrelation.findMany({
+      prisma.postrelations.findMany({
         where: { mid: Number(id) },
         include: {
-          post: {
+          posts: {
             select: {
               cid: true,
               title: true,
@@ -47,21 +47,21 @@ export default defineEventHandler(async event => {
           },
         },
         orderBy: {
-          post: {
+          posts: {
             created: "desc",
           },
         },
         skip,
         take: pageSize,
       }),
-      prisma.postrelation.count({
+      prisma.postrelations.count({
         where: { mid: Number(id) },
       }),
     ]);
 
     return {
       success: true,
-      data: relations.map(r => r.post),
+      data: relations.map(r => r.posts),
       total,
       page,
       pageSize,

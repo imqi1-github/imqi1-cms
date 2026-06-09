@@ -29,7 +29,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取数据库中已有的配置项
-    const existingKeys = await prisma.information.findMany({
+    const existingKeys = await prisma.informations.findMany({
       select: { key: true },
     });
 
@@ -50,7 +50,7 @@ export default defineEventHandler(async event => {
 
     // 批量创建缺失的配置项
     if (createdItems.length > 0) {
-      await prisma.information.createMany({
+      await prisma.informations.createMany({
         data: createdItems,
       });
     }

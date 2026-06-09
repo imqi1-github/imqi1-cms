@@ -34,17 +34,17 @@ export default defineEventHandler(async event => {
       usersCount,
     ] = await Promise.all([
       // 文章统计
-      prisma.post.count({ where: { type: 0 } }),
-      prisma.post.count({ where: { type: 1 } }),
-      prisma.post.count({ where: { type: 0, status: 1 } }), // status: 1 表示已发布
-      prisma.post.count({ where: { type: 0, status: 0 } }), // status: 0 表示草稿
-      prisma.post.count({
+      prisma.posts.count({ where: { type: 0 } }),
+      prisma.posts.count({ where: { type: 1 } }),
+      prisma.posts.count({ where: { type: 0, status: 1 } }), // status: 1 表示已发布
+      prisma.posts.count({ where: { type: 0, status: 0 } }), // status: 0 表示草稿
+      prisma.posts.count({
         where: {
           type: 0,
           create_time: { gte: startOfMonth },
         },
       }),
-      prisma.post.count({
+      prisma.posts.count({
         where: {
           type: 0,
           create_time: { gte: startOfWeek },
@@ -52,20 +52,20 @@ export default defineEventHandler(async event => {
       }),
 
       // 评论统计
-      prisma.comment.count(),
-      prisma.comment.count({ where: { status: 0 } }), // status: 0 表示待审核
-      prisma.comment.count({
+      prisma.comments.count(),
+      prisma.comments.count({ where: { status: 0 } }), // status: 0 表示待审核
+      prisma.comments.count({
         where: {
           create_time: { gte: startOfMonth },
         },
       }),
 
       // 分类和标签统计
-      prisma.meta.count({ where: { type: 'category' } }),
-      prisma.meta.count({ where: { type: 'tag' } }),
+      prisma.metas.count({ where: { type: 'category' } }),
+      prisma.metas.count({ where: { type: 'tag' } }),
 
       // 用户统计
-      prisma.user.count(),
+      prisma.users.count(),
     ]);
 
     return {

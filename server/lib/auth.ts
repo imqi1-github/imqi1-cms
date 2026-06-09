@@ -32,7 +32,7 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
   const expires = Date.now() + SESSION_MAX_AGE * 1000;
 
   // 更新数据库中的 auth_code，实现单端登录
-  await prisma.user.update({
+  await prisma.users.update({
     where: { uid: user.uid },
     data: { auth_code: authCode },
   });
@@ -76,7 +76,7 @@ export async function getUser(event: any): Promise<SessionUser | null> {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { uid: session.userId },
     select: {
       uid: true,

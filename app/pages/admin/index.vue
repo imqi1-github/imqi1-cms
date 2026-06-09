@@ -374,9 +374,9 @@ onMounted(() => {
                 </Button>
               </div>
               <p class="text-sm text-muted-foreground line-clamp-2 mb-2">{{ comment.content }}</p>
-              <div v-if="comment.post" class="flex items-center gap-1 text-xs text-muted-foreground">
+              <div v-if="comment.posts" class="flex items-center gap-1 text-xs text-muted-foreground">
                 <Icon name="lucide:file-text" class="size-3 flex-shrink-0" />
-                <span class="truncate">{{ comment.post.title }}</span>
+                <span class="truncate">{{ comment.posts.title }}</span>
               </div>
             </div>
           </div>

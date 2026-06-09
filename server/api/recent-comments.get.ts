@@ -6,7 +6,7 @@ export default defineEventHandler(async event => {
     const limit = parseInt(query.limit as string) || 20;
 
     // 获取最近的评论（获取比需要更多的评论，因为后续会过滤）
-    const comments = await prisma.comment.findMany({
+    const comments = await prisma.comments.findMany({
       where: {
         status: 1, // 已审核
       },
@@ -15,14 +15,14 @@ export default defineEventHandler(async event => {
         content: true,
         name: true,
         create_time: true,
-        post: {
+        posts: {
           select: {
             cid: true,
             title: true,
             slug: true,
-            postrelation: {
+            postrelations: {
               select: {
-                meta: {
+                metas: {
                   select: {
                     slug: true,
                   },
@@ -43,16 +43,16 @@ export default defineEventHandler(async event => {
     const formattedComments = comments
       .filter(comment => {
         // 确保评论有关联的文章且文章信息完整
-        return comment.post &&
-               comment.post.cid &&
-               comment.post.slug &&
-               comment.post.postrelation &&
-               comment.post.postrelation.length > 0 &&
-               comment.post.postrelation[0].meta;
+        return comment.posts &&
+               comment.posts.cid &&
+               comment.posts.slug &&
+               comment.posts.postrelations &&
+               comment.posts.postrelations.length > 0 &&
+               comment.posts.postrelations[0].metas;
       })
       .map(comment => {
-        const categorySlug = comment.post.postrelation[0].meta.slug;
-        const postSlug = comment.post.slug;
+        const categorySlug = comment.posts.postrelations[0].metas.slug;
+        const postSlug = comment.posts.slug;
         const postUrl = `/content/${categorySlug}/${postSlug}`;
 
         return {
@@ -60,8 +60,8 @@ export default defineEventHandler(async event => {
           text: comment.content,
           author: comment.name,
           created: comment.create_time,
-          post: {
-            title: comment.post.title,
+          posts: {
+            title: comment.posts.title,
             url: postUrl,
           },
         };

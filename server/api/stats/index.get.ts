@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取已发布的文章数
-    const publishedPostsNum = await prisma.post.count({
+    const publishedPostsNum = await prisma.posts.count({
       where: {
         type: 0, // 文章
         status: 1, // 已发布
@@ -11,21 +11,21 @@ export default defineEventHandler(async event => {
     });
 
     // 获取已审核的评论数
-    const publishedCommentsNum = await prisma.comment.count({
+    const publishedCommentsNum = await prisma.comments.count({
       where: {
         status: 1, // 已审核
       },
     });
 
     // 获取分类数
-    const categoriesNum = await prisma.meta.count({
+    const categoriesNum = await prisma.metas.count({
       where: {
         type: "category",
       },
     });
 
     // 获取标签数
-    const tagsNum = await prisma.meta.count({
+    const tagsNum = await prisma.metas.count({
       where: {
         type: "tag",
       },

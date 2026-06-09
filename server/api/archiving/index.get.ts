@@ -3,17 +3,17 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取所有已发布的文章（type=0），包含分类信息
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         status: 1,
         type: 0,
       },
       include: {
-        postrelation: {
+        postrelations: {
             select: {
               cid: true,
               mid: true,
-              meta: {
+              metas: {
               select: {
                 slug: true,
               },
@@ -42,8 +42,8 @@ export default defineEventHandler(async event => {
       }
 
       // 获取第一个分类的 slug
-      const categorySlug = post.postrelation && post.postrelation.length > 0
-        ? post.postrelation[0].meta?.slug
+      const categorySlug = post.postrelations && post.postrelations.length > 0
+        ? post.postrelations[0].metas?.slug
         : null;
 
       acc[key].posts.push({

@@ -17,13 +17,13 @@ export default defineEventHandler(async event => {
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
     // 获取当前文章的标签
-    const currentPost = await prisma.post.findUnique({
+    const currentPost = await prisma.posts.findUnique({
       where: { cid: postId },
       select: {
         cid: true,
-        postrelation: {
+        postrelations: {
           where: {
-            meta: {
+            metas: {
               type: "tag",
             },
           },
@@ -42,7 +42,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取当前文章的所有标签 ID
-    const tagMids = currentPost.postrelation.map(r => r.mid);
+    const tagMids = currentPost.postrelations.map(r => r.mid);
 
     // 如果没有标签，返回空数组
     if (tagMids.length === 0) {
@@ -53,14 +53,14 @@ export default defineEventHandler(async event => {
     }
 
     // 查找具有相同标签的文章（排除当前文章）
-    const relatedPosts = await prisma.post.findMany({
+    const relatedPosts = await prisma.posts.findMany({
       where: {
         cid: {
           not: postId,
         },
         type: 0,
         status: 1,
-        postrelation: {
+        postrelations: {
           some: {
             mid: {
               in: tagMids,
@@ -80,11 +80,11 @@ export default defineEventHandler(async event => {
         covers: true,
         create_time: true,
         comment_num: true,
-        postrelation: {
+        postrelations: {
           select: {
             cid: true,
             mid: true,
-            meta: {
+            metas: {
               select: {
                 mid: true,
                 name: true,
@@ -99,8 +99,8 @@ export default defineEventHandler(async event => {
 
     // 计算每篇文章的相关性（相同标签数量）
     const postsWithRelevance = relatedPosts.map(post => {
-      const postTagMids = post.postrelation
-        .filter(r => r.meta.type === "tag")
+      const postTagMids = post.postrelations
+        .filter(r => r.metas.type === "tag")
         .map(r => r.mid);
       const commonTags = tagMids.filter(id => postTagMids.includes(id));
       return {
@@ -120,18 +120,18 @@ export default defineEventHandler(async event => {
     // 格式化返回数据
     const data = postsWithRelevance.slice(0, limit).map(({ post }) => {
       // 分离分类和标签
-      const categories = post.postrelation
-        .filter(r => r.meta.type === "category")
+      const categories = post.postrelations
+        .filter(r => r.metas.type === "category")
         .map(r => ({
-          name: r.meta.name,
-          slug: r.meta.slug,
+          name: r.metas.name,
+          slug: r.metas.slug,
         }));
 
-      const tags = post.postrelation
-        .filter(r => r.meta.type === "tag")
+      const tags = post.postrelations
+        .filter(r => r.metas.type === "tag")
         .map(r => ({
-          name: r.meta.name,
-          slug: r.meta.slug,
+          name: r.metas.name,
+          slug: r.metas.slug,
         }));
 
       let covers: { url: string; desc?: string }[] = [];

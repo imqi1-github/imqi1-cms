@@ -89,7 +89,7 @@
     "@nuxt/icon": "^2.2.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.9.2",
     "@vue/compiler-sfc": "^3.5.31",
     "autoprefixer": "^10.4.27",
     "cross-env": "^10.1.0",

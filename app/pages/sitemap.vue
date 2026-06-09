@@ -110,7 +110,7 @@ useHead({
             </li>
             <li>
               <NuxtLink
-                to="/changelog"
+                to="/changelogs"
                 class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 更新日志
               </NuxtLink>
@@ -139,7 +139,7 @@ useHead({
             </li>
             <li>
               <NuxtLink
-                to="/message"
+                to="/messages"
                 class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                 留言
               </NuxtLink>
@@ -216,9 +216,9 @@ useHead({
             <NuxtLink
               v-for="comment in recentComments"
               :key="comment.coid"
-              :to="comment.post ? `${comment.post.url}#comment-${comment.coid}` : '#'"
+              :to="comment.posts ? `${comment.posts.url}#comment-${comment.coid}` : '#'"
               class="block pl-4 border-l-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
-              :class="{ 'pointer-events-none opacity-50': !comment.post }">
+              :class="{ 'pointer-events-none opacity-50': !comment.posts }">
               <div class="mb-2">
                 <span class="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {{ comment.author }}
@@ -228,9 +228,9 @@ useHead({
 
               <div class="ml-4 space-y-2">
                 <p class="text-slate-700 dark:text-gray-300 text-sm mb-1">{{ comment.text }}</p>
-                <div v-if="comment.post" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div v-if="comment.posts" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   <Icon name="ri-article-line" class="size-4" />
-                  <span>{{ comment.post.title }}</span>
+                  <span>{{ comment.posts.title }}</span>
                   <Icon name="ri-external-link-line" class="size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>

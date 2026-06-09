@@ -29,7 +29,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 检查邮箱是否已被使用
-    const existingMail = await prisma.user.findUnique({
+    const existingMail = await prisma.users.findUnique({
       where: { mail },
     });
 
@@ -41,7 +41,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查用户名是否已被使用
-    const existingName = await prisma.user.findUnique({
+    const existingName = await prisma.users.findUnique({
       where: { name },
     });
 
@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await prisma.user.create({
+    const newUser = await prisma.users.create({
       data: {
         name,
         nickname: nickname || null,

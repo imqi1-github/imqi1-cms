@@ -21,9 +21,9 @@ export default defineEventHandler(async event => {
 
   // 如果提供了 categorySlug，则需要同时匹配分类
   if (categorySlug) {
-    whereCondition.postrelation = {
+    whereCondition.postrelations = {
       some: {
-        meta: {
+        metas: {
           slug: categorySlug,
           type: "category",
         },
@@ -31,7 +31,7 @@ export default defineEventHandler(async event => {
     };
   }
 
-  const post = await prisma.post.findFirst({
+  const post = await prisma.posts.findFirst({
     where: whereCondition,
     include: {
       user: {
@@ -42,11 +42,11 @@ export default defineEventHandler(async event => {
           avatar: true,
         },
       },
-      postrelation: {
+      postrelations: {
         select: {
           cid: true,
           mid: true,
-          meta: {
+          metas: {
             select: {
               mid: true,
               name: true,

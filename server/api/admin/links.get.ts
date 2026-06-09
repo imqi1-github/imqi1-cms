@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const links = await prisma.link.findMany({
+    const links = await prisma.links.findMany({
       include: {
         // 包含原友链信息（如果是修改请求）
         originalLink: {

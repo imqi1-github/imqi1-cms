@@ -25,7 +25,7 @@ export interface CosDeleteResult {
 // 获取COS配置
 async function getCosConfig(): Promise<CosConfig | null> {
   try {
-    const meta = await prisma.information.findMany({
+    const meta = await prisma.informations.findMany({
       where: {
         key: {
           in: ["cosSecretId", "cosSecretKey", "cosBucket", "cosRegion"],
@@ -77,7 +77,7 @@ export async function validateCosConfig(): Promise<{ valid: boolean; error?: str
 // 获取访问域名
 async function getCosDomain(): Promise<{ source: string; cdn: string }> {
   try {
-    const meta = await prisma.information.findMany({
+    const meta = await prisma.informations.findMany({
       where: {
         key: {
           in: ["cosSourceDomain", "cosCdnDomain"],

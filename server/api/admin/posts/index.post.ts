@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
   }
 
   // 创建文章
-  const post = await prisma.post.create({
+  const post = await prisma.posts.create({
     data: {
       title,
       desc,
@@ -68,14 +68,14 @@ export default defineEventHandler(async event => {
 
   // 如果没有提供 slug，使用 cid 作为 slug
   if (!slug) {
-    await prisma.post.update({
+    await prisma.posts.update({
       where: { cid: post.cid },
       data: { slug: String(post.cid) },
     });
   }
 
   // 重新获取完整的文章信息（包含关联数据）
-  const updatedPost = await prisma.post.findUnique({
+  const updatedPost = await prisma.posts.findUnique({
     where: { cid: post.cid },
     include: {
       user: {

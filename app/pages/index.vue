@@ -358,7 +358,7 @@
                 </div>
                 <!-- 无封面占位 -->
                 <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
-                  <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ categoryData.category.name[0] }}</span>
+                  <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
                 </div>
                 <!-- 文章信息 -->
                 <div class="p-3">
@@ -478,7 +478,7 @@
           >归档</NuxtLink
         >
         <NuxtLink
-          to="/changelog"
+          to="/changelogs"
           class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
           >更新日志</NuxtLink
         >
@@ -559,7 +559,7 @@
           <h2 id="index-changelogs-title" class="text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
           <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">站点最新更新</div>
         </div>
-        <NuxtLink to="/changelog" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+        <NuxtLink to="/changelogs" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
           查看更多
           <Icon name="ri:arrow-right-line" class="size-4" />
         </NuxtLink>

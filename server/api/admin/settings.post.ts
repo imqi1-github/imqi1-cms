@@ -90,7 +90,7 @@ export default defineEventHandler(async event => {
     ];
 
     for (const update of updates) {
-      await prisma.information.upsert({
+      await prisma.informations.upsert({
         where: { key: update.key },
         create: { key: update.key, value: update.value },
         update: { value: update.value },

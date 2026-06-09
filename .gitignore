@@ -38,3 +38,4 @@ public/uploads/*
 new-theme.sql
 .build-hash
 .build-hash-dir
+.system-initialized.lock

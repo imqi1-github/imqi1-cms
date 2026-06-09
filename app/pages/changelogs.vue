@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { data, pending, error } = await useFetch("/api/changelog", {
+const { data, pending, error } = await useFetch("/api/changelogs", {
   headers: {
     "x-ssr-internal-request": "true",
   },

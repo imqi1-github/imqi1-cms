@@ -50,7 +50,7 @@ export default defineEventHandler(async event => {
                      "unknown";
 
     // 获取评论间隔设置
-    const intervalMeta = await prisma.information.findUnique({
+    const intervalMeta = await prisma.informations.findUnique({
       where: { key: "commentInterval" },
     });
     const commentInterval = intervalMeta ? parseInt(intervalMeta.value) : 60;
@@ -60,7 +60,7 @@ export default defineEventHandler(async event => {
       const intervalTime = new Date(Date.now() - commentInterval * 1000);
 
       // 查找该IP在间隔时间内是否有评论
-      const recentComment = await prisma.comment.findFirst({
+      const recentComment = await prisma.comments.findFirst({
         where: {
           ip: clientIP,
           create_time: { gte: intervalTime },
@@ -116,7 +116,7 @@ export default defineEventHandler(async event => {
       auditResult = await auditText(content);
       commentStatus = mapAuditResultToStatus(auditResult.conclusionType);
     } else {
-      const meta = await prisma.information.findUnique({
+      const meta = await prisma.informations.findUnique({
         where: { key: "commentModeration" },
       });
       const needModeration = meta?.value === "true";
@@ -126,7 +126,7 @@ export default defineEventHandler(async event => {
     // 净化评论内容，防止 XSS 攻击
     const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG);
 
-    const comment = await prisma.comment.create({
+    const comment = await prisma.comments.create({
       data: {
         cid: parseInt(cid),
         content: sanitizedContent,
@@ -142,7 +142,7 @@ export default defineEventHandler(async event => {
 
     // 更新文章的评论计数（仅统计已发布的评论）
     if (commentStatus === 1) {
-      await prisma.post.update({
+      await prisma.posts.update({
         where: { cid: parseInt(cid) },
         data: {
           comment_num: {
@@ -165,7 +165,7 @@ export default defineEventHandler(async event => {
     // 如果是回复评论(parent_id不为null)
     if (parent_id) {
       // 获取父评论信息
-      const parentComment = await prisma.comment.findUnique({
+      const parentComment = await prisma.comments.findUnique({
         where: { coid: parseInt(parent_id as string) },
         select: { name: true, mail: true, content: true },
       });

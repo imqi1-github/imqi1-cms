@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 检查用户是否存在
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { uid: Number(id) },
     });
 
@@ -60,7 +60,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查邮箱是否被其他用户占用
-    const mailUser = await prisma.user.findUnique({
+    const mailUser = await prisma.users.findUnique({
       where: { mail },
     });
 
@@ -72,7 +72,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查用户名是否被其他用户占用
-    const nameUser = await prisma.user.findUnique({
+    const nameUser = await prisma.users.findUnique({
       where: { name },
     });
 
@@ -98,7 +98,7 @@ export default defineEventHandler(async event => {
     }
 
     // 更新用户
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: { uid: Number(id) },
       data: updateData,
       select: {

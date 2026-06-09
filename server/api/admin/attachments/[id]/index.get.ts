@@ -22,10 +22,10 @@ export default defineEventHandler(async event => {
       })
     }
 
-    const attachment = await prisma.attachment.findUnique({
+    const attachment = await prisma.attachments.findUnique({
       where: { aid: id },
       include: {
-        post: {
+        posts: {
           select: {
             cid: true,
             title: true,
@@ -77,7 +77,7 @@ export default defineEventHandler(async event => {
         height,
         format,
         createdAt: attachment.create_time,
-        post: attachment.post,
+        post: attachment.posts,
       },
     }
   } catch (error: any) {

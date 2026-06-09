@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.users.findMany();
     return users;
   } catch (error) {
     throw createError({

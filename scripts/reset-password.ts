@@ -44,7 +44,7 @@ async function main() {
     const username = await question("请输入要重置密码的用户名: ");
 
     // 查询用户是否存在
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { name: username },
       select: {
         uid: true,
@@ -89,7 +89,7 @@ async function main() {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // 更新数据库
-    await prisma.user.update({
+    await prisma.users.update({
       where: { uid: user.uid },
       data: {
         password: hashedPassword,

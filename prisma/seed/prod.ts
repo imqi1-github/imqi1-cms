@@ -83,7 +83,7 @@ async function main() {
   console.log("🌱 [生产环境] 开始生成种子数据...");
 
   // 检查是否已有管理员用户
-  const existingAdmin = await prisma.user.findFirst({
+  const existingAdmin = await prisma.users.findFirst({
     where: { role: 1 },
   });
 
@@ -96,7 +96,7 @@ async function main() {
     // 创建管理员用户
     console.log("👤 创建管理员用户...");
     const hashedPassword = await bcrypt.hash(ADMIN_USER.password, 10);
-    admin = await prisma.user.create({
+    admin = await prisma.users.create({
       data: {
         name: ADMIN_USER.name,
         nickname: "管理员",
@@ -115,7 +115,7 @@ async function main() {
   console.log("⚙️  配置网站元数据...");
   for (const [key, value] of Object.entries(SITE_META)) {
     if (value) {
-      await prisma.information.upsert({
+      await prisma.informations.upsert({
         where: { key },
         update: { value },
         create: { key, value },
@@ -139,7 +139,7 @@ async function main() {
 
   // 创建示例文章
   console.log("📝 创建示例文章...");
-  const post = await prisma.post.upsert({
+  const post = await prisma.posts.upsert({
     where: { slug_type: { slug: "welcome", type: 0 } },
     update: {},
     create: {
@@ -179,7 +179,7 @@ async function main() {
   console.log(`   ✅ 创建文章: ${post.title}`);
 
   // 关联文章与分类
-  await prisma.postrelation.upsert({
+  await prisma.postrelations.upsert({
     where: { cid_mid: { cid: post.cid, mid: category.mid } },
     update: {},
     create: {
@@ -190,7 +190,7 @@ async function main() {
 
   // 创建测试评论
   console.log("💬 创建测试评论...");
-  const comment = await prisma.comment.upsert({
+  const comment = await prisma.comments.upsert({
     where: { coid: -1 },
     update: {},
     create: {
@@ -208,7 +208,7 @@ async function main() {
 
   // 创建标签
   console.log("🏷️  创建标签...");
-  const tag = await prisma.information.create({
+  const tag = await prisma.informations.create({
     data: {
       key: "tags",
       value: JSON.stringify([
@@ -222,7 +222,7 @@ async function main() {
 
   // 创建留言页面
   console.log("📄 创建留言页面...");
-  const messagePage = await prisma.post.upsert({
+  const messagePage = await prisma.posts.upsert({
     where: { slug_type: { slug: "message", type: 1 } },
     update: {},
     create: {

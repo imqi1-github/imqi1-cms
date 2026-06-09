@@ -40,7 +40,7 @@ export default defineEventHandler(async event => {
     }
 
     // 查找原友链
-    const originalLink = await prisma.link.findUnique({
+    const originalLink = await prisma.links.findUnique({
       where: { id: body.originalLinkId },
     });
 
@@ -52,7 +52,7 @@ export default defineEventHandler(async event => {
     }
 
     // 创建修改请求（默认禁用，等待审核）
-    const modificationLink = await prisma.link.create({
+    const modificationLink = await prisma.links.create({
       data: {
         name: body.name.trim(),
         link: body.link.trim(),

@@ -13,7 +13,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取要删除的评论信息（用于更新文章计数）
-    const commentsToDelete = await prisma.comment.findMany({
+    const commentsToDelete = await prisma.comments.findMany({
       where: {
         coid: { in: ids },
       },
@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
     });
 
     // 删除评论
-    const result = await prisma.comment.deleteMany({
+    const result = await prisma.comments.deleteMany({
       where: {
         coid: { in: ids },
       },
@@ -40,7 +40,7 @@ export default defineEventHandler(async event => {
       // 批量更新文章评论计数
       await Promise.all(
         Object.entries(postCommentCounts).map(([cid, count]) =>
-          prisma.post.update({
+          prisma.posts.update({
             where: { cid: Number(cid) },
             data: { comment_num: { decrement: count } },
           })

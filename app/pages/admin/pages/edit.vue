@@ -469,7 +469,7 @@ onUnmounted(() => {
                   </div>
                   <p class="text-xs text-muted-foreground">
                     特殊页面的唯一标识符。如 <code class="bg-muted px-1 py-0.5 rounded">agreement</code> 为协议页，
-                    <code class="bg-muted px-1 py-0.5 rounded">message</code> 为留言页。留空则不生成特殊页面路由
+                    <code class="bg-muted px-1 py-0.5 rounded">messages</code> 为留言页。留空则不生成特殊页面路由
                   </p>
                 </div>
               </CardContent>

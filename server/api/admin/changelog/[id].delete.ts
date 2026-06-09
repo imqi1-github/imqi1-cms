@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   // 检查日志是否存在
-  const existing = await prisma.changelog.findUnique({
+  const existing = await prisma.changelogs.findUnique({
     where: { id },
   });
 
@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
   }
 
   // 删除日志
-  await prisma.changelog.delete({
+  await prisma.changelogs.delete({
     where: { id },
   });
 

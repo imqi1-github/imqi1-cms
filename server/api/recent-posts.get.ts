@@ -9,24 +9,24 @@ export default defineEventHandler(async event => {
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
     // 获取图片分类设置
-    const photoCategoryMeta = await prisma.information.findUnique({
+    const photoCategoryMeta = await prisma.informations.findUnique({
       where: { key: "photoCategorySlug" },
     });
     const photoCategorySlug = photoCategoryMeta?.value || "shot";
 
     // 获取图片分类的 mid
-    const photoCategory = await prisma.meta.findFirst({
+    const photoCategory = await prisma.metas.findFirst({
       where: { slug: photoCategorySlug },
       select: { mid: true },
     });
     const photoCategoryMid = photoCategory?.mid;
 
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         type: 0, // 0: 文章
         status: 1,
         ...(photoCategoryMid && {
-          postrelation: {
+          postrelations: {
             none: {
               mid: photoCategoryMid,
             },
@@ -45,11 +45,11 @@ export default defineEventHandler(async event => {
         covers: true,
         create_time: true,
         comment_num: true,
-        postrelation: {
+        postrelations: {
           select: {
             cid: true,
             mid: true,
-            meta: {
+            metas: {
               select: {
                 mid: true,
                 name: true,
@@ -64,18 +64,18 @@ export default defineEventHandler(async event => {
 
     const data = posts.map(post => {
       // 分离分类和标签
-      const categories = post.postrelation
-        .filter(r => r.meta.type === "category")
+      const categories = post.postrelations
+        .filter(r => r.metas.type === "category")
         .map(r => ({
-          name: r.meta.name,
-          slug: r.meta.slug,
+          name: r.metas.name,
+          slug: r.metas.slug,
         }));
 
-      const tags = post.postrelation
-        .filter(r => r.meta.type === "tag")
+      const tags = post.postrelations
+        .filter(r => r.metas.type === "tag")
         .map(r => ({
-          name: r.meta.name,
-          slug: r.meta.slug,
+          name: r.metas.name,
+          slug: r.metas.slug,
         }));
 
       let covers: { url: string; desc?: string }[] = [];

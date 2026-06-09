@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取所有已发布的页面
-    const pages = await prisma.post.findMany({
+    const pages = await prisma.posts.findMany({
       where: {
         type: 1, // 1: 页面
         status: 1, // 已发布
@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
     });
 
     // 获取所有分类
-    const categories = await prisma.meta.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category",
       },
@@ -32,11 +32,11 @@ export default defineEventHandler(async event => {
     // 获取每个分类最近5篇文章
     const categoriesWithPosts = await Promise.all(
       categories.map(async category => {
-        const posts = await prisma.post.findMany({
+        const posts = await prisma.posts.findMany({
           where: {
             type: 0, // 文章
             status: 1, // 已发布
-            postrelation: {
+            postrelations: {
               some: {
                 mid: category.mid,
               },

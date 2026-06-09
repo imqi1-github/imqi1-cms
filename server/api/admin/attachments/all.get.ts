@@ -31,16 +31,16 @@ export default defineEventHandler(async event => {
     }
 
     // 查询总数
-    const total = await prisma.attachment.count({ where })
+    const total = await prisma.attachments.count({ where })
 
     // 查询附件列表
-    const attachments = await prisma.attachment.findMany({
+    const attachments = await prisma.attachments.findMany({
       where,
       orderBy: { create_time: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
-        post: {
+        posts: {
           select: {
             cid: true,
             title: true,
@@ -59,7 +59,7 @@ export default defineEventHandler(async event => {
           url: a.url,
           size: '-', // 暂不支持文件大小
           createTime: a.create_time,
-          post: a.post,
+          post: a.posts,
         })),
         total,
         page,

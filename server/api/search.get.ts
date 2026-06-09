@@ -25,7 +25,7 @@ function sanitizeSearchKeyword(keyword: string): string {
 // 获取搜索设置
 async function getSearchSettings() {
   try {
-    const settings = await prisma.information.findMany({
+    const settings = await prisma.informations.findMany({
       where: {
         key: {
           in: ["searchCacheEnabled", "searchCacheExpire"],
@@ -90,14 +90,14 @@ async function formatSearchResults(posts: any[], query: string) {
   const cids = posts.map((p: any) => p.cid);
 
   // 批量获取分类信息
-  const categories = await prisma.postrelation.findMany({
+  const categories = await prisma.postrelations.findMany({
     where: {
       cid: { in: cids },
-      meta: { type: "category" },
+      metas: { type: "category" },
     },
     select: {
       cid: true,
-      meta: {
+      metas: {
         select: {
           name: true,
           slug: true,
@@ -111,7 +111,7 @@ async function formatSearchResults(posts: any[], query: string) {
   const categoryMap = new Map();
   categories.forEach((rel) => {
     if (!categoryMap.has(rel.cid)) {
-      categoryMap.set(rel.cid, rel.meta);
+      categoryMap.set(rel.cid, rel.metas);
     }
   });
 
@@ -182,7 +182,7 @@ export default defineEventHandler(async event => {
     }
 
     // ========== 数据库搜索（LIKE 搜索，获取所有结果）==========
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         AND: [
           { status: 1 },

@@ -32,7 +32,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 查找修改请求
-    const modification = await prisma.link.findUnique({
+    const modification = await prisma.links.findUnique({
       where: { id: Number(id) },
       include: {
         originalLink: true,
@@ -62,7 +62,7 @@ export default defineEventHandler(async event => {
 
     if (action === "approve") {
       // 批准修改：更新原友链，删除修改请求
-      await prisma.link.update({
+      await prisma.links.update({
         where: { id: modification.originalLinkId },
         data: {
           name: modification.name,
@@ -73,7 +73,7 @@ export default defineEventHandler(async event => {
       });
 
       // 删除修改请求
-      await prisma.link.delete({
+      await prisma.links.delete({
         where: { id: Number(id) },
       });
 
@@ -83,7 +83,7 @@ export default defineEventHandler(async event => {
       };
     } else {
       // 拒绝修改：更新状态并删除修改请求
-      await prisma.link.delete({
+      await prisma.links.delete({
         where: { id: Number(id) },
       });
 

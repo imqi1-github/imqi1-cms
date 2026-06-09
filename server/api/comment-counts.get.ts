@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
     setHeader(event, "Cache-Control", "no-cache, no-store, must-revalidate");
 
     // 批量获取文章的评论数
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         cid: { in: cids },
       },

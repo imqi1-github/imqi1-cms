@@ -2,7 +2,7 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
-    const meta = await prisma.information.findMany({
+    const meta = await prisma.informations.findMany({
       where: {
         key: {
           in: ["siteName", "siteUrl"],

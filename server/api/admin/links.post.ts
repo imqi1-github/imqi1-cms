@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
       avatar: body.avatar,
     });
 
-    const link = await prisma.link.create({
+    const link = await prisma.links.create({
       data: {
         name: body.name,
         link: body.link,

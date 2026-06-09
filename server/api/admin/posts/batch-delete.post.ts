@@ -13,28 +13,28 @@ export default defineEventHandler(async event => {
     }
 
     // 删除文章关联
-    await prisma.postrelation.deleteMany({
+    await prisma.postrelations.deleteMany({
       where: {
         cid: { in: ids },
       },
     });
 
     // 删除评论
-    await prisma.comment.deleteMany({
+    await prisma.comments.deleteMany({
       where: {
         cid: { in: ids },
       },
     });
 
     // 删除附件
-    await prisma.attachment.deleteMany({
+    await prisma.attachments.deleteMany({
       where: {
         cid: { in: ids },
       },
     });
 
     // 删除文章
-    const result = await prisma.post.deleteMany({
+    const result = await prisma.posts.deleteMany({
       where: {
         cid: { in: ids },
       },

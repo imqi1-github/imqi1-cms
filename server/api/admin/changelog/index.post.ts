@@ -27,7 +27,7 @@ export default defineEventHandler(async event => {
   validateChangelogData({ class: classType, desc });
 
   // 创建更新日志
-  const changelog = await prisma.changelog.create({
+  const changelog = await prisma.changelogs.create({
     data: {
       class: classType || "新增",
       desc: desc.trim(),

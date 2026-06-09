@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取评论信息（用于更新文章计数）
-    const comment = await prisma.comment.findUnique({
+    const comment = await prisma.comments.findUnique({
       where: { coid: Number(id) },
       select: { coid: true, cid: true, status: true },
     });
@@ -36,13 +36,13 @@ export default defineEventHandler(async event => {
     }
 
     // 删除评论
-    await prisma.comment.delete({
+    await prisma.comments.delete({
       where: { coid: Number(id) },
     });
 
     // 如果删除的是已发布的评论，减少文章评论计数
     if (comment.status === 1) {
-      await prisma.post.update({
+      await prisma.posts.update({
         where: { cid: comment.cid },
         data: { comment_num: { decrement: 1 } },
       });

@@ -10,20 +10,20 @@ export default defineEventHandler(async event => {
     setHeader(event, "Cache-Control", "public, max-age=600, s-maxage=600");
 
     // 获取图片分类设置，用于排除
-    const photoCategoryMeta = await prisma.information.findUnique({
+    const photoCategoryMeta = await prisma.informations.findUnique({
       where: { key: "photoCategorySlug" },
     });
     const photoCategorySlug = photoCategoryMeta?.value || "shot";
 
     // 获取图片分类的 mid
-    const photoCategory = await prisma.meta.findFirst({
+    const photoCategory = await prisma.metas.findFirst({
       where: { slug: photoCategorySlug },
       select: { mid: true },
     });
     const photoCategoryMid = photoCategory?.mid;
 
     // 获取 mid 最小的前3个分类（排除图片分类）
-    const categories = await prisma.meta.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category",
         ...(photoCategoryMid && { mid: { not: photoCategoryMid } }),
@@ -42,12 +42,12 @@ export default defineEventHandler(async event => {
 
     // 获取"最新发布的内容"中已显示的文章 cid
     const recentPostsLimit = 6;
-    const recentPosts = await prisma.post.findMany({
+    const recentPosts = await prisma.posts.findMany({
       where: {
         type: 0, // 0: 文章
         status: 1,
         ...(photoCategoryMid && {
-          postrelation: {
+          postrelations: {
             none: {
               mid: photoCategoryMid,
             },
@@ -65,12 +65,12 @@ export default defineEventHandler(async event => {
     const excludeCids = recentPosts.map(p => p.cid);
 
     // 优化：一次性获取所有分类的文章，而不是为每个分类单独查询
-    const allPosts = await prisma.post.findMany({
+    const allPosts = await prisma.posts.findMany({
       where: {
         type: 0, // 0: 文章
         status: 1,
         cid: { notIn: excludeCids },
-        postrelation: {
+        postrelations: {
           some: {
             mid: { in: categories.map(c => c.mid) },
           },
@@ -88,11 +88,11 @@ export default defineEventHandler(async event => {
         covers: true,
         create_time: true,
         comment_num: true,
-        postrelation: {
+        postrelations: {
           select: {
             cid: true,
             mid: true,
-            meta: {
+            metas: {
               select: {
                 mid: true,
                 name: true,
@@ -109,17 +109,17 @@ export default defineEventHandler(async event => {
     const result = categories.map(category => {
       // 过滤出属于当前分类的文章
       const categoryPosts = allPosts.filter(post =>
-        post.postrelation.some(r => r.mid === category.mid)
+        post.postrelations.some(r => r.mid === category.mid)
       ).slice(0, limit); // 每个分类只取指定数量
 
       // 处理文章数据
       const mappedPosts = categoryPosts.map(post => {
         // 只获取标签（不获取分类，因为已经在分类页面了）
-        const tags = post.postrelation
-          .filter(r => r.meta.type === "tag")
+        const tags = post.postrelations
+          .filter(r => r.metas.type === "tag")
           .map(r => ({
-            name: r.meta.name,
-            slug: r.meta.slug,
+            name: r.metas.name,
+            slug: r.metas.slug,
           }));
 
         let covers: { url: string; desc?: string }[] = [];

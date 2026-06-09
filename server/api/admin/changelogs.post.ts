@@ -19,7 +19,7 @@ export default defineEventHandler(async event => {
     // 验证字段长度
     validateChangelogData({ class: body.class, desc: body.desc });
 
-    const changelog = await prisma.changelog.create({
+    const changelog = await prisma.changelogs.create({
       data: {
         class: body.class,
         desc: body.desc,

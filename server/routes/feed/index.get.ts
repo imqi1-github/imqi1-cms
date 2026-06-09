@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 获取站点设置
-    const siteSettings = await prisma.information.findUnique({
+    const siteSettings = await prisma.informations.findUnique({
       where: { key: "siteSettings" },
     });
 
@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取最新文章（只获取已发布的，type=0 表示文章）
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         status: 1,
         type: 0,
@@ -42,9 +42,9 @@ export default defineEventHandler(async event => {
             name: true,
           },
         },
-        postrelation: {
+        postrelations: {
           select: {
-            meta: {
+            metas: {
               select: {
                 slug: true,
               },
@@ -71,7 +71,7 @@ export default defineEventHandler(async event => {
     const rssItems = posts
       .map(post => {
         // 获取第一个关联分类的 slug，如果没有则使用 'default'
-        const categorySlug = post.postrelation?.[0]?.meta?.slug || "default";
+        const categorySlug = post.postrelations?.[0]?.metas?.slug || "default";
         const postUrl = `${baseUrl}/content/${categorySlug}/${post.slug || post.cid}`;
         const author = post.user?.nickname || post.user?.name || "Admin";
         const pubDate = new Date(post.create_time).toUTCString();

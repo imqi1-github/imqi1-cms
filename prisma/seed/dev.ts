@@ -959,20 +959,20 @@ async function main() {
 
   // 清空现有数据
   console.log("🗑️  清空现有数据...");
-  await prisma.comment.deleteMany();
-  await prisma.postrelation.deleteMany();
-  await prisma.post.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.information.deleteMany();
-  await prisma.subscribe.deleteMany();
-  await prisma.changelog.deleteMany();
-  await prisma.link.deleteMany();
+  await prisma.comments.deleteMany();
+  await prisma.postrelations.deleteMany();
+  await prisma.posts.deleteMany();
+  await prisma.metas.deleteMany();
+  await prisma.users.deleteMany();
+  await prisma.informations.deleteMany();
+  await prisma.subscribes.deleteMany();
+  await prisma.changelogs.deleteMany();
+  await prisma.links.deleteMany();
 
   // 创建管理员用户
   console.log("👤 创建管理员用户...");
   const hashedPassword = await bcrypt.hash("123456", 10);
-  const admin = await prisma.user.create({
+  const admin = await prisma.users.create({
     data: {
       name: "admin",
       nickname: "管理员",
@@ -985,14 +985,14 @@ async function main() {
 
   // 创建分类和标签
   console.log("📁 创建分类和标签...");
-  await prisma.category.createMany({
+  await prisma.metas.createMany({
     data: [...categories, ...tags],
     skipDuplicates: true,
   });
   console.log(`   ✅ 创建了 ${categories.length} 个分类和 ${tags.length} 个标签`);
 
   // 获取分类和标签ID
-  const categoryRecords = await prisma.category.findMany();
+  const categoryRecords = await prisma.metas.findMany();
   const categoryIds = categoryRecords.filter(c => c.type === "category").map(c => c.mid);
   const tagIds = categoryRecords.filter(c => c.type === "tag").map(c => c.mid);
 
@@ -1037,7 +1037,7 @@ async function main() {
     const updateDaysAfter = Math.floor(Math.random() * 30); // 0-30天后
     const updateTime = new Date(createTime.getTime() + updateDaysAfter * 24 * 60 * 60 * 1000);
 
-    const post = await prisma.post.create({
+    const post = await prisma.posts.create({
       data: {
         title: postData.title,
         desc: postData.desc,
@@ -1056,7 +1056,7 @@ async function main() {
 
     // 为每篇文章分配分类
     for (let j = 0; j < numCategories; j++) {
-      await prisma.postrelation.create({
+      await prisma.postrelations.create({
         data: {
           cid: post.cid,
           mid: assignedCategories[j],
@@ -1066,7 +1066,7 @@ async function main() {
 
     // 为每篇文章分配标签
     for (let j = 0; j < numTags; j++) {
-      await prisma.postrelation.create({
+      await prisma.postrelations.create({
         data: {
           cid: post.cid,
           mid: assignedTags[j],
@@ -1086,7 +1086,7 @@ async function main() {
     const isReply = i > 5 && Math.random() > 0.6; // 40% 概率是回复
     const parentId = isReply ? Math.floor(Math.random() * i) + 1 : null;
 
-    await prisma.comment.create({
+    await prisma.comments.create({
       data: {
         cid: post.cid,
         name: `用户${i + 1}`,
@@ -1106,7 +1106,7 @@ async function main() {
   // 创建元数据
   console.log("⚙️  创建元数据...");
   for (const item of metaItems) {
-    await prisma.information.upsert({
+    await prisma.informations.upsert({
       where: { key: item.key },
       update: { value: item.value },
       create: item,
@@ -1122,7 +1122,7 @@ async function main() {
     { name: "Prisma", desc: "下一代 ORM", link: "https://www.prisma.io", avatar: "https://www.prisma.io/images/favicon.ico", enabled: true },
     { name: "Vite", desc: "下一代前端工具", link: "https://vitejs.dev", avatar: "https://vitejs.dev/logo.svg", enabled: true },
   ];
-  await prisma.link.createMany({
+  await prisma.links.createMany({
     data: links,
   });
   console.log(`   ✅ 创建了 ${links.length} 个友情链接`);
@@ -1133,7 +1133,7 @@ async function main() {
     { name: "Vue Blog", url: "https://blog.vuejs.org/feed.xml", avatar: "https://vuejs.org/logo.svg" },
     { name: "Nuxt Blog", url: "https://nuxt.com/blog/feed.xml", avatar: "https://nuxt.com/assets/design/test/logo-full.svg" },
   ];
-  await prisma.subscribe.createMany({
+  await prisma.subscribes.createMany({
     data: subscribes,
   });
   console.log(`   ✅ 创建了 ${subscribes.length} 个订阅`);
@@ -1145,7 +1145,7 @@ async function main() {
     { class: "improvement", desc: "优化文章列表加载速度" },
     { class: "fix", desc: "修复评论回复的显示问题" },
   ];
-  await prisma.changelog.createMany({
+  await prisma.changelogs.createMany({
     data: changelogs,
   });
   console.log(`   ✅ 创建了 ${changelogs.length} 条更新日志`);

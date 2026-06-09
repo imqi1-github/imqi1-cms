@@ -14,7 +14,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取评论数最多的文章作为热门文章
-    const popularPosts = await prisma.post.findMany({
+    const popularPosts = await prisma.posts.findMany({
       where: {
         type: 0, // 只查询文章
         comment_num: {

@@ -513,7 +513,7 @@ export default defineNuxtConfig({
           },
 
           // 更新日志：每30分钟重新生成
-          "/changelog": {
+          "/changelogs": {
             isr: 3600,
             ...(redisConfig
               ? {
@@ -571,7 +571,7 @@ export default defineNuxtConfig({
           },
 
           // 留言板：动态内容，每10分钟重新生成
-          "/message": {
+          "/messages": {
             isr: 600,
             ...(redisConfig
               ? {
@@ -619,7 +619,7 @@ export default defineNuxtConfig({
                   isr: 30,
                   cache: { maxAge: 30, base: "redis" },
                 },
-                "/changelog": {
+                "/changelogs": {
                   isr: 30, // 30分钟
                   cache: { maxAge: 30, base: "redis" },
                 },
@@ -643,7 +643,7 @@ export default defineNuxtConfig({
                   isr: 600,
                   cache: { maxAge: 600, base: "redis" },
                 },
-                "/message": {
+                "/messages": {
                   isr: 600,
                   cache: { maxAge: 600, base: "redis" },
                 },
@@ -660,13 +660,13 @@ export default defineNuxtConfig({
                 "/content/**": { isr: false },
                 "/tag/**": { isr: false },
                 "/subscribes": { isr: false },
-                "/changelog": { isr: false },
+                "/changelogs": { isr: false },
                 "/agreement": { isr: false },
                 "/sitemap": { isr: false },
                 "/sitemap.xml": { isr: false },
                 "/about": { isr: false },
                 "/links": { isr: false },
-                "/message": { isr: false },
+                "/messages": { isr: false },
                 "/search": { isr: false },
               }),
         }),

@@ -6,7 +6,7 @@ datasource db {
   provider = "mysql"
 }
 
-model attachment {
+model attachments {
   aid         Int      @id @default(autoincrement())
   cid         Int
   type        String
@@ -14,32 +14,32 @@ model attachment {
   url         String
   storage     String   @default("local")
   create_time DateTime @default(now())
-  post        post     @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Attachment_cid_fkey")
+  posts       posts    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Attachment_cid_fkey")
 
   @@index([cid], map: "Attachment_cid_fkey")
 }
 
-model meta {
-  mid          Int            @id @default(autoincrement())
-  name         String         @unique(map: "Meta_name_key")
-  slug         String?        @unique(map: "Meta_slug_key")
-  desc         String?
-  type         String         @default("category")
-  postrelation postrelation[]
+model metas {
+  mid            Int            @id @default(autoincrement())
+  name           String         @unique(map: "Metas_name_key")
+  slug           String?        @unique(map: "Metas_slug_key")
+  desc           String?
+  type           String         @default("category")
+  postrelations  postrelations[]
 
-  @@index([mid, type], map: "Meta_mid_type_idx")
+  @@index([mid, type], map: "Metas_mid_type_idx")
 }
 
-model changelog {
+model changelogs {
   id          Int      @id @default(autoincrement())
   class       String
   desc        String   @db.Text
   create_time DateTime @default(now())
 
-  @@index([create_time], map: "Changelog_create_time_idx")
+  @@index([create_time], map: "Changelogs_create_time_idx")
 }
 
-model comment {
+model comments {
   coid        Int      @id @default(autoincrement())
   cid         Int
   name        String   @db.VarChar(255)
@@ -51,12 +51,12 @@ model comment {
   parent_id   Int?
   agent       String?  @db.VarChar(500)
   ip          String?  @db.VarChar(45)
-  post        post     @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comment_cid_fkey")
+  posts       posts    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comments_cid_fkey")
 
-  @@index([cid], map: "Comment_cid_fkey")
+  @@index([cid], map: "Comments_cid_fkey")
 }
 
-model link {
+model links {
   id      Int     @id @default(autoincrement())
   name    String
   desc    String?
@@ -70,54 +70,54 @@ model link {
   modificationStatus String? @default("pending")  // 修改状态: pending/approved/rejected
 
   // 关联原友链
-  originalLink      link?   @relation("LinkModifications", fields: [originalLinkId], references: [id])
-  modifications     link[]  @relation("LinkModifications")
+  originalLink      links?   @relation("LinkModifications", fields: [originalLinkId], references: [id])
+  modifications     links[]  @relation("LinkModifications")
 }
 
-model information {
+model informations {
   id    Int    @id @default(autoincrement())
-  key   String @unique(map: "Information_key_key")
+  key   String @unique(map: "Informations_key_key")
   value String
 }
 
-model post {
-  cid          Int            @id @default(autoincrement())
-  title        String         @db.VarChar(255)
-  slug         String?        @db.VarChar(255)
-  desc         String?        @db.Text
-  content      String?        @db.LongText
-  create_time  DateTime       @default(now())
-  update_time  DateTime
-  status       Int            @default(1)
-  comment_num  Int            @default(0)
-  many_covers  Boolean        @default(false)
-  covers       String?        @db.Text
-  show_toc     Boolean        @default(false)
-  tags         String?        @db.VarChar(500)
-  type         Int            @default(0)
-  uid          Int            @default(1)
-  attachment   attachment[]
-  comment      comment[]
-  user         user           @relation(fields: [uid], references: [uid], map: "Post_uid_fkey")
-  postrelation postrelation[]
+model posts {
+  cid           Int            @id @default(autoincrement())
+  title         String         @db.VarChar(255)
+  slug          String?        @db.VarChar(255)
+  desc          String?        @db.Text
+  content       String?        @db.LongText
+  create_time   DateTime       @default(now())
+  update_time   DateTime
+  status        Int            @default(1)
+  comment_num   Int            @default(0)
+  many_covers   Boolean        @default(false)
+  covers        String?        @db.Text
+  show_toc      Boolean        @default(false)
+  tags          String?        @db.VarChar(500)
+  type          Int            @default(0)
+  uid           Int            @default(1)
+  attachments   attachments[]
+  comments      comments[]
+  user          users           @relation(fields: [uid], references: [uid], map: "Posts_uid_fkey")
+  postrelations postrelations[]
 
-  @@unique([slug, type], map: "Post_slug_type_key")
-  @@index([status, type, create_time], map: "Post_status_type_create_time_idx")
-  @@index([uid], map: "Post_uid_fkey")
+  @@unique([slug, type], map: "Posts_slug_type_key")
+  @@index([status, type, create_time], map: "Posts_status_type_create_time_idx")
+  @@index([uid], map: "Posts_uid_fkey")
 }
 
-model postrelation {
+model postrelations {
   cid   Int
   mid   Int
-  post  post  @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
-  meta meta @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
+  posts posts @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
+  metas metas @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
 
-  @@id([cid, mid])
+  @@id([mid, cid])
   @@index([mid, cid], map: "PostRelation_mid_cid_idx")
   @@index([cid], map: "PostRelation_cid_fkey")
 }
 
-model session {
+model sessions {
   id        String   @id
   userId    Int
   authCode  String
@@ -125,20 +125,20 @@ model session {
   createdAt DateTime @default(now())
   data      String?
 
-  @@index([expires], map: "Session_expires_idx")
-  @@index([userId], map: "Session_userId_idx")
+  @@index([expires], map: "Sessions_expires_idx")
+  @@index([userId], map: "Sessions_userId_idx")
 }
 
-model subscribe {
+model subscribes {
   id            Int             @id @default(autoincrement())
   url           String
   name          String
   avatar        String?
   lastUpdated   DateTime?
-  subscribepost subscribepost[]
+  subscribeposts subscribeposts[]
 }
 
-model subscribepost {
+model subscribeposts {
   id          Int       @id @default(autoincrement())
   subscribeId Int
   title       String    @db.VarChar(500)
@@ -148,20 +148,20 @@ model subscribepost {
   author      String?   @db.VarChar(255)
   pubDate     DateTime?
   create_time DateTime  @default(now())
-  subscribe   subscribe @relation(fields: [subscribeId], references: [id], onDelete: Cascade, map: "SubscribePost_subscribeId_fkey")
+  subscribe   subscribes @relation(fields: [subscribeId], references: [id], onDelete: Cascade, map: "SubscribePost_subscribeId_fkey")
 
   @@index([subscribeId], map: "SubscribePost_subscribeId_fkey")
 }
 
-model user {
+model users {
   uid       Int      @id @default(autoincrement())
-  name      String   @unique(map: "User_name_key")
+  name      String   @unique(map: "Users_name_key")
   nickname  String?
   avatar    String?
-  mail      String   @unique(map: "User_mail_key")
+  mail      String   @unique(map: "Users_mail_key")
   password  String
   create    DateTime @default(now())
   auth_code String?
   role      Int      @default(0)
-  post      post[]
+  posts     posts[]
 }

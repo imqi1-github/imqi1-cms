@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    await prisma.changelog.delete({
+    await prisma.changelogs.delete({
       where: { id: Number(id) },
     });
     return { success: true };

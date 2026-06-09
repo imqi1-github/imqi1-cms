@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         type: 0, // 0: 文章，排除页面（type=1）
       },

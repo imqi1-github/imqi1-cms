@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const link = await prisma.link.findUnique({
+    const link = await prisma.links.findUnique({
       where: { id: Number(id) },
     });
 
@@ -32,7 +32,7 @@ export default defineEventHandler(async event => {
       });
     }
 
-    const updated = await prisma.link.update({
+    const updated = await prisma.links.update({
       where: { id: Number(id) },
       data: { enabled: !link.enabled },
     });

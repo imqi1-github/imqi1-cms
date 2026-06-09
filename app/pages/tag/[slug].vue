@@ -47,7 +47,7 @@ const skeletonCount = computed(() => {
 });
 
 // 监听 pending，控制骨架屏显示
-watch(pending, (isLoading) => {
+watch(pending, isLoading => {
   if (skeletonTimer) {
     clearTimeout(skeletonTimer);
     skeletonTimer = null;
@@ -123,7 +123,7 @@ watch(pending, (newVal, oldVal) => {
     // 设置页面标题供导航栏使用
     if (tag.value?.name) {
       const { setPageTitle } = usePageTitle();
-      setPageTitle(`#${tag.value.name}`, "ri:hashtag");
+      setPageTitle(`# ${tag.value.name}`, "ri:hashtag");
     }
 
     // 强制触发渐入动画
@@ -200,7 +200,7 @@ watch(
   newTag => {
     if (newTag?.name) {
       const { setPageTitle } = usePageTitle();
-      setPageTitle(`#${newTag.name}`, "ri:hashtag");
+      setPageTitle(`# ${newTag.name}`, "ri:hashtag");
     }
   },
   { immediate: true },
@@ -211,7 +211,7 @@ useHead(() => ({
   title: (() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
     if (isNotFound.value) return `标签不存在 - ${siteName.value}`;
-    return `${tag.value?.name} - ${siteName.value}`;
+    return `标签 ${tag.value?.name} - ${siteName.value}`;
   })(),
   meta: tag.value
     ? [
@@ -297,15 +297,12 @@ onMounted(() => {
           <div
             v-for="post in posts"
             :key="post.cid"
-            :class="[
-              'flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
-              post.covers.length > 0 ? 'h-[280px] overflow-hidden' : '',
-            ]">
+            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow">
             <!-- 封面 -->
             <NuxtLink
               v-if="post.covers.length > 0"
               :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
-              class="relative h-[280px] max-md:h-[200px] overflow-hidden rounded-t-[15px]">
+              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px]">
               <img
                 :src="post.covers[0].url"
                 :alt="post.title"
@@ -313,8 +310,15 @@ onMounted(() => {
                 loading="lazy" />
             </NuxtLink>
 
+            <!-- 无封面占位 -->
+            <div
+              v-else
+              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+              <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ post.title[0] }}</span>
+            </div>
+
             <!-- 文章信息 -->
-            <div :class="['px-5 pb-2 pt-1', post.covers.length > 0 ? 'mt-auto' : '']">
+            <div class="px-5 pb-2 pt-1 mt-auto">
               <NuxtLink
                 :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
                 class="text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
@@ -350,9 +354,10 @@ onMounted(() => {
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="flex flex-col h-[280px] overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
+            class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
-            <div class="h-[280px] max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
+            <div
+              class="h-50 max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
 
             <!-- 文章信息骨架 -->
             <div class="px-5 pb-2 pt-1 mt-auto">
@@ -373,7 +378,11 @@ onMounted(() => {
         </div>
 
         <!-- 空状态 -->
-        <div v-else-if="posts.length === 0 && !pending" class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
+        <div
+          v-else-if="posts.length === 0 && !pending"
+          class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          暂无文章
+        </div>
       </template>
 
       <!-- 分页 -->
@@ -429,5 +438,4 @@ onMounted(() => {
 .ease-out {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 </style>

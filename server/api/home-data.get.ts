@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
 
     // ========== 优化：先查询一次图片分类信息，后续复用 ==========
     // 1. 获取站点信息和图片分类slug（一次查询）
-    const siteInfoList = await prisma.information.findMany();
+    const siteInfoList = await prisma.informations.findMany();
     const infoMap = siteInfoList.reduce((acc, item) => {
       acc[item.key] = item.value;
       return acc;
@@ -31,7 +31,7 @@ export default defineEventHandler(async event => {
     const photoCategorySlug = infoMap["photoCategorySlug"] || "shot";
 
     // 2. 获取图片分类的 mid（一次查询）
-    const photoCategory = await prisma.meta.findFirst({
+    const photoCategory = await prisma.metas.findFirst({
       where: { slug: photoCategorySlug },
       select: { mid: true },
     });
@@ -47,12 +47,12 @@ export default defineEventHandler(async event => {
       changelogsData,
     ] = await Promise.all([
       // 1. 获取分类信息（前4个）
-      prisma.meta.findMany({
+      prisma.metas.findMany({
         where: { type: "category" },
         take: 4,
         include: {
           _count: {
-            select: { postrelation: true },
+            select: { postrelations: true },
           },
         },
         orderBy: { mid: "asc" },
@@ -62,17 +62,17 @@ export default defineEventHandler(async event => {
           name: cat.name,
           slug: cat.slug,
           desc: cat.desc,
-          postCount: cat._count.postrelation,
+          postCount: cat._count.postrelations,
         }))
       ),
 
       // 2. 获取最新6篇文章（排除图片分类）
-      prisma.post.findMany({
+      prisma.posts.findMany({
         where: {
           type: 0,
           status: 1,
           ...(photoCategoryMid && {
-            postrelation: {
+            postrelations: {
               none: { mid: photoCategoryMid },
             },
           }),
@@ -87,9 +87,9 @@ export default defineEventHandler(async event => {
           covers: true,
           create_time: true,
           comment_num: true,
-          postrelation: {
+          postrelations: {
             select: {
-              meta: {
+              metas: {
                 select: {
                   mid: true,
                   name: true,
@@ -101,13 +101,13 @@ export default defineEventHandler(async event => {
           },
         },
       }).then(posts => posts.map(post => {
-        const categories = post.postrelation
-          .filter(r => r.meta.type === "category")
-          .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
+        const categories = post.postrelations
+          .filter(r => r.metas.type === "category")
+          .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
-        const tags = post.postrelation
-          .filter(r => r.meta.type === "tag")
-          .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
+        const tags = post.postrelations
+          .filter(r => r.metas.type === "tag")
+          .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
         let covers: { url: string; desc?: string }[] = [];
         if (post.covers) {
@@ -134,12 +134,12 @@ export default defineEventHandler(async event => {
       // 3. 获取分类文章（3个分类，每个4篇，排除最新6篇中已展示的）
       (async () => {
         // 先获取最新6篇文章的cid（用于排除）
-        const recentPosts = await prisma.post.findMany({
+        const recentPosts = await prisma.posts.findMany({
           where: {
             type: 0,
             status: 1,
             ...(photoCategoryMid && {
-              postrelation: {
+              postrelations: {
                 none: { mid: photoCategoryMid },
               },
             }),
@@ -150,7 +150,7 @@ export default defineEventHandler(async event => {
         });
         const excludeCids = recentPosts.map(p => p.cid);
 
-        const categories = await prisma.meta.findMany({
+        const categories = await prisma.metas.findMany({
           where: {
             type: "category",
             ...(photoCategoryMid && { mid: { not: photoCategoryMid } }),
@@ -163,12 +163,12 @@ export default defineEventHandler(async event => {
         // 为每个分类独立获取最新的4篇文章（排除最新6篇）
         const result = await Promise.all(
           categories.map(async category => {
-            const posts = await prisma.post.findMany({
+            const posts = await prisma.posts.findMany({
               where: {
                 type: 0,
                 status: 1,
                 cid: { notIn: excludeCids }, // 排除最新6篇
-                postrelation: {
+                postrelations: {
                   some: { mid: category.mid },
                 },
               },
@@ -182,10 +182,10 @@ export default defineEventHandler(async event => {
                 covers: true,
                 create_time: true,
                 comment_num: true,
-                postrelation: {
+                postrelations: {
                   select: {
                     mid: true,
-                    meta: {
+                    metas: {
                       select: {
                         mid: true,
                         name: true,
@@ -201,9 +201,9 @@ export default defineEventHandler(async event => {
             if (posts.length === 0) return null;
 
             const mappedPosts = posts.map(post => {
-              const tags = post.postrelation
-                .filter(r => r.meta.type === "tag")
-                .map(r => ({ name: r.meta.name, slug: r.meta.slug }));
+              const tags = post.postrelations
+                .filter(r => r.metas.type === "tag")
+                .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
               let covers: { url: string; desc?: string }[] = [];
               if (post.covers) {
@@ -245,11 +245,11 @@ export default defineEventHandler(async event => {
       (async () => {
         if (!photoCategory) return [];
 
-        const posts = await prisma.post.findMany({
+        const posts = await prisma.posts.findMany({
           where: {
             type: 0,
             status: 1,
-            postrelation: {
+            postrelations: {
               some: { mid: photoCategory.mid },
             },
           },
@@ -260,9 +260,9 @@ export default defineEventHandler(async event => {
             title: true,
             slug: true,
             covers: true,
-            postrelation: {
+            postrelations: {
               select: {
-                meta: {
+                metas: {
                   select: {
                     name: true,
                     slug: true,
@@ -274,9 +274,9 @@ export default defineEventHandler(async event => {
         });
 
         return posts.map(post => {
-          const categories = post.postrelation.map(r => ({
-            name: r.meta.name,
-            slug: r.meta.slug,
+          const categories = post.postrelations.map(r => ({
+            name: r.metas.name,
+            slug: r.metas.slug,
           }));
 
           let covers: { url: string; desc?: string }[] = [];
@@ -308,7 +308,7 @@ export default defineEventHandler(async event => {
       getSubscribePosts().then(posts => posts.slice(0, 3)),
 
       // 6. 获取更新日志（4条）
-      prisma.changelog
+      prisma.changelogs
         .findMany({
           take: 4,
           orderBy: { create_time: "desc" },

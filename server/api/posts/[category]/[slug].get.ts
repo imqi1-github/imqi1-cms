@@ -20,14 +20,14 @@ export default defineEventHandler(async event => {
   }
 
   // 构建查询条件 - 必须同时匹配分类和文章
-  const post = await prisma.post.findFirst({
+  const post = await prisma.posts.findFirst({
     where: {
       slug,
       type: 0, // 0: 文章
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
-      postrelation: {
+      postrelations: {
         some: {
-          meta: {
+          metas: {
             slug: categorySlug,
             type: "category",
           },
@@ -43,11 +43,11 @@ export default defineEventHandler(async event => {
           avatar: true,
         },
       },
-      postrelation: {
+      postrelations: {
             select: {
               cid: true,
               mid: true,
-              meta: {
+              metas: {
             select: {
               mid: true,
               name: true,
@@ -67,14 +67,14 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 过滤 postrelation，只保留分类（type = "category"）
-  const categoryRelations = post.postrelation.filter(
-    relation => relation.meta.type === "category"
+  // 过滤 postrelations，只保留分类（type = "category"）
+  const categoryRelations = post.postrelations.filter(
+    relation => relation.metas.type === "category"
   );
 
   // 过滤出标签关系（type = "tag"）
-  const tagRelations = post.postrelation.filter(
-    relation => relation.meta.type === "tag"
+  const tagRelations = post.postrelations.filter(
+    relation => relation.metas.type === "tag"
   );
 
   // 解析封面 - 支持 JSON 数组或换行分隔格式
@@ -103,8 +103,8 @@ export default defineEventHandler(async event => {
 
   // 从 tagRelations 构建标签信息
   const tags = tagRelations.map(relation => ({
-    name: relation.meta.name,
-    slug: relation.meta.slug,
+    name: relation.metas.name,
+    slug: relation.metas.slug,
   }));
 
   // 在服务端渲染 Markdown 内容
@@ -114,7 +114,7 @@ export default defineEventHandler(async event => {
     success: true,
     data: {
       ...post,
-      postrelation: categoryRelations, // 只返回分类关系
+      postrelations: categoryRelations, // 只返回分类关系
       covers,
       tags,
       parsedCovers: covers,

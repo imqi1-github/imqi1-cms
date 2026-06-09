@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
   validatePostData({ title, slug, tags });
 
   // 检查文章是否存在
-  const existing = await prisma.post.findUnique({
+  const existing = await prisma.posts.findUnique({
     where: { cid },
   });
 
@@ -78,7 +78,7 @@ export default defineEventHandler(async event => {
   // 处理 slug：只有当提供了新的 slug 且与当前不同时才更新
   if (slug !== undefined && slug !== null && slug !== existing.slug) {
     // 检查新 slug 是否已被其他文章使用（同一 type 下唯一）
-    const slugExists = await prisma.post.findFirst({
+    const slugExists = await prisma.posts.findFirst({
       where: {
         slug,
         type: existing.type, // 使用当前文章的 type
@@ -100,13 +100,13 @@ export default defineEventHandler(async event => {
   }
 
   // 更新文章
-  await prisma.post.update({
+  await prisma.posts.update({
     where: { cid },
     data: updateData,
   });
 
   // 重新获取完整的文章信息（包含关联数据）
-  const post = await prisma.post.findUnique({
+  const post = await prisma.posts.findUnique({
     where: { cid },
     include: {
       user: {

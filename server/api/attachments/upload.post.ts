@@ -110,7 +110,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查文章是否存在
-    const post = await prisma.post.findUnique({
+    const post = await prisma.posts.findUnique({
       where: { cid },
     });
 
@@ -173,7 +173,7 @@ export default defineEventHandler(async event => {
     const fileName = generateFileName(file.name);
 
     // 获取上传位置配置
-    const uploadLocationMeta = await prisma.information.findUnique({
+    const uploadLocationMeta = await prisma.informations.findUnique({
       where: { key: "uploadLocation" },
     });
     const uploadLocation = uploadLocationMeta?.value || "local";
@@ -183,7 +183,7 @@ export default defineEventHandler(async event => {
     // 根据配置选择上传方式
     if (uploadLocation === "upyun") {
       // 获取图片处理配置
-      const imageProcessMeta = await prisma.information.findMany({
+      const imageProcessMeta = await prisma.informations.findMany({
         where: {
           key: {
             in: ["upyunImageProcess", "upyunThumbnailVersion", "upyunOutputMode"],
@@ -221,7 +221,7 @@ export default defineEventHandler(async event => {
       // 腾讯云COS上传
 
       // 获取图片后缀配置
-      const imageSuffixMeta = await prisma.information.findUnique({
+      const imageSuffixMeta = await prisma.informations.findUnique({
         where: { key: "cosImageSuffix" },
       });
       const imageSuffix = imageSuffixMeta?.value || undefined;
@@ -258,7 +258,7 @@ export default defineEventHandler(async event => {
     });
 
     // 保存到数据库
-    const attachment = await prisma.attachment.create({
+    const attachment = await prisma.attachments.create({
       data: {
         cid,
         type: category,

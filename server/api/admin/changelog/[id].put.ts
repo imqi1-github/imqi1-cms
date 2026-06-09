@@ -36,7 +36,7 @@ export default defineEventHandler(async event => {
   validateChangelogData({ class: classType, desc });
 
   // 检查日志是否存在
-  const existing = await prisma.changelog.findUnique({
+  const existing = await prisma.changelogs.findUnique({
     where: { id },
   });
 
@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
   }
 
   // 更新日志
-  const changelog = await prisma.changelog.update({
+  const changelog = await prisma.changelogs.update({
     where: { id },
     data: {
       class: classType || "新增",

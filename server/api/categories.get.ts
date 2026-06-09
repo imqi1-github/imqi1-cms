@@ -8,14 +8,14 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
     const limit = Number(query.limit) || 4;
 
-    const categories = await prisma.meta.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category"
       },
       take: limit,
       include: {
         _count: {
-          select: { postrelation: true },
+          select: { postrelations: true },
         },
       },
       orderBy: {
@@ -30,7 +30,7 @@ export default defineEventHandler(async event => {
         name: cat.name,
         slug: cat.slug,
         desc: cat.desc,
-        postCount: cat._count.postrelation,
+        postCount: cat._count.postrelations,
       })),
     };
   } catch (error) {

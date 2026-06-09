@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    await prisma.post.delete({
+    await prisma.posts.delete({
       where: { cid: Number(cid) },
     });
     return { success: true };

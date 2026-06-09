@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
       avatar: body.avatar,
     });
 
-    const subscribe = await prisma.subscribe.create({
+    const subscribe = await prisma.subscribes.create({
       data: {
         name: body.name,
         url: body.url,

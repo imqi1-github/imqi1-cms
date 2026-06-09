@@ -55,7 +55,7 @@ const post = computed(() => data.value?.data);
 // 判断文章是否存在
 const isNotFound = computed(() => !pending.value && (!post.value || error.value));
 
-const categories = computed(() => post.value?.postrelation?.map(r => r.meta) || []);
+const categories = computed(() => post.value?.postrelations?.map(r => r.metas) || []);
 const covers = computed(() => post.value?.parsedCovers || []);
 const tags = computed(() => post.value?.tags || []);
 

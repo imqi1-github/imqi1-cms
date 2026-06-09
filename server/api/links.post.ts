@@ -89,7 +89,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取后台设置
-    const settings = await prisma.information.findMany({
+    const settings = await prisma.informations.findMany({
       where: {
         key: { in: ['linkAutoApprove', 'siteUrl'] }
       }
@@ -129,7 +129,7 @@ export default defineEventHandler(async event => {
     }
 
     // 创建友链
-    const link = await prisma.link.create({
+    const link = await prisma.links.create({
       data: {
         name: body.name.trim(),
         link: body.link.trim(),

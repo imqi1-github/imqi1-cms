@@ -36,10 +36,10 @@ export default defineEventHandler(async event => {
     }
 
     // 获取附件信息
-    const attachment = await prisma.attachment.findUnique({
+    const attachment = await prisma.attachments.findUnique({
       where: { aid: id },
       include: {
-        post: {
+        posts: {
           select: {
             uid: true,
           },
@@ -55,7 +55,7 @@ export default defineEventHandler(async event => {
     }
 
     // 验证附件所有权：只有文章作者才能删除附件
-    if (attachment.post.uid !== user.uid) {
+    if (attachment.posts.uid !== user.uid) {
       throw createError({
         statusCode: 403,
         message: "无权删除此附件",
@@ -88,7 +88,7 @@ export default defineEventHandler(async event => {
     }
 
     // 删除数据库记录
-    await prisma.attachment.delete({
+    await prisma.attachments.delete({
       where: { aid: id },
     });
 

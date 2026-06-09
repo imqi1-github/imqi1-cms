@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
   const skip = (page - 1) * pageSize;
 
   // 获取分类信息
-  const category = await prisma.meta.findUnique({
+  const category = await prisma.metas.findUnique({
     where: { slug: categorySlug },
     select: {
       mid: true,
@@ -34,13 +34,13 @@ export default defineEventHandler(async event => {
   }
 
   // 获取该分类下的文章总数
-  const total = await prisma.postrelation.count({
+  const total = await prisma.postrelations.count({
     where: {
-      meta: {
+      metas: {
         slug: categorySlug,
         type: "category",
       },
-      post: {
+      posts: {
         type: 0, // 0: 文章
         status: 1, // 只统计已发布的文章
       },
@@ -48,19 +48,19 @@ export default defineEventHandler(async event => {
   });
 
   // 获取该分类下的文章列表
-  const relations = await prisma.postrelation.findMany({
+  const relations = await prisma.postrelations.findMany({
     where: {
-      meta: {
+      metas: {
         slug: categorySlug,
         type: "category",
       },
-      post: {
+      posts: {
         type: 0, // 0: 文章
         status: 1,
       },
     },
     include: {
-      post: {
+      posts: {
         include: {
           user: {
             select: {
@@ -70,11 +70,11 @@ export default defineEventHandler(async event => {
               avatar: true,
             },
           },
-          postrelation: {
+          postrelations: {
             select: {
               cid: true,
               mid: true,
-              meta: {
+              metas: {
                 select: {
                   name: true,
                   slug: true,
@@ -87,7 +87,7 @@ export default defineEventHandler(async event => {
       },
     },
     orderBy: {
-      post: {
+      posts: {
         create_time: 'desc',
       },
     },
@@ -97,7 +97,7 @@ export default defineEventHandler(async event => {
 
   // 解析文章数据
   const posts = relations.map(relation => {
-    const post = relation.post;
+    const post = relation.posts;
     let covers = [];
 
     // 查找评论数量
@@ -126,10 +126,10 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // 从 postrelation 中获取标签（只取 type="tag" 的）
-    const tagNames = post.postrelation
-      ?.filter(r => r.meta.type === "tag")
-      .map(r => r.meta.name) || [];
+    // 从 postrelations 中获取标签（只取 type="tag" 的）
+    const tagNames = post.postrelations
+      ?.filter(r => r.metas.type === "tag")
+      .map(r => r.metas.name) || [];
 
     return {
       cid: post.cid,

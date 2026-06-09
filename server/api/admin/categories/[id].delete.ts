@@ -33,7 +33,7 @@ export default defineEventHandler(async event => {
   const categoryId = Number(id);
 
   // 检查分类总数，至少保留一个分类
-  const categoryCount = await prisma.meta.count({
+  const categoryCount = await prisma.metas.count({
     where: { type: "category" },
   });
 
@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取要删除的分类
-    const categoryToDelete = await prisma.meta.findUnique({
+    const categoryToDelete = await prisma.metas.findUnique({
       where: { mid: categoryId },
     });
 
@@ -58,7 +58,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取该分类下的所有文章关联
-    const postrelations = await prisma.postrelation.findMany({
+    const postrelations = await prisma.postrelations.findMany({
       where: { mid: categoryId },
       select: { cid: true },
     });
@@ -66,7 +66,7 @@ export default defineEventHandler(async event => {
     // 如果有关联文章，需要转移到其他分类
     if (postrelations.length > 0) {
       // 获取第一个可用的目标分类（不是要删除的分类）
-      const targetCategory = await prisma.meta.findFirst({
+      const targetCategory = await prisma.metas.findFirst({
         where: {
           type: "category",
           mid: { not: categoryId },
@@ -84,7 +84,7 @@ export default defineEventHandler(async event => {
       // 获取每个文章当前的所有分类
       for (const relation of postrelations) {
         // 检查该文章是否还有其他分类
-        const otherRelations = await prisma.postrelation.findMany({
+        const otherRelations = await prisma.postrelations.findMany({
           where: {
             cid: relation.cid,
             mid: { not: categoryId },
@@ -93,7 +93,7 @@ export default defineEventHandler(async event => {
 
         // 如果文章没有其他分类了，创建新的关联到目标分类
         if (otherRelations.length === 0) {
-          await prisma.postrelation.create({
+          await prisma.postrelations.create({
             data: {
               cid: relation.cid,
               mid: targetCategory.mid,
@@ -103,13 +103,13 @@ export default defineEventHandler(async event => {
       }
 
       // 删除原分类的所有关联关系
-      await prisma.postrelation.deleteMany({
+      await prisma.postrelations.deleteMany({
         where: { mid: categoryId },
       });
     }
 
     // 删除分类
-    await prisma.meta.delete({
+    await prisma.metas.delete({
       where: { mid: categoryId },
     });
 

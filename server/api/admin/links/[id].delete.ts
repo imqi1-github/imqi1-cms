@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    await prisma.link.delete({
+    await prisma.links.delete({
       where: { id: Number(id) },
     });
     return { success: true };

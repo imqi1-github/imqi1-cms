@@ -14,13 +14,13 @@ export default defineEventHandler(async event => {
 
   try {
     // 获取所有分类（type = 'category'）
-    const categories = await prisma.meta.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category",
       },
       include: {
         _count: {
-          select: { postrelation: true },
+          select: { postrelations: true },
         },
       },
       orderBy: {
@@ -33,7 +33,7 @@ export default defineEventHandler(async event => {
       name: category.name,
       slug: category.slug,
       desc: category.desc,
-      postCount: category._count.postrelation,
+      postCount: category._count.postrelations,
     }));
   } catch (error: any) {
     console.error("获取分类失败:", error);

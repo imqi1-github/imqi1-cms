@@ -2,7 +2,7 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
-    const tags = await prisma.meta.findMany({
+    const tags = await prisma.metas.findMany({
       where: {
         type: "tag",
       },

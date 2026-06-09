@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
     // 禁用缓存（每次都要随机，不能缓存）
     setHeader(event, "Cache-Control", "no-cache, no-store, must-revalidate");
 
-    const total = await prisma.post.count({
+    const total = await prisma.posts.count({
       where: {
         type: 0, // 0: 文章
         status: 1,
@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
 
     const skip = Math.floor(Math.random() * total);
 
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         type: 0, // 0: 文章
         status: 1,
@@ -29,11 +29,11 @@ export default defineEventHandler(async event => {
       skip,
       take: 1,
       include: {
-        postrelation: {
+        postrelations: {
           select: {
             cid: true,
             mid: true,
-            meta: {
+            metas: {
               select: {
                 mid: true,
                 name: true,
@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
       };
     }
 
-    const category = post.postrelation[0]?.meta;
+    const category = post.postrelations[0]?.metas;
 
     let covers: { url: string; desc?: string }[] = [];
     if (post.covers) {

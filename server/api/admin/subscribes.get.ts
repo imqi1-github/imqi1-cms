@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const subscribes = await prisma.subscribe.findMany();
+    const subscribes = await prisma.subscribes.findMany();
     return subscribes;
   } catch (error) {
     throw createError({

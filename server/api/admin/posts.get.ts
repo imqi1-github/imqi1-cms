@@ -25,7 +25,7 @@ export default defineEventHandler(async event => {
     };
 
     if (categoryId) {
-      where.postrelation = {
+      where.postrelations = {
         some: {
           mid: categoryId,
         },
@@ -35,7 +35,7 @@ export default defineEventHandler(async event => {
     if (tagId) {
       where.AND = where.AND || [];
       where.AND.push({
-        postrelation: {
+        postrelations: {
           some: {
             mid: tagId,
           },
@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
     }
 
     const [posts, total] = await Promise.all([
-      prisma.post.findMany({
+      prisma.posts.findMany({
         where,
         orderBy: { cid: "desc" },
         skip: (page - 1) * pageSize,
@@ -61,11 +61,11 @@ export default defineEventHandler(async event => {
               avatar: true,
             },
           },
-          postrelation: {
+          postrelations: {
             select: {
               cid: true,
               mid: true,
-              meta: {
+              metas: {
                 select: {
                   mid: true,
                   name: true,
@@ -77,7 +77,7 @@ export default defineEventHandler(async event => {
           },
         },
       }),
-      prisma.post.count({ where }),
+      prisma.posts.count({ where }),
     ]);
 
     return {

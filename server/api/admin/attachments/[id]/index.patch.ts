@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查附件是否存在
-    const existing = await prisma.attachment.findUnique({
+    const existing = await prisma.attachments.findUnique({
       where: { aid: id },
     })
 
@@ -42,7 +42,7 @@ export default defineEventHandler(async event => {
     })
 
     // 更新附件
-    const attachment = await prisma.attachment.update({
+    const attachment = await prisma.attachments.update({
       where: { aid: id },
       data: {
         title: body.name,

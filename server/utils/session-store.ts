@@ -156,7 +156,7 @@ export class FileSessionStore implements SessionStore {
 export class DatabaseSessionStore implements SessionStore {
   async get(sessionId: string): Promise<SessionData | null> {
     try {
-      const session = await prisma.session.findUnique({
+      const session = await prisma.sessions.findUnique({
         where: { id: sessionId },
       });
 
@@ -165,7 +165,7 @@ export class DatabaseSessionStore implements SessionStore {
       }
 
       if (session.expires < new Date()) {
-        await prisma.session.delete({ where: { id: sessionId } });
+        await prisma.sessions.delete({ where: { id: sessionId } });
         return null;
       }
 
@@ -180,7 +180,7 @@ export class DatabaseSessionStore implements SessionStore {
   }
 
   async set(sessionId: string, data: SessionData): Promise<void> {
-    await prisma.session.upsert({
+    await prisma.sessions.upsert({
       where: { id: sessionId },
       create: {
         id: sessionId,
@@ -198,20 +198,20 @@ export class DatabaseSessionStore implements SessionStore {
 
   async delete(sessionId: string): Promise<void> {
     try {
-      await prisma.session.delete({ where: { id: sessionId } });
+      await prisma.sessions.delete({ where: { id: sessionId } });
     } catch {
       // 忽略错误
     }
   }
 
   async clearUserSessions(userId: number): Promise<void> {
-    await prisma.session.deleteMany({
+    await prisma.sessions.deleteMany({
       where: { userId },
     });
   }
 
   async cleanup(): Promise<void> {
-    await prisma.session.deleteMany({
+    await prisma.sessions.deleteMany({
       where: {
         expires: { lt: new Date() },
       },
@@ -255,7 +255,7 @@ export async function getSessionStore(): Promise<SessionStore> {
 // 获取 Session 配置
 export async function getSessionConfig(): Promise<{ storeType: SessionStoreType }> {
   try {
-    const meta = await prisma.information.findUnique({
+    const meta = await prisma.informations.findUnique({
       where: { key: "sessionStoreType" },
     });
     const storeType = (meta?.value as SessionStoreType) || "file";

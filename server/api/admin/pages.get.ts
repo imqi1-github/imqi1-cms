@@ -27,7 +27,7 @@ export default defineEventHandler(async event => {
     }
 
     const [posts, total] = await Promise.all([
-      prisma.post.findMany({
+      prisma.posts.findMany({
         where,
         orderBy: { create_time: "desc" },
         skip: (page - 1) * pageSize,
@@ -42,18 +42,18 @@ export default defineEventHandler(async event => {
           },
         },
       }),
-      prisma.post.count({ where }),
+      prisma.posts.count({ where }),
     ]);
 
     // 获取每个页面的分类
     const pagesWithRelations = await Promise.all(
       posts.map(async (post: any) => {
-        const relations = await prisma.postrelation.findMany({
+        const relations = await prisma.postrelations.findMany({
           where: { cid: post.cid },
           select: {
             cid: true,
             mid: true,
-            meta: {
+            metas: {
               select: {
                 mid: true,
                 name: true,

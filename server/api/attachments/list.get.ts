@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查文章是否存在
-    const post = await prisma.post.findUnique({
+    const post = await prisma.posts.findUnique({
       where: { cid },
     })
 
@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
     }
 
     // 获取附件列表
-    const attachments = await prisma.attachment.findMany({
+    const attachments = await prisma.attachments.findMany({
       where: { cid },
       orderBy: { create_time: 'desc' },
     })

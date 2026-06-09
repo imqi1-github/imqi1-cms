@@ -22,7 +22,7 @@ export interface UploadResult {
 // 从数据库获取又拍云配置
 export async function getUpYunConfig(): Promise<UpYunConfig | null> {
   try {
-    const meta = await prisma.information.findMany({
+    const meta = await prisma.informations.findMany({
       where: {
         key: {
           in: ["upyunService", "upyunOperator", "upyunPassword", "upyunDomain"],

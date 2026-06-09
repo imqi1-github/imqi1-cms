@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
     const dbVersion = await prisma.$queryRaw`SELECT VERSION() as version`;
 
     // 获取附件统计
-    const attachmentCount = await prisma.attachment.count();
+    const attachmentCount = await prisma.attachments.count();
 
     // 获取系统运行时间（进程启动时间）
     const uptime = process.uptime();

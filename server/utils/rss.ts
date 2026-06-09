@@ -146,7 +146,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       if (!item.link) continue;
 
       try {
-        await prisma.subscribepost.upsert({
+        await prisma.subscribeposts.upsert({
           where: { link: item.link },
           create: {
             subscribeId,
@@ -167,7 +167,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
     }
 
     // 更新订阅源的最后更新时间
-    await prisma.subscribe.update({
+    await prisma.subscribes.update({
       where: { id: subscribeId },
       data: { lastUpdated: new Date() },
     });
@@ -183,7 +183,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
 // 更新所有订阅
 export async function updateAllSubscribes() {
   console.log('[订阅更新] 开始更新所有订阅');
-  const subscribes = await prisma.subscribe.findMany();
+  const subscribes = await prisma.subscribes.findMany();
   console.log(`[订阅更新] 找到 ${subscribes.length} 个订阅源`);
 
   const results = {
@@ -216,14 +216,14 @@ export async function updateAllSubscribes() {
 // 获取订阅文章列表（每人最多10篇，总共最多30篇）
 export async function getSubscribePosts() {
   // 获取所有有文章的订阅源
-  const subscribesWithPosts = await prisma.subscribe.findMany({
+  const subscribesWithPosts = await prisma.subscribes.findMany({
     where: {
-      subscribepost: {
+      subscribeposts: {
         some: {},
       },
     },
     include: {
-      subscribepost: {
+      subscribeposts: {
         orderBy: { pubDate: 'desc' },
         take: 10,
       },
@@ -246,7 +246,7 @@ export async function getSubscribePosts() {
   }> = [];
 
   for (const subscribe of subscribesWithPosts) {
-    for (const post of subscribe.subscribepost) {
+    for (const post of subscribe.subscribeposts) {
       allPosts.push({
         id: post.id,
         subscribeId: subscribe.id,

@@ -9,13 +9,13 @@ export default defineEventHandler(async event => {
     setHeader(event, "Cache-Control", "public, max-age=600, s-maxage=600");
 
     // 获取图片分类设置
-    const photoCategoryMeta = await prisma.information.findUnique({
+    const photoCategoryMeta = await prisma.informations.findUnique({
       where: { key: "photoCategorySlug" },
     });
     const photoCategorySlug = photoCategoryMeta?.value || "shot";
 
     // 获取图片分类的 mid
-    const photoCategory = await prisma.meta.findFirst({
+    const photoCategory = await prisma.metas.findFirst({
       where: { slug: photoCategorySlug },
       select: { mid: true },
     });
@@ -27,11 +27,11 @@ export default defineEventHandler(async event => {
       };
     }
 
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         type: 0, // 0: 文章
         status: 1,
-        postrelation: {
+        postrelations: {
           some: {
             mid: photoCategory.mid,
           },
@@ -42,11 +42,11 @@ export default defineEventHandler(async event => {
         create_time: "desc",
       },
       include: {
-        postrelation: {
+        postrelations: {
           select: {
             cid: true,
             mid: true,
-            meta: {
+            metas: {
               select: {
                 mid: true,
                 name: true,
@@ -59,9 +59,9 @@ export default defineEventHandler(async event => {
     });
 
     const data = posts.map(post => {
-      const categories = post.postrelation.map(r => ({
-        name: r.meta.name,
-        slug: r.meta.slug,
+      const categories = post.postrelations.map(r => ({
+        name: r.metas.name,
+        slug: r.metas.slug,
       }));
 
       let covers: { url: string; desc?: string }[] = [];

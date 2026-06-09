@@ -38,7 +38,7 @@ export default defineEventHandler(async event => {
       changelogsQuery.take = limit;
     }
 
-    const changelogs = await prisma.changelog.findMany(changelogsQuery);
+    const changelogs = await prisma.changelogs.findMany(changelogsQuery);
 
     // 渲染所有 Markdown 内容（简化版，仅支持基础格式）
     const changelogsHtml = changelogs.map(log => ({

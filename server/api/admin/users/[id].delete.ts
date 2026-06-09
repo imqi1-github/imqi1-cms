@@ -40,7 +40,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查系统中的用户总数
-    const userCount = await prisma.user.count();
+    const userCount = await prisma.users.count();
 
     // 如果只有一个用户，不允许删除
     if (userCount <= 1) {
@@ -51,7 +51,7 @@ export default defineEventHandler(async event => {
     }
 
     // 检查用户是否有文章
-    const postCount = await prisma.post.count({
+    const postCount = await prisma.posts.count({
       where: { uid: Number(id) },
     });
 
@@ -62,7 +62,7 @@ export default defineEventHandler(async event => {
       });
     }
 
-    await prisma.user.delete({
+    await prisma.users.delete({
       where: { uid: Number(id) },
     });
     return { success: true };

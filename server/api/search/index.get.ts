@@ -38,7 +38,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 搜索文章（type=0，已发布的）
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         status: 1,
         type: 0,
@@ -55,11 +55,11 @@ export default defineEventHandler(async event => {
             name: true,
           },
         },
-        postrelation: {
+        postrelations: {
             select: {
               cid: true,
               mid: true,
-              meta: {
+              metas: {
               select: {
                 slug: true,
                 name: true,
@@ -77,8 +77,8 @@ export default defineEventHandler(async event => {
     // 格式化结果
     const results = posts.map(post => {
       // 获取第一个分类
-      const category = post.postrelation && post.postrelation.length > 0
-        ? post.postrelation[0].meta
+      const category = post.postrelations && post.postrelations.length > 0
+        ? post.postrelations[0].metas
         : null;
 
       // 从内容中提取摘要（去掉 HTML 标签）

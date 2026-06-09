@@ -18,7 +18,7 @@ export default defineEventHandler(async event => {
     // IP 归属地缓存
     const ipLocationCache = new Map<string, { location: string; isp: string }>();
 
-    const comments = await prisma.comment.findMany({
+    const comments = await prisma.comments.findMany({
       where: {
         cid,
         status: 1,

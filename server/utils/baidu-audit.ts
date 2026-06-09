@@ -58,7 +58,7 @@ async function getAccessToken(apiKey: string, secretKey: string): Promise<string
 
 export async function getAuditConfig(): Promise<AuditConfig> {
   const keys = ["moderationApiType", "baiduApiKey", "baiduSecretKey", "baiduCheckAdmin"];
-  const meta = await prisma.information.findMany({
+  const meta = await prisma.informations.findMany({
     where: { key: { in: keys } },
   });
 

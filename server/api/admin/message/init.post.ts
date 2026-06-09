@@ -14,13 +14,13 @@ export default defineEventHandler(async event => {
 
   try {
     // 检查是否已存在留言板文章
-    const existingPost = await prisma.post.findFirst({
-      where: { slug: "message-board" },
+    const existingPost = await prisma.posts.findFirst({
+      where: { slug: "messages" },
     });
 
     if (existingPost) {
       // 更新 meta 表中的配置
-      await prisma.information.upsert({
+      await prisma.informations.upsert({
         where: { key: "messagePostId" },
         create: { key: "messagePostId", value: existingPost.cid.toString() },
         update: { value: existingPost.cid.toString() },
@@ -34,10 +34,10 @@ export default defineEventHandler(async event => {
     }
 
     // 创建新的留言板文章
-    const messagePost = await prisma.post.create({
+    const messagePost = await prisma.posts.create({
       data: {
         title: "留言板",
-        slug: "message-board",
+        slug: "messages",
         content: "",
         desc: "留言板 - 用于收集访客留言和建议",
         status: 1, // 发布状态
@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
     });
 
     // 在 meta 表中记录留言板文章 ID
-    await prisma.information.upsert({
+    await prisma.informations.upsert({
       where: { key: "messagePostId" },
       create: { key: "messagePostId", value: messagePost.cid.toString() },
       update: { value: messagePost.cid.toString() },

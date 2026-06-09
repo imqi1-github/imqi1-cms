@@ -35,7 +35,7 @@ function writeLog(level: string, message: string, data?: any) {
 
 // 获取邮件配置
 async function getMailConfig() {
-  const settings = await prisma.information.findMany({
+  const settings = await prisma.informations.findMany({
     where: {
       key: {
         in: [
@@ -287,7 +287,7 @@ export function getRecentLogs(limit = 50): Array<{
 
 // 获取站点信息
 async function getSiteInfo() {
-  const settings = await prisma.information.findMany({
+  const settings = await prisma.informations.findMany({
     where: {
       key: {
         in: ["siteName", "siteUrl"],
@@ -345,7 +345,7 @@ function createEmailTemplate(title: string, content: string): string {
 // 获取文章的完整 URL
 async function getPostUrl(cid: number, commentId?: number): Promise<string> {
   const siteInfo = await getSiteInfo();
-  const post = await prisma.post.findUnique({
+  const post = await prisma.posts.findUnique({
     where: { cid },
     select: { slug: true },
   });
@@ -353,17 +353,17 @@ async function getPostUrl(cid: number, commentId?: number): Promise<string> {
   let url: string;
   if (post?.slug) {
     // 优先使用 slug
-    const category = await prisma.postrelation.findFirst({
+    const category = await prisma.postrelations.findFirst({
       where: { cid },
       select: {
-        meta: {
+        metas: {
           select: {
             slug: true,
           },
         },
       },
     });
-    const categorySlug = category?.meta?.slug || "posts";
+    const categorySlug = category?.metas?.slug || "posts";
     url = `${siteInfo.url}/content/${categorySlug}/${post.slug}`;
   } else {
     url = `${siteInfo.url}/content/posts/${cid}`;
@@ -379,7 +379,7 @@ async function getPostUrl(cid: number, commentId?: number): Promise<string> {
 
 // 获取文章标题
 async function getPostTitle(cid: number): Promise<string> {
-  const post = await prisma.post.findUnique({
+  const post = await prisma.posts.findUnique({
     where: { cid },
     select: { title: true },
   });

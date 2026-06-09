@@ -15,7 +15,7 @@ export default defineEventHandler(async event => {
     }
 
     // 查询标签信息（从 category 表）
-    const tag = await prisma.meta.findFirst({
+    const tag = await prisma.metas.findFirst({
       where: {
         slug,
         type: "tag",
@@ -35,10 +35,10 @@ export default defineEventHandler(async event => {
     }
 
     // 查询该标签的文章总数（通过 postrelation 表）
-    const totalCount = await prisma.postrelation.count({
+    const totalCount = await prisma.postrelations.count({
       where: {
         mid: tag.mid,
-        post: {
+        posts: {
           status: 1,
           type: 0,
         },
@@ -48,16 +48,16 @@ export default defineEventHandler(async event => {
     const totalPages = Math.ceil(totalCount / pageSize);
 
     // 查询文章（通过 postrelation 表）
-    const postRelations = await prisma.postrelation.findMany({
+    const postRelations = await prisma.postrelations.findMany({
       where: {
         mid: tag.mid,
-        post: {
+        posts: {
           status: 1,
           type: 0,
         },
       },
       include: {
-        post: {
+        posts: {
           include: {
             user: {
               select: {
@@ -67,11 +67,11 @@ export default defineEventHandler(async event => {
                 avatar: true,
               },
             },
-            postrelation: {
+            postrelations: {
               select: {
                 cid: true,
                 mid: true,
-                meta: {
+                metas: {
                   select: {
                     slug: true,
                     name: true,
@@ -84,7 +84,7 @@ export default defineEventHandler(async event => {
         },
       },
       orderBy: {
-        post: {
+        posts: {
           create_time: "desc",
         },
       },
@@ -93,7 +93,7 @@ export default defineEventHandler(async event => {
     });
 
     // 提取文章数据
-    const posts = postRelations.map(relation => relation.post);
+    const posts = postRelations.map(relation => relation.posts);
 
     // 格式化文章数据
     const formattedPosts = posts.map(post => {
@@ -128,11 +128,11 @@ export default defineEventHandler(async event => {
       }
 
       // 获取分类信息（排除当前标签，只返回 type="category" 的）
-      const categoryRelation = post.postrelation?.find(
-        r => r.meta.type === "category"
+      const categoryRelation = post.postrelations?.find(
+        r => r.metas.type === "category"
       );
-      const categoryName = categoryRelation?.meta?.name || null;
-      const categorySlug = categoryRelation?.meta?.slug || null;
+      const categoryName = categoryRelation?.metas?.name || null;
+      const categorySlug = categoryRelation?.metas?.slug || null;
 
       return {
         cid: post.cid,

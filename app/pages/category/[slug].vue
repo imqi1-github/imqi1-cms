@@ -77,7 +77,7 @@ const skeletonCount = computed(() => {
 });
 
 // 监听 pending，控制骨架屏显示
-watch(pending, (isLoading) => {
+watch(pending, isLoading => {
   if (skeletonTimer) {
     clearTimeout(skeletonTimer);
     skeletonTimer = null;
@@ -249,7 +249,7 @@ useHead(() => ({
   title: (() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
     if (isNotFound.value) return `分类不存在 - ${siteName.value}`;
-    return `${category.value?.name} - ${siteName.value}`;
+    return `分类 ${category.value?.name} - ${siteName.value}`;
   })(),
   meta: category.value
     ? [
@@ -327,10 +327,12 @@ onMounted(() => {
             class="block mb-2.5 overflow-hidden relative rounded-lg bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm"
             :style="{
               animationDelay: `${(i - 1) * 80}ms`,
-              minHeight: getSkeletonHeight(i) + 'px'
+              minHeight: getSkeletonHeight(i) + 'px',
             }">
             <!-- 图片占位 -->
-            <div class="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse" :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
+            <div
+              class="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse"
+              :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
           </div>
         </div>
 
@@ -338,12 +340,17 @@ onMounted(() => {
         <div v-else-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
           <template v-for="post in posts" :key="post.cid">
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
-              <NuxtLink :to="`/content/${slug}/${post.slug}`" class="image-card rounded-lg overflow-hidden relative group block mb-2.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow">
+              <NuxtLink
+                :to="`/content/${slug}/${post.slug}`"
+                class="image-card rounded-lg overflow-hidden relative group block mb-2.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow">
                 <LivePhoto
                   :src="cover.url"
                   :alt="cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title"
                   class="w-full h-full object-cover" />
-                <div class="image-title text-xs p-3 text-center text-shadow-lg text-white w-full opacity-0 transition-opacity duration-200 absolute bottom-0 left-0">{{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}</div>
+                <div
+                  class="image-title text-xs p-3 text-center text-shadow-lg text-white w-full opacity-0 transition-opacity duration-200 absolute bottom-0 left-0">
+                  {{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}
+                </div>
               </NuxtLink>
             </template>
           </template>
@@ -370,12 +377,12 @@ onMounted(() => {
           <div
             v-for="post in posts"
             :key="post.cid"
-            :class="[
-              'flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow',
-              post.covers.length > 0 ? 'h-[280px] overflow-hidden' : '',
-            ]">
+            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow">
             <!-- 封面 -->
-            <NuxtLink v-if="post.covers.length > 0" :to="`/content/${slug}/${post.slug}`" class="relative h-[280px] max-md:h-[200px] overflow-hidden rounded-t-[15px]">
+            <NuxtLink
+              v-if="post.covers.length > 0"
+              :to="`/content/${slug}/${post.slug}`"
+              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px]">
               <img
                 :src="post.covers[0].url"
                 :alt="post.title"
@@ -383,8 +390,15 @@ onMounted(() => {
                 loading="lazy" />
             </NuxtLink>
 
+            <!-- 无封面占位 -->
+            <div
+              v-else
+              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+              <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ post.title[0] }}</span>
+            </div>
+
             <!-- 文章信息 -->
-            <div :class="['px-5 pb-2 pt-1', post.covers.length > 0 ? 'mt-auto' : '']">
+            <div class="px-5 pb-2 pt-1 mt-auto">
               <NuxtLink
                 :to="`/content/${slug}/${post.slug}`"
                 class="text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
@@ -424,9 +438,10 @@ onMounted(() => {
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="flex flex-col h-[280px] overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
+            class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
-            <div class="h-[280px] max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
+            <div
+              class="h-50 max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
 
             <!-- 文章信息骨架 -->
             <div class="px-5 pb-2 pt-1 mt-auto">
@@ -447,7 +462,11 @@ onMounted(() => {
         </div>
 
         <!-- 空状态 -->
-        <div v-else-if="posts.length === 0 && !pending" class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
+        <div
+          v-else-if="posts.length === 0 && !pending"
+          class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          暂无文章
+        </div>
       </template>
 
       <!-- 分页 -->

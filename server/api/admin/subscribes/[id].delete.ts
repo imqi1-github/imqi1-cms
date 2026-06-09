@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    await prisma.subscribe.delete({
+    await prisma.subscribes.delete({
       where: { id: Number(id) },
     });
     return { success: true };

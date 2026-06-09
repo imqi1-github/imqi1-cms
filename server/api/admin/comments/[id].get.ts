@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const comment = await prisma.comment.findUnique({
+    const comment = await prisma.comments.findUnique({
       where: { coid: Number(id) },
       select: {
         coid: true,

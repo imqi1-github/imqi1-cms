@@ -13,11 +13,11 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const comments = await prisma.comment.findMany({
+    const comments = await prisma.comments.findMany({
       take: 5,
       orderBy: { create_time: "desc" },
       include: {
-        post: {
+        posts: {
           select: {
             title: true,
             cid: true,

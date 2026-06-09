@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     // 从 meta 表获取留言板关联的文章 ID
-    const messagePostIdMeta = await prisma.information.findUnique({
+    const messagePostIdMeta = await prisma.informations.findUnique({
       where: { key: "messagePostId" },
     });
 
@@ -11,8 +11,8 @@ export default defineEventHandler(async event => {
     let messagePostId = messagePostIdMeta?.value ? parseInt(messagePostIdMeta.value) : null;
 
     if (!messagePostId) {
-      const messagePost = await prisma.post.findFirst({
-        where: { slug: "message" },
+      const messagePost = await prisma.posts.findFirst({
+        where: { slug: "messages" },
         select: { cid: true },
       });
       messagePostId = messagePost?.cid || null;

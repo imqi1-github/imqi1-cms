@@ -22,7 +22,7 @@ export default defineEventHandler(async event => {
     console.log("[sitemap] 最终 baseUrl:", baseUrl);
 
     // 获取所有已发布的文章
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
       where: {
         status: 1, // 1: 已发布
         type: 0, // 0: 文章
@@ -32,9 +32,9 @@ export default defineEventHandler(async event => {
         slug: true,
         type: true,
         update_time: true,
-        postrelation: {
+        postrelations: {
           select: {
-            meta: {
+            metas: {
               select: {
                 slug: true,
               },
@@ -52,7 +52,7 @@ export default defineEventHandler(async event => {
     );
 
     // 获取所有独立页面
-    const pages = await prisma.post.findMany({
+    const pages = await prisma.posts.findMany({
       where: {
         type: 1, // 1: 页面
         status: 1, // 1: 已发布
@@ -66,7 +66,7 @@ export default defineEventHandler(async event => {
     console.log("[sitemap] 查询到的页面数量:", pages.length);
 
     // 获取所有分类
-    const categories = await prisma.meta.findMany({
+    const categories = await prisma.metas.findMany({
       where: {
         type: "category", // 或者不设置，获取默认类型
       },
@@ -78,7 +78,7 @@ export default defineEventHandler(async event => {
     console.log("[sitemap] 查询到的分类数量:", categories.length);
 
     // 获取所有标签（tags 也存储在 category 表中，type="tag"）
-    const tags = await prisma.meta.findMany({
+    const tags = await prisma.metas.findMany({
       where: {
         type: "tag",
       },
@@ -115,7 +115,7 @@ export default defineEventHandler(async event => {
     // 留言页
     urls.push(
       `  <url>
-    <loc>${baseUrl}/message</loc>
+    <loc>${baseUrl}/messages</loc>
     <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -186,7 +186,7 @@ export default defineEventHandler(async event => {
     posts.forEach(post => {
       const lastmod = post.update_time ? new Date(post.update_time).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
       // 获取第一个关联分类的slug，如果没有则使用 'default'
-      const categorySlug = post.postrelation?.[0]?.meta?.slug || "default";
+      const categorySlug = post.postrelations?.[0]?.metas?.slug || "default";
       urls.push(
         `  <url>
     <loc>${baseUrl}/content/${categorySlug}/${post.slug}</loc>

@@ -2,7 +2,7 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
-    const links = await prisma.link.findMany({
+    const links = await prisma.links.findMany({
       where: {
         enabled: true,
         // 排除未审核的修改请求

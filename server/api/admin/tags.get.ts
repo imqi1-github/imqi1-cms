@@ -11,13 +11,13 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const tags = await prisma.meta.findMany({
+    const tags = await prisma.metas.findMany({
       where: {
         type: "tag",
       },
       include: {
         _count: {
-          select: { postrelation: true },
+          select: { postrelations: true },
         },
       },
       orderBy: {
@@ -27,7 +27,7 @@ export default defineEventHandler(async event => {
 
     return tags.map(tag => ({
       ...tag,
-      postCount: tag._count.postrelation,
+      postCount: tag._count.postrelations,
     }));
   } catch (error) {
     throw createError({
