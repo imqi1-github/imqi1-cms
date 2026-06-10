@@ -56,7 +56,7 @@ REDIS_DB_PROD="0"
 - 站点地图 `/sitemap`：1小时
 - 关于页 `/about`：10分钟
 - 友链页 `/links`：10分钟
-- 留言板 `/message`：10分钟
+- 留言板 `/messages`：10分钟
 - 搜索页 `/search`：10分钟
 
 **不走缓存的页面**：

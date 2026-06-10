@@ -75,7 +75,7 @@ async function save() {
   submitting.value = true;
   try {
     if (editingId.value) {
-      await $fetch(`/api/admin/changelog/${editingId.value}`, {
+      await $fetch(`/api/admin/changelogs/${editingId.value}`, {
         method: "PUT",
         body: {
           class: editForm.class,
@@ -86,7 +86,7 @@ async function save() {
         message: "更新成功",
       });
     } else {
-      await $fetch("/api/admin/changelog", {
+      await $fetch("/api/admin/changelogs", {
         method: "POST",
         body: {
           class: editForm.class,
@@ -116,7 +116,7 @@ async function deleteLog(id: number) {
   }
 
   try {
-    await $fetch(`/api/admin/changelog/${id}`, {
+    await $fetch(`/api/admin/changelogs/${id}`, {
       method: "DELETE",
     });
     toast.success({

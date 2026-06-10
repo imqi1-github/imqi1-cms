@@ -10,7 +10,7 @@ const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true);
 
 // 获取留言板配置
-const { data: messageConfig } = await useFetch("/api/message/config", {
+const { data: messageConfig } = await useFetch("/api/messages/config", {
   headers: {
     "x-ssr-internal-request": "true",
   },
