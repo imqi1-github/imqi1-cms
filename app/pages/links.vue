@@ -408,6 +408,8 @@ const handleSubmit = async (forceSubmit = false) => {
   }
 };
 
+const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
+
 // 初始化滚动渐入动画
 onMounted(() => {
   // 加载友链状态
@@ -434,7 +436,7 @@ onMounted(() => {
     fadeInObserver.observe(el);
   });
 
-  Fancybox.bind("[data-fancybox]", {
+  Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
     // === 全局选项 ===
     l10n: zh_CN,
     placeFocusBack: false,
@@ -484,14 +486,15 @@ onUnmounted(() => {
   }
 
   // 清理 Fancybox
-  Fancybox.destroy();
+  // Fancybox.destroy();
+  Fancybox.unbind(fancyboxContainer.value);
 });
 </script>
 
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header class="animate-fade-in">
+    <header class="animate-fade-in" ref="fancyboxContainer">
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"
@@ -897,64 +900,68 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="link-name" class="sr-only">名称</label>
-            <input
-              id="link-name"
-              v-model="formData.name"
-              type="text"
-              :placeholder="formMode === 'edit' ? '新名称 *' : '名称 *'"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+        <!-- 输入框（申请模式或已选择友链时显示） -->
+        <template v-if="formMode === 'apply' || selectedLink">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="link-name" class="sr-only">名称</label>
+              <input
+                id="link-name"
+                v-model="formData.name"
+                type="text"
+                :placeholder="formMode === 'edit' ? '新名称 *' : '名称 *'"
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+            </div>
+            <div>
+              <label for="link-url" class="sr-only">链接</label>
+              <input
+                id="link-url"
+                v-model="formData.link"
+                type="text"
+                :placeholder="formMode === 'edit' ? '新链接 *' : '链接 *'"
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+            </div>
           </div>
-          <div>
-            <label for="link-url" class="sr-only">链接</label>
-            <input
-              id="link-url"
-              v-model="formData.link"
-              type="text"
-              :placeholder="formMode === 'edit' ? '新链接 *' : '链接 *'"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
-          </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="link-sort" class="sr-only">分类</label>
-            <input
-              id="link-sort"
-              v-model="formData.sort"
-              type="text"
-              placeholder="分类"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="link-sort" class="sr-only">分类</label>
+              <input
+                id="link-sort"
+                v-model="formData.sort"
+                type="text"
+                placeholder="分类"
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+            </div>
+            <div>
+              <label for="link-avatar" class="sr-only">头像</label>
+              <input
+                id="link-avatar"
+                v-model="formData.avatar"
+                type="text"
+                placeholder="头像"
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+            </div>
           </div>
-          <div>
-            <label for="link-avatar" class="sr-only">头像</label>
-            <input
-              id="link-avatar"
-              v-model="formData.avatar"
-              type="text"
-              placeholder="头像"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
-          </div>
-        </div>
 
-        <!-- 友链地址输入框（仅当后台开启时显示，且仅在申请模式下） -->
-        <div v-if="showLinkUrlInput && formMode === 'apply'">
-          <label for="blog-link-url" class="sr-only">能看到友情链接的地址</label>
-          <input
-            id="blog-link-url"
-            v-model="formData.blogLinkUrl"
-            type="text"
-            placeholder="能看到友情链接的地址 *"
-            class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
-        </div>
+          <!-- 友链地址输入框（仅当后台开启时显示，且仅在申请模式下） -->
+          <div v-if="showLinkUrlInput && formMode === 'apply'">
+            <label for="blog-link-url" class="sr-only">能看到友情链接的地址</label>
+            <input
+              id="blog-link-url"
+              v-model="formData.blogLinkUrl"
+              type="text"
+              placeholder="能看到友情链接的地址 *"
+              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+          </div>
+        </template>
 
         <button
           type="submit"
-          :disabled="submitting"
+          :disabled="submitting || (formMode === 'edit' && !selectedLink)"
           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
           <span v-if="submitting">{{ formMode === "apply" ? "提交中..." : "修改中..." }}</span>
+          <span v-else-if="formMode === 'edit' && !selectedLink">请先选择要修改的链接</span>
           <span v-else>{{ formMode === "apply" ? (showForceSubmit ? "重试" : "申请友链") : "提交修改" }}</span>
         </button>
 

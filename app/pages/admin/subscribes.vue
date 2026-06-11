@@ -3,11 +3,18 @@ const toast = useToast();
 const subscribes = ref<any[]>([]);
 const loading = ref(false);
 const showAddForm = ref(false);
+const showEditForm = ref(false);
 const updating = ref(false);
 const updateResult = ref<{ success: number; failed: number; total: number } | null>(null);
 const feedCacheInterval = ref(8); // 默认8小时
 
 const newSubscribe = ref({ name: "", url: "", avatar: "" });
+const editingSubscribe = ref<{ id: number | null; name: string; url: string; avatar: string }>({
+  id: null,
+  name: "",
+  url: "",
+  avatar: "",
+});
 
 // 加载站点设置
 async function loadSettings() {
@@ -100,6 +107,47 @@ function cancelAdd() {
   showAddForm.value = false;
 }
 
+function openEditForm(subscribe: any) {
+  editingSubscribe.value = {
+    id: subscribe.id,
+    name: subscribe.name,
+    url: subscribe.url,
+    avatar: subscribe.avatar || "",
+  };
+  showEditForm.value = true;
+}
+
+async function updateSubscribe() {
+  if (!editingSubscribe.value.id) return;
+
+  try {
+    await $fetch(`/api/admin/subscribes/${editingSubscribe.value.id}`, {
+      method: "PUT",
+      body: {
+        name: editingSubscribe.value.name,
+        url: editingSubscribe.value.url,
+        avatar: editingSubscribe.value.avatar,
+      },
+    });
+    showEditForm.value = false;
+    editingSubscribe.value = { id: null, name: "", url: "", avatar: "" };
+    toast.success({
+      message: "修改成功",
+    });
+    await loadSubscribes();
+  } catch (error) {
+    console.error("修改失败:", error);
+    toast.error({
+      message: "修改失败",
+    });
+  }
+}
+
+function cancelEdit() {
+  editingSubscribe.value = { id: null, name: "", url: "", avatar: "" };
+  showEditForm.value = false;
+}
+
 function formatDate(date: string | null) {
   if (!date) return "从未更新";
   const d = new Date(date);
@@ -180,6 +228,20 @@ onMounted(() => {
           </form>
         </div>
 
+        <!-- 编辑表单 -->
+        <div v-if="showEditForm" class="mb-6 p-4 border rounded-lg bg-primary/5 border-primary/50">
+          <h4 class="font-medium mb-4">编辑订阅</h4>
+          <form @submit.prevent="updateSubscribe" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Input v-model="editingSubscribe.name" placeholder="订阅名称" required />
+            <Input v-model="editingSubscribe.url" type="url" placeholder="RSS URL" required />
+            <Input v-model="editingSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />
+            <div class="flex gap-2">
+              <Button type="submit">保存</Button>
+              <Button type="button" variant="outline" @click="cancelEdit">取消</Button>
+            </div>
+          </form>
+        </div>
+
         <!-- 订阅列表 -->
         <!-- 加载状态 - 桌面端表格 -->
         <div v-if="loading" class="hidden lg:block">
@@ -244,9 +306,14 @@ onMounted(() => {
                 {{ formatDate(sub.lastUpdated) }}
               </TableCell>
               <TableCell class="text-right">
-                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
-                  <Icon name="lucide:trash-2" class="size-4" />
-                </Button>
+                <div class="flex justify-end gap-1">
+                  <Button variant="ghost" size="icon" class="size-8" @click="openEditForm(sub)">
+                    <Icon name="lucide:pencil" class="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
+                    <Icon name="lucide:trash-2" class="size-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           </TableBody>
@@ -280,9 +347,14 @@ onMounted(() => {
             </div>
             <div class="flex flex-col items-end gap-2">
               <span class="text-xs text-muted-foreground">{{ formatDate(sub.lastUpdated) }}</span>
-              <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
-                <Icon name="lucide:trash-2" class="size-4" />
-              </Button>
+              <div class="flex gap-1">
+                <Button variant="ghost" size="icon" class="size-8" @click="openEditForm(sub)">
+                  <Icon name="lucide:pencil" class="size-4" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
+                  <Icon name="lucide:trash-2" class="size-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

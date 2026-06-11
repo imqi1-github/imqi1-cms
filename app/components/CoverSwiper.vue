@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, onUnmounted, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, onUnmounted, watch, useTemplateRef } from "vue";
 import Swiper from "swiper";
 import { Navigation, Pagination, Mousewheel } from "swiper/modules";
 import { Fancybox } from "@fancyapps/ui";
@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const swiperContainer = ref<HTMLElement>();
+const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
 let swiperInstance: Swiper | null = null;
 
 const initSwiper = () => {
@@ -65,6 +66,31 @@ onMounted(() => {
   setTimeout(() => {
     initSwiper();
   }, 100);
+
+  // 初始化 Fancybox
+  Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+    l10n: zh_CN,
+    placeFocusBack: false,
+    Hash: false,
+    trapFocus: false,
+    closeExisting: false,
+    zoomEffect: true,
+    Carousel: {
+      Panzoom: {
+        maxScale: 2,
+      },
+      Toolbar: {
+        display: {
+          left: ["infobar"],
+          middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX", "flipY"],
+          right: ["thumbs", "close"],
+        },
+      },
+      Autoplay: false,
+    },
+    idle: false,
+    autoFocus: false,
+  });
 });
 
 onBeforeUnmount(() => {
@@ -75,7 +101,7 @@ onBeforeUnmount(() => {
 
 // 清理 Fancybox
 onUnmounted(() => {
-  Fancybox.destroy();
+  Fancybox.unbind(fancyboxContainer.value);
 });
 
 // 监听 covers 变化，重新初始化
@@ -91,7 +117,8 @@ watch(
 </script>
 
 <template>
-  <div ref="swiperContainer" class="swiper-container">
+  <div ref="fancyboxContainer">
+    <div ref="swiperContainer" class="swiper-container">
     <div :class="['swiper-wrapper', !isPhotoCategory && 'noneed']">
       <div v-for="(cover, index) in covers" :key="index" class="swiper-slide">
         <LivePhoto
@@ -114,6 +141,7 @@ watch(
         <div class="swiper-button-prev"></div>
         <div class="swiper-button-next"></div>
       </div>
+    </div>
     </div>
   </div>
 </template>

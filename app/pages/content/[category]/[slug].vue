@@ -7,7 +7,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Mousewheel, Navigation, Pagination } from "swiper/modules";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch, useTemplateRef } from "vue";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -430,6 +430,9 @@ watch(
   { immediate: true },
 );
 
+// Fancybox 容器引用
+const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
+
 // 初始化 Fancybox 和其他功能
 onMounted(() => {
   try {
@@ -444,8 +447,7 @@ onMounted(() => {
     }
 
     // 初始化 Fancybox（参照友情链接页面）
-    // @ts-ignore
-    Fancybox.bind("[data-fancybox]", {
+    Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
       l10n: zh_CN,
       placeFocusBack: false,
       Hash: false,
@@ -1818,7 +1820,7 @@ onMounted(() => {
 
 // 清理 Fancybox 和滚动监听
 onUnmounted(() => {
-  Fancybox.destroy();
+  Fancybox.unbind(fancyboxContainer.value);
   window.removeEventListener("scroll", handleTocScroll);
 
   // 清理所有代码块的复制按钮监听器
@@ -1848,7 +1850,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
+  <div ref="fancyboxContainer"
     :class="[
       'mx-auto w-full',
       isPhotoCategory ? (showToc ? 'max-w-[93.75rem]' : 'max-w-[87.5rem]') : showToc ? 'max-w-[62.5rem]' : 'max-w-[56.25rem]',

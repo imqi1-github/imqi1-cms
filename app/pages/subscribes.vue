@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
@@ -11,6 +13,92 @@ useHead({
 const posts = ref<any[]>([]);
 const error = ref<string | null>(null);
 const isLoaded = ref(false);
+
+// 获取当前选择的订阅源ID
+const route = useRoute();
+const selectedSourceId = computed(() => {
+  const sourceId = route.query.source;
+  return sourceId ? parseInt(sourceId as string) : null;
+});
+
+// 用于强制重新渲染动画的key
+const animatinKey = ref(0);
+
+// 左侧边栏引用
+const sidebarRef = ref<HTMLElement | null>(null);
+
+// 处理左侧边栏的滚轮事件
+function handleSidebarWheel(event: WheelEvent) {
+  if (sidebarRef.value && event.target instanceof Node && sidebarRef.value.contains(event.target)) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const sidebar = sidebarRef.value;
+    const delta = event.deltaY;
+    sidebar.scrollTop += delta;
+  }
+}
+
+onMounted(() => {
+  loadPosts();
+
+  // 添加滚轮事件监听
+  if (import.meta.client) {
+    window.addEventListener('wheel', handleSidebarWheel, { passive: false });
+  }
+
+  // 等待全局页面过渡完成后再初始化淡入动画
+  nextTick(() => {
+    setTimeout(() => {
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
+
+      const fadeInObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("fade-in-start");
+            fadeInObserver.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+        fadeInObserver.observe(el);
+      });
+    }, 350); // 等待全局页面淡入完成（300ms + 50ms 缓冲）
+  });
+});
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    window.removeEventListener('wheel', handleSidebarWheel);
+  }
+});
+
+// 获取所有订阅源（去重）
+const subscribes = computed(() => {
+  const subscribeMap = new Map();
+  posts.value.forEach(post => {
+    if (!subscribeMap.has(post.subscribeId)) {
+      subscribeMap.set(post.subscribeId, {
+        id: post.subscribeId,
+        name: post.subscribeName,
+        avatar: post.subscribeAvatar,
+        postCount: 0
+      });
+    }
+    subscribeMap.get(post.subscribeId).postCount++;
+  });
+  return Array.from(subscribeMap.values()).sort((a, b) => b.postCount - a.postCount);
+});
+
+// 筛选后的文章列表
+const filteredPosts = computed(() => {
+  if (!selectedSourceId.value) return posts.value;
+  return posts.value.filter(post => post.subscribeId === selectedSourceId.value);
+});
 
 // 加载订阅文章
 async function loadPosts() {
@@ -41,7 +129,7 @@ function formatDate(dateStr: string | Date | null) {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const weeks = Math.floor(days / 7);
   const months = Math.floor(days / 30);
-  const years = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const years = Math.floor(days / 365);
 
   if (days === 0) {
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -68,36 +156,41 @@ function truncateDescription(desc: string | null, maxLength = 150) {
   return desc.length > maxLength ? desc.substring(0, maxLength) + '...' : desc;
 }
 
-onMounted(() => {
-  loadPosts();
+// 选择订阅源
+function selectSubscribe(sourceId: number | null) {
+  if (sourceId === selectedSourceId.value) return;
 
-  // 等待全局页面过渡完成后再初始化淡入动画
-  nextTick(() => {
-    setTimeout(() => {
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: "0px 0px -50px 0px",
-      };
+  const query = { ...route.query };
+  if (sourceId) {
+    query.source = sourceId.toString();
+  } else {
+    delete query.source;
+  }
 
-      const fadeInObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("fade-in-start");
-            fadeInObserver.unobserve(entry.target);
-          }
-        });
-      }, observerOptions);
+  // 更新动画key以触发重新渲染
+  animatinKey.value++;
 
-      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-        fadeInObserver.observe(el);
-      });
-    }, 350); // 等待全局页面淡入完成（300ms + 50ms 缓冲）
-  });
+  navigateTo({ query });
+}
+
+// 清除筛选
+function clearFilter() {
+  selectSubscribe(null);
+}
+
+// 监听筛选变化，触发动画
+watch(() => selectedSourceId.value, async () => {
+  await nextTick();
+  setTimeout(() => {
+    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
+      el.classList.add("fade-in-start");
+    });
+  }, 50);
 });
 </script>
 
 <template>
-  <div class="container mx-auto max-w-5xl">
+  <div class="container mx-auto max-w-6xl">
     <!-- 页面头部 -->
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">订阅文章</h1>
@@ -118,64 +211,124 @@ onMounted(() => {
       <p class="text-sm text-muted-foreground mt-2">请先在后台添加订阅源并更新</p>
     </div>
 
-    <!-- 文章列表 -->
-    <div v-if="isLoaded && posts.length > 0" class="space-y-6">
-      <article
-        v-for="post in posts"
-        :key="post.id"
-        class="border rounded-lg p-6 hover:shadow-md hover:border-primary/50 transition-all animate-fade-in"
-      >
-        <div class="flex items-start gap-4">
-          <!-- 订阅源头像 -->
-          <a
-            :href="`/subscribes?source=${post.subscribeId}`"
-            class="flex-shrink-0"
-            :title="post.subscribeName"
+    <!-- 主内容区 -->
+    <div v-if="isLoaded && posts.length > 0" class="flex gap-6">
+      <!-- 左侧订阅源列表 -->
+      <aside class="w-12 lg:w-16 shrink-0 animate-fade-in">
+        <div
+          ref="sidebarRef"
+          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-8rem)] pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-300 dark:hover:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+        >
+          <button
+            @click="clearFilter"
+            :class="[
+              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
+              !selectedSourceId
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
+                : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+            ]"
           >
-            <Avatar class="size-10">
-              <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />
-              <AvatarFallback>{{ post.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
-            </Avatar>
-          </a>
+            <Icon name="lucide:layout-grid" class="size-4 lg:size-5" />
+          </button>
 
-          <!-- 文章内容 -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1 flex-wrap">
-              <span class="text-sm text-muted-foreground">{{ post.subscribeName }}</span>
-              <span v-if="post.pubDate" class="text-xs text-muted-foreground">
-                {{ formatDate(post.pubDate) }}
+          <!-- 订阅源列表 -->
+          <button
+            v-for="subscribe in subscribes"
+            :key="subscribe.id"
+            @click="selectSubscribe(subscribe.id)"
+            :class="[
+              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg overflow-hidden transition-all border-2',
+              selectedSourceId === subscribe.id
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
+                : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+            ]"
+          >
+            <!-- 头像 -->
+            <template v-if="subscribe.avatar">
+              <img
+                :src="subscribe.avatar"
+                :alt="subscribe.name"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </template>
+            <template v-else>
+              <span class="font-semibold text-xs lg:text-sm">
+                {{ subscribe.name.charAt(0) }}
               </span>
-            </div>
-            <a
-              :href="post.link"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="block group"
-            >
-              <h2 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                {{ post.title }}
-              </h2>
-            </a>
-            <p
-              v-if="post.description"
-              class="text-sm text-muted-foreground mt-2 line-clamp-2"
-            >
-              {{ truncateDescription(post.description) }}
-            </p>
-          </div>
-
-          <!-- 外部链接图标 -->
-          <a
-            :href="post.link"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
-            :title="post.title"
-          >
-            <Icon name="lucide:external-link" class="size-5" />
-          </a>
+            </template>
+          </button>
         </div>
-      </article>
+      </aside>
+
+      <!-- 右侧文章列表 -->
+      <main class="flex-1 min-w-0">
+        <!-- 文章列表 -->
+        <div class="space-y-6" :key="animatinKey">
+          <article
+            v-for="post in filteredPosts"
+            :key="post.id"
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition-all animate-fade-in bg-white dark:bg-slate-800/50"
+          >
+            <div class="flex items-start gap-4">
+              <!-- 订阅源头像 -->
+              <button
+                @click="selectSubscribe(post.subscribeId)"
+                class="shrink-0"
+                :title="post.subscribeName"
+              >
+                <Avatar class="size-10">
+                  <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />
+                  <AvatarFallback>{{ post.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
+                </Avatar>
+              </button>
+
+              <!-- 文章内容 -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span class="text-sm text-slate-600 dark:text-slate-400">{{ post.subscribeName }}</span>
+                  <span v-if="post.pubDate" class="text-xs text-slate-500 dark:text-slate-500">
+                    {{ formatDate(post.pubDate) }}
+                  </span>
+                </div>
+                <a
+                  :href="post.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block group"
+                >
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                    {{ post.title }}
+                  </h2>
+                </a>
+                <p
+                  v-if="post.description"
+                  class="text-sm text-slate-600 dark:text-slate-400 mt-2 line-clamp-2"
+                >
+                  {{ truncateDescription(post.description) }}
+                </p>
+              </div>
+
+              <!-- 外部链接图标 -->
+              <a
+                :href="post.link"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
+                :title="post.title"
+              >
+                <Icon name="lucide:external-link" class="size-5" />
+              </a>
+            </div>
+          </article>
+
+          <!-- 筛选后无结果 -->
+          <div v-if="filteredPosts.length === 0 && selectedSourceId" class="text-center py-12 animate-fade-in">
+            <Icon name="lucide:file-question" class="size-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p class="text-muted-foreground">该订阅源暂无文章</p>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 </template>
@@ -193,5 +346,46 @@ onMounted(() => {
 .animate-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* 细滚动条样式 */
+aside div::-webkit-scrollbar {
+  width: 4px;
+}
+
+aside div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside div::-webkit-scrollbar-thumb {
+  background-color: rgb(229 231 235);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+aside div::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(203 213 225);
+}
+
+.dark aside div::-webkit-scrollbar-thumb {
+  background-color: rgb(55 65 81);
+}
+
+.dark aside div::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(75 85 99);
+}
+
+/* 小屏幕优化 */
+@media (max-width: 640px) {
+  /* 在小屏幕上调整边栏宽度 */
+  aside {
+    width: 2.75rem !important;
+  }
+
+  /* 小屏幕上订阅源按钮尺寸 */
+  aside button {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+  }
 }
 </style>

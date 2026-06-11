@@ -52,6 +52,8 @@ useHead({
   ],
 });
 
+const fancyboxContainer = useTemplateRef("fancyboxContainer");
+
 // 初始化 Fancybox
 onMounted(() => {
   // 初始化滚动渐入动画
@@ -75,7 +77,7 @@ onMounted(() => {
   });
 
   // 初始化 Fancybox
-  Fancybox.bind("[data-fancybox]", {
+  Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
     l10n: zh_CN,
     placeFocusBack: false,
     Hash: false,
@@ -108,14 +110,15 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  Fancybox.destroy();
+  // Fancybox.destroy();
+  Fancybox.unbind(fancyboxContainer.value);
 });
 </script>
 
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header class="animate-fade-in">
+    <header class="animate-fade-in" ref="fancyboxContainer">
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"

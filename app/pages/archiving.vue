@@ -32,6 +32,35 @@ function formatFullDate(dateStr: string | Date) {
   });
 }
 
+// 折叠状态管理 - 默认只有第一个（最新的）月份展开
+const expandedMonths = ref<Set<string>>(new Set());
+
+// 初始化：在数据加载完成后，将第一个月份设置为展开
+watchEffect(() => {
+  if (data.value?.data?.groups && data.value.data.groups.length > 0) {
+    // 只展开第一个（最新的）月份
+    const firstGroup = data.value.data.groups[0];
+    expandedMonths.value.add(`${firstGroup.year}-${firstGroup.month}`);
+  }
+});
+
+// 切换月份展开/折叠状态
+function toggleMonth(year: number, month: number) {
+  const key = `${year}-${month}`;
+  if (expandedMonths.value.has(key)) {
+    expandedMonths.value.delete(key);
+  } else {
+    expandedMonths.value.add(key);
+  }
+  // 触发响应式更新
+  expandedMonths.value = new Set(expandedMonths.value);
+}
+
+// 检查月份是否展开
+function isMonthExpanded(year: number, month: number): boolean {
+  return expandedMonths.value.has(`${year}-${month}`);
+}
+
 onMounted(() => {
   // 初始化滚动渐入动画
   const observerOptions = {
@@ -76,21 +105,34 @@ onMounted(() => {
     </div>
 
     <!-- 归档列表 -->
-    <div v-else-if="data?.data?.groups && data.data.groups.length > 0" class="space-y-8">
+    <div v-else-if="data?.data?.groups && data.data.groups.length > 0" class="space-y-4">
       <section
         v-for="(group, index) in data.data.groups"
         :key="`${group.year}-${group.month}`"
-        class="animate-fade-in"
+        class="animate-fade-in border rounded-lg overflow-hidden"
         :style="{ animationDelay: `${index * 50}ms` }">
-        <!-- 月份标题 -->
-        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-          <Icon name="lucide:calendar" class="size-5 text-primary" />
-          {{ group.year }}年{{ group.month }}月
-          <span class="text-sm font-normal text-muted-foreground"> ({{ group.posts.length }} 篇) </span>
-        </h2>
+        <!-- 月份标题 - 可点击 -->
+        <button
+          @click="toggleMonth(group.year, group.month)"
+          class="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+          <div class="flex items-center gap-2">
+            <Icon
+              :name="isMonthExpanded(group.year, group.month) ? 'lucide:chevron-down' : 'lucide:chevron-right'"
+              class="size-5 text-primary transition-transform duration-200"
+              :class="{ 'rotate-0': isMonthExpanded(group.year, group.month), '-rotate-90': !isMonthExpanded(group.year, group.month) }" />
+            <Icon name="lucide:calendar" class="size-5 text-primary" />
+            <span class="text-xl font-bold">{{ group.year }}年{{ group.month }}月</span>
+            <span class="text-sm font-normal text-muted-foreground">({{ group.posts.length }} 篇)</span>
+          </div>
+          <Icon
+            :name="isMonthExpanded(group.year, group.month) ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+            class="size-4 text-muted-foreground transition-transform duration-200" />
+        </button>
 
-        <!-- 文章列表 -->
-        <div class="space-y-2">
+        <!-- 文章列表 - 根据展开状态显示/隐藏 -->
+        <div
+          v-show="isMonthExpanded(group.year, group.month)"
+          class="px-4 pb-3 space-y-2">
           <div
             v-for="post in group.posts"
             :key="post.cid"
