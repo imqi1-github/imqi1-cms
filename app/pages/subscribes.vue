@@ -27,6 +27,9 @@ const animatinKey = ref(0);
 // 左侧边栏引用
 const sidebarRef = ref<HTMLElement | null>(null);
 
+// 折叠菜单状态
+const isExpanded = ref(false);
+
 // 处理左侧边栏的滚轮事件
 function handleSidebarWheel(event: WheelEvent) {
   if (sidebarRef.value && event.target instanceof Node && sidebarRef.value.contains(event.target)) {
@@ -38,6 +41,24 @@ function handleSidebarWheel(event: WheelEvent) {
     sidebar.scrollTop += delta;
   }
 }
+
+// 切换折叠状态
+function toggleExpanded() {
+  isExpanded.value = !isExpanded.value;
+}
+
+// 显示的订阅源列表（最多4个）
+const displayedSubscribes = computed(() => {
+  if (isExpanded.value) {
+    return subscribes.value;
+  }
+  return subscribes.value.slice(0, 4);
+});
+
+// 剩余订阅源数量
+const remainingCount = computed(() => {
+  return Math.max(0, subscribes.value.length - 4);
+});
 
 onMounted(() => {
   loadPosts();
@@ -217,31 +238,33 @@ watch(() => selectedSourceId.value, async () => {
       <aside class="w-12 lg:w-16 shrink-0 animate-fade-in">
         <div
           ref="sidebarRef"
-          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-8rem)] pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-300 dark:hover:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
         >
           <button
             @click="clearFilter"
             :class="[
-              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
+              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
               !selectedSourceId
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
+            v-tooltip.right="'全部订阅'"
           >
             <Icon name="lucide:layout-grid" class="size-4 lg:size-5" />
           </button>
 
           <!-- 订阅源列表 -->
           <button
-            v-for="subscribe in subscribes"
+            v-for="subscribe in displayedSubscribes"
             :key="subscribe.id"
             @click="selectSubscribe(subscribe.id)"
             :class="[
-              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg overflow-hidden transition-all border-2',
+              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg overflow-hidden transition-all border-2',
               selectedSourceId === subscribe.id
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
+            v-tooltip.right="subscribe.name"
           >
             <!-- 头像 -->
             <template v-if="subscribe.avatar">
@@ -257,6 +280,27 @@ watch(() => selectedSourceId.value, async () => {
                 {{ subscribe.name.charAt(0) }}
               </span>
             </template>
+          </button>
+
+          <!-- 折叠盒子 -->
+          <button
+            v-if="remainingCount > 0"
+            @click="toggleExpanded"
+            :class="[
+              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
+              'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700',
+              'relative overflow-hidden'
+            ]"
+            v-tooltip.right="isExpanded ? '收起' : `还有 ${remainingCount} 个订阅源`"
+          >
+            <span
+              :class="[
+                'font-semibold text-xs lg:text-sm',
+                isExpanded ? 'text-red-500 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'
+              ]"
+            >
+              {{ isExpanded ? '×' : `+${remainingCount}` }}
+            </span>
           </button>
         </div>
       </aside>
@@ -346,6 +390,18 @@ watch(() => selectedSourceId.value, async () => {
 .animate-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* 隐藏滚动条 */
+.scrollbar-hide {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* 细滚动条样式 */

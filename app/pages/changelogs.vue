@@ -183,7 +183,7 @@ useHead({
       <aside class="w-12 lg:w-16 shrink-0 animate-fade-in">
         <div
           ref="sidebarRef"
-          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-8rem)] pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-300 dark:hover:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
         >
           <button
             v-for="classType in classTypes"
