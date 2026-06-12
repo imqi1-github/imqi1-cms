@@ -112,7 +112,13 @@ const subscribes = computed(() => {
     }
     subscribeMap.get(post.subscribeId).postCount++;
   });
-  return Array.from(subscribeMap.values()).sort((a, b) => b.postCount - a.postCount);
+  const arr = Array.from(subscribeMap.values());
+  // 随机排序（Fisher-Yates 洗牌算法）
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 });
 
 // 筛选后的文章列表

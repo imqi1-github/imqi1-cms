@@ -36,13 +36,17 @@ function formatFullDate(dateStr: string | Date) {
 const expandedMonths = ref<Set<string>>(new Set());
 
 // 初始化：在数据加载完成后，将第一个月份设置为展开
-watchEffect(() => {
-  if (data.value?.data?.groups && data.value.data.groups.length > 0) {
-    // 只展开第一个（最新的）月份
-    const firstGroup = data.value.data.groups[0];
-    expandedMonths.value.add(`${firstGroup.year}-${firstGroup.month}`);
-  }
-});
+watch(
+  () => data.value?.data?.groups,
+  (groups) => {
+    if (groups && groups.length > 0 && expandedMonths.value.size === 0) {
+      // 只在第一次且当前没有展开的月份时，展开第一个（最新的）月份
+      const firstGroup = groups[0];
+      expandedMonths.value.add(`${firstGroup.year}-${firstGroup.month}`);
+    }
+  },
+  { immediate: true }
+);
 
 // 切换月份展开/折叠状态
 function toggleMonth(year: number, month: number) {
