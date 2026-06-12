@@ -96,6 +96,9 @@ function goToPage(newPage: number) {
   // 标记为翻页操作，立即显示骨架屏
   isPaginating.value = true;
 
+  // 瞬间滚动到页面顶端
+  window.scrollTo(0, 0);
+
   // 直接更新页码，不进行渐出动画
   router.push({
     path: `/tag/${slug}`,
