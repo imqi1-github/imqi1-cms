@@ -302,7 +302,7 @@ onMounted(() => {
             <NuxtLink
               v-if="post.covers.length > 0"
               :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
-              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px]">
+              class="flex flex-col relative h-50 overflow-hidden rounded-t-[15px] grow">
               <img
                 :src="post.covers[0].url"
                 :alt="post.title"

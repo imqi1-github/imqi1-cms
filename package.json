@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "prebuild": "node scripts/generate-build-hash.mjs",
+    "serve": "node scripts/file-server.mjs",
     "build": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
     "build:upload": "npm run prebuild && node --max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build && npm run upload:cos",
     "build:debug": "npm run prebuild && cross-env DEBUG=nuxt:*,nitro:* NODE_OPTIONS=--max-old-space-size=8192 node_modules/nuxt/bin/nuxt.mjs build",
