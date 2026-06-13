@@ -458,7 +458,7 @@
 
       <!-- 交个朋友 -->
       <div class="ready ml-[50%] mb-24 max-md:ml-0">
-        <div class="text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">06</div>
+        <div class="text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">07</div>
         <h2
           class="text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           交个朋友
@@ -544,6 +544,43 @@
             </div>
             <div class="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">不断优化主题</div>
           </NuxtLink>
+        </div>
+      </div>
+
+      <!-- 十年之约履约进度 -->
+      <div class="ready ml-[5%] mb-24 max-md:ml-0">
+        <div class="text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">06</div>
+        <h2
+          class="text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-4 transition-colors duration-300">
+          十年之约
+        </h2>
+        <p class="text-slate-600 dark:text-slate-400 text-lg mb-8 transition-colors duration-300">
+          承诺让这个博客持续生长十年，不弃更、不关站
+        </p>
+        <div class="pledge-card">
+          <div class="flex items-end justify-between mb-3">
+            <div>
+              <div class="text-blue-600 dark:text-blue-400 text-4xl font-black leading-none transition-colors duration-300">
+                {{ animatedPledge.days }}<span class="text-base font-medium text-slate-500 dark:text-slate-400 ml-1">天</span>
+              </div>
+              <div class="text-slate-500 dark:text-slate-400 text-xs tracking-widest uppercase mt-2 transition-colors duration-300">
+                已履约 / 目标 {{ pledgeTotalDays }} 天
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-slate-900 dark:text-slate-100 text-2xl font-bold transition-colors duration-300">
+                {{ animatedPledge.percent }}%
+              </div>
+              <div class="text-slate-500 dark:text-slate-400 text-xs mt-2 transition-colors duration-300">
+                {{ pledgeFormattedDate(pledgeStartDate) }} → {{ pledgeFormattedDate(pledgeEndDate) }}
+              </div>
+            </div>
+          </div>
+          <div class="bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden transition-colors duration-300">
+            <div
+              class="bg-blue-600 dark:bg-blue-400 h-full rounded-full transition-all duration-[1800ms] ease-out"
+              :style="{ width: pledgeBarWidth + '%' }"></div>
+          </div>
         </div>
       </div>
 
@@ -671,6 +708,23 @@ const animatedMbtiData = ref({
   assertive: 0,
 });
 
+// 十年之约履约进度
+const pledgeStartDate = new Date("2024-07-21");
+const pledgeEndDate = new Date(
+  pledgeStartDate.getFullYear() + 10,
+  pledgeStartDate.getMonth(),
+  pledgeStartDate.getDate(),
+);
+const pledgeTotalDays = Math.max(1, Math.round((pledgeEndDate - pledgeStartDate) / 86400000));
+const pledgeElapsedDays = computed(() =>
+  Math.max(0, Math.min(pledgeTotalDays, Math.floor((Date.now() - pledgeStartDate.getTime()) / 86400000))),
+);
+const pledgePercent = computed(() => Math.round((pledgeElapsedDays.value / pledgeTotalDays) * 100));
+const pledgeFormattedDate = (d: Date) =>
+  `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+const animatedPledge = ref({ days: 0, percent: 0 });
+const pledgeBarWidth = ref(0);
+
 // 数字动画函数
 const animateNumber = (from, to, duration, callback) => {
   let start = performance.now();
@@ -735,6 +789,19 @@ onMounted(() => {
             animatedMbtiData.value = { ...mbtiData.value };
           }, 300);
         }
+
+        // 十年之约履约进度动画
+        if (el.querySelector(".pledge-card")) {
+          animateNumber(0, pledgeElapsedDays.value, 2000, value => {
+            animatedPledge.value.days = value;
+          });
+          animateNumber(0, pledgePercent.value, 2000, value => {
+            animatedPledge.value.percent = value;
+          });
+          setTimeout(() => {
+            pledgeBarWidth.value = pledgePercent.value;
+          }, 100);
+        }
       }
     });
   };
@@ -782,6 +849,19 @@ onMounted(() => {
                 setTimeout(() => {
                   animatedMbtiData.value = { ...mbtiData.value };
                 }, 300);
+              }
+
+              // 十年之约履约进度动画
+              if (entry.target.querySelector(".pledge-card")) {
+                animateNumber(0, pledgeElapsedDays.value, 2000, value => {
+                  animatedPledge.value.days = value;
+                });
+                animateNumber(0, pledgePercent.value, 2000, value => {
+                  animatedPledge.value.percent = value;
+                });
+                setTimeout(() => {
+                  pledgeBarWidth.value = pledgePercent.value;
+                }, 100);
               }
             }
           });

@@ -561,31 +561,44 @@ onUnmounted(() => {
       </div>
 
       <!-- 友链网格 -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
         <a
           v-for="link in links"
           :key="link.id"
           :href="link.link"
           target="_blank"
           rel="noopener"
-          class="group relative flex flex-col bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
-          <!-- 状态图标 -->
-          <div v-if="linkStatuses[link.id]" class="absolute top-3 right-3 flex-shrink-0 z-10">
-            <Icon v-if="linkStatuses[link.id].status === 'up'" name="ri:check-fill" class="size-4 text-green-500" title="可访问" />
-            <Icon v-else-if="linkStatuses[link.id].status === 'down'" name="ri:close-line" class="size-4 text-red-500" title="不可访问" />
-            <Icon v-else name="lucide:loader-2" class="size-4 text-blue-500 animate-spin" title="检测中" />
-          </div>
+          :aria-label="`访问友链：${link.name}${link.desc ? ' - ' + link.desc : ''}`"
+          class="group relative flex flex-col bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-gray-700/60 rounded-2xl no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-400/60 dark:hover:border-blue-500/40">
+          <!-- 状态点（检测中带呼吸光环） -->
+          <span
+            v-if="linkStatuses[link.id]"
+            class="absolute top-3 right-3 z-10 flex items-center justify-center size-2"
+            :title="linkStatuses[link.id].status === 'up' ? '可访问' : linkStatuses[link.id].status === 'down' ? '不可访问' : '检测中'">
+            <span
+              v-if="linkStatuses[link.id].status === 'checking'"
+              aria-hidden="true"
+              class="absolute inline-flex size-2 rounded-full bg-blue-500 opacity-60 animate-ping">
+            </span>
+            <span
+              class="relative size-2 rounded-full"
+              :class="{
+                'bg-green-500': linkStatuses[link.id].status === 'up',
+                'bg-red-500': linkStatuses[link.id].status === 'down',
+                'bg-blue-500': linkStatuses[link.id].status === 'checking',
+              }">
+            </span>
+          </span>
 
-          <!-- 卡片头部 -->
-          <div class="flex items-center gap-4 mb-4">
+          <!-- 头部：头像 + 名称/描述 -->
+          <div class="flex items-center gap-4 p-5 pb-3">
             <!-- 头像 -->
-            <div
-              class="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-semibold text-xl shrink-0 overflow-hidden">
+            <div class="size-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-xl text-slate-500 dark:text-slate-300 shrink-0 overflow-hidden">
               <template v-if="link.avatar">
                 <img
                   :src="link.avatar"
                   :alt="link.name"
-                  class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                  class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                   loading="lazy"
                   @error="link.avatar = ''" />
               </template>
@@ -593,28 +606,24 @@ onUnmounted(() => {
                 {{ link.name.charAt(0).toUpperCase() }}
               </template>
             </div>
-            <!-- 信息 -->
+            <!-- 名称 + 描述 -->
             <div class="flex-1 min-w-0">
-              <div class="text-[1.05em] font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">
+              <h3 class="text-[1em] font-semibold text-gray-900 dark:text-gray-100 truncate transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
                 {{ link.name }}
-              </div>
-              <div
-                v-if="link.desc"
-                class="text-slate-600 dark:text-slate-400 text-[0.75em]">
+              </h3>
+              <p v-if="link.desc" class="mt-1 text-[0.8em] text-slate-500 dark:text-slate-400 line-clamp-2">
                 {{ link.desc }}
-              </div>
+              </p>
             </div>
           </div>
 
-          <!-- URL -->
-          <div
-            class="flex items-center justify-between gap-1.5 text-[0.85em] text-slate-500 dark:text-slate-400 border-t border-gray-200 dark:border-gray-700 pt-3 mt-auto group-hover:text-blue-600">
-            <div class="flex items-center gap-1.5">
-              <Icon name="ri:link" class="text-base opacity-60 transition-opacity duration-300 group-hover:opacity-100" />
+          <!-- 底部域名条 -->
+          <div class="flex items-center justify-between gap-2 px-5 py-2.5 mt-auto border-t border-gray-100 dark:border-gray-700/60">
+            <div class="flex items-center gap-1.5 min-w-0 text-[0.8em] text-slate-500 dark:text-slate-400 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+              <Icon name="ri:global-line" aria-hidden="true" class="size-3.5 shrink-0" />
               <span class="truncate">{{ formatUrl(link.link) }}</span>
             </div>
-            <!-- 检测时间 -->
-            <span v-if="linkStatuses[link.id]" class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+            <span v-if="linkStatuses[link.id]" class="text-[0.7em] text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
               {{ new Date(linkStatuses[link.id].checkedAt).toLocaleTimeString() }}
             </span>
           </div>
