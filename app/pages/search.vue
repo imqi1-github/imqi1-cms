@@ -107,10 +107,13 @@ function highlightKeyword(text: string, keyword: string) {
 
       <!-- 搜索框 -->
       <div class="relative">
-        <Icon name="ri:search-line" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" mode="svg" />
+        <label class="sr-only" for="search-input">搜索文章标题、内容</label>
+        <Icon name="ri:search-line" aria-hidden="true" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" mode="svg" />
         <input
+          id="search-input"
           v-model="searchKeyword"
           type="text"
+          aria-label="搜索文章标题、内容"
           placeholder="搜索文章标题、内容..."
           class="w-full pl-12 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           @keydown="handleKeydown" />
@@ -118,34 +121,35 @@ function highlightKeyword(text: string, keyword: string) {
           v-if="searchKeyword"
           variant="ghost"
           size="icon"
+          aria-label="清除搜索内容"
           class="absolute right-2 top-1/2 -translate-y-1/2"
           @click="
             searchKeyword = '';
             handleSearch();
           ">
-          <Icon name="ri:close-line" class="size-4" />
+          <Icon name="ri:close-line" aria-hidden="true" class="size-4" />
         </Button>
       </div>
     </header>
 
     <!-- 搜索结果 -->
-    <div v-if="searchKeyword" class="animate-fade-in">
+    <div v-if="searchKeyword" role="status" aria-live="polite" aria-atomic="true" class="animate-fade-in">
       <!-- 加载状态 -->
       <div v-if="pending" class="relative py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <div aria-hidden="true" class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
         <p class="text-center text-muted-foreground mt-4">搜索中...</p>
       </div>
 
       <!-- 错误状态 -->
       <div v-else-if="error" class="py-20 text-center">
-        <Icon name="lucide:alert-circle" class="size-12 text-destructive mx-auto mb-4" />
+        <Icon name="lucide:alert-circle" aria-hidden="true" class="size-12 text-destructive mx-auto mb-4" />
         <h2 class="text-xl font-bold mb-2">搜索失败</h2>
         <p class="text-muted-foreground">请稍后再试</p>
       </div>
 
       <!-- 无结果 -->
       <div v-else-if="total === 0" class="py-20 text-center">
-        <Icon name="ri:search-line" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
+        <Icon name="ri:search-line" aria-hidden="true" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">
           没有找到与 "<span class="font-medium text-foreground">{{ searchKeyword }}</span
           >" 相关的文章

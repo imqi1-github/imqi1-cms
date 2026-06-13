@@ -33,9 +33,10 @@
             <NuxtLink
               :href="link.url"
               :target="link.target ? '_blank' : undefined"
+              :aria-label="link.title"
               v-tooltip="link.title"
               class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
-              <Icon :name="link.icon" class="size-5" mode="svg" />
+              <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
             </NuxtLink>
           </template>
         </div>
@@ -259,6 +260,7 @@
             v-for="post in recentPosts"
             :key="post.cid"
             :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
+            :aria-label="`阅读文章：${post.title}`"
             class="group block no-underline">
             <div
               class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
@@ -282,24 +284,24 @@
                 </h3>
                 <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
                   <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5" v-tooltip="'分类'">
-                    <Icon name="ri:menu-line" class="size-3" />
+                    <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
                     <span v-for="(cat, idx) in post.categories" :key="cat.slug">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
                   <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
-                    <Icon name="ri:hashtag" class="size-3" />
+                    <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
                     <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                   </div>
                   <span class="flex items-center gap-0.5" v-tooltip="'发布时间'">
-                    <Icon name="ri:time-line" class="size-3" />
+                    <Icon name="ri:time-line" aria-hidden="true" class="size-3" />
                     {{ formatDate(post.created) }}
                   </span>
                   <span class="flex items-center gap-0.5" v-tooltip="'评论数量'">
-                    <Icon name="ri:chat-2-line" class="size-3" />
+                    <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
                     {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                   </span>
                 </div>
@@ -317,7 +319,7 @@
         <div v-if="recentPosts.length > 0" class="text-center mt-8">
           <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部文章
-            <Icon name="ri:arrow-right-line" class="size-4" />
+            <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
           </NuxtLink>
         </div>
       </section>
@@ -335,7 +337,7 @@
               :to="`/category/${categoryData.category.slug}`"
               class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
               查看更多
-              <Icon name="ri:arrow-right-line" class="size-4" />
+              <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
             </NuxtLink>
           </div>
 
@@ -345,6 +347,7 @@
               v-for="post in categoryData.posts"
               :key="post.cid"
               :to="`/content/${categoryData.category.slug}/${post.slug || post.cid}`"
+              :aria-label="`阅读文章：${post.title}`"
               class="group block no-underline flex-[1_0_200px]">
               <div
                 class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
@@ -368,18 +371,18 @@
                   </h3>
                   <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
                     <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
-                      <Icon name="ri:hashtag" class="size-3" />
+                      <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
                       <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                     </span>
                     <span class="flex items-center gap-0.5" v-tooltip="'发布时间'">
-                      <Icon name="ri:time-line" class="size-3" />
+                      <Icon name="ri:time-line" aria-hidden="true" class="size-3" />
                       <span>{{ formatDate(post.created) }}</span>
                     </span>
                     <span class="flex items-center gap-0.5" v-tooltip="'评论数量'">
-                      <Icon name="ri:chat-2-line" class="size-3" />
+                      <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
                       <span>{{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}</span>
                     </span>
                   </div>
@@ -406,6 +409,7 @@
             v-for="(image, index) in photoImages"
             :key="index"
             :to="`/content/${image.categorySlug || 'shot'}/${image.slug || image.cid}`"
+            :aria-label="`查看图片：${image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title}`"
             class="block break-inside-avoid no-underline group">
             <div
               class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
@@ -415,6 +419,7 @@
                 class="w-full h-auto object-cover" />
               <!-- 悬浮标题 -->
               <div
+                aria-hidden="true"
                 class="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                 <div class="absolute bottom-0 left-0 right-0 px-2 py-1">
                   <p class="text-white text-xs text-center font-medium line-clamp-2">
@@ -432,7 +437,7 @@
             :to="`/category/${photoCategorySlug}`"
             class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
             查看全部图片
-            <Icon name="ri:arrow-right-line" class="size-4" />
+            <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
           </NuxtLink>
         </div>
       </section>
@@ -506,7 +511,7 @@
         </div>
         <NuxtLink to="/subscribes" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
           查看更多
-          <Icon name="ri:arrow-right-line" class="size-4" />
+          <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
         </NuxtLink>
       </div>
 
@@ -522,7 +527,7 @@
           <div class="flex items-start gap-3">
             <!-- 订阅源头像 -->
             <Avatar class="size-10 flex-shrink-0">
-              <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />
+              <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" :alt="post.subscribeName" />
               <AvatarFallback>{{ post.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
 
@@ -543,7 +548,7 @@
             </div>
 
             <!-- 外部链接图标 -->
-            <Icon name="lucide:external-link" class="size-5 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+            <Icon name="lucide:external-link" aria-hidden="true" class="size-5 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
         </a>
       </div>
@@ -561,7 +566,7 @@
         </div>
         <NuxtLink to="/changelogs" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
           查看更多
-          <Icon name="ri:arrow-right-line" class="size-4" />
+          <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
         </NuxtLink>
       </div>
 

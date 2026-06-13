@@ -213,8 +213,15 @@ onMounted(() => {
     <!-- 前台布局：Header 和 Footer 不刷新 -->
     <template v-if="isFrontend">
       <div class="min-h-screen flex flex-col">
+        <a
+          href="#main"
+          class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[10000] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:shadow-lg focus:outline-none">
+          跳转到主要内容
+        </a>
         <SiteHeader />
         <main
+          id="main"
+          tabindex="-1"
           class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
           :style="{
             transition: 'opacity 0.3s ease',

@@ -232,31 +232,32 @@ onUnmounted(() => {
       </div>
       <div class="**:fill-slate-600 dark:**:fill-slate-400 flex gap-2 items-center">
         <ClientOnly>
-          <NuxtLink to="/feed" target="_blank" v-tooltip="'RSS订阅'">
-            <Icon name="ri:rss-fill" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+          <NuxtLink to="/feed" target="_blank" aria-label="RSS订阅" v-tooltip="'RSS订阅'">
+            <Icon name="ri:rss-fill" aria-hidden="true" class="size-4.5 hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
           </NuxtLink>
           <NuxtLink
             to="https://creativecommons.org/licenses/by/4.0/deed.zh-hans"
             target="_blank"
+            aria-label="本站内容采用 CC BY-NC-ND 4.0 协议授权"
             class="flex items-center **:size-4.5 **:fill-state-600 group"
             v-tooltip="'本站内容采用CC BY-NC-ND 4.0协议授权'">
-            <Icon name="ri:copyright-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-            <Icon name="ri:creative-commons-by-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-            <Icon name="ri:creative-commons-nc-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
-            <Icon name="ri:creative-commons-nd-line" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:copyright-line" aria-hidden="true" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:creative-commons-by-line" aria-hidden="true" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:creative-commons-nc-line" aria-hidden="true" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
+            <Icon name="ri:creative-commons-nd-line" aria-hidden="true" class="group-hover:text-blue-600 duration-300 dark:group-hover:text-gray-200" />
           </NuxtLink>
           <!-- 技术栈图标 -->
-          <div class="border border-gray-300 dark:border-gray-600 h-3"></div>
+          <div aria-hidden="true" class="border border-gray-300 dark:border-gray-600 h-3"></div>
           <template v-for="iconItem in blogStackIcons" :key="iconItem.name">
-            <NuxtLink :to="iconItem.href" :target="iconItem.target" v-tooltip="iconItem.title" class="no-underline">
-              <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+            <NuxtLink :to="iconItem.href" :target="iconItem.target" :aria-label="iconItem.title" v-tooltip="iconItem.title" class="no-underline">
+              <Icon :name="iconItem.icon" aria-hidden="true" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
             </NuxtLink>
           </template>
           <!-- 博客导航图标（仅首页显示） -->
-          <div v-if="isHomePage" class="border border-gray-300 dark:border-gray-600 h-3"></div>
+          <div v-if="isHomePage" aria-hidden="true" class="border border-gray-300 dark:border-gray-600 h-3"></div>
           <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
-            <NuxtLink :to="iconItem.href" :target="iconItem.target" v-tooltip="iconItem.title" class="no-underline">
-              <Icon :name="iconItem.icon" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
+            <NuxtLink :to="iconItem.href" :target="iconItem.target" :aria-label="iconItem.title" v-tooltip="iconItem.title" class="no-underline">
+              <Icon :name="iconItem.icon" aria-hidden="true" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
             </NuxtLink>
           </template>
         </ClientOnly>
@@ -269,9 +270,11 @@ onUnmounted(() => {
         <Transition name="fade">
           <button
             v-if="pageLoading"
+            type="button"
+            aria-label="页面加载中"
             v-tooltip="'页面加载中'"
             class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 max-md:hidden">
-            <Icon name="lucide:loader-2" class="size-4 text-gray-600 dark:text-gray-300 animate-spin" />
+            <Icon name="lucide:loader-2" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300 animate-spin" />
           </button>
         </Transition>
       </ClientOnly>
@@ -281,12 +284,14 @@ onUnmounted(() => {
         <Transition name="fade">
           <button
             v-if="showProgress || showBackToTop"
+            type="button"
             @click="scrollToTop"
+            :aria-label="showProgress ? `返回顶部，当前阅读进度 ${Math.round(scrollProgress)}%` : '返回顶部'"
             v-tooltip="'返回顶部'"
             class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
             <!-- 进度圆环 -->
             <Transition name="icon-fade" mode="out-in">
-              <svg v-if="showProgress" key="progress" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+              <svg v-if="showProgress" key="progress" aria-hidden="true" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
                 <circle
                   cx="14"
                   cy="14"
@@ -299,13 +304,13 @@ onUnmounted(() => {
                   :stroke-dasharray="75.4"
                   :stroke-dashoffset="75.4 - (75.4 * scrollProgress) / 100" />
               </svg>
-              <div v-else-if="showBackToTop" key="arrow" class="absolute inset-0 flex items-center justify-center">
-                <Icon name="ri:arrow-up-line" class="size-4 text-gray-600 dark:text-gray-300" />
+              <div v-else-if="showBackToTop" key="arrow" aria-hidden="true" class="absolute inset-0 flex items-center justify-center">
+                <Icon name="ri:arrow-up-line" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
               </div>
             </Transition>
             <!-- 进度数字 -->
             <Transition name="icon-fade" mode="out-in">
-              <span v-if="showProgress" key="number" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
+              <span v-if="showProgress" key="number" aria-hidden="true" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
                 {{ Math.round(scrollProgress) }}
               </span>
             </Transition>
@@ -324,9 +329,11 @@ onUnmounted(() => {
           leave-to-class="opacity-0 translate-y-4 scale-75">
           <button
             v-if="pageLoading"
+            type="button"
+            aria-label="页面加载中"
             v-tooltip="'页面加载中'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
-            <Icon name="lucide:loader-2" class="size-5 text-gray-600 dark:text-gray-300 animate-spin" />
+            <Icon name="lucide:loader-2" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300 animate-spin" />
           </button>
         </Transition>
       </ClientOnly>
@@ -342,10 +349,12 @@ onUnmounted(() => {
           leave-to-class="opacity-0 translate-y-4 scale-75">
           <button
             v-show="isMobileButtonsOpen"
+            type="button"
             @click="scrollToTop"
+            aria-label="返回顶部"
             v-tooltip="'返回顶部'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
-            <Icon name="ri:arrow-up-line" class="size-5 text-gray-600 dark:text-gray-300" />
+            <Icon name="ri:arrow-up-line" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300" />
           </button>
         </Transition>
       </ClientOnly>
@@ -361,11 +370,14 @@ onUnmounted(() => {
           leave-to-class="opacity-0 translate-y-4 scale-75">
           <button
             v-show="isMobileButtonsOpen"
+            type="button"
             @click="handleClick"
+            :aria-pressed="isDarkMode"
+            :aria-label="isDarkMode ? '当前为暗色模式，点击切换为亮色模式' : '当前为亮色模式，点击切换为暗色模式'"
             v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
-            <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-5 text-gray-600 dark:text-gray-300" />
-            <Icon v-else name="ri:moon-line" class="size-5 text-gray-100 dark:text-gray-300" />
+            <Icon v-if="!isDarkMode" name="ri:sun-line" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300" />
+            <Icon v-else name="ri:moon-line" aria-hidden="true" class="size-5 text-gray-100 dark:text-gray-300" />
           </button>
         </Transition>
       </ClientOnly>
@@ -381,10 +393,12 @@ onUnmounted(() => {
           leave-to-class="opacity-0 translate-y-4 scale-75">
           <button
             v-show="isMobileButtonsOpen && isLoggedIn && !isLoadingAuth"
+            type="button"
             @click="goToAdmin"
+            aria-label="后台管理"
             v-tooltip="'后台管理'"
             class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
-            <Icon name="lucide:layout-dashboard" class="size-5 text-gray-600 dark:text-gray-300" />
+            <Icon name="lucide:layout-dashboard" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300" />
           </button>
         </Transition>
       </ClientOnly>
@@ -405,11 +419,14 @@ onUnmounted(() => {
       <!-- PC端：暗黑模式切换按钮 -->
       <ClientOnly>
         <button
+          type="button"
           @click="handleClick"
+          :aria-pressed="isDarkMode"
+          :aria-label="isDarkMode ? '当前为暗色模式，点击切换为亮色模式' : '当前为亮色模式，点击切换为暗色模式'"
           v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
           class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
-          <Icon v-if="!isDarkMode" name="ri:sun-line" class="size-4 text-gray-600 dark:text-gray-300" />
-          <Icon v-else name="ri:moon-line" class="size-4 text-gray-100 dark:text-gray-300" />
+          <Icon v-if="!isDarkMode" name="ri:sun-line" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
+          <Icon v-else name="ri:moon-line" aria-hidden="true" class="size-4 text-gray-100 dark:text-gray-300" />
         </button>
       </ClientOnly>
 
@@ -417,10 +434,12 @@ onUnmounted(() => {
       <ClientOnly>
         <button
           v-if="isLoggedIn && !isLoadingAuth"
+          type="button"
           @click="goToAdmin"
+          aria-label="后台管理"
           v-tooltip="'后台管理'"
           class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
-          <Icon name="lucide:layout-dashboard" class="size-4 text-gray-600 dark:text-gray-300" />
+          <Icon name="lucide:layout-dashboard" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
         </button>
       </ClientOnly>
 
