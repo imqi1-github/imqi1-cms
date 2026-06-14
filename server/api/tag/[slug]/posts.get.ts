@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
   try {
@@ -104,28 +105,7 @@ export default defineEventHandler(async event => {
       const commentsNum = post.comment_num || 0;
 
       // 解析封面（从 post.covers 字段）
-      let covers: Array<{ url: string; desc: string }> = [];
-      if (post.covers) {
-        try {
-          const parsed = JSON.parse(post.covers);
-          if (Array.isArray(parsed)) {
-            covers = parsed.map((item: any) => ({
-              url: item.url || item,
-              desc: item.title || item.desc || '',
-            }));
-          }
-        } catch {
-          covers = post.covers.split('\n').map(line => {
-            const trimmed = line.trim();
-            if (!trimmed) return null;
-            if (trimmed.includes('||')) {
-              const [url, desc] = trimmed.split('||');
-              return { url: (url ?? '').trim(), desc: desc?.trim() || '' };
-            }
-            return { url: trimmed, desc: '' };
-          }).filter(Boolean) as Array<{ url: string; desc: string }>;
-        }
-      }
+      const covers = parseCovers(post.covers);
 
       // 获取分类信息（排除当前标签，只返回 type="category" 的）
       const categoryRelation = post.postrelations?.find(

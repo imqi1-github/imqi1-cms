@@ -265,12 +265,19 @@
             <div
               class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
               <!-- 封面 -->
-              <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden grow">
+              <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
                 <img
                   :src="post.covers[0].url || post.covers[0]"
                   :alt="post.title"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy" />
+                <!-- 多封面角标 -->
+                <div
+                  v-if="post.many_covers && post.covers.length > 1"
+                  class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                  <Icon name="ri-gallery-line" class="size-3.5" />
+                  <span>+{{ post.covers.length - 1 }}</span>
+                </div>
               </div>
               <!-- 无封面占位 -->
               <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
@@ -352,12 +359,19 @@
               <div
                 class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
                 <!-- 封面 -->
-                <div v-if="post.covers && post.covers.length > 0" class="aspect-video overflow-hidden grow">
+                <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
                   <img
                     :src="post.covers[0].url || post.covers[0]"
                     :alt="post.title"
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy" />
+                  <!-- 多封面角标 -->
+                  <div
+                    v-if="post.many_covers && post.covers.length > 1"
+                    class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                    <Icon name="ri-gallery-line" class="size-3.5" />
+                    <span>+{{ post.covers.length - 1 }}</span>
+                  </div>
                 </div>
                 <!-- 无封面占位 -->
                 <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">

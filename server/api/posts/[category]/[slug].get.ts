@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { renderMarkdown } from "#server/utils/markdown";
+import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
   const slug = getRouterParam(event, 'slug');
@@ -78,28 +79,7 @@ export default defineEventHandler(async event => {
   );
 
   // 解析封面 - 支持 JSON 数组或换行分隔格式
-  let covers: Array<{ url: string; desc: string }> = [];
-  if (post.covers) {
-    try {
-      const parsed = JSON.parse(post.covers);
-      if (Array.isArray(parsed)) {
-        covers = parsed.map((item: any) => ({
-          url: item.url || item,
-          desc: item.title || item.desc || '',
-        }));
-      }
-    } catch {
-      covers = post.covers.split('\n').map(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return null;
-        if (trimmed.includes('||')) {
-          const [url, desc] = trimmed.split('||');
-          return { url: (url ?? '').trim(), desc: desc?.trim() || '' };
-        }
-        return { url: trimmed, desc: '' };
-      }).filter(Boolean) as Array<{ url: string; desc: string }>;
-    }
-  }
+  const covers = parseCovers(post.covers);
 
   // 从 tagRelations 构建标签信息
   const tags = tagRelations.map(relation => ({

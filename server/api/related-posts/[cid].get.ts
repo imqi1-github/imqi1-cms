@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
   try {
@@ -134,14 +135,7 @@ export default defineEventHandler(async event => {
           slug: r.metas.slug,
         }));
 
-      let covers: { url: string; desc?: string }[] = [];
-      if (post.covers) {
-        try {
-          covers = JSON.parse(post.covers);
-        } catch {
-          covers = [];
-        }
-      }
+      const covers = parseCovers(post.covers);
 
       return {
         cid: post.cid,

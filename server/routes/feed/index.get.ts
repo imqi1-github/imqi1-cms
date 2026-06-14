@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
   try {
@@ -92,27 +93,18 @@ export default defineEventHandler(async event => {
         let mediaContent = "";
         let enclosure = "";
 
-        if (post.covers) {
-          try {
-            const covers = JSON.parse(post.covers);
-            if (Array.isArray(covers) && covers.length > 0) {
-              // 获取第一张封面
-              const firstCover = typeof covers[0] === "string" ? covers[0] : covers[0]?.url;
-              if (firstCover) {
-                coverImage = firstCover;
+        const covers = parseCovers(post.covers);
+        const firstCover = covers[0];
+        if (firstCover) {
+          coverImage = firstCover.url;
 
-                // Media RSS 内容标签
-                mediaContent = `    <media:content url="${coverImage}" medium="image" type="image/jpeg">
+          // Media RSS 内容标签
+          mediaContent = `    <media:content url="${coverImage}" medium="image" type="image/jpeg">
       <media:title><![CDATA[${post.title}]]></media:title>
     </media:content>`;
 
-                // 标准 enclosure 标签（用于兼容性）
-                enclosure = `    <enclosure url="${coverImage}" type="image/jpeg" length="0" />`;
-              }
-            }
-          } catch (e) {
-            // 解析失败，忽略封面
-          }
+          // 标准 enclosure 标签（用于兼容性）
+          enclosure = `    <enclosure url="${coverImage}" type="image/jpeg" length="0" />`;
         }
 
         return `

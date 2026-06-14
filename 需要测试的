@@ -1,0 +1,180 @@
+🔴 真 Bug（高优先级，建议修复）
+
+Bug #1：封面解析逻辑在项目内不一致（最严重）
+
+covers 字段有两种存储格式，但不同接口用不同的解析方式，导致同一篇文章在不同页面显示不同的封面：
+
+格式 A：只支持 JSON 数组（失败就返回 []）：
+┌──────────────────────────────┬──────────┐
+│             文件             │    行    │
+├──────────────────────────────┼──────────┤
+│ home-data.get.ts             │ 115, 211 │
+├──────────────────────────────┼──────────┤
+│ category-recent-posts.get.ts │ 128      │
+├──────────────────────────────┼──────────┤
+│ recent-posts.get.ts          │ 84       │
+├──────────────────────────────┼──────────┤
+│ random-post.get.ts           │ 62       │
+├──────────────────────────────┼──────────┤
+│ related-posts/[cid].get.ts   │ 140      │
+└──────────────────────────────┴──────────┘
+格式 B：支持 JSON 数组 + 换行分隔 fallback（兼容两种存储格式）：
+┌────────────────────────────────┬─────────────────────────────┐
+│              文件              │             行              │
+├────────────────────────────────┼─────────────────────────────┤
+│ home-data.get.ts               │ 285（同一文件第二种！诡异） │
+├────────────────────────────────┼─────────────────────────────┤
+│ posts/[slug].get.ts            │ 72                          │
+├────────────────────────────────┼─────────────────────────────┤
+│ posts/[category]/[slug].get.ts │ 84                          │
+├────────────────────────────────┼─────────────────────────────┤
+│ category/[slug]/posts.get.ts   │ 109                         │
+├────────────────────────────────┼─────────────────────────────┤
+│ tag/[slug]/posts.get.ts        │ 110                         │
+├────────────────────────────────┼─────────────────────────────┤
+│ photo-posts.get.ts             │ 70                          │
+└────────────────────────────────┴─────────────────────────────┘
+实际后果：
+- 文章用换行分隔格式存的封面（老数据）→ 首页/最近文章/相关文章显示无封面
+- 同一篇文章 → 详情页正常显示封面
+
+建议：把封面解析抽到 server/utils/covers.ts：
+
+export function parseCovers(raw: string | null | undefined): Array<{ url: string; desc: string }> {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item: any) => ({
+        url: item.url || item,
+        desc: item.title || item.desc || '',
+      }));
+    }
+  } catch {
+    return raw.split('\n').map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return null;
+      if (trimmed.includes('||')) {
+        const [url, desc] = trimmed.split('||');
+        return { url: (url ?? '').trim(), desc: desc?.trim() || '' };
+      }
+      return { url: trimmed, desc: '' };
+    }).filter(Boolean) as Array<{ url: string; desc: string }>;
+  }
+  return [];
+}
+
+然后让 12+ 个文件都用这个工具函数。需要我做的话告诉我。
+
+Bug #2：useAudioPlayer.ts 的模块级状态 SSR 串号
+
+useAudioPlayer.ts:14-28 把 playlist、currentSong、isPlaying、audio 等声明在模块顶层：
+
+const playlist = ref<Song[]>([]);
+const currentSong = ref<Song | null>(null);
+let audio: HTMLAudioElement | null = null;
+// ...
+
+这些变量在 Node 服务端也会被加载，所有 SSR 请求共享同一份状态。虽然 audio 只在客户端用（有 import.meta.client 守卫），但 playlist、currentSong 这些 ref 在 SSR 时会被多个请求共享，可能导致用户 A 的请求影响用户 B 的渲染结果。
+
+建议：要么把这些状态挪到函数体内，要么用 Nuxt 的 useState()：
+
+const playlist = useState<Song[]>('audio-playlist', () => []);
+
+useState 是 Nuxt 提供的 SSR 安全状态容器，会自动按请求隔离。
+
+---
+🟡 真 Bug（中优先级）
+
+Bug #3：qqwry.ts 的 ipToNumber 没有 NaN 检查
+
+qqwry.ts:185-193（我之前修过 undefined 问题，但 NaN 没处理）：
+
+private ipToNumber(ip: string): number {
+  const parts = ip.split(".");
+  return (
+    (parseInt(parts[0] ?? "0") << 24) |  // ← 如果 parts[0] 是 "abc"，parseInt 返回 NaN
+    ...
+  ) >>> 0;
+}
+
+NaN 在位运算中会传播为 0，结果得到 0.0.0.0。这是静默错误。
+
+影响：如果调用方传了非法 IP 字符串，会查询到错误的 IP 段（默认 0.0.0.0）。
+
+建议：在函数开头加 if (!/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return 0;
+
+Bug #4：category/[slug]/posts.get.ts:113 的 item.url || item 隐患
+
+covers = parsed.map((item: any) => ({
+  url: item.url || item,    // ← 如果 item 是 0 或 ""，结果就是 0 或 ""
+  desc: item.title || item.desc || '',
+}));
+
+如果 JSON 数据里 item.url 是空字符串 ""，"" || item 会取 item（整个对象），最后渲染成 [object Object]。虽然实际数据可能不会这样，但缺少防御。
+
+建议：用 item.url ?? item 或显式判断 typeof item === 'string'。
+
+---
+⚪ 误报澄清（Explore agent 误判，不要改）
+
+误报 1：manyCovers 不是 bug
+
+Explore 说 admin/posts/index.post.ts:27 和 [cid].put.ts:33 的 manyCovers 字段名拼错。这是错的——代码显式做了字段映射：
+
+const { manyCovers = false } = body;  // 从前端请求体解构（驼峰约定）
+// ...
+data: {
+  many_covers: manyCovers,  // 显式映射到数据库字段
+}
+
+前端约定驼峰、数据库用下划线，中间手动转换，完全正确。
+
+误报 2：=== "true" 比较不是 bug
+
+Explore 把多个文件标记为"字符串与布尔错误比较"，但 informations.value 字段在 schema 中就是 String 类型（schema.prisma:80），存的就是 "true"/"false" 字符串。所以这些代码完全正确：
+┌────────────────────────────┬────────┬─────────┐
+│            文件            │   行   │ 正确性  │
+├────────────────────────────┼────────┼─────────┤
+│ settings.get.ts            │ 88     │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ site.get.ts                │ 43     │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ mail.ts                    │ 61, 71 │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ baidu-audit.ts             │ 74     │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ comments.post.ts           │ 122    │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ referer-check.ts           │ 17     │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ attachments/upload.post.ts │ 201    │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ links.post.ts              │ 103    │ ✅ 正确 │
+├────────────────────────────┼────────┼─────────┤
+│ search.get.ts              │ 42     │ ✅ 正确 │
+└────────────────────────────┴────────┴─────────┘
+误报 3：mail.ts 的 parseInt() || 465 不是 bug
+
+port: parseInt(get("smtpPort")) || 465 —— 端口 0 是不合法的，所以用 || 兜底反而正确。如果用 ?? 反而会让 0 这个无效值通过。
+
+---
+总结
+┌───────────────────────┬──────────────────────────────────┐
+│         类别          │               数量               │
+├───────────────────────┼──────────────────────────────────┤
+│ 🔴 真 bug（高优先级） │ 2 个（封面解析不一致、SSR 单例） │
+├───────────────────────┼──────────────────────────────────┤
+│ 🟡 真 bug（中优先级） │ 2 个（qqwry NaN、covers `        │
+├───────────────────────┼──────────────────────────────────┤
+│ ⚪ 误报               │ 9+ 处（不要改）                  │
+└───────────────────────┴──────────────────────────────────┘
+建议优先级
+
+最值得修的：Bug #1（封面解析抽公共函数）—— 这是个重复出现 12+ 次的代码异味 + 真实运行时不一致，且我已经在前几轮修复中接触过 4 个文件的同类逻辑，抽公共函数后还能预防未来新接口再次踩坑。
+
+第二优先：Bug #2（SSR 单例）—— 如果你的 useAudioPlayer 在 SSR 时确实有渲染逻辑参与（不只是客户端副作用），这是个隐患。
+
+如果你确认要修，告诉我先修哪个。
+
+✻ Brewed for 4m 16s

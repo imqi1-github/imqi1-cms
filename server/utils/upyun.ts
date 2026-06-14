@@ -9,7 +9,7 @@ export interface UpYunConfig {
   bucket: string; // 服务名称
   operator: string; // 操作员
   password: string; // 密码
-  domain: string; // 绑定域名
+  domain?: string; // 绑定域名
 }
 
 // 上传结果接口
@@ -139,7 +139,7 @@ export async function uploadToUpYun(
     const response = await fetch(`https://${UPYUN_API_ENDPOINT}${uri}`, {
       method: "PUT",
       headers,
-      body: fileBuffer,
+      body: new Uint8Array(fileBuffer),
     });
 
     if (!response.ok) {
@@ -151,7 +151,7 @@ export async function uploadToUpYun(
     }
 
     // 返回完整的访问 URL
-    const url = `${domain}${filePath}`;
+    const url = `${domain ?? ""}${filePath}`;
     return { success: true, url };
   } catch (error: any) {
     return {

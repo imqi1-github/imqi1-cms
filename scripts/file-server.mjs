@@ -51,8 +51,27 @@ function getMimeType(filePath) {
   return MIME_TYPES[ext] || 'application/octet-stream';
 }
 
+// 设置 CORS 响应头
+// 实况照片（LivePhoto）需要在前端通过 fetch 抓取图片二进制并解析内嵌视频，
+// 当页面与文件服务器不同源时，浏览器要求响应带 CORS 头才允许读取响应体。
+function setCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 // 创建服务器
 const server = http.createServer((req, res) => {
+  // 统一加上 CORS 头（所有响应，包括 404/500/OPTIONS 都需要）
+  setCorsHeaders(res);
+
+  // 处理 CORS 预检请求
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   // 解析 URL 路径
   let requestPath = decodeURIComponent(req.url);
 

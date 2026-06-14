@@ -112,9 +112,9 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
         let author = '';
         if (entry.author) {
           if (Array.isArray(entry.author)) {
-            author = getTextValue(entry.author[0]?.name);
+            author = getTextValue(entry.author[0]?.name) ?? '';
           } else {
-            author = getTextValue(entry.author.name);
+            author = getTextValue(entry.author.name) ?? '';
           }
         }
 

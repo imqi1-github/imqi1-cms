@@ -29,7 +29,7 @@ class QQWry {
   private lastRecord: number;
   private recordNum: number;
 
-  constructor(dataPath: string) {
+  constructor() {
     // 数据将在异步初始化时加载
     this.buffer = Buffer.alloc(0);
     this.firstRecord = 0;
@@ -69,7 +69,7 @@ class QQWry {
    */
   private read3Byte(offset: number): number {
     return this.buffer.readUInt16LE(offset) |
-           (this.buffer[offset + 2] << 16);
+           (this.buffer.readUInt8(offset + 2) << 16);
   }
 
   /**
@@ -185,10 +185,10 @@ class QQWry {
   private ipToNumber(ip: string): number {
     const parts = ip.split(".");
     return (
-      (parseInt(parts[0]) << 24) |
-      (parseInt(parts[1]) << 16) |
-      (parseInt(parts[2]) << 8) |
-      parseInt(parts[3])
+      (parseInt(parts[0] ?? "0") << 24) |
+      (parseInt(parts[1] ?? "0") << 16) |
+      (parseInt(parts[2] ?? "0") << 8) |
+      parseInt(parts[3] ?? "0")
     ) >>> 0;
   }
 
@@ -249,7 +249,7 @@ class QQWry {
     // 格式: "xxxx年xx月xx日" 提取日期部分
     const match = data.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
     if (match) {
-      return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+      return `${match[1]}-${match[2]!.padStart(2, "0")}-${match[3]!.padStart(2, "0")}`;
     }
     return data;
   }

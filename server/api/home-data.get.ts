@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getSubscribePosts } from '#server/utils/rss';
+import { parseCovers } from "#server/utils/covers";
 import MarkdownIt from "markdown-it";
 
 // 创建简化版 Markdown 实例
@@ -85,6 +86,7 @@ export default defineEventHandler(async event => {
           slug: true,
           desc: true,
           covers: true,
+          many_covers: true,
           create_time: true,
           comment_num: true,
           postrelations: {
@@ -109,14 +111,7 @@ export default defineEventHandler(async event => {
           .filter(r => r.metas.type === "tag")
           .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
-        let covers: { url: string; desc?: string }[] = [];
-        if (post.covers) {
-          try {
-            covers = JSON.parse(post.covers);
-          } catch {
-            covers = [];
-          }
-        }
+        const covers = parseCovers(post.covers);
 
         return {
           cid: post.cid,
@@ -124,6 +119,7 @@ export default defineEventHandler(async event => {
           slug: post.slug,
           desc: post.desc,
           covers,
+          many_covers: post.many_covers,
           created: post.create_time,
           commentsNum: post.comment_num || 0,
           categories,
@@ -180,6 +176,7 @@ export default defineEventHandler(async event => {
                 slug: true,
                 desc: true,
                 covers: true,
+                many_covers: true,
                 create_time: true,
                 comment_num: true,
                 postrelations: {
@@ -205,14 +202,7 @@ export default defineEventHandler(async event => {
                 .filter(r => r.metas.type === "tag")
                 .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
-              let covers: { url: string; desc?: string }[] = [];
-              if (post.covers) {
-                try {
-                  covers = JSON.parse(post.covers);
-                } catch {
-                  covers = [];
-                }
-              }
+              const covers = parseCovers(post.covers);
 
               return {
                 cid: post.cid,
@@ -220,6 +210,7 @@ export default defineEventHandler(async event => {
                 slug: post.slug,
                 desc: post.desc,
                 covers,
+                many_covers: post.many_covers,
                 created: post.create_time,
                 commentsNum: post.comment_num || 0,
                 tags,
@@ -279,20 +270,7 @@ export default defineEventHandler(async event => {
             slug: r.metas.slug,
           }));
 
-          let covers: { url: string; desc?: string }[] = [];
-          if (post.covers) {
-            try {
-              const parsed = JSON.parse(post.covers);
-              if (Array.isArray(parsed)) {
-                covers = parsed.map(item => ({
-                  url: item.url || item,
-                  desc: item.title || item.desc || "",
-                }));
-              }
-            } catch {
-              covers = [];
-            }
-          }
+          const covers = parseCovers(post.covers);
 
           return {
             cid: post.cid,
