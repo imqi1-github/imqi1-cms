@@ -288,7 +288,7 @@ onUnmounted(() => {
       <div class="flex gap-8 relative w-full max-w-7xl mx-auto">
         <!-- 目录侧边栏 - 左侧 -->
         <aside class="toc-sidebar hidden lg:block w-39 shrink-0 order-first">
-          <nav class="toc-nav sticky top-24">
+          <nav class="toc-nav sticky top-12 pt-12">
             <h3 class="px-4 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
             <ul class="space-y-1" v-if="showToc">
               <li v-for="item in tocItems" :key="item.id" class="wrap-anywhere overflow-hidden text-ellipsis">

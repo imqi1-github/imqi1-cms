@@ -16,9 +16,6 @@ export default defineNuxtPlugin(() => {
     }
   }
 
-  // 暴露到 window
-  window.isLogin = isLogin
-
   return {
     provide: {
       isLogin,

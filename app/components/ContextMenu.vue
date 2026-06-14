@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { MENU_ITEMS_KEY } from "~/directives/contextMenu";
+
 const route = useRoute();
 const { notify } = useFrontNotification();
 
@@ -60,8 +62,9 @@ const handleContextMenu = (e: MouseEvent) => {
   customMenuItems.value = null;
 
   while (currentElement) {
-    if ((currentElement as any)._customMenuItems) {
-      customMenuItems.value = (currentElement as any)._customMenuItems;
+    const items = (currentElement as any)[MENU_ITEMS_KEY];
+    if (items) {
+      customMenuItems.value = items;
       break;
     }
     currentElement = currentElement.parentElement;

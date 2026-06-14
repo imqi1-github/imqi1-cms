@@ -129,7 +129,7 @@ ${mediaContent}
       })
       .join("\n");
 
-    const lastBuildDate = posts.length > 0 ? new Date(posts[0].create_time).toUTCString() : new Date().toUTCString();
+    const lastBuildDate = posts.length > 0 ? new Date(posts[0]?.create_time ?? Date.now()).toUTCString() : new Date().toUTCString();
 
     const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"

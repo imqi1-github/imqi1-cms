@@ -68,7 +68,7 @@ export async function validateCosConfig(): Promise<{ valid: boolean; error?: str
     Bucket: config.Bucket,
     Region: config.Region,
     sourceDomain: domains.source || "自动生成",
-    cdnDomain: domains.cdnDomain || "未配置",
+    cdnDomain: domains.cdn || "未配置",
   });
 
   return { valid: true };
@@ -138,7 +138,7 @@ function generateSignature(method: string, path: string, headers: Record<string,
     const lowerKey = key.toLowerCase();
     // 只包含这些头部：content-md5, content-type, date, host
     if (["content-md5", "content-type", "date", "host"].includes(lowerKey)) {
-      headerMap[lowerKey] = headers[key];
+      headerMap[lowerKey] = headers[key] ?? "";
     }
   }
 
@@ -147,7 +147,7 @@ function generateSignature(method: string, path: string, headers: Record<string,
 
   // 生成 HttpHeaders
   const httpHeadersParts = sortedKeys.map(key => {
-    return `${key}=${urlEncode(headerMap[key])}`;
+    return `${key}=${urlEncode(headerMap[key] ?? "")}`;
   });
   const httpHeaders = httpHeadersParts.join("&");
 
@@ -292,7 +292,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
     const response = await fetch(url, {
       method: "PUT",
       headers,
-      body: fileBuffer,
+      body: new Uint8Array(fileBuffer),
     });
 
     if (!response.ok) {

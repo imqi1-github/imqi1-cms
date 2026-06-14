@@ -98,7 +98,7 @@ export default defineEventHandler(async event => {
   // 解析文章数据
   const posts = relations.map(relation => {
     const post = relation.posts;
-    let covers = [];
+    let covers: Array<{ url: string; desc: string }> = [];
 
     // 查找评论数量
     const commentsNum = post.comment_num || 0;
@@ -108,7 +108,7 @@ export default defineEventHandler(async event => {
       try {
         const parsed = JSON.parse(post.covers);
         if (Array.isArray(parsed)) {
-          covers = parsed.map(item => ({
+          covers = parsed.map((item: any) => ({
             url: item.url || item,
             desc: item.title || item.desc || '',
           }));
@@ -119,10 +119,10 @@ export default defineEventHandler(async event => {
           if (!trimmed) return null;
           if (trimmed.includes('||')) {
             const [url, desc] = trimmed.split('||');
-            return { url: url.trim(), desc: desc?.trim() || '' };
+            return { url: (url ?? '').trim(), desc: desc?.trim() || '' };
           }
           return { url: trimmed, desc: '' };
-        }).filter(Boolean);
+        }).filter(Boolean) as Array<{ url: string; desc: string }>;
       }
     }
 
@@ -138,9 +138,8 @@ export default defineEventHandler(async event => {
       desc: post.desc,
       created: post.create_time,
       updated: post.update_time,
-      views: post.views,
       commentsNum,
-      many_covers: post.manyCovers === 'on',
+      many_covers: post.many_covers,
       covers,
       tags: tagNames, // 保持为字符串数组，前端会处理
       user: post.user,

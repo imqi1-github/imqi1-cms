@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
     // 随机打乱数组顺序 (Fisher-Yates 洗牌算法)
     for (let i = links.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [links[i], links[j]] = [links[j], links[i]];
+      [links[i]!, links[j]!] = [links[j]!, links[i]!];
     }
 
     return {

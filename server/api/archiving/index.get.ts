@@ -43,7 +43,7 @@ export default defineEventHandler(async event => {
 
       // 获取第一个分类的 slug
       const categorySlug = post.postrelations && post.postrelations.length > 0
-        ? post.postrelations[0].metas?.slug
+        ? post.postrelations[0]?.metas?.slug ?? null
         : null;
 
       acc[key].posts.push({
@@ -66,8 +66,8 @@ export default defineEventHandler(async event => {
     // 统计信息
     const stats = {
       total: posts.length,
-      firstDate: posts.length > 0 ? posts[posts.length - 1].create_time : null,
-      lastDate: posts.length > 0 ? posts[0].create_time : null,
+      firstDate: posts.length > 0 ? posts[posts.length - 1]?.create_time ?? null : null,
+      lastDate: posts.length > 0 ? posts[0]?.create_time ?? null : null,
     };
 
     return {

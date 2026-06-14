@@ -68,9 +68,9 @@ export default defineEventHandler(async event => {
       // parts[0] 通常是省份，parts[1] 通常是城市，parts[2] 是区县
       let result = "";
       if (parts.length >= 2) {
-        result = parts[1]; // 例如：辽宁-沈阳-沈河区 → 沈阳
+        result = parts[1] ?? ""; // 例如：辽宁-沈阳-沈河区 → 沈阳
       } else {
-        result = parts[0]; // 只有省份，例如：辽宁
+        result = parts[0] ?? ""; // 只有省份，例如：辽宁
       }
 
       // 去掉行政区划后缀

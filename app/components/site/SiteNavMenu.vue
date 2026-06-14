@@ -33,7 +33,11 @@ const navItems = [
 const isScrolled = ref(false);
 
 // 导航函数
-function navigate(href: string) {
+function navigate(href: string, event?: MouseEvent) {
+  // 点击后立即失焦，避免 :focus-within 让下拉菜单保持展开
+  if (event?.currentTarget instanceof HTMLElement) {
+    event.currentTarget.blur();
+  }
   router.push(href);
 }
 
@@ -108,7 +112,7 @@ onMounted(() => {
             v-for="cat in categories"
             :key="cat.slug"
             role="menuitem"
-            @click="navigate(`/category/${cat.slug}`)"
+            @click="navigate(`/category/${cat.slug}`, $event)"
             class="block w-full text-left px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 text-sm font-medium cursor-pointer font-serif">
             {{ cat.name }}
           </button>

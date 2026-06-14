@@ -4,18 +4,18 @@
  *
  * menuItems 类型：
  * Array<{
- *   icon?: string;          // 图标名称（可选）
- *   label: string;          // 菜单项文字
- *   action: () => void;     // 点击执行的函数
- *   divider?: boolean;      // 是否为分隔线（可选）
- *   disabled?: boolean;     // 是否禁用（可选）
- *   danger?: boolean;       // 是否为危险操作（可选，红色样式）
+ *   icon?: string;                    // 图标名称（可选）
+ *   label: string;                    // 菜单项文字
+ *   action: (e: MouseEvent) => void;  // 点击执行的函数
+ *   divider?: boolean;                // 是否为分隔线（可选）
+ *   disabled?: boolean;               // 是否禁用（可选）
+ *   danger?: boolean;                 // 是否为危险操作（可选，红色样式）
  * }>
  *
  * 注意：此指令会将自定义菜单项嵌入到全局右键菜单中，而不是创建独立的菜单
  */
 
-import type { Directive, DirectiveBinding } from "vue";
+import type { Directive } from "vue";
 
 interface MenuItem {
   icon?: string;
@@ -28,48 +28,43 @@ interface MenuItem {
 
 type MenuItems = MenuItem[];
 
+// 挂载在 DOM 元素上的属性名（导出供 ContextMenu 组件读取）
+export const MENU_ITEMS_KEY = "_customMenuItems";
+
+// 写入/更新挂载元素上的菜单项
+function applyMenuItems(el: HTMLElement, items: unknown) {
+  (el as any)[MENU_ITEMS_KEY] = items;
+}
+
 const contextMenuDirective: Directive<HTMLElement, MenuItems> = {
-  // SSR 支持
-  getSSRProps(binding: DirectiveBinding<MenuItems>) {
-    // 返回空对象，服务端不渲染任何特殊属性
+  // SSR 支持：服务端不渲染任何特殊属性
+  getSSRProps() {
     return {};
   },
 
-  // 服务端不执行任何操作
-  serverCreated() {},
-  serverBeforeMounted() {},
-  serverMounted() {},
-  serverBeforeUnmount() {},
-  serverUnmounted() {},
-
-  mounted(el: HTMLElement, binding: DirectiveBinding<MenuItems>) {
-    const menuItems = binding.value;
-
-    if (!Array.isArray(menuItems) || menuItems.length === 0) {
-      console.warn("[v-context-menu] 菜单项必须是非空数组");
-      return;
-    }
-
-    // 存储菜单项到元素上，ContextMenu 组件会从这里读取
-    (el as any)._customMenuItems = menuItems;
+  mounted(el, binding) {
+    if (!isValidItems(binding.value)) return;
+    applyMenuItems(el, binding.value);
   },
 
-  updated(el: HTMLElement, binding: DirectiveBinding<MenuItems>) {
-    const menuItems = binding.value;
-    if (!Array.isArray(menuItems)) {
-      console.warn("[v-context-menu] 菜单项必须是数组");
-      return;
-    }
-
-    // 更新存储的菜单项
-    (el as any)._customMenuItems = menuItems;
+  updated(el, binding) {
+    if (!isValidItems(binding.value)) return;
+    applyMenuItems(el, binding.value);
   },
 
-  unmounted(el: HTMLElement) {
-    // 组件卸载时清除数据
-    delete (el as any)._customMenuItems;
+  unmounted(el) {
+    applyMenuItems(el, undefined);
   },
 };
+
+// 校验菜单项是否为非空数组
+function isValidItems(value: unknown): value is MenuItems {
+  if (!Array.isArray(value) || value.length === 0) {
+    console.warn("[v-context-menu] 菜单项必须是非空数组");
+    return false;
+  }
+  return true;
+}
 
 export default contextMenuDirective;
 

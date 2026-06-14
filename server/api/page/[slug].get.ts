@@ -38,12 +38,12 @@ export default defineEventHandler(async event => {
   }
 
   // 解析封面
-  let covers = [];
+  let covers: Array<{ url: string; desc: string }> = [];
   if (page.covers) {
     try {
       const parsed = JSON.parse(page.covers);
       if (Array.isArray(parsed)) {
-        covers = parsed.map(item => ({
+        covers = parsed.map((item: any) => ({
           url: item.url || item,
           desc: item.title || item.desc || '',
         }));

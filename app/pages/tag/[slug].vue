@@ -307,10 +307,17 @@ onMounted(() => {
               :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
               class="flex flex-col relative h-50 overflow-hidden rounded-t-[15px] grow">
               <img
-                :src="post.covers[0].url"
+                :src="post.covers[0]?.url"
                 :alt="post.title"
                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                 loading="lazy" />
+              <!-- 多封面角标 -->
+              <div
+                v-if="post.many_covers && post.covers.length > 1"
+                class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                <Icon name="ri-gallery-line" class="size-3.5" />
+                <span>+{{ post.covers.length - 1 }}</span>
+              </div>
             </NuxtLink>
 
             <!-- 无封面占位 -->

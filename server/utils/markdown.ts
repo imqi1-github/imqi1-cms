@@ -35,6 +35,10 @@ import powershell from "@shikijs/langs/powershell";
 import islandLightTheme from '@/shiki/island_light'
 import islandDarkTheme from '@/shiki/island_dark'
 
+// 自定义主题需要断言为 Shiki 接受的格式
+const lightTheme = islandLightTheme as any;
+const darkTheme = islandDarkTheme as any;
+
 // 单例模式的 markdown 实例
 let mdInstance: MarkdownIt | null = null;
 
@@ -92,8 +96,8 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   md.use(
     await Shiki({
       themes: {
-        light: islandLightTheme,
-        dark: islandDarkTheme,
+        light: lightTheme,
+        dark: darkTheme,
       },
       langs: [
         javascript,
@@ -125,45 +129,63 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
         powershell,
       ],
       // 未找到语言时的 fallback
-      fallbackLanguage: "text",
+      fallbackLanguage: "json",
       transformers: [transformerNotationHighlight(), transformerNotationDiff()],
     }),
   );
 
-  // 自定义代码块渲染规则 - 处理 "语言+文件名" 格式
+  // 自定义代码块渲染规则 - 处理 "语言+文件名" 格式 + 未知语言 fallback
   const defaultFence = md.renderer.rules.fence || function(tokens: any[], idx: number, options: any, env: any, self: any) {
     return self.renderToken(tokens, idx, options);
   };
+
+  // HTML 转义（用于兜底渲染）
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
 
   md.renderer.rules.fence = (tokens: any[], idx: number, options: any, env: any, self: any) => {
     const token = tokens[idx];
     const info = token.info || "";
 
-    // 检测是否为 "语言+文件名" 格式 (如 "js+main.js")
-    if (info.includes("+")) {
-      const parts = info.split("+");
-      const lang = parts[0];
-      const fileName = parts.slice(1).join("+");
+    // 提取实际语言名（去掉 "+文件名" 部分），用于喂给 Shiki
+    const shikiLang = info.includes("+") ? info.split("+")[0]! : info;
 
-      // 临时修改 info 为实际语言，让 Shiki 正确高亮
-      token.info = lang;
+    // 临时把 info 设为 shikiLang，让 Shiki 不被 "+文件名" 干扰
+    token.info = shikiLang;
 
-      // 调用原始渲染器
-      let result = defaultFence(tokens, idx, options, env, self);
-
+    let result: string;
+    try {
+      result = defaultFence(tokens, idx, options, env, self);
+      // 如果原始语言不是 json 系，但 Shiki fallback 后 class 变成 language-json
+      // 说明触发了 fallbackLanguage → 把 class 改回原始语言名
+      if (!shikiLang.toLowerCase().startsWith("json")) {
+        result = result.replace(/language-json/g, `language-${shikiLang}`);
+      }
+    } catch {
+      // fallbackLanguage 未配置或失败：手动用 json 重试
+      token.info = "json";
+      try {
+        result = defaultFence(tokens, idx, options, env, self);
+        result = result.replace(/language-json/g, `language-${shikiLang}`);
+      } catch {
+        // 极端情况：连 json 都失败，纯文本兜底
+        result = `<pre class="language-${info}"><code class="language-${info}">${escapeHtml(token.content)}</code></pre>`;
+      }
+    } finally {
       // 恢复原始 info
       token.info = info;
-
-      // 修改渲染结果中的 class，保留完整的 "语言+文件名" 信息
-      result = result.replace(
-        `class="language-${lang}"`,
-        `class="language-${info}"`
-      );
-
-      return result;
     }
 
-    return defaultFence(tokens, idx, options, env, self);
+    // 如果原始 info 含 "+文件名"，把 class 中的语言部分扩展为完整 info
+    if (info !== shikiLang) {
+      result = result.replace(
+        `class="language-${shikiLang}"`,
+        `class="language-${info}"`
+      );
+    }
+
+    return result;
   };
 
   // 配置容器插件（用于折叠等功能）
@@ -369,8 +391,8 @@ const musicPlatforms: MusicPlatform[] = [
     name: "netease",
     regex: /https:\/\/music\.163\.com\/(playlist|song|album|artist)\?id=(\d+)/i,
     getServer: () => "netease",
-    getType: (match) => match[1],
-    getId: (match) => match[2]
+    getType: (match) => match[1] ?? "",
+    getId: (match) => match[2] ?? ""
   },
   // QQ音乐
   {
@@ -383,25 +405,25 @@ const musicPlatforms: MusicPlatform[] = [
         songDetail: "song",
         albumDetail: "album"
       };
-      return typeMap[match[1]] || "song";
+      return typeMap[match[1] ?? ""] || "song";
     },
-    getId: (match) => match[2]
+    getId: (match) => match[2] ?? ""
   },
   // 酷我音乐
   {
     name: "kuwo",
     regex: /https:\/\/www\.kuwo\.cn\/(playlist|song|album)\/(\d+)/i,
     getServer: () => "kuwo",
-    getType: (match) => match[1],
-    getId: (match) => match[2]
+    getType: (match) => match[1] ?? "",
+    getId: (match) => match[2] ?? ""
   },
   // 酷狗音乐
   {
     name: "kugou",
     regex: /https:\/\/www\.kugou\.com\/(song|album|playlist)\/(\w+)\.html/i,
     getServer: () => "kugou",
-    getType: (match) => match[1],
-    getId: (match) => match[2]
+    getType: (match) => match[1] ?? "",
+    getId: (match) => match[2] ?? ""
   }
 ];
 

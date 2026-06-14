@@ -47,7 +47,7 @@ async function queryIpLocation(ip: string): Promise<IpLocation | null> {
         isp = "电信";
       } else {
         // 取第一个空格前的内容
-        isp = isp.split(" ")[0];
+        isp = isp.split(" ")[0] ?? null;
       }
     }
 

@@ -36,7 +36,7 @@ export const redis = redisConfig
   : null;
 
 // Redis 连接事件监听
-if (redis) {
+if (redis && redisConfig) {
   redis.on("connect", () => {
     console.log("[Redis] 连接成功");
   });

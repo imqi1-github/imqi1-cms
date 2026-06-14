@@ -215,7 +215,7 @@ onMounted(() => {
       <div class="min-h-screen flex flex-col">
         <a
           href="#main"
-          class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[10000] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:shadow-lg focus:outline-none">
+          class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10000 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:shadow-lg focus:outline-none">
           跳转到主要内容
         </a>
         <SiteHeader />

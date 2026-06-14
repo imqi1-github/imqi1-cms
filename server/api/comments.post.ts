@@ -44,7 +44,7 @@ export default defineEventHandler(async event => {
 
     // ========== 检查评论间隔 ==========
     // 获取客户端IP
-    const clientIP = getHeader(event, "x-forwarded-for")?.split(",")[0].trim() ||
+    const clientIP = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim() ||
                      getHeader(event, "x-real-ip") ||
                      event.node.req.socket.remoteAddress ||
                      "unknown";

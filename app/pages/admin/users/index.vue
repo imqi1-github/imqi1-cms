@@ -53,8 +53,15 @@ async function addUser() {
     })
   } catch (error: any) {
     console.error('添加失败:', error)
+    // 优先读 error.data.message（后端 createError 抛出的业务错误）
+    let errorMessage = '添加失败'
+    if (error?.data?.message) {
+      errorMessage = error.data.message
+    } else if (error?.message) {
+      errorMessage = error.message
+    }
     toast.error({
-      message: error.message || '添加失败',
+      message: errorMessage,
     })
   }
 }

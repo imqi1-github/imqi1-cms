@@ -82,9 +82,11 @@ function getNextSong(): Song | null {
   const availableIndices = playlist.value.map((_, index) => index).filter(index => !playedIndices.value.includes(index));
 
   const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+  if (randomIndex === undefined) return null;
+
   playedIndices.value.push(randomIndex);
 
-  return playlist.value[randomIndex];
+  return playlist.value[randomIndex] ?? null;
 }
 
 // 初始化播放器

@@ -60,7 +60,7 @@ let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 // 生成骨架屏随机高度 - 模拟真实瀑布流的随机效果
 const skeletonHeights = [200, 240, 280, 220, 260, 230, 270, 250, 210, 290, 215, 265, 235, 275, 225, 285];
 function getSkeletonHeight(index: number): number {
-  return skeletonHeights[(index - 1) % skeletonHeights.length];
+  return skeletonHeights[(index - 1) % skeletonHeights.length] ?? 240;
 }
 
 // 骨架屏数量 - 根据分类类型动态调整
@@ -384,10 +384,17 @@ onMounted(() => {
               :to="`/content/${slug}/${post.slug}`"
               class="flex flex-col relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px] grow">
               <img
-                :src="post.covers[0].url"
+                :src="post.covers[0]?.url"
                 :alt="post.title"
                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
                 loading="lazy" />
+              <!-- 多封面角标 -->
+              <div
+                v-if="post.many_covers && post.covers.length > 1"
+                class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                <Icon name="ri-gallery-line" class="size-3.5" />
+                <span>+{{ post.covers.length - 1 }}</span>
+              </div>
             </NuxtLink>
 
             <!-- 无封面占位 -->
