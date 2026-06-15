@@ -8,7 +8,7 @@
 
     <div class="p-10 md:p-6 max-sm:p-4 relative z-10">
       <!-- 头部区域 -->
-      <div class="ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32 md:grid-cols-1 max-md:gap-32">
+      <div class="ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32 max-md:gap-32">
         <div class="pl-8">
           <div
             class="w-48 h-48 rounded-full border-6 border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden mb-8 transition-colors duration-300">
@@ -22,7 +22,7 @@
             做技术的分享者 · 生活的摄影师 · 时事的评论员
           </p>
         </div>
-        <div class="pb-8 text-right text-left max-md:text-left">
+        <div class="pb-8 text-left max-md:text-left">
           <div class="text-blue-600 dark:text-blue-400 text-xs tracking-widest mb-4 uppercase transition-colors duration-300">
             ABOUT ME
           </div>
@@ -30,7 +30,7 @@
             class="text-slate-800 dark:text-slate-200 text-2xl font-medium leading-relaxed mb-8 transition-colors duration-300">
             我热爱编程，喜欢记录生活，分享有趣的事情。这是我的个人博客，记录着技术、生活和思考。
           </div>
-          <div class="flex flex-wrap gap-3 justify-end justify-start max-md:justify-start">
+          <div class="flex flex-wrap gap-3 justify-end max-md:justify-start">
             <span
               class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
               >💻 全栈开发者</span
@@ -97,142 +97,142 @@
           <div class="ml-[-10%] transform -rotate-12 transform-origin-center w-[120%]">
             <div class="flex gap-4 animate-scroll-diagonal w-max">
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/regex.svg"
                 alt="Regex"
                 title="正则表达式" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/c.svg"
                 alt="C"
                 title="C" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/cpp.svg"
                 alt="C++"
                 title="C++" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/java.svg"
                 alt="Java"
                 title="Java" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/sqlite.svg"
                 alt="SQLite"
                 title="SQLite" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/mysql.svg"
                 alt="MySQL"
                 title="MySQL" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/html.svg"
                 alt="HTML"
                 title="HTML" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/css.svg"
                 alt="CSS"
                 title="CSS" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/js.svg"
                 alt="JavaScript"
                 title="JavaScript" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/php.svg"
                 alt="PHP"
                 title="PHP" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/md.svg"
                 alt="Markdown"
                 title="Markdown" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/latex.svg"
                 alt="LaTeX"
                 title="LaTeX" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/python.svg"
                 alt="Python"
                 title="Python" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/qt.svg"
                 alt="Qt"
                 title="Qt" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/regex.svg"
                 alt="Regex"
                 title="正则表达式" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/c.svg"
                 alt="C"
                 title="C" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/cpp.svg"
                 alt="C++"
                 title="C++" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/java.svg"
                 alt="Java"
                 title="Java" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/sqlite.svg"
                 alt="SQLite"
                 title="SQLite" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/mysql.svg"
                 alt="MySQL"
                 title="MySQL" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/html.svg"
                 alt="HTML"
                 title="HTML" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/css.svg"
                 alt="CSS"
                 title="CSS" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/js.svg"
                 alt="JavaScript"
                 title="JavaScript" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/php.svg"
                 alt="PHP"
                 title="PHP" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/md.svg"
                 alt="Markdown"
                 title="Markdown" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/latex.svg"
                 alt="LaTeX"
                 title="LaTeX" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/python.svg"
                 alt="Python"
                 title="Python" />
               <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-allhover:-translate-y-2"
+                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 src="/skills/qt.svg"
                 alt="Qt"
                 title="Qt" />
@@ -423,18 +423,10 @@
         <div class="stats-grid grid grid-cols-1 md:grid-cols-4 gap-4 grid-cols-2 max-md:grid-cols-2">
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
-              2022
-            </div>
-            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              建站年份
-            </div>
-          </div>
-          <div class="text-center">
-            <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
               {{ animatedStats.publishedPostsNum }}
             </div>
             <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              篇文章
+              文章
             </div>
           </div>
           <div class="text-center">
@@ -447,10 +439,18 @@
           </div>
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
-              {{ animatedStats.techStack }}
+              {{ animatedStats.categoriesNum }}
             </div>
             <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              技术栈
+              分类
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
+              {{ animatedStats.tagsNum }}
+            </div>
+            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
+              标签
             </div>
           </div>
         </div>
@@ -684,7 +684,8 @@ useHead({
 const animatedStats = ref({
   publishedPostsNum: 0,
   publishedCommentsNum: 0,
-  techStack: 0,
+  categoriesNum: 0,
+  tagsNum: 0,
 });
 
 // 模拟内容
@@ -778,8 +779,11 @@ onMounted(() => {
           animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
             animatedStats.value.publishedCommentsNum = value;
           });
-          animateNumber(0, 30, 2000, value => {
-            animatedStats.value.techStack = value;
+          animateNumber(0, stats.value.categoriesNum, 2000, value => {
+            animatedStats.value.categoriesNum = value;
+          });
+          animateNumber(0, stats.value.tagsNum, 2000, value => {
+            animatedStats.value.tagsNum = value;
           });
         }
 
@@ -839,8 +843,11 @@ onMounted(() => {
                 animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
                   animatedStats.value.publishedCommentsNum = value;
                 });
-                animateNumber(0, 30, 2000, value => {
-                  animatedStats.value.techStack = value;
+                animateNumber(0, stats.value.categoriesNum, 2000, value => {
+                  animatedStats.value.categoriesNum = value;
+                });
+                animateNumber(0, stats.value.tagsNum, 2000, value => {
+                  animatedStats.value.tagsNum = value;
                 });
               }
 

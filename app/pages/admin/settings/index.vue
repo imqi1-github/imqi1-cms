@@ -299,7 +299,7 @@ onMounted(() => {
             :class="{ 'animate-spin': initializing }"
             class="mr-2 size-4"
           />
-          {{ initializing ? '初始化中...' : '初始化配置项' }}
+          {{ initializing ? '补全中...' : '补全缺失配置' }}
         </Button>
         <Button variant="outline" @click="showResetDialog = true">
           <Icon name="lucide:rotate-ccw" class="mr-2 size-4" />
