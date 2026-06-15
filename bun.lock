@@ -45,16 +45,8 @@
         "vue-sonner": "^2.0.9",
       },
       "devDependencies": {
-        "@iconify-json/ant-design": "^1.2.5",
-        "@iconify-json/boxicons": "^1.2.0",
-        "@iconify-json/devicon": "^1.2.62",
-        "@iconify-json/file-icons": "^1.2.2",
-        "@iconify-json/logos": "^1.2.11",
         "@iconify-json/lucide": "^1.2.101",
-        "@iconify-json/material-icon-theme": "^1.2.58",
-        "@iconify-json/material-symbols": "^1.2.66",
         "@iconify-json/ri": "^1.2.10",
-        "@iconify-json/vscode-icons": "^1.2.45",
         "@nuxt/icon": "^2.2.1",
         "@tailwindcss/postcss": "^4.2.2",
         "@types/markdown-it": "^14.1.2",
@@ -382,25 +374,9 @@
 
     "@hono/node-server": ["@hono/node-server@1.19.11", "", {}, "sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g=="],
 
-    "@iconify-json/ant-design": ["@iconify-json/ant-design@1.2.5", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-SYxhrx1AFq2MBcXk77AERYz2mPhLQes1F0vtvG64+dJZWyge9studXo7MiR8PPeLjRjZdWRrReRbxiwdRMf70Q=="],
-
-    "@iconify-json/boxicons": ["@iconify-json/boxicons@1.2.0", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-yAfCVaiZ5t2bC1xNVEdkWUI94e3u15IrytO2XFh8/7Y45M1i51adQpi42OhH2pUdsYM0/KY4Gklrb+XB+oZS/w=="],
-
-    "@iconify-json/devicon": ["@iconify-json/devicon@1.2.62", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-X0o0+fOJL2t5JTbDCGLRzrmvf8Pv5q8dr86+fW+F/VJ9qvXTtny6lqGIwjE9AY4VTLm3i8f/N+VtRheSW6OkEg=="],
-
-    "@iconify-json/file-icons": ["@iconify-json/file-icons@1.2.2", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-ajk44wYGTiu79EAyrfNHNaxZ1/2Z1xuSOAvYUT/pAPWHc+P6n9TUZP/ccnPG18kx0WMBxmkHHQ9/zkm6ENhk+Q=="],
-
-    "@iconify-json/logos": ["@iconify-json/logos@1.2.11", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-fOo4pGEatuyuCFNL+cwquYMa2Im0oJHRHV7lt/Qqs5Ode/lPImHCQcfTtPzZj7qYMPb/h8YHN3TG54uEowrjNQ=="],
-
     "@iconify-json/lucide": ["@iconify-json/lucide@1.2.101", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-JUN7uuSLRG3GK/9c5b8cK9e7sL6EAWDaASIwBOd0zUeKS0ACcokJubo2RMQHyVUVpd8mYkrR3Zd2mkH9ghhw1Q=="],
 
-    "@iconify-json/material-icon-theme": ["@iconify-json/material-icon-theme@1.2.58", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-G+Xgd6myxrm+zRISSwgrU/6+I7j84qjdguNOEST2V/faow15/c6tmv2/pHxR9W2EYbVQznSk8sYa2Qk2zfEjpw=="],
-
-    "@iconify-json/material-symbols": ["@iconify-json/material-symbols@1.2.66", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-pgZmK8RBAaYjfHnR0DcUDraduiJwjGDi4FwCXp89ecyNfs6fcL8j+TJ+Xqkyv6v7c31j/4OlL5ly86ATT6yTpA=="],
-
     "@iconify-json/ri": ["@iconify-json/ri@1.2.10", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-WWMhoncVVM+Xmu9T5fgu2lhYRrKTEWhKk3Com0KiM111EeEsRLiASjpsFKnC/SrB6covhUp95r2mH8tGxhgd5Q=="],
-
-    "@iconify-json/vscode-icons": ["@iconify-json/vscode-icons@1.2.45", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-ow+ueibMIq79ueM1kv6cOWgHx8jfh1XJQi2RrqMHb4HLbvIBlxpy5PCMvOJXlA68R6fBAHpWQeh6uWx7VKEVsA=="],
 
     "@iconify/collections": ["@iconify/collections@1.0.668", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-d4ygrDoTqb02p7YNHdNzy64y4VQG0bd3w26EH+mJ0eKAj+DSWxDJ1Qw/WdCAqhKfjb+mRp1n9+YwcELs2YWVlg=="],
 

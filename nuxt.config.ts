@@ -368,6 +368,10 @@ export default defineNuxtConfig({
     },
     build: {
       sourcemap: false,
+      // 使用 esbuild 进行压缩，比 terser 快 20-30 倍
+      minify: 'esbuild',
+      // 减少转译开销
+      target: 'es2020',
       rollupOptions: {
         output: {
           manualChunks: {
@@ -377,18 +381,29 @@ export default defineNuxtConfig({
             ui: ["reka-ui", "lucide-vue-next", "vue-sonner"],
             // 工具库
             utils: ["@vueuse/core", "clsx", "tailwind-merge", "class-variance-authority"],
-            // 图标
-            icons: ["@iconify/vue"],
+            // 媒体相关（swiper + fancyapps）
+            media: ["swiper", "@fancyapps/ui"],
           },
         },
+        // 忽略循环依赖警告以减少日志输出
+        onwarn(warning, warn) {
+          if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+          warn(warning);
+        },
       },
-      chunkSizeWarningLimit: 800,
+      chunkSizeWarningLimit: 1000,
     },
   },
 
   nitro: {
     // 禁用资源预压缩（不生成 .br 和 .gz 文件）
     compressPublicAssets: false,
+
+    // 实验性功能优化
+    experimental: {
+      // 禁用 OpenAPI 文档生成以加快构建
+      openAPI: false,
+    },
 
     // ISR 缓存存储配置
 
