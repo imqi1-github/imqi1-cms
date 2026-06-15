@@ -2,6 +2,7 @@ import prisma from "#server/utils/prisma";
 import * as fs from "fs";
 import nodemailer from "nodemailer";
 import * as path from "path";
+import { siteConfig } from "~~/site.config";
 
 // 邮件日志目录
 const LOG_DIR = path.join(process.cwd(), "logs", "mail");
@@ -298,8 +299,8 @@ async function getSiteInfo() {
   const get = (key: string) => settings.find(s => s.key === key)?.value || "";
 
   return {
-    name: get("siteName") || "ImQi1",
-    url: get("siteUrl") || "https://imqi1.com",
+    name: get("siteName") || siteConfig.siteName,
+    url: get("siteUrl") || siteConfig.siteUrl,
   };
 }
 
@@ -403,18 +404,16 @@ export async function notifyFriendLinkApplication(linkName: string, linkUrl: str
 
   const content = `
     <h2>${autoApproved ? "友链已自动添加" : "友链申请通知"}</h2>
-    ${autoApproved
-      ? `<p>系统检测到 <strong>${siteInfo.name}</strong> 的友链已在对方网站添加，已自动通过：</p>`
-      : `<p>有人在 <strong>${siteInfo.name}</strong> 申请了友链：</p>`
+    ${
+      autoApproved
+        ? `<p>系统检测到 <strong>${siteInfo.name}</strong> 的友链已在对方网站添加，已自动通过：</p>`
+        : `<p>有人在 <strong>${siteInfo.name}</strong> 申请了友链：</p>`
     }
     <div class="info-box">
       <p><strong>网站名称：</strong>${linkName}</p>
       <p><strong>网站链接：</strong><a href="${linkUrl}" target="_blank">${linkUrl}</a></p>
     </div>
-    ${autoApproved
-      ? `<p>此友链已自动启用，您可以前往后台进行管理。</p>`
-      : `<p>请前往后台审核此友链申请。</p>`
-    }
+    ${autoApproved ? `<p>此友链已自动启用，您可以前往后台进行管理。</p>` : `<p>请前往后台审核此友链申请。</p>`}
     <p><a href="${siteInfo.url}/admin/links" class="link">前往后台管理</a></p>
   `;
 
@@ -590,8 +589,8 @@ export async function notifyFriendLinkModification(
       <p><strong>新友链信息：</strong></p>
       <p>名称：${newLink.name}</p>
       <p>链接：<a href="${newLink.link}" target="_blank">${newLink.link}</a></p>
-      ${newLink.desc ? `<p>描述：${newLink.desc}</p>` : ''}
-      ${newLink.avatar ? `<p>头像：<a href="${newLink.avatar}" target="_blank">${newLink.avatar}</a></p>` : ''}
+      ${newLink.desc ? `<p>描述：${newLink.desc}</p>` : ""}
+      ${newLink.avatar ? `<p>头像：<a href="${newLink.avatar}" target="_blank">${newLink.avatar}</a></p>` : ""}
     </div>
 
     <p>请前往后台审核此修改请求。批准后将更新原友链，拒绝后将删除此请求。</p>

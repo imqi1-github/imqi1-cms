@@ -194,9 +194,6 @@ export function validateSettingsData(data: Record<string, any>): void {
   if (data.siteDesc) {
     validateMaxLength(data.siteDesc, 500, "站点描述");
   }
-  if (data.siteKeywords) {
-    validateMaxLength(data.siteKeywords, 500, "站点关键词");
-  }
   if (data.siteIcp) {
     validateMaxLength(data.siteIcp, 100, "ICP备案号");
   }

@@ -2,6 +2,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
 import { validateSettingsData } from "#server/utils/validation";
+import { siteConfig } from "~~/site.config";
 
 export default defineEventHandler(async event => {
   const body = await readBody(event);
@@ -30,10 +31,9 @@ export default defineEventHandler(async event => {
 
   try {
     const updates = [
-      { key: "siteName", value: settingsBody.siteName || "ImQi1" },
-      { key: "siteUrl", value: settingsBody.siteUrl || "https://imqi1.com" },
-      { key: "siteDesc", value: settingsBody.siteDesc || "做技术的分享者、生活的摄影师、时事的评论员。" },
-      { key: "siteKeywords", value: settingsBody.siteKeywords || "棋,ImQi1,棋的小站,生活,科技,编程,学习" },
+      { key: "siteName", value: settingsBody.siteName ?? siteConfig.siteName },
+      { key: "siteUrl", value: settingsBody.siteUrl ?? siteConfig.siteUrl },
+      { key: "siteDesc", value: settingsBody.siteDesc ?? siteConfig.seo.description },
       { key: "siteIcp", value: settingsBody.siteIcp || "" },
       { key: "commentEnabled", value: String(settingsBody.commentEnabled ?? true) },
       { key: "commentModeration", value: String(settingsBody.commentModeration ?? false) },
@@ -45,7 +45,7 @@ export default defineEventHandler(async event => {
       { key: "commentInterval", value: String(settingsBody.commentInterval ?? 60) },
       { key: "postPageSize", value: String(settingsBody.postPageSize ?? 12) },
       { key: "feedCacheInterval", value: String(settingsBody.feedCacheInterval ?? 8) },
-      { key: "homeCustomText", value: settingsBody.homeCustomText ?? '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' },
+      { key: "homeCustomText", value: settingsBody.homeCustomText ?? siteConfig.homeCustomText },
       { key: "musicPlaylistId", value: settingsBody.musicPlaylistId ?? "9255074836 || netease" },
       { key: "photoCategorySlug", value: settingsBody.photoCategorySlug ?? "shot" },
       { key: "moderationApiType", value: String(settingsBody.moderationApiType ?? "1") },
@@ -65,7 +65,7 @@ export default defineEventHandler(async event => {
       { key: "adminEmail", value: settingsBody.adminEmail ?? "" },
       { key: "notifyAdmin", value: String(settingsBody.notifyAdmin ?? false) },
       { key: "uploadLocation", value: settingsBody.uploadLocation ?? "local" },
-      { key: "upyunDomain", value: settingsBody.upyunDomain ?? "https://cdn.imqi1.com" },
+      { key: "upyunDomain", value: settingsBody.upyunDomain ?? siteConfig.cdnUrl },
       { key: "upyunService", value: settingsBody.upyunService ?? "" },
       { key: "upyunOperator", value: settingsBody.upyunOperator ?? "" },
       { key: "upyunPassword", value: settingsBody.upyunPassword ?? "" },

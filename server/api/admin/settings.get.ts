@@ -1,5 +1,6 @@
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
+import { siteConfig } from "~~/site.config";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -16,10 +17,9 @@ export default defineEventHandler(async event => {
 
     // 默认值
     const defaults: Record<string, any> = {
-      siteName: "ImQi1",
-      siteUrl: "https://imqi1.com",
-      siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
-      siteKeywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习",
+      siteName: siteConfig.siteName,
+      siteUrl: siteConfig.siteUrl,
+      siteDesc: siteConfig.seo.description,
       siteIcp: "",
       commentEnabled: true,
       commentModeration: false,
@@ -31,7 +31,7 @@ export default defineEventHandler(async event => {
       commentInterval: 60,
       postPageSize: 12,
       feedCacheInterval: 8,
-      homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
+      homeCustomText: siteConfig.homeCustomText,
       musicPlaylistId: "9255074836 || netease",
       photoCategorySlug: "shot",
       moderationApiType: "1",
@@ -51,7 +51,7 @@ export default defineEventHandler(async event => {
       adminEmail: "",
       notifyAdmin: false,
       uploadLocation: "local",
-      upyunDomain: "https://cdn.imqi1.com",
+      upyunDomain: siteConfig.cdnUrl,
       upyunService: "",
       upyunOperator: "",
       upyunPassword: "",

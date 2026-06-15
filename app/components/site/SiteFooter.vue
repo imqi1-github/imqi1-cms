@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const route = useRoute();
 const router = useRouter();
 
@@ -16,7 +18,7 @@ const { siteSettings, fetchSiteSettings } = useSiteSettings();
 // 判断是否为首页
 const isHomePage = computed(() => route.path === "/");
 
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const siteIcp = computed(() => siteSettings.value?.siteIcp || "");
 
 // 页脚图标数据

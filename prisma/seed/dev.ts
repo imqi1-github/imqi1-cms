@@ -1,6 +1,7 @@
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { siteConfig } from "../../site.config";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST || "localhost",
@@ -904,10 +905,9 @@ const tags = [
 
 // 示例元数据
 const metaItems = [
-  { key: "siteName", value: "ImQi1" },
-  { key: "siteUrl", value: "https://imqi1.com" },
-  { key: "siteDesc", value: "做技术的分享者、生活的摄影师、时事的评论员。" },
-  { key: "siteKeywords", value: "棋,ImQi1,棋的小站,生活,科技,编程,学习" },
+  { key: "siteName", value: siteConfig.siteName },
+  { key: "siteUrl", value: siteConfig.siteUrl },
+  { key: "siteDesc", value: siteConfig.seo.description },
   { key: "siteIcp", value: "" },
   { key: "commentEnabled", value: "true" },
   { key: "commentModeration", value: "false" },
@@ -942,7 +942,7 @@ const metaItems = [
   { key: "adminEmail", value: "" },
   { key: "notifyAdmin", value: "false" },
   { key: "uploadLocation", value: "local" },
-  { key: "upyunDomain", value: "https://cdn.imqi1.com" },
+  { key: "upyunDomain", value: siteConfig.cdnUrl },
   { key: "upyunService", value: "" },
   { key: "upyunOperator", value: "" },
   { key: "upyunPassword", value: "" },

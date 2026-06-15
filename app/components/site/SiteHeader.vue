@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const route = useRoute();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 获取页面标题（从页面组件设置）
 const { getPageTitle, getPageIcon, getPageCategory } = usePageTitle();
@@ -253,7 +255,7 @@ onMounted(() => {
         to="/"
         class="hidden md:flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] group font-serif font-[450]"
         :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
-        <img src="/imgs/imqi1.svg" alt="" class="w-5.5 h-5.5" />
+        <img :src="siteConfig.seo.ogImage" alt="" class="w-5.5 h-5.5" />
         <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
         <div aria-hidden="true" class="absolute inset-0 items-center group-hover:opacity-100 opacity-0 transition-all duration-300 justify-center flex bg-blue-600">
           <Icon name="ri:home-fill" class="size-5 text-white" mode="svg" />

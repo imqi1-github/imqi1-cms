@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { siteConfig } from "~~/site.config";
 
 // ✅ Catch-all 路由：处理前台 404
 
@@ -15,10 +16,12 @@ definePageMeta({
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
-useHead({
+usePageSeo({
   title: computed(() => `页面未找到 - ${siteName.value}`),
+  description: siteConfig.pageSeo.notFound.description,
+  keywords: siteConfig.pageSeo.notFound.keywords,
 });
 
 // 初始化404页面动画

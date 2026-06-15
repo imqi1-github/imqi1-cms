@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
-import { Fancybox } from "@fancyapps/ui";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { siteConfig } from "~~/site.config";
 import type { MenuItems } from "~/directives/contextMenu";
 
 // 导入前台通知 composable
@@ -10,7 +10,7 @@ const { success, error: showError, notify } = useFrontNotification();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 是否显示友链地址输入框
 const showLinkUrlInput = computed(() => siteSettings.value?.linkAutoApprove === true);
@@ -177,38 +177,10 @@ const checkIfNeedAutoCheck = () => {
 };
 
 // 页面元数据
-useHead({
+usePageSeo({
   title: computed(() => `友情链接 - ${siteName.value}`),
-  meta: [
-    {
-      name: "description",
-      content: "查看 ImQi1 的友情链接，发现更多优秀的博客和网站。欢迎申请友链交换。",
-    },
-    {
-      name: "keywords",
-      content: "友情链接,友链,博客链接,网站推荐,链接交换",
-    },
-    {
-      property: "og:title",
-      content: computed(() => `友情链接 - ${siteName.value}`),
-    },
-    {
-      property: "og:description",
-      content: "查看 ImQi1 的友情链接，发现更多优秀的博客和网站。欢迎申请友链交换。",
-    },
-    {
-      property: "og:type",
-      content: "website",
-    },
-    {
-      name: "twitter:title",
-      content: computed(() => `友情链接 - ${siteName.value}`),
-    },
-    {
-      name: "twitter:description",
-      content: "查看 ImQi1 的友情链接，发现更多优秀的博客和网站。欢迎申请友链交换。",
-    },
-  ],
+  description: siteConfig.pageSeo.links.description,
+  keywords: siteConfig.pageSeo.links.keywords,
 });
 
 // 表单状态
@@ -304,8 +276,7 @@ const avatarContextMenu: MenuItems = [
     icon: "ri:file-copy-line",
     label: "复制头像链接",
     action: () => {
-      const avatarUrl = "https://cn.cravatar.com/avatar/2841d29eeabab633ae116c7b2c97e3bf?size=512";
-      navigator.clipboard.writeText(avatarUrl);
+      navigator.clipboard.writeText(siteConfig.links.profile.siteAvatar);
       notify("复制头像链接成功", "success");
     },
   },
@@ -409,9 +380,12 @@ const handleSubmit = async (forceSubmit = false) => {
 };
 
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
+let FancyboxModule: any = null;
 
 // 初始化滚动渐入动画
-onMounted(() => {
+onMounted(async () => {
+  // 动态导入 Fancybox（仅客户端）
+  FancyboxModule = await import("@fancyapps/ui");
   // 加载友链状态
   loadLinkStatuses();
   // 检查是否需要自动检测
@@ -436,7 +410,7 @@ onMounted(() => {
     fadeInObserver.observe(el);
   });
 
-  Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
     // === 全局选项 ===
     l10n: zh_CN,
     placeFocusBack: false,
@@ -487,7 +461,9 @@ onUnmounted(() => {
 
   // 清理 Fancybox
   // Fancybox.destroy();
-  Fancybox.unbind(fancyboxContainer.value);
+  if (FancyboxModule) {
+    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
+  }
 });
 </script>
 
@@ -635,74 +611,19 @@ onUnmounted(() => {
     <section class="my-8 animate-fade-in">
       <h2 class="text-xl font-bold mb-4">本站已加入的博客组织</h2>
       <div class="flex flex-wrap gap-4">
-        <!-- 十年之约 -->
         <a
-          href="https://www.foreverblog.cn/blog/5868.html"
+          v-for="org in siteConfig.links.blogOrganizations"
+          :key="org.name"
+          :href="org.url"
           target="_blank"
           rel="noopener"
           class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
           <img
-            src="/imgs/foreverblog.png"
-            alt="十年之约"
+            :src="org.icon"
+            :alt="org.name"
             class="w-6 h-6 object-contain rounded-full"
             loading="lazy" />
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">十年之约</span>
-        </a>
-
-        <!-- 开往 -->
-        <a
-          href="https://list.travellings.cn/"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
-          <img
-            src="/imgs/travelling.png"
-            alt="开往"
-            class="w-6 h-6 object-contain rounded-full"
-            loading="lazy" />
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">开往</span>
-        </a>
-
-        <!-- 博友圈 -->
-        <a
-          href="https://www.boyouquan.com/blogs/imqi1.com"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
-          <img
-            src="/imgs/boyouquan.png"
-            alt="博友圈"
-            class="w-6 h-6 object-contain rounded-full"
-            loading="lazy" />
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">博友圈</span>
-        </a>
-
-        <!-- Blogfinder -->
-        <a
-          href="https://bf.zzxworld.com/s/976"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
-          <img
-            src="/imgs/blogfinder.png"
-            alt="Blogfinder"
-            class="w-6 h-6 object-contain rounded-full"
-            loading="lazy" />
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">Blogfinder</span>
-        </a>
-
-        <!-- 个站商店 -->
-        <a
-          href="https://storeweb.cn/member/o/2146"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
-          <img
-            src="/imgs/storeweb.png"
-            alt="个站商店"
-            class="w-6 h-6 object-contain rounded-full"
-            loading="lazy" />
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">个站商店</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">{{ org.name }}</span>
         </a>
       </div>
     </section>
@@ -716,21 +637,21 @@ onUnmounted(() => {
           <div class="shrink-0">
             <img
               v-context-menu="avatarContextMenu"
-              src="https://cn.cravatar.com/avatar/2841d29eeabab633ae116c7b2c97e3bf?size=512"
-              alt="ImQi1"
+              :src="siteConfig.links.profile.siteAvatar"
+              :alt="siteConfig.links.profile.siteName"
               class="w-20 h-20 rounded-xl object-cover cursor-context-menu" />
           </div>
           <!-- 信息 -->
           <div class="flex-1 space-y-1">
             <div>
-              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">ImQi1 / 棋</h3>
-              <p class="text-slate-600 dark:text-slate-400 text-sm mt-1">做技术的分享者 · 生活的摄影师 · 时事的评论员</p>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ siteConfig.links.profile.siteName }}</h3>
+              <p class="text-slate-600 dark:text-slate-400 text-sm mt-1">{{ siteConfig.links.profile.siteDescription }}</p>
             </div>
             <div class="flex flex-wrap gap-4 text-sm">
               <div class="flex items-center gap-2">
                 <Icon name="ri:link" class="text-blue-600" />
-                <a href="https://imqi1.com" target="_blank" rel="noopener" class="text-blue-600 hover:underline">
-                  https://imqi1.com
+                <a :href="siteConfig.links.profile.siteUrl" target="_blank" rel="noopener" class="text-blue-600 hover:underline">
+                  {{ siteConfig.links.profile.siteUrl }}
                 </a>
               </div>
             </div>

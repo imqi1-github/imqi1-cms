@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import emojisData from "~/assets/emojis.json";
+import { siteConfig } from "~~/site.config";
 
 const props = defineProps<{
   content: string;
 }>();
-
-// 获取 CDN 配置
-const config = useRuntimeConfig();
-const cdnURL = (config.public.cdnURL as string) || "";
 
 // 表情分类配置（通过前缀映射）
 const prefixConfig: Record<string, { dataKey: string; filePrefix: string }> = {
@@ -16,12 +13,12 @@ const prefixConfig: Record<string, { dataKey: string; filePrefix: string }> = {
   "cat": { dataKey: "Cat", filePrefix: "cat-" },
 };
 
-// 获取表情图片URL（根据是否有CDN返回不同路径）
+// 获取表情图片URL（生产环境使用 CDN 基础域名，不携带构建哈希目录）
 const getEmojiUrl = (path: string) => {
   // 只在生产环境下使用 CDN
-  if (!import.meta.env.PROD || !cdnURL) return path;
+  if (!import.meta.env.PROD || !siteConfig.cdnUrl) return path;
   // 如果有CDN，将路径中的 /emojis/ 替换为 CDN URL + /emojis/
-  return path.replace(/^\/emojis\//, `${cdnURL}/emojis/`);
+  return path.replace(/^\/emojis\//, `${siteConfig.cdnUrl}/emojis/`);
 };
 
 // 解析表情占位符

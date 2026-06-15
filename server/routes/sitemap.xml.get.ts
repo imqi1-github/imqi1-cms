@@ -1,19 +1,20 @@
 import { prisma } from "#server/utils/prisma";
+import { siteConfig } from "~~/site.config";
+
+// 从 siteConfig 提取主机名作为兜底（避免硬编码域名）
+const _fallbackHost = new URL(siteConfig.siteUrl).host;
 
 export default defineEventHandler(async event => {
   try {
-    // 获取CDN配置
-    const config = useRuntimeConfig();
-    const cdnURL = config.public.cdnURL as string;
-
     // 获取请求的协议和主机
     const host = event.node.req.headers.host || "";
     // 移除端口号，特别是443（HTTPS默认端口）和80（HTTP默认端口）
     const hostWithoutPort = host.replace(/:(443|80)$/, "");
 
     // 使用配置的根域名作为 fallback（防止内部请求时 host 为空）
+    const config = useRuntimeConfig();
     const rootDomain = config.public.rootDomain as string;
-    const finalHost = hostWithoutPort || rootDomain || "imqi1.com";
+    const finalHost = hostWithoutPort || rootDomain || _fallbackHost;
 
     const protocol = finalHost.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${finalHost}`;
@@ -259,7 +260,7 @@ ${urls.join("\n")}
     const host = event.node.req.headers.host || "";
     // 移除端口号，特别是443（HTTPS默认端口）和80（HTTP默认端口）
     const hostWithoutPort = host.replace(/:(443|80)$/, "");
-    const finalHost = hostWithoutPort || rootDomain || "imqi1.com";
+    const finalHost = hostWithoutPort || rootDomain || _fallbackHost;
 
     const protocol = finalHost.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${finalHost}`;

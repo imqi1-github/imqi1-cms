@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { siteConfig } from "~~/site.config";
 import LivePhoto from "~/components/LivePhoto.vue";
 
 const route = useRoute();
@@ -9,7 +10,7 @@ const slug = route.params.slug as string;
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug || "shot");
 const postPageSize = computed(() => siteSettings.value?.postPageSize || 12);
 
@@ -245,45 +246,19 @@ watch(
 );
 
 // 页面标题
-useHead(() => ({
-  title: (() => {
+usePageSeo({
+  title: computed(() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
     if (isNotFound.value) return `分类不存在 - ${siteName.value}`;
     return `分类 ${category.value?.name} - ${siteName.value}`;
-  })(),
-  meta: category.value
-    ? [
-        {
-          name: "description",
-          content: `浏览 ${category.value.name} 分类下的所有文章，${category.value.desc || "查看相关技术文章和教程"}`,
-        },
-        {
-          name: "keywords",
-          content: `${category.value.name},分类,博客,${category.value.desc || ""}`,
-        },
-        {
-          property: "og:title",
-          content: `${category.value.name} - ${siteName.value}`,
-        },
-        {
-          property: "og:description",
-          content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
-        },
-        {
-          property: "og:type",
-          content: "website",
-        },
-        {
-          name: "twitter:title",
-          content: `${category.value.name} - ${siteName.value}`,
-        },
-        {
-          name: "twitter:description",
-          content: category.value.desc || `浏览 ${category.value.name} 分类下的所有文章`,
-        },
-      ]
-    : [],
-}));
+  }),
+  description: computed(() =>
+    category.value ? siteConfig.pageSeo.category.description(category.value.name, category.value.desc) : "",
+  ),
+  keywords: computed(() =>
+    category.value ? siteConfig.pageSeo.category.keywords(category.value.name, category.value.desc) : "",
+  ),
+});
 
 // 初始化渐入动画
 onMounted(() => {

@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
-import { Fancybox } from "@fancyapps/ui";
-import Swiper from "swiper";
+import { siteConfig } from "~~/site.config";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { Mousewheel, Navigation, Pagination } from "swiper/modules";
 import { computed, onMounted, onUnmounted, ref, watch, useTemplateRef } from "vue";
 
 const route = useRoute();
@@ -68,7 +66,7 @@ const firstCover = computed(() => covers.value[0]?.url || "");
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true);
 
 // 使用全局认证状态
@@ -242,12 +240,12 @@ watch(
 const seoMeta = computed(() => {
   if (!post.value) return {};
 
-  const fullUrl = process.client ? window.location.href : `https://imqi1.com${route.path}`;
+  const fullUrl = process.client ? window.location.href : `${siteConfig.siteUrl}${route.path}`;
 
   const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
   const description = post.value.desc || "";
   const coverImage = firstCover.value || "";
-  const authorName = post.value.user?.nickname || post.value.user?.name || "ImQi1";
+  const authorName = post.value.user?.nickname || post.value.user?.name || siteConfig.siteName;
   const publishDate = post.value.create_time || post.value.update_time;
   const modifyDate = post.value.update_time;
 
@@ -283,7 +281,7 @@ const seoMeta = computed(() => {
       { name: "twitter:title", content: post.value.title },
       { name: "twitter:description", content: description },
       { name: "twitter:image", content: coverImage },
-      { name: "twitter:site", content: "@imqi1" },
+      { name: "twitter:site", content: siteConfig.seo.twitterSite },
 
       // 其他
       { name: "robots", content: "index, follow" },
@@ -432,10 +430,13 @@ watch(
 
 // Fancybox 容器引用
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
+let FancyboxModule: any = null;
 
 // 初始化 Fancybox 和其他功能
-onMounted(() => {
+onMounted(async () => {
   try {
+    // 动态导入 Fancybox（仅客户端）
+    FancyboxModule = await import("@fancyapps/ui");
     // 404 页面动画（初始状态）
     if (isNotFound.value) {
       nextTick(() => {
@@ -447,7 +448,7 @@ onMounted(() => {
     }
 
     // 初始化 Fancybox（参照友情链接页面）
-    Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+    FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
       l10n: zh_CN,
       placeFocusBack: false,
       Hash: false,
@@ -953,7 +954,11 @@ onMounted(() => {
         wrapper.replaceWith(swiperContainer);
 
         // 初始化 Swiper
-        setTimeout(() => {
+        setTimeout(async () => {
+          const [{ default: Swiper }, { Navigation, Pagination, Mousewheel }] = await Promise.all([
+            import("swiper"),
+            import("swiper/modules"),
+          ]);
           const newSwiper = new Swiper(`.${uniqueClass}`, {
             modules: [Navigation, Pagination, Mousewheel],
             slidesPerView: "auto",
@@ -1869,7 +1874,9 @@ onMounted(() => {
 
 // 清理 Fancybox 和滚动监听
 onUnmounted(() => {
-  Fancybox.unbind(fancyboxContainer.value);
+  if (FancyboxModule) {
+    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
+  }
   window.removeEventListener("scroll", handleTocScroll);
 
   // 清理所有代码块的复制按钮监听器

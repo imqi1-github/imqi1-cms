@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getSubscribePosts } from '#server/utils/rss';
 import { parseCovers } from "#server/utils/covers";
 import MarkdownIt from "markdown-it";
+import { siteConfig } from "~~/site.config";
 
 // 创建简化版 Markdown 实例
 const md = new MarkdownIt({
@@ -309,8 +310,8 @@ export default defineEventHandler(async event => {
       success: true,
       data: {
         site: {
-          siteName: infoMap["siteName"] || "ImQi1",
-          homeCustomText: infoMap["homeCustomText"] || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>",
+          siteName: infoMap["siteName"] || siteConfig.siteName,
+          homeCustomText: infoMap["homeCustomText"] || siteConfig.homeCustomText,
           photoCategorySlug: photoCategorySlug,
         },
         categories: categoriesData,

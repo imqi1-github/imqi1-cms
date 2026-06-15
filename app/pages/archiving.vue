@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const { data, pending, error } = await useFetch("/api/archiving", {
   headers: {
     "x-ssr-internal-request": "true",
@@ -7,11 +9,13 @@ const { data, pending, error } = await useFetch("/api/archiving", {
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 页面元数据
-useHead({
+usePageSeo({
   title: computed(() => `文章归档 - ${siteName.value}`),
+  description: siteConfig.pageSeo.archiving.description,
+  keywords: siteConfig.pageSeo.archiving.keywords,
 });
 
 // 格式化日期

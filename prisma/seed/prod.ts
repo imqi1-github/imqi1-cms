@@ -2,6 +2,7 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import "dotenv/config";
+import { siteConfig } from "../../site.config";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST || "localhost",
@@ -33,10 +34,9 @@ const ADMIN_USER = {
  * 网站元数据配置
  */
 const SITE_META = {
-  siteName: process.env.SEED_SITE_NAME || "ImQi1",
-  siteUrl: process.env.SEED_SITE_URL || "https://imqi1.com",
-  siteDesc: process.env.SEED_SITE_DESC || "做技术的分享者、生活的摄影师、时事的评论员。",
-  siteKeywords: process.env.SEED_SITE_KEYWORDS || "棋,ImQi1,棋的小站,生活,科技,编程,学习",
+  siteName: process.env.SEED_SITE_NAME || siteConfig.siteName,
+  siteUrl: process.env.SEED_SITE_URL || siteConfig.siteUrl,
+  siteDesc: process.env.SEED_SITE_DESC || siteConfig.seo.description,
   siteIcp: process.env.SEED_SITE_ICP || "",
   commentEnabled: process.env.SEED_COMMENT_ENABLED || "true",
   commentModeration: process.env.SEED_COMMENT_MODERATION || "false",
@@ -47,7 +47,7 @@ const SITE_META = {
   commentRequireLink: process.env.SEED_COMMENT_REQUIRE_LINK || "false",
   commentInterval: process.env.SEED_COMMENT_INTERVAL || "60",
   postPageSize: process.env.SEED_POST_PAGE_SIZE || "12",
-  homeCustomText: process.env.SEED_HOME_CUSTOM_TEXT || '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
+  homeCustomText: process.env.SEED_HOME_CUSTOM_TEXT || siteConfig.homeCustomText,
   musicPlaylistId: process.env.SEED_MUSIC_PLAYLIST_ID || "9255074836 || netease",
   photoCategorySlug: process.env.SEED_PHOTO_CATEGORY_SLUG || "shot",
   moderationApiType: process.env.SEED_MODERATION_API_TYPE || "1",
@@ -67,7 +67,7 @@ const SITE_META = {
   adminEmail: process.env.SEED_ADMIN_EMAIL || "",
   notifyAdmin: process.env.SEED_NOTIFY_ADMIN || "false",
   uploadLocation: process.env.SEED_UPLOAD_LOCATION || "local",
-  upyunDomain: process.env.SEED_UPYUN_DOMAIN || "https://cdn.imqi1.com",
+  upyunDomain: process.env.SEED_UPYUN_DOMAIN || siteConfig.cdnUrl,
   upyunService: process.env.SEED_UPYUN_SERVICE || "",
   upyunOperator: process.env.SEED_UPYUN_OPERATOR || "",
   upyunPassword: process.env.SEED_UPYUN_PASSWORD || "",

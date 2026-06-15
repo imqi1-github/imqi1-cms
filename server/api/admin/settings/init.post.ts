@@ -1,12 +1,13 @@
 import { prisma } from "#server/utils/prisma";
+import { siteConfig } from "~~/site.config";
 
 // 默认值配置
 const defaults: Record<string, any> = {
-  siteName: "ImQi1",
-  siteUrl: "https://imqi1.com",
-  siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
+  siteName: siteConfig.siteName,
+  siteUrl: siteConfig.siteUrl,
+  siteDesc: siteConfig.seo.description,
   siteIcp: "",
-  homeCustomText: "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>",
+  homeCustomText: siteConfig.homeCustomText,
   photoCategorySlug: "shot",
   commentEnabled: true,
   commentAvatarService: "gravatar",
@@ -40,9 +41,7 @@ export default defineEventHandler(async event => {
     for (const [key, defaultValue] of Object.entries(defaults)) {
       if (!existingKeySet.has(key)) {
         // 将默认值转换为字符串存储
-        const stringValue = typeof defaultValue === "boolean"
-          ? (defaultValue ? "true" : "false")
-          : String(defaultValue);
+        const stringValue = typeof defaultValue === "boolean" ? (defaultValue ? "true" : "false") : String(defaultValue);
 
         createdItems.push({ key, value: stringValue });
       }
@@ -57,9 +56,7 @@ export default defineEventHandler(async event => {
 
     return {
       success: true,
-      message: createdItems.length > 0
-        ? `已初始化 ${createdItems.length} 个配置项`
-        : "所有配置项已存在",
+      message: createdItems.length > 0 ? `已初始化 ${createdItems.length} 个配置项` : "所有配置项已存在",
       data: {
         created: createdItems,
         total: Object.keys(defaults).length,

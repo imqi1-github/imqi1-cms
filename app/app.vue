@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+import { printWelcomeBanner } from "../lib/welcome-banner";
+
 const route = useRoute();
-const config = useRuntimeConfig();
 const router = useRouter();
+
+// 加载页品牌文字（站点域名大写形式）
+const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();
 
 // 应用滚动条主题
 useScrollbarTheme();
@@ -99,14 +104,14 @@ router.beforeEach(async (to, from) => {
 provide("pageLoading", readonly(showPageLoading));
 
 // 全局 SEO 元信息（仅动态内容）
-const siteUrl = "https://imqi1.com";
+const siteUrl = siteConfig.siteUrl;
 
 useHead({
   link: [
     {
       rel: "canonical",
       href: computed(() => {
-        if (process.client) {
+        if (import.meta.client) {
           return window.location.href;
         }
         return siteUrl + route.path;
@@ -117,7 +122,7 @@ useHead({
     {
       property: "og:url",
       content: computed(() => {
-        if (process.client) {
+        if (import.meta.client) {
           return window.location.href;
         }
         return siteUrl + route.path;
@@ -167,18 +172,7 @@ onMounted(() => {
   // 页面加载完成后，延迟隐藏首次加载遮罩
   showFirstLoading.value = false;
 
-  console.log(
-    "%c ImQi1\u6B22\u8FCE\u4F60\u7684\u6765\u8BBF\u3002",
-    "background: linear-gradient(270deg,#f9fafb,#eaecf0,#dddddd);padding:8px 15px;border-radius:8px;color:#222",
-  );
-  console.log(
-    "██╗███╗   ███╗ ██████╗ ██╗ ██╗    ██████╗ ██████╗ ███╗   ███╗\n" +
-      "██║████╗ ████║██╔═══██╗██║███║   ██╔════╝██╔═══██╗████╗ ████║\n" +
-      "██║██╔████╔██║██║   ██║██║╚██║   ██║     ██║   ██║██╔████╔██║\n" +
-      "██║██║╚██╔╝██║██║▄▄ ██║██║ ██║   ██║     ██║   ██║██║╚██╔╝██║\n" +
-      "██║██║ ╚═╝ ██║╚██████╔╝██║ ██║██╗╚██████╗╚██████╔╝██║ ╚═╝ ██║\n" +
-      "╚═╝╚═╝     ╚═╝ ╚══▀▀═╝ ╚═╝ ╚═╝╚═╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝",
-  );
+  printWelcomeBanner();
 });
 </script>
 
@@ -204,7 +198,7 @@ onMounted(() => {
           </div>
           <div class="text-center">
             <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 font-serif mb-2">正在加载中...</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 font-serif">IMQI1.COM</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 font-serif">{{ brandDomain }}</p>
           </div>
         </div>
       </div>

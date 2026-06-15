@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const loading = ref(true);
 const activeTab = ref("basic");
 const showResetDialog = ref(false);
@@ -7,10 +9,9 @@ const csrfToken = ref("");
 const initializing = ref(false);
 
 const settings = ref({
-  siteName: "ImQi1",
-  siteUrl: "https://imqi1.com",
-  siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
-  siteKeywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习",
+  siteName: siteConfig.siteName,
+  siteUrl: siteConfig.siteUrl,
+  siteDesc: siteConfig.seo.description,
   siteIcp: "",
   commentEnabled: true,
   commentModeration: false,
@@ -22,7 +23,7 @@ const settings = ref({
   commentInterval: 60,
   postPageSize: 12,
   feedCacheInterval: 8,
-  homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
+  homeCustomText: siteConfig.homeCustomText,
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
   moderationApiType: "1",
@@ -42,7 +43,7 @@ const settings = ref({
   adminEmail: "",
   notifyAdmin: false,
   uploadLocation: "local",
-  upyunDomain: "https://cdn.imqi1.com",
+  upyunDomain: siteConfig.cdnUrl,
   upyunService: "",
   upyunOperator: "",
   upyunPassword: "",
@@ -130,10 +131,9 @@ async function testEmail() {
 }
 
 const defaultSettings = {
-  siteName: "ImQi1",
-  siteUrl: "https://imqi1.com",
-  siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
-  siteKeywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习",
+  siteName: siteConfig.siteName,
+  siteUrl: siteConfig.siteUrl,
+  siteDesc: siteConfig.seo.description,
   siteIcp: "",
   commentEnabled: true,
   commentModeration: false,
@@ -145,7 +145,7 @@ const defaultSettings = {
   commentInterval: 60,
   postPageSize: 12,
   feedCacheInterval: 8,
-  homeCustomText: '<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>',
+  homeCustomText: siteConfig.homeCustomText,
   musicPlaylistId: "9255074836 || netease",
   photoCategorySlug: "shot",
   moderationApiType: "1",
@@ -165,7 +165,7 @@ const defaultSettings = {
   adminEmail: "",
   notifyAdmin: false,
   uploadLocation: "local",
-  upyunDomain: "https://cdn.imqi1.com",
+  upyunDomain: siteConfig.cdnUrl,
   upyunService: "",
   upyunOperator: "",
   upyunPassword: "",
@@ -442,19 +442,15 @@ onMounted(() => {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <Label for="siteName">站点名称</Label>
-                  <Input id="siteName" v-model="settings.siteName" placeholder="ImQi1" />
+                  <Input id="siteName" v-model="settings.siteName" :placeholder="siteConfig.siteName" />
                 </div>
                 <div class="space-y-2">
                   <Label for="siteUrl">站点地址</Label>
-                  <Input id="siteUrl" v-model="settings.siteUrl" placeholder="https://imqi1.com" />
+                  <Input id="siteUrl" v-model="settings.siteUrl" :placeholder="siteConfig.siteUrl" />
                 </div>
                 <div class="space-y-2 md:col-span-2">
                   <Label for="siteDesc">站点描述</Label>
-                  <Input id="siteDesc" v-model="settings.siteDesc" placeholder="做技术的分享者、生活的摄影师、时事的评论员。" />
-                </div>
-                <div class="space-y-2 md:col-span-2">
-                  <Label for="siteKeywords">关键词</Label>
-                  <Input id="siteKeywords" v-model="settings.siteKeywords" placeholder="棋,ImQi1,棋的小站,生活,科技,编程,学习" />
+                  <Input id="siteDesc" v-model="settings.siteDesc" :placeholder="siteConfig.seo.description" />
                 </div>
                 <div class="space-y-2">
                   <Label for="siteIcp">备案号</Label>
@@ -629,7 +625,7 @@ onMounted(() => {
                     id="homeCustomText"
                     v-model="settings.homeCustomText"
                     rows="3"
-                    placeholder='<p>本站小程序上新，欢迎扫码体验，亦可在微信中搜索"ImQi1"。</p>' />
+                    :placeholder="siteConfig.homeCustomText" />
                   <p class="text-xs text-muted-foreground">显示在首页的自定义内容，支持 HTML 标签</p>
                 </div>
               </div>
@@ -714,7 +710,7 @@ onMounted(() => {
                   </div>
                   <div class="space-y-2">
                     <Label for="upyunDomain">绑定域名</Label>
-                    <Input id="upyunDomain" v-model="settings.upyunDomain" placeholder="https://cdn.imqi1.com" />
+                    <Input id="upyunDomain" v-model="settings.upyunDomain" :placeholder="siteConfig.cdnUrl" />
                     <p class="text-xs text-muted-foreground">又拍云绑定的 CDN 域名，用于访问上传的文件</p>
                   </div>
                 </div>
@@ -982,7 +978,7 @@ onMounted(() => {
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
                       <Label for="smtpFromName">发件人昵称</Label>
-                      <Input id="smtpFromName" v-model="settings.smtpFromName" placeholder="ImQi1 博客" />
+                      <Input id="smtpFromName" v-model="settings.smtpFromName" :placeholder="`${siteConfig.siteName} 博客`" />
                       <p class="text-xs text-muted-foreground">邮件接收人看到的发件人名称</p>
                     </div>
                     <div class="space-y-2">

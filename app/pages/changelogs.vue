@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { siteConfig } from "~~/site.config";
 
 interface ChangelogLog {
   id: number;
@@ -23,7 +24,7 @@ const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/ap
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 使用全局认证状态
 const { isLoggedIn, isLoadingAuth } = useAuth();
@@ -165,8 +166,10 @@ watch(() => selectedClass.value, async () => {
 });
 
 // 页面元数据
-useHead({
+usePageSeo({
   title: computed(() => `更新日志 - ${siteName.value}`),
+  description: siteConfig.pageSeo.changelogs.description,
+  keywords: siteConfig.pageSeo.changelogs.keywords,
 });
 </script>
 

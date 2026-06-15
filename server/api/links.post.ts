@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { notifyFriendLinkApplication } from "#server/utils/mail";
 import { validateLinkData } from "#server/utils/validation";
+import { siteConfig } from "~~/site.config";
 
 // 检测页面是否包含指定链接
 async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promise<boolean> {
@@ -101,7 +102,7 @@ export default defineEventHandler(async event => {
     });
 
     const linkAutoApprove = settingsMap['linkAutoApprove'] === 'true';
-    const siteUrl = settingsMap['siteUrl'] || 'https://imqi1.com';
+    const siteUrl = settingsMap['siteUrl'] || siteConfig.siteUrl;
 
     // 判断是否强制提交（跳过检测，直接进入待审核）
     const forceSubmit = body.forceSubmit === true;

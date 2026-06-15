@@ -218,7 +218,6 @@ VALUES ('admin', '管理员', 'admin@example.com', '$2a$10$vtD5ulRH6k9Lt0iLcoa66
 INSERT INTO `informations` (`key`, `value`) VALUES
 ('siteName', 'ImQi1 博客'),
 ('siteDescription', '做技术的分享者、生活的摄影师、时事的评论员'),
-('siteKeywords', '技术,博客,编程,开发,Vue,Nuxt,JavaScript'),
 ('commentEnabled', '1'),
 ('messagePostId', '0');
 

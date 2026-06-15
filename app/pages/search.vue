@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const route = useRoute();
 const router = useRouter();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 搜索关键词
 const searchKeyword = ref((route.query.q as string) || "");
@@ -23,8 +25,10 @@ const results = computed(() => data.value?.data?.results || []);
 const total = computed(() => data.value?.data?.total || 0);
 
 // 页面元数据
-useHead({
+usePageSeo({
   title: computed(() => `${searchKeyword.value ? `"${searchKeyword.value}" 的搜索结果` : "搜索"} - ${siteName.value}`),
+  description: siteConfig.pageSeo.search.description,
+  keywords: siteConfig.pageSeo.search.keywords,
 });
 
 // 触发渐入动画

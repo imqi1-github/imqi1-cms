@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { siteConfig } from "~~/site.config";
 
 // 获取路由
 const route = useRoute();
@@ -7,7 +8,7 @@ const router = useRouter();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 获取协议页面数据
 const { data, pending, error } = await useFetch("/api/page/agreement", {
@@ -166,8 +167,10 @@ watch(
   { immediate: true },
 );
 
-useHead({
+usePageSeo({
   title: pageTitle,
+  description: siteConfig.pageSeo.agreement.description,
+  keywords: siteConfig.pageSeo.agreement.keywords,
 });
 
 // 监听 404 状态，触发错误页动画

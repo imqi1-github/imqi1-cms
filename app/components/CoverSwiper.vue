@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, onUnmounted, watch, useTemplateRef } from "vue";
-import Swiper from "swiper";
-import { Navigation, Pagination, Mousewheel } from "swiper/modules";
-import { Fancybox } from "@fancyapps/ui";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -25,10 +22,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 const swiperContainer = ref<HTMLElement>();
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let swiperInstance: Swiper | null = null;
+let swiperInstance: any = null;
+let FancyboxModule: any = null;
 
-const initSwiper = () => {
+const initSwiper = async () => {
   if (!swiperContainer.value || props.covers.length === 0) return;
+
+  const [{ default: Swiper }, { Navigation, Pagination, Mousewheel }] = await Promise.all([
+    import("swiper"),
+    import("swiper/modules"),
+  ]);
 
   // 销毁旧实例
   if (swiperInstance && !swiperInstance.destroyed) {
@@ -61,14 +64,15 @@ const initSwiper = () => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
   // 延迟初始化，确保 DOM 已渲染
   setTimeout(() => {
     initSwiper();
   }, 100);
 
   // 初始化 Fancybox
-  Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+  FancyboxModule = await import("@fancyapps/ui");
+  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
     l10n: zh_CN,
     placeFocusBack: false,
     Hash: false,
@@ -101,7 +105,9 @@ onBeforeUnmount(() => {
 
 // 清理 Fancybox
 onUnmounted(() => {
-  Fancybox.unbind(fancyboxContainer.value);
+  if (FancyboxModule) {
+    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
+  }
 });
 
 // 监听 covers 变化，重新初始化

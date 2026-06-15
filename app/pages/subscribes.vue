@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { siteConfig } from "~~/site.config";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const feedCacheInterval = computed(() => siteSettings.value?.feedCacheInterval || 8);
 
-useHead({
-  title: computed(() => `我的订阅 - ${siteName.value}`)
+usePageSeo({
+  title: computed(() => `我的订阅 - ${siteName.value}`),
+  description: siteConfig.pageSeo.subscribes.description,
+  keywords: siteConfig.pageSeo.subscribes.keywords,
 });
 
 const posts = ref<any[]>([]);

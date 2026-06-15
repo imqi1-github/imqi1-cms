@@ -1,27 +1,19 @@
-import { prisma } from "#server/utils/prisma";
 import { parseCovers } from "#server/utils/covers";
+import { prisma } from "#server/utils/prisma";
+import { siteConfig } from "~~/site.config";
 
 export default defineEventHandler(async event => {
   try {
-    // 获取站点设置
-    const siteSettings = await prisma.informations.findUnique({
-      where: { key: "siteSettings" },
+    // 获取站点设置（逐 key 读取，与其他 API 一致）
+    const meta = await prisma.informations.findMany();
+    const infoMap: Record<string, string> = {};
+    meta.forEach((item: any) => {
+      infoMap[item.key] = item.value;
     });
 
-    let siteName = "ImQi1";
-    let siteUrl = "";
-    let siteDesc = "";
-
-    if (siteSettings?.value) {
-      try {
-        const settings = JSON.parse(siteSettings.value);
-        siteName = settings.siteName || siteName;
-        siteUrl = settings.siteUrl || "";
-        siteDesc = settings.siteDesc || "";
-      } catch {
-        // 解析失败使用默认值
-      }
-    }
+    const siteName = infoMap["siteName"] || siteConfig.siteName;
+    const siteUrl = infoMap["siteUrl"] || siteConfig.siteUrl;
+    const siteDesc = infoMap["siteDesc"] || siteConfig.seo.description;
 
     // 获取最新文章（只获取已发布的，type=0 表示文章）
     const posts = await prisma.posts.findMany({

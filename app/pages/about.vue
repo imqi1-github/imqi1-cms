@@ -3,7 +3,7 @@
     <div
       class="bottom-0 text-slate-100 dark:text-slate-800 text-[clamp(4rem,12vw,16rem)] font-extrabold left-[3%] tracking-tighter pointer-events-none leading-[.8] fixed [text-orientation:mixed] select-none [writing-mode:sideways-lr] z-0 transition-colors duration-300">
       <h1 id="about-page-title" class="sr-only">关于我</h1>
-      IMQI1.COM
+      {{ brandDomain }}
     </div>
 
     <div class="p-10 md:p-6 max-sm:p-4 relative z-10">
@@ -12,14 +12,14 @@
         <div class="pl-8">
           <div
             class="w-48 h-48 rounded-full border-6 border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden mb-8 transition-colors duration-300">
-            <img src="/imgs/avatar.webp" alt="Qi1" class="w-full h-full object-cover" />
+            <img :src="siteConfig.links.profile.siteAvatarPath" :alt="siteConfig.links.profile.ownerName" class="w-full h-full object-cover" />
           </div>
           <h1
             class="text-slate-900 dark:text-slate-100 text-[clamp(3rem,8vw,6rem)] font-black tracking-tight leading-[.9] mb-4 transition-colors duration-300">
-            Qi1
+            {{ siteConfig.links.profile.ownerName }}
           </h1>
           <p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xs transition-colors duration-300">
-            做技术的分享者 · 生活的摄影师 · 时事的评论员
+            {{ siteConfig.links.profile.siteDescription }}
           </p>
         </div>
         <div class="pb-8 text-left max-md:text-left">
@@ -466,20 +466,20 @@
         <p class="text-slate-600 dark:text-slate-400 text-lg mb-6 transition-colors duration-300">欢迎与我交流技术和生活</p>
         <div class="flex flex-wrap gap-4">
           <a
-            href="mailto:imqi1@qq.com"
+            :href="`mailto:${siteConfig.social.email}`"
             class="flex items-center bg-blue-600 dark:bg-blue-500 border border-slate-200 dark:border-slate-700 rounded-full text-white font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-500 dark:hover:bg-blue-400 hover:shadow">
             <Icon name="ri:mail-line" class="size-4 text-white" mode="svg" />
             发邮件
           </a>
           <a
-            href="https://qi1.website"
+            :href="siteConfig.social.homePage"
             target="_blank"
             class="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
             <Icon name="ri:home-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white" mode="svg" />
             主页
           </a>
           <a
-            href="https://github.com/imqi1-github"
+            :href="siteConfig.social.github"
             target="_blank"
             class="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
             <Icon name="ri:github-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white" mode="svg" />
@@ -624,10 +624,14 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { siteConfig } from "~~/site.config";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
+
+// 装饰性品牌文字（站点域名大写形式）
+const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();
 
 // 注入页面加载状态
 const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
@@ -646,38 +650,10 @@ const stats = computed(() => ({
 }));
 
 // 页面元数据
-useHead({
+usePageSeo({
   title: computed(() => `关于 - ${siteName.value}`),
-  meta: [
-    {
-      name: "description",
-      content: "了解 ImQi1，一个热爱技术、摄影和时事的博主。查看我的技能栈、MBTI 性格类型和统计数据。",
-    },
-    {
-      name: "keywords",
-      content: "关于,关于我,个人介绍,技能栈,博主,ImQi1",
-    },
-    {
-      property: "og:title",
-      content: computed(() => `关于 - ${siteName.value}`),
-    },
-    {
-      property: "og:description",
-      content: "了解 ImQi1，一个热爱技术、摄影和时事的博主。查看我的技能栈、MBTI 性格类型和统计数据。",
-    },
-    {
-      property: "og:type",
-      content: "website",
-    },
-    {
-      name: "twitter:title",
-      content: computed(() => `关于 - ${siteName.value}`),
-    },
-    {
-      name: "twitter:description",
-      content: "了解 ImQi1，一个热爱技术、摄影和时事的博主。查看我的技能栈、MBTI 性格类型和统计数据。",
-    },
-  ],
+  description: siteConfig.pageSeo.about.description,
+  keywords: siteConfig.pageSeo.about.keywords,
 });
 
 // 动画用的统计数据

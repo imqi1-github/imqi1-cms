@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const route = useRoute()
-const router = useRouter()
-const toast = useToast()
+
 
 // 移动端侧边栏开关状态
 const mobileSidebarOpen = ref(false)
@@ -63,7 +64,7 @@ const pageTitle = computed(() => {
 
 // 更新页面标题
 useHead({
-  title: computed(() => `${pageTitle.value} - 后台管理`),
+  title: computed(() => `${pageTitle.value} - ${siteConfig.siteName}后台管理`),
 })
 
 // 注意：会话验证已在 app/middleware/auth.global.ts 中处理

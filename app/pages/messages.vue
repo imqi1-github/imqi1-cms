@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
-import { Fancybox } from "@fancyapps/ui";
+import { siteConfig } from "~~/site.config";
 import { computed, onMounted } from "vue";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true);
 
 // 获取留言板配置
@@ -18,44 +18,19 @@ const { data: messageConfig } = await useFetch("/api/messages/config", {
 const messagePostId = computed(() => messageConfig.value?.data?.postId);
 
 // 页面元数据
-useHead({
+usePageSeo({
   title: computed(() => `留言 - ${siteName.value}`),
-  meta: [
-    {
-      name: "description",
-      content: "在 ImQi1 留言板留下你的足迹，说出你的想法。欢迎与我交流技术和生活。",
-    },
-    {
-      name: "keywords",
-      content: "留言,留言板,评论,交流,互动",
-    },
-    {
-      property: "og:title",
-      content: computed(() => `留言 - ${siteName.value}`),
-    },
-    {
-      property: "og:description",
-      content: "在 ImQi1 留言板留下你的足迹，说出你的想法。欢迎与我交流技术和生活。",
-    },
-    {
-      property: "og:type",
-      content: "website",
-    },
-    {
-      name: "twitter:title",
-      content: computed(() => `留言 - ${siteName.value}`),
-    },
-    {
-      name: "twitter:description",
-      content: "在 ImQi1 留言板留下你的足迹，说出你的想法。欢迎与我交流技术和生活。",
-    },
-  ],
+  description: siteConfig.pageSeo.messages.description,
+  keywords: siteConfig.pageSeo.messages.keywords,
 });
 
 const fancyboxContainer = useTemplateRef("fancyboxContainer");
+let FancyboxModule: any = null;
 
 // 初始化 Fancybox
-onMounted(() => {
+onMounted(async () => {
+  // 动态导入 Fancybox（仅客户端）
+  FancyboxModule = await import("@fancyapps/ui");
   // 初始化滚动渐入动画
   const observerOptions = {
     threshold: 0.1,
@@ -77,7 +52,7 @@ onMounted(() => {
   });
 
   // 初始化 Fancybox
-  Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
     l10n: zh_CN,
     placeFocusBack: false,
     Hash: false,
@@ -111,7 +86,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   // Fancybox.destroy();
-  Fancybox.unbind(fancyboxContainer.value);
+  if (FancyboxModule) {
+    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
+  }
 });
 </script>
 

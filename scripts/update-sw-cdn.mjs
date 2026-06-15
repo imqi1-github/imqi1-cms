@@ -14,6 +14,8 @@ if (existsSync(buildHashDirPath)) {
   buildHashDir = readFileSync(buildHashDirPath, 'utf-8').trim();
 }
 
+// 注意：此值应与 site.config.ts 中的 cdnUrl 保持一致
+// .mjs 无法直接导入 .ts，如需修改 CDN 域名请同步更新 site.config.ts
 const cdnBaseURL = 'https://cdn.imqi1.com';
 const cdnURL = buildHashDir ? `${cdnBaseURL}/${buildHashDir}` : cdnBaseURL;
 

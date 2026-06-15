@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { siteConfig } from "~~/site.config";
 
 export default defineEventHandler(async event => {
   try {
@@ -11,8 +12,8 @@ export default defineEventHandler(async event => {
     });
 
     const settings: Record<string, string> = {
-      siteName: "ImQi1",
-      siteUrl: "https://imqi1.com",
+      siteName: siteConfig.siteName,
+      siteUrl: siteConfig.siteUrl,
     };
 
     meta.forEach((meta: any) => {
@@ -22,8 +23,8 @@ export default defineEventHandler(async event => {
     return settings;
   } catch (error) {
     return {
-      siteName: "ImQi1",
-      siteUrl: "https://imqi1.com",
+      siteName: siteConfig.siteName,
+      siteUrl: siteConfig.siteUrl,
     };
   }
 });

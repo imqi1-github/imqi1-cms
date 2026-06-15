@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { siteConfig } from "~~/site.config";
+
 const loading = ref(true);
 const sitemapData = ref<any>(null);
 const recentComments = ref<any[]>([]);
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 async function fetchSitemap() {
   loading.value = true;
@@ -73,8 +75,10 @@ onMounted(() => {
   });
 });
 
-useHead({
-  title: computed(() => `站点地图 - ${siteName.value}`)
+usePageSeo({
+  title: computed(() => `站点地图 - ${siteName.value}`),
+  description: siteConfig.pageSeo.sitemap.description,
+  keywords: siteConfig.pageSeo.sitemap.keywords,
 });
 </script>
 

@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen relative w-full bg-white dark:bg-[#0a0a0a]">
     <!-- 英雄区 - fixed定位，独立于section -->
-    <h1 id="index-hero-title" class="sr-only">欢迎来到 ImQi1</h1>
+    <h1 id="index-hero-title" class="sr-only">欢迎来到 {{ siteName }}</h1>
     <div
       ref="heroRef"
       class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0"
@@ -17,7 +17,7 @@
 
         <!-- 头像区域 -->
         <div class="h-fit max-md:hidden">
-          <img src="/imgs/avatar.webp" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
+          <img :src="siteConfig.links.profile.siteAvatarPath" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
         </div>
 
         <!-- 滚动提示 -->
@@ -615,6 +615,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import MetingPlayer from "~/components/MetingPlayer.vue";
+import { siteConfig } from "~~/site.config";
 
 // 目录导航数据
 const tocItems = [
@@ -684,7 +685,7 @@ const { data: homeData } = await useFetch("/api/home-data", {
 });
 
 // 站点信息
-const siteName = computed(() => homeData.value?.data?.site?.siteName || "ImQi1");
+const siteName = computed(() => homeData.value?.data?.site?.siteName || siteConfig.siteName);
 
 // 分类信息
 const categories = computed(() => homeData.value?.data?.categories || []);
@@ -777,54 +778,25 @@ function getClassInfo(classType: string) {
 }
 
 // 页面元数据
-const siteUrl = "https://imqi1.com";
-useHead({
+usePageSeo({
   title: siteName,
-  meta: [
-    {
-      name: "description",
-      content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员。记录编程学习、生活点滴和时事评论的个人博客。",
-    },
-    {
-      name: "keywords",
-      content: "ImQi1,个人博客,技术博客,编程,Nuxt,Vue,JavaScript,摄影,时事评论",
-    },
-    {
-      property: "og:title",
-      content: siteName,
-    },
-    {
-      property: "og:description",
-      content: "做技术的分享者、生活的摄影师、时事的评论员。记录编程学习、生活点滴和时事评论的个人博客。",
-    },
-    {
-      property: "og:type",
-      content: "website",
-    },
-    {
-      name: "twitter:title",
-      content: siteName,
-    },
-    {
-      name: "twitter:description",
-      content: "做技术的分享者、生活的摄影师、时事的评论员。记录编程学习、生活点滴和时事评论的个人博客。",
-    },
-  ],
+  description: siteConfig.pageSeo.home.description,
+  keywords: siteConfig.pageSeo.home.keywords,
 });
 
 // 首页Hero下文字
-const homeAnnounce = computed(() => homeData.value?.data?.site?.homeCustomText || "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>");
+const homeAnnounce = computed(() => homeData.value?.data?.site?.homeCustomText || siteConfig.homeCustomText);
 
 // 图片分类slug
 const photoCategorySlug = computed(() => homeData.value?.data?.site?.photoCategorySlug || "shot");
 
 // 联系链接配置
 const contactLinks = ref([
-  { name: "email", url: "mailto:imqi1@qq.com", icon: "ri:mail-fill", target: true, title: "邮箱" },
-  { name: "github", url: "https://github.com/imqi1-github", icon: "ri:github-fill", target: true, title: "GitHub" },
-  { name: "npm", url: "https://www.npmjs.com/~imqi1-npm", icon: "ri:npmjs-fill", target: true, title: "npm" },
-  { name: "x", url: "https://x.com/imqi1_X", icon: "ri:twitter-x-fill", target: true, title: "X" },
-  { name: "home", url: "https://qi1.website", icon: "ri:home-2-fill", target: true, title: "个人首页" },
+  { name: "email", url: `mailto:${siteConfig.social.email}`, icon: "ri:mail-fill", target: true, title: "邮箱" },
+  { name: "github", url: siteConfig.social.github, icon: "ri:github-fill", target: true, title: "GitHub" },
+  { name: "npm", url: siteConfig.social.npm, icon: "ri:npmjs-fill", target: true, title: "npm" },
+  { name: "x", url: siteConfig.social.twitterUrl, icon: "ri:twitter-x-fill", target: true, title: "X" },
+  { name: "home", url: siteConfig.social.homePage, icon: "ri:home-2-fill", target: true, title: "个人首页" },
   { name: "link", url: "/links", icon: "ri:links-fill", target: false, title: "友情链接" },
 ]);
 

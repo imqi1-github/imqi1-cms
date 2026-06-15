@@ -1,12 +1,13 @@
 import { prisma } from "#server/utils/prisma";
+import { siteConfig } from "~~/site.config";
 
 // 默认值
 const defaults: Record<string, any> = {
-  siteName: "ImQi1",
-  siteUrl: "https://imqi1.com",
-  siteDesc: "做技术的分享者、生活的摄影师、时事的评论员。",
+  siteName: siteConfig.siteName,
+  siteUrl: siteConfig.siteUrl,
+  siteDesc: siteConfig.seo.description,
   siteIcp: "",
-  homeCustomText: "<p>做技术的分享者 · 生活的摄影师 · 时事的评论员</p>",
+  homeCustomText: siteConfig.homeCustomText,
   photoCategorySlug: "shot",
   commentEnabled: true,
   commentAvatarService: "gravatar",

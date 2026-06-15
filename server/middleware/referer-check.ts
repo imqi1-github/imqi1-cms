@@ -1,3 +1,5 @@
+import { siteConfig } from "~~/site.config";
+
 export default defineEventHandler(event => {
   // 跳过开发环境
   if (process.env.NODE_ENV === "development") {
@@ -25,7 +27,7 @@ export default defineEventHandler(event => {
     ? process.env.ALLOWED_REFERER_DOMAINS
         .split(",")
         .map(d => d.trim())
-    : ["imqi1.com"];
+    : [new URL(siteConfig.siteUrl).host];
 
   // 浏览器请求必须有 referer
   if (!referer) {

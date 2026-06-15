@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from "fs";
+import { siteConfig, fullOgImage } from "./site.config";
 
 // 读取构建 hash（如果存在）
 const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
 
-const cdnBaseURL = "https://cdn.imqi1.com";
-const cdnURL = buildHashDir ? `${cdnBaseURL}${buildHashDir}` : cdnBaseURL;
+const cdnURL = buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl;
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {
@@ -34,6 +34,11 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   rootDir: ".",
+
+  // 构建时跳过类型检查（已有独立的 vue-tsc 检查流程）
+  typescript: {
+    typeCheck: false,
+  },
 
   // 禁用开发环境的ISR payload缓存（避免目录错误）
   experimental: {
@@ -76,15 +81,15 @@ export default defineNuxtConfig({
     },
     // 生产环境配置
     manifest: {
-      name: "ImQi1",
-      short_name: "ImQi1",
-      description: "做技术的分享者、生活的摄影师、时事的评论员。",
-      theme_color: "#f9fafb",
-      background_color: "#ffffff",
+      name: siteConfig.manifest.name,
+      short_name: siteConfig.manifest.shortName,
+      description: siteConfig.manifest.description,
+      theme_color: siteConfig.manifest.themeColor,
+      background_color: siteConfig.manifest.backgroundColor,
       display: "fullscreen",
       lang: "zh-CN",
-      start_url: "https://imqi1.com",
-      scope: "https://imqi1.com",
+      start_url: siteConfig.siteUrl,
+      scope: siteConfig.siteUrl,
       id: "/",
       icons: [
         {
@@ -190,11 +195,11 @@ export default defineNuxtConfig({
       link: [
         {
           rel: "preconnect",
-          href: "https://cdn.imqi1.com",
+          href: siteConfig.cdnUrl,
         },
         {
           rel: "dns-prefetch",
-          href: "https://cdn.imqi1.com",
+          href: siteConfig.cdnUrl,
         },
         // RSS 订阅
         {
@@ -229,62 +234,34 @@ export default defineNuxtConfig({
       meta: [
         // 基础元信息
         {
-          name: "description",
-          content: "做技术的分享者、生活的摄影师、时事的评论员。",
-        },
-        {
-          name: "keywords",
-          content: "技术,摄影,时事,博客,编程,开发,Vue,Nuxt,JavaScript",
-        },
-        {
           name: "author",
-          content: "ImQi1",
+          content: siteConfig.siteName,
         },
-        // Open Graph
+        // Open Graph（仅全局静态项，title/description 由各页面 usePageSeo 设置）
         {
           property: "og:site_name",
-          content: "ImQi1",
-        },
-        {
-          property: "og:title",
-          content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
-        },
-        {
-          property: "og:description",
-          content: "做技术的分享者、生活的摄影师、时事的评论员。",
+          content: siteConfig.siteName,
         },
         {
           property: "og:image",
-          content: "https://imqi1.com/imgs/og-image.png",
-        },
-        {
-          property: "og:type",
-          content: "website",
+          content: fullOgImage,
         },
         {
           property: "og:locale",
-          content: "zh_CN",
+          content: siteConfig.seo.ogLocale,
         },
-        // Twitter Card
+        // Twitter Card（仅全局静态项）
         {
           name: "twitter:card",
           content: "summary_large_image",
         },
         {
-          name: "twitter:title",
-          content: "ImQi1 - 做技术的分享者、生活的摄影师、时事的评论员",
-        },
-        {
-          name: "twitter:description",
-          content: "做技术的分享者、生活的摄影师、时事的评论员。",
-        },
-        {
           name: "twitter:image",
-          content: "https://imqi1.com/imgs/og-image.png",
+          content: fullOgImage,
         },
         {
           name: "twitter:site",
-          content: "@imqi1",
+          content: siteConfig.seo.twitterSite,
         },
         // 其他
         {
@@ -396,8 +373,14 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // 明确指定 preset，避免自动检测消耗
+    preset: "node-server",
+
     // 禁用资源预压缩（不生成 .br 和 .gz 文件）
     compressPublicAssets: false,
+
+    // 禁用 Server-Timing 响应头，减少开销
+    timing: false,
 
     // 实验性功能优化
     experimental: {
@@ -704,7 +687,7 @@ export default defineNuxtConfig({
         ? {
             // 生产环境下的 CSP 配置
             "Content-Security-Policy":
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.imqi1.com; style-src 'self' 'unsafe-inline' https://cdn.imqi1.com; img-src 'self' data: https: https://cdn.imqi1.com; font-src 'self' data: https://cdn.imqi1.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';",
+              `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl}; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`,
             "X-Frame-Options": "DENY",
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "strict-origin-when-cross-origin",

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 const router = useRouter();
@@ -8,7 +9,7 @@ const slug = route.params.slug as string;
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
-const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const postPageSize = computed(() => siteSettings.value?.postPageSize || 12);
 
 // 从 URL query 参数中获取页码
@@ -210,45 +211,15 @@ watch(
 );
 
 // 页面标题
-useHead(() => ({
-  title: (() => {
+usePageSeo({
+  title: computed(() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
     if (isNotFound.value) return `标签不存在 - ${siteName.value}`;
     return `标签 ${tag.value?.name} - ${siteName.value}`;
-  })(),
-  meta: tag.value
-    ? [
-        {
-          name: "description",
-          content: `浏览带有 ${tag.value.name} 标签的所有文章，查看相关内容和技术分享`,
-        },
-        {
-          name: "keywords",
-          content: `${tag.value.name},标签,博客,文章`,
-        },
-        {
-          property: "og:title",
-          content: `${tag.value.name} - ${siteName.value}`,
-        },
-        {
-          property: "og:description",
-          content: `浏览带有 ${tag.value.name} 标签的所有文章`,
-        },
-        {
-          property: "og:type",
-          content: "website",
-        },
-        {
-          name: "twitter:title",
-          content: `${tag.value.name} - ${siteName.value}`,
-        },
-        {
-          name: "twitter:description",
-          content: `浏览带有 ${tag.value.name} 标签的所有文章`,
-        },
-      ]
-    : [],
-}));
+  }),
+  description: computed(() => (tag.value ? siteConfig.pageSeo.tag.description(tag.value.name) : "")),
+  keywords: computed(() => (tag.value ? siteConfig.pageSeo.tag.keywords(tag.value.name) : "")),
+});
 
 // 初始化渐入动画
 onMounted(() => {
