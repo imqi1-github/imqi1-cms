@@ -268,7 +268,7 @@ function formatDate(date: string) {
 }
 
 function getStatusInfo(status: number) {
-  return statusOptions.find(s => s.value === status) || statusOptions[0];
+  return statusOptions.find(s => s.value === status) || statusOptions[0]!;
 }
 
 onMounted(() => {

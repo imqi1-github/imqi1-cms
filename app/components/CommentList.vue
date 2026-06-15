@@ -191,7 +191,7 @@ function handleCommentSubmitted() {
     <div v-else-if="error" class="py-8 text-center">
       <Icon name="lucide:alert-circle" class="size-8 text-red-500 mx-auto mb-2" />
       <p class="text-red-500">{{ error }}</p>
-      <button @click="fetchComments" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">重试</button>
+      <button @click="() => fetchComments()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">重试</button>
     </div>
 
     <!-- 评论框（加载完成后显示） -->

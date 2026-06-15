@@ -332,7 +332,7 @@ function insertEmoji(key: string) {
   const config = categoryConfig[activeCategory.value];
   const name = key.replace(config?.prefix || "", "");
   // 使用 prefix 生成占位符，例如 :[heo-3d眼镜]、:[猫猫虫-加油]、:[cat-ablobcatattentionreverse]
-  const placeholder = `:[${config.prefix}${name}]`;
+  const placeholder = `:[${config?.prefix ?? ""}${name}]`;
 
   const textarea = textareaRef.value;
   if (!textarea) {
@@ -372,10 +372,10 @@ function formatEmojiPlaceholder(text: string): string {
     if (!category) return match;
 
     const key = prefix + name;
-    const emojis = emojisData[category as keyof typeof emojisData];
+    const emojis = emojisData[category as keyof typeof emojisData] as Record<string, string> | undefined;
     if (!emojis || !emojis[key]) return match;
 
-    return emojis[key];
+    return emojis[key]!;
   });
 }
 </script>

@@ -19,8 +19,8 @@ import type { Directive } from "vue";
 
 interface MenuItem {
   icon?: string;
-  label: string;
-  action: (e: MouseEvent) => void;
+  label?: string;
+  action?: (e: MouseEvent) => void;
   divider?: boolean;
   disabled?: boolean;
   danger?: boolean;

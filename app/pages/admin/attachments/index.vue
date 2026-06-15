@@ -154,7 +154,7 @@ onMounted(() => {
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <Label for="typeFilter" class="whitespace-nowrap">类型:</Label>
           <Select id="typeFilter" v-model="selectedType">
-            <SelectTrigger class="w-full sm:w-[120px]">
+            <SelectTrigger class="w-full sm:w-30">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -218,7 +218,7 @@ onMounted(() => {
 
             <!-- 操作遮罩 -->
             <div
-              class="absolute inset-0 top-[calc(100%-60px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
+              class="absolute inset-0 top-[calc(100%-60px)] bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
               <Button variant="secondary" size="sm" class="h-8" @click.stop="copyLink(item.url)" title="复制链接">
                 <Icon name="lucide:copy" class="size-4" />
               </Button>

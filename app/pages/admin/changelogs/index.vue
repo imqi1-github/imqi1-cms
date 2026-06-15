@@ -19,7 +19,7 @@ async function loadLogs() {
   loading.value = true;
   try {
     // 调用管理员专用 API，无缓存，返回原始数据
-    const response = (await $fetch("/api/admin/changelogs")) as any;
+    const response = (await ($fetch as any)("/api/admin/changelogs")) as any;
     logs.value = response;
   } catch (err) {
     console.error("加载失败:", err);
@@ -226,7 +226,7 @@ onMounted(() => {
               </div>
               <div class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content" v-html="log.descHtml" />
             </div>
-            <div class="flex gap-1 flex-shrink-0">
+            <div class="flex gap-1 shrink-0">
               <Button variant="ghost" size="icon" class="size-8" @click="startEdit(log)">
                 <Icon name="lucide:pencil" class="size-3.5" />
               </Button>

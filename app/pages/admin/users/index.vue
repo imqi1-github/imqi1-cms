@@ -30,7 +30,7 @@ async function fetchUsers() {
     // 获取当前用户信息
     currentUser.value = await $fetch('/api/auth/me')
 
-    users.value = await $fetch('/api/admin/users') as any[]
+    users.value = await ($fetch as any)('/api/admin/users') as any[]
   } catch (error) {
     console.error('获取用户失败:', error)
     users.value = []

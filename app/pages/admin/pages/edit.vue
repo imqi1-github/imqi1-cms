@@ -5,7 +5,10 @@ const toast = useToast();
 
 // 判断是新建还是编辑
 const isEdit = computed(() => !!route.query.cid);
-const pageId = computed(() => (route.query.cid ? Number(route.query.cid) : null));
+const pageId = ref<number | null>(null);
+watch(() => route.query.cid, (newCid) => {
+  pageId.value = newCid ? Number(newCid) : null;
+}, { immediate: true });
 
 const activeTab = ref("content");
 const loading = ref(false);
@@ -82,7 +85,7 @@ const uploadFiles = async (files: File[]) => {
 
   try {
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      const file = files[i]!;
 
       // 验证文件类型
       const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
@@ -254,9 +257,9 @@ const savePage = async (publish = false) => {
         .map(line => {
           const parts = line.split('||');
           if (parts.length === 2) {
-            return { url: parts[0].trim(), title: parts[1].trim() };
-          } else if (parts.length === 1 && parts[0].trim()) {
-            return { url: parts[0].trim(), title: '' };
+            return { url: parts[0]!.trim(), title: parts[1]!.trim() };
+          } else if (parts.length === 1 && parts[0]!.trim()) {
+            return { url: parts[0]!.trim(), title: '' };
           }
           return null;
         })
@@ -434,7 +437,7 @@ onUnmounted(() => {
           <TabsContent value="content" class="mt-6">
             <Card class="overflow-hidden px-0 pt-0">
               <CardContent class="p-0">
-                <MarkdownEditor v-model="content" :post-id="pageId" @attachment-updated="fetchAttachments" />
+                <MarkdownEditor v-model="content" :post-id="pageId ?? undefined" @attachment-updated="fetchAttachments" />
               </CardContent>
             </Card>
           </TabsContent>

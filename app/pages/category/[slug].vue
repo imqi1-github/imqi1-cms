@@ -331,7 +331,7 @@ onMounted(() => {
             }">
             <!-- 图片占位 -->
             <div
-              class="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse"
+              class="w-full h-full bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse"
               :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
           </div>
         </div>
@@ -382,7 +382,7 @@ onMounted(() => {
             <NuxtLink
               v-if="post.covers.length > 0"
               :to="`/content/${slug}/${post.slug}`"
-              class="flex flex-col relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px] grow">
+              class="flex flex-col relative h-50 max-md:h-50 overflow-hidden rounded-t-[15px] grow">
               <img
                 :src="post.covers[0]?.url"
                 :alt="post.title"
@@ -400,7 +400,7 @@ onMounted(() => {
             <!-- 无封面占位 -->
             <div
               v-else
-              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+              class="relative h-50 max-md:h-50 overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
               <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ post.title[0] }}</span>
             </div>
 
@@ -448,7 +448,7 @@ onMounted(() => {
             class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
             <div
-              class="h-50 max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
+              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
 
             <!-- 文章信息骨架 -->
             <div class="px-5 pb-2 pt-1 mt-auto">

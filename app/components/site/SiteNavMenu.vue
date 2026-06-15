@@ -13,7 +13,7 @@ const props = defineProps({
 const isMobileMenuOpen = ref(false);
 
 // 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
-const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch("/api/categories", {
+const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch<{ data: Array<{ name: string; slug: string | null }> }>("/api/categories", {
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -110,7 +110,7 @@ onMounted(() => {
           class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible group-focus-within/dropdown:opacity-100 group-focus-within/dropdown:visible transition-all duration-200 before:left-0 before:right-0 before:-top-5 before:h-5 before:absolute">
           <button
             v-for="cat in categories"
-            :key="cat.slug"
+            :key="cat.slug ?? cat.name"
             role="menuitem"
             @click="navigate(`/category/${cat.slug}`, $event)"
             class="block w-full text-left px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 text-sm font-medium cursor-pointer font-serif">
@@ -176,7 +176,7 @@ onMounted(() => {
           <div class="px-4 py-2 text-sm font-medium text-muted-foreground">分类</div>
           <button
             v-for="cat in categories"
-            :key="cat.slug"
+            :key="cat.slug ?? cat.name"
             @click="navigateAndClose(`/category/${cat.slug}`)"
             class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left">
             <Icon name="ri:book-shelf-line" aria-hidden="true" class="size-5" />

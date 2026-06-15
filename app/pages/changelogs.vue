@@ -1,7 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-const { data, pending, error } = await useFetch("/api/changelogs", {
+interface ChangelogLog {
+  id: number;
+  class: string;
+  desc: string;
+  descHtml?: string;
+  createTime: string | Date;
+}
+
+interface ChangelogGroup {
+  year: number;
+  month: number;
+  logs: ChangelogLog[];
+}
+
+const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -225,7 +239,7 @@ useHead({
                 class="relative group"
               >
                 <!-- 时间线节点 -->
-                <div class="absolute -left-[33px] top-1.5 size-4 rounded-full bg-blue-600 dark:bg-blue-400 border-4 border-white dark:border-slate-900 group-hover:scale-125 transition-transform" />
+                <div class="absolute -left-8.25 top-1.5 size-4 rounded-full bg-blue-600 dark:bg-blue-400 border-4 border-white dark:border-slate-900 group-hover:scale-125 transition-transform" />
 
                 <!-- 日志内容卡片 -->
                 <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all">

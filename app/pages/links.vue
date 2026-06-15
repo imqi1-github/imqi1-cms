@@ -471,7 +471,7 @@ onMounted(() => {
   <div class="fancybox__footer"></div>
 </div>`,
     },
-  });
+  } as any);
 });
 
 onUnmounted(() => {
@@ -574,18 +574,18 @@ onUnmounted(() => {
           <span
             v-if="linkStatuses[link.id]"
             class="absolute top-3 right-3 z-10 flex items-center justify-center size-2"
-            :title="linkStatuses[link.id].status === 'up' ? '可访问' : linkStatuses[link.id].status === 'down' ? '不可访问' : '检测中'">
+            :title="linkStatuses[link.id]?.status === 'up' ? '可访问' : linkStatuses[link.id]?.status === 'down' ? '不可访问' : '检测中'">
             <span
-              v-if="linkStatuses[link.id].status === 'checking'"
+              v-if="linkStatuses[link.id]?.status === 'checking'"
               aria-hidden="true"
               class="absolute inline-flex size-2 rounded-full bg-blue-500 opacity-60 animate-ping">
             </span>
             <span
               class="relative size-2 rounded-full"
               :class="{
-                'bg-green-500': linkStatuses[link.id].status === 'up',
-                'bg-red-500': linkStatuses[link.id].status === 'down',
-                'bg-blue-500': linkStatuses[link.id].status === 'checking',
+                'bg-green-500': linkStatuses[link.id]?.status === 'up',
+                'bg-red-500': linkStatuses[link.id]?.status === 'down',
+                'bg-blue-500': linkStatuses[link.id]?.status === 'checking',
               }">
             </span>
           </span>
@@ -624,7 +624,7 @@ onUnmounted(() => {
               <span class="truncate">{{ formatUrl(link.link) }}</span>
             </div>
             <span v-if="linkStatuses[link.id]" class="text-[0.7em] text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
-              {{ new Date(linkStatuses[link.id].checkedAt).toLocaleTimeString() }}
+              {{ new Date(linkStatuses[link.id]?.checkedAt ?? 0).toLocaleTimeString() }}
             </span>
           </div>
         </a>
@@ -710,7 +710,7 @@ onUnmounted(() => {
     <!-- 本站信息卡片 -->
     <section class="my-8 animate-fade-in">
       <h2 class="text-xl font-bold mb-4">本站信息</h2>
-      <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800/50 dark:to-slate-900/50 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+      <div class="bg-linear-to-br from-blue-50 to-indigo-50 dark:from-slate-800/50 dark:to-slate-900/50 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
         <div class="flex flex-col md:flex-row gap-6">
           <!-- 头像 -->
           <div class="shrink-0">
@@ -811,7 +811,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 申请表单 -->
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form @submit.prevent="() => handleSubmit()" class="space-y-4">
         <!-- 修改模式：选择要修改的友链 -->
         <div v-if="formMode === 'edit'" class="mb-4">
           <!-- 已选择友链时显示 -->

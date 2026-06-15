@@ -61,7 +61,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   // 独立页面
   else if (path.startsWith("/pages/")) {
     items.push({
-      name: route.meta.title || "页面",
+      name: (route.meta.title as string) || "页面",
       icon: "ri:file-3-line",
       isCurrent: true,
     });

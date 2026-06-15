@@ -11,7 +11,7 @@ const editLinkForm = ref({ name: "", link: "", desc: "", avatar: "" });
 async function fetchLinks() {
   loading.value = true;
   try {
-    links.value = (await $fetch("/api/admin/links")) as any[];
+    links.value = (await ($fetch as any)("/api/admin/links")) as any[];
   } catch (error) {
     console.error("获取友情链接失败:", error);
     links.value = [];

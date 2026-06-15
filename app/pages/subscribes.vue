@@ -364,7 +364,7 @@ watch(() => selectedSourceId.value, async () => {
                 :href="post.link"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex-shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
+                class="shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
                 :title="post.title"
               >
                 <Icon name="lucide:external-link" class="size-5" />

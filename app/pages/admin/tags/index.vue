@@ -12,7 +12,7 @@ const editingTag = ref<any>(null);
 async function fetchTags() {
   loading.value = true;
   try {
-    tags.value = (await $fetch("/api/admin/tags")) as any[];
+    tags.value = (await ($fetch as any)("/api/admin/tags")) as any[];
   } catch (error) {
     console.error("获取标签失败:", error);
     tags.value = [];

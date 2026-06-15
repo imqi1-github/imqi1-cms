@@ -196,7 +196,7 @@ async function loadSettings() {
       csrfToken.value = (csrfRes as any).data.token;
     }
 
-    settings.value = (await $fetch("/api/admin/settings")) as any;
+    settings.value = (await ($fetch as any)("/api/admin/settings")) as any;
   } catch (error) {
     console.error("获取设置失败:", error);
   } finally {
@@ -227,7 +227,7 @@ async function saveSettings() {
 
 // 重置为默认值
 async function resetToDefaults() {
-  settings.value = { ...defaultSettings };
+  settings.value = { ...defaultSettings } as any;
   showResetDialog.value = false;
   try {
     await $fetch("/api/admin/settings", {

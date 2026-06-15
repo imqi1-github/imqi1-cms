@@ -58,12 +58,19 @@ const getLinkText = (url: string) => {
   }
 };
 
+type MD5Block = [
+  number, number, number, number,
+  number, number, number, number,
+  number, number, number, number,
+  number, number, number, number
+];
+
 const md5 = (string: string): string => {
-  function md5cycle(x: number[], k: number[]) {
-    let a = x[0],
-      b = x[1],
-      c = x[2],
-      d = x[3];
+  function md5cycle(x: number[], k: MD5Block) {
+    let a = x[0]!,
+      b = x[1]!,
+      c = x[2]!,
+      d = x[3]!;
     a = ff(a, b, c, d, k[0], 7, -680876936);
     d = ff(d, a, b, c, k[1], 12, -389564586);
     c = ff(c, d, a, b, k[2], 17, 606105819);
@@ -128,10 +135,10 @@ const md5 = (string: string): string => {
     d = ii(d, a, b, c, k[11], 10, -1120210379);
     c = ii(c, d, a, b, k[2], 15, 718787259);
     b = ii(b, c, d, a, k[9], 21, -343485551);
-    x[0] = add32(a, x[0]);
-    x[1] = add32(b, x[1]);
-    x[2] = add32(c, x[2]);
-    x[3] = add32(d, x[3]);
+    x[0] = add32(a, x[0]!);
+    x[1] = add32(b, x[1]!);
+    x[2] = add32(c, x[2]!);
+    x[3] = add32(d, x[3]!);
   }
 
   function cmn(q: number, a: number, b: number, x: number, s: number, t: number) {
@@ -163,9 +170,15 @@ const md5 = (string: string): string => {
       md5cycle(state, md5blk(s.substring(i - 64, i)));
     }
     s = s.substring(i - 64);
-    const tail = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    for (i = 0; i < s.length; i++) tail[i >> 2] |= s.charCodeAt(i) << ((i % 4) << 3);
-    tail[i >> 2] |= 0x80 << ((i % 4) << 3);
+    const tail: MD5Block = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (i = 0; i < s.length; i++) {
+      const idx = i >> 2;
+      tail[idx] = (tail[idx] ?? 0) | (s.charCodeAt(i) << ((i % 4) << 3));
+    }
+    {
+      const idx = i >> 2;
+      tail[idx] = (tail[idx] ?? 0) | (0x80 << ((i % 4) << 3));
+    }
     if (i > 55) {
       md5cycle(state, tail);
       for (i = 0; i < 16; i++) tail[i] = 0;
@@ -175,8 +188,8 @@ const md5 = (string: string): string => {
     return state;
   }
 
-  function md5blk(s: string) {
-    const md5blks = [];
+  function md5blk(s: string): MD5Block {
+    const md5blks: MD5Block = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < 64; i += 4) {
       md5blks[i >> 2] = s.charCodeAt(i) + (s.charCodeAt(i + 1) << 8) + (s.charCodeAt(i + 2) << 16) + (s.charCodeAt(i + 3) << 24);
     }
@@ -187,13 +200,14 @@ const md5 = (string: string): string => {
 
   function rhex(n: number) {
     let s = "";
-    for (let j = 0; j < 4; j++) s += hex_chr[(n >> (j * 8 + 4)) & 0x0f] + hex_chr[(n >> (j * 8)) & 0x0f];
+    for (let j = 0; j < 4; j++) s += hex_chr[(n >> (j * 8 + 4)) & 0x0f]! + hex_chr[(n >> (j * 8)) & 0x0f]!;
     return s;
   }
 
   function hex(x: number[]) {
-    for (let i = 0; i < x.length; i++) x[i] = rhex(x[i]);
-    return x.join("");
+    let s = "";
+    for (let i = 0; i < x.length; i++) s += rhex(x[i]!);
+    return s;
   }
 
   function add32(a: number, b: number) {
@@ -241,10 +255,10 @@ function handleCommentSubmitted() {
   <li :id="`comment-${comment.coid}`">
     <div class="flex gap-3">
       <!-- 头像区域 -->
-      <div class="relative w-10 h-10 flex-shrink-0">
+      <div class="relative w-10 h-10 shrink-0">
         <button
           v-if="canReply"
-          class="absolute top-[-6px] right-[-6px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
+          class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
           v-tooltip="'回复'"
           @click="startReply(comment)">
           <Icon name="ri-reply-fill" class="size-4" />
@@ -253,11 +267,11 @@ function handleCommentSubmitted() {
           v-if="avatarUrl"
           :src="avatarUrl"
           :alt="comment.name"
-          class="w-10 h-10 rounded-full flex-shrink-0 object-cover bg-slate-100 dark:bg-slate-700"
+          class="w-10 h-10 rounded-full shrink-0 object-cover bg-slate-100 dark:bg-slate-700"
           loading="lazy" />
         <div
           v-else
-          class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-semibold text-lg text-slate-700 dark:text-slate-300 flex-shrink-0">
+          class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-semibold text-lg text-slate-700 dark:text-slate-300 shrink-0">
           <span>{{ getAvatarLetter(comment.name) }}</span>
         </div>
       </div>
@@ -314,7 +328,7 @@ function handleCommentSubmitted() {
         :form-data="formData"
         :post-id="postId"
         :is-reply="true"
-        :reply-to="replyState.replyTo"
+        :reply-to="replyState.replyTo ?? undefined"
         :comment-interval="commentInterval"
         :require-mail="requireMail"
         :require-link="requireLink"

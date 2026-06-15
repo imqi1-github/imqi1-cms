@@ -42,7 +42,9 @@ watch(
     if (groups && groups.length > 0 && expandedMonths.value.size === 0) {
       // 只在第一次且当前没有展开的月份时，展开第一个（最新的）月份
       const firstGroup = groups[0];
-      expandedMonths.value.add(`${firstGroup.year}-${firstGroup.month}`);
+      if (firstGroup) {
+        expandedMonths.value.add(`${firstGroup.year}-${firstGroup.month}`);
+      }
     }
   },
   { immediate: true }
@@ -142,7 +144,7 @@ onMounted(() => {
             :key="post.cid"
             class="group flex items-center gap-3 py-2.5 px-4 rounded-lg hover:bg-muted/50 transition-colors">
             <!-- 日期 -->
-            <div class="text-sm text-muted-foreground w-16 flex-shrink-0">
+            <div class="text-sm text-muted-foreground w-16 shrink-0">
               {{ formatDate(post.createTime) }}
             </div>
 

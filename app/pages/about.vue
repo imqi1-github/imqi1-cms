@@ -420,7 +420,7 @@
           class="text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           站点统计
         </h2>
-        <div class="stats-grid grid grid-cols-1 md:grid-cols-4 gap-4 grid-cols-2 max-md:grid-cols-2">
+        <div class="stats-grid grid grid-cols-1 md:grid-cols-4 gap-4 max-md:grid-cols-2">
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
               {{ animatedStats.publishedPostsNum }}
@@ -504,7 +504,7 @@
 
       <!-- 导航 -->
       <div class="ready mb-24">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 grid-cols-1 max-md:grid-cols-1">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-md:grid-cols-1">
           <NuxtLink
             href="/archiving"
             class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
@@ -578,7 +578,7 @@
           </div>
           <div class="bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden transition-colors duration-300">
             <div
-              class="bg-blue-600 dark:bg-blue-400 h-full rounded-full transition-all duration-[1800ms] ease-out"
+              class="bg-blue-600 dark:bg-blue-400 h-full rounded-full transition-all duration-1800 ease-out"
               :style="{ width: pledgeBarWidth + '%' }"></div>
           </div>
         </div>
@@ -630,7 +630,7 @@ const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 
 // 注入页面加载状态
-const pageLoading = inject<"pageLoading", Ref<boolean>>("pageLoading", ref(false));
+const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
 
 // 获取统计数据
 const { data: statsData } = await useFetch("/api/stats", {
@@ -716,7 +716,7 @@ const pledgeEndDate = new Date(
   pledgeStartDate.getMonth(),
   pledgeStartDate.getDate(),
 );
-const pledgeTotalDays = Math.max(1, Math.round((pledgeEndDate - pledgeStartDate) / 86400000));
+const pledgeTotalDays = Math.max(1, Math.round((pledgeEndDate.getTime() - pledgeStartDate.getTime()) / 86400000));
 const pledgeElapsedDays = computed(() =>
   Math.max(0, Math.min(pledgeTotalDays, Math.floor((Date.now() - pledgeStartDate.getTime()) / 86400000))),
 );
@@ -727,12 +727,12 @@ const animatedPledge = ref({ days: 0, percent: 0 });
 const pledgeBarWidth = ref(0);
 
 // 数字动画函数
-const animateNumber = (from, to, duration, callback) => {
+const animateNumber = (from: number, to: number, duration: number, callback: (value: number) => void) => {
   let start = performance.now();
   let current = from;
   const range = to - from;
 
-  const updateNumber = timestamp => {
+  const updateNumber = (timestamp: number) => {
     const elapsed = timestamp - start;
     const progress = Math.min(elapsed / duration, 1);
     // 使用缓动函数

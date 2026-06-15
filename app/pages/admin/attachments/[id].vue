@@ -63,7 +63,7 @@ async function saveAttachment() {
       body: {
         name: form.value.name,
       },
-    }) as any
+    } as any) as any
 
     if (res?.success) {
       toast.success({

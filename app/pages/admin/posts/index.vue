@@ -92,7 +92,7 @@ function toggleSelect(cid: number) {
 
 async function fetchCategories() {
   try {
-    categories.value = (await $fetch("/api/admin/categories")) as any[];
+    categories.value = (await ($fetch as any)("/api/admin/categories")) as any[];
   } catch (error) {
     console.error("获取分类失败:", error);
     categories.value = [];
@@ -101,7 +101,7 @@ async function fetchCategories() {
 
 async function fetchTags() {
   try {
-    tags.value = (await $fetch("/api/admin/tags")) as any[];
+    tags.value = (await ($fetch as any)("/api/admin/tags")) as any[];
   } catch (error) {
     console.error("获取标签失败:", error);
     tags.value = [];
@@ -297,13 +297,13 @@ onMounted(() => {
         <div class="flex flex-wrap gap-4">
           <div class="flex items-center gap-2">
             <Label for="category-filter">分类:</Label>
-            <Select id="category-filter" v-model="selectedCategory" @update:model-value="filterByCategory">
+            <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: any) => filterByCategory(v ?? null)">
               <SelectTrigger class="w-[180px]">
                 <SelectValue placeholder="全部分类" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem :value="null">全部分类</SelectItem>
-                <SelectItem v-for="category in categories" :key="category.mid" :value="category.mid">
+                <SelectItem v-for="category in categories" :key="category.mid ?? category.name" :value="category.mid">
                   {{ category.name }} ({{ category.postCount }})
                 </SelectItem>
               </SelectContent>
@@ -311,24 +311,24 @@ onMounted(() => {
           </div>
           <div class="flex items-center gap-2">
             <Label for="tag-filter">标签:</Label>
-            <Select id="tag-filter" v-model="selectedTag" @update:model-value="filterByTag">
+            <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: any) => filterByTag(v ?? null)">
               <SelectTrigger class="w-[180px]">
                 <SelectValue placeholder="全部标签" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem :value="null">全部标签</SelectItem>
-                <SelectItem v-for="tag in tags" :key="tag.mid" :value="tag.mid"> {{ tag.name }} ({{ tag.postCount }}) </SelectItem>
+                <SelectItem v-for="tag in tags" :key="tag.mid ?? tag.name" :value="tag.mid"> {{ tag.name }} ({{ tag.postCount }}) </SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
-            <Select id="status-filter" v-model="selectedStatus" @update:model-value="filterByStatus">
+            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: any) => filterByStatus(v ?? null)">
               <SelectTrigger class="w-[140px]">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
+                <SelectItem v-for="option in statusOptions" :key="option.value ?? option.label" :value="option.value">
                   {{ option.label }}
                 </SelectItem>
               </SelectContent>

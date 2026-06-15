@@ -5,7 +5,10 @@ const toast = useToast();
 
 // 判断是新建还是编辑
 const isEdit = computed(() => !!route.query.cid);
-const postId = computed(() => (route.query.cid ? Number(route.query.cid) : null));
+const postId = ref<number | null>(null);
+watch(() => route.query.cid, (newCid) => {
+  postId.value = newCid ? Number(newCid) : null;
+}, { immediate: true });
 
 const activeTab = ref("content");
 // 编辑模式下初始 loading 为 true，避免先显示编辑器再显示骨架屏
@@ -49,7 +52,7 @@ const selectedTagIds = ref<number[]>([]);
 // 获取分类列表
 const fetchCategories = async () => {
   try {
-    const res = (await $fetch("/api/admin/categories")) as any[];
+    const res = (await ($fetch as any)("/api/admin/categories")) as any[];
     categories.value = res || [];
   } catch (error) {
     console.error("获取分类失败:", error);
@@ -59,7 +62,7 @@ const fetchCategories = async () => {
 // 获取标签列表
 const fetchTags = async () => {
   try {
-    const res = (await $fetch("/api/admin/tags")) as any[];
+    const res = (await ($fetch as any)("/api/admin/tags")) as any[];
     tagList.value = res || [];
   } catch (error) {
     console.error("获取标签失败:", error);
@@ -220,7 +223,7 @@ const uploadFiles = async (files: File[]) => {
 
   try {
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      const file = files[i]!;
 
       // 验证文件类型
       const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
@@ -473,9 +476,9 @@ const savePost = async () => {
         .map(line => {
           const parts = line.split("||");
           if (parts.length === 2) {
-            return { url: parts[0].trim(), title: parts[1].trim() };
-          } else if (parts.length === 1 && parts[0].trim()) {
-            return { url: parts[0].trim(), title: "" };
+            return { url: parts[0]!.trim(), title: parts[1]!.trim() };
+          } else if (parts.length === 1 && parts[0]!.trim()) {
+            return { url: parts[0]!.trim(), title: "" };
           }
           return null;
         })
@@ -745,7 +748,7 @@ watch(postId, newCid => {
           <TabsContent value="content" class="mt-6">
             <Card class="overflow-hidden px-0 pt-0">
               <CardContent class="p-0">
-                <MarkdownEditor v-model="content" :post-id="postId" @attachment-updated="fetchAttachments" />
+                <MarkdownEditor v-model="content" :post-id="postId ?? undefined" @attachment-updated="fetchAttachments" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -992,7 +995,7 @@ watch(postId, newCid => {
                     <Checkbox
                       :id="`category-${category.mid}`"
                       :model-value="selectedCategoryIds.includes(category.mid)"
-                      @update:model-value="checked => toggleCategory(category.mid, checked)" />
+                      @update:model-value="(checked: any) => toggleCategory(category.mid, !!checked)" />
                     <Label :for="`category-${category.mid}`" class="text-sm font-normal cursor-pointer flex-1">
                       {{ category.name }}
                       <span class="text-xs text-muted-foreground">({{ category.postCount }})</span>
@@ -1019,7 +1022,7 @@ watch(postId, newCid => {
                     <Checkbox
                       :id="`tag-${tag.mid}`"
                       :model-value="selectedTagIds.includes(tag.mid)"
-                      @update:model-value="checked => toggleTag(tag.mid, checked)" />
+                      @update:model-value="(checked: any) => toggleTag(tag.mid, !!checked)" />
                     <Label :for="`tag-${tag.mid}`" class="text-sm font-normal cursor-pointer flex-1">
                       {{ tag.name }}
                       <span class="text-xs text-muted-foreground">({{ tag.postCount }})</span>

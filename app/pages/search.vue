@@ -10,7 +10,7 @@ const siteName = computed(() => siteSettings.value?.siteName || "ImQi1");
 const searchKeyword = ref((route.query.q as string) || "");
 
 // 搜索结果
-const { data, pending, error, refresh } = await useFetch("/api/search", {
+const { data, pending, error, refresh } = await useFetch<{ data?: { results: any[]; total: number } }>("/api/search", {
   headers: {
     "x-ssr-internal-request": "true",
   },

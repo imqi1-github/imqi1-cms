@@ -106,7 +106,7 @@ onMounted(() => {
   <div class="fancybox__footer"></div>
 </div>`,
     },
-  });
+  } as any);
 });
 
 onUnmounted(() => {

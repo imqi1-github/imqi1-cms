@@ -245,7 +245,7 @@ const seoMeta = computed(() => {
   const fullUrl = process.client ? window.location.href : `https://imqi1.com${route.path}`;
 
   const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
-  const description = post.value.desc || post.value.excerpt || "";
+  const description = post.value.desc || "";
   const coverImage = firstCover.value || "";
   const authorName = post.value.user?.nickname || post.value.user?.name || "ImQi1";
   const publishDate = post.value.create_time || post.value.update_time;
@@ -313,7 +313,7 @@ watch(
       if (categoryFromUrl.value) {
         setPageCategory({
           name: categoryFromUrl.value.name,
-          slug: categoryFromUrl.value.slug,
+          slug: categoryFromUrl.value.slug ?? "",
         });
       }
     }
@@ -469,7 +469,7 @@ onMounted(() => {
       },
       idle: false,
       autoFocus: false,
-    });
+    } as any);
 
     // 初始化代码复制按钮
     document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {
@@ -486,7 +486,7 @@ onMounted(() => {
           // 检测是否为 "语言+文件名" 格式 (如 "js+main.js")
           if (fullLang.includes("+")) {
             const parts = fullLang.split("+");
-            lang = parts[0];
+            lang = parts[0]!;
             fileName = parts.slice(1).join("+"); // 支持文件名中包含+的情况
             pre.classList.add("has-file-name");
           } else {
@@ -540,7 +540,7 @@ onMounted(() => {
       if (isCollapsed) {
         pre.classList.add("code-collapsed");
 
-        const handler = e => {
+        const handler = (e: Event) => {
           const target = e.target as HTMLElement;
           // 不处理复制按钮的点击
           if (target.closest(".copy-button")) return;
@@ -900,9 +900,9 @@ onMounted(() => {
         // 解析每一行，提取图片 URL 和标题
         lines.forEach(line => {
           const parts = line.split("|").map(s => s.trim());
-          if (parts.length >= 1 && parts[0].length > 0) {
+          if (parts.length >= 1 && parts[0]!.length > 0) {
             slides.push({
-              url: parts[0],
+              url: parts[0]!,
               title: parts[1] || "",
             });
           }
@@ -994,15 +994,15 @@ onMounted(() => {
           platform = "github";
           const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
           if (match) {
-            owner = match[1];
-            repo = match[2].replace(/\.git$/, "");
+            owner = match[1]!;
+            repo = match[2]!.replace(/\.git$/, "");
           }
         } else if (url.includes("gitee.com")) {
           platform = "gitee";
           const match = url.match(/gitee\.com\/([^/]+)\/([^/]+)/);
           if (match) {
-            owner = match[1];
-            repo = match[2].replace(/\.git$/, "");
+            owner = match[1]!;
+            repo = match[2]!.replace(/\.git$/, "");
           }
         }
 
@@ -1183,9 +1183,9 @@ onMounted(() => {
         // 解析每一行，提取图片 URL 和标题（格式：url | caption）
         lines.forEach(line => {
           const parts = line.split("|").map(s => s.trim());
-          if (parts.length >= 1 && parts[0].length > 0) {
+          if (parts.length >= 1 && parts[0]!.length > 0) {
             images.push({
-              url: parts[0],
+              url: parts[0]!,
               caption: parts[1] || "",
             });
           }
@@ -1245,7 +1245,7 @@ onMounted(() => {
         if (parts.length >= 1) {
           if (parts[0] === "auto" && parts.length >= 2) {
             // 格式 1: :::music auto https://example.com:::
-            const url = parts[1];
+            const url = parts[1]!;
             // 尝试解析 URL 获取平台和 ID
             try {
               const parsedUrl = new URL(url);
@@ -1253,38 +1253,38 @@ onMounted(() => {
                 server = "netease";
                 const typeMatch = parsedUrl.pathname.match(/\/(playlist|song|album|artist)\/?/);
                 if (typeMatch) {
-                  type = typeMatch[1];
+                  type = typeMatch[1]!;
                 }
                 id = parsedUrl.searchParams.get("id") || "";
               } else if (parsedUrl.hostname.includes("y.qq.com")) {
                 server = "tencent";
                 const typeMatch = parsedUrl.pathname.match(/\/(playlist|songDetail|albumDetail)\/?/);
                 if (typeMatch) {
-                  type = typeMatch[1].replace("Detail", "");
+                  type = typeMatch[1]!.replace("Detail", "");
                 }
                 const idMatch = parsedUrl.pathname.match(/\/([^/]+)$/);
                 if (idMatch) {
-                  id = idMatch[1];
+                  id = idMatch[1]!;
                 }
               } else if (parsedUrl.hostname.includes("kuwo.cn")) {
                 server = "kuwo";
                 const typeMatch = parsedUrl.pathname.match(/\/(playlist|song|album)\/?/);
                 if (typeMatch) {
-                  type = typeMatch[1];
+                  type = typeMatch[1]!;
                 }
                 const idMatch = parsedUrl.pathname.match(/\/([^/]+)$/);
                 if (idMatch) {
-                  id = idMatch[1];
+                  id = idMatch[1]!;
                 }
               } else if (parsedUrl.hostname.includes("kugou.com")) {
                 server = "kugou";
                 const typeMatch = parsedUrl.pathname.match(/\/(song|album|playlist)\/?/);
                 if (typeMatch) {
-                  type = typeMatch[1];
+                  type = typeMatch[1]!;
                 }
                 const idMatch = parsedUrl.pathname.match(/\/([^/]+)\.html$/);
                 if (idMatch) {
-                  id = idMatch[1];
+                  id = idMatch[1]!;
                 }
               } else {
                 console.warn("Unsupported music platform:", parsedUrl.hostname);
@@ -1295,9 +1295,9 @@ onMounted(() => {
           } else if (parts.length >= 3) {
             // 格式 2: :::music song netease 123456:::
             // 格式 3: :::music playlist netease 123456:::
-            type = parts[0];
-            server = parts[1];
-            id = parts[2];
+            type = parts[0]!;
+            server = parts[1]!;
+            id = parts[2]!;
           } else {
             console.warn("Invalid music params format:", paramsStr);
           }
@@ -1324,7 +1324,7 @@ onMounted(() => {
 
         // 动态导入并挂载 MetingPlayer 组件
         try {
-          const { MetingPlayer } = await import("~/components/MetingPlayer.vue");
+          const { MetingPlayer } = await import("~/components/MetingPlayer.vue") as any;
           const { createApp, h } = await import("vue");
 
           const mountEl = document.getElementById(mountId);
@@ -1584,7 +1584,8 @@ onMounted(() => {
 
       // 初始化实况照片
       const images = document.querySelectorAll(".markdown-body img");
-      images.forEach(img => {
+      images.forEach(imgEl => {
+        const img = imgEl as HTMLImageElement;
         const src = img.src;
         const alt = img.alt;
         const className = img.className;
@@ -1901,7 +1902,7 @@ onUnmounted(() => {
   <div ref="fancyboxContainer"
     :class="[
       'mx-auto w-full',
-      isPhotoCategory ? (showToc ? 'max-w-[93.75rem]' : 'max-w-[87.5rem]') : showToc ? 'max-w-[62.5rem]' : 'max-w-[56.25rem]',
+      isPhotoCategory ? (showToc ? 'max-w-375' : 'max-w-350') : showToc ? 'max-w-250' : 'max-w-225',
     ]">
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -1923,7 +1924,7 @@ onUnmounted(() => {
       </p>
     </div>
 
-    <article v-else class="flex flex-col w-full animate-fade-in">
+    <article v-else-if="post" class="flex flex-col w-full animate-fade-in">
       <!-- 标题区域 -->
       <header :class="['opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
@@ -1939,12 +1940,11 @@ onUnmounted(() => {
           :data-caption="covers[0]?.desc || '封面'"
           :class="[
             'w-full h-full object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
-            isPhotoCategory ? 'max-h-[600px]' : 'max-h-37.5',
-          ]"
-          loading="lazy" />
+            isPhotoCategory ? 'max-h-150' : 'max-h-37.5',
+          ].join(' ')" />
 
         <!-- 标题 -->
-        <h1 id="article-title" class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 break-words">
+        <h1 id="article-title" class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 wrap-break-word">
           {{ post.title }}
         </h1>
 
@@ -1970,7 +1970,7 @@ onUnmounted(() => {
       <!-- 文章内容区域 - 带目录 -->
       <div class="flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
-        <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 flex-shrink-0 order-first w-fit mt-6">
+        <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 shrink-0 order-first w-fit mt-6">
           <nav class="toc-nav sticky top-24 w-fit">
             <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 w-fit max-w-full">目录</h3>
             <ul class="space-y-1 w-fit max-w-48">

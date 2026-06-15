@@ -19,7 +19,7 @@ const editingSubscribe = ref<{ id: number | null; name: string; url: string; ava
 // 加载站点设置
 async function loadSettings() {
   try {
-    const settings = await $fetch("/api/admin/settings") as any;
+    const settings = await ($fetch as any)("/api/admin/settings") as any;
     if (settings?.feedCacheInterval) {
       feedCacheInterval.value = settings.feedCacheInterval;
     }
@@ -32,7 +32,7 @@ async function loadSettings() {
 async function loadSubscribes() {
   loading.value = true;
   try {
-    subscribes.value = (await $fetch("/api/admin/subscribes")) as any[];
+    subscribes.value = (await ($fetch as any)("/api/admin/subscribes")) as any[];
   } catch (error) {
     console.error("获取订阅失败:", error);
     subscribes.value = [];

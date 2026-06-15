@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, useAttrs } from "vue";
+import { onMounted, ref, useAttrs, type CSSProperties } from "vue";
 import { useLivePhoto } from "~/composables/useLivePhoto";
 
 // 禁用自动属性继承，手动控制属性传递
@@ -82,7 +82,7 @@ const wrapperStyle = computed(() => {
 });
 
 // 计算图片/视频的样式
-const mediaStyle = computed(() => {
+const mediaStyle = computed<CSSProperties>(() => {
   if (props.class?.includes("swiper-img")) {
     // 根据填充模式返回不同的样式
     if (imageFitMode.value === "width") {
@@ -426,7 +426,7 @@ onUnmounted(() => {
     <!-- 图片名字 -->
     <div
       v-if="alt"
-      class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+      class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-linear-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
       {{ alt }}
     </div>
   </div>

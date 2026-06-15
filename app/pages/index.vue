@@ -17,7 +17,7 @@
 
         <!-- 头像区域 -->
         <div class="h-fit max-md:hidden">
-          <img src="/imgs/avatar.webp" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-[120px] max-md:w-[120px] max-md:h-[120px]" />
+          <img src="/imgs/avatar.webp" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
         </div>
 
         <!-- 滚动提示 -->
@@ -207,7 +207,7 @@
                           v-if="randomPost.covers && randomPost.covers.length > 0"
                           class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
                           <img
-                            :src="randomPost.covers[0].url || randomPost.covers[0]"
+                            :src="(typeof randomPost.covers[0] === 'string' ? randomPost.covers[0] : randomPost.covers[0]?.url) || ''"
                             :alt="randomPost.title"
                             class="w-full h-full object-cover"
                             loading="lazy" />
@@ -267,7 +267,7 @@
               <!-- 封面 -->
               <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
                 <img
-                  :src="post.covers[0].url || post.covers[0]"
+                  :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
                   :alt="post.title"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy" />
@@ -292,13 +292,13 @@
                 <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
                   <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5" v-tooltip="'分类'">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
-                    <span v-for="(cat, idx) in post.categories" :key="cat.slug">
+                    <span v-for="(cat, idx) in post.categories" :key="cat.slug ?? cat.name">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
                   <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
                     <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                    <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
+                    <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
@@ -361,7 +361,7 @@
                 <!-- 封面 -->
                 <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
                   <img
-                    :src="post.covers[0].url || post.covers[0]"
+                    :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
                     :alt="post.title"
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy" />
@@ -386,7 +386,7 @@
                   <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
                     <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                      <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug">
+                      <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
@@ -540,7 +540,7 @@
           class="block border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all no-underline group">
           <div class="flex items-start gap-3">
             <!-- 订阅源头像 -->
-            <Avatar class="size-10 flex-shrink-0">
+            <Avatar class="size-10 shrink-0">
               <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" :alt="post.subscribeName" />
               <AvatarFallback>{{ post.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
@@ -562,7 +562,7 @@
             </div>
 
             <!-- 外部链接图标 -->
-            <Icon name="lucide:external-link" aria-hidden="true" class="size-5 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+            <Icon name="lucide:external-link" aria-hidden="true" class="size-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
         </a>
       </div>
@@ -589,7 +589,7 @@
         <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-md transition-all">
           <div class="flex items-start gap-3">
             <!-- 类型文字标签 -->
-            <div :class="`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${getClassInfo(log.class).color}`">
+            <div :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${getClassInfo(log.class).color}`">
               {{ getClassInfo(log.class).label }}
             </div>
 
@@ -722,9 +722,9 @@ const photoImages = computed(() => {
           url: cover.url || (typeof cover === "string" ? cover : ""),
           desc: cover.desc,
           title: post.title,
-          slug: post.slug,
+          slug: post.slug ?? "",
           cid: post.cid,
-          categorySlug: post.categories?.[0]?.slug,
+          categorySlug: post.categories?.[0]?.slug ?? undefined,
         });
       });
     }
@@ -829,6 +829,15 @@ const contactLinks = ref([
 ]);
 
 // 样式选择区域数据
+interface GridItem {
+  text: string;
+  href?: string;
+  isLink?: boolean;
+  isCode?: boolean;
+  hasIcon?: boolean;
+  isCategory?: boolean;
+}
+
 const themeItems = computed(() => [
   {
     title: "字体选择",
@@ -840,7 +849,7 @@ const themeItems = computed(() => [
       { text: "JetBrains Mono", isCode: true },
       { text: "图标" },
       { text: "Remixicon", hasIcon: true },
-    ],
+    ] as GridItem[],
   },
   {
     title: "调整布局",
@@ -850,7 +859,7 @@ const themeItems = computed(() => [
   {
     title: "用小组件丰富文章内容",
     type: "grid",
-    grids: [{ text: "音乐播放器" }, { text: "视频播放器" }, { text: "代码块" }, { text: "TIP 组件" }, { text: "轮播图" }, { text: "..." }],
+    grids: [{ text: "音乐播放器" }, { text: "视频播放器" }, { text: "代码块" }, { text: "TIP 组件" }, { text: "轮播图" }, { text: "..." }] as GridItem[],
   },
   {
     title: "用文章的方式记录生活",
@@ -862,7 +871,7 @@ const themeItems = computed(() => [
             { text: cat.desc || "暂无描述", isCategory: true },
           ])
         : [{ text: "暂无分类" }, { text: "", isCategory: true }],
-  },
+  } as { title: string; type: string; grids: GridItem[] },
 ]);
 
 const themeRightItems = [{ type: "fonts" }, { type: "layout", image: "/imgs/shenyang.webp" }, { type: "music" }, { type: "article" }];
@@ -871,12 +880,12 @@ const themeRightItems = [{ type: "fonts" }, { type: "layout", image: "/imgs/shen
 const activeThemeIndex = ref(0);
 
 // 样式选项元素的ref数组 - 使用Set去重
-const themeItemRefsSet = new Set();
-const themeItemRefs = ref([]);
+const themeItemRefsSet = new Set<HTMLElement>();
+const themeItemRefs = ref<HTMLElement[]>([]);
 
-const setThemeItemRef = el => {
+const setThemeItemRef = (el: Element | any) => {
   if (el) {
-    themeItemRefsSet.add(el);
+    themeItemRefsSet.add(el as HTMLElement);
     themeItemRefs.value = Array.from(themeItemRefsSet);
   }
 };
@@ -910,8 +919,8 @@ const checkVisibleItems = () => {
 };
 
 // 英雄区引用和样式
-const heroRef = ref(null);
-const heroStyle = ref({
+const heroRef = ref<HTMLElement | null>(null);
+const heroStyle = ref<Record<string, string>>({
   transform: "scale(1)",
   opacity: "1",
   display: "flex",

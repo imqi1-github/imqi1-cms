@@ -99,7 +99,7 @@ const handleContextMenu = (e: MouseEvent) => {
     if (hasSelection) {
       // 有选中文字，显示输入框菜单（会包含文本搜索功能）
       menuType.value = "input";
-      selectedText.value = inputElement.value.slice(inputElement.selectionStart, inputElement.selectionEnd);
+      selectedText.value = inputElement.value.slice(inputElement.selectionStart ?? 0, inputElement.selectionEnd ?? 0);
       inputTarget.value = inputElement;
     } else {
       // 没有选中文字，显示输入框菜单
@@ -282,8 +282,8 @@ const handleCopyTitleAndLink = () => {
 // 输入框剪切
 const handleCutInput = () => {
   if (inputTarget.value) {
-    const start = inputTarget.value.selectionStart;
-    const end = inputTarget.value.selectionEnd;
+    const start = inputTarget.value.selectionStart ?? 0;
+    const end = inputTarget.value.selectionEnd ?? 0;
     const text = inputTarget.value.value.slice(start, end);
     navigator.clipboard.writeText(text);
     inputTarget.value.value = inputTarget.value.value.slice(0, start) + inputTarget.value.value.slice(end);
@@ -313,8 +313,8 @@ const handleClearInput = () => {
 // 转换为大写
 const handleToUpperCase = () => {
   if (inputTarget.value) {
-    const start = inputTarget.value.selectionStart;
-    const end = inputTarget.value.selectionEnd;
+    const start = inputTarget.value.selectionStart ?? 0;
+    const end = inputTarget.value.selectionEnd ?? 0;
     const text = inputTarget.value.value.slice(start, end);
     if (text) {
       inputTarget.value.value = inputTarget.value.value.slice(0, start) + text.toUpperCase() + inputTarget.value.value.slice(end);
@@ -327,8 +327,8 @@ const handleToUpperCase = () => {
 // 转换为小写
 const handleToLowerCase = () => {
   if (inputTarget.value) {
-    const start = inputTarget.value.selectionStart;
-    const end = inputTarget.value.selectionEnd;
+    const start = inputTarget.value.selectionStart ?? 0;
+    const end = inputTarget.value.selectionEnd ?? 0;
     const text = inputTarget.value.value.slice(start, end);
     if (text) {
       inputTarget.value.value = inputTarget.value.value.slice(0, start) + text.toLowerCase() + inputTarget.value.value.slice(end);
@@ -341,8 +341,8 @@ const handleToLowerCase = () => {
 // 首字母大写
 const handleCapitalize = () => {
   if (inputTarget.value) {
-    const start = inputTarget.value.selectionStart;
-    const end = inputTarget.value.selectionEnd;
+    const start = inputTarget.value.selectionStart ?? 0;
+    const end = inputTarget.value.selectionEnd ?? 0;
     const text = inputTarget.value.value.slice(start, end);
     if (text) {
       const capitalized = text.charAt(0).toUpperCase() + text.slice(1);

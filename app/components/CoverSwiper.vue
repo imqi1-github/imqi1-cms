@@ -90,7 +90,7 @@ onMounted(() => {
     },
     idle: false,
     autoFocus: false,
-  });
+  } as any);
 });
 
 onBeforeUnmount(() => {

@@ -11,8 +11,8 @@ async function fetchSitemap() {
   loading.value = true;
   try {
     const [sitemapRes, commentsRes] = await Promise.all([
-      $fetch("/api/sitemap") as Promise<any>,
-      $fetch("/api/recent-comments?limit=10") as Promise<any>,
+      $fetch("/api/sitemap") as any,
+      $fetch("/api/recent-comments?limit=10") as any,
     ]);
     sitemapData.value = sitemapRes.data;
     recentComments.value = commentsRes.data || [];

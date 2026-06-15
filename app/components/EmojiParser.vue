@@ -37,11 +37,11 @@ const parsedContent = computed(() => {
     if (!config) return match;
 
     const key = config.filePrefix + name;
-    const emojis = emojisData[config.dataKey as keyof typeof emojisData];
+    const emojis = emojisData[config.dataKey as keyof typeof emojisData] as Record<string, string> | undefined;
     if (!emojis || !emojis[key]) return match;
 
     // 获取表情图片URL（根据CDN配置动态生成）
-    const emojiUrl = getEmojiUrl(emojis[key]);
+    const emojiUrl = getEmojiUrl(emojis[key]!);
 
     // 返回图片标签
     return `<img src="${emojiUrl}" alt="${name}" class="inline-emoji" loading="lazy" />`;

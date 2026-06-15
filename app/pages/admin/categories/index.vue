@@ -19,7 +19,7 @@ async function fetchCategories() {
       csrfToken.value = (csrfRes as any).data.token;
     }
 
-    categories.value = (await $fetch("/api/admin/categories")) as any[];
+    categories.value = (await ($fetch as any)("/api/admin/categories")) as any[];
   } catch (error) {
     console.error("获取分类失败:", error);
     categories.value = [];
@@ -137,7 +137,7 @@ async function updateCategory() {
 
 async function deleteCategory(mid: number) {
   // 检查是否是最后一个分类
-  if (categories.length <= 1) {
+  if (categories.value.length <= 1) {
     toast.error({
       message: "无法删除",
       description: "至少需要保留一个分类",

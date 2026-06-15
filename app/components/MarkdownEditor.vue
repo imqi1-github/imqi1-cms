@@ -106,7 +106,7 @@ const handlePaste = async (event: ClipboardEvent) => {
 
     // 逐个上传图片
     for (let i = 0; i < imageItems.length; i++) {
-      const item = imageItems[i]
+      const item = imageItems[i]!
       const file = item.getAsFile()
 
       if (!file) continue
@@ -131,7 +131,7 @@ const handlePaste = async (event: ClipboardEvent) => {
 
         if (res?.success) {
           // 替换占位符为实际的图片链接
-          const placeholder = placeholders[i]
+          const placeholder = placeholders[i]!
           const imageMarkdown = `![${res.data.name}](${res.data.url})`
 
           // 更新文本，替换占位符
