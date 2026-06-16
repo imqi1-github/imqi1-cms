@@ -17,6 +17,24 @@ export default defineNuxtPlugin(nuxtApp => {
         },
       },
     });
+
+    // floating-vue 隐藏 popper 时会设置 aria-hidden，
+    // 若 popper 内仍有元素持有焦点，浏览器会阻止 aria-hidden 并抛出警告。
+    // 这里在 aria-hidden 生效后立即移出焦点，避免警告。
+    const observer = new MutationObserver(() => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && active !== document.body) {
+        const popper = active.closest<HTMLElement>('.v-popper__popper[aria-hidden="true"]');
+        if (popper) {
+          active.blur();
+        }
+      }
+    });
+    observer.observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-hidden'],
+    });
   }
 
   // 在服务端提供指令的 SSR 支持

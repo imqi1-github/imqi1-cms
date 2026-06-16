@@ -146,13 +146,9 @@ COS_PREFIX="/"
 
 ### 管理员账户配置
 
-```env
-SEED_ADMIN_NAME="棋"
-SEED_ADMIN_MAIL="admin@example.com"
-SEED_ADMIN_PASSWORD="123456"
-```
+管理员种子数据不再通过 `.env` 配置，默认值统一维护在 `site.config.ts` 的 `seed.adminUser` 中。
 
-更多配置选项请参考 `.env.example` 文件。
+更多环境变量配置请参考 `.env.example` 文件。
 
 ## 📁 项目结构
 

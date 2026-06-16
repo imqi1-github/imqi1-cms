@@ -24,60 +24,12 @@ const prisma = new PrismaClient({
 /**
  * 管理员账户配置
  */
-const ADMIN_USER = {
-  name: process.env.SEED_ADMIN_NAME || "admin",
-  mail: process.env.SEED_ADMIN_MAIL || "admin@example.com",
-  password: process.env.SEED_ADMIN_PASSWORD || "admin123456", // 生产环境请使用强密码
-};
+const ADMIN_USER = siteConfig.seed.adminUser;
 
 /**
  * 网站元数据配置
  */
-const SITE_META = {
-  siteName: process.env.SEED_SITE_NAME || siteConfig.siteName,
-  siteUrl: process.env.SEED_SITE_URL || siteConfig.siteUrl,
-  siteDesc: process.env.SEED_SITE_DESC || siteConfig.seo.description,
-  siteIcp: process.env.SEED_SITE_ICP || "",
-  commentEnabled: process.env.SEED_COMMENT_ENABLED || "true",
-  commentModeration: process.env.SEED_COMMENT_MODERATION || "false",
-  commentAvatarService: process.env.SEED_COMMENT_AVATAR_SERVICE || "gravatar",
-  commentPageSize: process.env.SEED_COMMENT_PAGE_SIZE || "10",
-  commentMaxLevel: process.env.SEED_COMMENT_MAX_LEVEL || "4",
-  commentRequireMail: process.env.SEED_COMMENT_REQUIRE_MAIL || "true",
-  commentRequireLink: process.env.SEED_COMMENT_REQUIRE_LINK || "false",
-  commentInterval: process.env.SEED_COMMENT_INTERVAL || "60",
-  postPageSize: process.env.SEED_POST_PAGE_SIZE || "12",
-  homeCustomText: process.env.SEED_HOME_CUSTOM_TEXT || siteConfig.homeCustomText,
-  musicPlaylistId: process.env.SEED_MUSIC_PLAYLIST_ID || "9255074836 || netease",
-  photoCategorySlug: process.env.SEED_PHOTO_CATEGORY_SLUG || "shot",
-  moderationApiType: process.env.SEED_MODERATION_API_TYPE || "1",
-  baiduAppId: process.env.SEED_BAIDU_APP_ID || "",
-  baiduApiKey: process.env.SEED_BAIDU_API_KEY || "",
-  baiduSecretKey: process.env.SEED_BAIDU_SECRET_KEY || "",
-  baiduCheckAdmin: process.env.SEED_BAIDU_CHECK_ADMIN || "false",
-  emailLogEnabled: process.env.SEED_EMAIL_LOG_ENABLED || "true",
-  emailPushType: process.env.SEED_EMAIL_PUSH_TYPE || "none",
-  smtpHost: process.env.SEED_SMTP_HOST || "",
-  smtpUser: process.env.SEED_SMTP_USER || "",
-  smtpAddress: process.env.SEED_SMTP_ADDRESS || "",
-  smtpPassword: process.env.SEED_SMTP_PASSWORD || "",
-  smtpSecureMode: process.env.SEED_SMTP_SECURE_MODE || "tls",
-  smtpPort: process.env.SEED_SMTP_PORT || "465",
-  smtpFromName: process.env.SEED_SMTP_FROM_NAME || "",
-  adminEmail: process.env.SEED_ADMIN_EMAIL || "",
-  notifyAdmin: process.env.SEED_NOTIFY_ADMIN || "false",
-  uploadLocation: process.env.SEED_UPLOAD_LOCATION || "local",
-  upyunDomain: process.env.SEED_UPYUN_DOMAIN || siteConfig.cdnUrl,
-  upyunService: process.env.SEED_UPYUN_SERVICE || "",
-  upyunOperator: process.env.SEED_UPYUN_OPERATOR || "",
-  upyunPassword: process.env.SEED_UPYUN_PASSWORD || "",
-  upyunImageProcess: process.env.SEED_UPYUN_IMAGE_PROCESS || "false",
-  upyunThumbnailVersion: process.env.SEED_UPYUN_THUMBNAIL_VERSION || "",
-  upyunOutputMode: process.env.SEED_UPYUN_OUTPUT_MODE || "",
-  upyunTokenKey: process.env.SEED_UPYUN_TOKEN_KEY || "",
-  upyunTokenExpire: process.env.SEED_UPYUN_TOKEN_EXPIRE || "1800",
-  cosImageSuffix: process.env.SEED_COS_IMAGE_SUFFIX || "webp",
-};
+const SITE_META = siteConfig.seed.siteMeta;
 
 async function main() {
   console.log("🌱 [生产环境] 开始生成种子数据...");

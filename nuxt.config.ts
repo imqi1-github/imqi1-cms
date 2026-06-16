@@ -57,7 +57,7 @@ export default defineNuxtConfig({
       cdnURL: cdnURL,
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
-      rootDomain: process.env.ROOT_DOMAIN || "", // 防止反向代理的根域名
+      rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
     },
   },
 
@@ -216,11 +216,13 @@ export default defineNuxtConfig({
           rel: "stylesheet",
           href: import.meta.env.PROD && cdnURL ? `${cdnURL}/fonts/font.css` : "/fonts/font.css",
         },
-        // PWA Manifest（根据 CDN 配置动态生成）
-        {
-          rel: "manifest",
-          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/manifest.webmanifest` : "/manifest.webmanifest",
-        },
+        // PWA Manifest（仅在生产环境加载）
+        ...(import.meta.env.PROD
+          ? [{
+              rel: "manifest",
+              href: cdnURL ? `${cdnURL}/manifest.webmanifest` : "/manifest.webmanifest",
+            }]
+          : []),
         // Favicon（根据 CDN 配置动态生成）
         {
           rel: "icon",

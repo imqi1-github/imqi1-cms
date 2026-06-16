@@ -23,11 +23,7 @@ export default defineEventHandler(event => {
   const referer = event.node.req.headers.referer;
 
   // 允许的 referer 域名
-  const allowedDomains = process.env.ALLOWED_REFERER_DOMAINS
-    ? process.env.ALLOWED_REFERER_DOMAINS
-        .split(",")
-        .map(d => d.trim())
-    : [new URL(siteConfig.siteUrl).host];
+  const allowedDomains = siteConfig.security.allowedRefererDomains;
 
   // 浏览器请求必须有 referer
   if (!referer) {

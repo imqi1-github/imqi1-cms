@@ -53,7 +53,6 @@ PORT=4000
 NODE_PROJECT_NAME="glass"
 NODE_ENV="production"
 UV_THREADPOOL_SIZE=64
-ROOT_DOMAIN=imqi1.com
 ```
 
 端口选择 4000。

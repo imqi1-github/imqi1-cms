@@ -1,7 +1,7 @@
 /**
  * 防止反向代理插件
- * 仅在生产环境且配置了 ROOT_DOMAIN 时启用
- * 如果当前访问域名与 ROOT_DOMAIN 不匹配，则强制跳转
+ * 仅在生产环境且配置了 rootDomain 时启用
+ * 如果当前访问域名与 rootDomain 不匹配，则强制跳转
  */
 export default defineNuxtPlugin(() => {
   // 只在生产环境启用
@@ -12,7 +12,7 @@ export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
   const rootDomain = config.public.rootDomain as string;
 
-  // 如果未配置 ROOT_DOMAIN，则不启用防护
+  // 如果未配置 rootDomain，则不启用防护
   if (!rootDomain) {
     return;
   }
@@ -22,7 +22,7 @@ export default defineNuxtPlugin(() => {
     // 检查当前域名
     const currentHost = window.location.hostname;
 
-    // 如果当前域名与 ROOT_DOMAIN 不匹配，则强制跳转
+    // 如果当前域名与 rootDomain 不匹配，则强制跳转
     if (currentHost !== rootDomain) {
       // 构建目标 URL
       const currentPath = window.location.pathname;
