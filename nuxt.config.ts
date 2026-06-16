@@ -3,8 +3,10 @@ import { siteConfig, fullOgImage } from "./site.config";
 
 // 读取构建 hash（如果存在）
 const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
+const isProduction = process.env.NODE_ENV === "production";
 
 const cdnURL = buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl;
+const publicCdnAsset = (path: string) => isProduction && siteConfig.cdnUrl ? `${siteConfig.cdnUrl}${path}` : path;
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {
@@ -94,13 +96,13 @@ export default defineNuxtConfig({
       id: "/",
       icons: [
         {
-          src: "/imgs/imqi1.svg",
+          src: publicCdnAsset("/imgs/imqi1.svg"),
           sizes: "192x192",
           type: "image/svg+xml",
           purpose: "any maskable",
         },
         {
-          src: "/imgs/imqi1.svg",
+          src: publicCdnAsset("/imgs/imqi1.svg"),
           sizes: "512x512",
           type: "image/svg+xml",
           purpose: "any maskable",
@@ -108,14 +110,14 @@ export default defineNuxtConfig({
       ],
       screenshots: [
         {
-          src: "/imgs/frontend-screenshot1.png",
+          src: publicCdnAsset("/imgs/frontend-screenshot1.png"),
           sizes: "1280x720",
           type: "image/png",
           form_factor: "wide",
           label: "桌面端界面",
         },
         {
-          src: "/imgs/frontend-screenshot2.png",
+          src: publicCdnAsset("/imgs/frontend-screenshot2.png"),
           sizes: "510x820",
           type: "image/png",
           form_factor: "narrow",
@@ -214,26 +216,26 @@ export default defineNuxtConfig({
         // 字体样式表（根据 CDN 配置动态生成）
         {
           rel: "stylesheet",
-          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/fonts/font.css` : "/fonts/font.css",
+          href: publicCdnAsset("/fonts/font.css"),
         },
         // PWA Manifest（仅在生产环境加载）
-        ...(import.meta.env.PROD
+        ...(isProduction
           ? [{
               rel: "manifest",
-              href: cdnURL ? `${cdnURL}/manifest.webmanifest` : "/manifest.webmanifest",
+              href: publicCdnAsset("/manifest.webmanifest"),
             }]
           : []),
         // Favicon（根据 CDN 配置动态生成）
         {
           rel: "icon",
           type: "image/x-icon",
-          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/favicon.ico` : "/favicon.ico",
+          href: publicCdnAsset("/favicon.ico"),
         },
         // Apple Touch Icon（根据 CDN 配置动态生成）
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
-          href: import.meta.env.PROD && cdnURL ? `${cdnURL}/imgs/imqi1-144.png` : "/imgs/imqi1-144.png",
+          href: publicCdnAsset("/imgs/imqi1-144.png"),
         },
       ],
       meta: [
@@ -449,7 +451,7 @@ export default defineNuxtConfig({
   routeRules: {
     // ========== ISR（增量静态再生成）配置 ==========
     // 注意：ISR在开发环境可能不稳定，建议生产环境启用
-    ...(import.meta.env.PROD
+    ...(isProduction
       ? {
           // 首页：每5分钟重新生成一次（推荐）
           "/": {
@@ -688,11 +690,11 @@ export default defineNuxtConfig({
 
     // ========== 全局安全头配置 ==========
     "/**": {
-      headers: import.meta.env.PROD
+      headers: isProduction
         ? {
             // 生产环境下的 CSP 配置
             "Content-Security-Policy":
-              `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl}; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`,
+              `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl}; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`,
             "X-Frame-Options": "DENY",
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "strict-origin-when-cross-origin",

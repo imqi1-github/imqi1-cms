@@ -146,7 +146,7 @@ COS_PREFIX="/"
 
 ### 管理员账户配置
 
-管理员种子数据不再通过 `.env` 配置，默认值统一维护在 `site.config.ts` 的 `seed.adminUser` 中。
+管理员账户不再通过 `.env` 或 `site.config.ts` 配置默认种子值。需要本地测试数据时，可运行 `bun run db:init:test` 创建最小测试数据。
 
 更多环境变量配置请参考 `.env.example` 文件。
 

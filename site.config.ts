@@ -30,51 +30,6 @@ const _host = new URL(_url).host;
 // 静态资源 CDN 前缀：生产环境带 CDN 根（不带构建 hash），开发环境为空走本地 public
 const _assetPrefix = process.env.NODE_ENV === "production" ? _cdnUrl : "";
 
-const _seedSiteMeta = {
-  siteName: _name,
-  siteUrl: _url,
-  siteDesc: _desc,
-  siteIcp: "",
-  commentEnabled: "true",
-  commentModeration: "false",
-  commentAvatarService: "gravatar",
-  commentPageSize: "10",
-  commentMaxLevel: "4",
-  commentRequireMail: "true",
-  commentRequireLink: "false",
-  commentInterval: "60",
-  postPageSize: "12",
-  homeCustomText: `<p>${_displayName}</p>`,
-  musicPlaylistId: "9255074836 || netease",
-  photoCategorySlug: "shot",
-  moderationApiType: "1",
-  baiduAppId: "",
-  baiduApiKey: "",
-  baiduSecretKey: "",
-  baiduCheckAdmin: "false",
-  emailLogEnabled: "true",
-  emailPushType: "none",
-  smtpHost: "",
-  smtpUser: "",
-  smtpAddress: "",
-  smtpPassword: "",
-  smtpSecureMode: "tls",
-  smtpPort: "465",
-  smtpFromName: "",
-  adminEmail: "",
-  notifyAdmin: "false",
-  uploadLocation: "local",
-  upyunDomain: _cdnUrl,
-  upyunService: "",
-  upyunOperator: "",
-  upyunPassword: "",
-  upyunImageProcess: "false",
-  upyunThumbnailVersion: "",
-  upyunOutputMode: "",
-  upyunTokenKey: "",
-  upyunTokenExpire: "1800",
-  cosImageSuffix: "webp",
-};
 
 /**
  * 全站静态配置实例
@@ -94,19 +49,10 @@ export const siteConfig = defineSiteConfig({
     allowedRefererDomains: [_host],
   },
 
-  seed: {
-    adminUser: {
-      name: "admin",
-      mail: "admin@example.com",
-      password: "admin123456",
-    },
-    siteMeta: _seedSiteMeta,
-  },
-
   seo: {
     description: _desc,
     keywords: "棋,ImQi1,棋的小站,生活,科技,编程,学习,摄影,时事",
-    ogImage: "/imgs/imqi1.svg",
+    ogImage: `${_assetPrefix}/imgs/imqi1.svg`,
     ogLocale: "zh_CN",
     twitterSite: "@imqi1_X",
   },
@@ -206,4 +152,4 @@ export const siteConfig = defineSiteConfig({
  * 完整的 og:image URL（siteUrl + ogImage 路径拼接）
  * @example "https://imqi1.com/imgs/og-image.png"
  */
-export const fullOgImage: string = `${siteConfig.siteUrl}${siteConfig.seo.ogImage}`;
+export const fullOgImage: string = siteConfig.seo.ogImage;

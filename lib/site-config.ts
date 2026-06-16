@@ -30,8 +30,6 @@ export interface SiteConfig {
     /** 允许访问 API 的 Referer 根域名列表 */
     allowedRefererDomains: string[];
   };
-  /** 生产环境种子数据默认值 */
-  seed: SiteSeedConfig;
   /** SEO 默认文案及 Open Graph / Twitter Card 元数据 */
   seo: {
     /** 默认 SEO description，页面级可覆盖 */
@@ -103,18 +101,6 @@ export interface BlogOrganization {
   url: string;
   /** 组织图标相对路径（如 /imgs/foreverblog.png） */
   icon: string;
-}
-
-/** 生产环境种子数据默认值 */
-export interface SiteSeedConfig {
-  /** 默认管理员账户 */
-  adminUser: {
-    name: string;
-    mail: string;
-    password: string;
-  };
-  /** 默认站点元数据 */
-  siteMeta: Record<string, string>;
 }
 
 /** 静态页面的 SEO 配置项 */

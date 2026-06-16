@@ -8,7 +8,7 @@
 // 注意：
 // - 只有 _nuxt/ 走带 hash 的 cdnURL，由 Nuxt 自动处理；本 helper 不处理 _nuxt/。
 // - 业务路由（/about、/api/...）不会被前缀。
-// - 绝对 URL（http/https/data/blob/mailto/tel）直接返回。
+// - 绝对资源 URL（http/https/blob/data:image）直接返回。
 
 const STATIC_ASSET_RE =
   /^\/(imgs|skills|icons|fonts|emojis|uploads)\//;
@@ -17,7 +17,9 @@ const STATIC_ASSET_FILE_RE =
   /^\/(favicon\.ico|manifest\.webmanifest|robots\.txt|sitemap\.xsl)$/;
 
 const ABSOLUTE_RE = /^(https?:)?\/\//i;
-const NON_HTTP_RE = /^(data|blob|mailto|tel|javascript):/i;
+const SAFE_DATA_RE = /^data:image\//i;
+const BLOB_RE = /^blob:/i;
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 
 export interface PublicAssetOptions {
   /** 强制返回原始路径，不加 CDN 前缀 */
@@ -29,7 +31,8 @@ export function publicAsset(
   options: PublicAssetOptions = {},
 ): string {
   if (!input) return "";
-  if (ABSOLUTE_RE.test(input) || NON_HTTP_RE.test(input)) return input;
+  if (ABSOLUTE_RE.test(input) || SAFE_DATA_RE.test(input) || BLOB_RE.test(input)) return input;
+  if (SCHEME_RE.test(input)) return "";
   if (!input.startsWith("/")) return input;
   if (options.raw) return input;
   if (input.startsWith("/_nuxt/")) return input;

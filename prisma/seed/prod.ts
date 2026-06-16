@@ -1,6 +1,5 @@
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import "dotenv/config";
 import { siteConfig } from "../../site.config";
 
@@ -22,14 +21,53 @@ const prisma = new PrismaClient({
 // ============================================
 
 /**
- * 管理员账户配置
- */
-const ADMIN_USER = siteConfig.seed.adminUser;
-
-/**
  * 网站元数据配置
  */
-const SITE_META = siteConfig.seed.siteMeta;
+const SITE_META = {
+  siteName: siteConfig.siteName,
+  siteUrl: siteConfig.siteUrl,
+  siteDesc: siteConfig.seo.description,
+  siteIcp: "",
+  commentEnabled: "true",
+  commentModeration: "false",
+  commentAvatarService: "gravatar",
+  commentPageSize: "10",
+  commentMaxLevel: "4",
+  commentRequireMail: "true",
+  commentRequireLink: "false",
+  commentInterval: "60",
+  postPageSize: "12",
+  homeCustomText: siteConfig.homeCustomText,
+  musicPlaylistId: "9255074836 || netease",
+  photoCategorySlug: "shot",
+  moderationApiType: "1",
+  baiduAppId: "",
+  baiduApiKey: "",
+  baiduSecretKey: "",
+  baiduCheckAdmin: "false",
+  emailLogEnabled: "true",
+  emailPushType: "none",
+  smtpHost: "",
+  smtpUser: "",
+  smtpAddress: "",
+  smtpPassword: "",
+  smtpSecureMode: "tls",
+  smtpPort: "465",
+  smtpFromName: "",
+  adminEmail: "",
+  notifyAdmin: "false",
+  uploadLocation: "local",
+  upyunDomain: siteConfig.cdnUrl,
+  upyunService: "",
+  upyunOperator: "",
+  upyunPassword: "",
+  upyunImageProcess: "false",
+  upyunThumbnailVersion: "",
+  upyunOutputMode: "",
+  upyunTokenKey: "",
+  upyunTokenExpire: "1800",
+  cosImageSuffix: "webp",
+};
 
 async function main() {
   console.log("🌱 [生产环境] 开始生成种子数据...");
@@ -39,29 +77,13 @@ async function main() {
     where: { role: 1 },
   });
 
-  let admin;
-  if (existingAdmin) {
-    console.log("⚠️  已存在管理员用户，跳过创建");
-    console.log(`   👤 现有管理员: ${existingAdmin.name}`);
-    admin = existingAdmin;
-  } else {
-    // 创建管理员用户
-    console.log("👤 创建管理员用户...");
-    const hashedPassword = await bcrypt.hash(ADMIN_USER.password, 10);
-    admin = await prisma.users.create({
-      data: {
-        name: ADMIN_USER.name,
-        nickname: "管理员",
-        mail: ADMIN_USER.mail,
-        password: hashedPassword,
-        role: 1,
-      },
-    });
-    console.log(`   ✅ 创建管理员: ${admin.name}`);
-    console.log(`   📧 邮箱: ${admin.mail}`);
-    console.log(`   🔑 密码: ${ADMIN_USER.password}`);
-    console.log("   ⚠️  请尽快修改默认密码！");
+  if (!existingAdmin) {
+    throw new Error("未找到管理员用户。生产环境 seed 不再创建默认弱口令管理员，请先通过后台初始化或专用测试脚本创建用户。");
   }
+
+  console.log("⚠️  已存在管理员用户，跳过创建");
+  console.log(`   👤 现有管理员: ${existingAdmin.name}`);
+  const admin = existingAdmin;
 
   // 创建/更新元数据
   console.log("⚙️  配置网站元数据...");
