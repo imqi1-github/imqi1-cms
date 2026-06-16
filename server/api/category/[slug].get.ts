@@ -10,6 +10,19 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // uncategorized 是虚拟兜底分类，用于容错数据不完整的文章
+  if (categorySlug === "uncategorized") {
+    return {
+      success: true,
+      data: {
+        mid: 0,
+        name: "未分类",
+        slug: "uncategorized",
+        desc: null,
+      },
+    };
+  }
+
   // 获取分类信息
   const category = await prisma.metas.findUnique({
     where: {

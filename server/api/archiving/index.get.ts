@@ -10,15 +10,19 @@ export default defineEventHandler(async event => {
       },
       include: {
         postrelations: {
-            select: {
-              cid: true,
-              mid: true,
-              metas: {
+          where: {
+            metas: { type: "category" },
+          },
+          select: {
+            cid: true,
+            mid: true,
+            metas: {
               select: {
                 slug: true,
               },
             },
           },
+          take: 1,
         },
       },
       orderBy: {

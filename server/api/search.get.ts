@@ -85,40 +85,10 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "");
 }
 
-// 格式化搜索结果
-async function formatSearchResults(posts: any[], query: string) {
-  // 获取所有文章的 cid
-  const cids = posts.map((p: any) => p.cid);
-
-  // 批量获取分类信息
-  const categories = await prisma.postrelations.findMany({
-    where: {
-      cid: { in: cids },
-      metas: { type: "category" },
-    },
-    select: {
-      cid: true,
-      metas: {
-        select: {
-          name: true,
-          slug: true,
-        },
-      },
-    },
-    take: 1,
-  });
-
-  // 创建 cid -> category 的映射
-  const categoryMap = new Map();
-  categories.forEach((rel) => {
-    if (!categoryMap.has(rel.cid)) {
-      categoryMap.set(rel.cid, rel.metas);
-    }
-  });
-
-  // 格式化结果
+// 格式化搜索结果（分类信息已通过 postrelations 关联查询获取）
+function formatSearchResults(posts: any[], query: string) {
   return posts.map((post: any) => {
-    const category = categoryMap.get(post.cid);
+    const category = post.postrelations?.[0]?.metas;
 
     // 提取正文纯文本
     const plainContent = stripHtml(post.content || "");
@@ -204,6 +174,20 @@ export default defineEventHandler(async event => {
         desc: true,
         content: true,
         create_time: true,
+        postrelations: {
+          where: {
+            metas: { type: "category" },
+          },
+          select: {
+            metas: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+          take: 1,
+        },
       },
       orderBy: { create_time: "desc" },
     });
@@ -212,7 +196,7 @@ export default defineEventHandler(async event => {
     console.log(`[LIKE 搜索] 关键词: "${q}", 找到 ${total} 条结果`);
 
     // 格式化结果（传入搜索关键词用于高亮）
-    const results = await formatSearchResults(posts, q);
+    const results = formatSearchResults(posts, q);
 
     const responseData = {
       results,

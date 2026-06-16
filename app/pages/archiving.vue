@@ -154,7 +154,7 @@ onMounted(() => {
 
             <!-- 文章标题 -->
             <NuxtLink
-              :to="post.categorySlug ? `/content/${post.categorySlug}/${post.slug || post.cid}` : `/content/${post.slug || post.cid}`"
+              :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug || post.cid}`"
               class="flex-1 font-medium hover:text-primary transition-colors line-clamp-1">
               {{ post.title }}
             </NuxtLink>

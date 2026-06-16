@@ -179,7 +179,7 @@ function highlightKeyword(text: string, keyword: string) {
           <article v-for="post in results" :key="post.cid" class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all">
             <!-- 标题 -->
             <NuxtLink
-              :to="post.categorySlug ? `/content/${post.categorySlug}/${post.slug || post.cid}` : `/content/${post.slug || post.cid}`"
+              :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug || post.cid}`"
               class="block">
               <h3
                 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2 line-clamp-2"

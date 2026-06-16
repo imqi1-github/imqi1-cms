@@ -20,20 +20,26 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 构建查询条件 - 必须同时匹配分类和文章
+  // 构建查询条件
+  // uncategorized 是兜底分类：仅按 slug 匹配文章，容错数据库中分类关系缺失/不完整的情况
+  const isUncategorized = categorySlug === "uncategorized";
   const post = await prisma.posts.findFirst({
     where: {
       slug,
       type: 0, // 0: 文章
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
-      postrelations: {
-        some: {
-          metas: {
-            slug: categorySlug,
-            type: "category",
-          },
-        },
-      },
+      ...(isUncategorized
+        ? {}
+        : {
+            postrelations: {
+              some: {
+                metas: {
+                  slug: categorySlug,
+                  type: "category",
+                },
+              },
+            },
+          }),
     },
     include: {
       user: {
