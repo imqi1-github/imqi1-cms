@@ -5,8 +5,12 @@ import { siteConfig, fullOgImage } from "./site.config";
 const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
 const isProduction = process.env.NODE_ENV === "production";
 
-const cdnURL = buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl;
-const publicCdnAsset = (path: string) => isProduction && siteConfig.cdnUrl ? `${siteConfig.cdnUrl}${path}` : path;
+// 只有配置了有效的 CDN URL 才使用 CDN
+const hasCdn = siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http");
+const cdnURL = isProduction && hasCdn
+  ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl)
+  : "";
+const publicCdnAsset = (path: string) => isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path;
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {
@@ -687,6 +691,74 @@ export default defineNuxtConfig({
       isr: false,
       ssr: true,
     },
+
+    // ========== 静态资源 CDN 重定向配置 ==========
+    // 只有生产环境且配置了 CDN 时才启用重定向
+    // 避免服务器处理文件不存在的请求，节省服务器资源
+    ...(isProduction && siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http")
+      ? {
+          "/favicon.ico": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/favicon.ico`,
+              statusCode: 301,
+            },
+          },
+          "/manifest.webmanifest": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/manifest.webmanifest`,
+              statusCode: 301,
+            },
+          },
+          "/robots.txt": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/robots.txt`,
+              statusCode: 301,
+            },
+          },
+          "/sitemap.xsl": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/sitemap.xsl`,
+              statusCode: 301,
+            },
+          },
+          "/imgs/**": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/imgs/**`,
+              statusCode: 301,
+            },
+          },
+          "/skills/**": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/skills/**`,
+              statusCode: 301,
+            },
+          },
+          "/icons/**": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/icons/**`,
+              statusCode: 301,
+            },
+          },
+          "/fonts/**": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/fonts/**`,
+              statusCode: 301,
+            },
+          },
+          "/emojis/**": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/emojis/**`,
+              statusCode: 301,
+            },
+          },
+          "/uploads/**": {
+            redirect: {
+              to: `${siteConfig.cdnUrl}/uploads/**`,
+              statusCode: 301,
+            },
+          },
+        }
+      : {}),
 
     // ========== 全局安全头配置 ==========
     "/**": {
