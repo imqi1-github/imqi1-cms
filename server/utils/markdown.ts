@@ -2,6 +2,7 @@ import MarkdownIt from "markdown-it";
 import Shiki from "@shikijs/markdown-it";
 import { transformerNotationHighlight, transformerNotationDiff } from "@shikijs/transformers";
 import container from "markdown-it-container";
+import { escapeAttribute, escapeHtml, sanitizeHtml } from "~~/lib/html";
 
 // 只加载常见语言，减少服务端内存占用
 import javascript from "@shikijs/langs/javascript";
@@ -38,6 +39,19 @@ import islandDarkTheme from '@/shiki/island_dark'
 // 自定义主题需要断言为 Shiki 接受的格式
 const lightTheme = islandLightTheme as any;
 const darkTheme = islandDarkTheme as any;
+
+const supportedLanguages = new Set([
+  "javascript", "js", "typescript", "ts", "python", "py", "java", "cpp", "c++", "c", "css", "html", "json",
+  "bash", "sh", "shell", "sql", "php", "ruby", "rb", "go", "rust", "rs", "swift", "kotlin", "kt", "scala",
+  "yaml", "yml", "toml", "markdown", "md", "vue", "tsx", "jsx", "mermaid", "ini", "powershell", "ps1",
+]);
+
+const simpleMd = new MarkdownIt({
+  html: false,
+  linkify: false,
+  typographer: false,
+  breaks: true,
+});
 
 // 单例模式的 markdown 实例
 let mdInstance: MarkdownIt | null = null;
@@ -139,50 +153,77 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     return self.renderToken(tokens, idx, options);
   };
 
-  // HTML 转义（用于兜底渲染）
-  function escapeHtml(s: string): string {
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function normalizeClassName(s: string): string {
+    return s.trim().replace(/\s+/g, "-").replace(/[<>"'&`]/g, "-");
+  }
+
+  function parseFenceInfo(info: string) {
+    const trimmedInfo = info.trim();
+    const separatorIndex = trimmedInfo.indexOf("+");
+    if (separatorIndex <= 0) {
+      return { shikiLang: trimmedInfo, className: normalizeClassName(trimmedInfo) };
+    }
+
+    if (supportedLanguages.has(trimmedInfo.toLowerCase())) {
+      return { shikiLang: trimmedInfo, className: normalizeClassName(trimmedInfo) };
+    }
+
+    const baseLang = trimmedInfo.slice(0, separatorIndex);
+    const possibleFileName = trimmedInfo.slice(separatorIndex + 1);
+    if (!possibleFileName || !/[./\\]/.test(possibleFileName)) {
+      return { shikiLang: baseLang, className: normalizeClassName(baseLang) };
+    }
+
+    return {
+      shikiLang: baseLang,
+      className: normalizeClassName(trimmedInfo),
+    };
   }
 
   md.renderer.rules.fence = (tokens: any[], idx: number, options: any, env: any, self: any) => {
     const token = tokens[idx];
     const info = token.info || "";
+    const { shikiLang, className } = parseFenceInfo(info);
+    const renderPlainCode = () => {
+      const lines = token.content.split("\n");
+      if (lines[lines.length - 1] === "") {
+        lines.pop();
+      }
+      const code = lines.map(line => `<span class="line">${escapeHtml(line)}</span>`).join("\n");
+      const langClass = className ? ` language-${className}` : "";
+      const codeClass = className ? ` class="language-${className}"` : "";
+      return `<pre class="shiki${langClass}" tabindex="0"><code${codeClass}>${code}</code></pre>`;
+    };
 
-    // 提取实际语言名（去掉 "+文件名" 部分），用于喂给 Shiki
-    const shikiLang = info.includes("+") ? info.split("+")[0]! : info;
+    if (!shikiLang || !supportedLanguages.has(shikiLang.toLowerCase())) {
+      return renderPlainCode();
+    }
 
-    // 临时把 info 设为 shikiLang，让 Shiki 不被 "+文件名" 干扰
+    const shikiClassName = normalizeClassName(shikiLang);
+    const restoreClassName = (html: string) => html.replace(
+      /class="([^"]*)\blanguage-(?:json|text|plaintext)(\s|$)([^"]*)"/,
+      (_match: string, before: string, after: string, rest: string) => `class="${before}language-${className}${after}${rest}"`
+    );
+
     token.info = shikiLang;
 
     let result: string;
     try {
       result = defaultFence(tokens, idx, options, env, self);
-      // 如果原始语言不是 json 系，但 Shiki fallback 后 class 变成 language-json
-      // 说明触发了 fallbackLanguage → 把 class 改回原始语言名
-      if (!shikiLang.toLowerCase().startsWith("json")) {
-        result = result.replace(/language-json/g, `language-${shikiLang}`);
+      if (className && className !== shikiClassName) {
+        result = result.replace(`language-${shikiClassName}`, `language-${className}`);
+      } else if (className && !result.includes(`language-${className}`)) {
+        result = restoreClassName(result);
       }
     } catch {
-      // fallbackLanguage 未配置或失败：手动用 json 重试
       token.info = "json";
       try {
-        result = defaultFence(tokens, idx, options, env, self);
-        result = result.replace(/language-json/g, `language-${shikiLang}`);
+        result = restoreClassName(defaultFence(tokens, idx, options, env, self));
       } catch {
-        // 极端情况：连 json 都失败，纯文本兜底
-        result = `<pre class="language-${info}"><code class="language-${info}">${escapeHtml(token.content)}</code></pre>`;
+        result = renderPlainCode();
       }
     } finally {
-      // 恢复原始 info
       token.info = info;
-    }
-
-    // 如果原始 info 含 "+文件名"，把 class 中的语言部分扩展为完整 info
-    if (info !== shikiLang) {
-      result = result.replace(
-        `class="language-${shikiLang}"`,
-        `class="language-${info}"`
-      );
     }
 
     return result;
@@ -201,7 +242,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器
-        return `<div class="markdown-details-wrapper" data-summary="${summary}">`;
+        return `<div class="markdown-details-wrapper" data-summary="${escapeAttribute(summary)}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -222,7 +263,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器
-        return `<div class="markdown-video-wrapper" data-url="${url}">`;
+        return `<div class="markdown-video-wrapper" data-url="${escapeAttribute(url)}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -243,7 +284,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器
-        return `<div class="markdown-callout-wrapper" data-type="${type}">`;
+        return `<div class="markdown-callout-wrapper" data-type="${escapeAttribute(type)}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -264,7 +305,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器，将参数存储在 data 属性中
-        return `<div class="markdown-card-wrapper" data-params="${encodeURIComponent(paramsStr)}">`;
+        return `<div class="markdown-card-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -302,7 +343,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器
-        return `<div class="markdown-repo-wrapper" data-url="${url}">`;
+        return `<div class="markdown-repo-wrapper" data-url="${escapeAttribute(url)}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -326,7 +367,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器，将参数存储在 data 属性中
-        return `<div class="markdown-music-wrapper" data-params="${encodeURIComponent(paramsStr)}">`;
+        return `<div class="markdown-music-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -347,7 +388,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
       if (tokens[idx].nesting === 1) {
         // 开始容器，将参数存储在 data 属性中
-        return `<div class="markdown-simple-card-wrapper" data-params="${encodeURIComponent(paramsStr)}">`;
+        return `<div class="markdown-simple-card-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
         // 结束容器
         return `</div>`;
@@ -449,6 +490,14 @@ function transformMusicLinks(content: string): string {
   return transformedContent;
 }
 
+export function renderSimpleMarkdown(content: string): string {
+  if (!content) {
+    return "";
+  }
+
+  return sanitizeHtml(simpleMd.render(content));
+}
+
 // 渲染 Markdown 内容
 export async function renderMarkdown(content: string): Promise<string> {
   if (!content) {
@@ -459,7 +508,7 @@ export async function renderMarkdown(content: string): Promise<string> {
   const transformedContent = transformMusicLinks(content);
 
   const md = await createMarkdownInstance();
-  return md.render(transformedContent);
+  return sanitizeHtml(md.render(transformedContent));
 }
 
 // 预热 Shiki（在应用启动时调用）

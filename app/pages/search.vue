@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { escapeHtml, escapeRegExp } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
@@ -97,9 +98,11 @@ function formatDate(date: string | Date) {
 
 // 高亮关键词
 function highlightKeyword(text: string, keyword: string) {
-  if (!keyword || !text) return text;
-  const regex = new RegExp(`(${keyword})`, "gi");
-  return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>');
+  if (!keyword || !text) return escapeHtml(text || "");
+  const escapedText = escapeHtml(text);
+  const escapedKeyword = escapeRegExp(keyword);
+  const regex = new RegExp(`(${escapedKeyword})`, "gi");
+  return escapedText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>');
 }
 </script>
 

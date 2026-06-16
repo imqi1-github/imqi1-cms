@@ -1,7 +1,36 @@
 import { updateAllSubscribes } from '../utils/rss';
+import { prisma } from '#server/utils/prisma';
 
 let updateTimer: NodeJS.Timeout | null = null;
-const UPDATE_INTERVAL = 8 * 60 * 60 * 1000; // 8小时
+const STARTUP_DELAY = 60 * 60 * 1000; // 1小时
+const DEFAULT_UPDATE_INTERVAL = 8;
+
+async function getUpdateInterval() {
+  const setting = await prisma.informations.findFirst({
+    where: { key: 'feedCacheInterval' },
+    select: { value: true },
+  });
+  const interval = Number(setting?.value ?? DEFAULT_UPDATE_INTERVAL);
+  return Number.isFinite(interval) && interval > 0 ? interval : DEFAULT_UPDATE_INTERVAL;
+}
+
+async function runUpdate() {
+  try {
+    console.log('[RSS订阅] 开始自动更新订阅...');
+    const result = await updateAllSubscribes();
+    console.log(`[RSS订阅] 自动更新完成: 成功 ${result.success}/${result.total}`);
+  } catch (error) {
+    console.error('[RSS订阅] 自动更新失败:', error);
+  }
+}
+
+function scheduleNextUpdate(delay: number) {
+  updateTimer = setTimeout(async () => {
+    await runUpdate();
+    const interval = await getUpdateInterval();
+    scheduleNextUpdate(interval * 60 * 60 * 1000);
+  }, delay);
+}
 
 // 启动定时任务
 function startScheduler() {
@@ -9,29 +38,8 @@ function startScheduler() {
     return;
   }
 
-  // 服务器启动时立即执行一次更新
-  setTimeout(async () => {
-    try {
-      console.log('[RSS订阅] 开始自动更新订阅...');
-      const result = await updateAllSubscribes();
-      console.log(`[RSS订阅] 自动更新完成: 成功 ${result.success}/${result.total}`);
-    } catch (error) {
-      console.error('[RSS订阅] 自动更新失败:', error);
-    }
-  }, 100);
-
-  // 设置定时任务
-  updateTimer = setInterval(async () => {
-    try {
-      console.log('[RSS订阅] 开始自动更新订阅...');
-      const result = await updateAllSubscribes();
-      console.log(`[RSS订阅] 自动更新完成: 成功 ${result.success}/${result.total}`);
-    } catch (error) {
-      console.error('[RSS订阅] 自动更新失败:', error);
-    }
-  }, UPDATE_INTERVAL);
-
-  console.log('[RSS订阅] 定时任务已启动，更新间隔: 8小时');
+  scheduleNextUpdate(STARTUP_DELAY);
+  console.log('[RSS订阅] 定时任务已启动，服务器启动1小时后首次更新，随后按数据库设置间隔更新');
 }
 
 // Nitro plugin

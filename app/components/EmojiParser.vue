@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import emojisData from "~/assets/emojis.json";
-import { siteConfig } from "~~/site.config";
+import { escapeAttribute, escapeHtml } from "~~/lib/html";
 
 const props = defineProps<{
   content: string;
@@ -13,23 +13,18 @@ const prefixConfig: Record<string, { dataKey: string; filePrefix: string }> = {
   "cat": { dataKey: "Cat", filePrefix: "cat-" },
 };
 
-// 获取表情图片URL（生产环境使用 CDN 基础域名，不携带构建哈希目录）
-const getEmojiUrl = (path: string) => {
-  // 只在生产环境下使用 CDN
-  if (!import.meta.env.PROD || !siteConfig.cdnUrl) return path;
-  // 如果有CDN，将路径中的 /emojis/ 替换为 CDN URL + /emojis/
-  return path.replace(/^\/emojis\//, `${siteConfig.cdnUrl}/emojis/`);
-};
-
 // 解析表情占位符
 const parsedContent = computed(() => {
   const text = props.content;
   if (!text) return "";
 
+  // 先转义原始文本，再插入受控的表情 img，避免未命中内容通过 v-html 执行
+  const escapedText = escapeHtml(text);
+
   // 匹配 :[prefix-name] 格式
   const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
 
-  let result = text.replace(emojiRegex, (match, prefix, name) => {
+  let result = escapedText.replace(emojiRegex, (match, prefix, name) => {
     const config = prefixConfig[prefix];
     if (!config) return match;
 
@@ -37,11 +32,11 @@ const parsedContent = computed(() => {
     const emojis = emojisData[config.dataKey as keyof typeof emojisData] as Record<string, string> | undefined;
     if (!emojis || !emojis[key]) return match;
 
-    // 获取表情图片URL（根据CDN配置动态生成）
-    const emojiUrl = getEmojiUrl(emojis[key]!);
+    // 获取表情图片URL（生产环境且配置了 CDN 时自动加前缀）
+    const emojiUrl = publicAsset(emojis[key]!);
 
-    // 返回图片标签
-    return `<img src="${emojiUrl}" alt="${name}" class="inline-emoji" loading="lazy" />`;
+    // 返回受控图片标签
+    return `<img src="${escapeAttribute(emojiUrl)}" alt="${escapeAttribute(name)}" class="inline-emoji" loading="lazy" />`;
   });
 
   return result;

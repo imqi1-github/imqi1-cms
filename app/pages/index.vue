@@ -17,7 +17,7 @@
 
         <!-- 头像区域 -->
         <div class="h-fit max-md:hidden">
-          <img :src="siteConfig.links.profile.siteAvatarPath" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
+          <img :src="siteConfig.siteAvatarPath" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
         </div>
 
         <!-- 滚动提示 -->
@@ -178,7 +178,7 @@
                   <div v-else-if="rightItem.type === 'layout'" class="relative h-75 w-75 group">
                     <div
                       class="absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
-                      <img src="/imgs/shenyang.webp" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
+                      <img :src="publicAsset('/imgs/shenyang.webp')" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
                     </div>
                     <div
                       class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"></div>
@@ -685,7 +685,8 @@ const { data: homeData } = await useFetch("/api/home-data", {
 });
 
 // 站点信息
-const siteName = computed(() => homeData.value?.data?.site?.siteName || siteConfig.siteName);
+const { siteSettings } = useSiteSettings();
+const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 分类信息
 const categories = computed(() => homeData.value?.data?.categories || []);
@@ -785,7 +786,7 @@ usePageSeo({
 });
 
 // 首页Hero下文字
-const homeAnnounce = computed(() => homeData.value?.data?.site?.homeCustomText || siteConfig.homeCustomText);
+const homeAnnounce = computed(() => siteSettings.value?.homeCustomText || siteConfig.homeCustomText);
 
 // 图片分类slug
 const photoCategorySlug = computed(() => homeData.value?.data?.site?.photoCategorySlug || "shot");

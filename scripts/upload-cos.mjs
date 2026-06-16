@@ -35,10 +35,31 @@ if (fs.existsSync(path.join(ROOT_DIR, '.build-hash-dir'))) {
 const args = process.argv.slice(2)
 const subDir = args.find(arg => !arg.startsWith('-'))
 
-// 如果提供了子目录，则上传指定子目录；否则上传整个 public 目录
+// 指定子目录时只上传该子目录；
+// 未指定时默认上传 _nuxt/ 构建产物 + workbox-*.js 运行时文件（均带构建 hash）。
+// imgs/skills/icons/emojis 等静态资源不走构建 hash，不在此上传。
 const SOURCE_DIR = subDir
   ? path.join(BASE_DIR, subDir)
-  : BASE_DIR
+  : path.join(BASE_DIR, '_nuxt')
+
+// 收集默认上传文件：_nuxt/ 全部 + workbox-*.js + manifest.webmanifest
+function collectDefaultFiles() {
+  const files = []
+  const nuxtDir = path.join(BASE_DIR, '_nuxt')
+  if (fs.existsSync(nuxtDir)) {
+    files.push(...getAllFiles(nuxtDir))
+  }
+  if (fs.existsSync(BASE_DIR)) {
+    const rootFiles = fs.readdirSync(BASE_DIR)
+      .filter(f =>
+        (f.startsWith('workbox-') && f.endsWith('.js'))
+        || f === 'manifest.webmanifest'
+      )
+      .map(f => path.join(BASE_DIR, f))
+    files.push(...rootFiles)
+  }
+  return files
+}
 
 // COS 配置
 const cosConfig = {
@@ -268,16 +289,21 @@ async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CO
 async function main() {
   console.log('🚀 开始上传文件到腾讯云 COS...\n')
 
-  // 检查源目录是否存在
-  if (!fs.existsSync(SOURCE_DIR)) {
-    console.error(`❌ 源目录不存在: ${SOURCE_DIR}`)
-    console.error('请先运行构建命令: bun run build')
-    rl.close()
-    process.exit(1)
-  }
-
   // 获取所有文件
-  const files = getAllFiles(SOURCE_DIR)
+  let files
+  if (subDir) {
+    // 指定子目录：检查存在性后递归收集
+    if (!fs.existsSync(SOURCE_DIR)) {
+      console.error(`❌ 源目录不存在: ${SOURCE_DIR}`)
+      console.error('请先运行构建命令: bun run build')
+      rl.close()
+      process.exit(1)
+    }
+    files = getAllFiles(SOURCE_DIR)
+  } else {
+    // 默认：收集 _nuxt/ + workbox-*.js
+    files = collectDefaultFiles()
+  }
 
   if (files.length === 0) {
     console.warn('⚠️  没有找到需要上传的文件')
@@ -286,7 +312,7 @@ async function main() {
   }
 
   console.log(`📦 找到 ${files.length} 个文件`)
-  console.log(`📂 上传目录: ${SOURCE_DIR}`)
+  console.log(`📂 来源: ${subDir ? SOURCE_DIR : '_nuxt/ + workbox-*.js + manifest.webmanifest'}`)
   console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 10}）`)
 
   // 清空远程目录

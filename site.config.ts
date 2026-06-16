@@ -24,7 +24,11 @@ const _nickname = "棋";
 const _ownerName = "Qi1";
 const _avatarPath = "/imgs/avatar.webp";
 const _url = "https://imqi1.com";
-const _host = _url.replace(/^https?:\/\//, "");
+const _cdnUrl = "https://cdn.imqi1.com";
+// const _host = _url.replace(/^https?:\/\//, "");
+
+// 静态资源 CDN 前缀：生产环境带 CDN 根（不带构建 hash），开发环境为空走本地 public
+const _assetPrefix = process.env.NODE_ENV === "production" ? _cdnUrl : "";
 
 /**
  * 全站静态配置实例
@@ -35,7 +39,9 @@ const _host = _url.replace(/^https?:\/\//, "");
 export const siteConfig = defineSiteConfig({
   siteName: _name,
   siteUrl: _url,
-  cdnUrl: "https://cdn.imqi1.com",
+  cdnUrl: _cdnUrl,
+  siteAvatarPath: `${_assetPrefix}${_avatarPath}`,
+  ownerName: _ownerName,
 
   seo: {
     description: _desc,
@@ -76,9 +82,7 @@ export const siteConfig = defineSiteConfig({
       siteName: `${_name} / ${_nickname}`,
       siteUrl: _url,
       siteDescription: _displayName,
-      siteAvatar: "https://cn.cravatar.com/avatar/1",
-      siteAvatarPath: _avatarPath,
-      ownerName: _ownerName,
+      siteAvatar: "https://cravatar.cn/avatar/2841d29eeabab633ae116c7b2c97e3bf?s=512",
     },
   },
 

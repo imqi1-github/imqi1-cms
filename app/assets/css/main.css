@@ -131,11 +131,6 @@ html.theme-transitioning body * {
     box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* 确保 Firefox 下 view-transition 伪元素不会产生闪烁 */
-::view-transition-none(*) {
-  animation: none !important;
-}
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

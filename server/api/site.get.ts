@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { sanitizeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
 
 // 默认值
@@ -20,6 +21,13 @@ const defaults: Record<string, any> = {
   feedCacheInterval: 8,
   linkAutoApprove: false,
 };
+
+function sanitizePublicSettings(settings: Record<string, any>): Record<string, any> {
+  return {
+    ...settings,
+    homeCustomText: sanitizeHtml(String(settings.homeCustomText || "")),
+  };
+}
 
 export default defineEventHandler(async event => {
   // 设置缓存头 - CDN 和浏览器缓存 5 分钟
@@ -60,8 +68,8 @@ export default defineEventHandler(async event => {
       }
     });
 
-    return { success: true, data: settings };
+    return { success: true, data: sanitizePublicSettings(settings) };
   } catch (error) {
-    return { success: true, data: defaults };
+    return { success: true, data: sanitizePublicSettings(defaults) };
   }
 });

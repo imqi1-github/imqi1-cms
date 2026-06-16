@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
-import { siteConfig } from "~~/site.config";
 
 // 导入前台通知 composable
 const { success, error: showError } = useFrontNotification();
@@ -78,14 +77,6 @@ const categoryConfig: Record<string, { name: string; prefix: string }> = {
   Cat: { name: "猫咪", prefix: "cat-" },
 };
 
-// 获取表情图片URL（生产环境使用 CDN 基础域名，不携带构建哈希目录）
-const getEmojiUrl = (path: string) => {
-  // 只在生产环境下使用 CDN
-  if (!import.meta.env.PROD || !siteConfig.cdnUrl) return path;
-  // 如果有CDN，将路径中的 /emojis/ 替换为 CDN URL + /emojis/
-  return path.replace(/^\/emojis\//, `${siteConfig.cdnUrl}/emojis/`);
-};
-
 // 当前分类的表情列表
 const currentEmojis = computed(() => {
   const category = activeCategory.value;
@@ -97,7 +88,7 @@ const currentEmojis = computed(() => {
 
   return Object.entries(emojis).map(([key, path]) => ({
     key,
-    path: getEmojiUrl(path), // 使用CDN处理后的路径
+    path: publicAsset(path), // 生产环境且配置了 CDN 时自动加前缀
     name: key.replace(config.prefix, ""),
   }));
 });

@@ -27,6 +27,13 @@ usePageSeo({
 const fancyboxContainer = useTemplateRef("fancyboxContainer");
 let FancyboxModule: any = null;
 
+// 封面加载失败时回退到 nopic
+const nopicUrl = publicAsset("/imgs/nopic.png");
+function handleCoverError(event: Event) {
+  const target = event.target as HTMLImageElement;
+  if (target) target.src = nopicUrl;
+}
+
 // 初始化 Fancybox
 onMounted(async () => {
   // 动态导入 Fancybox（仅客户端）
@@ -100,11 +107,11 @@ onUnmounted(() => {
       <img
         data-fancybox="gallery"
         data-caption="封面"
-        src="/imgs/message-cover.png"
+        :src="publicAsset('/imgs/message-cover.png')"
         alt="封面"
         loading="lazy"
         class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800"
-        onerror="this.src = '/imgs/nopic.png'" />
+        @error="handleCoverError" />
 
       <!-- 标题 -->
       <h1 class="text-[3em] font-extrabold mb-2.5">留言</h1>

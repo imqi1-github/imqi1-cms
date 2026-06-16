@@ -55,6 +55,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       cdnURL: cdnURL,
+      cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
       rootDomain: process.env.ROOT_DOMAIN || "", // 防止反向代理的根域名
     },
@@ -123,6 +124,8 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
+      // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
+      navigateFallback: null,
       // 缓存静态资源
       runtimeCaching: [
         {

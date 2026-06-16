@@ -141,7 +141,7 @@ onMounted(() => {
     <!-- 移动端汉堡菜单按钮 -->
 
     <NuxtLink to="/" class="text-inherit font-serif font-bold flex items-center justify-center gap-1 md:hidden">
-      <img :src="siteConfig.seo.ogImage" alt="favicon" class="w-5.5 h-5.5" />
+      <img :src="publicAsset(siteConfig.seo.ogImage)" alt="favicon" class="w-5.5 h-5.5" />
       <div class="text-[0.95em] font-black -top-px relative">{{ siteName }}</div>
     </NuxtLink>
 

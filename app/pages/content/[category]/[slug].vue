@@ -119,9 +119,12 @@ interface TocItem {
 const tocItems = ref<TocItem[]>([]);
 const activeTocId = ref("");
 
-// 根据文章的 show_toc 字段和实际标题数量决定是否显示目录
+// 根据文章的 show_toc 字段预留目录区域，避免客户端提取目录后产生布局偏移
+const shouldReserveToc = computed(() => Boolean(post.value?.show_toc));
+
+// 根据文章的 show_toc 字段和实际标题数量决定是否显示目录内容
 const showToc = computed(() => {
-  return post.value?.show_toc && tocItems.value.length > 0;
+  return shouldReserveToc.value && tocItems.value.length > 0;
 });
 
 // 提取目录
@@ -485,54 +488,38 @@ onMounted(async () => {
           const fullLang = langClass.replace("language-", "");
 
           // 检测是否为 "语言+文件名" 格式 (如 "js+main.js")
-          if (fullLang.includes("+")) {
-            const parts = fullLang.split("+");
-            lang = parts[0]!;
-            fileName = parts.slice(1).join("+"); // 支持文件名中包含+的情况
+          const separatorIndex = fullLang.indexOf("+");
+          const possibleFileName = separatorIndex > 0 ? fullLang.slice(separatorIndex + 1) : "";
+          if (possibleFileName && /[./\\]/.test(possibleFileName)) {
+            lang = fullLang.slice(0, separatorIndex);
+            fileName = possibleFileName;
             pre.classList.add("has-file-name");
+          } else if (separatorIndex > 0) {
+            lang = fullLang.slice(0, separatorIndex);
           } else {
             lang = fullLang;
           }
         }
       }
 
-      // 语言显示名称映射
       const langNames: Record<string, string> = {
-        js: "JavaScript",
-        ts: "TypeScript",
-        jsx: "JSX",
-        tsx: "TSX",
-        vue: "Vue",
+        js: "Javascript",
+        ts: "Typescript",
         py: "Python",
         rb: "Ruby",
-        go: "Go",
         rs: "Rust",
-        java: "Java",
         kt: "Kotlin",
-        swift: "Swift",
-        scala: "Scala",
-        cpp: "C++",
-        c: "C",
-        cs: "C#",
-        php: "PHP",
-        sql: "SQL",
         sh: "Shell",
-        bash: "Bash",
-        yaml: "YAML",
-        yml: "YAML",
-        json: "JSON",
-        toml: "TOML",
-        xml: "XML",
-        html: "HTML",
-        css: "CSS",
-        scss: "SCSS",
-        less: "Less",
+        yml: "Yaml",
         md: "Markdown",
-        mermaid: "Mermaid",
       };
 
-      // 如果有文件名，使用文件名作为显示文本；否则使用语言名称
-      const displayLang = fileName || langNames[lang] || lang.toUpperCase();
+      const formatLangName = (value: string) => {
+        if (!value) return "";
+        return langNames[value.toLowerCase()] || `${value.charAt(0).toUpperCase()}${value.slice(1).toLowerCase()}`;
+      };
+
+      const displayLangName = formatLangName(lang);
 
       // 检测代码行数，超过14行则折叠
       const lineCount = code?.querySelectorAll(".line").length || 0;
@@ -555,68 +542,72 @@ onMounted(async () => {
         pre.addEventListener("click", handler);
       }
 
-      // 创建语言标签
-      const langLabel = document.createElement("span");
-      langLabel.className = "lang-label";
-      langLabel.textContent = displayLang;
-
-      // 如果有文件名，添加 data-file 属性用于样式匹配
+      let fileLabel: HTMLSpanElement | null = null;
+      let langLabel: HTMLSpanElement | null = null;
       if (fileName) {
-        langLabel.setAttribute("data-file", fileName);
+        fileLabel = document.createElement("span");
+        fileLabel.className = "file-label";
+        fileLabel.textContent = fileName;
+        fileLabel.setAttribute("data-file", fileName);
+        fileLabel.setAttribute("data-lang", displayLangName);
       }
 
-      // 判断是否有匹配的图标（基于扩展名或语言名）
-      // 通过 CSS 变量把图标 URL 传给 ::before，避免依赖 data-file 匹配
-      const iconMap: Record<string, string> = {
-        js: "/icons/javascript.svg",
-        jsx: "/icons/javascript.svg",
-        javascript: "/icons/javascript.svg",
-        mjs: "/icons/javascript.svg",
-        cjs: "/icons/javascript.svg",
-        ts: "/icons/typescript.svg",
-        tsx: "/icons/typescript.svg",
-        typescript: "/icons/typescript.svg",
-        vue: "/icons/vue.svg",
-        css: "/icons/css.svg",
-        scss: "/icons/css.svg",
-        less: "/icons/css.svg",
-        html: "/icons/html.svg",
-        htm: "/icons/html.svg",
-        json: "/icons/json.svg",
-        jsonc: "/icons/json.svg",
-        md: "/icons/markdown.svg",
-        markdown: "/icons/markdown.svg",
-        py: "/icons/python.svg",
-        python: "/icons/python.svg",
-        php: "/icons/php.svg",
-        java: "/icons/java.svg",
-        sh: "/icons/bash.svg",
-        bash: "/icons/bash.svg",
-        shell: "/icons/bash.svg",
-        ps1: "/icons/powershell.svg",
-        powershell: "/icons/powershell.svg",
-        sql: "/icons/sql.svg",
-        yaml: "/icons/yaml.svg",
-        yml: "/icons/yaml.svg",
-        xml: "/icons/xml.svg",
-        ini: "/icons/ini.svg",
-        toml: "/icons/ini.svg",
-        conf: "/icons/ini.svg",
-        cfg: "/icons/ini.svg",
-      };
+      if (displayLangName) {
+        langLabel = document.createElement("span");
+        langLabel.className = "lang-label";
+        langLabel.textContent = displayLangName;
 
-      const ext = (fileName?.match(/\.(\w+)$/) || [])[1]?.toLowerCase() || "";
-      const iconKey = ext || lang.toLowerCase();
-      const iconUrl = iconMap[iconKey];
-      if (iconUrl) {
-        langLabel.classList.add("has-icon");
-        langLabel.style.setProperty("--icon-url", `url("${iconUrl}")`);
+        const iconMap: Record<string, string> = {
+          js: "/icons/javascript.svg",
+          jsx: "/icons/javascript.svg",
+          javascript: "/icons/javascript.svg",
+          mjs: "/icons/javascript.svg",
+          cjs: "/icons/javascript.svg",
+          ts: "/icons/typescript.svg",
+          tsx: "/icons/typescript.svg",
+          typescript: "/icons/typescript.svg",
+          vue: "/icons/vue.svg",
+          css: "/icons/css.svg",
+          scss: "/icons/css.svg",
+          less: "/icons/css.svg",
+          html: "/icons/html.svg",
+          htm: "/icons/html.svg",
+          json: "/icons/json.svg",
+          jsonc: "/icons/json.svg",
+          md: "/icons/markdown.svg",
+          markdown: "/icons/markdown.svg",
+          py: "/icons/python.svg",
+          python: "/icons/python.svg",
+          php: "/icons/php.svg",
+          java: "/icons/java.svg",
+          sh: "/icons/bash.svg",
+          bash: "/icons/bash.svg",
+          shell: "/icons/bash.svg",
+          ps1: "/icons/powershell.svg",
+          powershell: "/icons/powershell.svg",
+          sql: "/icons/sql.svg",
+          yaml: "/icons/yaml.svg",
+          yml: "/icons/yaml.svg",
+          xml: "/icons/xml.svg",
+          ini: "/icons/ini.svg",
+          toml: "/icons/ini.svg",
+          conf: "/icons/ini.svg",
+          cfg: "/icons/ini.svg",
+        };
+
+        const ext = (fileName.match(/\.(\w+)$/) || [])[1]?.toLowerCase() || "";
+        const iconKey = ext || lang.toLowerCase();
+        const iconUrl = iconMap[iconKey];
+        if (iconUrl && fileLabel) {
+          fileLabel.classList.add("has-icon");
+          fileLabel.style.setProperty("--icon-url", `url("${publicAsset(iconUrl)}")`);
+        }
       }
 
       // 创建复制按钮
       const button = document.createElement("button");
       button.className = "copy-button";
-      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
       button.ariaLabel = "复制代码";
 
       const copyIcon = button.innerHTML;
@@ -649,7 +640,12 @@ onMounted(async () => {
       };
 
       button.addEventListener("click", copyCode);
-      pre.appendChild(langLabel);
+      if (fileLabel) {
+        pre.appendChild(fileLabel);
+      }
+      if (langLabel) {
+        pre.appendChild(langLabel);
+      }
       pre.appendChild(button);
     });
 
@@ -1909,7 +1905,7 @@ onUnmounted(() => {
   <div ref="fancyboxContainer"
     :class="[
       'mx-auto w-full',
-      isPhotoCategory ? (showToc ? 'max-w-375' : 'max-w-350') : showToc ? 'max-w-250' : 'max-w-225',
+      isPhotoCategory ? (shouldReserveToc ? 'max-w-375' : 'max-w-350') : shouldReserveToc ? 'max-w-250' : 'max-w-225',
     ]">
     <div v-if="pending" class="py-20 text-center">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -1977,8 +1973,8 @@ onUnmounted(() => {
       <!-- 文章内容区域 - 带目录 -->
       <div class="flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
-        <aside v-if="showToc" class="toc-sidebar hidden lg:block max-w-48 shrink-0 order-first w-fit mt-6">
-          <nav class="toc-nav sticky top-24 w-fit">
+        <aside v-if="shouldReserveToc" class="toc-sidebar hidden lg:block w-48 shrink-0 order-first mt-6">
+          <nav v-if="showToc" class="toc-nav sticky top-24 w-fit">
             <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 w-fit max-w-full">目录</h3>
             <ul class="space-y-1 w-fit max-w-48">
               <li v-for="item in tocItems" :key="item.id" class="max-w-48 wrap-anywhere overflow-hidden text-ellipsis">
@@ -2209,22 +2205,25 @@ onUnmounted(() => {
 /* 目录样式 */
 .toc-sidebar {
   position: relative;
-  opacity: 0;
-  transform: translateX(-20px);
-  animation: toc-slide-in 0.5s ease-out forwards;
-  animation-delay: 0.3s;
-}
-
-@keyframes toc-slide-in {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .toc-nav {
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+  opacity: 0;
+  transform: translateX(-20px);
+  animation: toc-slide-in 0.5s ease-out forwards;
+}
+
+@keyframes toc-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .toc-nav::-webkit-scrollbar {
@@ -2549,12 +2548,20 @@ onUnmounted(() => {
   position: absolute;
   top: 8px;
   right: 36px;
+  max-width: 96px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(243 244 246);
   font-size: 11px;
   font-weight: 500;
+  line-height: 18px;
   color: rgb(107 114 128);
-  opacity: 0.5;
+  opacity: 0.72;
   transition: opacity 0.2s;
   pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .markdown-body :deep(pre.shiki:hover .lang-label) {
@@ -2639,7 +2646,7 @@ onUnmounted(() => {
 }
 
 /* 文件名标签样式 */
-.markdown-body :deep(pre.shiki.has-file-name .lang-label) {
+.markdown-body :deep(pre.shiki.has-file-name .file-label) {
   position: absolute;
   top: 6px;
   left: 12px;
@@ -2659,7 +2666,7 @@ onUnmounted(() => {
 }
 
 /* 添加文件图标（仅 has-icon 时渲染，图标 URL 由 JS 通过 --icon-url 传入） */
-.markdown-body :deep(pre.shiki .lang-label.has-icon::before) {
+.markdown-body :deep(pre.shiki .file-label.has-icon::before) {
   content: "";
   display: inline-block;
   width: 14px;
@@ -2672,7 +2679,7 @@ onUnmounted(() => {
   border-radius: 2px;
 }
 
-.dark .markdown-body :deep(pre.shiki.has-file-name .lang-label) {
+.dark .markdown-body :deep(pre.shiki.has-file-name .file-label) {
   background: rgb(55 65 81);
   color: rgb(229 231 235);
 }
@@ -2680,6 +2687,10 @@ onUnmounted(() => {
 /* 复制按钮位置调整 - 在带文件名的代码块中 */
 .markdown-body :deep(pre.shiki.has-file-name .copy-button) {
   top: 38px; /* 移到文件标签栏下方 */
+}
+
+.markdown-body :deep(pre.shiki.has-file-name .lang-label) {
+  top: 38px;
 }
 
 .markdown-body :deep(table) {

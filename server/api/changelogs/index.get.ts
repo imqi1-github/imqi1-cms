@@ -1,21 +1,5 @@
 import { prisma } from "#server/utils/prisma";
-import MarkdownIt from "markdown-it";
-
-// 创建简化版 Markdown 实例（仅支持基础格式）
-const md = new MarkdownIt({
-  html: false,
-  linkify: false,
-  typographer: false,
-  breaks: true,
-});
-
-// 简化版 Markdown 渲染（仅支持：粗体、斜体、删除线、行内代码、有序/无序列表）
-function renderSimpleMarkdown(content: string): string {
-  if (!content) {
-    return "";
-  }
-  return md.render(content);
-}
+import { renderSimpleMarkdown } from "#server/utils/markdown";
 
 export default defineEventHandler(async event => {
   try {

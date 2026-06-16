@@ -179,6 +179,14 @@ usePageSeo({
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">更新日志</h1>
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">记录每一次迭代与改进</p>
+      <NuxtLink
+        v-if="isLoggedIn && !isLoadingAuth"
+        to="/admin/changelogs"
+        class="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+      >
+        <Icon name="lucide:settings" class="size-3.5" />
+        管理日志
+      </NuxtLink>
     </header>
 
     <!-- 加载状态 -->

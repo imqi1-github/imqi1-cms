@@ -475,7 +475,7 @@ onUnmounted(() => {
       <img
         data-fancybox="gallery"
         data-caption="封面"
-        src="/imgs/links-cover.png"
+        :src="publicAsset('/imgs/links-cover.png')"
         alt="封面"
         loading="lazy"
         class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800" />
@@ -619,7 +619,7 @@ onUnmounted(() => {
           rel="noopener"
           class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
           <img
-            :src="org.icon"
+            :src="publicAsset(org.icon)"
             :alt="org.name"
             class="w-6 h-6 object-contain rounded-full"
             loading="lazy" />

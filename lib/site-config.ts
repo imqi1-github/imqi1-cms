@@ -19,6 +19,10 @@ export interface SiteConfig {
   siteUrl: string;
   /** CDN 域名（含协议），用于静态资源 CDN 加速及 CSP 白名单 */
   cdnUrl: string;
+  /** 本地头像路径（开发环境走本地，生产环境自动带 CDN 前缀） */
+  siteAvatarPath: string;
+  /** 站长显示名（如 "Qi1"） */
+  ownerName: string;
   /** SEO 默认文案及 Open Graph / Twitter Card 元数据 */
   seo: {
     /** 默认 SEO description，页面级可覆盖 */
@@ -76,10 +80,6 @@ export interface SiteConfig {
       siteDescription: string;
       /** 站点头像完整 URL（用于友链页展示等） */
       siteAvatar: string;
-      /** 本地头像相对路径（用于页面展示，如 /imgs/avatar.webp） */
-      siteAvatarPath: string;
-      /** 站长显示名（如 "Qi1"） */
-      ownerName: string;
     };
   };
   /** 各页面 SEO 文案（description / keywords），统一管理避免散落各页面 */

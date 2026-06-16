@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
+import { escapeHtml, escapeRegExp } from "~~/lib/html";
 
 // 搜索关键词净化
 function sanitizeSearchKeyword(keyword: string): string {
@@ -58,18 +59,18 @@ function highlightKeyword(text: string, keyword: string, maxLength: number = 200
   const index = text.toLowerCase().indexOf(keyword.toLowerCase());
   if (index === -1) {
     // 如果没找到，返回前200个字符
-    return text.substring(0, maxLength);
+    return escapeHtml(text.substring(0, maxLength));
   }
 
   // 提取关键词周围的上下文（前后各100个字符）
   const start = Math.max(0, index - 100);
   const end = Math.min(text.length, index + keyword.length + 100);
 
-  let snippet = text.substring(start, end);
+  let snippet = escapeHtml(text.substring(start, end));
 
   // 高亮关键词（使用 <mark> 标签）
-  const regex = new RegExp(`(${keyword})`, 'gi');
-  snippet = snippet.replace(regex, '<mark>$1</mark>');
+  const regex = new RegExp(`(${escapeRegExp(keyword)})`, "gi");
+  snippet = snippet.replace(regex, "<mark>$1</mark>");
 
   // 添加省略号
   if (start > 0) snippet = "..." + snippet;
