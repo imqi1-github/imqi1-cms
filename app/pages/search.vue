@@ -44,7 +44,14 @@ function triggerFadeIn() {
 // 监听搜索关键词变化
 watch(
   () => searchKeyword.value,
-  () => {
+  newVal => {
+    const q = newVal.trim();
+    const currentQ = (route.query.q as string) || "";
+
+    if (q !== currentQ) {
+      router.replace({ path: "/search", query: q ? { q } : {} });
+    }
+
     if (!pending.value) {
       triggerFadeIn();
     }
@@ -63,10 +70,9 @@ onMounted(() => {
   triggerFadeIn();
 });
 
-// 执行搜索
+// 执行搜索（与 watch 同步，仅在回车时手动触发刷新，避免 push 新增历史）
 function handleSearch() {
   if (searchKeyword.value.trim()) {
-    router.push({ path: "/search", query: { q: searchKeyword.value.trim() } });
     refresh();
   }
 }

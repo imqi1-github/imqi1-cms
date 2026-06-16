@@ -163,7 +163,7 @@ onMounted(() => {
         <SheetDescription class="sr-only"> 网站导航菜单，包含搜索、分类和其他页面链接 </SheetDescription>
       </SheetHeader>
 
-      <nav class="flex flex-col gap-2 mt-6" aria-label="移动端导航">
+      <nav class="flex flex-col gap-2 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] pr-2" aria-label="移动端导航">
         <!-- 搜索 -->
         <button
           @click="navigateAndClose('/search')"

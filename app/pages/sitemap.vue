@@ -4,6 +4,23 @@ import { siteConfig } from "~~/site.config";
 const loading = ref(true);
 const sitemapData = ref<any>(null);
 const recentComments = ref<any[]>([]);
+const tags = ref<any[]>([]);
+
+// 系统页面配置（包含图标、路径、名称）
+const systemPages = [
+  { path: "/", name: "首页", icon: "ri:home-line" },
+  { path: "/about", name: "关于", icon: "ri:user-line" },
+  { path: "/changelogs", name: "更新日志", icon: "ri:time-line" },
+  { path: "/subscribes", name: "我的订阅", icon: "ri:rss-line" },
+  { path: "/feed", name: "本站RSS", icon: "ri:rss-fill", external: true },
+  { path: "/agreement", name: "协议", icon: "ri:file-text-line" },
+  { path: "/links", name: "友情链接", icon: "ri:links-line" },
+  { path: "/messages", name: "留言", icon: "ri:chat-3-line" },
+  { path: "/sitemap", name: "站点地图", icon: "ri:map-line" },
+  { path: "/archiving", name: "文章归档", icon: "ri:archive-line" },
+  { path: "/sitemap.xml", name: "站点地图XML", icon: "ri:file-code-line", external: true },
+  { path: "/search", name: "搜索", icon: "ri:search-line" },
+];
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -12,12 +29,14 @@ const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteN
 async function fetchSitemap() {
   loading.value = true;
   try {
-    const [sitemapRes, commentsRes] = await Promise.all([
+    const [sitemapRes, commentsRes, tagsRes] = await Promise.all([
       $fetch("/api/sitemap") as any,
       $fetch("/api/recent-comments?limit=10") as any,
+      $fetch("/api/tags") as any,
     ]);
     sitemapData.value = sitemapRes.data;
     recentComments.value = commentsRes.data || [];
+    tags.value = tagsRes.data || [];
   } catch (error) {
     console.error("获取站点地图失败:", error);
   } finally {
@@ -107,77 +126,32 @@ usePageSeo({
         <section>
           <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">系统页面</h2>
           <ul class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <li>
-              <NuxtLink to="/" class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                首页
-              </NuxtLink>
-            </li>
-            <li>
+            <li v-for="page in systemPages" :key="page.path">
               <NuxtLink
-                to="/changelogs"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                更新日志
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/subscribes"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                我的订阅
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/feed"
-                target="_blank"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                本站RSS
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/links"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                友情链接
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/messages"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                留言
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/sitemap"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                站点地图
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/archiving"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                文章归档
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/sitemap.xml"
-                target="_blank"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                站点地图XML
-              </NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/search"
-                class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                搜索
+                :to="page.path"
+                :target="page.external ? '_blank' : undefined"
+                class="flex items-center gap-2 text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <Icon :name="page.icon" class="size-4" />
+                {{ page.name }}
+                <Icon v-if="page.external" name="ri:external-link-line" class="size-3 opacity-60 align-sub" />
               </NuxtLink>
             </li>
           </ul>
+        </section>
+
+        <!-- 所有标签 -->
+        <section v-if="tags.length > 0">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">文章标签</h2>
+          <div class="flex flex-wrap gap-2">
+            <NuxtLink
+              v-for="tag in tags"
+              :key="tag.slug"
+              :to="`/tag/${tag.slug}`"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              <Icon name="ri:price-tag-3-line" class="size-3.5 align-sub" />
+              {{ tag.name }}
+            </NuxtLink>
+          </div>
         </section>
 
         <!-- 分类和文章 -->
