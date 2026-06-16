@@ -5,6 +5,50 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// 从 site.config.ts 读取 CDN 配置
+function getCdnConfig() {
+  try {
+    const configPath = join(process.cwd(), 'site.config.ts');
+    if (!existsSync(configPath)) return null;
+
+    const content = readFileSync(configPath, 'utf-8');
+    const match = content.match(/_cdnUrl\s*=\s*(["'])([^"']*)\1/);
+    if (!match) return null;
+
+    const cdnUrl = match[2].trim();
+    if (!cdnUrl.startsWith('http://') && !cdnUrl.startsWith('https://')) {
+      return null;
+    }
+    return cdnUrl;
+  } catch (e) {
+    return null;
+  }
+}
+
+const cdnBaseURL = getCdnConfig();
+
+// 如果没有配置 CDN，跳过所有处理
+if (!cdnBaseURL) {
+  console.log('ℹ 未配置 CDN，跳过 sw.js CDN 路径更新');
+
+  // 仍然复制 sw.js 到 server 目录（即使没有 CDN 也需要）
+  const swPath = join(process.cwd(), '.output', 'public', 'sw.js');
+  if (existsSync(swPath)) {
+    const serverDir = join(process.cwd(), '.output', 'server');
+    const serverSwPath = join(serverDir, 'sw.js');
+    try {
+      if (!existsSync(serverDir)) {
+        mkdirSync(serverDir, { recursive: true });
+      }
+      copyFileSync(swPath, serverSwPath);
+      console.log('✓ Copied sw.js to .output/server/sw.js');
+    } catch (error) {
+      console.error('✗ Failed to copy sw.js to server directory:', error.message);
+    }
+  }
+  process.exit(0);
+}
+
 // 读取构建 hash
 const buildHashDirPath = join(process.cwd(), '.build-hash-dir');
 let buildHashDir = '';
@@ -14,9 +58,6 @@ if (existsSync(buildHashDirPath)) {
   buildHashDir = readFileSync(buildHashDirPath, 'utf-8').trim();
 }
 
-// 注意：此值应与 site.config.ts 中的 cdnUrl 保持一致
-// .mjs 无法直接导入 .ts，如需修改 CDN 域名请同步更新 site.config.ts
-const cdnBaseURL = 'https://cdn.imqi1.com';
 const cdnURL = buildHashDir ? `${cdnBaseURL}/${buildHashDir}` : cdnBaseURL;
 
 console.log('✓ CDN URL:', cdnURL);
