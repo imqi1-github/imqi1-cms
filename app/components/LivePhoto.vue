@@ -30,6 +30,10 @@ const fancyboxAttrs = computed(() => {
       result[key] = attrs[key];
     }
   });
+  // 标记实况照片，供 Fancybox 灯箱识别后在灯箱内提供实况视频播放
+  if (props.src.includes("#live")) {
+    result["data-live-photo"] = "";
+  }
   return result;
 });
 
@@ -413,7 +417,7 @@ onUnmounted(() => {
       muted
       playsinline
       preload="auto"
-      class="live-photo-video absolute w-full inset-0 max-h-[inherit] pointer-events-none transition-opacity duration-300 ease-in-out object-cover"
+      class="live-photo-video absolute w-full h-full inset-0 max-h-[inherit] rounded-lg pointer-events-none transition-opacity duration-300 ease-in-out object-cover"
       :style="{
         opacity: videoOpacity / 100,
         ...mediaStyle,

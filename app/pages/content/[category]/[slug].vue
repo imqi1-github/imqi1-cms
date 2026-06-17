@@ -438,6 +438,9 @@ let FancyboxModule: any = null;
 // Markdown 图片增强（实况照片动态挂载 LivePhoto 组件，普通图片加 caption 浮层）
 const { mount: mountMarkdownImages, unmount: unmountMarkdownImages } = useMarkdownImages();
 
+// 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
+const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
+
 // 初始化 Fancybox 和其他功能
 onMounted(async () => {
   try {
@@ -454,7 +457,7 @@ onMounted(async () => {
     }
 
     // 初始化 Fancybox（参照友情链接页面）
-    FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+    FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
       l10n: zh_CN,
       placeFocusBack: false,
       Hash: false,
@@ -476,7 +479,7 @@ onMounted(async () => {
       },
       idle: false,
       autoFocus: false,
-    } as any);
+    } as any));
 
     // 初始化代码复制按钮
     document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {

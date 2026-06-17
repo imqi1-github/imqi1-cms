@@ -972,7 +972,7 @@ html.with-fancybox body.hide-scrollbar {
   --f-button-svg-filter: drop-shadow(1px 1px 1px rgba(24, 24, 27, .01)), drop-shadow(1px 2px 1px rgba(24, 24, 27, .05));
   --f-button-svg-fill: none;
   --f-button-svg-disabled-opacity: 0.5;
-  --f-arrow-pos: 32px;
+  --f-arrow-pos: 16px;
   --f-arrow-width: 50px;
   --f-arrow-height: 50px;
   --f-arrow-svg-width: 24px;
@@ -1246,4 +1246,145 @@ html.with-fancybox body.hide-scrollbar {
 .fancybox__container.is-closing .f-caption,
 .fancybox__slide.is-loading .f-caption {
   visibility: hidden
+}
+
+/* ============================================
+ * 灯箱实况照片增强（useFancyboxLivePhoto）
+ * UI 与 LivePhoto 组件保持一致：
+ * - 左上角 .flp-tip：▶ 实况 标识（播放时隐藏）
+ * - 右下角 .flp-play-btn：播放/暂停按钮
+ * - .flp-video：交叉淡入的视频覆盖层
+ * ============================================ */
+
+/* 左上角 "▶ 实况" 标识 */
+.flp-tip {
+  align-items: center;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 9999px;
+  color: #fff;
+  display: flex;
+  font-size: 13px;
+  gap: 4px;
+  padding: 4px 10px;
+  pointer-events: none;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  transition: opacity 0.3s ease;
+  z-index: 25;
+  /* 禁用 fancybox 可能继承的 animation，防止干扰显隐 */
+  animation: none;
+}
+
+.flp-tip.is-hidden {
+  opacity: 0;
+}
+
+.flp-tip__icon {
+  height: 14px;
+  width: 14px;
+}
+
+/* 右下角播放/暂停按钮 */
+.flp-play-btn {
+  align-items: center;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  border-radius: 9999px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  pointer-events: all;
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+  width: 40px;
+  z-index: 25;
+  /* 禁用 fancybox 可能继承的 animation，防止干扰显隐 */
+  animation: none;
+}
+
+.flp-play-btn:hover {
+  background: blue;
+}
+
+.flp-play-btn.is-loading {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.flp-play-btn__icon {
+  height: 20px;
+  width: 20px;
+}
+
+/* 加载图标旋转动画 */
+.flp-play-btn__icon-loading {
+  animation: flp-spin 0.8s linear infinite;
+  display: none;
+}
+
+@keyframes flp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 播放中：显示暂停图标，隐藏播放图标 */
+.flp-play-btn.is-playing .flp-play-btn__icon-play {
+  display: none;
+}
+
+.flp-play-btn:not(.is-playing) .flp-play-btn__icon-pause {
+  display: none;
+}
+
+/* 加载中：显示旋转图标，隐藏其他 */
+.flp-play-btn.is-loading .flp-play-btn__icon-play,
+.flp-play-btn.is-loading .flp-play-btn__icon-pause {
+  display: none;
+}
+
+.flp-play-btn.is-loading .flp-play-btn__icon-loading {
+  display: block;
+}
+
+/* 视频覆盖层：交叉淡入，与图片同样的 contain 方式 */
+.flp-video {
+  /* 相对 .f-panzoom__wrapper 定位，完全覆盖图片区域 */
+  height: 100%;
+  inset: 0;
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 0.3s ease-in-out;
+  width: 100%;
+  z-index: 20;
+  /* 禁用 fancybox 可能继承的 animation（f-fadeIn/f-fadeOut 会操纵 opacity） */
+  animation: none;
+}
+
+.flp-video.is-visible {
+  opacity: 1;
+}
+
+/* 宿主容器（图片父元素 .f-panzoom__wrapper）：为所有非视频子元素预设 opacity transition
+ * 这样播放/停止时图片淡入淡出都有动画，Panzoom 的 transform 不受影响 */
+.flp-host > *:not(.flp-video) {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* 播放状态：淡出宿主内所有非视频子元素（含 Panzoom 放大的图片）
+ * 解决视频 object-fit:contain 透明区域露出放大图片的重叠问题 */
+.flp-host.is-flp-playing > *:not(.flp-video) {
+  opacity: 0;
 }

@@ -25,6 +25,9 @@ const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
 let swiperInstance: any = null;
 let FancyboxModule: any = null;
 
+// 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
+const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
+
 const initSwiper = async () => {
   if (!swiperContainer.value || props.covers.length === 0) return;
 
@@ -72,7 +75,7 @@ onMounted(async () => {
 
   // 初始化 Fancybox
   FancyboxModule = await import("@fancyapps/ui");
-  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
+  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
     l10n: zh_CN,
     placeFocusBack: false,
     Hash: false,
@@ -94,7 +97,7 @@ onMounted(async () => {
     },
     idle: false,
     autoFocus: false,
-  } as any);
+  } as any));
 });
 
 onBeforeUnmount(() => {
