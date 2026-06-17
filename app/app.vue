@@ -110,23 +110,13 @@ useHead({
   link: [
     {
       rel: "canonical",
-      href: computed(() => {
-        if (import.meta.client) {
-          return window.location.href;
-        }
-        return siteUrl + route.path;
-      }),
+      href: computed(() => siteUrl + route.path),
     },
   ],
   meta: [
     {
       property: "og:url",
-      content: computed(() => {
-        if (import.meta.client) {
-          return window.location.href;
-        }
-        return siteUrl + route.path;
-      }),
+      content: computed(() => siteUrl + route.path),
     },
   ],
 });

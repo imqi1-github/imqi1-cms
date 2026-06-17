@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, useAttrs, type CSSProperties } from "vue";
+import { useMediaQuery } from "@vueuse/core";
 import { useLivePhoto } from "~/composables/useLivePhoto";
 
 // 禁用自动属性继承，手动控制属性传递
@@ -44,6 +45,11 @@ const imageNaturalWidth = ref<number | null>(null);
 const imageNaturalHeight = ref<number | null>(null);
 const imageFitMode = ref<"width" | "height" | "scale">("scale");
 const isHovering = ref(false);
+
+// 移动端判定：移动端无 hover 事件，需要强制切换为点击播放模式并让按钮常驻
+const isMobile = useMediaQuery("(max-width: 768px)");
+// 实际生效的悬浮播放模式：移动端无论 props.hoverPlay 为何，都不走 hover 自动播放
+const effectiveHoverPlay = computed(() => props.hoverPlay && !isMobile.value);
 
 // 两个独立的透明度状态，用于交叉淡入淡出
 const imgOpacity = ref(100);
@@ -177,7 +183,7 @@ let resetTimer: number | null = null;
 const handleMouseEnter = async () => {
   isHovering.value = true; // 标记悬浮状态
 
-  if (!props.hoverPlay) return; // 点击播放模式不处理悬浮
+  if (!effectiveHoverPlay.value) return; // 点击播放模式不处理悬浮
 
   // 检查是否有视频 URL
   if (!videoBlobUrl.value) {
@@ -233,7 +239,7 @@ const handleMouseEnter = async () => {
 const handleMouseLeave = () => {
   isHovering.value = false; // 标记悬浮结束
 
-  if (!props.hoverPlay) return; // 点击播放模式不处理悬浮
+  if (!effectiveHoverPlay.value) return; // 点击播放模式不处理悬浮
 
   if (!videoRef.value) return;
 
@@ -273,7 +279,7 @@ const handleMouseLeave = () => {
 
 // 点击播放/暂停（点击播放模式）
 const handlePlayClick = async () => {
-  if (props.hoverPlay) return; // 悬浮播放模式不处理点击
+  if (effectiveHoverPlay.value) return; // 悬浮播放模式不处理点击
 
   if (!videoBlobUrl.value) return;
 
@@ -342,6 +348,16 @@ const onVideoEnded = () => {
     isPlaying.value = false;
   }
 };
+
+// 播放按钮可见性：
+// - 移动端：播放中隐藏，其余时间常驻显示（hover 不可靠）
+// - 桌面端：保持原有 hover 显示行为（鼠标进入显示，离开隐藏）
+const playButtonVisible = computed(() => {
+  if (isMobile.value) {
+    return !isPlaying.value;
+  }
+  return isHovering.value;
+});
 
 // 组件卸载时清理定时器和事件监听
 onUnmounted(() => {
@@ -414,11 +430,11 @@ onUnmounted(() => {
 
     <!-- 点击播放模式：播放按钮 -->
     <button
-      v-if="videoBlobUrl && !hoverPlay"
+      v-if="videoBlobUrl && !effectiveHoverPlay"
       class="absolute bottom-3 right-3 transition-opacity duration-200 z-20 bg-black/20 dark:bg-black/40 rounded-full backdrop-blur-sm border-none cursor-pointer size-8 flex items-center justify-center"
-      :class="isHovering ? 'opacity-100' : 'opacity-0'"
+      :class="playButtonVisible ? 'opacity-100' : 'opacity-0'"
       type="button"
-      @click.stop="handlePlayClick">
+      @click.stop.prevent="handlePlayClick">
       <Icon v-if="!isPlaying" name="ri:play-fill" class="size-6 text-white drop-shadow-lg" />
       <Icon v-else name="ri:pause-fill" class="size-6 text-white drop-shadow-lg" />
     </button>

@@ -734,9 +734,26 @@ const photoImages = computed(() => {
   return images;
 });
 
-// 格式化日期
+// 是否已完成客户端 hydration
+// SSR 与客户端首帧都为 false，此时日期统一用绝对格式（不依赖当前时间），
+// 避免 ISR 缓存导致的 hydration text content mismatch；onMounted 后切换为相对时间
+const isHydrated = ref(false);
+
+// 格式化为绝对日期（SSR 与客户端一致，不依赖当前时间）
+function formatAbsoluteDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// 格式化日期：hydration 完成前返回绝对日期，完成后返回相对时间
 function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  if (!isHydrated.value) {
+    return formatAbsoluteDate(d);
+  }
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const seconds = Math.floor(diff / 1000);
@@ -756,9 +773,12 @@ function formatDate(date: string | Date): string {
   return "刚刚";
 }
 
-// 格式化更新日志日期
+// 格式化更新日志日期：hydration 前用确定性格式，避免 Node 与浏览器 ICU 数据差异
 function formatChangelogDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  if (!isHydrated.value) {
+    return formatAbsoluteDate(d);
+  }
   return d.toLocaleDateString("zh-CN", {
     year: "numeric",
     month: "2-digit",
@@ -939,6 +959,9 @@ let fadeInObserver: IntersectionObserver | null = null;
 
 // 初始化滚动动画
 onMounted(async () => {
+  // 标记 hydration 已完成，此后日期切换为相对时间 / 本地化格式
+  isHydrated.value = true;
+
   // 立即执行一次滚动检测，确保页面加载时状态正确
   handleScroll();
   checkVisibleItems();
