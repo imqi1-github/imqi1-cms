@@ -189,7 +189,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       if (lines[lines.length - 1] === "") {
         lines.pop();
       }
-      const code = lines.map(line => `<span class="line">${escapeHtml(line)}</span>`).join("\n");
+      const code = lines.map((line: string) => `<span class="line">${escapeHtml(line)}</span>`).join("\n");
       const langClass = className ? ` language-${className}` : "";
       const codeClass = className ? ` class="language-${className}"` : "";
       return `<pre class="shiki${langClass}" tabindex="0"><code${codeClass}>${code}</code></pre>`;

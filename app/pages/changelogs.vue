@@ -220,7 +220,7 @@ usePageSeo({
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
-            :title="classType.label"
+            v-tooltip.right="classType.label"
           >
             <Icon :name="classType.icon" class="size-4 lg:size-5" />
           </button>

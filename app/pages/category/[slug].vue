@@ -253,10 +253,10 @@ usePageSeo({
     return `分类 ${category.value?.name} - ${siteName.value}`;
   }),
   description: computed(() =>
-    category.value ? siteConfig.pageSeo.category.description(category.value.name, category.value.desc) : "",
+    category.value ? siteConfig.pageSeo.category.description(category.value.name, category.value.desc ?? "") : "",
   ),
   keywords: computed(() =>
-    category.value ? siteConfig.pageSeo.category.keywords(category.value.name, category.value.desc) : "",
+    category.value ? siteConfig.pageSeo.category.keywords(category.value.name, category.value.desc ?? "") : "",
   ),
 });
 
