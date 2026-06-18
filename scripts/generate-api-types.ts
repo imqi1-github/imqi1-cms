@@ -119,7 +119,6 @@ async function main() {
   const typeFileContent = `/**
  * 自动生成的 API 类型定义
  * 此文件由 scripts/generate-api-types.ts 自动生成，请勿手动修改！
- * 生成时间: ${new Date().toISOString()}
  *
  * 包含 ${apiFiles.length} 个 API 端点
  * 已类型化: ${typedApis.size} 个端点
