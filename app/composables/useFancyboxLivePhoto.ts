@@ -31,6 +31,8 @@ export const useFancyboxLivePhoto = () => {
   // 这样视频 inset:0 只覆盖图片区域，不会遮挡 caption
   let currentMountEl: HTMLElement | null = null;
   let isExtracting = false;
+  // ✅ 用于取消实况视频提取请求
+  let extractAbortController: AbortController | null = null;
 
   /**
    * 查找覆盖层应挂载的容器（图片的父元素）
@@ -74,8 +76,13 @@ export const useFancyboxLivePhoto = () => {
     }
   }
 
-  /** 完整清理：DOM + Blob URL + 状态 */
+  /** 完整清理：DOM + Blob URL + 状态 + 取消进行中的请求 */
   function fullCleanup(fancybox?: any) {
+    // ✅ 先取消正在进行的视频提取
+    if (extractAbortController) {
+      extractAbortController.abort();
+      extractAbortController = null;
+    }
     removeAllOverlays(fancybox);
     revokeVideo();
     currentImageUrl = null;
@@ -131,10 +138,14 @@ export const useFancyboxLivePhoto = () => {
       if (isExtracting) return;
       isExtracting = true;
       currentPlayBtnEl?.classList.add("is-loading");
-      currentVideoUrl = await extractMotionVideo(targetUrl);
+
+      // ✅ 创建新的 AbortController
+      extractAbortController = new AbortController();
+      currentVideoUrl = await extractMotionVideo(targetUrl, extractAbortController.signal);
+      extractAbortController = null;
       isExtracting = false;
 
-      // 提取期间用户切换了幻灯片 → 放弃
+      // 提取期间用户切换了幻灯片或关闭了灯箱 → 放弃
       if (currentImageUrl !== targetUrl) {
         if (currentVideoUrl) {
           URL.revokeObjectURL(currentVideoUrl);

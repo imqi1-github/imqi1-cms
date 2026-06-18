@@ -2,6 +2,8 @@ import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
+import { defineTypedApiHandler } from "#server/utils/typedApi";
+import { CommentCreateSchema, CommentItemSchema } from "../schemas";
 import { validateCommentData } from "#server/utils/validation";
 import DOMPurify from "isomorphic-dompurify";
 
@@ -21,11 +23,15 @@ const PURIFY_CONFIG = {
   },
 };
 
-export default defineEventHandler(async event => {
-  try {
-    // CSRF 验证
-    const body = await readBody(event);
-    const { csrfToken, cid, content, name, mail, link, parent_id } = body;
+export default defineTypedApiHandler(
+  {
+    body: CommentCreateSchema,
+    response: CommentItemSchema,
+    description: "提交评论",
+  },
+  async (event, { body }) => {
+    try {
+      const { csrfToken, cid, content, name, mail, link, parent_id } = body;
 
     // 验证 CSRF token
     if (!validateCsrfToken(event, csrfToken)) {
@@ -128,7 +134,7 @@ export default defineEventHandler(async event => {
 
     const comment = await prisma.comments.create({
       data: {
-        cid: parseInt(cid),
+        cid,
         content: sanitizedContent,
         name,
         mail: mail || null,
@@ -143,7 +149,7 @@ export default defineEventHandler(async event => {
     // 更新文章的评论计数（仅统计已发布的评论）
     if (commentStatus === 1) {
       await prisma.posts.update({
-        where: { cid: parseInt(cid) },
+        where: { cid },
         data: {
           comment_num: {
             increment: 1,
@@ -158,7 +164,7 @@ export default defineEventHandler(async event => {
     // 如果评论状态不是已发布(status !== 1)，则通知站长
     if (commentStatus !== 1) {
       // 异步发送邮件，不阻塞响应
-      notifyAdminPendingComment(parseInt(cid), name, content, commentStatus, comment.coid);
+      notifyAdminPendingComment(cid, name, content, commentStatus, comment.coid);
     }
 
     // 3. 评论回复通知 - 通知被回复的评论者
@@ -166,21 +172,21 @@ export default defineEventHandler(async event => {
     if (parent_id) {
       // 获取父评论信息
       const parentComment = await prisma.comments.findUnique({
-        where: { coid: parseInt(parent_id as string) },
+        where: { coid: parent_id },
         select: { name: true, mail: true, content: true },
       });
 
       // 如果父评论有邮箱，发送回复通知
       if (parentComment?.mail) {
         // 异步发送邮件
-        notifyCommentReply(parseInt(cid), parentComment.name, parentComment.mail, parentComment.content, name, content, comment.coid);
+        notifyCommentReply(cid, parentComment.name, parentComment.mail, parentComment.content, name, content, comment.coid);
       }
     } else {
       // 2. 新评论通知 - 通知站长（仅顶级评论）
       // 如果是顶级评论且已发布(status === 1)，通知站长有新评论
       if (commentStatus === 1) {
         // 异步发送邮件
-        notifyAdminNewComment(parseInt(cid), name, content, comment.coid);
+        notifyAdminNewComment(cid, name, content, comment.coid);
       }
     }
 

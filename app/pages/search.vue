@@ -20,6 +20,12 @@ const { data, pending, error, refresh } = await useFetch<{ data?: { results: any
   query: {
     q: searchKeyword,
   },
+  // 有搜索关键词时才发起请求
+  immediate: !!searchKeyword.value,
+  // 标记错误已处理，避免全局 toast 重复提示
+  onResponseError({ error: fetchError }) {
+    (fetchError as any).__handled__ = true;
+  },
 });
 
 const results = computed(() => data.value?.data?.results || []);

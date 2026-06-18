@@ -24,6 +24,8 @@ const swiperContainer = ref<HTMLElement>();
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
 let swiperInstance: any = null;
 let FancyboxModule: any = null;
+// ✅ 标记组件是否已卸载
+let isUnmounted = false;
 
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
@@ -35,6 +37,11 @@ const initSwiper = async () => {
     import("swiper"),
     import("swiper/modules"),
   ]);
+
+  // ✅ 异步操作后检查 DOM 是否还存在
+  if (isUnmounted || !swiperContainer.value) {
+    return;
+  }
 
   // 销毁旧实例
   if (swiperInstance && !swiperInstance.destroyed) {
@@ -75,6 +82,12 @@ onMounted(async () => {
 
   // 初始化 Fancybox
   FancyboxModule = await import("@fancyapps/ui");
+
+  // ✅ 异步操作后检查组件是否已卸载
+  if (isUnmounted || !fancyboxContainer.value) {
+    return;
+  }
+
   FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
     l10n: zh_CN,
     placeFocusBack: false,
@@ -100,15 +113,18 @@ onMounted(async () => {
   } as any));
 });
 
-onBeforeUnmount(() => {
+// 合并清理逻辑
+onUnmounted(() => {
+  // ✅ 先标记为已卸载
+  isUnmounted = true;
+
+  // 销毁 Swiper
   if (swiperInstance && !swiperInstance.destroyed) {
     swiperInstance.destroy(true, true);
   }
-});
 
-// 清理 Fancybox
-onUnmounted(() => {
-  if (FancyboxModule) {
+  // 清理 Fancybox
+  if (FancyboxModule && fancyboxContainer.value) {
     FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
   }
 });

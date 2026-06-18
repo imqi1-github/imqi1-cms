@@ -4,9 +4,12 @@ export const useLivePhoto = () => {
    * 从图片文件中提取实况视频
    * 原理：JPEG 文件内部嵌入了一个 MP4 视频，通过查找 "ftyp" 标记来定位
    */
-  const extractMotionVideo = async (imgUrl: string): Promise<string | null> => {
+  const extractMotionVideo = async (imgUrl: string, signal?: AbortSignal): Promise<string | null> => {
     try {
-      const res = await fetch(imgUrl, { cache: "force-cache" });
+      const res = await fetch(imgUrl, {
+        cache: "force-cache",
+        signal,  // ✅ 支持传入 AbortSignal 用于取消请求
+      });
       const buffer = await res.arrayBuffer();
       const bytes = new Uint8Array(buffer);
 
@@ -34,7 +37,11 @@ export const useLivePhoto = () => {
       const videoBlob = new Blob([bytes.slice(start)], { type: "video/mp4" });
       const videoUrl = URL.createObjectURL(videoBlob);
       return videoUrl;
-    } catch (e) {
+    } catch (e: any) {
+      // ✅ 忽略用户主动取消的请求（快速切换页面时的正常行为）
+      if (e?.name === "AbortError") {
+        return null;
+      }
       console.error("[useLivePhoto] 提取实况视频失败:", e);
       return null;
     }

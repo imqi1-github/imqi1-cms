@@ -119,6 +119,11 @@ const mediaStyle = computed<CSSProperties>(() => {
   return {};
 });
 
+// 标记组件是否已卸载
+let isUnmounted = false;
+// ✅ 用于取消实况视频提取请求
+let extractAbortController: AbortController | null = null;
+
 // 初始化实况照片
 onMounted(async () => {
   if (!isLive.value) {
@@ -127,7 +132,8 @@ onMounted(async () => {
 
   // 获取图片自然宽高并计算填充模式
   const calculateFitMode = () => {
-    if (!imgRef.value || !props.class?.includes("swiper-img")) return;
+    // ✅ 检查组件是否已卸载或 DOM 是否存在
+    if (isUnmounted || !imgRef.value || !props.class?.includes("swiper-img")) return;
 
     const naturalWidth = imgRef.value.naturalWidth;
     const naturalHeight = imgRef.value.naturalHeight;
@@ -171,8 +177,17 @@ onMounted(async () => {
     }
   }
 
+  // ✅ 创建 AbortController 用于快速切页时取消请求
+  extractAbortController = new AbortController();
+
   // 提取实况视频
-  const videoUrl = await extractMotionVideo(cleanSrc.value);
+  const videoUrl = await extractMotionVideo(cleanSrc.value, extractAbortController.signal);
+
+  // ✅ 异步操作后检查
+  if (isUnmounted) {
+    return;
+  }
+
   if (videoUrl) {
     videoBlobUrl.value = videoUrl;
   }
@@ -211,32 +226,41 @@ const handleMouseEnter = async () => {
   // 等待 DOM 更新，确保 video 元素已渲染
   await nextTick();
 
-  if (videoRef.value) {
-    // 先设置视频到开头
-    videoRef.value.currentTime = 0;
+  // ✅ 异步操作后检查：组件已卸载或 DOM 不存在则返回
+  if (isUnmounted || !videoRef.value) {
+    return;
+  }
 
-    // 交叉淡入淡出：
-    // 1. 先让视频淡入（0 -> 100）
-    videoOpacity.value = 100;
+  // 先设置视频到开头
+  videoRef.value.currentTime = 0;
 
-    // 2. 等待一小段时间后，再让图片淡出
-    // imgOpacityTimer = window.setTimeout(() => {
-    //   imgOpacity.value = 0;
-    // }, 150); // 150ms 后让图片淡出
+  // 交叉淡入淡出：
+  // 1. 先让视频淡入（0 -> 100）
+  videoOpacity.value = 100;
 
-    // 3. 开始播放视频
-    videoRef.value
-      .play()
-      .then(() => {
+  // 2. 等待一小段时间后，再让图片淡出
+  // imgOpacityTimer = window.setTimeout(() => {
+  //   imgOpacity.value = 0;
+  // }, 150); // 150ms 后让图片淡出
+
+  // 3. 开始播放视频
+  videoRef.value
+    .play()
+    .then(() => {
+      // ✅ 异步回调中也检查组件状态
+      if (!isUnmounted) {
         isPlaying.value = true;
-      })
-      .catch(err => {
+      }
+    })
+    .catch(err => {
+      // ✅ 异步回调中也检查组件状态
+      if (!isUnmounted) {
         // 播放失败时恢复显示图片
         // imgOpacity.value = 100;
         videoOpacity.value = 0;
         isPlaying.value = false;
-      });
-  }
+      }
+    });
 };
 
 // 鼠标移开 - 恢复显示图片（仅悬浮播放模式）
@@ -365,6 +389,15 @@ const playButtonVisible = computed(() => {
 
 // 组件卸载时清理定时器和事件监听
 onUnmounted(() => {
+  // ✅ 先标记为已卸载（防止异步回调执行）
+  isUnmounted = true;
+
+  // ✅ 取消正在进行的实况视频提取请求
+  if (extractAbortController) {
+    extractAbortController.abort();
+    extractAbortController = null;
+  }
+
   // 清理所有定时器
   // if (imgOpacityTimer !== null) {
   //   clearTimeout(imgOpacityTimer);

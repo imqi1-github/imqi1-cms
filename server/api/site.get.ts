@@ -1,4 +1,6 @@
 import { prisma } from "#server/utils/prisma";
+import { defineTypedApiHandler } from "#server/utils/typedApi";
+import { SiteSettingsResponseSchema } from "./schemas";
 import { sanitizeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
 
@@ -29,7 +31,12 @@ function sanitizePublicSettings(settings: Record<string, any>): Record<string, a
   };
 }
 
-export default defineEventHandler(async event => {
+export default defineTypedApiHandler(
+  {
+    response: SiteSettingsResponseSchema,
+    description: "获取站点公共设置",
+  },
+  async (event) => {
   // 设置缓存头 - CDN 和浏览器缓存 5 分钟
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 

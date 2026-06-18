@@ -1,5 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
+import { defineTypedApiHandler } from "#server/utils/typedApi";
+import { SearchQuerySchema, SearchResponseSchema } from "./schemas";
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
 
 // 搜索关键词净化
@@ -110,11 +112,15 @@ function formatSearchResults(posts: any[], query: string) {
   });
 }
 
-export default defineEventHandler(async event => {
-  try {
-    const query = getQuery(event);
-    const rawKeyword = (query.q as string) || "";
-    const q = sanitizeSearchKeyword(rawKeyword);
+export default defineTypedApiHandler(
+  {
+    query: SearchQuerySchema,
+    response: SearchResponseSchema,
+    description: "文章搜索接口",
+  },
+  async (event, { query }) => {
+    try {
+      const q = sanitizeSearchKeyword(query.q);
 
     if (!q) {
       return {

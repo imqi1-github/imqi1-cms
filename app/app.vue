@@ -15,7 +15,6 @@ useScrollbarTheme();
 const isFrontend = computed(() => !route.path.startsWith("/admin") && route.path !== "/login");
 const showFirstLoading = ref(true);
 
-
 // 页面加载状态
 const showPageLoading = ref(false);
 const showLoadingTimeout = ref(false);
@@ -76,12 +75,12 @@ nuxtApp.hook("page:finish", () => {
   // 如果页面加载很快（淡出动画未完成），需要等待淡出完成
   if (remainingFadeOutTime > 0 && isFrontend.value) {
     fadeOutTimer = setTimeout(() => {
-        finishPageTransition();
-    }, remainingFadeOutTime);
-    } else {
-    // 淡出已完成或后台页面，直接显示内容
       finishPageTransition();
-    }
+    }, remainingFadeOutTime);
+  } else {
+    // 淡出已完成或后台页面，直接显示内容
+    finishPageTransition();
+  }
 
   function finishPageTransition() {
     // 等待 Vue 更新 DOM 后再淡入，避免样式冲突
@@ -167,78 +166,74 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- 首次加载遮罩 -->
-    <Transition name="first-loading">
-      <div
-        v-if="showFirstLoading && isFrontend"
-        id="first-loading"
-        class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950"
-        onclick="
-          const fadeElements = document.querySelectorAll('.animate-fade-in:not(.fade-in-start)');
-          fadeElements.forEach(el => {
-            el.classList.add('fade-in-start');
-          });
-          this.style.display = 'none';
-        "
-      >
-        <div class="flex flex-col items-center gap-6">
-          <div class="animate-spin">
-            <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />
-          </div>
-          <div class="text-center">
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 font-serif mb-2">正在加载中...</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 font-serif">{{ brandDomain }}</p>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- 前台布局：Header 和 Footer 不刷新 -->
-    <template v-if="isFrontend">
-      <div class="min-h-screen flex flex-col">
-        <a
-          href="#main"
-          class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10000 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:shadow-lg focus:outline-none">
-          跳转到主要内容
-        </a>
-        <SiteHeader />
-        <main
-          id="main"
-          tabindex="-1"
-          class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
-          :style="{
-            transition: 'opacity 0.3s ease',
-            opacity: mainOpacity
-          }">
-          <NuxtPage class="font-serif font-[450] grow" />
-        </main>
-        <SiteFooter class="font-serif font-[450]" />
-      </div>
-    </template>
-
-    <!-- 后台布局：直接显示页面 -->
-    <template v-else>
-      <NuxtPage />
-    </template>
-
-    <!-- 页面加载超时提示 -->
-    <div v-if="showLoadingTimeout" class="fixed inset-0 flex items-center justify-center">
-      <div class="flex items-center gap-4">
+  <!-- 首次加载遮罩 -->
+  <Transition name="first-loading">
+    <div
+      v-if="showFirstLoading && isFrontend"
+      id="first-loading"
+      class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950"
+      onclick="
+        const fadeElements = document.querySelectorAll('.animate-fade-in:not(.fade-in-start)');
+        fadeElements.forEach(el => {
+          el.classList.add('fade-in-start');
+        });
+        this.style.display = 'none';
+      ">
+      <div class="flex flex-col items-center gap-6">
         <div class="animate-spin">
-          <Icon name="lucide:loader-2" class="size-5 text-blue-600 dark:text-blue-400" mode="svg" />
+          <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />
         </div>
-        <div>
-          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 font-serif">页面加载中...</h3>
+        <div class="text-center">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 font-serif mb-2">正在加载中...</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 font-serif">{{ brandDomain }}</p>
         </div>
       </div>
     </div>
+  </Transition>
 
-    <Toaster />
-    <ContextMenu class="right-button" />
-    <FrontNotification />
+  <!-- 前台布局：Header 和 Footer 不刷新 -->
+  <template v-if="isFrontend">
+    <div class="min-h-screen flex flex-col">
+      <a
+        href="#main"
+        class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10000 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:shadow-lg focus:outline-none">
+        跳转到主要内容
+      </a>
+      <SiteHeader />
+      <main
+        id="main"
+        tabindex="-1"
+        class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
+        :style="{
+          transition: 'opacity 0.3s ease',
+          opacity: mainOpacity,
+        }">
+        <NuxtPage class="font-serif font-[450] grow" />
+      </main>
+      <SiteFooter class="font-serif font-[450]" />
+    </div>
+  </template>
 
+  <!-- 后台布局：直接显示页面 -->
+  <template v-else>
+    <NuxtPage />
+  </template>
+
+  <!-- 页面加载超时提示 -->
+  <div v-if="showLoadingTimeout" class="fixed inset-0 flex items-center justify-center">
+    <div class="flex items-center gap-4">
+      <div class="animate-spin">
+        <Icon name="lucide:loader-2" class="size-5 text-blue-600 dark:text-blue-400" mode="svg" />
+      </div>
+      <div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 font-serif">页面加载中...</h3>
+      </div>
+    </div>
   </div>
+
+  <Toaster />
+  <ContextMenu class="right-button" />
+  <FrontNotification />
 </template>
 
 <style scoped>

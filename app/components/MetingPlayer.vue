@@ -41,12 +41,19 @@ const props = defineProps({
 const container = ref<HTMLElement>()
 let APlayer: any = null
 let aplayerInstance: any = null
+// 标记组件是否已卸载
+let isUnmounted = false
 
 onMounted(async () => {
   if (import.meta.client) {
     // 动态导入 APlayer
     const module = await import('~/lib/aplayer/player.js')
     APlayer = module.default
+
+    // ✅ 异步操作后检查：组件已卸载则直接返回
+    if (isUnmounted || !container.value) {
+      return
+    }
 
     // 获取音乐数据
     let audioData: any[] = []
@@ -76,7 +83,8 @@ onMounted(async () => {
       }
     }
 
-    if (audioData.length === 0) {
+    // ✅ 异步操作后再次检查
+    if (isUnmounted || !container.value || audioData.length === 0) {
       return
     }
 
@@ -125,6 +133,9 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  // ✅ 先标记为已卸载
+  isUnmounted = true
+
   // 从播放器管理器中注销
   if (playerManager) {
     playerManager.unregisterPlayer('meting', playerId)
@@ -132,6 +143,7 @@ onBeforeUnmount(() => {
 
   if (aplayerInstance) {
     aplayerInstance.destroy()
+    aplayerInstance = null
   }
   // 清理容器上的引用
   if (container.value) {
