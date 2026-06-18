@@ -109,7 +109,9 @@ if (precacheMatches.length > 0) {
       return;
     }
 
-    const cdnUrl = `${cdnURL}/${resourcePath}`;
+    // manifest.webmanifest 从 CDN 根目录加载（不带 hash），其他从 hash 目录加载
+    const cdnBase = resourcePath === 'manifest.webmanifest' ? cdnBaseURL : cdnURL;
+    const cdnUrl = `${cdnBase}/${resourcePath}`;
     console.log(`  Replacing: ${resourcePath} -> ${cdnUrl}`);
     swContent = swContent.replace(fullMatch, `url:"${cdnUrl}"`);
   });

@@ -8,10 +8,11 @@ const { notify } = useFrontNotification();
 const visible = ref(false);
 const x = ref(0);
 const y = ref(0);
-const menuType = ref<"default" | "text" | "link" | "input">("default");
+const menuType = ref<"default" | "text" | "link" | "input" | "image">("default");
 const selectedText = ref("");
 const linkTarget = ref<HTMLAnchorElement | null>(null);
 const inputTarget = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
+const imageTarget = ref<HTMLImageElement | null>(null);
 const menuRef = ref<HTMLElement | null>(null);
 const isCommentArea = ref(false); // 是否在评论区
 const customMenuItems = ref<any[] | null>(null); // 自定义菜单项
@@ -77,8 +78,12 @@ const handleContextMenu = (e: MouseEvent) => {
   // 使用 closest() 查找目标元素或其父元素
   const closestLink = (target as HTMLElement).closest("a");
   const closestInput = (target as HTMLElement).closest("input, textarea");
+  const closestImage = (target as HTMLElement).closest("img");
 
-  if (selection && isBrowsableLink(selection)) {
+  if (closestImage) {
+    menuType.value = "image";
+    imageTarget.value = closestImage as HTMLImageElement;
+  } else if (selection && isBrowsableLink(selection)) {
     menuType.value = "link";
     selectedText.value = selection.startsWith("http") ? selection : "https://" + selection;
     linkTarget.value = document.createElement("a");
@@ -353,6 +358,97 @@ const handleCapitalize = () => {
   }
 };
 
+// 复制图片到剪贴板
+const handleCopyImage = async () => {
+  if (imageTarget.value) {
+    const src = imageTarget.value.src;
+
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+
+      // 如果是 PNG/JPG 直接复制
+      if (blob.type === "image/png" || blob.type === "image/jpeg") {
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob }),
+        ]);
+        notify("复制图片成功", "success");
+      } else {
+        // WebP 等不支持格式，用 Image + canvas 转成 PNG
+        // 用 blobUrl 加载图片，避免跨域污染
+        const blobUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = blobUrl;
+        });
+
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+
+        const pngBlob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error("转码失败"));
+          }, "image/png");
+        });
+
+        URL.revokeObjectURL(blobUrl);
+
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": pngBlob }),
+        ]);
+        notify("复制图片成功", "success");
+      }
+    } catch {
+      // 失败时降级复制图片地址
+      try {
+        await navigator.clipboard.writeText(src);
+        notify("已复制图片地址", "info");
+      } catch {
+        notify("复制失败", "error");
+      }
+    }
+    closeMenu();
+  }
+};
+
+// 下载图片
+const handleDownloadImage = async () => {
+  if (imageTarget.value) {
+    const src = imageTarget.value.src;
+    const filename = src.split("/").pop() || "image";
+
+    try {
+      // 尝试 fetch 获取 blob 后下载（不跳转）
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+
+      notify("开始下载图片", "success");
+    } catch {
+      // 失败时 fallback 到新窗口打开
+      window.open(src, "_blank", "noopener,noreferrer");
+      notify("已打开图片，请右键保存", "info");
+    }
+    closeMenu();
+  }
+};
+
 // 监听全局右键事件
 onMounted(() => {
   document.addEventListener("contextmenu", handleContextMenu);
@@ -540,6 +636,23 @@ onUnmounted(() => {
           class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Icon name="ri:external-link-line" class="size-4" />
           <span>访问链接</span>
+        </li>
+      </template>
+
+      <!-- 图片菜单选项 -->
+      <template v-if="menuType === 'image'">
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li
+          @click="handleCopyImage"
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <Icon name="ri:image-add-line" class="size-4" />
+          <span>复制图片</span>
+        </li>
+        <li
+          @click="handleDownloadImage"
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <Icon name="ri:download-2-line" class="size-4" />
+          <span>下载图片</span>
         </li>
       </template>
 
