@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, onUnmounted, watch, useTemplateRef } from "vue";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import Swiper from "swiper";
+import { Navigation, Pagination, Mousewheel } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -30,13 +32,8 @@ let isUnmounted = false;
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
 
-const initSwiper = async () => {
+const initSwiper = () => {
   if (!swiperContainer.value || props.covers.length === 0) return;
-
-  const [{ default: Swiper }, { Navigation, Pagination, Mousewheel }] = await Promise.all([
-    import("swiper"),
-    import("swiper/modules"),
-  ]);
 
   // ✅ 异步操作后检查 DOM 是否还存在
   if (isUnmounted || !swiperContainer.value) {

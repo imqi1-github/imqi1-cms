@@ -1,6 +1,5 @@
 import prisma from "#server/utils/prisma";
 import * as fs from "fs";
-import nodemailer from "nodemailer";
 import * as path from "path";
 import { siteConfig } from "~~/site.config";
 
@@ -81,6 +80,8 @@ async function createTransporter() {
     return null;
   }
 
+  // nodemailer 仅在实际发送邮件时才动态加载，避免冷启动时拉入 ~540KB
+  const { default: nodemailer } = await import("nodemailer");
   return nodemailer.createTransport({
     host: config.host,
     port: config.port,

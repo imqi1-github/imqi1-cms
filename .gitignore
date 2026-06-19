@@ -30,6 +30,9 @@ pids
 .env.*
 !.env.example
 
+# Bundle analysis
+stats.html
+
 /app/generated/prisma
 
 .old-theme

@@ -1,7 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateUserData } from "#server/utils/validation";
-import bcrypt from "bcryptjs";
 import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
@@ -94,6 +93,7 @@ export default defineEventHandler(async event => {
 
     // 如果提供了新密码，则更新密码
     if (password && password.trim() !== "") {
+      const { default: bcrypt } = await import("bcryptjs");
       updateData.password = await bcrypt.hash(password, 10);
     }
 

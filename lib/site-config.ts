@@ -71,6 +71,11 @@ export interface SiteConfig {
     /** manifest background_color */
     backgroundColor: string;
   };
+  /** 构建相关静态配置（由 nuxt.config.ts 读取） */
+  build: {
+    /** 是否在构建时预压缩静态资源为 brotli（生成 .br 文件，需 Nginx brotli_static on 配合） */
+    brotliCompression: boolean;
+  };
   /** 首页自定义公告文案（HTML），作为数据库默认种子值 */
   homeCustomText: string;
   /** 友链页配置 */

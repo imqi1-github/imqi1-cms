@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { siteConfig, fullOgImage } from "./site.config";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // 读取构建 hash（如果存在）
 const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
@@ -320,7 +321,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ["~/assets/css/main.css", "~/assets/css/aplayer.css"],
+  css: ["~/assets/css/main.css"],
 
   postcss: {
     plugins: {
@@ -342,7 +343,6 @@ export default defineNuxtConfig({
         "class-variance-authority",
         "@vueuse/core",
         "clsx",
-        "tailwind-merge",
         "reka-ui",
         "lucide-vue-next",
         "vue-sonner",
@@ -368,7 +368,7 @@ export default defineNuxtConfig({
             // UI 组件库
             ui: ["reka-ui", "lucide-vue-next", "vue-sonner"],
             // 工具库
-            utils: ["@vueuse/core", "clsx", "tailwind-merge", "class-variance-authority"],
+            utils: ["@vueuse/core", "clsx", "class-variance-authority"],
             // 媒体相关（swiper + fancyapps）
             media: ["swiper", "@fancyapps/ui"],
           },
@@ -383,12 +383,32 @@ export default defineNuxtConfig({
     },
   },
 
+  hooks: {
+    // 仅在 client build 时注入 visualizer，避免 server bundle 覆盖 stats.html
+    "vite:extendConfig"(config, { isClient }) {
+      if (!isClient) return;
+      // @ts-ignore
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        // @ts-ignore
+        visualizer({
+          filename: "stats.html",
+          template: "treemap",
+          gzipSize: true,
+          brotliSize: true,
+          emitFile: false,
+        })
+      );
+    },
+  },
+
   nitro: {
     // 明确指定 preset，避免自动检测消耗
     preset: "node-server",
 
-    // 禁用资源预压缩（不生成 .br 和 .gz 文件）
-    compressPublicAssets: false,
+    // 资源预压缩：由 site.config.ts 的 build.brotliCompression 控制
+    // 开启后同时生成 .br 和 .gz，需 Nginx 配合 brotli_static/gzip_static 或 CDN 直接发送
+    compressPublicAssets: siteConfig.build.brotliCompression,
 
     // 禁用 Server-Timing 响应头，减少开销
     timing: false,

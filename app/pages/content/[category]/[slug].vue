@@ -2,6 +2,8 @@
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
+import Swiper from "swiper";
+import { Navigation, Pagination, Mousewheel } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -956,11 +958,7 @@ onMounted(async () => {
         wrapper.replaceWith(swiperContainer);
 
         // 初始化 Swiper
-        setTimeout(async () => {
-          const [{ default: Swiper }, { Navigation, Pagination, Mousewheel }] = await Promise.all([
-            import("swiper"),
-            import("swiper/modules"),
-          ]);
+        setTimeout(() => {
           const newSwiper = new Swiper(`.${uniqueClass}`, {
             modules: [Navigation, Pagination, Mousewheel],
             slidesPerView: "auto",

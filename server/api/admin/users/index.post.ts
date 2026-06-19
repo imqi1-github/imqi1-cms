@@ -1,7 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateUserData } from "#server/utils/validation";
-import bcrypt from "bcryptjs";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -52,6 +51,7 @@ export default defineEventHandler(async event => {
       });
     }
 
+    const { default: bcrypt } = await import("bcryptjs");
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await prisma.users.create({

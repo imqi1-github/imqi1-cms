@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePlayerManager } from '~/composables/usePlayerManager'
+import "~/assets/css/aplayer.css"
 
 // 获取播放器管理器
 const playerManager = usePlayerManager()

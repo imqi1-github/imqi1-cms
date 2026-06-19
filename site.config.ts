@@ -74,6 +74,12 @@ export const siteConfig = defineSiteConfig({
     backgroundColor: "#ffffff",
   },
 
+  build: {
+    // 是否在构建时预压缩静态资源为 brotli（生成 .br 文件）
+    // 需 Nginx 配合 brotli_static on，或 CDN 直接发送预压缩文件
+    brotliCompression: true,
+  },
+
   homeCustomText: `<p>${_displayName}</p>`,
 
   links: {

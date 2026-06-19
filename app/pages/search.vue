@@ -22,6 +22,9 @@ const { data, pending, error, refresh } = await useFetch<{ data?: { results: any
   },
   // 有搜索关键词时才发起请求
   immediate: !!searchKeyword.value,
+  // 禁用 query 自动响应式，改由下方 watch + debounce 手动 refresh 控制，
+  // 否则 useFetch 自动触发与手动 refresh 会重复请求，导致布局抖动
+  watch: false,
   // 标记错误已处理，避免全局 toast 重复提示
   onResponseError({ error: fetchError }) {
     (fetchError as any).__handled__ = true;
@@ -56,6 +59,11 @@ watch(
 
     if (q !== currentQ) {
       router.replace({ path: "/search", query: q ? { q } : {} });
+    }
+
+    // 输入即搜（useFetch 的 watch:false 已禁用自动响应，由这里手动触发）
+    if (q) {
+      refresh();
     }
 
     if (!pending.value) {

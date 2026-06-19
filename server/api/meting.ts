@@ -1,4 +1,5 @@
-import Meting from '@meting/core';
+// @meting/core 仅在请求到达时动态加载，避免冷启动时拉入
+// （仅在 /api/meting 路由内部使用）
 
 // 允许的音乐服务域名白名单
 const ALLOWED_REDIRECT_DOMAINS = [
@@ -66,6 +67,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 初始化 Meting 实例并启用格式化
+  const { default: Meting } = await import('@meting/core');
   const api = new Meting(server).format(true);
 
   // 根据 type 处理不同的请求

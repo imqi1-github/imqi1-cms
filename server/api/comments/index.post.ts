@@ -130,7 +130,7 @@ export default defineTypedApiHandler(
     }
 
     // 净化评论内容，防止 XSS 攻击
-    const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG);
+    const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG) as string;
 
     const comment = await prisma.comments.create({
       data: {
