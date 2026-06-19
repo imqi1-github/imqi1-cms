@@ -26,7 +26,7 @@ const isPageTransitioning = ref(false);
 const mainOpacity = ref(1);
 let transitionStartTime = 0;
 let fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
-const FADE_OUT_DURATION = 300; // 淡出动画时长
+const FADE_OUT_DURATION = siteConfig.pageTransition.fadeDuration; // 淡出动画时长
 
 // 监听页面开始加载
 const nuxtApp = useNuxtApp();
@@ -205,7 +205,7 @@ onMounted(() => {
         tabindex="-1"
         class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
         :style="{
-          transition: 'opacity 0.3s ease',
+          transition: `opacity ${siteConfig.pageTransition.fadeDuration}ms ease`,
           opacity: mainOpacity,
         }">
         <NuxtPage class="font-serif font-[450] grow" />

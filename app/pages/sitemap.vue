@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { siteConfig } from "~~/site.config";
 
-const loading = ref(true);
-const sitemapData = ref<any>(null);
-const recentComments = ref<any[]>([]);
-const tags = ref<any[]>([]);
+// 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，
+// 渐入时直接带数据。x-ssr-internal-request 头供 referer-check 中间件放行 SSR 内部请求（与其它页面一致）。
+const ssrHeaders = { headers: { "x-ssr-internal-request": "true" } };
+const { data: sitemapRes, pending: sitemapPending } = await useFetch("/api/sitemap", ssrHeaders);
+const { data: commentsRes } = await useFetch("/api/recent-comments?limit=10", ssrHeaders);
+const { data: tagsRes } = await useFetch("/api/tags", ssrHeaders);
+
+const sitemapData = computed(() => sitemapRes.value?.data ?? null);
+const recentComments = computed(() => commentsRes.value?.data || []);
+const tags = computed(() => tagsRes.value?.data || []);
+const loading = computed(() => sitemapPending.value);
 
 // 系统页面配置（包含图标、路径、名称）
 const systemPages = [
@@ -25,24 +32,6 @@ const systemPages = [
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
-
-async function fetchSitemap() {
-  loading.value = true;
-  try {
-    const [sitemapRes, commentsRes, tagsRes] = await Promise.all([
-      $fetch("/api/sitemap") as any,
-      $fetch("/api/recent-comments?limit=10") as any,
-      $fetch("/api/tags") as any,
-    ]);
-    sitemapData.value = sitemapRes.data;
-    recentComments.value = commentsRes.data || [];
-    tags.value = tagsRes.data || [];
-  } catch (error) {
-    console.error("获取站点地图失败:", error);
-  } finally {
-    loading.value = false;
-  }
-}
 
 function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -68,8 +57,6 @@ function formatDateTime(date: string | Date): string {
 }
 
 onMounted(() => {
-  fetchSitemap();
-
   // 等待全局页面过渡完成后再初始化淡入动画
   nextTick(() => {
     setTimeout(() => {
@@ -90,7 +77,7 @@ onMounted(() => {
       document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
         fadeInObserver.observe(el);
       });
-    }, 350); // 等待全局页面淡入完成（300ms + 50ms 缓冲）
+    }, siteConfig.pageTransition.fadeDuration); // 等待全局页面淡入完成
   });
 });
 
@@ -145,7 +132,7 @@ usePageSeo({
           <div class="flex flex-wrap gap-2">
             <NuxtLink
               v-for="tag in tags"
-              :key="tag.slug"
+              :key="tag.slug ?? tag.name"
               :to="`/tag/${tag.slug}`"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Icon name="ri:price-tag-3-line" class="size-3.5 align-sub" />

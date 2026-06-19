@@ -29,13 +29,12 @@ onMounted(() => {
   nextTick(() => {
     const element = document.querySelector(".animate-fade-in:not(.fade-in-start)");
     if (element) {
-      // 延迟触发动画，等待 app.vue 的页面过渡完成
-      // app.vue 的页面过渡包括：淡出 0.3s + 淡入 0.3s = 0.6s
+      // 延迟触发动画，等待 app.vue 的页面过渡完成（一次 fadeDuration）
       setTimeout(() => {
         requestAnimationFrame(() => {
           element.classList.add("fade-in-start");
         });
-      }, 300); // 正好在页面过渡完成后触发
+      }, siteConfig.pageTransition.fadeDuration);
     }
   });
 });

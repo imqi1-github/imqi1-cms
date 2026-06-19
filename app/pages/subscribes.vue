@@ -13,9 +13,17 @@ usePageSeo({
   keywords: siteConfig.pageSeo.subscribes.keywords,
 });
 
-const posts = ref<any[]>([]);
-const error = ref<string | null>(null);
-const isLoaded = ref(false);
+// 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，渐入时直接带数据。
+// 订阅源列表含随机洗牌，故用 ref 并在 onMounted（仅客户端）计算，避免 SSR/客户端各洗一次导致 hydration 不一致。
+// x-ssr-internal-request 头供 referer-check 中间件放行 SSR 内部请求（与其它页面一致）。
+const { data: postsRes, pending, error: fetchError, refresh } = await useFetch("/api/subscribes", {
+  headers: { "x-ssr-internal-request": "true" },
+});
+const posts = computed(() => ((postsRes.value as any)?.data || []) as any[]);
+const error = computed<string | null>(() =>
+  fetchError.value ? fetchError.value.message || "获取订阅文章失败" : null,
+);
+const isLoaded = computed(() => !pending.value);
 
 // 获取当前选择的订阅源ID
 const route = useRoute();
@@ -73,7 +81,8 @@ const collapseTooltip = {
 };
 
 onMounted(() => {
-  loadPosts();
+  // 计算订阅源列表（含随机洗牌，仅客户端）
+  computeSubscribes();
 
   // 添加滚轮事件监听
   if (import.meta.client) {
@@ -100,7 +109,7 @@ onMounted(() => {
       document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
         fadeInObserver.observe(el);
       });
-    }, 350); // 等待全局页面淡入完成（300ms + 50ms 缓冲）
+    }, siteConfig.pageTransition.fadeDuration); // 等待全局页面淡入完成
   });
 });
 
@@ -110,8 +119,11 @@ onUnmounted(() => {
   }
 });
 
-// 获取所有订阅源（去重）
-const subscribes = computed(() => {
+// 订阅源列表（含随机洗牌）。用 ref 而非 computed，并在 onMounted（仅客户端）计算，
+// 避免 SSR 与客户端各自随机一次导致 hydration 不一致。
+const subscribes = ref<any[]>([]);
+
+function computeSubscribes() {
   const subscribeMap = new Map();
   posts.value.forEach(post => {
     if (!subscribeMap.has(post.subscribeId)) {
@@ -130,8 +142,8 @@ const subscribes = computed(() => {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return arr;
-});
+  subscribes.value = arr;
+}
 
 // 筛选后的文章列表
 const filteredPosts = computed(() => {
@@ -139,25 +151,10 @@ const filteredPosts = computed(() => {
   return posts.value.filter(post => post.subscribeId === selectedSourceId.value);
 });
 
-// 加载订阅文章
-async function loadPosts() {
-  error.value = null;
-  try {
-    const response = await $fetch('/api/subscribes') as any;
-    posts.value = response.data || [];
-  } catch (err: any) {
-    error.value = err.message || '获取订阅文章失败';
-    posts.value = [];
-  } finally {
-    isLoaded.value = true;
-    // 等待 DOM 更新后触发动画
-    await nextTick();
-    setTimeout(() => {
-      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-        el.classList.add("fade-in-start");
-      });
-    }, 50);
-  }
+// 重新加载订阅文章（错误重试用）
+async function reload() {
+  await refresh();
+  computeSubscribes();
 }
 
 function formatDate(dateStr: string | Date | null) {
@@ -236,11 +233,17 @@ watch(() => selectedSourceId.value, async () => {
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每{{ feedCacheInterval }}小时自动更新</p>
     </header>
 
+    <!-- 加载占位：客户端重新拉取（如错误重试）时避免空白 -->
+    <div v-if="!isLoaded" class="flex items-center justify-center py-20">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <p class="ml-3 text-muted-foreground">加载中...</p>
+    </div>
+
     <!-- 错误状态 -->
     <div v-if="isLoaded && error" class="text-center py-16 animate-fade-in">
       <Icon name="lucide:alert-circle" class="size-16 text-destructive/50 mx-auto mb-4" />
       <p class="text-muted-foreground mb-4">{{ error }}</p>
-      <Button variant="outline" @click="loadPosts">重试</Button>
+      <Button variant="outline" @click="reload">重试</Button>
     </div>
 
     <!-- 空状态 -->

@@ -76,6 +76,12 @@ export interface SiteConfig {
     /** 是否在构建时预压缩静态资源为 brotli（生成 .br 文件，需 Nginx brotli_static on 配合） */
     brotliCompression: boolean;
   };
+  /** 页面过渡动画时长（ms），供 app.vue 全局淡出/淡入及部分页面的「等待过渡完成」延迟引用 */
+  pageTransition: {
+    /** 单次淡出/淡入动画时长（ms）—— app.vue <main> 全局页面过渡的真实时长（JS 与 CSS 共用），
+     *  同时作为各页面「onMounted 后等待过渡完成、再启动页面内元素滚动渐入」的统一延迟 */
+    fadeDuration: number;
+  };
   /** 首页自定义公告文案（HTML），作为数据库默认种子值 */
   homeCustomText: string;
   /** 友链页配置 */

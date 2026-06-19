@@ -1790,6 +1790,10 @@ onUnmounted(() => {
       </div>
 
       <!-- 相关文章 -->
+      <div v-if="relatedPostsPending" class="article-constrained flex items-center gap-2 py-4 text-muted-foreground">
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+        <span class="text-sm">加载相关文章...</span>
+      </div>
       <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
