@@ -23,9 +23,9 @@ let isInitialized = false;
 // 播放器实例 ID（用于播放器管理器）
 const playerId = `footer-${Date.now()}-${Math.random()}`;
 
-// Meting API 失败计数相关常量
+// 音乐播放器失败计数相关常量（歌单拉取失败 + 单首播放卡顿/失败共用同一计数）
 const METING_FAILURE_COUNT_KEY = 'meting_api_failure_count';
-const MAX_FAILURE_COUNT = 5;
+const MAX_FAILURE_COUNT = 3;
 
 // 获取失败次数
 function getFailureCount(): number {
@@ -103,6 +103,21 @@ export function useAudioPlayer() {
     progress.value = duration > 0 ? (currentTime / duration) * 100 : 0;
   };
 
+  // 连续失败达到上限：停止切歌、隐藏胶囊、暂停音频。
+  // 播放卡顿/失败多为瞬时网络问题，故重置计数——刷新后自动重试，
+  // 且不污染 initPlayer 的「歌单 API 拉取闸门」（该闸门只对真正的 API 失败持久生效）。
+  function disablePlayer(reason: string) {
+    console.warn(`${reason}，本次停用页脚音乐，刷新页面后将自动重试`);
+    shouldAutoPlay.value = false;
+    isPlaying.value = false;
+    currentSong.value = null;
+    isLoaded.value = false;
+    if (audio) {
+      audio.pause();
+    }
+    resetFailureCount();
+  }
+
   const handleSongEnd = () => {
     shouldAutoPlay.value = true;
     playNext();
@@ -110,12 +125,22 @@ export function useAudioPlayer() {
 
   const handleSongError = () => {
     console.warn("歌曲加载失败，切换下一首");
+    const newCount = incrementFailureCount();
+    if (newCount >= MAX_FAILURE_COUNT) {
+      disablePlayer(`歌曲连续加载失败 ${newCount} 次`);
+      return;
+    }
     shouldAutoPlay.value = isPlaying.value;
     playNext();
   };
 
   const handleSongStalled = () => {
     console.warn("网络卡顿，切换下一首");
+    const newCount = incrementFailureCount();
+    if (newCount >= MAX_FAILURE_COUNT) {
+      disablePlayer(`网络连续卡顿 ${newCount} 次`);
+      return;
+    }
     shouldAutoPlay.value = isPlaying.value;
     playNext();
   };
@@ -131,6 +156,9 @@ export function useAudioPlayer() {
   const handlePlaying = () => {
     isPlaying.value = true;
     shouldAutoPlay.value = false;
+
+    // 成功播放，重置连续失败计数（与歌单拉取成功一致），避免偶发卡顿冤枉累积
+    resetFailureCount();
 
     // 通知播放器管理器，暂停其他所有播放器
     const manager = getPlayerManager();

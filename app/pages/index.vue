@@ -459,13 +459,27 @@
       <!-- 目录 -->
       <div
         class="max-sm:hidden flex -mt-16 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
+        <!-- 滑动指示框：跟随激活节点在 4 个目录项之间移动（节点等宽，故按槽位 25% 等分用 calc 定位 + 滑动） -->
+        <!-- 四周内缩 + 微投影，呈内嵌药丸质感：上下 top-1/bottom-1，左右用 calc(left/width) 留出 4px 真实间隙；
+             不用「透明 border + bg-clip-padding」方案，避免边框渲染出深色伪影 -->
+        <div
+          class="absolute top-1 bottom-1 rounded-full bg-blue-700 shadow-sm pointer-events-none"
+          :style="{
+            left: `calc(${activeTocIndex * 25}% + 4px)`,
+            width: 'calc(25% - 8px)',
+            transition: 'left 300ms cubic-bezier(0, 0, 0.2, 1)',
+          }"></div>
         <div
           v-for="(item, index) in tocItems"
           :key="item.id"
-          class="px-4 py-2 rounded-full cursor-pointer hover:bg-gray-100 duration-150 dark:hover:bg-gray-700"
-          :class="{ 'bg-blue-700 text-white hover:bg-blue-600!': activeTocIndex === index }"
+          class="group relative z-10 px-4 py-2 cursor-pointer"
+          :class="{ 'text-white': activeTocIndex === index }"
           @click="scrollToSection(index)">
-          {{ item.title }}
+          <!-- 非激活态悬浮背景：与高亮指示框同尺寸的内嵌药丸（inset-1 与指示框四周 4px 内缩一致） -->
+          <span
+            v-if="activeTocIndex !== index"
+            class="absolute inset-1 rounded-full bg-gray-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:bg-gray-700"></span>
+          <span class="relative">{{ item.title }}</span>
         </div>
       </div>
     </div>
