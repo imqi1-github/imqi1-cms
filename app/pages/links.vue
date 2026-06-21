@@ -497,6 +497,12 @@ onUnmounted(() => {
             编辑友链
           </a>
         </ClientOnly>
+          <NuxtLink
+            href="/subscribes"
+            class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
+            <Icon name="ri:rss-line" class="size-3" />
+            也可以看看我的订阅列表
+          </NuxtLink>
       </div>
     </header>
 
@@ -605,6 +611,7 @@ onUnmounted(() => {
           </div>
         </a>
       </div>
+      <MapEntryLinks :views="['blogs']" title="看看这些站点位于哪里" class="mt-6" />
     </section>
 
     <!-- 本站加入的博客组织 -->

@@ -244,6 +244,7 @@ watch(() => selectedSourceId.value, async () => {
           管理订阅
         </a>
       </ClientOnly>
+      <MapEntryLinks :views="['blogs']" title="看一看这些站点位于哪里" class="mt-3" />
     </header>
 
     <!-- 加载占位：客户端重新拉取（如错误重试）时避免空白 -->

@@ -26,9 +26,10 @@ const _avatarPath = "/imgs/avatar.webp";
 const _url = "https://imqi1.com";
 const _cdnUrl = "https://cdn.imqi1.com";
 const _host = new URL(_url).host;
+const _isProduction = process.env.NODE_ENV === "production";
 
 // 静态资源 CDN 前缀：生产环境带 CDN 根（不带构建 hash），开发环境为空走本地 public
-const _assetPrefix = process.env.NODE_ENV === "production" ? _cdnUrl : "";
+const _assetPrefix = _isProduction ? _cdnUrl : "";
 
 
 /**
@@ -78,6 +79,19 @@ export const siteConfig = defineSiteConfig({
     // 是否在构建时预压缩静态资源为 brotli（生成 .br 文件）
     // 需 Nginx 配合 brotli_static on，或 CDN 直接发送预压缩文件
     brotliCompression: true,
+  },
+
+  amap: {
+    useNginxProxy: {
+      development: false,
+      production: true,
+    },
+    // 是否在站点各处展示指向地图页的入口胶囊。开发默认开；生产默认关——
+    // 待后台/环境配好高德 apikey（地图可正常加载）后再把 production 改为 true。
+    entryLinks: {
+      development: true,
+      production: false,
+    },
   },
 
   // 页面过渡动画时长（ms）：app.vue 全局淡出/淡入真实时长，也是各页面等待过渡完成再启动元素动画的统一延迟

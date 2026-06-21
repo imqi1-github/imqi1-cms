@@ -13,8 +13,10 @@
 const STATIC_ASSET_RE =
   /^\/(imgs|skills|icons|fonts|emojis|uploads)\//;
 
+// robots.txt 不在此列：它由 Nitro 直接在主域返回（不走 CDN），
+// 否则跨主机跳转会让 robots 规则只对 CDN 子域生效。
 const STATIC_ASSET_FILE_RE =
-  /^\/(favicon\.ico|manifest\.webmanifest|robots\.txt|sitemap\.xsl)$/;
+  /^\/(favicon\.ico|manifest\.webmanifest|sitemap\.xsl)$/;
 
 const ABSOLUTE_RE = /^(https?:)?\/\//i;
 const SAFE_DATA_RE = /^data:image\//i;

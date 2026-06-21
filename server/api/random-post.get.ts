@@ -43,6 +43,11 @@ export default defineEventHandler(async event => {
             },
           },
         },
+        // 关联的启用地点数（首页随机文章封面角标用）
+        travels: {
+          where: { travel: { enabled: true } },
+          select: { travel_id: true },
+        },
       },
     });
 
@@ -67,6 +72,7 @@ export default defineEventHandler(async event => {
         slug: post.slug,
         desc: post.desc,
         covers,
+        travelCount: post.travels.length,
         category: category
           ? {
               name: category.name,

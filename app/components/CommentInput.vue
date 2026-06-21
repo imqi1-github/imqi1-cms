@@ -42,23 +42,14 @@ const honeypot = ref("");
 // 反垃圾：页面加载时间戳（提交太快说明是机器人）
 const pageLoadTime = Date.now();
 
-// 反垃圾：人机验证状态
-const humanVerified = ref(false);
-const verifyQuestion = ref("");
-const verifyAnswer = ref("");
-const verifyInput = ref("");
+// 反垃圾：图形验证码（未登录用户需填写，登录用户免验证）
+const captchaInput = ref("");
+const captchaUrl = ref("");
 
-// 生成简单的数学验证问题
-function generateVerifyQuestion() {
-  const a = Math.floor(Math.random() * 10) + 1;
-  const b = Math.floor(Math.random() * 10) + 1;
-  verifyQuestion.value = `${a} + ${b} = ?`;
-  verifyAnswer.value = String(a + b);
-}
-generateVerifyQuestion();
-
-function checkVerify() {
-  humanVerified.value = verifyInput.value.trim() === verifyAnswer.value;
+// 刷新验证码图片（附时间戳避免浏览器缓存）
+function refreshCaptcha() {
+  captchaUrl.value = `/api/captcha/image?t=${Date.now()}`;
+  captchaInput.value = "";
 }
 
 // CSRF Token
@@ -191,6 +182,11 @@ onMounted(async () => {
         formData.value.content = savedContent;
       }
     }
+
+    // 未登录用户加载图形验证码
+    if (!isLoggedIn.value) {
+      refreshCaptcha();
+    }
   }
 });
 
@@ -233,10 +229,10 @@ async function submitComment() {
     return;
   }
 
-  // 反垃圾：人机验证（登录用户免验证）
-  if (!isLoggedIn.value && !humanVerified.value) {
-    submitError.value = "请完成人机验证";
-    showError("请完成人机验证");
+  // 反垃圾：图形验证码（登录用户免验证）
+  if (!isLoggedIn.value && !captchaInput.value.trim()) {
+    submitError.value = "请输入验证码";
+    showError("请输入验证码");
     return;
   }
 
@@ -294,6 +290,7 @@ async function submitComment() {
         link: formData.value.link,
         parent_id: props.isReply ? props.replyTo?.id : null,
         website: honeypot.value, // 蜜罐字段
+        captcha: captchaInput.value, // 图形验证码（未登录用户）
       },
     });
 
@@ -328,6 +325,10 @@ async function submitComment() {
 
       // 重置表单（只重置内容，保留用户信息）
       formData.value.content = "";
+      // 验证码已消费，刷新一张新的
+      if (!isLoggedIn.value) {
+        refreshCaptcha();
+      }
       // 3秒后自动隐藏成功提示
       setTimeout(() => {
         submitSuccess.value = false;
@@ -342,6 +343,10 @@ async function submitComment() {
       submitError.value = errorMsg;
       // 显示前台错误通知
       showError(errorMsg);
+      // 验证码可能已消费，刷新一张
+      if (!isLoggedIn.value) {
+        refreshCaptcha();
+      }
     }
   } catch (error: any) {
     // 提取错误消息 - 网络错误或其他异常
@@ -356,6 +361,10 @@ async function submitComment() {
     // 显示前台错误通知
     showError(errorMessage);
     console.error("评论失败:", error);
+    // 验证码已消费（如校验失败），刷新一张让用户重填
+    if (!isLoggedIn.value) {
+      refreshCaptcha();
+    }
   } finally {
     submitting.value = false;
   }
@@ -431,10 +440,13 @@ function formatEmojiPlaceholder(text: string): string {
       <textarea id="comment-content-input" ref="textareaRef" v-model="formData.content" placeholder="评论内容 *" class="comment-textarea" required />
     </div>
 
-    <!-- 蜜罐字段：人类不可见，机器人会自动填充 -->
-    <div class="hp-field" aria-hidden="true">
-      <label for="comment-website">网站</label>
-      <input id="comment-website" v-model="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" />
+    <!-- 蜜罐字段：人类不可见，机器人会自动填充。
+         仅未登录用户渲染——登录用户已通过身份认证，无需蜜罐；且其昵称/邮箱/链接框均被禁用，
+         浏览器自动填充找不到可填的字段，会误填这个文本框，导致提交被蜜罐逻辑静默拦截（表现为“点了没反应”）。
+         字段名刻意避开 website/url 等浏览器自动填充识别词，防止误填。 -->
+    <div v-if="!isLoggedIn" class="hp-field" aria-hidden="true">
+      <label for="comment-hp">附加信息</label>
+      <input id="comment-hp" v-model="honeypot" type="text" name="hp_field" tabindex="-1" autocomplete="off" />
     </div>
 
     <div class="comment-input-row">
@@ -469,17 +481,26 @@ function formatEmojiPlaceholder(text: string): string {
           class="comment-input"
           :disabled="isLoggedIn" />
       </div>
-      <!-- 人机验证（仅未登录用户显示，与昵称/邮箱/链接同行） -->
+      <!-- 图形验证码（仅未登录用户显示，与昵称/邮箱/链接同行） -->
       <div v-if="!isLoggedIn" class="comment-input-group verify-group">
-        <label for="comment-input-verify" class="sr-only">人机验证</label>
+        <label for="comment-input-captcha" class="sr-only">验证码</label>
         <input
-          id="comment-input-verify"
-          v-model="verifyInput"
+          id="comment-input-captcha"
+          v-model="captchaInput"
           type="text"
-          :placeholder="verifyQuestion"
-          class="comment-input verify-input"
-          @input="checkVerify" />
-        <Icon v-if="humanVerified" name="ri:checkbox-circle-fill" class="verify-icon" />
+          placeholder="验证码 *"
+          class="comment-input"
+          maxlength="6"
+          autocomplete="off"
+          required />
+        <img
+          v-if="captchaUrl"
+          :src="captchaUrl"
+          class="captcha-image"
+          alt="验证码"
+          title="点击刷新验证码"
+          loading="lazy"
+          @click="refreshCaptcha" />
       </div>
 
       <div class="comment-buttons">
@@ -840,23 +861,35 @@ function formatEmojiPlaceholder(text: string): string {
   pointer-events: none;
 }
 
-/* 人机验证样式（与昵称/邮箱/链接同行） */
+/* 图形验证码样式（验证码输入框 + 图片并排） */
 .verify-group {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.verify-input {
-  padding-right: 28px !important;
+.verify-group .comment-input {
+  width: auto;
+  flex: 1;
+  min-width: 0;
 }
 
-.verify-icon {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: rgb(34 197 94);
-  pointer-events: none;
+.captcha-image {
+  height: 28px;
+  width: auto;
+  flex-shrink: 0;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgb(248 250 252);
+  transition: opacity 0.15s;
+}
+
+.captcha-image:hover {
+  opacity: 0.8;
+}
+
+.dark .captcha-image {
+  border-color: rgb(51 65 85);
 }
 </style>

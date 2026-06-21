@@ -1,4 +1,6 @@
+import { getUser } from "#server/lib/auth";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
+import { verifyCaptcha } from "#server/utils/captcha";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
@@ -45,6 +47,15 @@ export default defineTypedApiHandler(
     if (body.website) {
       // 静默丢弃，不返回错误信息（避免机器人根据响应调整策略）
       return { code: 200, message: "评论提交成功", data: null, needModeration: false };
+    }
+
+    // 反垃圾：图形验证码校验（登录用户免验证）
+    const currentUser = await getUser(event);
+    if (!currentUser && !verifyCaptcha(event, body.captcha ?? "")) {
+      throw createError({
+        statusCode: 400,
+        message: "验证码错误或已过期",
+      });
     }
 
     if (!cid || !content || !name) {

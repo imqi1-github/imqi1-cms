@@ -173,6 +173,16 @@ export default defineEventHandler(async event => {
   </url>`,
     );
 
+    // 订阅页（我的订阅 / RSS 订阅源列表）
+    urls.push(
+      `  <url>
+    <loc>${baseUrl}/subscribes</loc>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>`,
+    );
+
     // RSS
     urls.push(
       `  <url>
@@ -210,7 +220,8 @@ export default defineEventHandler(async event => {
 
     // 所有独立页面（type=1，排除 message 和 agreement）
     pages
-      .filter(page => page.slug !== "message" && page.slug !== "agreement")
+      // 排除已在上面硬编码的独立页面 slug（messages 复数，避免与硬编码的 /messages 重复）
+      .filter(page => page.slug !== "messages" && page.slug !== "agreement")
       .forEach(page => {
         const lastmod = page.update_time ? new Date(page.update_time).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
         urls.push(

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AcceptableValue } from "reka-ui";
+
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -223,10 +225,11 @@ async function setTravelPost(travel: any, add: boolean) {
 }
 
 // 从下拉选择一个地点，添加关联
-function onPickTravel(value: string) {
-  selectedTravelId.value = value;
+function onPickTravel(value: AcceptableValue) {
+  const nextValue = value == null ? "" : String(value);
+  selectedTravelId.value = nextValue;
   travelKeyword.value = "";
-  const travel = travels.value.find(t => String(t.id) === value);
+  const travel = travels.value.find(t => String(t.id) === nextValue);
   if (travel && postId.value) {
     setTravelPost(travel, true).finally(() => {
       selectedTravelId.value = "";
@@ -1048,7 +1051,7 @@ watch(postId, newCid => {
 
                       <!-- 操作遮罩 -->
                       <div
-                        class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
+                        class="absolute inset-0 top-[calc(100%-40px)] bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
                         <Button variant="secondary" size="sm" class="h-7 text-xs px-2" @click.stop="copyLink(item.url)" title="复制链接">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>

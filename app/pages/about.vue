@@ -84,6 +84,7 @@
             </div>
           </div>
         </div>
+        <MapEntryLinks :views="['travels']" title="看看我都去过哪里" class="mt-4" />
       </div>
 
       <!-- 技多不压身 -->

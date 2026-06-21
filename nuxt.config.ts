@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { siteConfig, fullOgImage } from "./site.config";
+import { resolveAmapRuntimeConfig } from "./shared/amap-runtime";
 import { visualizer } from "rollup-plugin-visualizer";
 
 // 读取构建 hash（如果存在）
@@ -36,6 +37,12 @@ function getRedisConfig() {
 }
 
 const redisConfig = getRedisConfig();
+const amapRuntime = resolveAmapRuntimeConfig({
+  nodeEnv: process.env.NODE_ENV,
+  key: process.env.AMAP_KEY || "",
+  securityJsCode: process.env.AMAP_SECURITY_CODE || "",
+  useNginxProxy: siteConfig.amap.useNginxProxy,
+});
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -60,13 +67,17 @@ export default defineNuxtConfig({
   // },
 
   runtimeConfig: {
+    amapKey: process.env.AMAP_KEY || "",
+    amapSecurityCode: process.env.AMAP_SECURITY_CODE || "",
     public: {
       cdnURL: cdnURL,
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
       rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
-      amapKey: process.env.AMAP_KEY || "",
-      amapSecurityCode: process.env.AMAP_SECURITY_CODE || "",
+      amapEnabled: amapRuntime.enabled,
+      amapUseProxy: amapRuntime.useProxy,
+      amapKey: amapRuntime.publicKey,
+      amapSecurityCode: amapRuntime.publicSecurityJsCode,
     },
   },
 
@@ -746,12 +757,8 @@ export default defineNuxtConfig({
               statusCode: 301,
             },
           },
-          "/robots.txt": {
-            redirect: {
-              to: `${siteConfig.cdnUrl}/robots.txt`,
-              statusCode: 301,
-            },
-          },
+          // 注意：robots.txt 故意不走 CDN 重定向，作为 public/ 静态文件由
+          // Nitro 直接返回——否则规则只对 CDN 子域生效，对本站失效。
           "/sitemap.xsl": {
             redirect: {
               to: `${siteConfig.cdnUrl}/sitemap.xsl`,

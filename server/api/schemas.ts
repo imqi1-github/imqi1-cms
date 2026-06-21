@@ -75,6 +75,7 @@ export const CommentCreateSchema = z.object({
   link: z.string().optional().nullable().transform(v => (v === "" ? null : v)),
   parent_id: z.coerce.number().int().optional().nullable(),
   website: z.string().optional(), // 蜜罐字段：人类不会填写，机器人会自动填充
+  captcha: z.string().optional(), // 图形验证码（未登录用户必填，登录用户可不带）
 });
 
 export const CommentItemSchema = z.object({

@@ -9,8 +9,19 @@ const router = useRouter();
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
-// 搜索关键词
-const searchKeyword = ref((route.query.q as string) || "");
+// 搜索关键词：初始值取自 URL 的 q。
+const initialQ = (route.query.q as string) || "";
+const searchKeyword = ref(initialQ);
+
+// app.vue 的页面渐出依赖「新页顶层 await 挂起 Suspense 期间、旧页 DOM 保持挂载」：
+// page:start 把 mainOpacity 置 0，只要 setup 的 await 不 resolve，旧页就不会被替换、淡出看得到。
+// 有 q 时下方 useFetch 的真实请求会自然挂起；无 q 时不发空查询，需人为挂起一个 fadeDuration
+// 复刻这个窗口，否则新页瞬间替换旧页、旧页来不及渐出。仅在客户端 SPA 导航时挂起——
+// SSR 与首屏 hydration 不需要（首屏走 first-loading 遮罩，无上一页可渐出）。
+const nuxtApp = useNuxtApp();
+if (import.meta.client && !initialQ && !nuxtApp.isHydrating) {
+  await new Promise<void>(resolve => setTimeout(resolve, siteConfig.pageTransition.fadeDuration));
+}
 
 // 搜索结果
 const { data, pending, error, refresh } = await useFetch<{ data?: { results: any[]; total: number } }>("/api/search", {
@@ -20,10 +31,9 @@ const { data, pending, error, refresh } = await useFetch<{ data?: { results: any
   query: {
     q: searchKeyword,
   },
-  // 始终发起请求：空 q 时 /api/search 早返回空结果（不查库不查 Redis，代价可忽略），
-  // 但真实请求制造 Suspense 间隙，让旧页（如首页）能在 page:start→page:finish 间完整渐出；
-  // 若用 immediate:false，顶层 await 当场 resolve、Suspense 不挂起 → 首页无渐出（同订阅/站点地图旧 bug 类）。
-  immediate: true,
+  // 仅带 q 进入时初始化查询（真实请求同时挂起 Suspense 让旧页渐出）；
+  // 无 q 进入时不发空查询——渐出已由上方的人为挂起保证。
+  immediate: !!initialQ,
   // 禁用 query 自动响应式，改由下方 watch + debounce 手动 refresh 控制，
   // 否则 useFetch 自动触发与手动 refresh 会重复请求，导致布局抖动
   watch: false,
@@ -70,6 +80,18 @@ watch(
 
     if (!pending.value) {
       triggerFadeIn();
+    }
+  },
+);
+
+// 监听 URL 的 q 变化：在搜索页内用右键菜单「站内搜索」会 push 到同一路由 /search?q=…，
+// 此时组件复用、setup 不会重读 route.query.q，searchKeyword 不变 → 上面的 watch 不触发、不搜索。
+// 这里把 URL 的 q 同步回 searchKeyword，再由上面的 watch 接力 refresh（相等值赋值 ref 不会触发，无环）。
+watch(
+  () => (route.query.q as string) || "",
+  newQ => {
+    if (newQ !== searchKeyword.value) {
+      searchKeyword.value = newQ;
     }
   },
 );

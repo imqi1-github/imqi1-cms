@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AMapLoader from "@amap/amap-jsapi-loader";
+import { loadAmap } from "../../utils/amap-loader";
 
 const props = defineProps<{
   longitude: string | number | null;
@@ -12,8 +12,10 @@ const emit = defineEmits<{
 }>();
 
 const config = useRuntimeConfig();
-const amapKey = config.public.amapKey as string;
-const amapSecurityCode = config.public.amapSecurityCode as string;
+const amapEnabled = Boolean(config.public.amapEnabled);
+const amapUseProxy = Boolean(config.public.amapUseProxy);
+const amapKey = String(config.public.amapKey || "");
+const amapSecurityCode = String(config.public.amapSecurityCode || "");
 const colorMode = useColorMode();
 const isDark = computed(() => colorMode.value === "dark");
 
@@ -150,19 +152,19 @@ function selectLngLat(value: any, moveCenter = true) {
 }
 
 onMounted(async () => {
-  if (!amapKey || !mapEl.value) {
+  if (!amapEnabled || !mapEl.value) {
     loadError.value = true;
     loading.value = false;
-    if (!amapKey) console.warn("[TravelCoordinatePicker] 未配置 AMAP_KEY，请在 .env 中设置高德地图 Key");
+    if (!amapEnabled) console.warn("[TravelCoordinatePicker] 未完整配置 AMAP_KEY / AMAP_SECURITY_CODE，请在 .env 中设置高德地图密钥");
     return;
   }
 
   try {
-    (window as any)._AMapSecurityConfig = { securityJsCode: amapSecurityCode };
-
-    AMap = await AMapLoader.load({
-      key: amapKey,
+    AMap = await loadAmap({
       version: "2.0",
+      useProxy: amapUseProxy,
+      key: amapKey,
+      securityJsCode: amapSecurityCode,
     });
 
     const initialLngLat = formLngLat();

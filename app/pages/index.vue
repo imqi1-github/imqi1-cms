@@ -2,10 +2,7 @@
   <div class="min-h-screen relative w-full bg-white dark:bg-[#0a0a0a]">
     <!-- 英雄区 - fixed定位，独立于section -->
     <h1 id="index-hero-title" class="sr-only">欢迎来到 {{ siteName }}</h1>
-    <div
-      ref="heroRef"
-      class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0"
-      :style="heroStyle">
+    <div ref="heroRef" class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0" :style="heroStyle">
       <div class="flex items-center justify-between w-full opacity-0 animate-fade-in max-md:flex-col max-md:text-center max-md:gap-8">
         <!-- 标题区域 -->
         <div class="p-1.5">
@@ -17,7 +14,10 @@
 
         <!-- 头像区域 -->
         <div class="h-fit max-md:hidden">
-          <img :src="siteConfig.siteAvatarPath" alt="头像" class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
+          <img
+            :src="siteConfig.siteAvatarPath"
+            alt="头像"
+            class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
         </div>
 
         <!-- 滚动提示 -->
@@ -205,12 +205,19 @@
                         <!-- 封面 -->
                         <div
                           v-if="randomPost.covers && randomPost.covers.length > 0"
-                          class="mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
+                          class="relative mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
                           <img
                             :src="(typeof randomPost.covers[0] === 'string' ? randomPost.covers[0] : randomPost.covers[0]?.url) || ''"
                             :alt="randomPost.title"
                             class="w-full h-full object-cover"
                             loading="lazy" />
+                          <!-- 关联地点角标 -->
+                          <div
+                            v-if="randomPost.travelCount > 0"
+                            class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                            <Icon name="ri:map-pin-line" class="size-3.5" />
+                            <span>{{ randomPost.travelCount }}</span>
+                          </div>
                         </div>
                         <!-- 标题 -->
                         <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-2 mb-2">
@@ -277,6 +284,14 @@
                   class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                   <Icon name="ri-gallery-line" class="size-3.5" />
                   <span>+{{ post.covers.length - 1 }}</span>
+                </div>
+                <!-- 关联地点角标 -->
+                <div
+                  v-if="post.travelCount > 0"
+                  :class="post.many_covers && post.covers.length > 1 ? 'top-10' : 'top-2'"
+                  class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                  <Icon name="ri:map-pin-line" class="size-3.5" />
+                  <span>{{ post.travelCount }}</span>
                 </div>
               </div>
               <!-- 无封面占位 -->
@@ -371,6 +386,14 @@
                     class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                     <Icon name="ri-gallery-line" class="size-3.5" />
                     <span>+{{ post.covers.length - 1 }}</span>
+                  </div>
+                  <!-- 关联地点角标 -->
+                  <div
+                    v-if="post.travelCount > 0"
+                    :class="post.many_covers && post.covers.length > 1 ? 'top-10' : 'top-2'"
+                    class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                    <Icon name="ri:map-pin-line" class="size-3.5" />
+                    <span>{{ post.travelCount }}</span>
                   </div>
                 </div>
                 <!-- 无封面占位 -->
@@ -528,14 +551,14 @@
     <div class="h-37.5"></div>
 
     <!-- 订阅文章 -->
-    <section
-      v-if="subscribePosts.length > 0"
-      class="mx-auto max-w-275 animate-fade-in"
-      aria-labelledby="index-subscribe-posts-title">
+    <section v-if="subscribePosts.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-subscribe-posts-title">
       <div class="flex items-center justify-between mb-6">
-        <div>
-          <h2 id="index-subscribe-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
-          <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
+        <div class="flex gap-6">
+          <div>
+            <h2 id="index-subscribe-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
+            <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
+          </div>
+          <MapEntryLinks :views="['blogs']" title="查看这些站点位于哪里" class="self-end" />
         </div>
         <NuxtLink to="/subscribes" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
           查看更多
@@ -576,7 +599,10 @@
             </div>
 
             <!-- 外部链接图标 -->
-            <Icon name="lucide:external-link" aria-hidden="true" class="size-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+            <Icon
+              name="lucide:external-link"
+              aria-hidden="true"
+              class="size-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
         </a>
       </div>
@@ -809,7 +835,9 @@ function getClassInfo(classType: string) {
     重构: { color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "lucide:refresh-cw", label: "重构" },
   };
 
-  return classMap[classType] || { color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400", icon: "lucide:circle", label: classType };
+  return (
+    classMap[classType] || { color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400", icon: "lucide:circle", label: classType }
+  );
 }
 
 // 页面元数据
@@ -866,7 +894,14 @@ const themeItems = computed(() => [
   {
     title: "用小组件丰富文章内容",
     type: "grid",
-    grids: [{ text: "音乐播放器" }, { text: "视频播放器" }, { text: "代码块" }, { text: "TIP 组件" }, { text: "轮播图" }, { text: "..." }] as GridItem[],
+    grids: [
+      { text: "音乐播放器" },
+      { text: "视频播放器" },
+      { text: "代码块" },
+      { text: "TIP 组件" },
+      { text: "轮播图" },
+      { text: "..." },
+    ] as GridItem[],
   },
   {
     title: "用文章的方式记录生活",

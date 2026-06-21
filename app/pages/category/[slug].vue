@@ -370,6 +370,14 @@ onMounted(() => {
                 <Icon name="ri-gallery-line" class="size-3.5" />
                 <span>+{{ post.covers.length - 1 }}</span>
               </div>
+              <!-- 关联地点角标 -->
+              <div
+                v-if="post.travelCount > 0"
+                :class="post.many_covers && post.covers.length > 1 ? 'top-10' : 'top-2'"
+                class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                <Icon name="ri:map-pin-line" class="size-3.5" />
+                <span>{{ post.travelCount }}</span>
+              </div>
             </NuxtLink>
 
             <!-- 无封面占位 -->

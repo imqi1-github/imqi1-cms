@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AMapLoader from "@amap/amap-jsapi-loader";
+import { loadAmap } from "../utils/amap-loader";
 
 interface TravelPost {
   url: string;
@@ -44,8 +44,10 @@ const props = defineProps<{
 }>();
 
 const config = useRuntimeConfig();
-const amapKey = config.public.amapKey as string;
-const amapSecurityCode = config.public.amapSecurityCode as string;
+const amapEnabled = Boolean(config.public.amapEnabled);
+const amapUseProxy = Boolean(config.public.amapUseProxy);
+const amapKey = String(config.public.amapKey || "");
+const amapSecurityCode = String(config.public.amapSecurityCode || "");
 const router = useRouter();
 
 // 跟随站点深浅模式
@@ -59,6 +61,9 @@ let cluster: any = null;
 let infoWindow: any = null;
 // 缓存 AMap 命名空间，供 buildPoints/createCluster 等可复用函数在 onMounted 之后引用
 let AMapRef: any = null;
+// 每个标记上次渲染的内容签名：缩放时内容未变就跳过 setContent，
+// 避免重复重建 <img> 导致头像重新加载/闪烁/重新请求。
+const lastMarkerContent = new WeakMap<object, string>();
 // InfoWindow 内文章链接的委托点击监听（原生 HTML <a> 默认整页刷新，改走 Nuxt 路由）
 let linkClickHandler: ((e: MouseEvent) => void) | null = null;
 
@@ -207,12 +212,19 @@ function buildBlogCard(place: Place) {
   </div>`;
 }
 
-// 博客网络聚合簇内的单个站点条目：图标 + 名称（可点）。订阅 → /subscribes?source=<id>（站内 SPA）；
-// 友链 → targetUrl（外链，linkClickHandler 新标签）。与下方 postsHtml 同款链接样式。
+// 博客网络聚合簇内的单个站点条目：头像 + 名称（可点）。订阅 → /subscribes?source=<id>（站内 SPA）；
+// 友链 → targetUrl（外链，linkClickHandler 新标签）。头像缺失/加载失败降级为首字母圆盘。
 function blogEntryHtml(p: Place) {
   const isSub = p.source === "subscribe";
   const href = isSub ? `/subscribes?source=${encodeURIComponent(String(p.sourceId ?? ""))}` : escapeHtml(p.targetUrl || "#");
-  return `<a href="${href}" class="travel-info-link" style="display:flex;align-items:center;gap:6px;font-size:13px;text-decoration:none;font-weight:500;padding:4px 0;">${ARTICLE_ICON}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</span></a>`;
+  const initial = escapeHtml((p.name || "?").trim().charAt(0) || "?");
+  const avatarSrc = p.avatar ? escapeHtml(p.avatar) : "";
+  const sz = 18;
+  const common = `width:${sz}px;height:${sz}px;border-radius:9999px;flex-shrink:0;`;
+  const avatar = avatarSrc
+    ? `<img src="${avatarSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="${common}object-fit:cover;" /><span style="${common}display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:11px;">${initial}</span>`
+    : `<span style="${common}display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:11px;">${initial}</span>`;
+  return `<a href="${href}" class="travel-info-link" style="display:flex;align-items:center;gap:3px;font-size:13px;text-decoration:none;font-weight:500;padding:4px 0;">${avatar}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</span></a>`;
 }
 
 // 博客网络聚合簇卡片：圈内多个站点按「订阅 / 友链」分组展示。混合时两组各带小标题分列；
@@ -274,7 +286,7 @@ function buildInfoContent(place: Place) {
     ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;">${shownReaders
         .map(r => {
           const nameHtml = r.url
-            ? `<a href="${escapeHtml(r.url)}" class="travel-info-link" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:600;text-decoration:none;">${escapeHtml(r.name)}</a>`
+            ? `<a href="${escapeHtml(r.url)}" class="travel-info-link" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:600;text-decoration:none;flex:none">${escapeHtml(r.name)}</a>`
             : `<span class="travel-info-title" style="font-size:13px;font-weight:600;">${escapeHtml(r.name)}</span>`;
           const articleHtml = r.articleUrl
             ? `<a href="${escapeHtml(r.articleUrl)}" class="travel-info-link" style="display:inline-flex;align-items:center;gap:3px;min-width:0;max-width:260px;font-size:12px;text-decoration:none;opacity:.85;">${ARTICLE_ICON}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.articleTitle || "")}</span></a>`
@@ -373,6 +385,19 @@ function fitChinaView() {
   map.setZoomAndCenter(fitZoomForWidth(width), CHINA_CENTER, true);
 }
 
+/**
+ * 设置标记内容与偏移：仅当内容字符串变化时才 setContent（重建 <img> 的代价很高，
+ * 会触发头像重新加载/重新请求），offset 每次都设置（廉价且幂等）。
+ * 这样地图缩放重渲染时，内容未变的标记不再重建 DOM，头像不再反复加载。
+ */
+function applyMarker(marker: any, html: string, offset: any) {
+  if (lastMarkerContent.get(marker) !== html) {
+    marker.setContent(html);
+    lastMarkerContent.set(marker, html);
+  }
+  marker.setOffset(offset);
+}
+
 // 创建点聚合（含渲染与点击逻辑），返回 cluster 实例。places 变化时销毁旧 cluster 重建即可，不重载地图。
 function createCluster(points: MapPoint[]) {
   // lnglat 键 → 该点读者数。访客分布视图聚合圈的数字要显示「读者数之和」而非「城市点数」；
@@ -414,23 +439,21 @@ function createCluster(points: MapPoint[]) {
         : lnglats.length || context.count || context.clusterData.length;
       const center = averageLngLat(lnglats);
 
-      context.marker.setContent(clusterHtml(count));
       if (center) context.marker.setPosition(center);
-      context.marker.setOffset(new AMapRef.Pixel(-clusterSize(count) / 2, -clusterSize(count) / 2));
+      // 内容未变则跳过 setContent（避免重建 <img> / 头像重新加载），offset 每次设置（廉价幂等）
+      applyMarker(context.marker, clusterHtml(count), new AMapRef.Pixel(-clusterSize(count) / 2, -clusterSize(count) / 2));
     },
     renderMarker: (context: any) => {
       // 博客网络：单点始终用头像圆标。即使 avatar 为空，也用站点名首个汉字/字符生成占位头像，
       // 与订阅页头像 fallback 同原则；不能退回默认 pin，否则无头像站点看起来像“丢了”。
       const place0 = findPlace(context.data?.[0]);
       if (!hasReaders && place0?.source) {
-        context.marker.setContent(avatarMarkerHtml(place0));
-        context.marker.setOffset(new AMapRef.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
+        applyMarker(context.marker, avatarMarkerHtml(place0), new AMapRef.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
         return;
       }
       // 我的足迹：单点用蓝色圆点（与访客分布单读者同款）
       if (!hasReaders) {
-        context.marker.setContent(singleDotHtml());
-        context.marker.setOffset(new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
+        applyMarker(context.marker, singleDotHtml(), new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
         return;
       }
       // 访客分布单点：按坐标查该城市读者数（与聚合簇同款查表，规避高德对 place.readers 的克隆裁剪）
@@ -438,12 +461,10 @@ function createCluster(points: MapPoint[]) {
       const rc = (ll && readerCountByLng.get(`${ll[0]},${ll[1]}`)) ?? 1;
       if (rc > 1) {
         // 多位访客：数字圆圈（数字 = 读者数，与聚合圈同款）——如沈阳 6 位访客显示「6」
-        context.marker.setContent(clusterHtml(rc));
-        context.marker.setOffset(new AMapRef.Pixel(-clusterSize(rc) / 2, -clusterSize(rc) / 2));
+        applyMarker(context.marker, clusterHtml(rc), new AMapRef.Pixel(-clusterSize(rc) / 2, -clusterSize(rc) / 2));
       } else {
         // 单读者：小实心圆点（不显示针）
-        context.marker.setContent(singleDotHtml());
-        context.marker.setOffset(new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
+        applyMarker(context.marker, singleDotHtml(), new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
       }
     },
   });
@@ -515,20 +536,19 @@ function createCluster(points: MapPoint[]) {
 }
 
 onMounted(async () => {
-  if (!amapKey) {
+  if (!amapEnabled) {
     loadError.value = true;
     loading.value = false;
-    console.warn("[TravelMap] 未配置 AMAP_KEY，请在 .env 中设置高德地图 Key");
+    console.warn("[TravelMap] 未完整配置 AMAP_KEY / AMAP_SECURITY_CODE，请在 .env 中设置高德地图密钥");
     return;
   }
   try {
-    // JS API 2.0 安全密钥
-    (window as any)._AMapSecurityConfig = { securityJsCode: amapSecurityCode };
-
-    const AMap: any = await AMapLoader.load({
-      key: amapKey,
+    const AMap: any = await loadAmap({
       version: "2.0",
       plugins: ["AMap.MarkerCluster"],
+      useProxy: amapUseProxy,
+      key: amapKey,
+      securityJsCode: amapSecurityCode,
     });
     AMapRef = AMap;
 

@@ -117,7 +117,7 @@ onUnmounted(() => {
       <h1 class="text-[3em] font-extrabold mb-2.5">留言</h1>
 
       <!-- 描述 -->
-      <div class="text-[0.8em] text-slate-600 dark:text-slate-400 mb-4">留下你的足迹，说出你的想法。</div>
+      <MapEntryLinks :views="['footprint']" title="聚集五湖四海的朋友" />
     </header>
 
     <!-- 留言内容区域 -->

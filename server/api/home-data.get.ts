@@ -88,6 +88,11 @@ export default defineEventHandler(async event => {
               },
             },
           },
+          // 关联的启用地点数（封面角标用）
+          travels: {
+            where: { travel: { enabled: true } },
+            select: { travel_id: true },
+          },
         },
       }).then(posts => posts.map(post => {
         const categories = post.postrelations
@@ -107,6 +112,7 @@ export default defineEventHandler(async event => {
           desc: post.desc,
           covers,
           many_covers: post.many_covers,
+          travelCount: post.travels.length,
           created: post.create_time,
           commentsNum: post.comment_num || 0,
           categories,
@@ -179,6 +185,11 @@ export default defineEventHandler(async event => {
                     },
                   },
                 },
+                // 关联的启用地点数（封面角标用）
+                travels: {
+                  where: { travel: { enabled: true } },
+                  select: { travel_id: true },
+                },
               },
             });
 
@@ -198,6 +209,7 @@ export default defineEventHandler(async event => {
                 desc: post.desc,
                 covers,
                 many_covers: post.many_covers,
+                travelCount: post.travels.length,
                 created: post.create_time,
                 commentsNum: post.comment_num || 0,
                 tags,

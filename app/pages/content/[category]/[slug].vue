@@ -1768,16 +1768,6 @@ onUnmounted(() => {
               {{ typeof tag === "string" ? tag : tag.name }}
             </NuxtLink>
           </span>
-          <span v-if="post.travels?.length" class="inline-flex items-center gap-0.5" v-tooltip="'地图'">
-            <Icon name="ri:map-2-line" class="size-4" />
-            <NuxtLink
-              v-for="(travel, index) in post.travels"
-              :key="travel.id"
-              :to="`/map?view=travels&place=${travel.id}`"
-              class="text-inherit no-underline transition-colors hover:text-blue-600">
-              {{ travel.name }}{{ index < post.travels.length - 1 ? ", " : "" }}
-            </NuxtLink>
-          </span>
         </div>
 
         <!-- CC 协议授权 -->
@@ -1797,6 +1787,14 @@ onUnmounted(() => {
             </p>
           </div>
         </div>
+
+        <!-- 相关地点：逐地点渲染胶囊，点击跳转到地图足迹视图并聚焦该地点 -->
+        <MapEntryLinks
+          v-if="post.travels?.length"
+          :places="(post.travels ?? []).map(t => ({ id: t.id, name: t.name }))"
+          place-icon="ri:map-pin-line"
+          title="作者在撰写此篇文章时，曾去过"
+          class="mt-4" />
       </div>
 
       <!-- 相关文章 -->
