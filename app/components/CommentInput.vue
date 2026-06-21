@@ -36,6 +36,31 @@ const submitSuccess = ref(false);
 const submitError = ref("");
 const successMessage = ref("评论提交成功");
 
+// 反垃圾：蜜罐字段（人类不可见，机器人会自动填充）
+const honeypot = ref("");
+
+// 反垃圾：页面加载时间戳（提交太快说明是机器人）
+const pageLoadTime = Date.now();
+
+// 反垃圾：人机验证状态
+const humanVerified = ref(false);
+const verifyQuestion = ref("");
+const verifyAnswer = ref("");
+const verifyInput = ref("");
+
+// 生成简单的数学验证问题
+function generateVerifyQuestion() {
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  verifyQuestion.value = `${a} + ${b} = ?`;
+  verifyAnswer.value = String(a + b);
+}
+generateVerifyQuestion();
+
+function checkVerify() {
+  humanVerified.value = verifyInput.value.trim() === verifyAnswer.value;
+}
+
 // CSRF Token
 const csrfToken = ref("");
 
@@ -53,7 +78,7 @@ const localFormData = ref({
 // 使用 computed 来统一访问，避免在代码中到处判断
 const formData = computed({
   get: () => props.formData || localFormData.value,
-  set: (value) => {
+  set: value => {
     if (props.formData) {
       // 逐个属性修改，保持响应性
       if (value.content !== undefined) props.formData.content = value.content;
@@ -172,7 +197,7 @@ onMounted(async () => {
 // 监听评论内容变化，自动保存到 localStorage
 watch(
   () => formData.value.content,
-  (newContent) => {
+  newContent => {
     if (import.meta.client) {
       if (newContent.trim()) {
         localStorage.setItem("comment_content", newContent);
@@ -181,7 +206,7 @@ watch(
       }
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 // 取消回复
@@ -194,6 +219,26 @@ async function submitComment() {
   // 重置状态
   submitSuccess.value = false;
   submitError.value = "";
+
+  // 反垃圾：蜜罐检测（机器人会自动填充隐藏字段）
+  if (honeypot.value) {
+    submitError.value = "提交失败";
+    return;
+  }
+
+  // 反垃圾：时间检测（提交太快说明是机器人，5秒内提交视为异常）
+  if (Date.now() - pageLoadTime < 5000) {
+    submitError.value = "操作太快，请稍后再试";
+    showError("操作太快，请稍后再试");
+    return;
+  }
+
+  // 反垃圾：人机验证（登录用户免验证）
+  if (!isLoggedIn.value && !humanVerified.value) {
+    submitError.value = "请完成人机验证";
+    showError("请完成人机验证");
+    return;
+  }
 
   // 检查评论间隔
   if (import.meta.client && props.commentInterval && props.commentInterval > 0) {
@@ -248,6 +293,7 @@ async function submitComment() {
         mail: formData.value.mail,
         link: formData.value.link,
         parent_id: props.isReply ? props.replyTo?.id : null,
+        website: honeypot.value, // 蜜罐字段
       },
     });
 
@@ -376,25 +422,64 @@ function formatEmojiPlaceholder(text: string): string {
       </h2>
       <button v-if="isReply" type="button" @click="cancelReply" class="cancel-reply-button">取消回复</button>
     </div>
-    <div class="comment-box-description">评论即代表你已阅读并同意<a href="/agreement#评论相关" class="comment-link" target="_blank">评论协议</a>。</div>
+    <div class="comment-box-description">
+      评论即代表你已阅读并同意<a href="/agreement#评论相关" class="comment-link" target="_blank">评论协议</a>。
+    </div>
 
     <div class="comment-input-row">
       <label for="comment-content-input" class="sr-only">评论内容</label>
       <textarea id="comment-content-input" ref="textareaRef" v-model="formData.content" placeholder="评论内容 *" class="comment-textarea" required />
     </div>
 
+    <!-- 蜜罐字段：人类不可见，机器人会自动填充 -->
+    <div class="hp-field" aria-hidden="true">
+      <label for="comment-website">网站</label>
+      <input id="comment-website" v-model="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+
     <div class="comment-input-row">
       <div class="comment-input-group">
         <label for="comment-input-name" class="sr-only">昵称</label>
-        <input id="comment-input-name" v-model="formData.name" type="text" placeholder="昵称 *" class="comment-input" :disabled="isLoggedIn" required />
+        <input
+          id="comment-input-name"
+          v-model="formData.name"
+          type="text"
+          placeholder="昵称 *"
+          class="comment-input"
+          :disabled="isLoggedIn"
+          required />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-mail" class="sr-only">邮箱</label>
-        <input id="comment-input-mail" v-model="formData.mail" type="email" :placeholder="requireMail ? '邮箱 *' : '邮箱'" class="comment-input" :disabled="isLoggedIn" />
+        <input
+          id="comment-input-mail"
+          v-model="formData.mail"
+          type="email"
+          :placeholder="requireMail ? '邮箱 *' : '邮箱'"
+          class="comment-input"
+          :disabled="isLoggedIn" />
       </div>
       <div class="comment-input-group">
         <label for="comment-input-link" class="sr-only">链接</label>
-        <input id="comment-input-link" v-model="formData.link" type="url" :placeholder="requireLink ? '链接 *' : '链接'" class="comment-input" :disabled="isLoggedIn" />
+        <input
+          id="comment-input-link"
+          v-model="formData.link"
+          type="url"
+          :placeholder="requireLink ? '链接 *' : '链接'"
+          class="comment-input"
+          :disabled="isLoggedIn" />
+      </div>
+      <!-- 人机验证（仅未登录用户显示，与昵称/邮箱/链接同行） -->
+      <div v-if="!isLoggedIn" class="comment-input-group verify-group">
+        <label for="comment-input-verify" class="sr-only">人机验证</label>
+        <input
+          id="comment-input-verify"
+          v-model="verifyInput"
+          type="text"
+          :placeholder="verifyQuestion"
+          class="comment-input verify-input"
+          @input="checkVerify" />
+        <Icon v-if="humanVerified" name="ri:checkbox-circle-fill" class="verify-icon" />
       </div>
 
       <div class="comment-buttons">
@@ -741,5 +826,37 @@ function formatEmojiPlaceholder(text: string): string {
     margin-left: 0;
     justify-content: flex-end;
   }
+}
+
+/* 蜜罐字段：完全隐藏，机器人会自动填充 */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 人机验证样式（与昵称/邮箱/链接同行） */
+.verify-group {
+  position: relative;
+}
+
+.verify-input {
+  padding-right: 28px !important;
+}
+
+.verify-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: rgb(34 197 94);
+  pointer-events: none;
 }
 </style>

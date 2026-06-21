@@ -5,6 +5,15 @@ import { onMounted } from "vue";
 const { siteSettings } = useSiteSettings();
 const settings = computed(() => siteSettings.value);
 
+// 地图中心页：毛玻璃浮于地图之上，无阴影；非地图页保持原白卡样式
+const route = useRoute();
+const isTravelPage = computed(() => route.path === "/map");
+const btnShell = computed(() =>
+  isTravelPage.value
+    ? "border-transparent bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px]"
+    : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800",
+);
+
 // 解析音乐播放列表 ID
 const playlistConfig = computed(() => {
   const config = settings.value?.musicPlaylistId || "9255074836 || netease";
@@ -25,8 +34,8 @@ onMounted(() => {
   <Transition v-if="isLoaded && currentSong" name="fade">
     <button
       @click="togglePlay"
-      class="group relative flex items-center gap-2 rounded-full border border-gray-200 bg-white py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 dark:border-gray-700 dark:bg-slate-800 overflow-hidden max-w-36 h-7.5 group"
-      :title="isPlaying ? '暂停播放' : '开始播放'">
+      class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5 group"
+      :class="btnShell">
       <!-- 进度条背景 -->
       <span
         class="absolute left-0 right-0 top-0 bottom-0 bg-linear-to-r from-blue-500 to-purple-500 transition-all duration-300"

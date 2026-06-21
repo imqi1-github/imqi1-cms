@@ -2,6 +2,7 @@
 import { MENU_ITEMS_KEY } from "~/directives/contextMenu";
 
 const route = useRoute();
+const router = useRouter();
 const { notify } = useFrontNotification();
 
 // 菜单状态
@@ -176,6 +177,14 @@ const handleBingSearch = () => {
 
 const handleGoogleSearch = () => {
   window.open(`https://www.google.com/search?q=${encodeURIComponent(selectedText.value)}`, "_blank");
+  closeMenu();
+};
+
+// 站内搜索：跳 /search?q= 走 SPA（非新标签），配合 search.vue 顶层 await useFetch 正常渐入 + 搜索
+const handleSiteSearch = () => {
+  if (selectedText.value.trim()) {
+    router.push({ path: "/search", query: { q: selectedText.value } });
+  }
   closeMenu();
 };
 
@@ -546,6 +555,12 @@ onUnmounted(() => {
       <template v-if="menuType === 'text'">
         <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
         <li
+          @click="handleSiteSearch"
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <Icon name="ri:search-line" class="size-4" />
+          <span>站内搜索</span>
+        </li>
+        <li
           @click="handleBaiduSearch"
           class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Icon name="ri:baidu-fill" class="size-4" />
@@ -686,6 +701,12 @@ onUnmounted(() => {
         <!-- 如果在输入框内有选中文字，显示搜索功能 -->
         <template v-if="inputTarget && inputTarget.selectionStart !== inputTarget.selectionEnd">
           <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+          <li
+            @click="handleSiteSearch"
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <Icon name="ri:search-line" class="size-4" />
+            <span>站内搜索</span>
+          </li>
           <li
             @click="handleBaiduSearch"
             class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">

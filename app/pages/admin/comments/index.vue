@@ -451,7 +451,7 @@ onMounted(() => {
       </div>
 
       <!-- 中屏到大屏卡片视图 (1024px - 1649px / lg - custom) -->
-      <div class="hidden lg:block min-[1650px]:hidden">
+      <div class="hidden max-[1650px]:lg:block min-[1650px]:hidden">
         <!-- 加载状态 -->
         <div v-if="loading" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div v-for="i in 4" :key="i" class="border rounded-lg p-4 space-y-3">

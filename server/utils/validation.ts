@@ -297,3 +297,22 @@ export function validateChangelogData(data: {
     validateMaxLength(data.desc, 20000, "内容");
   }
 }
+
+/**
+ * 验证旅行地点数据
+ */
+export function validateTravelData(data: {
+  name?: string;
+  desc?: string | null;
+  cover?: string | null;
+}): void {
+  if (data.name) {
+    validateMaxLength(data.name, 255, "名称");
+  }
+  if (data.desc) {
+    validateMaxLength(data.desc, 20000, "描述");
+  }
+  if (data.cover) {
+    validateMaxLength(data.cover, 500, "封面图");
+  }
+}

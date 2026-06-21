@@ -2,6 +2,7 @@
 import { Menu } from "lucide-vue-next";
 import { siteConfig } from "~~/site.config";
 
+const route = useRoute();
 const router = useRouter();
 const props = defineProps({
   siteName: {
@@ -9,6 +10,11 @@ const props = defineProps({
     default: "默认站点",
   },
 });
+
+const isTravelPage = computed(() => route.path === "/map");
+// zhheo 式毛玻璃：渐变(上浅下深)直接作背景 + blur(20px) + 柔和阴影
+const travelNavPillClass =
+  "text-slate-900 dark:text-slate-100 bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] shadow-[0_8px_16px_-4px_rgba(44,45,48,0.047)]";
 
 // 移动端侧边栏开关
 const isMobileMenuOpen = ref(false);
@@ -71,8 +77,8 @@ onMounted(() => {
 <template>
   <div
     key="site-nav-menu"
-    class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] ml-auto mr-3"
-    :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
+    class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 ml-auto mr-3"
+    :class="isTravelPage ? travelNavPillClass : ['backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]', isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : '']">
     <!-- PC端菜单项 -->
     <div key="pc-nav-items" class="hidden md:flex items-center gap-2.5">
       <!-- 搜索按钮 -->

@@ -22,6 +22,7 @@ const systemPages = [
   { path: "/feed", name: "本站RSS", icon: "ri:rss-fill", external: true },
   { path: "/agreement", name: "协议", icon: "ri:file-text-line" },
   { path: "/links", name: "友情链接", icon: "ri:links-line" },
+  { path: "/map", name: "地图", icon: "ri:map-2-line" },
   { path: "/messages", name: "留言", icon: "ri:chat-3-line" },
   { path: "/sitemap", name: "站点地图", icon: "ri:map-line" },
   { path: "/archiving", name: "文章归档", icon: "ri:archive-line" },

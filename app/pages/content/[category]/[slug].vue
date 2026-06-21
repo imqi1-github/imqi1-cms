@@ -1768,6 +1768,16 @@ onUnmounted(() => {
               {{ typeof tag === "string" ? tag : tag.name }}
             </NuxtLink>
           </span>
+          <span v-if="post.travels?.length" class="inline-flex items-center gap-0.5" v-tooltip="'地图'">
+            <Icon name="ri:map-2-line" class="size-4" />
+            <NuxtLink
+              v-for="(travel, index) in post.travels"
+              :key="travel.id"
+              :to="`/map?view=travels&place=${travel.id}`"
+              class="text-inherit no-underline transition-colors hover:text-blue-600">
+              {{ travel.name }}{{ index < post.travels.length - 1 ? ", " : "" }}
+            </NuxtLink>
+          </span>
         </div>
 
         <!-- CC 协议授权 -->

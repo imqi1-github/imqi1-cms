@@ -156,6 +156,14 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
       isCurrent: true,
     });
   }
+  // 地图中心页（我的足迹 / 访客分布）
+  else if (path === "/map") {
+    items.push({
+      name: "地图",
+      icon: "ri:map-2-line",
+      isCurrent: true,
+    });
+  }
   // 404或其他
   else {
     items.push({
@@ -167,6 +175,21 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 
   return items;
 });
+
+// 地图中心页：面包屑透明浮于全屏地图之上（原 /travel 已并入 /map）
+const isTravelPage = computed(() => route.path === "/map");
+// zhheo 式毛玻璃：渐变(上浅下深)直接作背景 + blur(20px) + 柔和阴影。
+// 不用 ::before：那是 zhheo 为滚动淡入才加的，常驻态下会把正文画到渐变层下面。
+const travelNavPillClass =
+  "text-slate-900 dark:text-slate-100 bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] shadow-[0_8px_16px_-4px_rgba(44,45,48,0.047)]";
+const navPillClass = computed(() =>
+  isTravelPage.value ? travelNavPillClass : "backdrop-blur-xl bg-white/75 dark:bg-gray-900/75",
+);
+const navPillTransparentClass = computed(() =>
+  isTravelPage.value
+    ? travelNavPillClass
+    : "backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]",
+);
 
 // 获取当前页标题（用于向下滚动时显示）
 const currentPageTitle = computed(() => {
@@ -253,8 +276,8 @@ onMounted(() => {
       <!-- 左侧Logo - PC端显示 -->
       <NuxtLink
         to="/"
-        class="hidden md:flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] group font-serif font-[450]"
-        :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
+        class="hidden md:flex items-center gap-1 px-4 py-2 rounded-full relative overflow-hidden transition-all duration-300 group font-serif font-[450]"
+        :class="isTravelPage ? travelNavPillClass : ['backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]', isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : '']">
         <img :src="publicAsset(siteConfig.seo.ogImage)" alt="" class="w-5.5 h-5.5" />
         <span class="text-[0.95em] font-black -top-px relative">{{ siteName }}</span>
         <div aria-hidden="true" class="absolute inset-0 items-center group-hover:opacity-100 opacity-0 transition-all duration-300 justify-center flex bg-blue-600">
@@ -268,8 +291,8 @@ onMounted(() => {
           <!-- 首页：固定显示标题 -->
           <div
             v-if="route.path === '/'"
-            class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max"
-            :class="isScrolled ? 'shadow-xs' : ''">
+            class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 w-max"
+            :class="[navPillClass, isScrolled && !isTravelPage ? 'shadow-xs' : '']">
             <div class="flex items-center gap-1 font-medium text-sm">
               <span>{{ currentPageTitle }}</span>
             </div>
@@ -280,7 +303,8 @@ onMounted(() => {
             <!-- 路由切换时或初始加载时：直接显示标题，无动画 -->
             <div
               v-if="isRouteChanging || isInitialLoad"
-              class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max">
+              class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 w-max"
+              :class="navPillClass">
               <div class="flex items-center gap-1 font-medium text-sm">
                 <span>{{ currentPageTitle }}</span>
               </div>
@@ -292,8 +316,8 @@ onMounted(() => {
               <div
                 v-if="isScrollingDown"
                 key="title"
-                class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/75 dark:bg-gray-900/75 w-max"
-                :class="isScrolled ? 'shadow-xs' : ''">
+                class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 w-max"
+                :class="[navPillClass, isScrolled && !isTravelPage ? 'shadow-xs' : '']">
                 <div class="flex items-center gap-1 font-medium text-sm">
                   <span>{{ currentPageTitle }}</span>
                 </div>
@@ -303,8 +327,8 @@ onMounted(() => {
               <div
                 v-else
                 key="breadcrumbs"
-                class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)] w-max"
-                :class="isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : ''">
+                class="absolute left-1/2 -translate-x-1/2 top-0 flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-300 w-max"
+                :class="[navPillTransparentClass, isScrolled && !isTravelPage ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : '']">
                 <nav class="flex items-center gap-2 text-sm" aria-label="面包屑">
                   <ol class="flex items-center gap-2">
                     <template v-for="(item, index) in breadcrumbs" :key="index">

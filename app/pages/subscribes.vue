@@ -7,6 +7,9 @@ const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const feedCacheInterval = computed(() => siteSettings.value?.feedCacheInterval || 8);
 
+// 使用全局认证状态
+const { isLoggedIn, isLoadingAuth } = useAuth();
+
 usePageSeo({
   title: computed(() => `我的订阅 - ${siteName.value}`),
   description: siteConfig.pageSeo.subscribes.description,
@@ -231,6 +234,16 @@ watch(() => selectedSourceId.value, async () => {
     <header class="mb-8 animate-fade-in">
       <h1 class="text-[3em] font-extrabold mb-2.5">订阅文章</h1>
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每{{ feedCacheInterval }}小时自动更新</p>
+      <ClientOnly>
+        <a
+          v-if="isLoggedIn && !isLoadingAuth"
+          href="/admin/subscribes"
+          target="_blank"
+          class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
+          <Icon name="lucide:edit" class="size-3" />
+          管理订阅
+        </a>
+      </ClientOnly>
     </header>
 
     <!-- 加载占位：客户端重新拉取（如错误重试）时避免空白 -->

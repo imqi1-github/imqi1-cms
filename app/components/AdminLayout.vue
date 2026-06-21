@@ -39,6 +39,7 @@ const pageTitle = computed(() => {
     '/admin/tags': '标签管理',
     '/admin/users': '用户管理',
     '/admin/links': '友情链接',
+    '/admin/travels': '旅行地点',
     '/admin/attachments': '附件管理',
     '/admin/subscribes': '订阅列表',
     '/admin/changelogs': '更新日志',
@@ -110,6 +111,11 @@ const navItems = [
     title: '友情链接',
     href: '/admin/links',
     icon: 'lucide:link',
+  },
+  {
+    title: '旅行地点',
+    href: '/admin/travels',
+    icon: 'lucide:map-pin',
   },
   {
     title: '附件管理',

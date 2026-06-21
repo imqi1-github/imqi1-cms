@@ -18,6 +18,9 @@ const { siteSettings, fetchSiteSettings } = useSiteSettings();
 // 判断是否为首页
 const isHomePage = computed(() => route.path === "/");
 
+// 地图中心页：页脚透明浮于全屏地图之上（地图底色非白即黑，主题色文字可直接显示）
+const isTravelPage = computed(() => route.path === "/map");
+
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const siteIcp = computed(() => siteSettings.value?.siteIcp || "");
 
@@ -77,6 +80,22 @@ const colorMode = useColorMode();
 
 // 移动端按钮组展开状态
 const isMobileButtonsOpen = ref(false);
+
+const travelBtnShell =
+  "border-transparent bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] text-slate-900 dark:text-slate-100";
+const footerBtnShell = computed(() =>
+  isTravelPage.value ? travelBtnShell : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800",
+);
+const footerBtnShadow = computed(() => (isTravelPage.value ? "" : "shadow-lg"));
+const toggleBtnShell = computed(() =>
+  isTravelPage.value
+    ? isMobileButtonsOpen.value
+      ? "border-red-500 bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] text-slate-900 dark:text-slate-100"
+      : travelBtnShell
+    : isMobileButtonsOpen.value
+      ? "border-red-500 bg-white dark:bg-slate-800"
+      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800",
+);
 
 // 按钮引用
 const themeButtonRef = ref<HTMLElement | null>(null);
@@ -223,10 +242,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-slate-50 dark:bg-slate-900 z-9">
+  <div class="z-9" :class="isTravelPage ? '' : 'bg-slate-50 dark:bg-slate-900'">
     <div
+      v-if="!isTravelPage"
       class="flex items-center justify-between p-5 max-w-175 w-full mx-auto font-semibold text-slate-600 dark:text-slate-400 max-sm:flex-col gap-3">
-      <div class="flex items-center gap-2">
+      <div v-if="!isTravelPage" class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
         <span v-if="siteIcp && isHomePage" class="max-md:hidden"
           >│ <NuxtLink class="hover:underline" to="https://beian.miit.gov.cn/" target="_blank">{{ siteIcp }}</NuxtLink></span
@@ -275,7 +295,8 @@ onUnmounted(() => {
             type="button"
             aria-label="页面加载中"
             v-tooltip="'页面加载中'"
-            class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 max-md:hidden">
+            class="cursor-pointer rounded-full p-1.5 flex items-center justify-center transition-all duration-300 aspect-square size-7.5 max-md:hidden"
+            :class="footerBtnShell">
             <Icon name="lucide:loader-2" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300 animate-spin" />
           </button>
         </Transition>
@@ -290,7 +311,8 @@ onUnmounted(() => {
             @click="scrollToTop"
             :aria-label="showProgress ? `返回顶部，当前阅读进度 ${Math.round(scrollProgress)}%` : '返回顶部'"
             v-tooltip="'返回顶部'"
-            class="cursor-pointer relative rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
+            class="cursor-pointer relative rounded-full p-1.5 flex items-center justify-center transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
+            :class="footerBtnShell">
             <!-- 进度圆环 -->
             <Transition name="icon-fade" mode="out-in">
               <svg v-if="showProgress" key="progress" aria-hidden="true" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
@@ -334,7 +356,8 @@ onUnmounted(() => {
             type="button"
             aria-label="页面加载中"
             v-tooltip="'页面加载中'"
-            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+            class="rounded-full p-2 flex items-center justify-center md:hidden"
+            :class="[footerBtnShell, footerBtnShadow]">
             <Icon name="lucide:loader-2" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300 animate-spin" />
           </button>
         </Transition>
@@ -355,7 +378,8 @@ onUnmounted(() => {
             @click="scrollToTop"
             aria-label="返回顶部"
             v-tooltip="'返回顶部'"
-            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+            class="rounded-full p-2 flex items-center justify-center md:hidden"
+            :class="[footerBtnShell, footerBtnShadow]">
             <Icon name="ri:arrow-up-line" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300" />
           </button>
         </Transition>
@@ -377,7 +401,8 @@ onUnmounted(() => {
             :aria-pressed="isDarkMode"
             :aria-label="isDarkMode ? '当前为暗色模式，点击切换为亮色模式' : '当前为亮色模式，点击切换为暗色模式'"
             v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
-            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+            class="rounded-full p-2 flex items-center justify-center md:hidden"
+            :class="[footerBtnShell, footerBtnShadow]">
             <Icon v-if="!isDarkMode" name="ri:sun-line" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300" />
             <Icon v-else name="ri:moon-line" aria-hidden="true" class="size-5 text-gray-100 dark:text-gray-300" />
           </button>
@@ -399,7 +424,8 @@ onUnmounted(() => {
             @click="goToAdmin"
             aria-label="后台管理"
             v-tooltip="'后台管理'"
-            class="rounded-full border border-gray-200 dark:border-gray-700 p-2 flex items-center justify-center bg-white dark:bg-slate-800 shadow-lg md:hidden">
+            class="rounded-full p-2 flex items-center justify-center md:hidden"
+            :class="[footerBtnShell, footerBtnShadow]">
             <Icon name="lucide:layout-dashboard" aria-hidden="true" class="size-5 text-gray-600 dark:text-gray-300" />
           </button>
         </Transition>
@@ -426,7 +452,8 @@ onUnmounted(() => {
           :aria-pressed="isDarkMode"
           :aria-label="isDarkMode ? '当前为暗色模式，点击切换为亮色模式' : '当前为亮色模式，点击切换为暗色模式'"
           v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
-          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
+          class="cursor-pointer rounded-full p-1.5 flex items-center justify-center transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
+          :class="footerBtnShell">
           <Icon v-if="!isDarkMode" name="ri:sun-line" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
           <Icon v-else name="ri:moon-line" aria-hidden="true" class="size-4 text-gray-100 dark:text-gray-300" />
         </button>
@@ -440,7 +467,8 @@ onUnmounted(() => {
           @click="goToAdmin"
           aria-label="后台管理"
           v-tooltip="'后台管理'"
-          class="cursor-pointer rounded-full border border-gray-200 dark:border-gray-700 p-1.5 flex items-center justify-center bg-white dark:bg-slate-800 transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600">
+          class="cursor-pointer rounded-full p-1.5 flex items-center justify-center transition-all duration-300 size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
+          :class="footerBtnShell">
           <Icon name="lucide:layout-dashboard" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
         </button>
       </ClientOnly>
@@ -453,10 +481,8 @@ onUnmounted(() => {
         <button
           @click="toggleMobileButtons"
           v-tooltip="isMobileButtonsOpen ? '收起' : '展开'"
-          class="rounded-full border p-2 flex items-center justify-center shadow-lg transition-all duration-300 md:hidden"
-          :class="
-            isMobileButtonsOpen ? 'border-red-500 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800'
-          ">
+          class="rounded-full border p-2 flex items-center justify-center transition-all duration-300 md:hidden"
+          :class="[toggleBtnShell, footerBtnShadow]">
           <Icon
             :name="isMobileButtonsOpen ? 'ri:close-large-line' : 'ri:menu-line'"
             class="size-5"

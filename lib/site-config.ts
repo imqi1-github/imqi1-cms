@@ -150,6 +150,8 @@ export interface PageSeo {
   subscribes: PageSeoItem;
   /** 搜索 */
   search: PageSeoItem;
+  /** 地图中心页（我的足迹 / 访客分布） */
+  map: PageSeoItem;
   /** 协议 */
   agreement: PageSeoItem;
   /** 404 页面 */

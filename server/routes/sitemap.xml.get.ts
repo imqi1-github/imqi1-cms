@@ -133,6 +133,16 @@ export default defineEventHandler(async event => {
   </url>`,
     );
 
+    // 地图中心页（我的足迹 / 访客分布）
+    urls.push(
+      `  <url>
+    <loc>${baseUrl}/map</loc>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`,
+    );
+
     // 关于页
     urls.push(
       `  <url>

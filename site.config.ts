@@ -140,6 +140,10 @@ export const siteConfig = defineSiteConfig({
       description: `在${_name}搜索文章、标签和分类，快速找到你感兴趣的内容。`,
       keywords: `搜索,站内搜索,文章搜索,${_name}`,
     },
+    map: {
+      description: `${_name}的地图中心：跟随我的足迹看走过的城市，或在访客分布里看看读者们来自哪里。`,
+      keywords: `地图,我的足迹,访客分布,读者足迹,旅行地图,${_name}`,
+    },
     agreement: {
       description: `查看${_name}的站点协议，包括评论规范、友链规则和使用条款。`,
       keywords: `协议,站点协议,评论规范,友链规则,使用条款,${_name}`,

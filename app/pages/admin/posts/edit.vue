@@ -159,6 +159,88 @@ const selectedCategoriesLabel = computed(() => {
   return names.join(", ");
 });
 
+// 旅行地图地点关联
+const travels = ref<any[]>([]);
+const travelKeyword = ref("");
+const selectedTravelId = ref("");
+
+// 获取全部旅行地点
+const fetchTravels = async () => {
+  try {
+    const res = await ($fetch as any)("/api/admin/travels");
+    travels.value = Array.isArray(res) ? res : [];
+  } catch (error) {
+    console.error("获取旅行地点失败:", error);
+    travels.value = [];
+  }
+};
+
+// 已关联到当前文章的地点（多对多：cids 包含当前文章 cid）
+const associatedTravels = computed(() => {
+  const pid = postId.value;
+  return pid != null ? travels.value.filter(t => (t.cids ?? []).includes(pid)) : [];
+});
+
+// 可添加的地点：尚未关联到当前文章（多对多下添加不影响其他文章）
+const availableTravels = computed(() => {
+  const pid = postId.value;
+  const q = travelKeyword.value.trim().toLowerCase();
+  return travels.value
+    .filter(t => (pid != null ? !(t.cids ?? []).includes(pid) : true))
+    .filter(t => {
+      if (!q) return true;
+      return String(t.name || "").toLowerCase().includes(q) || String(t.id || "").includes(q);
+    });
+});
+
+// 多对多：增/减当前文章与某地点的关联，PUT 携带全量 cids
+async function setTravelPost(travel: any, add: boolean) {
+  const pid = postId.value;
+  if (pid == null) return;
+  const current: number[] = Array.isArray(travel.cids) ? travel.cids : [];
+  const next = add
+    ? Array.from(new Set([...current, pid]))
+    : current.filter((c: number) => c !== pid);
+  try {
+    await $fetch(`/api/admin/travels/${travel.id}`, {
+      method: "PUT",
+      body: {
+        name: travel.name,
+        desc: travel.desc,
+        cover: travel.cover,
+        cids: next,
+        longitude: travel.longitude,
+        latitude: travel.latitude,
+        sort: travel.sort ?? 0,
+        enabled: travel.enabled !== false,
+      },
+    });
+    await fetchTravels();
+  } catch (error) {
+    console.error("更新旅行地点关联失败:", error);
+    toast.error({ message: "更新关联失败" });
+  }
+}
+
+// 从下拉选择一个地点，添加关联
+function onPickTravel(value: string) {
+  selectedTravelId.value = value;
+  travelKeyword.value = "";
+  const travel = travels.value.find(t => String(t.id) === value);
+  if (travel && postId.value) {
+    setTravelPost(travel, true).finally(() => {
+      selectedTravelId.value = "";
+    });
+  } else {
+    selectedTravelId.value = "";
+  }
+}
+
+// 取消某地点与当前文章的关联
+function disassociateTravel(travel: any) {
+  setTravelPost(travel, false);
+}
+
 // 附件相关
 const attachments = ref<any[]>([]);
 const showUploadDialog = ref(false);
@@ -597,6 +679,7 @@ onMounted(async () => {
 
   fetchCategories();
   fetchTags();
+  fetchTravels();
   if (isEdit.value) {
     fetchPost();
   } else {
@@ -813,6 +896,75 @@ watch(postId, newCid => {
                     class="font-mono text-sm" />
                   <p class="text-xs text-muted-foreground">一行一个封面，使用 || 分隔图片地址和标题。如只有图片地址则不显示标题。</p>
                 </div>
+              </CardContent>
+            </Card>
+
+            <!-- 地图地点 -->
+            <Card>
+              <CardHeader>
+                <CardTitle>地图地点</CardTitle>
+                <CardDescription>管理与此文章关联的旅行地图地点</CardDescription>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <template v-if="postId">
+                  <!-- 已关联 -->
+                  <div v-if="associatedTravels.length > 0" class="space-y-2">
+                    <Label>已关联地点</Label>
+                    <div class="space-y-2">
+                      <div
+                        v-for="t in associatedTravels"
+                        :key="t.id"
+                        class="flex items-center justify-between gap-2 border rounded-md p-2">
+                        <div class="min-w-0">
+                          <p class="text-sm font-medium truncate">{{ t.name }}</p>
+                          <p class="text-xs text-muted-foreground font-mono truncate">
+                            {{ Number(t.longitude).toFixed(4) }}, {{ Number(t.latitude).toFixed(4) }}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          class="size-7 shrink-0 text-destructive hover:text-destructive"
+                          title="取消关联"
+                          @click="disassociateTravel(t)">
+                          <Icon name="lucide:x" class="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-else class="text-xs text-muted-foreground">暂未关联任何地图地点</p>
+
+                  <!-- 添加关联 -->
+                  <div v-if="travels.length > 0" class="space-y-2">
+                    <Label>添加地点</Label>
+                    <Select v-model="selectedTravelId" @update:model-value="onPickTravel">
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择要关联的地点" />
+                      </SelectTrigger>
+                      <SelectContent class="max-h-72">
+                        <div class="sticky top-0 z-10 bg-popover p-1">
+                          <Input
+                            v-model="travelKeyword"
+                            placeholder="搜索地点名称或 ID"
+                            class="h-8"
+                            @keydown.stop />
+                        </div>
+                        <SelectItem v-for="t in availableTravels" :key="t.id" :value="String(t.id)">
+                          <span class="truncate">{{ t.name }}</span>
+                          <span class="text-xs text-muted-foreground">
+                            {{ (t.cids?.length ?? 0) > 0 ? `已关联 ${t.cids.length} 篇` : "未关联" }}
+                          </span>
+                        </SelectItem>
+                        <div v-if="availableTravels.length === 0" class="px-2 py-3 text-center text-sm text-muted-foreground">
+                          没有可关联的地点
+                        </div>
+                      </SelectContent>
+                    </Select>
+                    <p class="text-xs text-muted-foreground">一个地点可关联多篇文章，可自由添加/移除。</p>
+                  </div>
+                  <div v-else class="text-xs text-muted-foreground">还没有地图地点，请先到「旅行地点」管理中创建。</div>
+                </template>
+                <p v-else class="text-xs text-muted-foreground">请先保存文章后再关联地图地点</p>
               </CardContent>
             </Card>
           </TabsContent>

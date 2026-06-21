@@ -65,6 +65,8 @@ export default defineNuxtConfig({
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
       rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
+      amapKey: process.env.AMAP_KEY || "",
+      amapSecurityCode: process.env.AMAP_SECURITY_CODE || "",
     },
   },
 
@@ -589,6 +591,16 @@ export default defineNuxtConfig({
               : {}),
           },
 
+          // 旅行地图：静态内容，每10分钟重新生成
+          "/map": {
+            isr: 600,
+            ...(redisConfig
+              ? {
+                  cache: { maxAge: 600, base: "redis" },
+                }
+              : {}),
+          },
+
           // 友链页：静态内容，每10分钟重新生成
           "/links": {
             isr: 600,
@@ -668,6 +680,10 @@ export default defineNuxtConfig({
                   isr: 600,
                   cache: { maxAge: 600, base: "redis" },
                 },
+                "/map": {
+                  isr: 600,
+                  cache: { maxAge: 600, base: "redis" },
+                },
                 "/links": {
                   isr: 600,
                   cache: { maxAge: 600, base: "redis" },
@@ -694,6 +710,7 @@ export default defineNuxtConfig({
                 "/sitemap": { isr: false },
                 "/sitemap.xml": { isr: false },
                 "/about": { isr: false },
+                "/map": { isr: false },
                 "/links": { isr: false },
                 "/messages": { isr: false },
                 "/search": { isr: false },
@@ -786,7 +803,7 @@ export default defineNuxtConfig({
         ? {
             // 生产环境下的 CSP 配置
             "Content-Security-Policy":
-              `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl}; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`,
+              `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`,
             "X-Frame-Options": "DENY",
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "strict-origin-when-cross-origin",

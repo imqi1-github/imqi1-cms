@@ -2,7 +2,7 @@
  * 自动生成的 API 类型定义
  * 此文件由 scripts/generate-api-types.ts 自动生成，请勿手动修改！
  *
- * 包含 92 个 API 端点
+ * 包含 99 个 API 端点
  * 已类型化: 3 个端点
  *
  * 使用方式:
@@ -396,6 +396,34 @@ export interface ApiTypes {
     };
   };
 
+  "/admin/travels/index": {
+    get: {
+      query: any;
+      body: any;
+      response: any;
+    };
+
+    post: {
+      query: any;
+      body: any;
+      response: any;
+    };
+  };
+
+  "/admin/travels/:id/index": {
+    delete: {
+      query: any;
+      body: any;
+      response: any;
+    };
+
+    put: {
+      query: any;
+      body: any;
+      response: any;
+    };
+  };
+
   "/admin/users/index": {
     get: {
       query: any;
@@ -494,6 +522,14 @@ export interface ApiTypes {
     };
   };
 
+  "/blog-network/index": {
+    get: {
+      query: any;
+      body: any;
+      response: any;
+    };
+  };
+
   "/categories": {
     get: {
       query: any;
@@ -549,6 +585,14 @@ export interface ApiTypes {
   };
 
   "/csrf/token": {
+    get: {
+      query: any;
+      body: any;
+      response: any;
+    };
+  };
+
+  "/footprint/index": {
     get: {
       query: any;
       body: any;
@@ -699,6 +743,14 @@ export interface ApiTypes {
   };
 
   "/tags": {
+    get: {
+      query: any;
+      body: any;
+      response: any;
+    };
+  };
+
+  "/travels/index": {
     get: {
       query: any;
       body: any;

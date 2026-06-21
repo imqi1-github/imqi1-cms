@@ -20,8 +20,10 @@ const { data, pending, error, refresh } = await useFetch<{ data?: { results: any
   query: {
     q: searchKeyword,
   },
-  // 有搜索关键词时才发起请求
-  immediate: !!searchKeyword.value,
+  // 始终发起请求：空 q 时 /api/search 早返回空结果（不查库不查 Redis，代价可忽略），
+  // 但真实请求制造 Suspense 间隙，让旧页（如首页）能在 page:start→page:finish 间完整渐出；
+  // 若用 immediate:false，顶层 await 当场 resolve、Suspense 不挂起 → 首页无渐出（同订阅/站点地图旧 bug 类）。
+  immediate: true,
   // 禁用 query 自动响应式，改由下方 watch + debounce 手动 refresh 控制，
   // 否则 useFetch 自动触发与手动 refresh 会重复请求，导致布局抖动
   watch: false,

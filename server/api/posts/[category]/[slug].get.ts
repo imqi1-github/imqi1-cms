@@ -64,6 +64,11 @@ export default defineEventHandler(async event => {
           },
         },
       },
+      // travels 为 posttravels[] 关联表，过滤启用地点后取 {id,name}
+      travels: {
+        where: { travel: { enabled: true } },
+        select: { travel: { select: { id: true, name: true } } },
+      },
     },
   });
 
@@ -100,6 +105,7 @@ export default defineEventHandler(async event => {
     success: true,
     data: {
       ...post,
+      travels: post.travels.map(t => t.travel), // 展平为 [{id,name}]
       postrelations: categoryRelations, // 只返回分类关系
       covers,
       tags,

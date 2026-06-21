@@ -98,6 +98,7 @@ model posts {
   uid           Int             @default(1)
   attachments   attachments[]
   comments      comments[]
+  travels       posttravels[]
   user          users           @relation(fields: [uid], references: [uid], map: "Posts_uid_fkey")
   postrelations postrelations[]
 
@@ -164,4 +165,32 @@ model users {
   auth_code String?
   role      Int      @default(0)
   posts     posts[]
+}
+
+model travels {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  desc        String?  @db.Text
+  cover       String?  @db.VarChar(500)
+  longitude   Float
+  latitude    Float
+  sort        Int      @default(0)
+  enabled     Boolean  @default(true)
+  create_time DateTime @default(now())
+
+  posts       posttravels[]
+
+  @@index([sort], map: "Travels_sort_idx")
+}
+
+// 文章 ↔ 旅行地点 多对多关联表
+model posttravels {
+  travel_id Int
+  cid       Int
+  travel    travels @relation(fields: [travel_id], references: [id], onDelete: Cascade, map: "PostTravels_travel_id_fkey")
+  post      posts   @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostTravels_cid_fkey")
+
+  @@id([travel_id, cid])
+  @@index([travel_id], map: "PostTravels_travel_id_fkey")
+  @@index([cid], map: "PostTravels_cid_fkey")
 }

@@ -71,9 +71,10 @@ export const CommentCreateSchema = z.object({
   cid: z.coerce.number().int().positive(),
   content: z.string().min(1).max(5000),
   name: z.string().min(1).max(50),
-  mail: z.string().email().optional().nullable(),
-  link: z.string().url().optional().nullable(),
+  mail: z.string().optional().nullable().transform(v => (v === "" ? null : v)),
+  link: z.string().optional().nullable().transform(v => (v === "" ? null : v)),
   parent_id: z.coerce.number().int().optional().nullable(),
+  website: z.string().optional(), // 蜜罐字段：人类不会填写，机器人会自动填充
 });
 
 export const CommentItemSchema = z.object({

@@ -41,6 +41,12 @@ export default defineTypedApiHandler(
       });
     }
 
+    // 反垃圾：蜜罐检测（前端隐藏字段，机器人会自动填充 website 字段）
+    if (body.website) {
+      // 静默丢弃，不返回错误信息（避免机器人根据响应调整策略）
+      return { code: 200, message: "评论提交成功", data: null, needModeration: false };
+    }
+
     if (!cid || !content || !name) {
       throw createError({
         statusCode: 400,
@@ -119,7 +125,9 @@ export default defineTypedApiHandler(
     let auditResult = null;
 
     if (auditConfig.enabled) {
-      auditResult = await auditText(content);
+      // 合并昵称和评论内容为一次审核请求，节省额度
+      const auditText_content = `昵称：${name}，评论内容：${content}`;
+      auditResult = await auditText(auditText_content);
       commentStatus = mapAuditResultToStatus(auditResult.conclusionType);
     } else {
       const meta = await prisma.informations.findUnique({
