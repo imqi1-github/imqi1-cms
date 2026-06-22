@@ -233,7 +233,7 @@ onMounted(() => {
     <!-- 页面列表 -->
     <Card>
       <!-- 加载状态 - 桌面端表格 -->
-      <div v-if="loading" class="p-4 hidden lg:block">
+      <div v-if="loading" class="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>

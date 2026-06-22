@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { CITY_COORDS } from "~~/shared/city-coords";
 import { siteConfig } from "~~/site.config";
 
 const { siteSettings } = useSiteSettings();
@@ -57,14 +58,31 @@ const { data: blogData, pending: blogPending, error: blogError } = await useFetc
 
 const travelPlaces = computed(() => travelsData.value?.data || []);
 
-// 统计已到访的省市数量：从 name 中提取省市部分（格式如"浙江·杭州"取"浙江"，"北京"取"北京"）
+const cityCoordEntries = Object.entries(CITY_COORDS);
+
+function nearestCityByCoord(longitude: number, latitude: number): string | null {
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+
+  let nearest: string | null = null;
+  let minDistance = Number.POSITIVE_INFINITY;
+
+  for (const [name, [lng, lat]] of cityCoordEntries) {
+    const distance = (longitude - lng) ** 2 + (latitude - lat) ** 2;
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = name;
+    }
+  }
+
+  return nearest;
+}
+
+// 统计已到访的省市数量：用坐标最近邻归到内置城市/省市质心，避免地点名不同导致“省市数=地点数”。
 const travelProvinceStats = computed(() => {
   const provinces = new Set<string>();
   for (const p of travelPlaces.value) {
-    const name = p.name || "";
-    // 如果有分隔符（如 · ），取第一部分作为省/直辖市
-    const province = name.includes("·") ? name.split("·")[0]! : name;
-    provinces.add(province);
+    const name = nearestCityByCoord(Number(p.longitude), Number(p.latitude));
+    if (name) provinces.add(name);
   }
   return { provinces: provinces.size, places: travelPlaces.value.length };
 });
@@ -239,22 +257,22 @@ onUnmounted(() => {
     <!-- 右下浮层：我的足迹统计（仅 travels 视图） -->
     <div
       v-if="view === 'travels' && travelProvinceStats.places > 0"
-      class="pointer-events-none absolute right-2 z-20 flex flex-col items-end gap-1.5"
+      class="pointer-events-none absolute right-2 z-20 flex items-end gap-1.5"
       :style="{ bottom: `${footerH + 4}px` }">
-      <div class="text-[10px] text-slate-700 dark:text-slate-200">
-        已到访 {{ travelProvinceStats.provinces }} 个省市 · {{ travelProvinceStats.places }} 个地点
-      </div>
       <!-- 已登录：前往后台编辑足迹（外层 pointer-events-none 不挡地图，按钮单独可点） -->
       <ClientOnly>
         <NuxtLink
           v-if="isLoggedIn"
           to="/admin/travels"
           target="_blank"
-          class="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-linear-to-b from-white/60 to-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-700 shadow backdrop-blur-[20px] transition-colors hover:text-blue-600 dark:from-black/60 dark:to-black/85 dark:text-slate-200 dark:hover:text-blue-400">
+          class="pointer-events-auto inline-flex items-center gap-1 text-[10px] font-medium text-slate-700">
           <Icon name="ri:edit-line" class="size-3" />
           编辑足迹
         </NuxtLink>
       </ClientOnly>
+      <div class="text-[10px] text-slate-700 dark:text-slate-200">
+        已到访 {{ travelProvinceStats.provinces }} 个省市 · {{ travelProvinceStats.places }} 个地点
+      </div>
     </div>
 
     <!-- 右下浮层：访客分布统计（仅 footprint 视图）。避让顶栏导航：用 footerH 把它顶到页脚之上，

@@ -43,7 +43,10 @@ function toggleCid(cids: string[], cid: string, checked: boolean) {
 function postTitles(travel: any) {
   const list = travel.posts ?? [];
   if (!list.length) return "";
-  const shown = list.slice(0, 2).map((p: any) => p.title).join("、");
+  const shown = list
+    .slice(0, 2)
+    .map((p: any) => p.title)
+    .join("、");
   return list.length > 2 ? `${shown} 等${list.length}篇` : shown;
 }
 
@@ -223,9 +226,7 @@ onMounted(() => {
     <div class="flex items-center justify-between mb-6">
       <div>
         <h2 class="text-2xl font-bold">旅行地点</h2>
-        <p class="text-sm text-muted-foreground mt-1">
-          管理旅行地图上的地点（名称、坐标、关联文章、封面）
-        </p>
+        <p class="text-sm text-muted-foreground mt-1">管理旅行地图上的地点（名称、坐标、关联文章、封面）</p>
       </div>
       <Button @click="showAddModal = true">
         <Icon name="lucide:plus" class="mr-2 size-4" />
@@ -235,7 +236,7 @@ onMounted(() => {
 
     <Card>
       <!-- 加载状态 - 桌面端表格 -->
-      <div v-if="loading" class="p-4 hidden lg:block">
+      <div v-if="loading" class="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -293,7 +294,9 @@ onMounted(() => {
             </TableCell>
             <TableCell class="text-muted-foreground font-mono text-xs">{{ formatCoord(travel) }}</TableCell>
             <TableCell>
-              <span v-if="(travel.posts ?? []).length" class="text-primary truncate block max-w-50" :title="postTitles(travel)">{{ postTitles(travel) }}</span>
+              <span v-if="(travel.posts ?? []).length" class="text-primary truncate block max-w-50" :title="postTitles(travel)">{{
+                postTitles(travel)
+              }}</span>
               <span v-else class="text-muted-foreground">-</span>
             </TableCell>
             <TableCell class="text-muted-foreground">{{ travel.sort ?? 0 }}</TableCell>
@@ -310,12 +313,7 @@ onMounted(() => {
                 <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(travel)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-8 text-destructive hover:text-destructive"
-                  @click="deleteTravel(travel.id)"
-                >
+                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteTravel(travel.id)">
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
               </div>
@@ -363,12 +361,7 @@ onMounted(() => {
             <Button variant="ghost" size="icon" class="size-8" @click="openEditModal(travel)">
               <Icon name="lucide:pencil" class="size-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-8 text-destructive hover:text-destructive"
-              @click="deleteTravel(travel.id)"
-            >
+            <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteTravel(travel.id)">
               <Icon name="lucide:trash-2" class="size-4" />
             </Button>
           </div>
@@ -413,10 +406,7 @@ onMounted(() => {
               <div class="space-y-2">
                 <Label>地图选点</Label>
                 <ClientOnly>
-                  <AdminTravelCoordinatePicker
-                    v-model:longitude="newTravel.longitude"
-                    v-model:latitude="newTravel.latitude"
-                  />
+                  <AdminTravelCoordinatePicker v-model:longitude="newTravel.longitude" v-model:latitude="newTravel.latitude" />
                   <template #fallback>
                     <div class="h-48 rounded-md bg-muted animate-pulse sm:h-72" />
                   </template>
@@ -429,9 +419,7 @@ onMounted(() => {
                     <Input v-model="addPostKeyword" placeholder="搜索文章标题或 ID" class="h-8" />
                   </div>
                   <div class="max-h-44 overflow-y-auto p-2 space-y-1 sm:max-h-64">
-                    <div v-if="filteredAddPosts.length === 0" class="text-sm text-muted-foreground text-center py-3">
-                      未找到相关文章
-                    </div>
+                    <div v-if="filteredAddPosts.length === 0" class="text-sm text-muted-foreground text-center py-3">未找到相关文章</div>
                     <div v-for="p in filteredAddPosts" :key="p.cid" class="flex items-center space-x-2">
                       <Checkbox
                         :id="`add-travel-post-${p.cid}`"
@@ -497,10 +485,7 @@ onMounted(() => {
               <div class="space-y-2">
                 <Label>地图选点</Label>
                 <ClientOnly>
-                  <AdminTravelCoordinatePicker
-                    v-model:longitude="editTravelForm.longitude"
-                    v-model:latitude="editTravelForm.latitude"
-                  />
+                  <AdminTravelCoordinatePicker v-model:longitude="editTravelForm.longitude" v-model:latitude="editTravelForm.latitude" />
                   <template #fallback>
                     <div class="h-48 rounded-md bg-muted animate-pulse sm:h-72" />
                   </template>
@@ -513,9 +498,7 @@ onMounted(() => {
                     <Input v-model="editPostKeyword" placeholder="搜索文章标题或 ID" class="h-8" />
                   </div>
                   <div class="max-h-44 overflow-y-auto p-2 space-y-1 sm:max-h-64">
-                    <div v-if="filteredEditPosts.length === 0" class="text-sm text-muted-foreground text-center py-3">
-                      未找到相关文章
-                    </div>
+                    <div v-if="filteredEditPosts.length === 0" class="text-sm text-muted-foreground text-center py-3">未找到相关文章</div>
                     <div v-for="p in filteredEditPosts" :key="p.cid" class="flex items-center space-x-2">
                       <Checkbox
                         :id="`edit-travel-post-${p.cid}`"

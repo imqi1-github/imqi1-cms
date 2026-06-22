@@ -1,68 +1,68 @@
 <script setup lang="ts">
-const router = useRouter()
-const loading = ref(true)
-const users = ref<any[]>([])
-const showAddModal = ref(false)
-const newUser = ref({ name: '', nickname: '', mail: '', password: '', role: 0 })
-const toast = useToast()
-const currentUser = ref<any>(null)
+const router = useRouter();
+const loading = ref(true);
+const users = ref<any[]>([]);
+const showAddModal = ref(false);
+const newUser = ref({ name: "", nickname: "", mail: "", password: "", role: 0 });
+const toast = useToast();
+const currentUser = ref<any>(null);
 
 // 计算是否只有一个用户
-const isOnlyUser = computed(() => users.value.length <= 1)
+const isOnlyUser = computed(() => users.value.length <= 1);
 
 // 判断是否可以删除用户（不是自己且不是唯一用户）
 function canDeleteUser(userId: number) {
-  if (isOnlyUser.value) return false
-  if (currentUser.value && currentUser.value.uid === userId) return false
-  return true
+  if (isOnlyUser.value) return false;
+  if (currentUser.value && currentUser.value.uid === userId) return false;
+  return true;
 }
 
 // 获取禁用删除按钮的提示信息
 function getDeleteDisabledMessage(userId: number) {
-  if (isOnlyUser.value) return '系统中只有一个用户，不允许删除'
-  if (currentUser.value && currentUser.value.uid === userId) return '不允许删除自己的账号'
-  return ''
+  if (isOnlyUser.value) return "系统中只有一个用户，不允许删除";
+  if (currentUser.value && currentUser.value.uid === userId) return "不允许删除自己的账号";
+  return "";
 }
 
 async function fetchUsers() {
-  loading.value = true
+  loading.value = true;
   try {
     // 获取当前用户信息
-    currentUser.value = await $fetch('/api/auth/me')
+    currentUser.value = await $fetch("/api/auth/me");
 
-    users.value = await ($fetch as any)('/api/admin/users') as any[]
+    users.value = (await ($fetch as any)("/api/admin/users")) as any[];
   } catch (error) {
-    console.error('获取用户失败:', error)
-    users.value = []
+    console.error("获取用户失败:", error);
+    users.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function addUser() {
   try {
-    await $fetch('/api/admin/users', {
-      method: 'POST',
+    await $fetch("/api/admin/users", {
+      method: "POST",
       body: newUser.value,
-    })
-    newUser.value = { name: '', nickname: '', mail: '', password: '', role: 0 }
-    showAddModal.value = false
-    await fetchUsers()
+    });
+    newUser.value = { name: "", nickname: "", mail: "", password: "", role: 0 };
+    showAddModal.value = false;
+    await fetchUsers();
     toast.success({
-      message: '用户创建成功',
-    })
+      message: "用户创建成功",
+    });
   } catch (error: any) {
-    console.error('添加失败:', error)
+    console.error("添加失败:", error);
     // 优先读 error.data.message（后端 createError 抛出的业务错误）
-    let errorMessage = '添加失败'
+    let errorMessage = "添加失败";
     if (error?.data?.message) {
-      errorMessage = error.data.message
+      errorMessage = error.data.message;
     } else if (error?.message) {
-      errorMessage = error.message
+      errorMessage = error.message;
     }
     toast.error({
       message: errorMessage,
-    })
+    });
   }
 }
 
@@ -71,51 +71,52 @@ async function deleteUser(id: number) {
   if (!canDeleteUser(id)) {
     toast.error({
       message: getDeleteDisabledMessage(id),
-    })
-    return
+    });
+    return;
   }
 
-  const confirmed = confirm('确定要删除这个用户吗？')
+  const confirmed = confirm("确定要删除这个用户吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/users/${id}?csrfToken=${encodeURIComponent((await $fetch('/api/csrf/token', { credentials: 'include' }) as any).data.token)}`, { method: 'DELETE' })
-      await fetchUsers()
+      await $fetch(
+        `/api/admin/users/${id}?csrfToken=${encodeURIComponent(((await $fetch("/api/csrf/token", { credentials: "include" })) as any).data.token)}`,
+        { method: "DELETE" },
+      );
+      await fetchUsers();
       toast.success({
-        message: '用户已删除',
-      })
+        message: "用户已删除",
+      });
     } catch (error: any) {
-      console.error('删除失败:', error)
+      console.error("删除失败:", error);
 
       // 提取错误信息
-      let errorMessage = '删除失败'
+      let errorMessage = "删除失败";
       if (error?.data?.message) {
-        errorMessage = error.data.message
+        errorMessage = error.data.message;
       } else if (error?.message) {
-        errorMessage = error.message
-      } else if (typeof error === 'string') {
-        errorMessage = error
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
       }
 
       toast.error({
         message: errorMessage,
-      })
+      });
     }
   }
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('zh-CN')
+  return new Date(date).toLocaleDateString("zh-CN");
 }
 
 function getRoleBadge(role: number) {
-  return role === 1
-    ? { label: '管理员', variant: 'default' as const }
-    : { label: '普通用户', variant: 'secondary' as const }
+  return role === 1 ? { label: "管理员", variant: "default" as const } : { label: "普通用户", variant: "secondary" as const };
 }
 
 onMounted(() => {
-  fetchUsers()
-})
+  fetchUsers();
+});
 </script>
 
 <template>
@@ -133,7 +134,7 @@ onMounted(() => {
 
     <Card>
       <!-- 加载状态 - 桌面端表格 -->
-      <div v-if="loading" class="p-4 hidden lg:block">
+      <div v-if="loading" class="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -188,7 +189,7 @@ onMounted(() => {
             <TableCell>
               <div class="flex items-center gap-3">
                 <Avatar class="size-8">
-                  <AvatarFallback>{{ user.name?.charAt(0)?.toUpperCase() || '?' }}</AvatarFallback>
+                  <AvatarFallback>{{ user.name?.charAt(0)?.toUpperCase() || "?" }}</AvatarFallback>
                 </Avatar>
                 <span class="font-medium">{{ user.name }}</span>
               </div>
@@ -202,12 +203,7 @@ onMounted(() => {
             <TableCell>{{ formatDate(user.create) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-8"
-                  @click="router.push(`/admin/users/${user.uid}`)"
-                >
+                <Button variant="ghost" size="icon" class="size-8" @click="router.push(`/admin/users/${user.uid}`)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button
@@ -216,8 +212,7 @@ onMounted(() => {
                   class="size-8 text-destructive hover:text-destructive"
                   :disabled="!canDeleteUser(user.uid)"
                   :title="getDeleteDisabledMessage(user.uid)"
-                  @click="deleteUser(user.uid)"
-                >
+                  @click="deleteUser(user.uid)">
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
               </div>
@@ -245,7 +240,7 @@ onMounted(() => {
         <div v-for="user in users" :key="user.uid" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <Avatar class="size-8">
-              <AvatarFallback class="text-xs">{{ user.name?.charAt(0)?.toUpperCase() || '?' }}</AvatarFallback>
+              <AvatarFallback class="text-xs">{{ user.name?.charAt(0)?.toUpperCase() || "?" }}</AvatarFallback>
             </Avatar>
             <div class="flex-1 min-w-0">
               <h3 class="font-medium text-base truncate">{{ user.name }}</h3>
@@ -271,8 +266,7 @@ onMounted(() => {
                 class="size-8 text-destructive hover:text-destructive"
                 :disabled="!canDeleteUser(user.uid)"
                 :title="getDeleteDisabledMessage(user.uid)"
-                @click="deleteUser(user.uid)"
-              >
+                @click="deleteUser(user.uid)">
                 <Icon name="lucide:trash-2" class="size-4" />
               </Button>
             </div>
@@ -330,9 +324,7 @@ onMounted(() => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showAddModal = false">
-              取消
-            </Button>
+            <Button type="button" variant="outline" @click="showAddModal = false"> 取消 </Button>
             <Button type="submit">确定</Button>
           </DialogFooter>
         </form>

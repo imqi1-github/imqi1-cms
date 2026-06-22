@@ -179,7 +179,7 @@ const handleLogout = async () => {
 
       <!-- 侧边栏 -->
       <aside
-        class="fixed inset-y-0 left-0 z-50 w-64 border-r bg-card transition-transform duration-300 ease-in-out lg:z-10"
+        class="fixed inset-y-0 left-0 z-50 w-48 border-r bg-card transition-transform duration-300 ease-in-out lg:z-10"
         :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
       >
         <ScrollArea class="h-full py-4">
@@ -222,7 +222,7 @@ const handleLogout = async () => {
       </aside>
 
       <!-- 主内容区 -->
-      <div class="flex-1 lg:ml-64">
+      <div class="flex-1 lg:ml-48">
         <!-- 顶部栏 -->
         <header class="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
           <div class="flex h-14 items-center gap-4 px-4 lg:px-6">

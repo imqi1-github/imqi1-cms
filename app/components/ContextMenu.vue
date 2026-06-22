@@ -367,6 +367,16 @@ const handleCapitalize = () => {
   }
 };
 
+// 复制图片链接到剪贴板
+const handleCopyImageLink = () => {
+  if (imageTarget.value) {
+    const src = imageTarget.value.src;
+    navigator.clipboard.writeText(src);
+    notify("复制图片链接成功", "success");
+    closeMenu();
+  }
+}
+
 // 复制图片到剪贴板
 const handleCopyImage = async () => {
   if (imageTarget.value) {
@@ -657,6 +667,12 @@ onUnmounted(() => {
       <!-- 图片菜单选项 -->
       <template v-if="menuType === 'image'">
         <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li
+          @click="handleCopyImageLink"
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <Icon name="ri:link" class="size-4" />
+          <span>复制图片链接</span>
+        </li>
         <li
           @click="handleCopyImage"
           class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">

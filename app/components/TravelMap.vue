@@ -136,6 +136,31 @@ function collectClusterLngLats(clusterData: any[]): LngLatTuple[] {
   return lnglats;
 }
 
+// 从聚合数据里规整出原始 cluster point（id / lnglat），用于按 id 反查完整 place 求读者数之和。
+// 高德克隆 clusterData 时会裁剪自定义嵌套字段，但 id 与 lnglat 一般保留；originData 嵌套时展开。
+function collectClusterPoints(clusterData: any[]): { id?: number; lnglat: LngLatTuple | null }[] {
+  const out: { id?: number; lnglat: LngLatTuple | null }[] = [];
+
+  const pushPoint = (point: any) => {
+    const id = Number(point?.id);
+    out.push({
+      ...(Number.isFinite(id) ? { id } : {}),
+      lnglat: normalizeLngLat(point?.lnglat ?? point),
+    });
+  };
+
+  clusterData.forEach(item => {
+    const originData = item?._amapMarker?.originData;
+    if (Array.isArray(originData) && originData.length) {
+      originData.flat().forEach(pushPoint);
+    } else {
+      pushPoint(item);
+    }
+  });
+
+  return out;
+}
+
 function escapeHtml(s: string) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -404,14 +429,27 @@ function createCluster(points: MapPoint[]) {
   // 但 clusterData 自定义/嵌套字段会被高德克隆裁剪（place.readers 可能丢失），故在闭包里按
   // 坐标键建查表，渲染时据 clusterData 取出的 lnglat 反查求和，不依赖高德保留嵌套数据。
   const readerCountByLng = new Map<string, number>();
+  const readerCountById = new Map<number, number>();
   let hasReaders = false;
   for (const p of points) {
     const rc = p.place?.readers?.length;
     if (rc) {
       hasReaders = true;
       readerCountByLng.set(`${p.lnglat[0]},${p.lnglat[1]}`, rc);
+      readerCountById.set(p.id, rc);
     }
   }
+
+  // 按 cluster point 求读者数：优先 id 反查（规避高德对 place.readers 的克隆裁剪），
+  // 坐标表作兜底，最后回落 1，避免误报 0。这样聚合簇与单点都显示「圈内读者人数」。
+  const readerCountOf = (cp: { id?: number; lnglat: LngLatTuple | null }): number => {
+    if (cp.id != null && readerCountById.has(cp.id)) return readerCountById.get(cp.id) ?? 0;
+    if (cp.lnglat) {
+      const byLng = readerCountByLng.get(`${cp.lnglat[0]},${cp.lnglat[1]}`);
+      if (byLng) return byLng;
+    }
+    return 1;
+  };
 
   // 聚合最大缩放必须与地图实际最大缩放对齐（props.maxZoom ?? 20，见 onMounted 的 zooms 与下方
   // minZoom/maxZoom watch）。此前写死 18，而地图上限是 20 → 19~20 级聚合被关闭，同坐标点
@@ -432,10 +470,9 @@ function createCluster(points: MapPoint[]) {
     maxZoom: effectiveMax,
     renderClusterMarker: (context: any) => {
       const lnglats = collectClusterLngLats(context.clusterData || []);
-      // 访客分布：圈内读者数之和；我的足迹：聚合的城市点数。
-      // 单点查表未命中（坐标精度错位）回落 1，避免误报 0。
+      // 访客分布：圈内读者人数之和；我的足迹：聚合的城市点数。
       const count = hasReaders
-        ? lnglats.reduce((sum, ll) => sum + (readerCountByLng.get(`${ll[0]},${ll[1]}`) ?? 1), 0)
+        ? collectClusterPoints(context.clusterData || []).reduce((sum, cp) => sum + readerCountOf(cp), 0)
         : lnglats.length || context.count || context.clusterData.length;
       const center = averageLngLat(lnglats);
 
@@ -456,9 +493,9 @@ function createCluster(points: MapPoint[]) {
         applyMarker(context.marker, singleDotHtml(), new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
         return;
       }
-      // 访客分布单点：按坐标查该城市读者数（与聚合簇同款查表，规避高德对 place.readers 的克隆裁剪）
-      const ll = normalizeLngLat(context.data?.[0]?.lnglat);
-      const rc = (ll && readerCountByLng.get(`${ll[0]},${ll[1]}`)) ?? 1;
+      // 访客分布单点：按 id 优先反查该城市读者数（规避高德对 place.readers 的克隆裁剪）
+      const cp0 = collectClusterPoints(context.data || [])[0];
+      const rc = cp0 ? readerCountOf(cp0) : 1;
       if (rc > 1) {
         // 多位访客：数字圆圈（数字 = 读者数，与聚合圈同款）——如沈阳 6 位访客显示「6」
         applyMarker(context.marker, clusterHtml(rc), new AMapRef.Pixel(-clusterSize(rc) / 2, -clusterSize(rc) / 2));

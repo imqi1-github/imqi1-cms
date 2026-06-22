@@ -106,11 +106,7 @@ async function deleteLink(id: number) {
 
 async function approveModification(link: any, approve: boolean) {
   const action = approve ? "批准" : "拒绝";
-  const confirmed = confirm(
-    approve
-      ? `确定要批准此修改吗？\n\n原友链"${link.originalLink?.name}"将被更新为新信息。`
-      : "确定要拒绝此修改申请吗？"
-  );
+  const confirmed = confirm(approve ? `确定要批准此修改吗？\n\n原友链"${link.originalLink?.name}"将被更新为新信息。` : "确定要拒绝此修改申请吗？");
 
   if (confirmed) {
     try {
@@ -151,7 +147,7 @@ onMounted(() => {
 
     <Card>
       <!-- 加载状态 - 桌面端表格 -->
-      <div v-if="loading" class="p-4 hidden lg:block">
+      <div v-if="loading" class="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -213,13 +209,9 @@ onMounted(() => {
                 <div class="flex flex-col">
                   <div class="flex items-center gap-2">
                     <span class="font-medium">{{ link.name }}</span>
-                    <Badge v-if="link.isModification" variant="outline" class="text-xs">
-                      修改申请
-                    </Badge>
+                    <Badge v-if="link.isModification" variant="outline" class="text-xs"> 修改申请 </Badge>
                   </div>
-                  <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground">
-                    替代: {{ link.originalLink.name }}
-                  </div>
+                  <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground">替代: {{ link.originalLink.name }}</div>
                 </div>
               </div>
             </TableCell>
@@ -238,7 +230,7 @@ onMounted(() => {
                   {{ link.enabled ? "启用" : "禁用" }}
                 </Badge>
                 <Badge v-if="link.isModification" variant="secondary" class="text-xs">
-                  {{ link.modificationStatus === 'pending' ? '待审核' : link.modificationStatus === 'approved' ? '已批准' : '已拒绝' }}
+                  {{ link.modificationStatus === "pending" ? "待审核" : link.modificationStatus === "approved" ? "已批准" : "已拒绝" }}
                 </Badge>
               </div>
             </TableCell>
@@ -291,7 +283,11 @@ onMounted(() => {
 
       <!-- 数据列表 - 移动端卡片 -->
       <div v-else class="p-4 lg:hidden space-y-4">
-        <div v-for="link in links" :key="link.id" :class="{ 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800': link.isModification }" class="border rounded-lg p-4 space-y-3">
+        <div
+          v-for="link in links"
+          :key="link.id"
+          :class="{ 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800': link.isModification }"
+          class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <Avatar class="size-8">
               <AvatarImage v-if="link.avatar" :src="link.avatar" />
@@ -300,16 +296,12 @@ onMounted(() => {
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <h3 class="font-medium text-base truncate">{{ link.name }}</h3>
-                <Badge v-if="link.isModification" variant="outline" class="text-xs">
-                  修改申请
-                </Badge>
+                <Badge v-if="link.isModification" variant="outline" class="text-xs"> 修改申请 </Badge>
               </div>
               <a :href="link.link" target="_blank" class="text-xs text-primary hover:underline truncate block">
                 {{ link.link }}
               </a>
-              <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground">
-                替代: {{ link.originalLink.name }}
-              </div>
+              <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground">替代: {{ link.originalLink.name }}</div>
             </div>
           </div>
 
@@ -320,7 +312,7 @@ onMounted(() => {
               {{ link.enabled ? "启用" : "禁用" }}
             </Badge>
             <Badge v-if="link.isModification" variant="secondary" class="text-xs">
-              {{ link.modificationStatus === 'pending' ? '待审核' : link.modificationStatus === 'approved' ? '已批准' : '已拒绝' }}
+              {{ link.modificationStatus === "pending" ? "待审核" : link.modificationStatus === "approved" ? "已批准" : "已拒绝" }}
             </Badge>
           </div>
 
