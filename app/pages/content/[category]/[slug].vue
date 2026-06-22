@@ -1798,7 +1798,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 相关文章 -->
-      <div v-if="relatedPostsPending" class="article-constrained flex items-center gap-2 py-4 text-muted-foreground">
+      <div v-if="relatedPostsPending" class="article-constrained flex items-center justify-center gap-2 py-4 text-muted-foreground">
         <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
         <span class="text-sm">加载相关文章...</span>
       </div>

@@ -196,7 +196,7 @@ onUnmounted(() => {
       </div>
     </div>
     <div v-else-if="places.length === 0" class="absolute inset-0 flex items-center justify-center">
-      <div class="text-center text-white/90">
+      <div class="text-center text-gray-300 dark:text-white/90">
         <Icon name="ri:map-pin-line" class="size-12 mx-auto mb-4 opacity-70" />
         <p>{{ view === "footprint" ? "还没有访客足迹" : view === "blogs" ? "还没有博客站点" : "还没有任何足迹" }}</p>
       </div>

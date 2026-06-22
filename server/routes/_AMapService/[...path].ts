@@ -1,5 +1,5 @@
-import { createError, defineEventHandler, getRequestURL, proxyRequest } from "h3";
-import { resolveAmapProxyTarget } from "~~/shared/amap-proxy";
+import { createError, defineEventHandler, getRequestURL, proxyRequest, setResponseHeader } from "h3";
+import { resolveAmapProxyTarget } from "#shared/amap-proxy";
 
 export default defineEventHandler(event => {
   const config = useRuntimeConfig();
@@ -33,5 +33,11 @@ export default defineEventHandler(event => {
     });
   }
 
-  return proxyRequest(event, target.toString());
+  return proxyRequest(event, target.toString(), {
+    onResponse: () => {
+      if (target.searchParams.has("callback")) {
+        setResponseHeader(event, "Content-Type", "application/javascript; charset=utf-8");
+      }
+    },
+  });
 });

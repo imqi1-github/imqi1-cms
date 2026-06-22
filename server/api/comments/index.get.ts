@@ -56,8 +56,9 @@ export default defineEventHandler(async event => {
     const formatLocation = (location: string): string => {
       if (!location) return "";
 
-      // 去掉"中国"前缀
+      // 去掉"中国"前缀；若 IP 数据只能定位到国家级，则保底显示「中国」。
       let loc = location.replace(/^中国[–—\-]?/, "");
+      if (!loc.trim() && location.startsWith("中国")) return "中国";
 
       // 按"–"或"—"或"-"分割
       const parts = loc.split(/[–—\-]/).map(p => p.trim()).filter(p => p);

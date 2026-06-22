@@ -1,4 +1,4 @@
-import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost } from "../../shared/amap-proxy";
+import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost } from "#shared/amap-proxy";
 
 interface LoadAmapOptions {
   version?: string;

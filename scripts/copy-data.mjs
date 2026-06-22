@@ -7,23 +7,43 @@ const __dirname = dirname(__filename);
 
 const sourceDir = join(process.cwd(), 'data');
 const targetDir = join(process.cwd(), '.output', 'server', 'data');
+const ipdbSource = process.env.QQWRY_IPDB_PATH || join(process.cwd(), 'data', 'qqwry.ipdb');
 
 console.log('Copying data files to build output...');
 
-if (existsSync(sourceDir)) {
-  // 创建目标目录
-  mkdirSync(targetDir, { recursive: true });
-
-  // 复制 qqwry.dat
-  const sourceFile = join(sourceDir, 'qqwry.dat');
-  const targetFile = join(targetDir, 'qqwry.dat');
-
-  if (existsSync(sourceFile)) {
-    copyFileSync(sourceFile, targetFile);
-    console.log('✓ Copied qqwry.dat to .output/server/data/');
-  } else {
-    console.warn('⚠ qqwry.dat not found in data/ directory');
-  }
-} else {
+if (!existsSync(sourceDir)) {
   console.warn('⚠ data/ directory not found');
+}
+
+const runtimeFiles = [
+  {
+    source: join(process.cwd(), 'server', 'fonts', 'DejaVuSans.ttf'),
+    target: join(process.cwd(), '.output', 'server', 'server', 'fonts', 'DejaVuSans.ttf'),
+    targetDir: join(process.cwd(), '.output', 'server', 'server', 'fonts'),
+    label: 'captcha font',
+  },
+  {
+    source: join(process.cwd(), 'node_modules', 'svg2png-wasm', 'svg2png_wasm_bg.wasm'),
+    target: join(process.cwd(), '.output', 'server', 'wasm', 'svg2png_wasm_bg.wasm'),
+    targetDir: join(process.cwd(), '.output', 'server', 'wasm'),
+    label: 'svg2png WASM',
+  },
+  {
+    source: ipdbSource,
+    target: join(process.cwd(), '.output', 'server', 'data', 'qqwry.ipdb'),
+    targetDir: join(process.cwd(), '.output', 'server', 'data'),
+    label: 'qqwry.ipdb database',
+  },
+];
+
+for (const file of runtimeFiles) {
+  if (!existsSync(file.source)) {
+    const prefix = file.optional ? 'ℹ' : '⚠';
+    console.warn(`${prefix} ${file.label} not found: ${file.source}`);
+    continue;
+  }
+
+  mkdirSync(file.targetDir, { recursive: true });
+  copyFileSync(file.source, file.target);
+  console.log(`✓ Copied ${file.label} to ${file.target}`);
 }

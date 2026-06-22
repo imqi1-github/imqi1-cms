@@ -27,25 +27,35 @@ function getCdnConfig() {
 
 const cdnBaseURL = getCdnConfig();
 
+function copyPublicFileToServerRoot(fileName) {
+  const sourcePath = join(process.cwd(), '.output', 'public', fileName);
+  if (!existsSync(sourcePath)) {
+    console.log(`ℹ ${fileName} not found, skipping server root copy`);
+    return;
+  }
+
+  const serverDir = join(process.cwd(), '.output', 'server');
+  const targetPath = join(serverDir, fileName);
+
+  try {
+    if (!existsSync(serverDir)) {
+      mkdirSync(serverDir, { recursive: true });
+    }
+
+    copyFileSync(sourcePath, targetPath);
+    console.log(`✓ Copied ${fileName} to .output/server/${fileName}`);
+  } catch (error) {
+    console.error(`✗ Failed to copy ${fileName} to server directory:`, error.message);
+  }
+}
+
 // 如果没有配置 CDN，跳过所有处理
 if (!cdnBaseURL) {
   console.log('ℹ 未配置 CDN，跳过 sw.js CDN 路径更新');
 
-  // 仍然复制 sw.js 到 server 目录（即使没有 CDN 也需要）
-  const swPath = join(process.cwd(), '.output', 'public', 'sw.js');
-  if (existsSync(swPath)) {
-    const serverDir = join(process.cwd(), '.output', 'server');
-    const serverSwPath = join(serverDir, 'sw.js');
-    try {
-      if (!existsSync(serverDir)) {
-        mkdirSync(serverDir, { recursive: true });
-      }
-      copyFileSync(swPath, serverSwPath);
-      console.log('✓ Copied sw.js to .output/server/sw.js');
-    } catch (error) {
-      console.error('✗ Failed to copy sw.js to server directory:', error.message);
-    }
-  }
+  // 仍然复制根目录文件到 server 目录（即使没有 CDN 也需要）
+  copyPublicFileToServerRoot('sw.js');
+  copyPublicFileToServerRoot('robots.txt');
   process.exit(0);
 }
 
@@ -67,6 +77,7 @@ const swPath = join(process.cwd(), '.output', 'public', 'sw.js');
 
 if (!existsSync(swPath)) {
   console.log('✗ sw.js not found, skipping CDN update');
+  copyPublicFileToServerRoot('robots.txt');
   process.exit(0);
 }
 
@@ -77,21 +88,20 @@ const workboxImportRegex = /define\(\["\.\/(workbox-[a-f0-9]+)"\]/g;
 const workboxMatches = [...swContent.matchAll(workboxImportRegex)];
 
 if (workboxMatches.length === 0) {
-  console.log('✗ No workbox imports found in sw.js');
-  process.exit(0);
+  console.log('ℹ No workbox imports found in sw.js, skipping workbox CDN replacement');
+} else {
+  console.log(`✓ Found ${workboxMatches.length} workbox import(s)`);
+
+  // 替换 workbox 为 CDN 路径
+  workboxMatches.forEach((match) => {
+    const fullMatch = match[0];
+    const workboxFile = match[1];
+    const cdnUrl = `${cdnURL}/${workboxFile}`;
+
+    console.log(`  Replacing: ${workboxFile} -> ${cdnUrl}`);
+    swContent = swContent.replace(fullMatch, `define(["${cdnUrl}"]`);
+  });
 }
-
-console.log(`✓ Found ${workboxMatches.length} workbox import(s)`);
-
-// 替换 workbox 为 CDN 路径
-workboxMatches.forEach((match) => {
-  const fullMatch = match[0];
-  const workboxFile = match[1];
-  const cdnUrl = `${cdnURL}/${workboxFile}`;
-
-  console.log(`  Replacing: ${workboxFile} -> ${cdnUrl}`);
-  swContent = swContent.replace(fullMatch, `define(["${cdnUrl}"]`);
-});
 
 // 2. 替换 precacheAndRoute 中的所有静态资源路径为 CDN 路径
 // 匹配 url:"_nuxt/...", url:"manifest.webmanifest" 等
@@ -133,19 +143,6 @@ if (workboxFiles.length > 0) {
   console.log(`\n→ Upload these files to CDN: ${cdnURL}/`);
 }
 
-// 3. 将修改后的 sw.js 复制到 server 目录
-const serverDir = join(process.cwd(), '.output', 'server');
-const serverSwPath = join(serverDir, 'sw.js');
-
-try {
-  // 确保 server 目录存在
-  if (!existsSync(serverDir)) {
-    mkdirSync(serverDir, { recursive: true });
-  }
-
-  // 复制 sw.js 到 server 目录
-  copyFileSync(swPath, serverSwPath);
-  console.log('✓ Copied sw.js to .output/server/sw.js');
-} catch (error) {
-  console.error('✗ Failed to copy sw.js to server directory:', error.message);
-}
+// 3. 将根目录文件复制到 server 目录
+copyPublicFileToServerRoot('sw.js');
+copyPublicFileToServerRoot('robots.txt');

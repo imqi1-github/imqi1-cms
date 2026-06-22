@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
+import { readFileSync } from "fs";
 import { getCookie, setCookie } from "h3";
-import sharp from "sharp";
+import { initialize, svg2png } from "svg2png-wasm";
 
 /**
  * 图形验证码工具
@@ -25,6 +26,11 @@ const CHARSET = "3456789abcdefghjkmnpqrstuvwxyABCDEFGHJKMNPQRSTUVWXY";
 const LENGTH = 4;
 // 在浅色背景上可见的颜色
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#db2777", "#0891b2"];
+
+const CAPTCHA_FONT_PATHS = ["server/fonts/DejaVuSans.ttf"];
+const WASM_PATHS = ["wasm/svg2png_wasm_bg.wasm", "node_modules/svg2png-wasm/svg2png_wasm_bg.wasm"];
+let wasmReady: Promise<void> | null = null;
+let captchaFont: Uint8Array | null | undefined;
 
 // 内存存储：token -> { answer, expires }
 const STORE = new Map<string, { answer: string; expires: number }>();
@@ -98,9 +104,53 @@ function buildSvg(text: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="#f8fafc" rx="4"/>${lines}${dots}${chars}</svg>`;
 }
 
+/** 读取构建复制后的 WASM 文件；开发环境回退到 node_modules */
+function readWasmFile(): Buffer {
+  for (const path of WASM_PATHS) {
+    try {
+      return readFileSync(path);
+    } catch {
+      // 兼容 .output/server 运行目录与源码开发目录。
+    }
+  }
+
+  throw new Error("Cannot find svg2png WASM file. Expected wasm/svg2png_wasm_bg.wasm in server root.");
+}
+
+/** 初始化 SVG 转 PNG 的 WASM 模块（只初始化一次） */
+function ensureWasmReady(): Promise<void> {
+  wasmReady ??= initialize(readWasmFile());
+  return wasmReady;
+}
+
+/** 读取验证码字体，保证 SVG 文本在不同服务器上稳定渲染 */
+function getCaptchaFont(): Uint8Array | undefined {
+  if (captchaFont !== undefined) return captchaFont ?? undefined;
+
+  for (const path of CAPTCHA_FONT_PATHS) {
+    try {
+      captchaFont = readFileSync(path);
+      return captchaFont;
+    } catch {
+      // 兼容开发目录与 .output/server 运行目录，找不到则尝试下一个路径。
+    }
+  }
+
+  captchaFont = null;
+  return undefined;
+}
+
 /** 把 SVG 字符串栅格化为 PNG Buffer（位图化后无法用 XML 直接抠出明文答案） */
 async function rasterizePng(svg: string): Promise<Buffer> {
-  return sharp(Buffer.from(svg)).png().toBuffer();
+  await ensureWasmReady();
+
+  const font = getCaptchaFont();
+  return Buffer.from(await svg2png(svg, {
+    ...(font ? { fonts: [font] } : {}),
+    defaultFontFamily: {
+      monospaceFamily: "DejaVu Sans",
+    },
+  }));
 }
 
 /** 清理过期项，防止内存无限增长 */

@@ -13,6 +13,7 @@ const cdnURL = isProduction && hasCdn
   ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl)
   : "";
 const publicCdnAsset = (path: string) => isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path;
+const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {
@@ -257,6 +258,12 @@ export default defineNuxtConfig({
         },
       ],
       meta: [
+        ...(isProduction
+          ? [{
+              "http-equiv": "Content-Security-Policy",
+              content: cspContent,
+            }]
+          : []),
         // 基础元信息
         {
           name: "author",
@@ -475,11 +482,37 @@ export default defineNuxtConfig({
 
         const sourceDir = join(process.cwd(), "data");
         const targetDir = join(process.cwd(), ".output", "server", "data");
+        const ipdbSource = process.env.QQWRY_IPDB_PATH || join(process.cwd(), "data", "qqwry.ipdb");
 
-        if (existsSync(sourceDir)) {
+        if (!existsSync(sourceDir)) {
+          console.warn("⚠ data/ directory not found");
+        }
+
+        if (existsSync(ipdbSource)) {
           mkdirSync(targetDir, { recursive: true });
-          copyFileSync(join(sourceDir, "qqwry.dat"), join(targetDir, "qqwry.dat"));
-          console.log("✓ Copied qqwry.dat to .output/server/data/");
+          copyFileSync(ipdbSource, join(targetDir, "qqwry.ipdb"));
+          console.log("✓ Copied qqwry.ipdb to .output/server/data/");
+        } else {
+          console.warn("⚠ qqwry.ipdb not found in data/ directory");
+        }
+
+        const fontSource = join(process.cwd(), "server", "fonts", "DejaVuSans.ttf");
+        const fontTargetDir = join(process.cwd(), ".output", "server", "server", "fonts");
+        const fontTarget = join(fontTargetDir, "DejaVuSans.ttf");
+
+        if (existsSync(fontSource)) {
+          mkdirSync(fontTargetDir, { recursive: true });
+          copyFileSync(fontSource, fontTarget);
+          console.log("✓ Copied captcha font to .output/server/server/fonts/");
+        }
+
+        const wasmSource = join(process.cwd(), "node_modules", "svg2png-wasm", "svg2png_wasm_bg.wasm");
+        const wasmTarget = join(process.cwd(), ".output", "server", "wasm", "svg2png_wasm_bg.wasm");
+
+        if (existsSync(wasmSource)) {
+          mkdirSync(join(process.cwd(), ".output", "server", "wasm"), { recursive: true });
+          copyFileSync(wasmSource, wasmTarget);
+          console.log("✓ Copied svg2png WASM to .output/server/wasm/");
         }
       },
     },
@@ -808,9 +841,6 @@ export default defineNuxtConfig({
     "/**": {
       headers: isProduction
         ? {
-            // 生产环境下的 CSP 配置
-            "Content-Security-Policy":
-              `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`,
             "X-Frame-Options": "DENY",
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "strict-origin-when-cross-origin",

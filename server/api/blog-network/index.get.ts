@@ -1,4 +1,5 @@
-import { resolve4 } from "node:dns/promises";
+import { resolve4, resolve6 } from "node:dns/promises";
+import { isIP } from "node:net";
 import { prisma } from "#server/utils/prisma";
 import { resolveCity } from "#server/utils/ip-location";
 import { CITY_COORDS, matchForeignCoord, type Coord } from "~~/shared/city-coords";
@@ -11,7 +12,7 @@ import { CITY_COORDS, matchForeignCoord, type Coord } from "~~/shared/city-coord
  * 友链 → 目标站点（新标签）。
  *
  * 合并：订阅与友链按**域名**去重，重复域名以订阅为准（订阅是作者自加，收集意愿更强）。
- * 坐标：DNS 取**全部 A 记录**，逐个 geolocate、按坐标去重后全部打点（多机房 CDN 自然多 pin，
+ * 坐标：DNS 取**全部 A/AAAA 记录**，逐个 geolocate、按坐标去重后全部打点（多机房 CDN 自然多 pin，
  * 同机房合并）。国内 city→province 质心；境外 country→FOREIGN_COORDS 子串匹配；命中不了
  * 的计入 overseas / unknown 计数桶（不伪造坐标）。
  *
@@ -29,8 +30,6 @@ function domainOf(url: string): string | null {
     return null;
   }
 }
-
-const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 
 // 单条 DNS 解析带超时兜底（系统 resolver 默认可能很久），超时返回 fallback
 function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -60,16 +59,16 @@ function coordForInfo(info: {
 
 // 一个域名 → 多个去重坐标 + 单一桶标记（任一 IP 命中即算定位成功，否则取最差的桶）
 async function resolveDomain(domain: string): Promise<{ coords: Coord[]; bucket: Bucket }> {
-  // 域名本身是 IPv4 字面量时跳过 DNS 直接用作 IP
+  // 域名本身是 IP 字面量时跳过 DNS 直接用作 IP
   let ips: string[];
-  if (IPV4_RE.test(domain)) {
+  if (isIP(domain)) {
     ips = [domain];
   } else {
-    try {
-      ips = await withTimeout(resolve4(domain), 5000, []);
-    } catch {
-      ips = [];
-    }
+    const [v4, v6] = await Promise.all([
+      withTimeout(resolve4(domain).catch(() => []), 5000, []),
+      withTimeout(resolve6(domain).catch(() => []), 5000, []),
+    ]);
+    ips = [...new Set([...v4, ...v6])];
   }
   if (!ips.length) return { coords: [], bucket: "unknown" };
 

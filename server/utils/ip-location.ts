@@ -34,10 +34,10 @@ function stripSuffix(s: string): string {
 
 /**
  * 解析单个 IP 的结构化地区。失败/解析不出时返回国内标记为 false、country 为空。
- * qqwry 仅支持 IPv4；IPv6 解析为 null → 调用方计入「未知」桶。
+ * `getIpLocation` 基于 qqwry.ipdb，支持 IPv4 / IPv6。
  */
 export async function resolveCity(ip: string): Promise<CityInfo> {
-  const raw = (await getIpLocation(ip))?.location ?? "";
+  const raw = (await getIpLocation(ip.trim()))?.location ?? "";
   if (!raw) return { city: null, province: null, isDomestic: false, country: "" };
 
   // 港澳台：qqwry 可能给「香港」「中国香港」「香港特别行政区」等，统一成省级
