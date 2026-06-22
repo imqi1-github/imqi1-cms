@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { CITY_COORDS } from "~~/shared/city-coords";
@@ -8,6 +9,7 @@ interface Reader {
   articleTitle: string | null;
   articleUrl: string | null;
   comment: string | null;
+  avatar: string | null;
 }
 
 /**
@@ -37,7 +39,22 @@ function commentSnippet(raw: string | null | undefined): string | null {
   return text.length > 80 ? `${text.slice(0, 80)}…` : text;
 }
 
+function avatarUrl(mail: string | null, service: string): string | null {
+  if (!mail) return null;
+  const hash = createHash("md5").update(mail.toLowerCase().trim()).digest("hex");
+  const serviceUrls: Record<string, string> = {
+    gravatar: "https://www.gravatar.com/avatar",
+    cravatar: "https://cravatar.cn/avatar",
+    weavatar: "https://weavatar.com/avatar",
+  };
+  const baseUrl = serviceUrls[service] || serviceUrls.gravatar;
+  return `${baseUrl}/${hash}?d=identicon&s=80`;
+}
+
 export default defineEventHandler(async () => {
+  const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
+  const avatarService = avatarSetting?.value || "gravatar";
+
   // 取 ip + 昵称(name) + 网址(link) + 邮箱(mail，仅去重用) + coid + 正文(content) + 关联文章；
   // 按时间倒序，使每个身份遍历时首条即其最新评论。
   const rows = await prisma.comments.findMany({
@@ -120,6 +137,7 @@ export default defineEventHandler(async () => {
           articleTitle: row.posts?.title ?? null,
           articleUrl,
           comment: commentSnippet(row.content),
+          avatar: avatarUrl(mail, avatarService),
         };
 
         const ex = tally.get(name);

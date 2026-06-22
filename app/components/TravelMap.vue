@@ -14,6 +14,7 @@ interface Reader {
   articleTitle: string | null;
   articleUrl: string | null;
   comment: string | null;
+  avatar: string | null;
 }
 
 interface Place {
@@ -64,6 +65,9 @@ let AMapRef: any = null;
 // 每个标记上次渲染的内容签名：缩放时内容未变就跳过 setContent，
 // 避免重复重建 <img> 导致头像重新加载/闪烁/重新请求。
 const lastMarkerContent = new WeakMap<object, string>();
+// 高德聚合在缩放/聚散切换时可能换 marker 实例。头像类标记用稳定 DOM 复用，避免新 marker setContent(string)
+// 重新解析 <img> 导致头像再次加载/闪烁。
+const avatarMarkerElementCache = new Map<string, HTMLElement>();
 // InfoWindow 内文章链接的委托点击监听（原生 HTML <a> 默认整页刷新，改走 Nuxt 路由）
 let linkClickHandler: ((e: MouseEvent) => void) | null = null;
 
@@ -195,24 +199,48 @@ function clusterHtml(count: number) {
   return `<div style="width:${size}px;height:${size}px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:${bg};color:#fff;font-size:15px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.85);font-family:${MAP_FONT_FAMILY};">${count}</div>`;
 }
 
-// 访客分布单读者点：小实心圆（无数字）。比针轻量，避免单读者城市铺满醒目的针。
+// 访客分布单读者点：默认显示评论邮箱生成的头像；缺失/加载失败时降级为首字母圆盘。
 const SINGLE_DOT_SIZE = 20;
+const VISITOR_AVATAR_SIZE = 28;
 function singleDotHtml() {
   return `<div style="width:${SINGLE_DOT_SIZE}px;height:${SINGLE_DOT_SIZE}px;border-radius:9999px;background:rgba(37,99,235,.9);box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.85);"></div>`;
+}
+function avatarCircleHtml(src: string | null | undefined, name: string, size: number) {
+  const avatarSrc = src ? escapeHtml(src) : "";
+  const initial = escapeHtml((name || "?").trim().charAt(0) || "?");
+  const common = `width:${size}px;height:${size}px;border-radius:9999px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);`;
+  return avatarSrc
+    ? `<img src="${avatarSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="${common}display:block;object-fit:cover;background:#2563eb;" /><div style="${common}display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:${Math.max(11, Math.round(size * 0.42))}px;">${initial}</div>`
+    : `<div style="${common}display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:${Math.max(11, Math.round(size * 0.42))}px;">${initial}</div>`;
+}
+function readerMarkerHtml(reader: Reader | null | undefined) {
+  return `<div style="position:relative;width:${VISITOR_AVATAR_SIZE}px;height:${VISITOR_AVATAR_SIZE}px;">${avatarCircleHtml(reader?.avatar, reader?.name || "?", VISITOR_AVATAR_SIZE)}</div>`;
+}
+function markerElement(key: string, html: string) {
+  const cached = avatarMarkerElementCache.get(key);
+  if (cached) return { key, element: cached };
+
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const element = (box.firstElementChild || box) as HTMLElement;
+  avatarMarkerElementCache.set(key, element);
+  return { key, element };
+}
+function readerMarkerElement(placeId: number, reader: Reader | null | undefined) {
+  const key = `reader:${placeId}:${reader?.avatar || ""}:${reader?.name || "?"}`;
+  return markerElement(key, readerMarkerHtml(reader));
 }
 
 // 博客网络单站点：圆形头像 + 白边 + 底部小尖角（仿 pin）。头像缺失/加载失败降级为首字母圆盘。
 const AVATAR_SIZE = 36;
 function avatarMarkerHtml(place: Place) {
-  const src = place.avatar ? escapeHtml(place.avatar) : "";
-  const initial = escapeHtml((place.name || "?").trim().charAt(0) || "?");
-  const common = `width:${AVATAR_SIZE}px;height:${AVATAR_SIZE}px;border-radius:9999px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);`;
-  const avatar = src
-    ? `<img src="${src}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="${common}display:block;object-fit:cover;" /><div style="${common}display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:15px;">${initial}</div>`
-    : `<div style="${common}display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:15px;">${initial}</div>`;
   return `<div style="position:relative;width:${AVATAR_SIZE}px;height:${AVATAR_SIZE}px;">
-    ${avatar}
+    ${avatarCircleHtml(place.avatar, place.name, AVATAR_SIZE)}
   </div>`;
+}
+function blogMarkerElement(place: Place) {
+  const key = `blog:${place.id}:${place.avatar || ""}:${place.name || "?"}`;
+  return markerElement(key, avatarMarkerHtml(place));
 }
 
 // 内联图标（InfoWindow 是原生 HTML，Icon 组件不编译）
@@ -326,6 +354,7 @@ function buildInfoContent(place: Place) {
           const nameHtml = readerUrl
             ? `<a href="${escapeHtml(readerUrl)}" class="travel-info-link" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:600;text-decoration:none;flex:none">${escapeHtml(r.name)}</a>`
             : `<span class="travel-info-title" style="font-size:13px;font-weight:600;">${escapeHtml(r.name)}</span>`;
+          const readerAvatar = avatarCircleHtml(r.avatar, r.name, 22);
           const articleHtml = r.articleUrl
             ? `<a href="${escapeHtml(r.articleUrl)}" class="travel-info-link" style="display:inline-flex;align-items:center;gap:3px;min-width:0;max-width:260px;font-size:12px;text-decoration:none;opacity:.85;">${ARTICLE_ICON}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.articleTitle || "")}</span></a>`
             : "";
@@ -333,9 +362,9 @@ function buildInfoContent(place: Place) {
           const commentHtml = r.comment
             ? `<div class="travel-info-desc" style="font-size:12px;line-height:1.4;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(r.comment)}</div>`
             : "";
-          return `<div style="display:flex;flex-direction:column;gap:1px;"><div style="display:flex;align-items:center;gap:6px;">${nameHtml}${
+          return `<div style="display:flex;gap:7px;align-items:flex-start;"><div style="flex:none;">${readerAvatar}</div><div style="min-width:0;display:flex;flex-direction:column;gap:1px;"><div style="display:flex;align-items:center;gap:6px;min-width:0;">${nameHtml}${
             articleHtml ? `<span class="travel-info-desc" style="font-size:12px;">·</span>${articleHtml}` : ""
-          }</div>${commentHtml}</div>`;
+          }</div>${commentHtml}</div></div>`;
         })
         .join("")}${
         restReaders > 0 ? `<div class="travel-info-desc" style="font-size:12px;padding-top:2px;">共 ${readers.length} 位访客</div>` : ""
@@ -435,6 +464,13 @@ function applyMarker(marker: any, html: string, offset: any) {
   }
   marker.setOffset(offset);
 }
+function applyMarkerElement(marker: any, key: string, element: HTMLElement, offset: any) {
+  if (lastMarkerContent.get(marker) !== key) {
+    marker.setContent(element);
+    lastMarkerContent.set(marker, key);
+  }
+  marker.setOffset(offset);
+}
 
 // 创建点聚合（含渲染与点击逻辑），返回 cluster 实例。places 变化时销毁旧 cluster 重建即可，不重载地图。
 function createCluster(points: MapPoint[]) {
@@ -498,7 +534,8 @@ function createCluster(points: MapPoint[]) {
       // 与订阅页头像 fallback 同原则；不能退回默认 pin，否则无头像站点看起来像“丢了”。
       const place0 = findPlace(context.data?.[0]);
       if (!hasReaders && place0?.source) {
-        applyMarker(context.marker, avatarMarkerHtml(place0), new AMapRef.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
+        const markerElement = blogMarkerElement(place0);
+        applyMarkerElement(context.marker, markerElement.key, markerElement.element, new AMapRef.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
         return;
       }
       // 我的足迹：单点用蓝色圆点（与访客分布单读者同款）
@@ -513,8 +550,11 @@ function createCluster(points: MapPoint[]) {
         // 多位访客：数字圆圈（数字 = 读者数，与聚合圈同款）——如沈阳 6 位访客显示「6」
         applyMarker(context.marker, clusterHtml(rc), new AMapRef.Pixel(-clusterSize(rc) / 2, -clusterSize(rc) / 2));
       } else {
-        // 单读者：小实心圆点（不显示针）
-        applyMarker(context.marker, singleDotHtml(), new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
+        // 单读者：显示该访客头像（头像加载失败时降级首字母），让访客分布不再只是匿名圆点。
+        // 这里复用同一个 DOM 元素，避免高德缩放重建 marker 实例时 setContent(string) 重新解析 <img>。
+        const reader = place0?.readers?.[0] ?? null;
+        const markerElement = readerMarkerElement(place0?.id ?? 0, reader);
+        applyMarkerElement(context.marker, markerElement.key, markerElement.element, new AMapRef.Pixel(-VISITOR_AVATAR_SIZE / 2, -VISITOR_AVATAR_SIZE / 2));
       }
     },
   });
@@ -738,6 +778,7 @@ onUnmounted(() => {
     map = null;
   }
   cluster = null;
+  avatarMarkerElementCache.clear();
   if (linkClickHandler) {
     document.removeEventListener("click", linkClickHandler);
     linkClickHandler = null;
