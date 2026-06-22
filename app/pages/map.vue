@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { siteConfig } from "~~/site.config";
 
 const { siteSettings } = useSiteSettings();
+const { isLoggedIn } = useAuth();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const currentYear = new Date().getFullYear();
 
@@ -238,11 +239,22 @@ onUnmounted(() => {
     <!-- 右下浮层：我的足迹统计（仅 travels 视图） -->
     <div
       v-if="view === 'travels' && travelProvinceStats.places > 0"
-      class="pointer-events-none absolute right-2 z-20"
+      class="pointer-events-none absolute right-2 z-20 flex flex-col items-end gap-1.5"
       :style="{ bottom: `${footerH + 4}px` }">
       <div class="text-[10px] text-slate-700 dark:text-slate-200">
         已到访 {{ travelProvinceStats.provinces }} 个省市 · {{ travelProvinceStats.places }} 个地点
       </div>
+      <!-- 已登录：前往后台编辑足迹（外层 pointer-events-none 不挡地图，按钮单独可点） -->
+      <ClientOnly>
+        <NuxtLink
+          v-if="isLoggedIn"
+          to="/admin/travels"
+          target="_blank"
+          class="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-linear-to-b from-white/60 to-white/85 px-2.5 py-1 text-[10px] font-medium text-slate-700 shadow backdrop-blur-[20px] transition-colors hover:text-blue-600 dark:from-black/60 dark:to-black/85 dark:text-slate-200 dark:hover:text-blue-400">
+          <Icon name="ri:edit-line" class="size-3" />
+          编辑足迹
+        </NuxtLink>
+      </ClientOnly>
     </div>
 
     <!-- 右下浮层：访客分布统计（仅 footprint 视图）。避让顶栏导航：用 footerH 把它顶到页脚之上，

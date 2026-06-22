@@ -582,6 +582,14 @@
               :style="{ width: pledgeBarWidth + '%' }"></div>
           </div>
         </div>
+        <a
+          :href="tenYearPledgeUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm mt-6 transition-colors duration-300">
+          看看我的大事记
+          <Icon name="ri:arrow-right-line" class="size-4" />
+        </a>
       </div>
 
       <!-- 更多故事 -->
@@ -629,6 +637,11 @@ import { siteConfig } from "~~/site.config";
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
+
+// 十年之约入口链接（取自 site.config.ts 的 blogOrganizations，避免硬编码）
+const tenYearPledgeUrl = computed(
+  () => siteConfig.links.blogOrganizations.find(o => o.name === "十年之约")?.url || "https://www.foreverblog.cn/",
+);
 
 // 装饰性品牌文字（站点域名大写形式）
 const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();

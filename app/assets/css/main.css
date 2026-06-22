@@ -131,6 +131,19 @@ html.theme-transitioning body * {
     box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* View Transition（Chrome/Edge）主题切换期间：临时关闭所有元素自身的颜色过渡，
+   只由圆形扩散快照负责过渡，避免导航/logo 等自带 transition-all 的元素
+   在快照之上再叠一遍颜色过渡，造成"颜色变得更慢"的观感。切换结束即移除该类。 */
+html.theme-color-instant,
+html.theme-color-instant body,
+html.theme-color-instant body * {
+  transition:
+    background-color 0s,
+    color 0s,
+    border-color 0s,
+    box-shadow 0s !important;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

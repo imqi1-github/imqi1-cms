@@ -125,7 +125,7 @@ export interface BlogOrganization {
   name: string;
   /** 组织链接 URL */
   url: string;
-  /** 组织图标相对路径（如 /imgs/foreverblog.png） */
+  /** 组织图标相对路径（如 /imgs/foreverblog.png，不需要加 cdn 前缀） */
   icon: string;
 }
 

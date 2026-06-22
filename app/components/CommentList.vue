@@ -60,13 +60,17 @@ function cancelReply() {
   };
 }
 
-const fetchComments = async (isRefresh = false, page = 1) => {
-  if (isRefresh) {
-    refreshing.value = true;
-  } else if (page > 1) {
-    loadingMore.value = true;
-  } else {
-    loading.value = true;
+const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
+  // silent=true（如提交评论后刷新）时不切换任何 loading 标志，
+  // 避免顶部的 refreshing 旋转指示器插入/移除把下方评论框顶下去造成布局偏移
+  if (!silent) {
+    if (isRefresh) {
+      refreshing.value = true;
+    } else if (page > 1) {
+      loadingMore.value = true;
+    } else {
+      loading.value = true;
+    }
   }
   error.value = "";
 
@@ -174,7 +178,8 @@ onMounted(async () => {
 });
 
 function handleCommentSubmitted() {
-  fetchComments(true, 1);
+  // 静默刷新：不显示 refreshing 指示器，避免评论框被顶部 spinner 顶动产生布局偏移
+  fetchComments(true, 1, true);
   cancelReply();
 }
 </script>

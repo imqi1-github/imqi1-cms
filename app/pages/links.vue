@@ -492,15 +492,15 @@ onUnmounted(() => {
             v-if="isLoggedIn && !isLoadingAuth"
             href="/admin/links"
             target="_blank"
-            class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
-            <Icon name="lucide:edit" class="size-3" />
+            class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 mr-4">
+            <Icon mode="svg" name="lucide:edit" class="size-3" />
             编辑友链
           </a>
         </ClientOnly>
           <NuxtLink
             href="/subscribes"
-            class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
-            <Icon name="ri:rss-line" class="size-3" />
+            class="inline-flex items-center gap-0.5 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
+            <Icon mode="svg" name="ri:rss-line" class="size-3" />
             也可以看看我的订阅列表
           </NuxtLink>
       </div>

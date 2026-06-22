@@ -139,6 +139,10 @@ const handleClick = async (event: MouseEvent) => {
   }
 
   // 使用 View Transition API
+  // 先挂上 theme-color-instant：切换期间临时把所有元素自身的颜色过渡置 0s，
+  // 仅由圆形扩散快照负责过渡，避免导航/logo 等自带 transition-all 的元素
+  // 在快照之上再叠一遍颜色过渡，造成"颜色变得更慢"的观感
+  document.documentElement.classList.add("theme-color-instant");
   const transition = document.startViewTransition(async () => {
     colorMode.preference = newMode;
     await nextTick();
@@ -168,10 +172,12 @@ const handleClick = async (event: MouseEvent) => {
       )
       .finished.then(() => {
         isTransitioning = false;
+        document.documentElement.classList.remove("theme-color-instant");
       });
   } catch (error) {
     // 如果 transition 失败，确保释放锁
     isTransitioning = false;
+    document.documentElement.classList.remove("theme-color-instant");
     console.error("View transition failed:", error);
   }
 };

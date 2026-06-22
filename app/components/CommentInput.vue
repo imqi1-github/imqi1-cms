@@ -32,9 +32,7 @@ const emit = defineEmits<{
 
 const submitting = ref(false);
 const showEmoji = ref(false);
-const submitSuccess = ref(false);
 const submitError = ref("");
-const successMessage = ref("评论提交成功");
 
 // 反垃圾：蜜罐字段（人类不可见，机器人会自动填充）
 const honeypot = ref("");
@@ -213,7 +211,6 @@ function cancelReply() {
 // 提交评论
 async function submitComment() {
   // 重置状态
-  submitSuccess.value = false;
   submitError.value = "";
 
   // 反垃圾：蜜罐检测（机器人会自动填充隐藏字段）
@@ -296,10 +293,7 @@ async function submitComment() {
 
     // 检查响应状态码
     if (response.code === 200) {
-      submitSuccess.value = true;
       submitError.value = "";
-      // 根据是否需要审核显示不同的提示
-      successMessage.value = response.needModeration ? "评论提交成功，请等待审核" : "评论提交成功";
 
       // 显示前台通知
       if (response.needModeration) {
@@ -329,14 +323,8 @@ async function submitComment() {
       if (!isLoggedIn.value) {
         refreshCaptcha();
       }
-      // 3秒后自动隐藏成功提示
-      setTimeout(() => {
-        submitSuccess.value = false;
-      }, 3000);
-      // 通知父组件刷新评论列表（延迟3秒）
-      setTimeout(() => {
-        emit("comment-submitted");
-      }, 3000);
+      // 通知父组件立即刷新评论列表，让用户马上看到自己的评论（不再延迟 3 秒）
+      emit("comment-submitted");
     } else {
       // 处理错误响应（包括429频率限制）
       const errorMsg = response.message || "评论失败，请重试";
