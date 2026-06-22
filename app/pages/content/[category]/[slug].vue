@@ -1809,7 +1809,7 @@ onUnmounted(() => {
           v-if="post.travels?.length"
           :places="(post.travels ?? []).map(t => ({ id: t.id, name: t.name }))"
           place-icon="ri:map-pin-line"
-          title="作者在撰写此篇文章时，曾去过"
+          title="作者在撰写此篇文章前，曾去过"
           class="mt-4" />
       </div>
 
