@@ -850,6 +850,7 @@ onUnmounted(() => {
 }
 .travel-info-title {
   color: #0f172a;
+  white-space: nowrap;
 }
 .dark .travel-info-title {
   color: #f1f5f9;
