@@ -90,7 +90,7 @@ export const siteConfig = defineSiteConfig({
     // 待后台/环境配好高德 apikey（地图可正常加载）后再把 production 改为 true。
     entryLinks: {
       development: true,
-      production: false,
+      production: true,
     },
   },
 
