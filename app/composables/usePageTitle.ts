@@ -1,18 +1,15 @@
-import { ref, type Ref } from "vue";
-
-// 页面标题状态 - 使用 ref 确保响应式
-const currentPageTitle: Ref<string | null> = ref(null);
-const currentPageIcon: Ref<string | null> = ref(null);
-
 // 页面分类状态（用于文章页面包屑）
 interface PageCategory {
   name: string;
   slug: string;
 }
 
-const currentPageCategory: Ref<PageCategory | null> = ref(null);
-
 export function usePageTitle() {
+  // 页面标题状态：用 useState 按 SSR 请求隔离，避免生产环境模块级 ref 跨请求串号。
+  const currentPageTitle = useState<string | null>("page-title:title", () => null);
+  const currentPageIcon = useState<string | null>("page-title:icon", () => null);
+  const currentPageCategory = useState<PageCategory | null>("page-title:category", () => null);
+
   // 设置页面标题
   function setPageTitle(title: string, icon?: string) {
     currentPageTitle.value = title;

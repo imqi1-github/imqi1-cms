@@ -165,6 +165,16 @@ function escapeHtml(s: string) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function safeExternalHref(raw: string | null | undefined) {
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 // 自定义标记：Remix Icon ri:map-pin-2-fill（红），底部尖端对准坐标
 function markerHtml() {
   return `<div style="position:relative;width:36px;height:42px;">
@@ -215,7 +225,8 @@ const CLOSE_ICON =
 // 订阅 → /subscribes?source=<id>（站内，linkClickHandler 走 SPA）；友链 → targetUrl（外链，linkClickHandler 新标签）。
 function buildBlogCard(place: Place) {
   const isSub = place.source === "subscribe";
-  const actionHref = isSub ? `/subscribes?source=${encodeURIComponent(String(place.sourceId ?? ""))}` : escapeHtml(place.targetUrl || "#");
+  const externalHref = safeExternalHref(place.targetUrl);
+  const actionHref = isSub ? `/subscribes?source=${encodeURIComponent(String(place.sourceId ?? ""))}` : externalHref || "#";
   const label = isSub ? "来自订阅" : "来自友链";
   const actionText = isSub ? "查看 TA 的文章" : "访问站点";
   const avatarSrc = place.avatar ? escapeHtml(place.avatar) : "";
@@ -231,7 +242,7 @@ function buildBlogCard(place: Place) {
         <span class="travel-info-desc" style="font-size:12px;">${label}</span>
       </div>
     </div>
-    <a href="${actionHref}" class="travel-info-link" style="display:block;padding:8px 12px;text-align:center;font-size:13px;font-weight:600;border-top:1px solid rgba(148,163,184,.2);text-decoration:none;">${actionText} →</a>
+    <a href="${escapeHtml(actionHref)}" class="travel-info-link" style="display:block;padding:8px 12px;text-align:center;font-size:13px;font-weight:600;border-top:1px solid rgba(148,163,184,.2);text-decoration:none;">${actionText} →</a>
     <div onclick="window.__closeTravelInfo&amp;&amp;window.__closeTravelInfo()" class="travel-info-close" style="position:absolute;top:8px;left:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:9999px;cursor:pointer;">${CLOSE_ICON}</div>
     <div class="travel-info-tip" style="position:absolute;left:50%;bottom:-4px;width:8px;height:8px;transform:translateX(-50%) rotate(45deg);"></div>
   </div>`;
@@ -241,7 +252,8 @@ function buildBlogCard(place: Place) {
 // 友链 → targetUrl（外链，linkClickHandler 新标签）。头像缺失/加载失败降级为首字母圆盘。
 function blogEntryHtml(p: Place) {
   const isSub = p.source === "subscribe";
-  const href = isSub ? `/subscribes?source=${encodeURIComponent(String(p.sourceId ?? ""))}` : escapeHtml(p.targetUrl || "#");
+  const externalHref = safeExternalHref(p.targetUrl);
+  const href = isSub ? `/subscribes?source=${encodeURIComponent(String(p.sourceId ?? ""))}` : externalHref || "#";
   const initial = escapeHtml((p.name || "?").trim().charAt(0) || "?");
   const avatarSrc = p.avatar ? escapeHtml(p.avatar) : "";
   const sz = 18;
@@ -249,7 +261,7 @@ function blogEntryHtml(p: Place) {
   const avatar = avatarSrc
     ? `<img src="${avatarSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="${common}object-fit:cover;" /><span style="${common}display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:11px;">${initial}</span>`
     : `<span style="${common}display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:11px;">${initial}</span>`;
-  return `<a href="${href}" class="travel-info-link" style="display:flex;align-items:center;gap:3px;font-size:13px;text-decoration:none;font-weight:500;padding:4px 0;">${avatar}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</span></a>`;
+  return `<a href="${escapeHtml(href)}" class="travel-info-link" style="display:flex;align-items:center;gap:3px;font-size:13px;text-decoration:none;font-weight:500;padding:4px 0;">${avatar}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</span></a>`;
 }
 
 // 博客网络聚合簇卡片：圈内多个站点按「订阅 / 友链」分组展示。混合时两组各带小标题分列；
@@ -310,8 +322,9 @@ function buildInfoContent(place: Place) {
   const readersHtml = shownReaders.length
     ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;">${shownReaders
         .map(r => {
-          const nameHtml = r.url
-            ? `<a href="${escapeHtml(r.url)}" class="travel-info-link" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:600;text-decoration:none;flex:none">${escapeHtml(r.name)}</a>`
+          const readerUrl = safeExternalHref(r.url);
+          const nameHtml = readerUrl
+            ? `<a href="${escapeHtml(readerUrl)}" class="travel-info-link" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:600;text-decoration:none;flex:none">${escapeHtml(r.name)}</a>`
             : `<span class="travel-info-title" style="font-size:13px;font-weight:600;">${escapeHtml(r.name)}</span>`;
           const articleHtml = r.articleUrl
             ? `<a href="${escapeHtml(r.articleUrl)}" class="travel-info-link" style="display:inline-flex;align-items:center;gap:3px;min-width:0;max-width:260px;font-size:12px;text-decoration:none;opacity:.85;">${ARTICLE_ICON}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.articleTitle || "")}</span></a>`

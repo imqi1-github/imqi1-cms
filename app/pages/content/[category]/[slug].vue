@@ -21,9 +21,23 @@ const { data: categoryData } = await useFetch(`/api/category/${categorySlug}`, {
 });
 const categoryFromUrl = computed(() => categoryData.value?.data || null);
 
-// 格式化日期
+const isHydrated = ref(false);
+
+// 格式化为绝对日期（SSR 与客户端首屏一致，不依赖当前时间）
+function formatAbsoluteDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// 格式化日期：hydration 完成前返回绝对日期，完成后返回相对时间
 function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  if (!isHydrated.value) {
+    return formatAbsoluteDate(d);
+  }
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const seconds = Math.floor(diff / 1000);
@@ -445,6 +459,8 @@ const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
 
 // 初始化 Fancybox 和其他功能
 onMounted(async () => {
+  isHydrated.value = true;
+
   try {
     // 动态导入 Fancybox（仅客户端）
     FancyboxModule = await import("@fancyapps/ui");
@@ -1646,7 +1662,7 @@ onUnmounted(() => {
       v-else-if="isNotFound"
       class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
-        <Icon name="ri:close-large-fill" class="text-red-500" />
+        <Icon name="ri:close-large-fill" class="text-red-500 mt-1" />
         <span>页面未找到</span>
       </h1>
 

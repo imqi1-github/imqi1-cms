@@ -116,7 +116,10 @@ export default defineTypedApiHandler(
 
     if (link) {
       try {
-        new URL(link);
+        const url = new URL(link);
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          throw new Error("Invalid link protocol");
+        }
       } catch {
         throw createError({
           statusCode: 400,
