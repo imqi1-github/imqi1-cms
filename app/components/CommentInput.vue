@@ -55,6 +55,12 @@ const csrfToken = ref("");
 
 // 用户登录状态
 const isLoggedIn = ref(false);
+const currentUser = ref<{
+  name?: string;
+  nickname?: string | null;
+  mail?: string | null;
+  avatar?: string | null;
+} | null>(null);
 
 // 表单数据 - 如果传入了 formData 就使用它，否则创建本地状态
 const localFormData = ref({
@@ -81,8 +87,10 @@ const formData = computed({
   },
 });
 
+const loggedInDisplayName = computed(() => currentUser.value?.nickname || currentUser.value?.name || formData.value.name || "已登录用户");
+
 // 表情相关
-const activeCategory = ref("capoo");
+const activeCategory = ref("Heo-Sticker");
 
 // 表情分类配置
 const categoryConfig: Record<string, { name: string; prefix: string }> = {
@@ -138,6 +146,7 @@ onMounted(async () => {
       if (userRes.status === "fulfilled" && userRes.value?.user) {
         const user = userRes.value.user;
         isLoggedIn.value = true;
+        currentUser.value = user;
         formData.value.name = user.nickname || user.name || "";
         formData.value.mail = user.mail || "";
       } else {
@@ -412,472 +421,160 @@ function formatEmojiPlaceholder(text: string): string {
 </script>
 
 <template>
-  <div id="comment-input-box" class="comment-input-box">
+  <div id="comment-input-box" class="mt-5">
     <div class="flex items-center justify-between">
-      <h2 class="comment-box-title">
+      <h2 class="mb-1.25 text-[1.3em] font-bold">
         {{ isReply ? `回复 ${replyTo?.name}` : "评论" }}
       </h2>
-      <button v-if="isReply" type="button" @click="cancelReply" class="cancel-reply-button">取消回复</button>
+      <button
+        v-if="isReply"
+        type="button"
+        @click="cancelReply"
+        class="cursor-pointer rounded border-0 bg-transparent px-2 py-1 text-[0.875em] text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+        取消回复
+      </button>
     </div>
-    <div class="comment-box-description">
-      评论即代表你已阅读并同意<a href="/agreement#评论相关" class="comment-link" target="_blank">评论协议</a>。
+    <div class="mb-3.75 text-[0.875em] text-slate-500">
+      评论即代表你已阅读并同意<a href="/agreement#评论相关" class="text-blue-600 underline underline-offset-2 hover:text-blue-700" target="_blank">评论协议</a>。
     </div>
 
-    <div class="comment-input-row">
+    <div class="mb-2.5 flex w-full flex-wrap gap-2.5">
       <label for="comment-content-input" class="sr-only">评论内容</label>
-      <textarea id="comment-content-input" ref="textareaRef" v-model="formData.content" placeholder="评论内容 *" class="comment-textarea" required />
+      <textarea
+        id="comment-content-input"
+        ref="textareaRef"
+        v-model="formData.content"
+        placeholder="评论内容 *"
+        class="min-h-[10em] w-full resize-y rounded border border-slate-200 bg-white px-3 py-2 leading-normal text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300"
+        required />
     </div>
 
-    <!-- 蜜罐字段：人类不可见，机器人会自动填充。
-         仅未登录用户渲染——登录用户已通过身份认证，无需蜜罐；且其昵称/邮箱/链接框均被禁用，
-         浏览器自动填充找不到可填的字段，会误填这个文本框，导致提交被蜜罐逻辑静默拦截（表现为“点了没反应”）。
-         字段名刻意避开 website/url 等浏览器自动填充识别词，防止误填。 -->
-    <div v-if="!isLoggedIn" class="hp-field" aria-hidden="true">
+    <!-- 蜜罐字段：仅未登录用户渲染。
+         人类不可见且不可聚焦；正常用户/浏览器自动填充应填写昵称、邮箱、链接等可见字段，
+         但简单机器人可能会无差别填充隐藏 input，从而被蜜罐拦截。
+         登录用户已通过身份认证，无需蜜罐；同时避免自动填充/密码管理器误填蜜罐导致提交被拦截。
+         字段名刻意避开 website/url 等自动填充关键词，降低误填概率。 -->
+    <div v-if="!isLoggedIn" class="pointer-events-none absolute -left-2499.75 -top-2499.75 size-px overflow-hidden opacity-0" aria-hidden="true">
       <label for="comment-hp">附加信息</label>
       <input id="comment-hp" v-model="honeypot" type="text" name="hp_field" tabindex="-1" autocomplete="off" />
     </div>
 
-    <div class="comment-input-row">
-      <div class="comment-input-group">
-        <label for="comment-input-name" class="sr-only">昵称</label>
-        <input
-          id="comment-input-name"
-          v-model="formData.name"
-          type="text"
-          placeholder="昵称 *"
-          class="comment-input"
-          :disabled="isLoggedIn"
-          required />
-      </div>
-      <div class="comment-input-group">
-        <label for="comment-input-mail" class="sr-only">邮箱</label>
-        <input
-          id="comment-input-mail"
-          v-model="formData.mail"
-          type="email"
-          :placeholder="requireMail ? '邮箱 *' : '邮箱'"
-          class="comment-input"
-          :disabled="isLoggedIn" />
-      </div>
-      <div class="comment-input-group">
-        <label for="comment-input-link" class="sr-only">链接</label>
-        <input
-          id="comment-input-link"
-          v-model="formData.link"
-          type="url"
-          :placeholder="requireLink ? '链接 *' : '链接'"
-          class="comment-input"
-          :disabled="isLoggedIn" />
-      </div>
+    <div class="mb-2.5 flex w-full flex-wrap gap-2.5">
+      <template v-if="isLoggedIn">
+        <input v-model="formData.name" type="hidden" name="name" />
+        <input v-model="formData.mail" type="hidden" name="mail" />
+        <input v-model="formData.link" type="hidden" name="link" />
+        <div class="flex h-8 flex-1 items-center gap-2 text-[0.875em] text-slate-700 dark:text-slate-300">
+          <span class="overflow-hidden text-ellipsis whitespace-nowrap">已登录用户：</span>
+          <img
+            v-if="currentUser?.avatar"
+            :src="currentUser.avatar"
+            :alt="loggedInDisplayName"
+            class="size-5.5 shrink-0 rounded-full border border-[rgb(229,224,224)] bg-slate-200 object-cover" />
+        </div>
+      </template>
+      <template v-else>
+        <div class="min-w-37.5 flex-1 max-sm:min-w-full">
+          <label for="comment-input-name" class="sr-only">昵称</label>
+          <input
+            id="comment-input-name"
+            v-model="formData.name"
+            type="text"
+            placeholder="昵称 *"
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
+            required />
+        </div>
+        <div class="min-w-37.5 flex-1 max-sm:min-w-full">
+          <label for="comment-input-mail" class="sr-only">邮箱</label>
+          <input
+            id="comment-input-mail"
+            v-model="formData.mail"
+            type="email"
+            :placeholder="requireMail ? '邮箱 *' : '邮箱'"
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
+        </div>
+        <div class="min-w-37.5 flex-1 max-sm:min-w-full">
+          <label for="comment-input-link" class="sr-only">链接</label>
+          <input
+            id="comment-input-link"
+            v-model="formData.link"
+            type="url"
+            :placeholder="requireLink ? '链接 *' : '链接'"
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
+        </div>
+      </template>
       <!-- 图形验证码（仅未登录用户显示，与昵称/邮箱/链接同行） -->
-      <div v-if="!isLoggedIn" class="comment-input-group verify-group">
+      <div v-if="!isLoggedIn" class="flex min-w-37.5 flex-1 items-center gap-1.5 max-sm:min-w-full">
         <label for="comment-input-captcha" class="sr-only">验证码</label>
         <input
           id="comment-input-captcha"
           v-model="captchaInput"
           type="text"
           placeholder="验证码 *"
-          class="comment-input"
+          class="h-8 min-w-0 flex-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
           maxlength="6"
           autocomplete="off"
           required />
         <img
           v-if="captchaUrl"
           :src="captchaUrl"
-          class="captcha-image"
+          class="h-7 w-auto shrink-0 cursor-pointer rounded border border-slate-200 bg-slate-50 transition-opacity duration-150 hover:opacity-80 dark:border-slate-600"
           alt="验证码"
           title="点击刷新验证码"
           loading="lazy"
           @click="refreshCaptcha" />
       </div>
 
-      <div class="comment-buttons">
+      <div class="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:justify-end">
         <div class="relative">
-          <button type="button" class="emoji-button" @click="showEmoji = !showEmoji" v-tooltip="'表情'">
+          <button
+            type="button"
+            class="flex h-7 cursor-pointer items-center justify-center rounded-md border-0 bg-slate-100 px-3 text-[0.875em] font-semibold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            @click="showEmoji = !showEmoji"
+            v-tooltip="'表情'">
             <Icon name="ri:emoji-sticker-line" class="size-4" />
           </button>
           <!-- 表情面板 - 悬浮 -->
-          <Transition name="emoji">
-            <div v-if="showEmoji" class="emoji-box">
+          <Transition
+            enter-active-class="transition-all duration-150"
+            leave-active-class="transition-all duration-150"
+            enter-from-class="opacity-0 -translate-y-2"
+            leave-to-class="opacity-0 -translate-y-2">
+            <div v-if="showEmoji" class="absolute right-0 bottom-[calc(100%+8px)] z-100 w-80 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
               <!-- 分类标签 -->
-              <div class="emoji-tabs">
+              <div class="mb-2 flex gap-1">
                 <button
                   v-for="cat in categories"
                   :key="cat.key"
                   type="button"
-                  class="emoji-tab"
-                  :class="{ active: activeCategory === cat.key }"
+                  class="cursor-pointer rounded border-0 px-2.5 py-1 text-[0.75em] text-slate-500 transition-all duration-150 dark:text-slate-400"
+                  :class="{ 'bg-blue-500 text-white dark:text-white': activeCategory === cat.key }"
                   @click="activeCategory = cat.key">
                   {{ cat.name }}
                 </button>
               </div>
               <!-- 表情列表 -->
-              <div class="emoji-list">
+              <div class="flex max-h-45 flex-wrap gap-1 overflow-y-auto [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar]:w-1">
                 <img
                   v-for="emoji in currentEmojis"
                   :key="emoji.key"
                   :src="emoji.path"
                   :alt="emoji.name"
                   :title="emoji.name"
-                  class="emoji-item"
+                  class="size-8 cursor-pointer rounded p-0.5 object-contain transition-colors duration-150 hover:bg-slate-100 dark:hover:bg-slate-800"
                   @click="insertEmoji(emoji.key)" />
               </div>
             </div>
           </Transition>
         </div>
-        <button type="button" class="submit-button" @click="submitComment" :disabled="submitting">
+        <button
+          type="button"
+          class="flex h-7 cursor-pointer items-center justify-center rounded-md border-0 bg-blue-600 px-3 text-[0.875em] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          @click="submitComment"
+          :disabled="submitting">
           {{ submitting ? "提交中..." : "提交评论" }}
         </button>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.comment-input-box {
-  margin-top: 20px;
-}
-
-.comment-box-title {
-  font-size: 1.3em;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.comment-box-description {
-  color: rgb(100 116 139);
-  font-size: 0.875em;
-  margin-bottom: 15px;
-}
-
-.comment-link {
-  color: rgb(37 99 235);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.comment-link:hover {
-  color: rgb(29 78 216);
-}
-
-.comment-input-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-.comment-textarea {
-  width: 100%;
-  min-height: 10em;
-  padding: 8px 12px;
-  border: 1px solid rgb(226 232 240);
-  border-radius: 4px;
-  background: rgb(255 255 255);
-  line-height: 1.5;
-  color: rgb(23, 20, 20);
-  resize: vertical;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.dark .comment-textarea {
-  background: rgb(8, 14, 30);
-  border-color: rgb(24, 35, 49);
-  color: rgb(203 213 225);
-}
-
-.comment-textarea:focus {
-  outline: none;
-  border-color: rgb(37 99 235);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
-}
-
-.comment-input-group {
-  flex: 1;
-  min-width: 150px;
-}
-
-.comment-input {
-  width: 100%;
-  height: 2em;
-  padding: 4px 10px;
-  border: 1px solid rgb(226 232 240);
-  border-radius: 4px;
-  background: rgb(255 255 255);
-  color: rgb(23, 20, 20);
-  font-size: 0.875em;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.dark .comment-input {
-  background: rgb(8, 14, 30);
-  border-color: rgb(24, 35, 49);
-  color: rgb(203 213 225);
-}
-
-.comment-input:focus {
-  outline: none;
-  border-color: rgb(37 99 235);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
-}
-
-.comment-input:disabled {
-  background: rgb(243 244 246);
-  color: rgb(107 114 128);
-  cursor: not-allowed;
-}
-
-.dark .comment-input:disabled {
-  background: rgb(30 41 59);
-  color: rgb(107 114 128);
-}
-
-.comment-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.emoji-button,
-.submit-button {
-  border: none;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875em;
-  font-weight: 600;
-  transition: background-color 0.15s;
-}
-
-.emoji-button {
-  background: rgb(241 245 249);
-  color: rgb(51 65 85);
-  padding-inline: 12px;
-}
-
-.dark .emoji-button {
-  background: rgb(30 41 59);
-  color: rgb(203 213 225);
-}
-
-.emoji-button:hover {
-  background: rgb(226 232 240);
-}
-
-.dark .emoji-button:hover {
-  background: rgb(51 65 85);
-}
-
-.submit-button {
-  background: rgb(37 99 235);
-  color: white;
-  padding-inline: 12px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: rgb(29 78 216);
-}
-
-.submit-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* 表情面板 - 悬浮样式 */
-.emoji-box {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  z-index: 100;
-  width: 320px;
-  padding: 8px;
-  background: rgb(255 255 255);
-  border: 1px solid rgb(226 232 240);
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-}
-
-.dark .emoji-box {
-  background: rgb(15 23 42);
-  border-color: rgb(51 65 85);
-}
-
-/* 表情分类标签 */
-.emoji-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.emoji-tab {
-  padding: 4px 10px;
-  border: none;
-  background: transparent;
-  color: rgb(100 116 139);
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 0.75em;
-  transition: all 0.15s;
-}
-
-.dark .emoji-tab {
-  color: rgb(148 163 184);
-}
-
-.emoji-tab.active {
-  background: rgb(37 99 235);
-  color: white;
-}
-
-.emoji-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.emoji-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.emoji-list::-webkit-scrollbar-thumb {
-  background: rgb(203 213 225);
-  border-radius: 2px;
-}
-
-.dark .emoji-list::-webkit-scrollbar-thumb {
-  background: rgb(71 85 105);
-}
-
-.emoji-item {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 4px;
-  transition: background 0.15s;
-}
-
-.emoji-item:hover {
-  background: rgb(241 245 249);
-}
-
-.dark .emoji-item:hover {
-  background: rgb(30 41 59);
-}
-
-/* 表情面板动画 */
-.emoji-enter-active,
-.emoji-leave-active {
-  transition: all 0.15s;
-}
-
-.emoji-enter-from,
-.emoji-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.cancel-reply-button {
-  background: none;
-  border: none;
-  color: rgb(100 116 139);
-  font-size: 0.875em;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.15s;
-}
-
-.dark .cancel-reply-button {
-  color: rgb(148 163 184);
-}
-
-.cancel-reply-button:hover {
-  background: rgb(241 245 249);
-}
-
-.dark .cancel-reply-button:hover {
-  background: rgb(30 41 59);
-}
-
-/* 响应式 */
-@media (max-width: 640px) {
-  .comment-input-group {
-    min-width: 100%;
-  }
-
-  .comment-buttons {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-end;
-  }
-}
-
-/* 蜜罐字段：完全隐藏，机器人会自动填充 */
-.hp-field {
-  position: absolute;
-  left: -9999px;
-  top: -9999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* 图形验证码样式（验证码输入框 + 图片并排） */
-.verify-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.verify-group .comment-input {
-  width: auto;
-  flex: 1;
-  min-width: 0;
-}
-
-.captcha-image {
-  height: 28px;
-  width: auto;
-  flex-shrink: 0;
-  border: 1px solid rgb(226 232 240);
-  border-radius: 4px;
-  cursor: pointer;
-  background: rgb(248 250 252);
-  transition: opacity 0.15s;
-}
-
-.captcha-image:hover {
-  opacity: 0.8;
-}
-
-.dark .captcha-image {
-  border-color: rgb(51 65 85);
-}
-</style>
