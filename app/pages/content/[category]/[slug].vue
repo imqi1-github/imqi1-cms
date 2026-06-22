@@ -773,7 +773,7 @@ onMounted(async () => {
         calloutContainer.className = `markdown-callout my-4 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
         calloutContainer.innerHTML = `
         <div class="flex items-start gap-3">
-          <div class="${config.iconColor} flex-shrink-0 mt-0.5">
+          <div class="${config.iconColor} flex-shrink-0 mt-1">
             ${config.icon}
           </div>
           <div class="flex-1 ${config.textColor}">
