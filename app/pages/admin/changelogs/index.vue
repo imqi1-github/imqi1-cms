@@ -9,6 +9,8 @@ const toast = useToast();
 const logs = ref<any[]>([]);
 const loading = ref(true);
 const submitting = ref(false);
+const importing = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 // 编辑状态：一条记录可含多个条目（type + value）
 const editingId = ref<number | null>(null);
@@ -135,6 +137,41 @@ async function deleteLog(id: number) {
   }
 }
 
+// 触发隐藏的文件选择框
+function triggerImport() {
+  fileInput.value?.click();
+}
+
+// 导入 JSON：读取文件文本 → 后端解析入库 → 刷新列表
+async function onImportFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  importing.value = true;
+  try {
+    const source = await file.text();
+    const res = (await $fetch("/api/admin/changelogs/import", {
+      method: "POST",
+      body: { source },
+    })) as { imported?: number };
+
+    toast.success({
+      message: res?.imported ? `导入成功，共 ${res.imported} 条记录` : "导入成功",
+    });
+    await loadLogs();
+  } catch (err: any) {
+    console.error("导入失败:", err);
+    toast.error({
+      message: err?.data?.message || "导入失败，请检查 JSON 格式",
+    });
+  } finally {
+    importing.value = false;
+    // 清空 value，便于重复选择同一个文件
+    input.value = "";
+  }
+}
+
 onMounted(() => {
   loadLogs();
 });
@@ -146,6 +183,31 @@ onMounted(() => {
       <!-- 页面标题 -->
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold">更新日志管理</h1>
+        <div class="flex items-center gap-2">
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".json,application/json"
+            class="hidden"
+            @change="onImportFile"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="importing"
+            v-tooltip.bottom="
+              'JSON 格式：条目数组 [{ type, value }, ...]，一个文件 = 一条记录；多条记录可用 [{ entries: [...] }, ...]'
+            "
+            @click="triggerImport"
+          >
+            <Icon
+              :name="importing ? 'lucide:loader-2' : 'lucide:upload'"
+              class="mr-1 size-4"
+              :class="importing ? 'animate-spin' : ''"
+            />
+            {{ importing ? "导入中..." : "导入 JSON" }}
+          </Button>
+        </div>
       </div>
 
       <!-- 添加表单 -->
