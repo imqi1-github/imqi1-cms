@@ -32,8 +32,7 @@ model metas {
 
 model changelogs {
   id          Int      @id @default(autoincrement())
-  class       String
-  desc        String   @db.Text
+  content     String   @db.Text
   create_time DateTime @default(now())
 
   @@index([create_time], map: "Changelogs_create_time_idx")

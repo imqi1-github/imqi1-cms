@@ -1,7 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { getSubscribePosts } from '#server/utils/rss';
 import { parseCovers } from "#server/utils/covers";
-import { renderSimpleMarkdown } from "#server/utils/markdown";
+import { renderChangelogContent } from "#server/utils/changelog";
 
 export default defineEventHandler(async event => {
   try {
@@ -293,9 +293,7 @@ export default defineEventHandler(async event => {
         .then(logs =>
           logs.map(log => ({
             id: log.id,
-            class: log.class,
-            desc: log.desc,
-            descHtml: renderSimpleMarkdown(log.desc || ""),
+            content: renderChangelogContent(log.content),
             create_time: log.create_time,
           }))
         ),

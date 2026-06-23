@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
-import { renderSimpleMarkdown } from "#server/utils/markdown";
+import { renderChangelogContent } from "#server/utils/changelog";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -17,10 +17,11 @@ export default defineEventHandler(async event => {
       orderBy: { create_time: "desc" },
     });
 
-    // 渲染 Markdown 内容为 HTML
+    // 解析 content（JSON 条目数组）并渲染每条 value 的 markdown
     return changelogs.map(log => ({
-      ...log,
-      descHtml: renderSimpleMarkdown(log.desc || ""),
+      id: log.id,
+      content: renderChangelogContent(log.content),
+      createTime: log.create_time,
     }));
   } catch (error) {
     throw createError({

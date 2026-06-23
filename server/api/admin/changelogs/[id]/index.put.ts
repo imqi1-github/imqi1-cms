@@ -1,6 +1,10 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateChangelogData } from "#server/utils/validation";
+import {
+  normalizeChangelogEntries,
+  stringifyChangelogContent,
+} from "#server/utils/changelog";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -23,17 +27,9 @@ export default defineEventHandler(async event => {
   }
 
   const body = await readBody(event);
-  const { class: classType, desc } = body;
-
-  if (!desc || !desc.trim()) {
-    throw createError({
-      statusCode: 400,
-      message: "内容不能为空",
-    });
-  }
-
-  // 验证字段长度
-  validateChangelogData({ class: classType, desc });
+  // 前端发来 { content: [{ type, value }, ...] }，规整后校验
+  const entries = normalizeChangelogEntries(body?.content);
+  validateChangelogData(entries);
 
   // 检查日志是否存在
   const existing = await prisma.changelogs.findUnique({
@@ -51,8 +47,7 @@ export default defineEventHandler(async event => {
   const changelog = await prisma.changelogs.update({
     where: { id },
     data: {
-      class: classType || "新增",
-      desc: desc.trim(),
+      content: stringifyChangelogContent(entries),
     },
   });
 

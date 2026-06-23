@@ -15,6 +15,8 @@ const ROOT_DIR = path.resolve(__dirname, '..')
 const SOURCE_DIR = path.join(ROOT_DIR, '.output', 'server')
 const args = process.argv.slice(2)
 const isDryRun = args.includes('--dry-run')
+// 默认不上传 node_modules；加 --node-modules 才上传
+const includeNodeModules = args.includes('--node-modules')
 
 const config = {
   host: process.env.SERVER_HOST || process.env.SERVER_IP,
@@ -48,6 +50,9 @@ function getAllFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir)
 
   for (const file of files) {
+    // 默认跳过 node_modules 目录（任意层级）
+    if (!includeNodeModules && file === 'node_modules') continue
+
     const filePath = path.join(dir, file)
     const stat = fs.statSync(filePath)
 
@@ -59,6 +64,18 @@ function getAllFiles(dir, fileList = []) {
   }
 
   return fileList
+}
+
+// 统计目录内文件数量（用于提示被跳过的 node_modules 文件数）
+function countDirFiles(dir) {
+  let count = 0
+  const files = fs.readdirSync(dir)
+  for (const file of files) {
+    const filePath = path.join(dir, file)
+    if (fs.statSync(filePath).isDirectory()) count += countDirFiles(filePath)
+    else count++
+  }
+  return count
 }
 
 function toRemotePath(...parts) {
@@ -142,8 +159,18 @@ async function main() {
     return
   }
 
+  // 默认不上传 node_modules，统计被跳过的文件数用于提示
+  let skippedNodeModules = 0
+  if (!includeNodeModules) {
+    const nmDir = path.join(SOURCE_DIR, 'node_modules')
+    if (fs.existsSync(nmDir)) skippedNodeModules = countDirFiles(nmDir)
+  }
+
   console.log('🚀 开始上传 .output/server 到服务器...\n')
   console.log(`📦 文件数量: ${files.length}`)
+  if (skippedNodeModules > 0) {
+    console.log(`⊘ 跳过 node_modules: ${skippedNodeModules} 个文件（加 --node-modules 可一并上传）`)
+  }
   console.log(`📂 本地目录: ${SOURCE_DIR}`)
   console.log(`🌐 服务器: ${config.host}:${config.port}`)
   console.log(`📁 远程目录: ${config.remoteDir}`)

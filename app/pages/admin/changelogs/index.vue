@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import {
+  CHANGELOG_TYPES,
+  getChangelogMeta,
+  type ChangelogEntry,
+} from "~~/shared/changelog";
+
 const toast = useToast();
 const logs = ref<any[]>([]);
 const loading = ref(true);
 const submitting = ref(false);
 
-// 编辑状态
+// 编辑状态：一条记录可含多个条目（type + value）
 const editingId = ref<number | null>(null);
-const editForm = reactive({
-  class: "新增",
-  desc: "",
+const editForm = reactive<{ entries: ChangelogEntry[] }>({
+  entries: [{ type: "新增", value: "" }],
 });
 
-// 分类选项
-const classOptions = ["新增", "优化", "修复", "删除", "重构"];
+// 是否存在可保存的条目（至少一条 value 非空）
+const canSave = computed(() => editForm.entries.some(e => e.value.trim().length > 0));
 
 // 加载更新日志
 async function loadLogs() {
@@ -40,35 +45,50 @@ function formatDate(dateStr: string | Date) {
   });
 }
 
-// 获取分类颜色
-function getClassColor(classType: string) {
-  const colors: Record<string, string> = {
-    新增: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    优化: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    修复: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    删除: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    重构: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  };
-  return colors[classType] || "bg-gray-100 text-gray-700";
+// 添加一条空白条目
+function addEntry() {
+  editForm.entries.push({ type: "新增", value: "" });
+}
+
+// 删除某条条目（至少保留 1 行，避免空表单）
+function removeEntry(index: number) {
+  if (editForm.entries.length <= 1) return;
+  editForm.entries.splice(index, 1);
+}
+
+// 重置为单条空白
+function resetForm() {
+  editForm.entries = [{ type: "新增", value: "" }];
 }
 
 // 开始编辑
 function startEdit(log: any) {
   editingId.value = log.id;
-  editForm.class = log.class;
-  editForm.desc = log.desc;
+  const src = Array.isArray(log?.content) ? log.content : [];
+  editForm.entries =
+    src.length > 0
+      ? src.map((c: any) => ({
+          type: c.type ?? "新增",
+          value: c.value ?? "",
+        }))
+      : [{ type: "新增", value: "" }];
 }
 
 // 取消编辑
 function cancelEdit() {
   editingId.value = null;
-  editForm.class = "新增";
-  editForm.desc = "";
+  resetForm();
 }
 
 // 保存
 async function save() {
-  if (!editForm.desc.trim()) {
+  // 过滤掉 value 空行
+  const entries: ChangelogEntry[] = editForm.entries
+    .map(e => ({ type: e.type, value: e.value.trim() }))
+    .filter(e => e.value.length > 0);
+
+  if (entries.length === 0) {
+    toast.error({ message: "内容不能为空" });
     return;
   }
 
@@ -77,33 +97,21 @@ async function save() {
     if (editingId.value) {
       await $fetch(`/api/admin/changelogs/${editingId.value}`, {
         method: "PUT",
-        body: {
-          class: editForm.class,
-          desc: editForm.desc,
-        },
+        body: { content: entries },
       });
-      toast.success({
-        message: "更新成功",
-      });
+      toast.success({ message: "更新成功" });
     } else {
       await $fetch("/api/admin/changelogs", {
         method: "POST",
-        body: {
-          class: editForm.class,
-          desc: editForm.desc,
-        },
+        body: { content: entries },
       });
-      toast.success({
-        message: "添加成功",
-      });
+      toast.success({ message: "添加成功" });
     }
     await loadLogs();
     cancelEdit();
   } catch (err) {
     console.error("保存失败:", err);
-    toast.error({
-      message: editingId.value ? "更新失败" : "添加失败",
-    });
+    toast.error({ message: editingId.value ? "更新失败" : "添加失败" });
   } finally {
     submitting.value = false;
   }
@@ -119,15 +127,11 @@ async function deleteLog(id: number) {
     await $fetch(`/api/admin/changelogs/${id}`, {
       method: "DELETE",
     });
-    toast.success({
-      message: "删除成功",
-    });
+    toast.success({ message: "删除成功" });
     await loadLogs();
   } catch (err) {
     console.error("删除失败:", err);
-    toast.error({
-      message: "删除失败",
-    });
+    toast.error({ message: "删除失败" });
   }
 }
 
@@ -144,30 +148,57 @@ onMounted(() => {
         <h1 class="text-2xl font-bold">更新日志管理</h1>
       </div>
 
-      <!-- 添加/编辑表单 -->
+      <!-- 添加表单 -->
       <Card v-if="editingId === null" class="p-4">
         <form @submit.prevent="save" class="space-y-3">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <label class="block text-sm font-medium mb-1.5">分类</label>
-              <Select v-model="editForm.class">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="option in classOptions" :key="option" :value="option">
-                    {{ option }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1.5">内容</label>
-              <Textarea v-model="editForm.desc" placeholder="输入更新内容，支持 Markdown 格式" rows="2" required />
+          <!-- 条目编辑器：可重复行 -->
+          <div class="space-y-2">
+            <div
+              v-for="(entry, index) in editForm.entries"
+              :key="index"
+              class="rounded-lg border p-3"
+            >
+              <div class="flex items-start gap-2">
+                <div class="w-28 shrink-0">
+                  <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
+                  <Select v-model="entry.type">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in CHANGELOG_TYPES" :key="option" :value="option">
+                        {{ option }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>
+                  <Textarea
+                    v-model="entry.value"
+                    placeholder="输入更新内容，支持 Markdown 格式"
+                    rows="2"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="mt-6 size-8 shrink-0"
+                  :disabled="editForm.entries.length <= 1"
+                  @click="removeEntry(index)"
+                >
+                  <Icon name="lucide:x" class="size-4" />
+                </Button>
+              </div>
             </div>
           </div>
-          <div class="flex justify-end">
-            <Button type="submit" :disabled="submitting || !editForm.desc.trim()">
+          <div class="flex justify-between">
+            <Button type="button" variant="outline" size="sm" @click="addEntry">
+              <Icon name="lucide:plus" class="mr-1 size-4" />
+              添加条目
+            </Button>
+            <Button type="submit" :disabled="submitting || !canSave">
               <Icon v-if="submitting" name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
               {{ submitting ? "提交中..." : "添加" }}
             </Button>
@@ -185,46 +216,89 @@ onMounted(() => {
         <Card v-for="log in logs" :key="log.id" class="p-3" :class="{ 'ring-2 ring-primary': editingId === log.id }">
           <!-- 编辑模式 -->
           <form v-if="editingId === log.id" @submit.prevent="save" class="space-y-3">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div>
-                <label class="block text-sm font-medium mb-1.5">分类</label>
-                <Select v-model="editForm.class">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in classOptions" :key="option" :value="option">
-                      {{ option }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="md:col-span-3">
-                <label class="block text-sm font-medium mb-1.5">内容</label>
-                <Textarea v-model="editForm.desc" placeholder="输入更新内容，支持 Markdown 格式" rows="2" required />
+            <div class="space-y-2">
+              <div
+                v-for="(entry, index) in editForm.entries"
+                :key="index"
+                class="rounded-lg border p-3"
+              >
+                <div class="flex items-start gap-2">
+                  <div class="w-28 shrink-0">
+                    <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
+                    <Select v-model="entry.type">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="option in CHANGELOG_TYPES" :key="option" :value="option">
+                          {{ option }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>
+                    <Textarea
+                      v-model="entry.value"
+                      placeholder="输入更新内容，支持 Markdown 格式"
+                      rows="2"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="mt-6 size-8 shrink-0"
+                    :disabled="editForm.entries.length <= 1"
+                    @click="removeEntry(index)"
+                  >
+                    <Icon name="lucide:x" class="size-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-            <div class="flex justify-end gap-2">
-              <Button type="button" variant="outline" @click="cancelEdit"> 取消 </Button>
-              <Button type="submit" :disabled="submitting || !editForm.desc.trim()">
-                <Icon v-if="submitting" name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
-                {{ submitting ? "保存中..." : "保存" }}
+            <div class="flex justify-between">
+              <Button type="button" variant="outline" size="sm" @click="addEntry">
+                <Icon name="lucide:plus" class="mr-1 size-4" />
+                添加条目
               </Button>
+              <div class="flex gap-2">
+                <Button type="button" variant="outline" @click="cancelEdit"> 取消 </Button>
+                <Button type="submit" :disabled="submitting || !canSave">
+                  <Icon v-if="submitting" name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
+                  {{ submitting ? "保存中..." : "保存" }}
+                </Button>
+              </div>
             </div>
           </form>
 
           <!-- 显示模式 -->
           <div v-else class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1.5">
-                <span :class="['px-2 py-0.5 rounded text-xs font-medium', getClassColor(log.class)]">
-                  {{ log.class }}
-                </span>
+            <div class="flex-1 min-w-0 space-y-1.5">
+              <div class="flex items-center gap-2">
                 <span class="text-xs text-muted-foreground">
-                  {{ formatDate(log.create_time) }}
+                  {{ formatDate(log.createTime) }}
                 </span>
               </div>
-              <div class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content" v-html="log.descHtml" />
+              <div
+                v-for="(entry, i) in log.content"
+                :key="i"
+                class="flex items-baseline gap-2"
+              >
+                <span
+                  :class="[
+                    'shrink-0 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1',
+                    getChangelogMeta(entry.type).color,
+                  ]"
+                >
+                  <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
+                  {{ getChangelogMeta(entry.type).label }}
+                </span>
+                <div
+                  class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content flex-1 min-w-0"
+                  v-html="entry.html"
+                />
+              </div>
             </div>
             <div class="flex gap-1 shrink-0">
               <Button variant="ghost" size="icon" class="size-8" @click="startEdit(log)">

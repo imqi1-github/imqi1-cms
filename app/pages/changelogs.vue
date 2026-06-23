@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { siteConfig } from "~~/site.config";
+import {
+  CHANGELOG_TYPES,
+  CHANGELOG_META,
+  getChangelogMeta,
+} from "~~/shared/changelog";
+
+interface ChangelogEntry {
+  type: string;
+  value: string;
+  html: string;
+}
 
 interface ChangelogLog {
   id: number;
-  class: string;
-  desc: string;
-  descHtml?: string;
+  content: ChangelogEntry[];
   createTime: string | Date;
 }
 
@@ -29,11 +38,11 @@ const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteN
 // 使用全局认证状态
 const { isLoggedIn, isLoadingAuth } = useAuth();
 
-// 获取当前筛选的分类
+// 获取当前筛选的类型（一条记录可含多个条目，筛选命中任一条目的 type）
 const route = useRoute();
-const selectedClass = computed(() => {
-  const classType = route.query.class;
-  return classType || null;
+const selectedType = computed(() => {
+  const t = route.query.type;
+  return t || null;
 });
 
 // 用于强制重新渲染动画的key
@@ -54,50 +63,45 @@ function handleSidebarWheel(event: WheelEvent) {
   }
 }
 
-// 所有分类类型
+// 所有分类类型（全部 + 7 类）
 const classTypes = [
   { type: null, label: '全部', icon: 'lucide:layout-grid' },
-  { type: '新增', label: '新增', icon: 'lucide:plus-circle' },
-  { type: '优化', label: '优化', icon: 'lucide:zap' },
-  { type: '修复', label: '修复', icon: 'lucide:bug' },
-  { type: '删除', label: '删除', icon: 'lucide:trash-2' },
-  { type: '重构', label: '重构', icon: 'lucide:refresh-cw' },
+  ...CHANGELOG_TYPES.map(t => ({
+    type: t,
+    label: CHANGELOG_META[t].label,
+    icon: CHANGELOG_META[t].icon,
+  })),
 ];
-
-// 获取分类对应的颜色和图标
-function getClassInfo(classType: string) {
-  const classMap: Record<string, { color: string; icon: string; label: string }> = {
-    新增: { color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: "lucide:plus-circle", label: "新增" },
-    优化: { color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", icon: "lucide:zap", label: "优化" },
-    修复: { color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: "lucide:bug", label: "修复" },
-    删除: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "lucide:trash-2", label: "删除" },
-    重构: { color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "lucide:refresh-cw", label: "重构" },
-  };
-
-  return classMap[classType] || { color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400", icon: "lucide:circle", label: classType };
-}
 
 // 筛选后的日志列表
 const filteredData = computed(() => {
   if (!data.value?.data) return [];
 
-  if (!selectedClass.value) return data.value.data;
+  if (!selectedType.value) return data.value.data;
 
   return data.value.data.map(group => ({
     ...group,
-    logs: group.logs.filter(log => log.class === selectedClass.value)
+    logs: group.logs.filter(log =>
+      Array.isArray(log.content) && log.content.some(c => c.type === selectedType.value)
+    )
   })).filter(group => group.logs.length > 0);
 });
 
-// 选择分类
-function selectClass(classType: string | null) {
-  if (classType === selectedClass.value) return;
+// 当前记录下需要展示的条目（筛选时只显示命中类型的条目）
+function visibleEntries(content: ChangelogEntry[] | undefined) {
+  if (!selectedType.value) return content || [];
+  return (content || []).filter(c => c.type === selectedType.value);
+}
+
+// 选择类型
+function selectType(type: string | null) {
+  if (type === selectedType.value) return;
 
   const query = { ...route.query };
-  if (classType) {
-    query.class = classType;
+  if (type) {
+    query.type = type;
   } else {
-    delete query.class;
+    delete query.type;
   }
 
   // 更新动画key以触发重新渲染
@@ -108,7 +112,7 @@ function selectClass(classType: string | null) {
 
 // 清除筛选
 function clearFilter() {
-  selectClass(null);
+  selectType(null);
 }
 
 // 格式化日期
@@ -156,7 +160,7 @@ onUnmounted(() => {
 });
 
 // 监听筛选变化，触发动画
-watch(() => selectedClass.value, async () => {
+watch(() => selectedType.value, async () => {
   await nextTick();
   setTimeout(() => {
     document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
@@ -213,10 +217,10 @@ usePageSeo({
           <button
             v-for="classType in classTypes"
             :key="classType.label"
-            @click="classType.type === null ? clearFilter() : selectClass(classType.type)"
+            @click="classType.type === null ? clearFilter() : selectType(classType.type)"
             :class="[
               'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
-              (selectedClass === null && classType.type === null) || selectedClass === classType.type
+              (selectedType === null && classType.type === null) || selectedType === classType.type
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
@@ -254,32 +258,41 @@ usePageSeo({
 
                 <!-- 日志内容卡片 -->
                 <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all">
-                  <!-- 顶部信息 -->
+                  <!-- 时间 -->
                   <div class="flex items-center gap-2 mb-2 flex-wrap">
-                    <!-- 分类标签 -->
-                    <span :class="['px-2 py-0.5 rounded-md text-xs font-medium flex items-center gap-1', getClassInfo(log.class).color]">
-                      <Icon :name="getClassInfo(log.class).icon" class="size-3" />
-                      {{ getClassInfo(log.class).label }}
-                    </span>
-
-                    <!-- 时间 -->
                     <span class="text-xs text-slate-500 dark:text-slate-400">
                       {{ formatDate(log.createTime) }}
                     </span>
                   </div>
 
-                  <!-- 描述内容 -->
-                  <div
-                    class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content"
-                    v-html="log.descHtml"
-                  />
+                  <!-- 条目列表（一条记录可含多个更新条目；筛选时只显示命中类型） -->
+                  <div class="space-y-2">
+                    <div v-for="(entry, i) in visibleEntries(log.content)" :key="i" class="flex items-baseline gap-2">
+                      <!-- 类型徽标 -->
+                      <span
+                        :class="[
+                          'shrink-0 px-2 py-0.5 rounded-md text-xs font-medium flex items-center gap-1',
+                          getChangelogMeta(entry.type).color,
+                        ]"
+                      >
+                        <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
+                        {{ getChangelogMeta(entry.type).label }}
+                      </span>
+
+                      <!-- 条目内容 -->
+                      <div
+                        class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content flex-1 min-w-0"
+                        v-html="entry.html"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
           <!-- 筛选后无结果 -->
-          <div v-if="filteredData.length === 0 && selectedClass" class="text-center py-12 animate-fade-in">
+          <div v-if="filteredData.length === 0 && selectedType" class="text-center py-12 animate-fade-in">
             <Icon name="lucide:file-question" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p class="text-slate-500 dark:text-slate-400">该分类暂无日志</p>
           </div>

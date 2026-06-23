@@ -3,6 +3,8 @@
  * 根据 Prisma schema 中定义的字段长度限制进行验证
  */
 
+import { isChangelogType } from "~~/shared/changelog";
+
 /**
  * 验证字符串长度
  * @param value 要验证的值
@@ -284,17 +286,57 @@ export function validateSettingsData(data: Record<string, any>): void {
 }
 
 /**
- * 验证更新日志数据
+ * 验证更新日志条目数组（content）
+ *
+ * - 至少 1 条、最多 MAX 条
+ * - 每条 type 必须是合法类别
+ * - 每条 value 非空、长度上限 VALUE_MAX
  */
-export function validateChangelogData(data: {
-  class?: string;
-  desc?: string;
-}): void {
-  if (data.class) {
-    validateMaxLength(data.class, 50, "类型");
+export function validateChangelogData(entries: unknown): void {
+  const MAX = 50;
+  const VALUE_MAX = 20000;
+
+  if (!Array.isArray(entries)) {
+    throw createError({
+      statusCode: 400,
+      message: "更新内容格式错误",
+    });
   }
-  if (data.desc) {
-    validateMaxLength(data.desc, 20000, "内容");
+  if (entries.length === 0) {
+    throw createError({
+      statusCode: 400,
+      message: "内容不能为空",
+    });
+  }
+  if (entries.length > MAX) {
+    throw createError({
+      statusCode: 400,
+      message: `最多 ${MAX} 条更新`,
+    });
+  }
+
+  for (const item of entries) {
+    if (!item || typeof item !== "object") {
+      throw createError({
+        statusCode: 400,
+        message: "更新内容格式错误",
+      });
+    }
+    const obj = item as Record<string, unknown>;
+    if (!isChangelogType(obj.type)) {
+      throw createError({
+        statusCode: 400,
+        message: "更新类型不合法",
+      });
+    }
+    const value = typeof obj.value === "string" ? obj.value.trim() : "";
+    if (!value) {
+      throw createError({
+        statusCode: 400,
+        message: "内容不能为空",
+      });
+    }
+    validateMaxLength(obj.value as string, VALUE_MAX, "内容");
   }
 }
 

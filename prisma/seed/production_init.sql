@@ -142,8 +142,7 @@ CREATE TABLE `attachments` (
 -- 8. 更新日志表
 CREATE TABLE `changelogs` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `class` VARCHAR(191) NOT NULL,
-  `desc` TEXT NOT NULL,
+  `content` TEXT NOT NULL,
   `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
   INDEX `Changelogs_create_time_idx`(`create_time`)
@@ -304,9 +303,9 @@ INSERT INTO `comments` (
   '127.0.0.1'
 );
 
--- 插入一条更新日志
-INSERT INTO `changelogs` (`class`, `desc`, `create_time`)
-VALUES ('新增', '初始化博客系统，安装完成', @now);
+-- 插入一条更新日志（content 为 JSON 条目列表）
+INSERT INTO `changelogs` (`content`, `create_time`)
+VALUES ('[{"type":"新增","value":"初始化博客系统，安装完成"}]', @now);
 
 -- =====================================================
 -- 第四部分：验证数据

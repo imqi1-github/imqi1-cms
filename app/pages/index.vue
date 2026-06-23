@@ -627,20 +627,23 @@
       <!-- 日志列表 -->
       <div class="space-y-4">
         <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-md transition-all">
-          <div class="flex items-start gap-3">
-            <!-- 类型文字标签 -->
-            <div :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${getClassInfo(log.class).color}`">
-              {{ getClassInfo(log.class).label }}
-            </div>
-
-            <!-- 日志内容 -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-sm text-muted-foreground">{{ formatChangelogDate(log.create_time) }}</span>
-              </div>
+          <div class="mb-2">
+            <span class="text-sm text-muted-foreground">{{ formatChangelogDate(log.create_time) }}</span>
+          </div>
+          <div class="space-y-2">
+            <div v-for="(entry, i) in log.content" :key="i" class="flex items-start gap-3">
+              <!-- 类型徽标 -->
               <div
-                class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content"
-                v-html="log.descHtml" />
+                :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 flex items-center gap-1 ${getChangelogMeta(entry.type).color}`"
+              >
+                <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
+                {{ getChangelogMeta(entry.type).label }}
+              </div>
+
+              <!-- 条目内容 -->
+              <div
+                class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content flex-1 min-w-0"
+                v-html="entry.html" />
             </div>
           </div>
         </div>
@@ -656,6 +659,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import MetingPlayer from "~/components/MetingPlayer.vue";
 import { siteConfig } from "~~/site.config";
+import { getChangelogMeta } from "~~/shared/changelog";
 
 // 目录导航数据
 const tocItems = [
@@ -824,20 +828,6 @@ function formatChangelogDate(date: string | Date): string {
     month: "2-digit",
     day: "2-digit",
   });
-}
-
-function getClassInfo(classType: string) {
-  const classMap: Record<string, { color: string; icon: string; label: string }> = {
-    新增: { color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: "lucide:plus-circle", label: "新增" },
-    优化: { color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", icon: "lucide:zap", label: "优化" },
-    修复: { color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: "lucide:bug", label: "修复" },
-    删除: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "lucide:trash-2", label: "删除" },
-    重构: { color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "lucide:refresh-cw", label: "重构" },
-  };
-
-  return (
-    classMap[classType] || { color: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400", icon: "lucide:circle", label: classType }
-  );
 }
 
 // 页面元数据

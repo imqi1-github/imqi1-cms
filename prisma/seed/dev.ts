@@ -1138,12 +1138,16 @@ async function main() {
   });
   console.log(`   ✅ 创建了 ${subscribes.length} 个订阅`);
 
-  // 创建更新日志
+  // 创建更新日志（content 为 JSON 条目列表字符串）
   console.log("📋 创建更新日志...");
   const changelogs = [
-    { class: "feature", desc: "添加用户管理功能" },
-    { class: "improvement", desc: "优化文章列表加载速度" },
-    { class: "fix", desc: "修复评论回复的显示问题" },
+    {
+      content: JSON.stringify([
+        { type: "功能", value: "添加用户管理功能" },
+        { type: "优化", value: "优化文章列表加载速度" },
+      ]),
+    },
+    { content: JSON.stringify([{ type: "修复", value: "修复评论回复的显示问题" }]) },
   ];
   await prisma.changelogs.createMany({
     data: changelogs,

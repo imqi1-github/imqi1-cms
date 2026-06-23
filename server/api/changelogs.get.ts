@@ -1,5 +1,5 @@
 import { prisma } from "#server/utils/prisma";
-import { renderSimpleMarkdown } from "#server/utils/markdown";
+import { renderChangelogContent } from "#server/utils/changelog";
 
 export default defineEventHandler(async event => {
   try {
@@ -24,23 +24,24 @@ export default defineEventHandler(async event => {
 
     const changelogs = await prisma.changelogs.findMany(changelogsQuery);
 
-    // 渲染所有 Markdown 内容（简化版，仅支持基础格式）
-    const changelogsHtml = changelogs.map(log => ({
-      ...log,
-      descHtml: renderSimpleMarkdown(log.desc || ""),
+    // 解析 content（JSON 条目数组）并渲染每条 value 的 markdown
+    const changelogsParsed = changelogs.map(log => ({
+      id: log.id,
+      content: renderChangelogContent(log.content),
+      createTime: log.create_time,
     }));
 
     // 如果是simple模式，直接返回未分组的数组
     if (simple) {
       return {
         success: true,
-        data: changelogsHtml,
+        data: changelogsParsed,
       };
     }
 
     // 按月份分组
-    const grouped = changelogsHtml.reduce((acc, log) => {
-      const date = new Date(log.create_time);
+    const grouped = changelogsParsed.reduce((acc, log) => {
+      const date = new Date(log.createTime);
       const year = date.getFullYear();
       const month = date.getMonth(); // 0-11
       const key = `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -53,13 +54,7 @@ export default defineEventHandler(async event => {
         };
       }
 
-      acc[key].logs.push({
-        id: log.id,
-        class: log.class,
-        desc: log.desc,
-        descHtml: log.descHtml,
-        createTime: log.create_time,
-      });
+      acc[key].logs.push(log);
 
       return acc;
     }, {} as Record<string, { year: number; month: number; logs: any[] }>);
