@@ -2,7 +2,7 @@
  * 自动生成的 API 类型定义
  * 此文件由 scripts/generate-api-types.ts 自动生成，请勿手动修改！
  *
- * 包含 100 个 API 端点
+ * 包含 101 个 API 端点
  * 已类型化: 3 个端点
  *
  * 使用方式:
@@ -68,6 +68,14 @@ export interface ApiTypes {
 
   "/admin/categories": {
     get: {
+      query: any;
+      body: any;
+      response: any;
+    };
+  };
+
+  "/admin/changelogs/import": {
+    post: {
       query: any;
       body: any;
       response: any;
