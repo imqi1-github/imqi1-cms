@@ -126,15 +126,21 @@ export default defineEventHandler(async () => {
         next = "unknown";
       } else {
         next = "placed";
-        // 文章链接：/content/<分类slug>/<文章slug>#comment-<coid>，带评论锚点直达该读者留下的评论
+        // 文章链接：普通文章走 /content/<分类slug>/<文章slug>#comment-<coid>；留言板文章走 /messages#comment-<coid>。
         const categorySlug = row.posts?.postrelations?.[0]?.metas?.slug ?? null;
         const postSlug = row.posts?.slug ?? null;
-        const articleUrl = categorySlug && postSlug ? `/content/${categorySlug}/${postSlug}#comment-${row.coid}` : null;
+        const isMessagePost = postSlug === "messages";
+        const articleUrl = isMessagePost
+          ? `/messages#comment-${row.coid}`
+          : categorySlug && postSlug
+            ? `/content/${categorySlug}/${postSlug}#comment-${row.coid}`
+            : null;
+        const articleTitle = isMessagePost ? "留言板" : row.posts?.title ?? null;
 
         const reader: Reader = {
           name: row.name?.trim() || "匿名读者",
           url: row.link?.trim() || null,
-          articleTitle: row.posts?.title ?? null,
+          articleTitle,
           articleUrl,
           comment: commentSnippet(row.content),
           avatar: avatarUrl(mail, avatarService),

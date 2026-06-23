@@ -9,10 +9,8 @@ const isProduction = process.env.NODE_ENV === "production";
 
 // 只有配置了有效的 CDN URL 才使用 CDN
 const hasCdn = siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http");
-const cdnURL = isProduction && hasCdn
-  ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl)
-  : "";
-const publicCdnAsset = (path: string) => isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path;
+const cdnURL = isProduction && hasCdn ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl) : "";
+const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path);
 const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com https://mapplugin.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
 
 // 获取当前环境的 Redis 配置
@@ -239,10 +237,12 @@ export default defineNuxtConfig({
         },
         // PWA Manifest（仅在生产环境加载）
         ...(isProduction
-          ? [{
-              rel: "manifest",
-              href: publicCdnAsset("/manifest.webmanifest"),
-            }]
+          ? [
+              {
+                rel: "manifest",
+                href: publicCdnAsset("/manifest.webmanifest"),
+              },
+            ]
           : []),
         // Favicon（根据 CDN 配置动态生成）
         {
@@ -259,10 +259,12 @@ export default defineNuxtConfig({
       ],
       meta: [
         ...(isProduction
-          ? [{
-              "http-equiv": "Content-Security-Policy",
-              content: cspContent,
-            }]
+          ? [
+              {
+                "http-equiv": "Content-Security-Policy",
+                content: cspContent,
+              },
+            ]
           : []),
         // 基础元信息
         {
@@ -372,14 +374,15 @@ export default defineNuxtConfig({
         "swiper",
         "swiper/modules",
         "@fancyapps/ui",
+        "isomorphic-dompurify",
       ],
     },
     build: {
       sourcemap: false,
       // 使用 esbuild 进行压缩，比 terser 快 20-30 倍
-      minify: 'esbuild',
+      minify: "esbuild",
       // 减少转译开销
-      target: 'es2020',
+      target: "es2020",
       rollupOptions: {
         output: {
           manualChunks: {
@@ -395,7 +398,7 @@ export default defineNuxtConfig({
         },
         // 忽略循环依赖警告以减少日志输出
         onwarn(warning, warn) {
-          if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+          if (warning.code === "CIRCULAR_DEPENDENCY") return;
           warn(warning);
         },
       },
@@ -417,7 +420,7 @@ export default defineNuxtConfig({
           gzipSize: true,
           brotliSize: true,
           emitFile: false,
-        })
+        }),
       );
     },
   },

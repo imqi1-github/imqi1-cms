@@ -246,6 +246,25 @@ function getPostTitle(comment: any) {
   return comment.posts?.title || "未知";
 }
 
+function getCommentFrontendUrl(comment: any) {
+  const post = comment.posts;
+  if (!post?.slug) return null;
+  if (post.slug === "messages") return `/messages#comment-${comment.coid}`;
+
+  const categorySlug = post.postrelations?.[0]?.metas?.slug;
+  if (!categorySlug) return null;
+  return `/content/${categorySlug}/${post.slug}#comment-${comment.coid}`;
+}
+
+function openFrontendComment(comment: any) {
+  const url = getCommentFrontendUrl(comment);
+  if (!url) {
+    toast.error({ message: "无法定位前台评论" });
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 function formatDate(date: string) {
   const d = new Date(date);
   const now = new Date();
@@ -423,6 +442,10 @@ onMounted(() => {
                       <DropdownMenuItem @click="openEditDialog(comment)">
                         <Icon name="lucide:pencil" class="mr-2 size-4" />
                         编辑
+                      </DropdownMenuItem>
+                      <DropdownMenuItem @click="openFrontendComment(comment)">
+                        <Icon name="lucide:external-link" class="mr-2 size-4" />
+                        查看前台评论
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel>设置状态</DropdownMenuLabel>

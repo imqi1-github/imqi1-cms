@@ -271,7 +271,7 @@ onMounted(() => {
 
 <template>
   <ClientOnly>
-    <div :class="['mx-auto', isPhotoCategory ? 'max-w-1600' : 'max-w-225 flex flex-col justify-center items-center']">
+    <div :class="['mx-auto', isPhotoCategory ? 'photo-category-shell' : 'max-w-225 flex flex-col justify-center items-center']">
       <!-- 加载中 - 仅首次加载时显示 -->
       <div v-if="pending && !category" class="py-20 text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -294,8 +294,21 @@ onMounted(() => {
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">
+        <nav v-if="pagination && pagination.totalPages > 1" class="photo-page-control" aria-label="图片分页">
+          <button type="button" :disabled="pagination.page <= 1 || pending" @click="goToPage(pagination.page - 1)">
+            <Icon name="ri-arrow-left-double-line" />
+          </button>
+          <span class="photo-page-current">
+            <strong>{{ pagination.page }}</strong>
+            <em>/{{ pagination.totalPages }}</em>
+          </span>
+          <button type="button" :disabled="pagination.page >= pagination.totalPages || pending" @click="goToPage(pagination.page + 1)">
+            <Icon name="ri-arrow-right-double-line" />
+          </button>
+        </nav>
+
         <!-- 骨架屏（加载时显示16个占位符） -->
-        <div v-if="showSkeleton || (pending && posts.length === 0)" class="photos-container">
+        <div v-if="showSkeleton || (pending && posts.length === 0)" class="photos-container photo-skeleton-container">
           <div
             v-for="i in 16"
             :key="`skeleton-${i}`"
@@ -460,7 +473,7 @@ onMounted(() => {
       </template>
 
       <!-- 分页 -->
-      <div v-if="pagination && pagination.totalPages > 1" class="flex justify-center gap-2 mt-10">
+      <div v-if="!isPhotoCategory && pagination && pagination.totalPages > 1" class="flex justify-center gap-2 mt-10">
         <button
           v-if="pagination.page > 1"
           @click="goToPage(pagination.page - 1)"
@@ -477,6 +490,7 @@ onMounted(() => {
           <Icon name="ri-arrow-right-double-line" />
         </button>
       </div>
+
     </div>
   </ClientOnly>
 </template>
@@ -529,9 +543,15 @@ onMounted(() => {
 }
 
 /* 图片分类 - 瀑布流布局 */
+.photo-category-shell {
+  width: min(100vw - 16px, 1800px);
+  margin-top: -3rem;
+  min-height: 100vh;
+}
+
 .photos-container {
   column-count: 4;
-  column-gap: 12px;
+  column-gap: 6px;
 }
 
 @media (max-width: 1400px) {
@@ -547,13 +567,29 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
+  .photo-category-shell {
+    width: calc(100vw - 8px);
+  }
+
+  .photos-container {
+    column-count: 2;
+    column-gap: 4px;
+  }
+}
+
+@media (max-width: 420px) {
   .photos-container {
     column-count: 1;
   }
 }
 
+.photo-skeleton-container {
+  min-height: 180vh;
+}
+
 .image-card {
   break-inside: avoid;
+  border-radius: 4px;
 }
 
 .image-card img {
@@ -566,6 +602,77 @@ onMounted(() => {
 
 .image-card:hover .image-title {
   opacity: 1;
+}
+
+.photo-page-control {
+  position: sticky;
+  top: calc(100vh - 3.4rem);
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: inline-grid;
+  grid-template-columns: 1.45rem auto 1.45rem;
+  align-items: center;
+  gap: 0.22rem;
+  width: max-content;
+  margin: 0 0 0.5rem 0.25rem;
+  padding: 0.22rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.photo-page-control button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  color: #64748b;
+  background: transparent;
+}
+
+.photo-page-control button:hover:not(:disabled) {
+  color: #64748b;
+  background: transparent;
+}
+
+.photo-page-control button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.photo-page-control button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.photo-page-current {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  min-width: 2.6rem;
+  padding: 0 0.25rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.photo-page-current strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.photo-page-current em {
+  color: #94a3b8;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 700;
+  margin-left: 0.08rem;
 }
 
 /* 文字阴影 */

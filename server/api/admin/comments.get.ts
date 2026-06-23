@@ -82,6 +82,12 @@ export default defineEventHandler(async event => {
             select: {
               cid: true,
               title: true,
+              slug: true,
+              postrelations: {
+                where: { metas: { type: "category" } },
+                select: { metas: { select: { slug: true } } },
+                take: 1,
+              },
             },
           },
         },

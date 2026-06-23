@@ -2,7 +2,7 @@
 import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
-import { computed, onMounted } from "vue";
+import { computed, nextTick, onMounted, watch } from "vue";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -16,6 +16,48 @@ const { data: messageConfig } = await useFetch("/api/messages/config", {
   },
 });
 const messagePostId = computed(() => messageConfig.value?.data?.postId);
+const route = useRoute();
+
+function scrollToComment(hash: string) {
+  if (!import.meta.client) return;
+
+  const commentId = hash.replace(/^#comment-/, "");
+  if (!commentId) return;
+
+  const element = document.getElementById(`comment-${commentId}`);
+  if (!element) return;
+
+  const headerOffset = 100;
+  const elementPosition = element.getBoundingClientRect().top;
+  const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+  window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+  element.classList.add("ring-2", "ring-blue-500", "ring-offset-2", "dark:ring-offset-slate-900");
+  setTimeout(() => {
+    element.classList.remove("ring-2", "ring-blue-500", "ring-offset-2", "dark:ring-offset-slate-900");
+  }, 3000);
+}
+
+watch(
+  () => route.hash,
+  hash => {
+    if (!hash?.startsWith("#comment-")) return;
+    nextTick(() => {
+      let attempts = 0;
+      const checkAndScroll = () => {
+        const commentId = hash.replace(/^#comment-/, "");
+        const element = document.getElementById(`comment-${commentId}`);
+        if (element || attempts >= 10) scrollToComment(hash);
+        else {
+          attempts++;
+          setTimeout(checkAndScroll, 100);
+        }
+      };
+      checkAndScroll();
+    });
+  },
+  { immediate: true },
+);
 
 // 页面元数据
 usePageSeo({
@@ -130,7 +172,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 评论区 -->
-      <CommentList v-else-if="commentEnabled" :post-id="messagePostId" />
+      <CommentList v-else-if="commentEnabled" :post-id="messagePostId" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
     </section>
   </div>
 </template>
