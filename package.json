@@ -23,6 +23,7 @@
     "upload:server": "node scripts/upload-server.mjs",
     "compress:livephoto": "node scripts/compress-livephoto.mjs",
     "restart:server": "node scripts/restart-server.mjs",
+    "clear:redis": "node scripts/clear-redis.mjs",
     "reset:password": "tsx scripts/reset-password.ts",
     "db:init:test": "tsx scripts/init-test-db.ts"
   },
