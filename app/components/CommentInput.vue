@@ -54,13 +54,9 @@ function refreshCaptcha() {
 const csrfToken = ref("");
 
 // 用户登录状态
-const isLoggedIn = ref(false);
-const currentUser = ref<{
-  name?: string;
-  nickname?: string | null;
-  mail?: string | null;
-  avatar?: string | null;
-} | null>(null);
+const { isLoggedIn, isLoadingAuth, currentUser } = useAuth();
+const { siteSettings } = useSiteSettings();
+const showGuestFields = computed(() => !isLoadingAuth.value && !isLoggedIn.value);
 
 // 表单数据 - 如果传入了 formData 就使用它，否则创建本地状态
 const localFormData = ref({
@@ -126,76 +122,64 @@ const categories = computed(() => {
 // Textarea 引用
 const textareaRef = ref<HTMLTextAreaElement>();
 
+function fillCommentUserInfo() {
+  const user = currentUser.value;
+  if (isLoggedIn.value && user) {
+    formData.value.name = user.nickname || user.name || "";
+    formData.value.mail = user.mail || "";
+    formData.value.link = siteSettings.value?.siteUrl || formData.value.link;
+    return;
+  }
+
+  const savedName = localStorage.getItem("comment_name");
+  const savedMail = localStorage.getItem("comment_mail");
+  const savedLink = localStorage.getItem("comment_link");
+
+  if (savedName) formData.value.name = savedName;
+  if (savedMail) formData.value.mail = savedMail;
+  if (savedLink) formData.value.link = savedLink;
+}
+
 // 初始化表单数据
-onMounted(async () => {
+onMounted(() => {
   if (import.meta.client) {
-    try {
-      // 并行获取用户信息、站点设置和 CSRF token
-      const [userRes, settingsRes, csrfRes] = await Promise.allSettled([
-        $fetch("/api/user", { credentials: "include" }),
-        $fetch("/api/settings"),
-        $fetch("/api/csrf/token", { credentials: "include" }),
-      ]);
+    fillCommentUserInfo();
 
-      // 获取 CSRF token
-      if (csrfRes.status === "fulfilled" && csrfRes.value?.data?.token) {
-        csrfToken.value = csrfRes.value.data.token;
-      }
-
-      // 处理用户信息
-      if (userRes.status === "fulfilled" && userRes.value?.user) {
-        const user = userRes.value.user;
-        isLoggedIn.value = true;
-        currentUser.value = user;
-        formData.value.name = user.nickname || user.name || "";
-        formData.value.mail = user.mail || "";
-      } else {
-        // 未登录，从localStorage读取
-        const savedName = localStorage.getItem("comment_name");
-        const savedMail = localStorage.getItem("comment_mail");
-        const savedLink = localStorage.getItem("comment_link");
-
-        if (savedName) formData.value.name = savedName;
-        if (savedMail) formData.value.mail = savedMail;
-        if (savedLink) formData.value.link = savedLink;
-      }
-
-      // 加载保存的评论内容
-      const savedContent = localStorage.getItem("comment_content");
-      if (savedContent) {
-        formData.value.content = savedContent;
-      }
-
-      // 处理站点设置（获取链接）
-      if (settingsRes.status === "fulfilled" && settingsRes.value?.siteUrl) {
-        // 如果已登录，自动填充站点链接
-        if (isLoggedIn.value) {
-          formData.value.link = settingsRes.value.siteUrl;
+    // 评论框只需要单独获取 CSRF token；登录状态和站点设置复用全局状态。
+    $fetch("/api/csrf/token", { credentials: "include" })
+      .then((csrfRes: any) => {
+        if (csrfRes?.data?.token) {
+          csrfToken.value = csrfRes.data.token;
         }
-      }
-    } catch {
-      // 出错时从localStorage读取
-      const savedName = localStorage.getItem("comment_name");
-      const savedMail = localStorage.getItem("comment_mail");
-      const savedLink = localStorage.getItem("comment_link");
+      })
+      .catch(() => {
+        // 提交时会提示 CSRF token 未通过，初始化阶段静默失败不阻塞表单显示。
+      });
 
-      if (savedName) formData.value.name = savedName;
-      if (savedMail) formData.value.mail = savedMail;
-      if (savedLink) formData.value.link = savedLink;
-
-      // 加载保存的评论内容
-      const savedContent = localStorage.getItem("comment_content");
-      if (savedContent) {
-        formData.value.content = savedContent;
-      }
+    // 加载保存的评论内容
+    const savedContent = localStorage.getItem("comment_content");
+    if (savedContent) {
+      formData.value.content = savedContent;
     }
 
     // 未登录用户加载图形验证码
-    if (!isLoggedIn.value) {
+    if (showGuestFields.value) {
       refreshCaptcha();
     }
   }
 });
+
+watch(
+  [() => isLoadingAuth.value, () => isLoggedIn.value, () => currentUser.value, () => siteSettings.value?.siteUrl],
+  () => {
+    if (!import.meta.client) return;
+
+    fillCommentUserInfo();
+    if (showGuestFields.value && !captchaUrl.value) {
+      refreshCaptcha();
+    }
+  },
+);
 
 // 监听评论内容变化，自动保存到 localStorage
 watch(
@@ -236,7 +220,7 @@ async function submitComment() {
   }
 
   // 反垃圾：图形验证码（登录用户免验证）
-  if (!isLoggedIn.value && !captchaInput.value.trim()) {
+  if (showGuestFields.value && !captchaInput.value.trim()) {
     submitError.value = "请输入验证码";
     showError("请输入验证码");
     return;
@@ -329,7 +313,7 @@ async function submitComment() {
       // 重置表单（只重置内容，保留用户信息）
       formData.value.content = "";
       // 验证码已消费，刷新一张新的
-      if (!isLoggedIn.value) {
+      if (showGuestFields.value) {
         refreshCaptcha();
       }
       // 通知父组件立即刷新评论列表，让用户马上看到自己的评论（不再延迟 3 秒）
@@ -341,7 +325,7 @@ async function submitComment() {
       // 显示前台错误通知
       showError(errorMsg);
       // 验证码可能已消费，刷新一张
-      if (!isLoggedIn.value) {
+      if (showGuestFields.value) {
         refreshCaptcha();
       }
     }
@@ -359,7 +343,7 @@ async function submitComment() {
     showError(errorMessage);
     console.error("评论失败:", error);
     // 验证码已消费（如校验失败），刷新一张让用户重填
-    if (!isLoggedIn.value) {
+    if (showGuestFields.value) {
       refreshCaptcha();
     }
   } finally {
@@ -454,7 +438,7 @@ function formatEmojiPlaceholder(text: string): string {
          但简单机器人可能会无差别填充隐藏 input，从而被蜜罐拦截。
          登录用户已通过身份认证，无需蜜罐；同时避免自动填充/密码管理器误填蜜罐导致提交被拦截。
          字段名刻意避开 website/url 等自动填充关键词，降低误填概率。 -->
-    <div v-if="!isLoggedIn" class="pointer-events-none absolute -left-2499.75 -top-2499.75 size-px overflow-hidden opacity-0" aria-hidden="true">
+    <div v-if="showGuestFields" class="pointer-events-none absolute -left-2499.75 -top-2499.75 size-px overflow-hidden opacity-0" aria-hidden="true">
       <label for="comment-hp">附加信息</label>
       <input id="comment-hp" v-model="honeypot" type="text" name="hp_field" tabindex="-1" autocomplete="off" />
     </div>
@@ -473,7 +457,7 @@ function formatEmojiPlaceholder(text: string): string {
             class="size-5.5 shrink-0 rounded-full border border-[rgb(229,224,224)] bg-slate-200 object-cover" />
         </div>
       </template>
-      <template v-else>
+      <template v-else-if="showGuestFields">
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
           <label for="comment-input-name" class="sr-only">昵称</label>
           <input
@@ -504,7 +488,7 @@ function formatEmojiPlaceholder(text: string): string {
         </div>
       </template>
       <!-- 图形验证码（仅未登录用户显示，与昵称/邮箱/链接同行） -->
-      <div v-if="!isLoggedIn" class="flex min-w-37.5 flex-1 items-center gap-1.5 max-sm:min-w-full">
+      <div v-if="showGuestFields" class="flex min-w-37.5 flex-1 items-center gap-1.5 max-sm:min-w-full">
         <label for="comment-input-captcha" class="sr-only">验证码</label>
         <input
           id="comment-input-captcha"
