@@ -284,10 +284,10 @@ export default defineEventHandler(async event => {
       // 5. 获取订阅文章（3篇）
       getSubscribePosts().then(posts => posts.slice(0, 3)),
 
-      // 6. 获取更新日志（4条）
+      // 6. 获取更新日志（1条）
       prisma.changelogs
         .findMany({
-          take: 4,
+          take: 1,
           orderBy: { create_time: "desc" },
         })
         .then(logs =>
