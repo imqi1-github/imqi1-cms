@@ -314,7 +314,6 @@ onMounted(() => {
             :key="`skeleton-${i}`"
             class="block mb-2.5 overflow-hidden relative rounded-lg bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm"
             :style="{
-              animationDelay: `${(i - 1) * 80}ms`,
               minHeight: getSkeletonHeight(i) + 'px',
             }">
             <!-- 图片占位 -->
@@ -330,7 +329,7 @@ onMounted(() => {
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
               <NuxtLink
                 :to="`/content/${slug}/${post.slug}`"
-                class="image-card rounded-lg overflow-hidden relative group block mb-2.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow">
+                class="image-card rounded-lg overflow-hidden relative group block mb-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow">
                 <LivePhoto
                   :src="cover.url"
                   :alt="cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title"
@@ -544,7 +543,7 @@ onMounted(() => {
 
 /* 图片分类 - 瀑布流布局 */
 .photo-category-shell {
-  width: min(100vw - 16px, 1800px);
+  max-width: 1800px;
   margin-top: -3rem;
   min-height: 100vh;
 }
@@ -574,6 +573,15 @@ onMounted(() => {
   .photos-container {
     column-count: 2;
     column-gap: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .photo-page-control {
+    top: calc(100vh - 3rem) !important;
+    bottom: 1rem !important;
+    left: 1rem !important;
+    margin-left: 0.75rem !important;
   }
 }
 
@@ -614,7 +622,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.22rem;
   width: max-content;
-  margin: 0 0 0.5rem 0.25rem;
+  margin: 0 0 0.5rem 0;
   padding: 0.22rem;
   border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 999px;
