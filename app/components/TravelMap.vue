@@ -419,8 +419,9 @@ function openInfo(content: string, lnglat: LngLatTuple, offsetY = INFO_OFFSET_PI
 function focusPlace(place: Place) {
   const lnglat = placeLngLat(place);
   if (!map || !lnglat) return;
-  map.setCenter(lnglat);
-  map.setZoom(13);
+  // 首屏带 ?place 时直接原子定位，避免 setCenter/setZoom 分两步产生残留动画，
+  // 后续切到其它 tab 重置全国视野时被旧动画抢回深缩放。
+  map.setZoomAndCenter(13, lnglat, true);
   openInfo(buildInfoContent(place), lnglat, INFO_OFFSET_VISITOR_Y);
 }
 
@@ -458,6 +459,7 @@ function fitZoomForWidth(width: number): number {
 }
 function fitChinaView() {
   if (!map) return;
+  map.stopMove?.();
   const width = document.getElementById("travel-map")?.clientWidth || window.innerWidth || 0;
   map.setZoomAndCenter(fitZoomForWidth(width), CHINA_CENTER, true);
 }
