@@ -216,7 +216,7 @@ onMounted(() => {
               </div>
             </TableCell>
             <TableCell>
-              <a :href="link.link" target="_blank" class="text-primary hover:underline truncate block max-w-[200px]">
+              <a :href="link.link" target="_blank" class="text-primary hover:underline truncate block max-w-50">
                 {{ link.link }}
               </a>
               <div v-if="link.isModification && link.originalLink" class="text-xs text-muted-foreground mt-1">
@@ -342,7 +342,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="links.length === 0" class="text-center py-12">
+      <div v-if="links.length === 0 && !loading" class="text-center py-12">
         <Icon name="lucide:link" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无友情链接</p>
         <Button variant="outline" class="mt-4" @click="showAddModal = true">

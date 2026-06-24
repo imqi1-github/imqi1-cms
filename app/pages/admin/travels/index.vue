@@ -368,7 +368,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="travels.length === 0" class="text-center py-12">
+      <div v-if="travels.length === 0 && !loading" class="text-center py-12">
         <Icon name="lucide:map-pin" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">暂无旅行地点</p>
         <Button variant="outline" class="mt-4" @click="showAddModal = true">
