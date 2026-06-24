@@ -32,6 +32,8 @@ interface Place {
   source?: "subscribe" | "link";
   sourceId?: number | string;
   targetUrl?: string | null;
+  serverLocation?: string | null;
+  serverIsp?: string | null;
 }
 
 const props = defineProps<{
@@ -179,13 +181,17 @@ function safeExternalHref(raw: string | null | undefined) {
   }
 }
 
-// 自定义标记：Remix Icon ri:map-pin-2-fill（红），底部尖端对准坐标
-function markerHtml() {
-  return `<div style="position:relative;width:36px;height:42px;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 24 24" style="color:#3971ec">
-      <path fill="currentColor" d="M18.364 17.364L12 23.728l-6.364-6.364a9 9 0 1 1 12.728 0zM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-    </svg>
-  </div>`;
+function serverMetaText(place: Place) {
+  const location = (place.serverLocation || "").trim();
+  const isp = (place.serverIsp || "").trim();
+  if (!location && !isp) return "";
+
+  if (isp.endsWith("CDN")) {
+    const carrier = isp.replace(/CDN$/, "");
+    return `CDN · ${location}${carrier}`;
+  }
+
+  return `${location} · ${isp}`;
 }
 
 // 聚合圆圈尺寸：点数越多越大
@@ -262,11 +268,13 @@ function buildBlogCard(place: Place) {
   const avatar = avatarSrc
     ? `<img src="${avatarSrc}" alt="" style="width:44px;height:44px;border-radius:9999px;object-fit:cover;border:2px solid rgba(148,163,184,.45);flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div style="width:44px;height:44px;border-radius:9999px;display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:18px;flex-shrink:0;">${initial}</div>`
     : `<div style="width:44px;height:44px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:18px;flex-shrink:0;">${initial}</div>`;
+  const meta = serverMetaText(place);
+  const metaHtml = meta ? `<span class="travel-info-desc" style="font-size:11px;font-weight:400;margin-left:6px;">${escapeHtml(meta)}</span>` : "";
   return `<div class="travel-info" style="position:relative;min-width:240px;max-width:360px;border-radius:12px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.2)">
     <div style="padding:12px;padding-left:40px;display:flex;gap:10px;align-items:center;">
       ${avatar}
       <div style="min-width:0;flex:1;">
-        <h3 class="travel-info-title" style="margin:0;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(place.name)}</h3>
+        <h3 class="travel-info-title" style="margin:0;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(place.name)}${metaHtml}</h3>
         <span class="travel-info-desc" style="font-size:12px;">${label}</span>
       </div>
     </div>
@@ -289,7 +297,9 @@ function blogEntryHtml(p: Place) {
   const avatar = avatarSrc
     ? `<img src="${avatarSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="${common}object-fit:cover;" /><span style="${common}display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:11px;">${initial}</span>`
     : `<span style="${common}display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:11px;">${initial}</span>`;
-  return `<a href="${escapeHtml(href)}" class="travel-info-link" style="display:flex;align-items:center;gap:3px;font-size:13px;text-decoration:none;font-weight:500;padding:4px 0;">${avatar}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</span></a>`;
+  const meta = serverMetaText(p);
+  const metaHtml = meta ? `<span class="travel-info-desc" style="font-size:11px;font-weight:400;margin-left:4px;">${escapeHtml(meta)}</span>` : "";
+  return `<a href="${escapeHtml(href)}" class="travel-info-link" style="display:flex;align-items:center;gap:3px;font-size:13px;text-decoration:none;font-weight:500;padding:4px 0;">${avatar}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}${metaHtml}</span></a>`;
 }
 
 // 博客网络聚合簇卡片：圈内多个站点按「订阅 / 友链」分组展示。混合时两组各带小标题分列；

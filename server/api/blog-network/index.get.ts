@@ -1,6 +1,7 @@
 import { resolve4, resolve6 } from "node:dns/promises";
 import { isIP } from "node:net";
 import { prisma } from "#server/utils/prisma";
+import { getIpLocation } from "#server/utils/qqwry";
 import { resolveCity } from "#server/utils/ip-location";
 import { CITY_COORDS, matchForeignCoord, type Coord } from "~~/shared/city-coords";
 
@@ -37,6 +38,65 @@ function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
 }
 
 type Bucket = "ok" | "overseas" | "unknown";
+type ResolvedPoint = { coord: Coord; locations: string[]; isps: string[] };
+
+function uniqueValues(values: Array<string | null | undefined>): string[] {
+  return [...new Set(values.map(v => (v || "").trim()).filter(Boolean))];
+}
+
+function simplifyRawLocation(raw: string): string {
+  return raw
+    .replace(/^中国[–—\-]?/, "")
+    .split(/[–—\-]/)
+    .map(p => p.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("-");
+}
+
+function formatServerLocation(
+  info: { city: string | null; province: string | null; isDomestic: boolean; country: string },
+  rawLocation: string,
+): string {
+  if (info.isDomestic) return info.city || info.province || simplifyRawLocation(rawLocation);
+  return info.country || simplifyRawLocation(rawLocation);
+}
+
+function normalizeServerIsp(isp: string): string {
+  const raw = isp.trim();
+  if (!raw) return "";
+
+  const rules: Array<[RegExp, string]> = [
+    [/腾讯|Tencent|DNSPod/i, "腾讯云"],
+    [/阿里|Alibaba|Aliyun/i, "阿里云"],
+    [/华为|Huawei/i, "华为云"],
+    [/百度|Baidu/i, "百度云"],
+    [/火山|Volc/i, "火山引擎"],
+    [/京东|JD/i, "京东云"],
+    [/Cloudflare/i, "Cloudflare"],
+    [/Amazon|AWS|CloudFront/i, "AWS"],
+    [/Google/i, "Google Cloud"],
+    [/Microsoft|Azure/i, "Azure"],
+    [/Vercel/i, "Vercel"],
+    [/Netlify/i, "Netlify"],
+    [/GitHub/i, "GitHub Pages"],
+    [/Fastly/i, "Fastly"],
+    [/Akamai/i, "Akamai"],
+    [/DigitalOcean/i, "DigitalOcean"],
+    [/Linode/i, "Linode"],
+    [/Vultr/i, "Vultr"],
+    [/Hetzner/i, "Hetzner"],
+    [/OVH/i, "OVH"],
+    [/Oracle/i, "Oracle Cloud"],
+    // 博客网络解析到运营商出口时，多半是站点启用了运营商 CDN 边缘节点。
+    [/移动|China Mobile|CMNET|铁通/i, "移动CDN"],
+    [/联通|China Unicom|网通/i, "联通CDN"],
+    [/电信|China Telecom|Chinanet/i, "电信CDN"],
+    [/广电|CBN/i, "广电CDN"],
+  ];
+
+  return rules.find(([pattern]) => pattern.test(raw))?.[1] || raw;
+}
 
 // IP → 坐标 + 桶分类（国内 city→province→；境外 country→FOREIGN_COORDS 子串匹配）
 function coordForInfo(info: {
@@ -58,7 +118,7 @@ function coordForInfo(info: {
 }
 
 // 一个域名 → 多个去重坐标 + 单一桶标记（任一 IP 命中即算定位成功，否则取最差的桶）
-async function resolveDomain(domain: string): Promise<{ coords: Coord[]; bucket: Bucket }> {
+async function resolveDomain(domain: string): Promise<{ points: ResolvedPoint[]; bucket: Bucket }> {
   // 域名本身是 IP 字面量时跳过 DNS 直接用作 IP
   let ips: string[];
   if (isIP(domain)) {
@@ -70,25 +130,36 @@ async function resolveDomain(domain: string): Promise<{ coords: Coord[]; bucket:
     ]);
     ips = [...new Set([...v4, ...v6])];
   }
-  if (!ips.length) return { coords: [], bucket: "unknown" };
+  if (!ips.length) return { points: [], bucket: "unknown" };
 
-  const seen = new Set<string>();
-  const coords: Coord[] = [];
+  const byCoord = new Map<string, { coord: Coord; locations: Set<string>; isps: Set<string> }>();
   let overseas = false;
   for (const ip of ips) {
-    const info = await resolveCity(ip);
+    const [info, ipInfo] = await Promise.all([resolveCity(ip), getIpLocation(ip)]);
     const { coord, bucket } = coordForInfo(info);
     if (bucket === "overseas") overseas = true;
     if (coord) {
       const key = `${coord[0]},${coord[1]}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        coords.push(coord);
+      let entry = byCoord.get(key);
+      if (!entry) {
+        entry = { coord, locations: new Set<string>(), isps: new Set<string>() };
+        byCoord.set(key, entry);
       }
+
+      const location = formatServerLocation(info, ipInfo?.location || "");
+      const isp = normalizeServerIsp(ipInfo?.isp || "");
+      if (location) entry.locations.add(location);
+      if (isp) entry.isps.add(isp);
     }
   }
-  if (!coords.length) return { coords: [], bucket: overseas ? "overseas" : "unknown" };
-  return { coords, bucket: "ok" };
+
+  const points = [...byCoord.values()].map(p => ({
+    coord: p.coord,
+    locations: [...p.locations],
+    isps: [...p.isps],
+  }));
+  if (!points.length) return { points: [], bucket: overseas ? "overseas" : "unknown" };
+  return { points, bucket: "ok" };
 }
 
 export default defineEventHandler(async () => {
@@ -119,7 +190,7 @@ export default defineEventHandler(async () => {
   const resolved = await Promise.all(
     blogs.map(async b => {
       const d = domainOf(b.url);
-      const res = d ? await resolveDomain(d) : ({ coords: [], bucket: "unknown" as Bucket });
+      const res = d ? await resolveDomain(d) : ({ points: [], bucket: "unknown" as Bucket });
       return { blog: b, ...res };
     }),
   );
@@ -133,6 +204,8 @@ export default defineEventHandler(async () => {
     source: "subscribe" | "link";
     sourceId: number;
     targetUrl: string | null;
+    serverLocation: string | null;
+    serverIsp: string | null;
   }> = [];
   let overseas = 0;
   let unknown = 0;
@@ -141,7 +214,10 @@ export default defineEventHandler(async () => {
   for (const r of resolved) {
     if (r.bucket === "overseas") overseas++;
     else if (r.bucket === "unknown") unknown++;
-    for (const [lng, lat] of r.coords) {
+    for (const point of r.points) {
+      const [lng, lat] = point.coord;
+      const locations = uniqueValues(point.locations);
+      const isps = uniqueValues(point.isps);
       id++;
       points.push({
         id,
@@ -154,6 +230,8 @@ export default defineEventHandler(async () => {
         // 订阅卡片的跳转由 source+sourceId 拼 /subscribes?source=<id>，无需目标 URL；
         // 友链卡片直接开 targetUrl（外链）
         targetUrl: r.blog.type === "link" ? r.blog.url : null,
+        serverLocation: locations.length ? locations.join(" / ") : null,
+        serverIsp: isps.length ? isps.join(" / ") : null,
       });
     }
   }

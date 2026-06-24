@@ -29,14 +29,33 @@ const viewOptions = [
 // 「我的足迹」是真实地点，需要钻到具体点位，故不限缩放。
 const FOOTPRINT_MAX_ZOOM = 9;
 
-// 两视图各自的数据源；切视图只是换 places，TravelMap 内部重建聚合点、不重载地图
-const { data: travelsData, pending: travelsPending, error: travelsError } = await useFetch("/api/travels", {
-  headers: { "x-ssr-internal-request": "true" },
+// 三个视图的数据源按需加载：首屏只请求当前 tab，切到其它 tab 时再首次请求。
+// TravelMap 内部仍只根据当前 places 重建聚合点、不重载地图。
+const fetchOptions = { headers: { "x-ssr-internal-request": "true" } };
+const {
+  data: travelsData,
+  pending: travelsPending,
+  error: travelsError,
+  execute: executeTravels,
+} = await useFetch("/api/travels", {
+  ...fetchOptions,
+  immediate: view.value === "travels",
 });
-const { data: footprintData, pending: footprintPending, error: footprintError } = await useFetch("/api/footprint", {
-  headers: { "x-ssr-internal-request": "true" },
+const {
+  data: footprintData,
+  pending: footprintPending,
+  error: footprintError,
+  execute: executeFootprint,
+} = await useFetch("/api/footprint", {
+  ...fetchOptions,
+  immediate: view.value === "footprint",
 });
-const { data: blogData, pending: blogPending, error: blogError } = await useFetch<{
+const {
+  data: blogData,
+  pending: blogPending,
+  error: blogError,
+  execute: executeBlog,
+} = await useFetch<{
   data?: {
     points: Array<{
       id: number;
@@ -47,13 +66,26 @@ const { data: blogData, pending: blogPending, error: blogError } = await useFetc
       source: "subscribe" | "link";
       sourceId: number;
       targetUrl: string | null;
+      serverLocation: string | null;
+      serverIsp: string | null;
     }>;
     overseas: number;
     unknown: number;
     total: number;
   };
 }>("/api/blog-network", {
-  headers: { "x-ssr-internal-request": "true" },
+  ...fetchOptions,
+  immediate: view.value === "blogs",
+});
+
+watch(view, currentView => {
+  if (currentView === "footprint") {
+    if (!footprintData.value && !footprintPending.value) executeFootprint();
+  } else if (currentView === "blogs") {
+    if (!blogData.value && !blogPending.value) executeBlog();
+  } else if (!travelsData.value && !travelsPending.value) {
+    executeTravels();
+  }
 });
 
 const travelPlaces = computed(() => travelsData.value?.data || []);
@@ -113,6 +145,8 @@ const blogPlaces = computed(() =>
     source: p.source,
     sourceId: p.sourceId,
     targetUrl: p.targetUrl,
+    serverLocation: p.serverLocation,
+    serverIsp: p.serverIsp,
   })),
 );
 
@@ -123,6 +157,15 @@ const places = computed(() =>
       ? blogPlaces.value
       : travelPlaces.value,
 );
+const mapEverShown = ref(false);
+watch(
+  places,
+  currentPlaces => {
+    if (currentPlaces.length > 0) mapEverShown.value = true;
+  },
+  { immediate: true },
+);
+const shouldShowMap = computed(() => mapEverShown.value || places.value.length > 0);
 // ?place 聚焦仅对「我的足迹」有意义
 const focusId = computed(() => (view.value === "travels" ? (route.query.place as string) || null : null));
 
@@ -201,26 +244,26 @@ onUnmounted(() => {
 <template>
   <section class="relative -mt-20 -mx-5 h-svh overflow-hidden bg-gray-100 dark:bg-gray-900" :style="sectionStyle">
     <!-- 地图主体 -->
-    <div v-if="pending" class="absolute inset-0 flex items-center justify-center">
+    <div v-if="pending && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
       <div class="text-center text-white">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
         <p class="mt-3">加载中...</p>
       </div>
     </div>
-    <div v-else-if="error" class="absolute inset-0 flex items-center justify-center">
+    <div v-else-if="error && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
       <div class="text-center text-white">
         <Icon name="ri:error-warning-line" class="size-8 mx-auto mb-2" />
         <p>加载失败，请刷新重试</p>
       </div>
     </div>
-    <div v-else-if="places.length === 0" class="absolute inset-0 flex items-center justify-center">
+    <div v-else-if="places.length === 0 && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
       <div class="text-center text-gray-300 dark:text-white/90">
         <Icon name="ri:map-pin-line" class="size-12 mx-auto mb-4 opacity-70" />
         <p>{{ view === "footprint" ? "还没有访客足迹" : view === "blogs" ? "还没有博客站点" : "还没有任何足迹" }}</p>
       </div>
     </div>
 
-    <ClientOnly v-else>
+    <ClientOnly v-if="shouldShowMap">
       <TravelMap :places="places" :focus-id="focusId" :max-zoom="view === 'footprint' || view === 'blogs' ? FOOTPRINT_MAX_ZOOM : undefined" />
       <template #fallback>
         <div class="w-full h-full bg-gray-100 dark:bg-gray-900 animate-pulse" />
