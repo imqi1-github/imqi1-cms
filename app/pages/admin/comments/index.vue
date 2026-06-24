@@ -418,7 +418,7 @@ onMounted(() => {
                   size="sm"
                   class="h-auto p-1 justify-start text-left font-normal hover:bg-muted"
                   @click="filterByPost(comment.cid)">
-                  <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
+                  <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="text-sm truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
               </TableCell>
@@ -428,7 +428,8 @@ onMounted(() => {
                 </Badge>
               </TableCell>
               <TableCell>
-                <span class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
+                <div class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</div>
+                <div class="text-xs text-muted-foreground">{{ comment.ip }}</div>
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-1">
@@ -527,17 +528,18 @@ onMounted(() => {
 
             <!-- 评论内容 -->
             <div class="pl-9 space-y-2">
-              <p class="text-sm line-clamp-3 whitespace-pre-wrap break-words">{{ comment.content }}</p>
+              <p class="text-sm line-clamp-3 whitespace-pre-wrap wrap-break-word">{{ comment.content }}</p>
               <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground items-center">
                 <Button
                   variant="ghost"
                   size="sm"
                   class="h-auto p-0.5 justify-start text-left font-normal hover:bg-muted"
                   @click="filterByPost(comment.cid)">
-                  <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
+                  <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
                 <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
+                <span>{{ comment.ip }}</span>
               </div>
             </div>
 
@@ -632,17 +634,18 @@ onMounted(() => {
 
             <!-- 评论内容 -->
             <div class="pl-7 sm:pl-9 space-y-2">
-              <p class="text-sm line-clamp-4 whitespace-pre-wrap break-words">{{ comment.content }}</p>
+              <p class="text-sm line-clamp-4 whitespace-pre-wrap wrap-break-word">{{ comment.content }}</p>
               <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground items-center">
                 <Button
                   variant="ghost"
                   size="sm"
                   class="h-auto p-0.5 justify-start text-left font-normal hover:bg-muted"
                   @click="filterByPost(comment.cid)">
-                  <Icon name="lucide:filter" class="size-3 mr-1 flex-shrink-0" />
+                  <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
                 <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
+                <span>{{ comment.ip }}</span>
               </div>
             </div>
 
@@ -715,7 +718,7 @@ onMounted(() => {
 
     <!-- 编辑对话框 -->
     <Dialog v-model:open="editDialogOpen">
-      <DialogContent class="sm:max-w-[500px]">
+      <DialogContent class="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>编辑评论</DialogTitle>
           <DialogDescription>修改评论内容和状态</DialogDescription>
