@@ -189,6 +189,7 @@ onMounted(() => {
             <TableCell>
               <div class="flex items-center gap-3">
                 <Avatar class="size-8">
+                  <AvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.nickname || user.name" />
                   <AvatarFallback>{{ user.name?.charAt(0)?.toUpperCase() || "?" }}</AvatarFallback>
                 </Avatar>
                 <span class="font-medium">{{ user.name }}</span>
@@ -240,6 +241,7 @@ onMounted(() => {
         <div v-for="user in users" :key="user.uid" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <Avatar class="size-8">
+              <AvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.nickname || user.name" />
               <AvatarFallback class="text-xs">{{ user.name?.charAt(0)?.toUpperCase() || "?" }}</AvatarFallback>
             </Avatar>
             <div class="flex-1 min-w-0">

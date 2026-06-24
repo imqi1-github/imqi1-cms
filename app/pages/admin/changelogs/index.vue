@@ -182,7 +182,10 @@ onMounted(() => {
     <div class="space-y-4">
       <!-- 页面标题 -->
       <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">更新日志管理</h1>
+        <div>
+          <h1 class="text-2xl font-bold">更新日志管理</h1>
+          <p class="text-sm text-muted-foreground mt-1">管理站点更新日志内容</p>
+        </div>
         <div class="flex items-center gap-2">
           <input
             ref="fileInput"

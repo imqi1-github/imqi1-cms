@@ -3,7 +3,6 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute()
 
-
 // 移动端侧边栏开关状态
 const mobileSidebarOpen = ref(false)
 
@@ -250,32 +249,14 @@ const handleLogout = async () => {
               <Icon name="lucide:home" class="size-5" />
             </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <Button variant="ghost" size="icon" class="rounded-full">
-                  <Avatar>
-                    <AvatarFallback>Admin</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="w-56">
-                <DropdownMenuLabel>我的账户</DropdownMenuLabel>
-                <Separator />
-                <DropdownMenuItem>
-                  <Icon name="lucide:user" class="mr-2 size-4" />
-                  个人资料
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Icon name="lucide:settings" class="mr-2 size-4" />
-                  设置
-                </DropdownMenuItem>
-                <Separator />
-                <DropdownMenuItem @click="handleLogout">
-                  <Icon name="lucide:log-out" class="mr-2 size-4" />
-                  退出登录
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              v-tooltip="'退出登录'"
+              @click="handleLogout"
+            >
+              <Icon name="lucide:log-out" class="size-5" />
+            </Button>
           </div>
         </header>
 
