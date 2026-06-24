@@ -766,6 +766,10 @@ watch(
       // 先定视野再建聚合：避免新点按旧（可能很深）缩放惰性渲染导致只画出局部
       fitChinaView();
       cluster = createCluster(points);
+    } else {
+      // 切 tab 后新数据尚在 pending 时 places 会短暂为空；此时也要先脱离 ?place 的深缩放视野，
+      // 否则后续 maxZoom 钳制/旧动画可能把地图留在局部。
+      fitChinaView();
     }
   },
 );
@@ -780,7 +784,7 @@ watch(
     map.setZooms?.([lo, hi]);
     const z = map.getZoom();
     if (z < lo) map.setZoom(lo);
-    if (z > hi) map.setZoom(hi);
+    if (z > hi) fitChinaView();
   },
 );
 
