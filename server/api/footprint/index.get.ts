@@ -51,6 +51,11 @@ function avatarUrl(mail: string | null, service: string): string | null {
   return `${baseUrl}/${hash}?d=identicon&s=80`;
 }
 
+function isMeaningfulName(name: string): boolean {
+  if (!name) return false;
+  return !/^(匿名|匿名读者|游客|访客|路人|佚名)$/i.test(name.trim());
+}
+
 export default defineEventHandler(async () => {
   const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
   const avatarService = avatarSetting?.value || "gravatar";
@@ -77,19 +82,21 @@ export default defineEventHandler(async () => {
     orderBy: { create_time: "desc" },
   });
 
-  // 预扫一遍：为每个「昵称+网址」记录其出现过的邮箱（取最新一条）。这样同一个人偶尔漏填邮箱
-  // 的那条评论，能并到他惯用的邮箱身份里，而不是凭「无邮箱」另立一个身份（如「战忽包子」
-  // 一条带邮箱一条不带，实为同一人）。仅当昵称+网址完全相同时才并——这是强键，不会误并。
+  // 预扫一遍：为昵称相关键记录其出现过的邮箱（取最新一条）。这样同一个人偶尔漏填邮箱
+  // 或换网址时，能并到他惯用的邮箱身份里，而不是另立身份。昵称单键只用于非泛化昵称。
   const nlToMail = new Map<string, string>();
+  const nameToMail = new Map<string, string>();
   for (const row of rows) {
     const name = row.name?.trim() || "";
     const link = row.link?.trim().toLowerCase() || "";
-    if (!name || !link) continue;
     const mail = row.mail?.trim().toLowerCase() || null;
-    if (mail && !nlToMail.has(`${name}|${link}`)) nlToMail.set(`${name}|${link}`, mail);
+    if (!name || !mail) continue;
+    if (link && !nlToMail.has(`${name}|${link}`)) nlToMail.set(`${name}|${link}`, mail);
+    if (isMeaningfulName(name) && !nameToMail.has(name)) nameToMail.set(name, mail);
   }
 
-  // 读者身份去重键：邮箱 > 昵称+网址 > IP。同一个人换 IP/换设备只算一位。
+  // 读者身份去重键：邮箱 > 昵称+网址/昵称命中的邮箱 > 非泛化昵称 > 昵称+网址 > IP。
+  // 同一个人换 IP/换设备只算一位。
   // 落点取该身份「最新的国内评论」所在城市——避免读者走 VPN（IP 解析成境外）或临时出国时
   // 从国内地图凭空消失。境外/坐标解析不出的身份仅当其**没有任何可落点的国内评论**时，
   // 才计入 overseas / unknown 桶。
@@ -106,8 +113,11 @@ export default defineEventHandler(async () => {
     const readerName = row.name?.trim() || "";
     const link = row.link?.trim().toLowerCase() || null;
     const nlKey = readerName && link ? `${readerName}|${link}` : null;
-    // 邮箱最强；无邮箱但昵称+网址命中过某邮箱 → 并入那个邮箱身份；否则用昵称+网址；最后退回 IP
-    const identity = mail ?? (nlKey ? (nlToMail.get(nlKey) ?? `nl:${nlKey}`) : `ip:${ip}`);
+    // 非泛化昵称优先：同一个读者换邮箱/网址/IP 后仍只算一位（如「刘郎」有多个邮箱）。
+    // 泛化昵称不按昵称合并，避免把不同「匿名/游客」误合成一位。
+    const identity = isMeaningfulName(readerName)
+      ? `name:${readerName}`
+      : (mail ?? (nlKey ? nlToMail.get(nlKey) : null) ?? (nlKey ? `nl:${nlKey}` : `ip:${ip}`));
 
     // 已落点（已找到更新的国内可落点评论）：跳过该身份其余更旧的行
     if (idStatus.get(identity) === "placed") continue;

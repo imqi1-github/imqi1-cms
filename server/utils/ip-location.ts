@@ -12,7 +12,7 @@
  */
 
 import { getIpLocation } from "#server/utils/qqwry";
-import { PROVINCES } from "~~/shared/city-coords";
+import { CITY_COORDS, PROVINCES } from "~~/shared/city-coords";
 
 export interface CityInfo {
   /** 城市名（去后缀，如「沈阳」）；只有省级时为 null */
@@ -45,6 +45,18 @@ export async function resolveCity(ip: string): Promise<CityInfo> {
   if (raw.includes("澳门")) return { city: null, province: "澳门", isDomestic: true, country: "中国" };
   if (raw.includes("台湾") || raw.includes("台北") || raw.includes("高雄") || raw.includes("新北")) {
     return { city: null, province: "台湾", isDomestic: true, country: "中国" };
+  }
+
+  // 简化版 ipdb 可能直接返回「南京」「重庆」「新疆」这类单字段。
+  // 先按坐标表判断城市，再按省级判断；否则旧逻辑会把「南京」当作境外 country。
+  const direct = stripSuffix(raw.replace(/^中国[–—\-]?/, ""));
+  if (direct && CITY_COORDS[direct]) {
+    return {
+      city: PROVINCES.has(direct) ? null : direct,
+      province: PROVINCES.has(direct) ? direct : null,
+      isDomestic: true,
+      country: "中国",
+    };
   }
 
   // 去「中国」前缀后按分隔符切分：典型「辽宁-沈阳-沈河区」或「辽宁省-沈阳市-沈河区」
