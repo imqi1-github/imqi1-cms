@@ -186,6 +186,7 @@ usePageSeo({
       <NuxtLink
         v-if="isLoggedIn && !isLoadingAuth"
         to="/admin/changelogs"
+        target="_blank"
         class="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
       >
         <Icon name="lucide:settings" class="size-3.5" />
@@ -212,7 +213,7 @@ usePageSeo({
       <aside class="w-12 lg:w-16 shrink-0 animate-fade-in">
         <div
           ref="sidebarRef"
-          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
+          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-hit pr-1 scrollbar-hide"
         >
           <button
             v-for="classType in classTypes"
@@ -414,5 +415,17 @@ aside div::-webkit-scrollbar-thumb:hover {
 
 .markdown-content :deep(.dark li::marker) {
   color: rgb(148 163 184); /* slate-400 */
+}
+
+/* 隐藏滚动条 */
+.scrollbar-hide {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 </style>
