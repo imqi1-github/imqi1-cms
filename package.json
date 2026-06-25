@@ -28,7 +28,9 @@
     "db:init:test": "tsx scripts/init-test-db.ts",
     "ipdb:convert": "tsx scripts/convert-czdb-to-ipdb.ts",
     "ipdb:merge-ipv6wry": "tsx scripts/merge-ipv6wry-to-ipdb.ts",
-    "ipdb:simplify": "tsx scripts/simplify-ipdb.ts"
+    "ipdb:simplify": "tsx scripts/simplify-ipdb.ts",
+    "get:ip": "tsx scripts/get-ip.ts",
+    "check:update": "node scripts/check-updates.mjs"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
