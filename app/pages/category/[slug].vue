@@ -309,21 +309,21 @@ onMounted(() => {
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">
-        <nav v-if="pagination && pagination.totalPages > 1" aria-label="图片分页" class="photo-page-control sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-[0.22rem] w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3">
-          <button type="button" :disabled="pagination.page <= 1 || pending" @click="goToPage(pagination.page - 1)" class="inline-flex items-center justify-center w-5.8 h-5.8 rounded-full text-slate-500 bg-transparent hover:bg-transparent hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2">
+        <nav v-if="pagination && pagination.totalPages > 1" aria-label="图片分页" class="photo-page-control sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-0.5 w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3">
+          <button type="button" :disabled="pagination.page <= 1 || pending" @click="goToPage(pagination.page - 1)" class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
             <Icon name="ri-arrow-left-double-line" />
           </button>
           <span class="photo-page-current inline-flex items-baseline justify-center min-w-10 px-1 leading-1 whitespace-nowrap">
             <strong class="text-slate-900 text-[0.92rem] font-extrabold tracking-tighter">{{ pagination.page }}</strong>
             <em class="text-slate-400 text-[0.62rem] font-bold not-italic ml-1">/{{ pagination.totalPages }}</em>
           </span>
-          <button type="button" :disabled="pagination.page >= pagination.totalPages || pending" @click="goToPage(pagination.page + 1)" class="inline-flex items-center justify-center w-5.8 h-5.8 rounded-full text-slate-500 bg-transparent hover:bg-transparent hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2">
+          <button type="button" :disabled="pagination.page >= pagination.totalPages || pending" @click="goToPage(pagination.page + 1)" class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
             <Icon name="ri-arrow-right-double-line" />
           </button>
         </nav>
 
         <!-- 骨架屏（加载时显示16个占位符） -->
-        <div v-if="showSkeleton || (pending && posts.length === 0)" class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[4640px]:columns-1 gap-1.5 max-[640px]:gap-1 min-h-[180vh]">
+        <div v-if="showSkeleton || (pending && posts.length === 0)" class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[640px]:columns-1 gap-1.5 max-[640px]:gap-1 min-h-[180vh]">
           <div
             v-for="i in 16"
             :key="`skeleton-${i}`"
@@ -495,7 +495,7 @@ onMounted(() => {
         <button
           v-if="pagination.page > 1"
           @click="goToPage(pagination.page - 1)"
-          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
           <Icon name="ri-arrow-left-double-line" />
         </button>
 
@@ -504,7 +504,7 @@ onMounted(() => {
         <button
           v-if="pagination.page < pagination.totalPages"
           @click="goToPage(pagination.page + 1)"
-          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
           <Icon name="ri-arrow-right-double-line" />
         </button>
       </div>
