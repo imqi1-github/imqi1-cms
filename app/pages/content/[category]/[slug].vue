@@ -2370,7 +2370,7 @@ onUnmounted(() => {
   color: rgb(107 114 128);
 }
 
-.markdown-body :deep(pre.shiki:hover .copy-button) {
+.markdown-body :deep(pre.shiki:hover .copy-button), .markdown-body :deep(pre.shiki.has-file-name:hover .file-label) {
   opacity: 1;
 }
 
