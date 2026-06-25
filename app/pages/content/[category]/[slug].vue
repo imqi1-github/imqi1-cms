@@ -823,7 +823,7 @@ onMounted(async () => {
           href="${url}"
           target="_blank"
           rel="noopener noreferrer"
-          class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800">
+          class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800">
           <div class="flex min-w-0">
             ${
               image
@@ -887,7 +887,7 @@ onMounted(async () => {
           href="${url}"
           target="_blank"
           rel="noopener noreferrer"
-          class="block group border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800">
+          class="block group border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800">
           <div class="flex min-w-0 items-center justify-between gap-3 px-4 py-3">
             <h3 class="min-w-0 flex-1 text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
               ${title}
@@ -1438,7 +1438,10 @@ onMounted(async () => {
         padding: 8px 12px;
         font-size: 13px;
         line-height: 1.4;
+        width: 100%;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        padding: 12px 12px 4px 12px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.247), transparent);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1581,8 +1584,9 @@ onMounted(async () => {
         bottom: 0;
         left: 0;
         right: 0;
-        padding: 8px 12px;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        padding: 12px 12px 4px 12px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.247), transparent);
         color: white;
         font-size: 13px;
         text-align: center;
@@ -1821,7 +1825,7 @@ onUnmounted(() => {
           <div
             v-for="relatedPost in relatedPosts"
             :key="relatedPost.cid"
-            class="flex-1 min-w-50 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden transition-transform hover:border-blue-400 min-h-50">
+            class="flex-1 min-w-50 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:border-blue-600 transition-colors duration-300 min-h-50">
             <NuxtLink :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`" class="flex flex-col">
               <div v-if="relatedPost.covers && relatedPost.covers.length > 0" class="overflow-hidden">
                 <img
@@ -2319,6 +2323,26 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+/* 文件名标签 - 右上角显示 */
+.markdown-body :deep(pre.shiki.has-file-name .file-label) {
+  position: absolute;
+  top: 6px;
+  right: 36px;
+  left: auto;
+  background: white;
+  padding: 4px 12px 0 12px;
+  border-radius: 6px 6px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(55 65 81);
+  z-index: 2;
+  opacity: 1;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .markdown-body :deep(pre.shiki:hover .lang-label) {
   opacity: 1;
 }
@@ -2373,51 +2397,30 @@ onUnmounted(() => {
   color: rgb(74 222 128);
 }
 
-/* 带文件名的代码块样式 - 编辑器风格 */
-.markdown-body :deep(pre.shiki.has-file-name) {
-  padding-top: 44px; /* 为文件标签栏留出空间 */
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-}
-
-/* 文件标签栏容器 */
-.markdown-body :deep(pre.shiki.has-file-name::before) {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 32px;
-  background: rgb(243 244 246);
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  border-bottom: 1px solid rgb(229 231 235);
-  z-index: 1;
-}
-
 .dark .markdown-body :deep(pre.shiki.has-file-name::before) {
   background: rgb(31 41 55);
   border-bottom-color: rgb(55 65 81);
 }
 
-/* 文件名标签样式 */
+/* 文件名标签样式 - 右上角显示，复用语言标签的样式规格 */
 .markdown-body :deep(pre.shiki.has-file-name .file-label) {
   position: absolute;
   top: 6px;
-  left: 12px;
-  right: auto;
-  background: white;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  right: 36px;
+  left: auto;
+  background: rgb(243 244 246);
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 500;
-  color: rgb(55 65 81);
-  z-index: 2;
-  opacity: 1;
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  line-height: 18px;
+  color: rgb(107 114 128);
+  opacity: 0.72;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 添加文件图标（仅 has-icon 时渲染，图标 URL 由 JS 通过 --icon-url 传入） */
@@ -2441,11 +2444,13 @@ onUnmounted(() => {
 
 /* 复制按钮位置调整 - 在带文件名的代码块中 */
 .markdown-body :deep(pre.shiki.has-file-name .copy-button) {
-  top: 38px; /* 移到文件标签栏下方 */
+  top: 6px;
+  right: 8px;
 }
 
+/* 带文件名的代码块中隐藏语言标签 - 语言信息已经包含在文件名标题里了 */
 .markdown-body :deep(pre.shiki.has-file-name .lang-label) {
-  top: 38px;
+  display: none;
 }
 
 .markdown-body :deep(table) {

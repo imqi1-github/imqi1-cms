@@ -91,7 +91,7 @@ export const useMarkdownImages = () => {
             <img src="${src}" alt="${alt}" ${
               dataFancybox ? `data-fancybox="${dataFancybox}"` : ""
             } ${dataCaption ? `data-caption="${dataCaption}"` : ""} class="w-full h-full object-cover" />
-            <div class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-linear-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
               ${alt}
             </div>
           </div>

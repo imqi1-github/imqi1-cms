@@ -241,11 +241,12 @@ watch(
   text-align: center;
   color: white;
   padding: 8px 12px;
+  width: 100%;
   font-size: 13px;
   line-height: 1.4;
-  /* 文字阴影确保可读性 */
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  padding: 12px 12px 4px 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.247), transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

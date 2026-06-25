@@ -127,13 +127,22 @@ watch(pending, (newVal, oldVal) => {
     // 设置页面标题供导航栏使用
     if (tag.value?.name) {
       const { setPageTitle } = usePageTitle();
-      setPageTitle(`# ${tag.value.name}`, "ri:hashtag");
+      setPageTitle(`${tag.value.name}`, "ri:hashtag");
     }
 
-    // 强制触发渐入动画
+    // 强制触发渐入动画 - 给足够时间让DOM渲染完成
     setTimeout(() => {
-      triggerFadeIn();
-    }, 50);
+      nextTick(() => {
+        document.querySelectorAll(".fade-in-element").forEach(el => {
+          el.classList.remove("opacity-100", "translate-y-0");
+          el.classList.add("opacity-0", "translate-y-8");
+        });
+        // 需要下一帧再触发动画，否则浏览器会合并DOM更新导致动画不播放
+        requestAnimationFrame(() => {
+          triggerFadeIn();
+        });
+      });
+    }, 150);
   }
 
   // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
@@ -204,7 +213,7 @@ watch(
   newTag => {
     if (newTag?.name) {
       const { setPageTitle } = usePageTitle();
-      setPageTitle(`# ${newTag.name}`, "ri:hashtag");
+      setPageTitle(`${newTag.name}`, "ri:hashtag");
     }
   },
   { immediate: true },
@@ -242,7 +251,7 @@ onMounted(() => {
       <!-- 404 -->
       <div
         v-else-if="isNotFound"
-        class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
           <Icon name="ri:close-large-fill" class="text-red-500" />
           <span>标签不存在</span>
@@ -256,7 +265,7 @@ onMounted(() => {
       <!-- 标签文章页 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="my-12 mx-auto w-fit fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        <header class="my-12 mx-auto w-fit fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:hashtag" class="inline-block size-8.5 mr-2" />
             {{ tag?.name }}
@@ -267,11 +276,11 @@ onMounted(() => {
         <!-- 文章列表 -->
         <div
           v-if="posts.length > 0 && !showSkeleton"
-          class="grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          class="grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           <div
             v-for="post in posts"
             :key="post.cid"
-            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow">
+            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md border border-transparent hover:border-blue-500 dark:hover:border-blue-600 group transition-all duration-300">
             <!-- 封面 -->
             <NuxtLink
               v-if="post.covers.length > 0"
@@ -302,7 +311,7 @@ onMounted(() => {
             <!-- 无封面占位 -->
             <div
               v-else
-              class="relative h-50 max-md:h-[200px] overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+              class="relative h-50 max-md:h-50 overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
               <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ post.title[0] }}</span>
             </div>
 
@@ -346,7 +355,7 @@ onMounted(() => {
             class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
             <div
-              class="h-50 max-md:h-[200px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
+              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
 
             <!-- 文章信息骨架 -->
             <div class="px-5 pb-2 pt-1 mt-auto">
@@ -369,7 +378,7 @@ onMounted(() => {
         <!-- 空状态 -->
         <div
           v-else-if="posts.length === 0 && !pending"
-          class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           暂无文章
         </div>
       </template>
@@ -420,7 +429,7 @@ onMounted(() => {
   transform: translateY(2rem);
 }
 
-.duration-300 {
+.duration-600 {
   transition-duration: 0.6s;
 }
 

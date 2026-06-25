@@ -162,7 +162,19 @@ watch(pending, (newVal, oldVal) => {
 
     // 强制触发渐入动画
     setTimeout(() => {
-      triggerFadeIn();
+      // 对于图片分类，需要先重置状态再触发动画
+      if (isPhotoCategory.value) {
+        document.querySelectorAll(".fade-in-element").forEach(el => {
+          el.classList.remove("opacity-100", "translate-y-0");
+          el.classList.add("opacity-0", "translate-y-8");
+        });
+        // 需要下一帧再触发动画，否则浏览器会合并DOM更新导致动画不播放
+        requestAnimationFrame(() => {
+          triggerFadeIn();
+        });
+      } else {
+        triggerFadeIn();
+      }
     }, 50);
   }
 
@@ -227,8 +239,11 @@ watch(
         el.classList.add("opacity-0", "translate-y-8");
       });
 
-      // 触发动画
-      triggerFadeIn();
+      // 如果是图片分类且骨架屏正在显示，需要在数据加载完成后重新触发动画
+      // 因为此时真实内容还没渲染，需要等到骨架屏隐藏后再处理
+      if (!isPhotoCategory.value || !(showSkeleton.value || (pending.value && posts.value.length === 0))) {
+        triggerFadeIn();
+      }
     });
   },
 );
@@ -281,7 +296,7 @@ onMounted(() => {
       <!-- 404 -->
       <div
         v-else-if="isNotFound"
-        class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
         <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
           <Icon name="ri:close-large-fill" class="text-red-500" />
           <span>分类不存在</span>
@@ -294,21 +309,21 @@ onMounted(() => {
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">
-        <nav v-if="pagination && pagination.totalPages > 1" class="photo-page-control" aria-label="图片分页">
-          <button type="button" :disabled="pagination.page <= 1 || pending" @click="goToPage(pagination.page - 1)">
+        <nav v-if="pagination && pagination.totalPages > 1" aria-label="图片分页" class="photo-page-control sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-[0.22rem] w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3">
+          <button type="button" :disabled="pagination.page <= 1 || pending" @click="goToPage(pagination.page - 1)" class="inline-flex items-center justify-center w-5.8 h-5.8 rounded-full text-slate-500 bg-transparent hover:bg-transparent hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2">
             <Icon name="ri-arrow-left-double-line" />
           </button>
-          <span class="photo-page-current">
-            <strong>{{ pagination.page }}</strong>
-            <em>/{{ pagination.totalPages }}</em>
+          <span class="photo-page-current inline-flex items-baseline justify-center min-w-10 px-1 leading-1 whitespace-nowrap">
+            <strong class="text-slate-900 text-[0.92rem] font-extrabold tracking-tighter">{{ pagination.page }}</strong>
+            <em class="text-slate-400 text-[0.62rem] font-bold not-italic ml-1">/{{ pagination.totalPages }}</em>
           </span>
-          <button type="button" :disabled="pagination.page >= pagination.totalPages || pending" @click="goToPage(pagination.page + 1)">
+          <button type="button" :disabled="pagination.page >= pagination.totalPages || pending" @click="goToPage(pagination.page + 1)" class="inline-flex items-center justify-center w-5.8 h-5.8 rounded-full text-slate-500 bg-transparent hover:bg-transparent hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2">
             <Icon name="ri-arrow-right-double-line" />
           </button>
         </nav>
 
         <!-- 骨架屏（加载时显示16个占位符） -->
-        <div v-if="showSkeleton || (pending && posts.length === 0)" class="photos-container photo-skeleton-container">
+        <div v-if="showSkeleton || (pending && posts.length === 0)" class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[4640px]:columns-1 gap-1.5 max-[640px]:gap-1 min-h-[180vh]">
           <div
             v-for="i in 16"
             :key="`skeleton-${i}`"
@@ -318,25 +333,29 @@ onMounted(() => {
             }">
             <!-- 图片占位 -->
             <div
-              class="w-full h-full bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 skeleton-pulse"
+              class="w-full h-full bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse"
               :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
           </div>
         </div>
 
         <!-- 图片列表 -->
-        <div v-else-if="posts.length > 0" class="photos-container fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        <div v-else-if="posts.length > 0" class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[640px]:columns-1 gap-1.5 max-[640px]:gap-1 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           <template v-for="post in posts" :key="post.cid">
             <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
               <NuxtLink
                 :to="`/content/${slug}/${post.slug}`"
-                class="image-card rounded-lg overflow-hidden relative group block mb-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md transition-shadow">
+                class="break-inside-avoid rounded-lg overflow-hidden relative group block mb-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-sm group transition-all duration-300">
                 <LivePhoto
                   :src="cover.url"
                   :alt="cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title"
                   class="w-full h-full object-cover" />
                 <div
-                  class="image-title text-xs p-3 text-center text-shadow-lg text-white w-full opacity-0 transition-opacity duration-200 absolute bottom-0 left-0">
-                  {{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}
+                  class="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div class="absolute bottom-0 left-0 right-0 px-2 py-1">
+                    <p class="text-white text-xs text-center font-medium line-clamp-2">
+                      {{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}
+                    </p>
+                  </div>
                 </div>
               </NuxtLink>
             </template>
@@ -344,13 +363,13 @@ onMounted(() => {
         </div>
 
         <!-- 空状态 -->
-        <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">暂无文章</div>
+        <div v-else class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">暂无文章</div>
       </template>
 
       <!-- 普通分类 - 网格布局 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="my-12 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+        <header class="my-12 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:menu-line" class="inline-block size-12 mr-2" />{{ category?.name }}
           </h1>
@@ -360,11 +379,11 @@ onMounted(() => {
         <!-- 文章列表 -->
         <div
           v-if="posts.length > 0 && !showSkeleton"
-          class="articles-grid grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          class="articles-grid grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           <div
             v-for="post in posts"
             :key="post.cid"
-            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md group transition-shadow">
+            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md border border-transparent hover:border-blue-500 dark:hover:border-blue-600 group transition-all duration-300">
             <!-- 封面 -->
             <NuxtLink
               v-if="post.covers.length > 0"
@@ -466,7 +485,7 @@ onMounted(() => {
         <!-- 空状态 -->
         <div
           v-else-if="posts.length === 0 && !pending"
-          class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-300 ease-out">
+          class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           暂无文章
         </div>
       </template>
@@ -495,34 +514,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 骨架屏脉冲动画 */
-@keyframes skeletonPulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.skeleton-pulse {
-  animation: skeletonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* 渐入动画 */
+/* 渐入动画 - JS 通过 .fade-in-element 选择器操作，必须保留 */
 .fade-in-element {
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.opacity-0 {
-  opacity: 0;
-}
-
-.opacity-100 {
-  opacity: 1;
 }
 
 .translate-y-0 {
@@ -533,7 +529,7 @@ onMounted(() => {
   transform: translateY(2rem);
 }
 
-.duration-300 {
+.duration-600 {
   transition-duration: 0.6s;
 }
 
@@ -541,150 +537,16 @@ onMounted(() => {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 图片分类 - 瀑布流布局 */
+/* 容器布局 - 保留类名用于模板绑定 */
 .photo-category-shell {
   max-width: 1800px;
   margin-top: -3rem;
   min-height: 100vh;
 }
 
-.photos-container {
-  column-count: 4;
-  column-gap: 6px;
-}
-
-@media (max-width: 1400px) {
-  .photos-container {
-    column-count: 3;
-  }
-}
-
-@media (max-width: 1024px) {
-  .photos-container {
-    column-count: 2;
-  }
-}
-
 @media (max-width: 640px) {
   .photo-category-shell {
     width: calc(100vw - 8px);
   }
-
-  .photos-container {
-    column-count: 2;
-    column-gap: 4px;
-  }
-}
-
-@media (max-width: 768px) {
-  .photo-page-control {
-    top: calc(100vh - 3rem) !important;
-    bottom: 1rem !important;
-    left: 1rem !important;
-    margin-left: 0.75rem !important;
-  }
-}
-
-@media (max-width: 420px) {
-  .photos-container {
-    column-count: 1;
-  }
-}
-
-.photo-skeleton-container {
-  min-height: 180vh;
-}
-
-.image-card {
-  break-inside: avoid;
-  border-radius: 4px;
-}
-
-.image-card img {
-  transition: transform 0.3s ease;
-}
-
-.image-card:hover img {
-  transform: scale(1.02);
-}
-
-.image-card:hover .image-title {
-  opacity: 1;
-}
-
-.photo-page-control {
-  position: sticky;
-  top: calc(100vh - 3.4rem);
-  bottom: max(0.75rem, env(safe-area-inset-bottom));
-  z-index: 40;
-  display: inline-grid;
-  grid-template-columns: 1.45rem auto 1.45rem;
-  align-items: center;
-  gap: 0.22rem;
-  width: max-content;
-  margin: 0 0 0.5rem 0;
-  padding: 0.22rem;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(14px);
-}
-
-.photo-page-control button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.45rem;
-  height: 1.45rem;
-  border-radius: 999px;
-  color: #64748b;
-  background: transparent;
-}
-
-.photo-page-control button:hover:not(:disabled) {
-  color: #64748b;
-  background: transparent;
-}
-
-.photo-page-control button:disabled {
-  color: #cbd5e1;
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.photo-page-control button:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
-
-.photo-page-current {
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: center;
-  min-width: 2.6rem;
-  padding: 0 0.25rem;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.photo-page-current strong {
-  color: #0f172a;
-  font-size: 0.92rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-}
-
-.photo-page-current em {
-  color: #94a3b8;
-  font-size: 0.62rem;
-  font-style: normal;
-  font-weight: 700;
-  margin-left: 0.08rem;
-}
-
-/* 文字阴影 */
-.text-shadow-lg {
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
 }
 </style>

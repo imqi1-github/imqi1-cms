@@ -103,9 +103,12 @@ watch(pending, newPending => {
   }
 });
 
+const searchInputRef = useTemplateRef<HTMLInputElement>("searchInputRef");
+
 // 页面挂载时触发动画
 onMounted(() => {
   triggerFadeIn();
+  searchInputRef.value?.focus();
 });
 
 // 执行搜索（与 watch 同步，仅在回车时手动触发刷新，避免 push 新增历史）
@@ -166,7 +169,8 @@ function highlightKeyword(text: string, keyword: string) {
           type="text"
           aria-label="搜索文章标题、内容"
           placeholder="搜索文章标题、内容..."
-          class="w-full pl-12 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          class="w-full pl-12 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-300"
+          ref="searchInputRef"
           @keydown="handleKeydown" />
         <Button
           v-if="searchKeyword"

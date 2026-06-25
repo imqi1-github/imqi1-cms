@@ -270,7 +270,7 @@
             :aria-label="`阅读文章：${post.title}`"
             class="group block no-underline">
             <div
-              class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
+              class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 hover:shadow-sm transition-all duration-300 h-55 flex flex-col">
               <!-- 封面 -->
               <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
                 <img
@@ -372,7 +372,7 @@
               :aria-label="`阅读文章：${post.title}`"
               class="group block no-underline flex-[1_0_200px]">
               <div
-                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md dark:hover:shadow-gray-800/50 transition-all duration-300 h-55 flex flex-col">
+                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 hover:shadow-sm transition-all duration-300 h-55 flex flex-col">
                 <!-- 封面 -->
                 <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
                   <img
@@ -449,7 +449,7 @@
             :aria-label="`查看图片：${image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title}`"
             class="block break-inside-avoid no-underline group">
             <div
-              class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-all duration-300">
+              class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm transition-all duration-300">
               <LivePhoto
                 :src="image.url"
                 :alt="image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title"
@@ -574,7 +574,7 @@
           :href="post.link"
           target="_blank"
           rel="noopener noreferrer"
-          class="block border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all no-underline group">
+          class="block border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all no-underline group">
           <div class="flex items-start gap-3">
             <!-- 订阅源头像 -->
             <Avatar class="size-10 shrink-0">
@@ -626,7 +626,7 @@
 
       <!-- 日志列表 -->
       <div class="space-y-4">
-        <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-md transition-all">
+        <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all">
           <div class="mb-2">
             <span class="text-sm text-muted-foreground">{{ formatChangelogDate(log.create_time) }}</span>
           </div>

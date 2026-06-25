@@ -242,6 +242,23 @@ const linkFirstLetters = computed(() => {
 // 选中的友链
 const selectedLink = ref<any>(null);
 
+// 检查必填字段是否已填写
+const isRequiredFieldsFilled = computed(() => {
+  // 名称和链接始终为必填
+  if (!formData.value.name?.trim()) return false;
+  if (!formData.value.link?.trim()) return false;
+
+  // 申请友链且开启自动审核时，本站友链地址也是必填
+  if (formMode.value === 'apply' && showLinkUrlInput.value) {
+    if (!formData.value.blogLinkUrl?.trim()) return false;
+  }
+
+  // 修改友链时必须已选中要修改的友链
+  if (formMode.value === 'edit' && !selectedLink.value) return false;
+
+  return true;
+});
+
 // 选择友链
 const selectLink = (link: any) => {
   selectedLink.value = link;
@@ -269,18 +286,6 @@ const cancelSelection = () => {
 watch(formMode, () => {
   cancelSelection();
 });
-
-// 本站头像右键菜单配置
-const avatarContextMenu: MenuItems = [
-  {
-    icon: "ri:file-copy-line",
-    label: "复制头像链接",
-    action: () => {
-      navigator.clipboard.writeText(siteConfig.links.profile.siteAvatar);
-      notify("复制头像链接成功", "success");
-    },
-  },
-];
 
 // 处理链接显示
 const formatUrl = (url: string) => {
@@ -517,7 +522,7 @@ onUnmounted(() => {
         <button
           @click="checkAllLinks"
           :disabled="isCheckingLinks"
-          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5 w-fit">
+          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5 w-fit cursor-pointer">
           <Icon name="lucide:refresh-cw" class="size-4" />
           <span v-if="isCheckingLinks">检测中...</span>
           <span v-else>检测友链</span>
@@ -551,7 +556,7 @@ onUnmounted(() => {
           target="_blank"
           rel="noopener"
           :aria-label="`访问友链：${link.name}${link.desc ? ' - ' + link.desc : ''}`"
-          class="group relative flex flex-col bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-gray-700/60 rounded-2xl no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-400/60 dark:hover:border-blue-500/40">
+          class="group relative flex flex-col bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-gray-700/60 rounded-2xl no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600">
           <!-- 状态点（检测中带呼吸光环） -->
           <span
             v-if="linkStatuses[link.id]"
@@ -624,7 +629,7 @@ onUnmounted(() => {
           :href="org.url"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 hover:shadow-md group">
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 group">
           <img
             :src="publicAsset(org.icon)"
             :alt="org.name"
@@ -643,7 +648,6 @@ onUnmounted(() => {
           <!-- 头像 -->
           <div class="shrink-0">
             <img
-              v-context-menu="avatarContextMenu"
               :src="siteConfig.links.profile.siteAvatar"
               :alt="siteConfig.links.profile.siteName"
               class="w-20 h-20 rounded-xl object-cover cursor-context-menu" />
@@ -681,7 +685,7 @@ onUnmounted(() => {
             type="radio"
             v-model="formMode"
             value="apply"
-            class="w-4 h-4 text-blue-600" />
+            class="w-4 h-4 text-blue-600 cursor-pointer" />
           <span class="text-sm font-medium text-gray-900 dark:text-gray-100">申请友链</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer">
@@ -762,7 +766,7 @@ onUnmounted(() => {
               <button
                 type="button"
                 @click="cancelSelection"
-                class="px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                class="px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
                 重新选择
               </button>
             </div>
@@ -776,7 +780,7 @@ onUnmounted(() => {
                 v-model="linkSearchQuery"
                 type="text"
                 placeholder="搜索友链名称或链接..."
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
             </div>
 
             <!-- 首字母筛选 -->
@@ -785,7 +789,7 @@ onUnmounted(() => {
                 type="button"
                 @click="selectedFilterLetter = '全部'"
                 :class="[
-                  'px-3 py-1 text-sm rounded transition-colors',
+                  'px-3 py-1 text-sm rounded transition-colors cursor-pointer',
                   selectedFilterLetter === '全部'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-slate-300 dark:hover:bg-slate-600'
@@ -798,7 +802,7 @@ onUnmounted(() => {
                 type="button"
                 @click="selectedFilterLetter = letter"
                 :class="[
-                  'px-3 py-1 text-sm rounded transition-colors',
+                  'px-3 py-1 text-sm rounded transition-colors cursor-pointer',
                   selectedFilterLetter === letter
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-slate-300 dark:hover:bg-slate-600'
@@ -847,7 +851,7 @@ onUnmounted(() => {
                 v-model="formData.name"
                 type="text"
                 :placeholder="formMode === 'edit' ? '新名称 *' : '名称 *'"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
             </div>
             <div>
               <label for="link-url" class="sr-only">链接</label>
@@ -856,7 +860,7 @@ onUnmounted(() => {
                 v-model="formData.link"
                 type="text"
                 :placeholder="formMode === 'edit' ? '新链接 *' : '链接 *'"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
             </div>
           </div>
 
@@ -868,7 +872,7 @@ onUnmounted(() => {
                 v-model="formData.sort"
                 type="text"
                 placeholder="分类"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
             </div>
             <div>
               <label for="link-avatar" class="sr-only">头像</label>
@@ -877,7 +881,7 @@ onUnmounted(() => {
                 v-model="formData.avatar"
                 type="text"
                 placeholder="头像"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
             </div>
           </div>
 
@@ -889,14 +893,14 @@ onUnmounted(() => {
               v-model="formData.blogLinkUrl"
               type="text"
               placeholder="能看到友情链接的地址 *"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none focus:border-blue-600 transition-colors" />
+              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
           </div>
         </template>
 
         <button
           type="submit"
-          :disabled="submitting || (formMode === 'edit' && !selectedLink)"
-          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+          :disabled="submitting || !isRequiredFieldsFilled"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
           <span v-if="submitting">{{ formMode === "apply" ? "提交中..." : "修改中..." }}</span>
           <span v-else-if="formMode === 'edit' && !selectedLink">请先选择要修改的链接</span>
           <span v-else>{{ formMode === "apply" ? (showForceSubmit ? "重试" : "申请友链") : "提交修改" }}</span>

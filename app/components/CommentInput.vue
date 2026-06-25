@@ -429,7 +429,7 @@ function formatEmojiPlaceholder(text: string): string {
         ref="textareaRef"
         v-model="formData.content"
         placeholder="评论内容 *"
-        class="min-h-[10em] w-full resize-y rounded border border-slate-200 bg-white px-3 py-2 leading-normal text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300"
+        class="min-h-[10em] w-full resize-y rounded border border-slate-200 bg-white px-3 py-2 leading-normal text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 hover:border-blue-600 focus:outline-none dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300"
         required />
     </div>
 
@@ -465,7 +465,7 @@ function formatEmojiPlaceholder(text: string): string {
             v-model="formData.name"
             type="text"
             placeholder="昵称 *"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
             required />
         </div>
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
@@ -475,7 +475,7 @@ function formatEmojiPlaceholder(text: string): string {
             v-model="formData.mail"
             type="email"
             :placeholder="requireMail ? '邮箱 *' : '邮箱'"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
         </div>
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
           <label for="comment-input-link" class="sr-only">链接</label>
@@ -484,7 +484,7 @@ function formatEmojiPlaceholder(text: string): string {
             v-model="formData.link"
             type="url"
             :placeholder="requireLink ? '链接 *' : '链接'"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
         </div>
       </template>
       <!-- 图形验证码（仅未登录用户显示，与昵称/邮箱/链接同行） -->
@@ -495,7 +495,7 @@ function formatEmojiPlaceholder(text: string): string {
           v-model="captchaInput"
           type="text"
           placeholder="验证码 *"
-          class="h-8 min-w-0 flex-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
+          class="h-8 min-w-0 flex-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
           maxlength="6"
           autocomplete="off"
           required />

@@ -77,7 +77,7 @@ onMounted(() => {
 <template>
   <div
     key="site-nav-menu"
-    class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 ml-auto mr-3"
+    class="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-300 ml-auto"
     :class="isTravelPage ? travelNavPillClass : ['backdrop-blur-xl bg-white/0 dark:bg-gray-900/0 shadow-[0_5px_20px_-5px_hsla(0,16%,87%,0)]', isScrolled ? 'bg-white/75 dark:bg-gray-900/75 shadow-xs' : '']">
     <!-- PC端菜单项 -->
     <div key="pc-nav-items" class="hidden md:flex items-center gap-2.5">

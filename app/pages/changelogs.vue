@@ -258,7 +258,7 @@ usePageSeo({
                 <div class="absolute -left-8.25 top-1.5 size-4 rounded-full bg-blue-600 dark:bg-blue-400 border-4 border-white dark:border-slate-900 group-hover:scale-125 transition-transform" />
 
                 <!-- 日志内容卡片 -->
-                <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all">
+                <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-sm transition-all">
                   <!-- 时间 -->
                   <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span class="text-xs text-slate-500 dark:text-slate-400">

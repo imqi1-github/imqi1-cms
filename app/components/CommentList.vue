@@ -268,7 +268,7 @@ function handleCommentSubmitted() {
             <button
               @click="loadMore"
               :disabled="loadingMore"
-              class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
               <span v-if="loadingMore" class="flex items-center gap-2">
                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 加载中...

@@ -508,7 +508,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-md:grid-cols-1">
           <NuxtLink
             href="/archiving"
-            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
             <div
               class="flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-16 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <Icon name="ri:archive-line" class="size-8" mode="svg" />
@@ -521,7 +521,7 @@
           </NuxtLink>
           <NuxtLink
             to="/sitemap"
-            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
             <div
               class="flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-16 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <Icon name="ri:compass-line" class="size-8" mode="svg" />
@@ -534,7 +534,7 @@
           </NuxtLink>
           <NuxtLink
             to="/changelogs"
-            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
             <div
               class="flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-16 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <Icon name="ri:edit-line" class="size-8" mode="svg" />
