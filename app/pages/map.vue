@@ -187,7 +187,7 @@ const error = computed(() =>
 function setView(v: string) {
   // place 仅「我的足迹」视图用（见下方 focusId）；切 tab 时丢弃，避免 URL 残留 / 切回 travels 时误聚焦。
   const { place: _place, ...rest } = route.query;
-  router.replace({ query: { ...rest, view: v } });
+  router.push({ query: { ...rest, view: v } });
 }
 
 const viewTitleMap: Record<string, string> = {

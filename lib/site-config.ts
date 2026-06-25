@@ -44,20 +44,16 @@ export interface SiteConfig {
     twitterSite: string;
   };
   /** 站长社交/联系方式 */
-  social: {
-    /** GitHub 主页完整 URL */
-    github: string;
-    /** 联系邮箱 */
-    email: string;
-    /** Twitter/X 用户名（含 @） */
-    twitter: string;
-    /** Twitter/X 主页完整 URL */
-    twitterUrl: string;
-    /** npm 个人主页完整 URL */
-    npm: string;
-    /** 个人主页 URL（非本站） */
-    homePage: string;
-  };
+  social: Array<{
+    /** 名称 */
+    name: string,
+    /** 图标 */
+    icon: string,
+    /** 社交链接*/
+    link: string,
+    /** target */
+    target?: boolean
+  }>,
   /** PWA manifest 静态配置 */
   manifest: {
     /** manifest name */

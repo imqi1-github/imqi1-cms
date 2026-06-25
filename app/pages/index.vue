@@ -29,12 +29,12 @@
       <!-- 联系链接 -->
       <ClientOnly>
         <div class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center animate-fade-in">
-          <template v-for="link in contactLinks" :key="link.name">
+          <template v-for="(link, index) in contactLinks" :key="index">
             <NuxtLink
-              :href="link.url"
+              :href="link.link"
               :target="link.target ? '_blank' : undefined"
-              :aria-label="link.title"
-              v-tooltip="link.title"
+              :aria-label="link.name"
+              v-tooltip="link.name"
               class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
               <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
             </NuxtLink>
@@ -844,14 +844,7 @@ const homeAnnounce = computed(() => siteSettings.value?.homeCustomText || siteCo
 const photoCategorySlug = computed(() => homeData.value?.data?.site?.photoCategorySlug || "shot");
 
 // 联系链接配置
-const contactLinks = ref([
-  { name: "email", url: `mailto:${siteConfig.social.email}`, icon: "ri:mail-fill", target: true, title: "邮箱" },
-  { name: "github", url: siteConfig.social.github, icon: "ri:github-fill", target: true, title: "GitHub" },
-  { name: "npm", url: siteConfig.social.npm, icon: "ri:npmjs-fill", target: true, title: "npm" },
-  { name: "x", url: siteConfig.social.twitterUrl, icon: "ri:twitter-x-fill", target: true, title: "X" },
-  { name: "home", url: siteConfig.social.homePage, icon: "ri:home-2-fill", target: true, title: "个人首页" },
-  { name: "link", url: "/links", icon: "ri:links-fill", target: false, title: "友情链接" },
-]);
+const contactLinks = ref(siteConfig.social);
 
 // 样式选择区域数据
 interface GridItem {

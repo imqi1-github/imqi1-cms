@@ -2,7 +2,6 @@
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
-const router = useRouter();
 
 const currentYear = new Date().getFullYear();
 
@@ -32,24 +31,6 @@ interface FooterIcon {
   title: string;
   target?: string;
 }
-
-// 博客导航图标（仅首页显示）
-const blogNavIcons: FooterIcon[] = [
-  {
-    name: "开往",
-    icon: "ri:subway-fill",
-    href: "https://www.travellings.cn/go-by-clouds.html",
-    title: "开往 - 友谊链接探索",
-    target: "_blank",
-  },
-  {
-    name: "虫洞",
-    icon: "boxicons:planet-filled",
-    href: "https://foreverblog.cn/go.html",
-    title: "虫洞 - 随机访问博客",
-    target: "_blank",
-  },
-];
 
 const blogStackIcons: FooterIcon[] = [
   {
@@ -277,13 +258,6 @@ onUnmounted(() => {
           <!-- 技术栈图标 -->
           <div aria-hidden="true" class="border border-gray-300 dark:border-gray-600 h-3"></div>
           <template v-for="iconItem in blogStackIcons" :key="iconItem.name">
-            <NuxtLink :to="iconItem.href" :target="iconItem.target" :aria-label="iconItem.title" v-tooltip="iconItem.title" class="no-underline">
-              <Icon :name="iconItem.icon" aria-hidden="true" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
-            </NuxtLink>
-          </template>
-          <!-- 博客导航图标（仅首页显示） -->
-          <div v-if="isHomePage" aria-hidden="true" class="border border-gray-300 dark:border-gray-600 h-3"></div>
-          <template v-if="isHomePage" v-for="iconItem in blogNavIcons" :key="iconItem.name">
             <NuxtLink :to="iconItem.href" :target="iconItem.target" :aria-label="iconItem.title" v-tooltip="iconItem.title" class="no-underline">
               <Icon :name="iconItem.icon" aria-hidden="true" class="text-lg hover:text-blue-600 dark:hover:text-gray-200 duration-300" />
             </NuxtLink>

@@ -58,14 +58,44 @@ export const siteConfig = defineSiteConfig({
     twitterSite: "@imqi1_X",
   },
 
-  social: {
-    github: "https://github.com/imqi1",
-    email: "imqi1@qq.com",
-    twitter: "@imqi1_X",
-    twitterUrl: "https://x.com/imqi1_X",
-    npm: "https://www.npmjs.com/~imqi1",
-    homePage: "https://qi1.website",
-  },
+  social: [
+    {
+      name: "邮箱",
+      icon: "ri:mail-fill",
+      link: "mailto:imqi1@qq.com",
+      target: true
+    },
+    {
+      name: "Github",
+      icon: "ri:github-fill",
+      link: "https://github.com/imqi1-github",
+      target: true
+    },
+    {
+      name: "X",
+      icon: "ri:twitter-x-fill",
+      link: "https://x.com/imqi1_X",
+      target: true
+    },
+    {
+      name: "个人网站",
+      icon: "ri:home-fill",
+      link: "https://qi1.website",
+      target: true
+    },
+    {
+      name: "开往",
+      icon: "ri:subway-fill",
+      link: "https://www.travellings.cn/go-by-clouds.html",
+      target: true,
+    },
+    {
+      name: "虫洞",
+      icon: "boxicons:planet-filled",
+      link: "https://foreverblog.cn/go.html",
+      target: true,
+    }
+  ],
 
   manifest: {
     name: _name,
