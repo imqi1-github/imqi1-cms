@@ -47,3 +47,4 @@ new-theme.sql
 .compressed-live-photos
 .claude
 changelogs.json
+nginx.conf
