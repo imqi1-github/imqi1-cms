@@ -380,8 +380,8 @@ html.with-fancybox body.hide-scrollbar {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   box-sizing: border-box;
   border: 2px solid transparent;
   border-top-color: #2563eb;
@@ -428,9 +428,9 @@ html.with-fancybox body.hide-scrollbar {
 /* 旋转动画（只旋转 spinner） */
 @keyframes img-loading-spin {
   from {
-    transform: translate(-12px, -12px) rotate(0deg);
+    transform: translate(-8px, -8px) rotate(0deg);
   }
   to {
-    transform: translate(-12px, -12px) rotate(360deg);
+    transform: translate(-8px, -8px) rotate(360deg);
   }
 }

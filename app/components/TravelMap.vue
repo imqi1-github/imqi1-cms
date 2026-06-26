@@ -214,7 +214,7 @@ function singleDotHtml() {
 function avatarCircleHtml(src: string | null | undefined, name: string, size: number) {
   const avatarSrc = src ? escapeHtml(src) : "";
   const initial = escapeHtml((name || "?").trim().charAt(0) || "?");
-  const common = `width:${size}px;height:${size}px;border-radius:9999px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);`;
+  const common = `width:${size}px;height:${size}px;border-radius:9999px;border:2px solid #fff;`;
   return avatarSrc
     ? `<img src="${avatarSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="${common}display:block;object-fit:cover;background:#2563eb;" /><div style="${common}display:none;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:${Math.max(11, Math.round(size * 0.42))}px;">${initial}</div>`
     : `<div style="${common}display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;font-weight:700;font-size:${Math.max(11, Math.round(size * 0.42))}px;">${initial}</div>`;
