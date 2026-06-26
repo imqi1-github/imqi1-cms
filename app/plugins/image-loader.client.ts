@@ -51,35 +51,45 @@ export default defineNuxtPlugin(() => {
     }
   };
 
+  const LOADING_TIMEOUT = 15000;
+
   const markLoading = (img: HTMLImageElement) => {
     if (shouldSkip(img)) return;
+
     img.setAttribute(ATTR_LOADING, "true");
+
     wrapImage(img);
+
+    window.setTimeout(() => {
+      if (!img.hasAttribute(ATTR_LOADED)) {
+        markDone(img);
+      }
+    }, LOADING_TIMEOUT);
   };
 
   // Capture 阶段事件代理：能捕获所有 img 的 load/error，包括后续动态创建的
   document.addEventListener(
     "load",
-    (e) => {
+    e => {
       if (e.target instanceof HTMLImageElement) {
         markDone(e.target);
       }
     },
-    true
+    true,
   );
 
   document.addEventListener(
     "error",
-    (e) => {
+    e => {
       if (e.target instanceof HTMLImageElement) {
         markDone(e.target);
       }
     },
-    true
+    true,
   );
 
   // 监听 src 属性变更（Vue 响应式更新 src 时重新进入加载态）
-  const attrObserver = new MutationObserver((mutations) => {
+  const attrObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
       if (m.type === "attributes" && m.attributeName === "src") {
         const img = m.target as HTMLImageElement;
@@ -120,17 +130,20 @@ export default defineNuxtPlugin(() => {
 
   const getIntersectionObserver = () => {
     if (!intersectionObserver) {
-      intersectionObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const img = entry.target as HTMLImageElement;
-            intersectionObserver!.unobserve(img);
-            queueProcessImageNow(img);
+      intersectionObserver = new IntersectionObserver(
+        entries => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const img = entry.target as HTMLImageElement;
+              intersectionObserver!.unobserve(img);
+              queueProcessImageNow(img);
+            }
           }
-        }
-      }, {
-        rootMargin: '200px', // 提前200px开始准备
-      });
+        },
+        {
+          rootMargin: "200px", // 提前200px开始准备
+        },
+      );
     }
     return intersectionObserver;
   };
@@ -170,7 +183,7 @@ export default defineNuxtPlugin(() => {
     if (!isFlushScheduled) {
       isFlushScheduled = true;
       // 在浏览器空闲时批量处理，避免阻塞主线程
-      if ('requestIdleCallback' in window) {
+      if ("requestIdleCallback" in window) {
         requestIdleCallback(flushProcessingQueue, { timeout: 200 });
       } else {
         // 降级处理：用 setTimeout
@@ -193,7 +206,7 @@ export default defineNuxtPlugin(() => {
   document.querySelectorAll("img").forEach(queueProcessImage);
 
   // 监听动态插入的节点（Markdown 渲染、JS createElement、组件挂载等）
-  const childObserver = new MutationObserver((mutations) => {
+  const childObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node instanceof HTMLImageElement) {
@@ -212,7 +225,7 @@ export default defineNuxtPlugin(() => {
 
   // 清理 observer 在页面卸载时
   if (import.meta.client) {
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener("beforeunload", () => {
       if (intersectionObserver) {
         intersectionObserver.disconnect();
       }

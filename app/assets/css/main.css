@@ -366,9 +366,8 @@ html.with-fancybox body.hide-scrollbar {
 .img-loading-wrapper {
   position: relative;
   display: block;
-  background-color: rgb(241 245 249);
-  /* 骨架背景脉冲呼吸动画 */
   animation: img-skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  overflow: hidden;
 }
 
 /* 图片本身：加载中时移出可视区 */
@@ -383,7 +382,6 @@ html.with-fancybox body.hide-scrollbar {
   left: 50%;
   width: 24px;
   height: 24px;
-  margin: -12px 0 0 -12px;
   box-sizing: border-box;
   border: 2px solid transparent;
   border-top-color: #2563eb;
@@ -396,7 +394,6 @@ html.with-fancybox body.hide-scrollbar {
 /* 加载完成：隐藏骨架和 spinner */
 .img-loading-wrapper.img-loaded {
   animation: none;
-  background-color: transparent;
 }
 
 .img-loading-wrapper.img-loaded .img-loading-spinner {
