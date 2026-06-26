@@ -357,3 +357,83 @@ html.with-fancybox {
 html.with-fancybox body.hide-scrollbar {
   margin-right: 8px !important;
 }
+
+/* ============================================
+   图片加载骨架屏 - 全局自动生效
+   ============================================ */
+
+/* 外层包裹容器：相对定位用于 spinner 居中 */
+.img-loading-wrapper {
+  position: relative;
+  display: block;
+  background-color: rgb(241 245 249);
+  /* 骨架背景脉冲呼吸动画 */
+  animation: img-skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 图片本身：加载中时移出可视区 */
+.img-loading-wrapper img[data-img-loading="true"] {
+  object-position: -9999px -9999px;
+}
+
+/* 旋转 spinner：绝对定位居中 */
+.img-loading-wrapper .img-loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-top-color: #2563eb;
+  border-right-color: #2563eb;
+  border-radius: 50%;
+  /* 单独旋转动画，只旋转 spinner */
+  animation: img-loading-spin 1s linear infinite;
+}
+
+/* 加载完成：隐藏骨架和 spinner */
+.img-loading-wrapper.img-loaded {
+  animation: none;
+  background-color: transparent;
+}
+
+.img-loading-wrapper.img-loaded .img-loading-spinner {
+  display: none;
+}
+
+.img-loading-wrapper.img-loaded img {
+  object-position: center;
+}
+
+/* 深色模式适配 */
+.dark .img-loading-wrapper {
+  background-color: rgb(30 41 59);
+}
+
+.dark .img-loading-wrapper .img-loading-spinner {
+  border-color: transparent;
+  border-top-color: #60a5fa;
+  border-right-color: #60a5fa;
+}
+
+/* 脉冲呼吸动画（骨架背景） */
+@keyframes img-skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 旋转动画（只旋转 spinner） */
+@keyframes img-loading-spin {
+  from {
+    transform: translate(-12px, -12px) rotate(0deg);
+  }
+  to {
+    transform: translate(-12px, -12px) rotate(360deg);
+  }
+}

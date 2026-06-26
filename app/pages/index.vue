@@ -553,7 +553,7 @@
     <!-- 订阅文章 -->
     <section v-if="subscribePosts.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-subscribe-posts-title">
       <div class="flex items-center justify-between mb-6">
-        <div class="flex gap-6">
+        <div class="flex gap-6 max-sm:flex-col max-sm:gap-1">
           <div>
             <h2 id="index-subscribe-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
             <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
