@@ -93,7 +93,7 @@ onMounted(async () => {
     const options: any = {
       container: container.value,
       audio: audioData,
-      mutex: props.mutex !== false,
+      mutex: props.mutex,
       lrcType: props.lrcType || 3,
       storageName: props.storageName || 'metingjs',
     }

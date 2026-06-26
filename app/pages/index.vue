@@ -441,32 +441,7 @@
         <div class="text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">小物件，风景，合照，值得记录的瞬间</div>
 
         <!-- 图片瀑布流 -->
-        <div class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-          <NuxtLink
-            v-for="(image, index) in photoImages"
-            :key="index"
-            :to="`/content/${image.categorySlug || 'shot'}/${image.slug || image.cid}`"
-            :aria-label="`查看图片：${image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title}`"
-            class="block break-inside-avoid no-underline group">
-            <div
-              class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm transition-all duration-300">
-              <LivePhoto
-                :src="image.url"
-                :alt="image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title"
-                class="w-full h-auto object-cover" />
-              <!-- 悬浮标题 -->
-              <div
-                aria-hidden="true"
-                class="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                <div class="absolute bottom-0 left-0 right-0 px-2 py-1">
-                  <p class="text-white text-xs text-center font-medium line-clamp-2">
-                    {{ image.desc && image.desc.trim() ? `${image.desc} - ${image.title}` : image.title }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </NuxtLink>
-        </div>
+        <WaterfallGrid :items="photoImages" />
 
         <!-- 查看更多 -->
         <div class="text-center mt-8 mb-36">

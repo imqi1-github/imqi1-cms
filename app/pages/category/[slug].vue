@@ -2,7 +2,6 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { siteConfig } from "~~/site.config";
-import LivePhoto from "~/components/LivePhoto.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -49,6 +48,27 @@ const tagSlugMap = computed(() => {
 
 // 判断是否为图片分类
 const isPhotoCategory = computed(() => slug === photoCategorySlug.value);
+
+// 将 posts 转换为瀑布流组件需要的格式（平铺所有封面）
+const waterfallItems = computed(() => {
+  const items: { url: string; title: string; desc?: string; cid?: number; slug: string; categorySlug: string }[] = [];
+  posts.value.forEach(post => {
+    const postSlug = post.slug;
+    if (post.covers && post.covers.length > 0 && postSlug) {
+      post.covers.forEach(cover => {
+        items.push({
+          url: cover.url,
+          title: post.title,
+          desc: cover.desc,
+          cid: post.cid,
+          slug: postSlug,
+          categorySlug: slug,
+        });
+      });
+    }
+  });
+  return items;
+});
 
 // 判断是否为404
 const isNotFound = computed(() => !pending.value && (!category.value || error.value));
@@ -153,7 +173,7 @@ function triggerFadeIn() {
 // 监听数据加载状态，触发渐入渐出动画
 watch(pending, (newVal, oldVal) => {
   // 数据加载完成，触发渐入动画
-  if (oldVal === true && newVal === false) {
+  if (oldVal && !newVal) {
     // 设置页面标题供导航栏使用
     if (category.value?.name) {
       const { setPageTitle } = usePageTitle();
@@ -179,7 +199,7 @@ watch(pending, (newVal, oldVal) => {
   }
 
   // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
-  if (oldVal === false && newVal === true && category.value) {
+  if (!oldVal && newVal && category.value) {
     document.querySelectorAll(".fade-in-element").forEach(el => {
       el.classList.remove("opacity-100");
       el.classList.add("opacity-0");
@@ -267,12 +287,8 @@ usePageSeo({
     if (isNotFound.value) return `分类不存在 - ${siteName.value}`;
     return `分类 ${category.value?.name} - ${siteName.value}`;
   }),
-  description: computed(() =>
-    category.value ? siteConfig.pageSeo.category.description(category.value.name, category.value.desc ?? "") : "",
-  ),
-  keywords: computed(() =>
-    category.value ? siteConfig.pageSeo.category.keywords(category.value.name, category.value.desc ?? "") : "",
-  ),
+  description: computed(() => (category.value ? siteConfig.pageSeo.category.description(category.value.name, category.value.desc ?? "") : "")),
+  keywords: computed(() => (category.value ? siteConfig.pageSeo.category.keywords(category.value.name, category.value.desc ?? "") : "")),
 });
 
 // 初始化渐入动画
@@ -309,21 +325,34 @@ onMounted(() => {
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">
-        <nav v-if="pagination && pagination.totalPages > 1" aria-label="图片分页" class="photo-page-control sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-0.5 w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3">
-          <button type="button" :disabled="pagination.page <= 1 || pending" @click="goToPage(pagination.page - 1)" class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
+        <nav
+          v-if="pagination && pagination.totalPages > 1"
+          aria-label="图片分页"
+          class="photo-page-control sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-0.5 w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3">
+          <button
+            type="button"
+            :disabled="pagination.page <= 1 || pending"
+            @click="goToPage(pagination.page - 1)"
+            class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
             <Icon name="ri-arrow-left-double-line" />
           </button>
           <span class="photo-page-current inline-flex items-baseline justify-center min-w-10 px-1 leading-1 whitespace-nowrap">
             <strong class="text-slate-900 text-[0.92rem] font-extrabold tracking-tighter">{{ pagination.page }}</strong>
             <em class="text-slate-400 text-[0.62rem] font-bold not-italic ml-1">/{{ pagination.totalPages }}</em>
           </span>
-          <button type="button" :disabled="pagination.page >= pagination.totalPages || pending" @click="goToPage(pagination.page + 1)" class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
+          <button
+            type="button"
+            :disabled="pagination.page >= pagination.totalPages || pending"
+            @click="goToPage(pagination.page + 1)"
+            class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
             <Icon name="ri-arrow-right-double-line" />
           </button>
         </nav>
 
         <!-- 骨架屏（加载时显示16个占位符） -->
-        <div v-if="showSkeleton || (pending && posts.length === 0)" class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[640px]:columns-1 gap-1.5 max-[640px]:gap-1 min-h-[180vh]">
+        <div
+          v-if="showSkeleton || (pending && posts.length === 0)"
+          class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[640px]:columns-1 gap-1.5 max-[640px]:gap-1 min-h-[180vh]">
           <div
             v-for="i in 16"
             :key="`skeleton-${i}`"
@@ -339,27 +368,8 @@ onMounted(() => {
         </div>
 
         <!-- 图片列表 -->
-        <div v-else-if="posts.length > 0" class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[640px]:columns-1 gap-1.5 max-[640px]:gap-1 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
-          <template v-for="post in posts" :key="post.cid">
-            <template v-for="(cover, index) in post.covers" :key="`${post.cid}-${index}`">
-              <NuxtLink
-                :to="`/content/${slug}/${post.slug}`"
-                class="break-inside-avoid rounded-lg overflow-hidden relative group block mb-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-sm group transition-all duration-300">
-                <LivePhoto
-                  :src="cover.url"
-                  :alt="cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title"
-                  class="w-full h-full object-cover" />
-                <div
-                  class="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                  <div class="absolute bottom-0 left-0 right-0 px-2 py-1">
-                    <p class="text-white text-xs text-center font-medium line-clamp-2">
-                      {{ cover.desc && cover.desc.trim() ? `${cover.desc} - ${post.title}` : post.title }}
-                    </p>
-                  </div>
-                </div>
-              </NuxtLink>
-            </template>
-          </template>
+        <div v-else-if="posts.length > 0" class="fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+          <WaterfallGrid :items="waterfallItems" />
         </div>
 
         <!-- 空状态 -->
@@ -508,7 +518,6 @@ onMounted(() => {
           <Icon name="ri-arrow-right-double-line" />
         </button>
       </div>
-
     </div>
   </ClientOnly>
 </template>
@@ -535,18 +544,5 @@ onMounted(() => {
 
 .ease-out {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 容器布局 - 保留类名用于模板绑定 */
-.photo-category-shell {
-  max-width: 1800px;
-  margin-top: -3rem;
-  min-height: 100vh;
-}
-
-@media (max-width: 640px) {
-  .photo-category-shell {
-    width: calc(100vw - 8px);
-  }
 }
 </style>

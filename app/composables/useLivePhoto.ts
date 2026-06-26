@@ -35,8 +35,7 @@ export const useLivePhoto = () => {
 
       // 提取从 ftyp 开始到文件末尾的所有数据作为视频
       const videoBlob = new Blob([bytes.slice(start)], { type: "video/mp4" });
-      const videoUrl = URL.createObjectURL(videoBlob);
-      return videoUrl;
+      return URL.createObjectURL(videoBlob);
     } catch (e: any) {
       // ✅ 忽略用户主动取消的请求（快速切换页面时的正常行为）
       if (e?.name === "AbortError") {

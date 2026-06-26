@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  CHANGELOG_TYPES,
-  getChangelogMeta,
-  type ChangelogEntry,
-} from "~~/shared/changelog";
+import {CHANGELOG_TYPES, type ChangelogEntry, getChangelogMeta} from "~~/shared/changelog";
 
 const toast = useToast();
 const logs = ref<any[]>([]);
@@ -26,8 +22,7 @@ async function loadLogs() {
   loading.value = true;
   try {
     // 调用管理员专用 API，无缓存，返回原始数据
-    const response = (await ($fetch as any)("/api/admin/changelogs")) as any;
-    logs.value = response;
+    logs.value = (await ($fetch as any)("/api/admin/changelogs")) as any;
   } catch (err) {
     console.error("加载失败:", err);
   } finally {
@@ -85,9 +80,7 @@ function cancelEdit() {
 // 保存
 async function save() {
   // 过滤掉 value 空行
-  const entries: ChangelogEntry[] = editForm.entries
-    .map(e => ({ type: e.type, value: e.value.trim() }))
-    .filter(e => e.value.length > 0);
+  const entries: ChangelogEntry[] = editForm.entries.map(e => ({ type: e.type, value: e.value.trim() })).filter(e => e.value.length > 0);
 
   if (entries.length === 0) {
     toast.error({ message: "内容不能为空" });
@@ -151,10 +144,10 @@ async function onImportFile(event: Event) {
   importing.value = true;
   try {
     const source = await file.text();
-    const res = (await $fetch("/api/admin/changelogs/import", {
+    const res = await $fetch<{ imported?: number }>("/api/admin/changelogs/import", {
       method: "POST",
       body: { source },
-    })) as { imported?: number };
+    });
 
     toast.success({
       message: res?.imported ? `导入成功，共 ${res.imported} 条记录` : "导入成功",
@@ -187,27 +180,14 @@ onMounted(() => {
           <p class="text-sm text-muted-foreground mt-1">管理站点更新日志内容</p>
         </div>
         <div class="flex items-center gap-2">
-          <input
-            ref="fileInput"
-            type="file"
-            accept=".json,application/json"
-            class="hidden"
-            @change="onImportFile"
-          />
+          <input ref="fileInput" type="file" accept=".json,application/json" class="hidden" @change="onImportFile" />
           <Button
             variant="outline"
             size="sm"
             :disabled="importing"
-            v-tooltip.bottom="
-              'JSON 格式：条目数组 [{ type, value }, ...]，一个文件 = 一条记录；多条记录可用 [{ entries: [...] }, ...]'
-            "
-            @click="triggerImport"
-          >
-            <Icon
-              :name="importing ? 'lucide:loader-2' : 'lucide:upload'"
-              class="mr-1 size-4"
-              :class="importing ? 'animate-spin' : ''"
-            />
+            v-tooltip.bottom="'JSON 格式：条目数组 [{ type, value }, ...]，一个文件 = 一条记录；多条记录可用 [{ entries: [...] }, ...]'"
+            @click="triggerImport">
+            <Icon :name="importing ? 'lucide:loader-2' : 'lucide:upload'" class="mr-1 size-4" :class="importing ? 'animate-spin' : ''" />
             {{ importing ? "导入中..." : "导入 JSON" }}
           </Button>
         </div>
@@ -218,11 +198,7 @@ onMounted(() => {
         <form @submit.prevent="save" class="space-y-3">
           <!-- 条目编辑器：可重复行 -->
           <div class="space-y-2">
-            <div
-              v-for="(entry, index) in editForm.entries"
-              :key="index"
-              class="rounded-lg border p-3"
-            >
+            <div v-for="(entry, index) in editForm.entries" :key="index" class="rounded-lg border p-3">
               <div class="flex items-start gap-2">
                 <div class="w-28 shrink-0">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
@@ -239,11 +215,7 @@ onMounted(() => {
                 </div>
                 <div class="flex-1 min-w-0">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>
-                  <Textarea
-                    v-model="entry.value"
-                    placeholder="输入更新内容，支持 Markdown 格式"
-                    rows="2"
-                  />
+                  <Textarea v-model="entry.value" placeholder="输入更新内容，支持 Markdown 格式" rows="2" />
                 </div>
                 <Button
                   type="button"
@@ -251,8 +223,7 @@ onMounted(() => {
                   size="icon"
                   class="mt-6 size-8 shrink-0"
                   :disabled="editForm.entries.length <= 1"
-                  @click="removeEntry(index)"
-                >
+                  @click="removeEntry(index)">
                   <Icon name="lucide:x" class="size-4" />
                 </Button>
               </div>
@@ -282,11 +253,7 @@ onMounted(() => {
           <!-- 编辑模式 -->
           <form v-if="editingId === log.id" @submit.prevent="save" class="space-y-3">
             <div class="space-y-2">
-              <div
-                v-for="(entry, index) in editForm.entries"
-                :key="index"
-                class="rounded-lg border p-3"
-              >
+              <div v-for="(entry, index) in editForm.entries" :key="index" class="rounded-lg border p-3">
                 <div class="flex items-start gap-2">
                   <div class="w-28 shrink-0">
                     <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
@@ -303,11 +270,7 @@ onMounted(() => {
                   </div>
                   <div class="flex-1 min-w-0">
                     <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>
-                    <Textarea
-                      v-model="entry.value"
-                      placeholder="输入更新内容，支持 Markdown 格式"
-                      rows="2"
-                    />
+                    <Textarea v-model="entry.value" placeholder="输入更新内容，支持 Markdown 格式" rows="2" />
                   </div>
                   <Button
                     type="button"
@@ -315,8 +278,7 @@ onMounted(() => {
                     size="icon"
                     class="mt-6 size-8 shrink-0"
                     :disabled="editForm.entries.length <= 1"
-                    @click="removeEntry(index)"
-                  >
+                    @click="removeEntry(index)">
                     <Icon name="lucide:x" class="size-4" />
                   </Button>
                 </div>
@@ -345,24 +307,12 @@ onMounted(() => {
                   {{ formatDate(log.createTime) }}
                 </span>
               </div>
-              <div
-                v-for="(entry, i) in log.content"
-                :key="i"
-                class="flex items-baseline gap-2"
-              >
-                <span
-                  :class="[
-                    'shrink-0 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1',
-                    getChangelogMeta(entry.type).color,
-                  ]"
-                >
+              <div v-for="(entry, i) in log.content" :key="i" class="flex items-baseline gap-2">
+                <span :class="['shrink-0 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1', getChangelogMeta(entry.type).color]">
                   <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
                   {{ getChangelogMeta(entry.type).label }}
                 </span>
-                <div
-                  class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content flex-1 min-w-0"
-                  v-html="entry.html"
-                />
+                <div class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content flex-1 min-w-0" v-html="entry.html" />
               </div>
             </div>
             <div class="flex gap-1 shrink-0">
@@ -429,7 +379,9 @@ onMounted(() => {
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.8em;
-  font-family: JetBrains Mono, monospace;
+  font-family:
+    JetBrains Mono,
+    monospace;
 }
 
 .markdown-content :deep(.dark code) {

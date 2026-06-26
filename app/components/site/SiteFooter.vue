@@ -477,30 +477,4 @@ onUnmounted(() => {
 .no-underline {
   text-decoration: none;
 }
-
-.fade-enter-active,
-.fade-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.icon-fade-enter-active,
-.icon-fade-leave-active {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.icon-fade-enter-from,
-.icon-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
 </style>

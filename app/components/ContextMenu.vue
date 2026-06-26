@@ -258,24 +258,6 @@ const handleSelectAll = () => {
   closeMenu();
 };
 
-// 切换深色模式
-const colorMode = useColorMode();
-const handleToggleTheme = () => {
-  const newMode = colorMode.value === "dark" ? "light" : "dark";
-
-  const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
-  if (!document.startViewTransition || isFirefox) {
-    document.documentElement.classList.add("theme-transitioning");
-    colorMode.preference = newMode;
-    setTimeout(() => {
-      document.documentElement.classList.remove("theme-transitioning");
-    }, 350);
-  } else {
-    colorMode.preference = newMode;
-  }
-  closeMenu();
-};
-
 // 复制页面标题
 const handleCopyTitle = () => {
   const title = document.title;

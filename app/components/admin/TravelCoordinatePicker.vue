@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { loadAmap } from "../../utils/amap-loader";
+import { loadAmap } from "~/utils/amap-loader";
 
 const props = defineProps<{
   longitude: string | number | null;

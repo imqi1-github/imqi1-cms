@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
-import { getUser } from "#server/lib/auth";
+import {prisma} from "#server/utils/prisma";
+import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -12,7 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const links = await prisma.links.findMany({
+    return await prisma.links.findMany({
       include: {
         // 包含原友链信息（如果是修改请求）
         originalLink: {
@@ -28,8 +28,6 @@ export default defineEventHandler(async event => {
         id: "desc",
       },
     });
-
-    return links;
   } catch (error) {
     throw createError({
       statusCode: 500,

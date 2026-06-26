@@ -94,11 +94,6 @@ nuxtApp.hook("page:finish", () => {
   }
 });
 
-// 路由导航守卫（不再需要，逻辑已移到 page:start 钩子）
-router.beforeEach(async (to, from) => {
-  return true;
-});
-
 // 提供给子组件
 provide("pageLoading", readonly(showPageLoading));
 

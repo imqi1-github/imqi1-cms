@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import emojisData from "~/assets/emojis.json";
-import { escapeAttribute, escapeHtml } from "~~/lib/html";
+import {escapeAttribute, escapeHtml} from "~~/lib/html";
 
 const props = defineProps<{
   content: string;
@@ -24,7 +24,7 @@ const parsedContent = computed(() => {
   // 匹配 :[prefix-name] 格式
   const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
 
-  let result = escapedText.replace(emojiRegex, (match, prefix, name) => {
+  return escapedText.replace(emojiRegex, (match, prefix, name) => {
     const config = prefixConfig[prefix];
     if (!config) return match;
 
@@ -38,8 +38,6 @@ const parsedContent = computed(() => {
     // 返回受控图片标签
     return `<img src="${escapeAttribute(emojiUrl)}" alt="${escapeAttribute(name)}" class="inline-emoji" loading="lazy" />`;
   });
-
-  return result;
 });
 </script>
 

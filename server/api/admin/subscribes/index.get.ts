@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
-import { getUser } from "#server/lib/auth";
+import {prisma} from "#server/utils/prisma";
+import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -12,8 +12,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const subscribes = await prisma.subscribes.findMany();
-    return subscribes;
+    return await prisma.subscribes.findMany();
   } catch (error) {
     throw createError({
       statusCode: 500,

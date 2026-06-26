@@ -510,8 +510,3 @@ export async function renderMarkdown(content: string): Promise<string> {
   const md = await createMarkdownInstance();
   return sanitizeHtml(md.render(transformedContent));
 }
-
-// 预热 Shiki（在应用启动时调用）
-export async function warmupMarkdownRenderer() {
-  await createMarkdownInstance();
-}

@@ -1,5 +1,5 @@
-import { createHash, createHmac } from "crypto";
-import { prisma } from "./prisma";
+import {createHash, createHmac} from "crypto";
+import {prisma} from "./prisma";
 
 // COS配置接口
 interface CosConfig {
@@ -274,12 +274,10 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
     };
 
     // 计算Content-MD5
-    const md5 = createHash("md5").update(fileBuffer).digest("base64");
-    headers["Content-MD5"] = md5;
+    headers["Content-MD5"] = createHash("md5").update(fileBuffer).digest("base64");
 
     // 生成签名
-    const authorization = generateSignature("PUT", filePath, headers, config.SecretKey, config.SecretId);
-    headers["Authorization"] = authorization;
+    headers["Authorization"] = generateSignature("PUT", filePath, headers, config.SecretKey, config.SecretId);
 
     console.log("[COS上传] 开始上传:", {
       url,
@@ -396,8 +394,7 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
     };
 
     // 生成签名
-    const authorization = generateSignature("DELETE", filePath, headers, config.SecretKey, config.SecretId);
-    headers["Authorization"] = authorization;
+    headers["Authorization"] = generateSignature("DELETE", filePath, headers, config.SecretKey, config.SecretId);
 
     console.log("[COS删除] 请求信息:", {
       url: deleteUrl,

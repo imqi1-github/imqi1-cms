@@ -1,6 +1,6 @@
-import { prisma } from "#server/utils/prisma";
-import { getUser } from "#server/lib/auth";
-import { validateLinkData } from "#server/utils/validation";
+import {prisma} from "#server/utils/prisma";
+import {getUser} from "#server/lib/auth";
+import {validateLinkData} from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -45,8 +45,8 @@ export default defineEventHandler(async event => {
     }
 
     // 更新链接
-    const updated = await prisma.links.update({
-      where: { id: Number(id) },
+    return await prisma.links.update({
+      where: {id: Number(id)},
       data: {
         name: body.name,
         link: body.link,
@@ -55,7 +55,6 @@ export default defineEventHandler(async event => {
         enabled: body.enabled,
       },
     });
-    return updated;
   } catch (error) {
     throw createError({
       statusCode: 500,

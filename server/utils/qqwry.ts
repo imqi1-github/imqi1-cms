@@ -181,19 +181,3 @@ export async function getIpLocation(ip: string): Promise<{
     isp: detail.area || "",
   };
 }
-
-/**
- * 获取数据库版本
- */
-export async function getQQWryVersion(): Promise<string> {
-  try {
-    const ipdb = getInstance();
-    if (!ipdb) return "未知";
-
-    const fields = ipdb.meta?.fields?.join(", ") || "未知字段";
-    const ipVersion = ipdb.meta?.ip_version ?? "未知";
-    return `qqwry.ipdb (IPv${ipVersion}, ${fields})`;
-  } catch {
-    return "未知";
-  }
-}

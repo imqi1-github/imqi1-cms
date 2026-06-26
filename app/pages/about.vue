@@ -23,11 +23,8 @@
           </p>
         </div>
         <div class="pb-8 text-right max-md:text-left">
-          <div class="text-blue-600 dark:text-blue-400 text-xs tracking-widest mb-4 uppercase transition-colors duration-300">
-            ABOUT ME
-          </div>
-          <div
-            class="text-slate-800 dark:text-slate-200 text-2xl font-medium leading-relaxed mb-8 transition-colors duration-300">
+          <div class="text-blue-600 dark:text-blue-400 text-xs tracking-widest mb-4 uppercase transition-colors duration-300">ABOUT ME</div>
+          <div class="text-slate-800 dark:text-slate-200 text-2xl font-medium leading-relaxed mb-8 transition-colors duration-300">
             我热爱编程，喜欢记录生活，分享有趣的事情。这是我的个人博客，记录着技术、生活和思考。
           </div>
           <div class="flex flex-wrap gap-3 justify-end max-md:justify-start">
@@ -74,10 +71,7 @@
             </div>
           </div>
           <div class="aspect-video rounded-2xl overflow-hidden relative">
-            <img
-              class="w-full h-full object-cover transition-transform duration-300"
-              :src="publicAsset('/imgs/shenyang.webp')"
-              alt="秦皇岛" />
+            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/shenyang.webp')" alt="秦皇岛" />
             <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="text-xs mb-1 opacity-80">现居</div>
               <div class="text-lg font-semibold">辽宁省沈阳市</div>
@@ -250,48 +244,42 @@
           兴趣广泛
         </h2>
         <div class="flex flex-wrap gap-4 pt-3">
-          <div
-            class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">💻</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >编程</span
             >
           </div>
-          <div
-            class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">🎮</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >游戏</span
             >
           </div>
-          <div
-            class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">🎸</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >音乐</span
             >
           </div>
-          <div
-            class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">📸</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >摄影</span
             >
           </div>
-          <div
-            class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">📚</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >阅读</span
             >
           </div>
-          <div
-            class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">✈️</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
@@ -314,9 +302,7 @@
               <img :src="publicAsset('/imgs/enfj.svg')" alt="ENTJ" class="w-32 h-32 object-contain" />
             </div>
             <div class="flex-1">
-              <div class="text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">
-                主人公 · ENTJ-A
-              </div>
+              <div class="text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">主人公 · ENTJ-A</div>
               <div class="text-slate-600 dark:text-slate-400 mb-4 transition-colors duration-300">外向 · 思维 · 展望</div>
               <div class="flex flex-wrap gap-2">
                 <span
@@ -341,66 +327,56 @@
           <div class="stats-mbti-bars grid gap-4">
             <div class="flex items-center gap-4">
               <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">外向</div>
-              <div
-                class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.extroversion + '%' }"></div>
               </div>
-              <div
-                class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.extroversion }}%
               </div>
             </div>
             <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">天马行空  </div>
-              <div
-                class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">天马行空</div>
+              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.intuition + '%' }"></div>
               </div>
-              <div
-                class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.intuition }}%
               </div>
             </div>
             <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">情感细腻  </div>
-              <div
-                class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">情感细腻</div>
+              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.thinking + '%' }"></div>
               </div>
-              <div
-                class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.thinking }}%
               </div>
             </div>
             <div class="flex items-center gap-4">
               <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">运筹帷幄</div>
-              <div
-                class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.prospecting + '%' }"></div>
               </div>
-              <div
-                class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.prospecting }}%
               </div>
             </div>
             <div class="flex items-center gap-4">
               <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">自信果断</div>
-              <div
-                class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
                   :style="{ width: animatedMbtiData.assertive + '%' }"></div>
               </div>
-              <div
-                class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
+              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.assertive }}%
               </div>
             </div>
@@ -426,33 +402,25 @@
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
               {{ animatedStats.publishedPostsNum }}
             </div>
-            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              文章
-            </div>
+            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">文章</div>
           </div>
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
               {{ animatedStats.publishedCommentsNum }}
             </div>
-            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              评论
-            </div>
+            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">评论</div>
           </div>
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
               {{ animatedStats.categoriesNum }}
             </div>
-            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              分类
-            </div>
+            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">分类</div>
           </div>
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
               {{ animatedStats.tagsNum }}
             </div>
-            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">
-              标签
-            </div>
+            <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">标签</div>
           </div>
         </div>
       </div>
@@ -467,23 +435,29 @@
         <p class="text-slate-600 dark:text-slate-400 text-lg mb-6 transition-colors duration-300">欢迎与我交流技术和生活</p>
         <div class="flex flex-wrap gap-4">
           <a
-            :href="`mailto:${siteConfig.social.email}`"
+            :href="siteConfig.social.find(item => item.name === '邮箱')?.link || '#'"
             class="flex items-center bg-blue-600 dark:bg-blue-500 border border-slate-200 dark:border-slate-700 rounded-full text-white font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-500 dark:hover:bg-blue-400 hover:shadow">
             <Icon name="ri:mail-line" class="size-4 text-white" mode="svg" />
             发邮件
           </a>
           <a
-            :href="siteConfig.social.homePage"
+            :href="siteConfig.social.find(item => item.name === '个人网站')?.link || '#'"
             target="_blank"
             class="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
-            <Icon name="ri:home-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white" mode="svg" />
+            <Icon
+              name="ri:home-line"
+              class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white"
+              mode="svg" />
             主页
           </a>
           <a
-            :href="siteConfig.social.github"
+            :href="siteConfig.social.find(item => item.name === 'Github')?.link || '#'"
             target="_blank"
             class="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
-            <Icon name="ri:github-line" class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white" mode="svg" />
+            <Icon
+              name="ri:github-line"
+              class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white"
+              mode="svg" />
             GitHub
           </a>
         </div>
@@ -491,16 +465,13 @@
 
       <!-- 引言 -->
       <div class="ready my-24 py-16 relative">
-        <div
-          class="text-slate-900 dark:text-slate-100 text-2xl font-bold leading-relaxed max-w-2xl pl-12 relative transition-colors duration-300">
+        <div class="text-slate-900 dark:text-slate-100 text-2xl font-bold leading-relaxed max-w-2xl pl-12 relative transition-colors duration-300">
           <div class="absolute -top-36 left-0 text-[12em] text-slate-200 dark:text-slate-700 size-fit -z-1 opacity-55 transition-colors duration-300">
             "
           </div>
           山海寻梦，不觉其远<br />前路迢迢，阔步而行
         </div>
-        <div class="text-slate-600 dark:text-slate-400 mt-6 pl-12 relative transition-colors duration-300">
-          —— 习近平 · 二〇二六年新年贺词
-        </div>
+        <div class="text-slate-600 dark:text-slate-400 mt-6 pl-12 relative transition-colors duration-300">—— 习近平 · 二〇二六年新年贺词</div>
       </div>
 
       <!-- 导航 -->
@@ -554,9 +525,7 @@
           class="text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-4 transition-colors duration-300">
           十年之约
         </h2>
-        <p class="text-slate-600 dark:text-slate-400 text-lg mb-8 transition-colors duration-300">
-          承诺让这个博客持续生长十年，不弃更、不关站
-        </p>
+        <p class="text-slate-600 dark:text-slate-400 text-lg mb-8 transition-colors duration-300">承诺让这个博客持续生长十年，不弃更、不关站</p>
         <div class="pledge-card">
           <div class="flex items-end justify-between mb-3">
             <div>
@@ -568,9 +537,7 @@
               </div>
             </div>
             <div class="text-right">
-              <div class="text-slate-900 dark:text-slate-100 text-2xl font-bold transition-colors duration-300">
-                {{ animatedPledge.percent }}%
-              </div>
+              <div class="text-slate-900 dark:text-slate-100 text-2xl font-bold transition-colors duration-300">{{ animatedPledge.percent }}%</div>
               <div class="text-slate-500 dark:text-slate-400 text-xs mt-2 transition-colors duration-300">
                 {{ pledgeFormattedDate(pledgeStartDate) }} → {{ pledgeFormattedDate(pledgeEndDate) }}
               </div>
@@ -639,9 +606,7 @@ const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 十年之约入口链接（取自 site.config.ts 的 blogOrganizations，避免硬编码）
-const tenYearPledgeUrl = computed(
-  () => siteConfig.links.blogOrganizations.find(o => o.name === "十年之约")?.url || "https://www.foreverblog.cn/",
-);
+const tenYearPledgeUrl = computed(() => siteConfig.links.blogOrganizations.find(o => o.name === "十年之约")?.url || "https://www.foreverblog.cn/");
 
 // 装饰性品牌文字（站点域名大写形式）
 const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();
@@ -700,18 +665,11 @@ const animatedMbtiData = ref({
 
 // 十年之约履约进度
 const pledgeStartDate = new Date("2024-07-21");
-const pledgeEndDate = new Date(
-  pledgeStartDate.getFullYear() + 10,
-  pledgeStartDate.getMonth(),
-  pledgeStartDate.getDate(),
-);
+const pledgeEndDate = new Date(pledgeStartDate.getFullYear() + 10, pledgeStartDate.getMonth(), pledgeStartDate.getDate());
 const pledgeTotalDays = Math.max(1, Math.round((pledgeEndDate.getTime() - pledgeStartDate.getTime()) / 86400000));
-const pledgeElapsedDays = computed(() =>
-  Math.max(0, Math.min(pledgeTotalDays, Math.floor((Date.now() - pledgeStartDate.getTime()) / 86400000))),
-);
+const pledgeElapsedDays = computed(() => Math.max(0, Math.min(pledgeTotalDays, Math.floor((Date.now() - pledgeStartDate.getTime()) / 86400000))));
 const pledgePercent = computed(() => Math.round((pledgeElapsedDays.value / pledgeTotalDays) * 100));
-const pledgeFormattedDate = (d: Date) =>
-  `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+const pledgeFormattedDate = (d: Date) => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 const animatedPledge = ref({ days: 0, percent: 0 });
 const pledgeBarWidth = ref(0);
 

@@ -65,20 +65,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Fade transition for entering/leaving */
-.fade-enter-active,
-.fade-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
 /* 封面旋转动画 */
 @keyframes spin {
   from {

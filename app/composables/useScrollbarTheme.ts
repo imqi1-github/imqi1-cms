@@ -7,7 +7,6 @@ export function useScrollbarTheme() {
   const updateScrollbarColor = (isDark: boolean) => {
     if (!import.meta.client) return;
 
-    const root = document.documentElement;
     const scrollbarStyleId = "scrollbar-theme-style";
 
     // 移除初始样式和旧样式

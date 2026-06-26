@@ -213,7 +213,7 @@ onMounted(() => {
               <div class="h-4 bg-muted rounded w-20 animate-pulse" />
               <div class="h-8 bg-muted rounded w-16 animate-pulse" />
             </div>
-            <div class="size-8 bg-muted rounded-lg animate-pulse flex-shrink-0" />
+            <div class="size-8 bg-muted rounded-lg animate-pulse shrink-0" />
           </div>
         </CardContent>
       </Card>
@@ -227,12 +227,12 @@ onMounted(() => {
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between mb-1 gap-2">
                 <p class="text-sm text-muted-foreground truncate">{{ card.title }}</p>
-                <Badge v-if="getStatCardBadge(card.title)" variant="secondary" class="text-xs flex-shrink-0">{{ getStatCardBadge(card.title) }}</Badge>
+                <Badge v-if="getStatCardBadge(card.title)" variant="secondary" class="text-xs shrink-0">{{ getStatCardBadge(card.title) }}</Badge>
               </div>
               <p class="text-2xl sm:text-3xl font-bold mt-1 truncate">{{ stats[card.title === '文章总数' ? 'posts' : card.title === '评论总数' ? 'comments' : card.title === '分类标签' ? 'categories' : 'users'] }}</p>
               <p class="text-xs text-muted-foreground mt-1 truncate">{{ getStatCardDescription(card.title) }}</p>
             </div>
-            <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 flex-shrink-0" />
+            <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 shrink-0" />
           </div>
         </CardContent>
       </Card>
@@ -248,7 +248,7 @@ onMounted(() => {
               <p class="text-2xl sm:text-3xl font-bold mt-1">{{ card.value }}</p>
               <p class="text-xs text-muted-foreground mt-1 truncate">{{ card.description }}</p>
             </div>
-            <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 flex-shrink-0" />
+            <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 shrink-0" />
           </div>
         </CardContent>
       </Card>
@@ -258,12 +258,12 @@ onMounted(() => {
         <CardContent class="p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <p class="text-sm text-muted-foreground">系统运行时间</p>
-            <Icon name="lucide:activity" class="size-4 text-muted-foreground/50 flex-shrink-0" />
+            <Icon name="lucide:activity" class="size-4 text-muted-foreground/50 shrink-0" />
           </div>
           <p class="text-base sm:text-lg font-bold truncate">{{ systemInfo.uptime }}</p>
           <div class="mt-3 pt-3 border-t">
             <div class="flex items-center justify-between text-xs gap-2">
-              <span class="text-muted-foreground flex-shrink-0">内存使用</span>
+              <span class="text-muted-foreground shrink-0">内存使用</span>
               <span class="font-medium truncate">{{ systemInfo.memory.used }} / {{ systemInfo.memory.total }} {{ systemInfo.memory.unit }}</span>
             </div>
           </div>
@@ -285,7 +285,7 @@ onMounted(() => {
               <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
               <div class="h-3 bg-muted rounded w-1/4 animate-pulse" />
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 shrink-0">
               <div class="h-6 bg-muted rounded w-12 animate-pulse" />
               <div class="size-8 bg-muted rounded-lg animate-pulse" />
               <div class="size-8 bg-muted rounded-lg animate-pulse" />
@@ -305,7 +305,7 @@ onMounted(() => {
                 <p class="font-medium truncate text-sm">{{ post.title }}</p>
                 <p class="text-sm text-muted-foreground">{{ formatDate(post.create_time) }}</p>
               </div>
-              <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+              <div class="flex items-center gap-1 sm:gap-2 shrink-0">
                 <Badge variant="outline" class="text-xs">{{ post.status || '已发布' }}</Badge>
                 <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
@@ -367,7 +367,7 @@ onMounted(() => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="size-8 text-destructive hover:text-destructive flex-shrink-0"
+                  class="size-8 text-destructive hover:text-destructive shrink-0"
                   @click="deleteComment(comment.coid)"
                 >
                   <Icon name="lucide:trash-2" class="size-4" />
@@ -375,7 +375,7 @@ onMounted(() => {
               </div>
               <p class="text-sm text-muted-foreground line-clamp-2 mb-2">{{ comment.content }}</p>
               <div v-if="comment.posts" class="flex items-center gap-1 text-xs text-muted-foreground">
-                <Icon name="lucide:file-text" class="size-3 flex-shrink-0" />
+                <Icon name="lucide:file-text" class="size-3 shrink-0" />
                 <span class="truncate">{{ comment.posts.title }}</span>
               </div>
             </div>
@@ -411,7 +411,7 @@ onMounted(() => {
               :key="post.cid"
               class="flex items-start gap-3 py-3 border-b last:border-0"
             >
-              <div class="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+              <div class="shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                 {{ index + 1 }}
               </div>
               <div class="flex-1 min-w-0">
@@ -464,7 +464,7 @@ onMounted(() => {
           <!-- 数据库信息 -->
           <div class="space-y-2 p-3 rounded-lg bg-muted/30">
             <div class="flex items-center gap-2 text-sm font-medium">
-              <Icon name="lucide:database" class="size-4 text-muted-foreground flex-shrink-0" />
+              <Icon name="lucide:database" class="size-4 text-muted-foreground shrink-0" />
               <span class="truncate">数据库版本</span>
             </div>
             <p class="text-lg sm:text-xl font-bold truncate">{{ systemInfo.database.version }}</p>
@@ -474,7 +474,7 @@ onMounted(() => {
           <!-- 附件信息 -->
           <div class="space-y-2 p-3 rounded-lg bg-muted/30">
             <div class="flex items-center gap-2 text-sm font-medium">
-              <Icon name="lucide:paperclip" class="size-4 text-muted-foreground flex-shrink-0" />
+              <Icon name="lucide:paperclip" class="size-4 text-muted-foreground shrink-0" />
               <span class="truncate">附件统计</span>
             </div>
             <p class="text-xl sm:text-2xl font-bold">{{ systemInfo.attachments.count }}</p>

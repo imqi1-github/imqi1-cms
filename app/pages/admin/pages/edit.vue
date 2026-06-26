@@ -581,7 +581,7 @@ onUnmounted(() => {
 
                       <!-- 操作遮罩 -->
                       <div
-                        class="absolute inset-0 top-[calc(100%-40px)] bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
+                        class="absolute inset-0 top-[calc(100%-40px)] bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
                         <Button variant="secondary" size="sm" class="h-7 text-xs px-2" @click.stop="copyLink(item.url)" title="复制链接">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>

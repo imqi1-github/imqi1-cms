@@ -95,10 +95,8 @@ export const useFancyboxLivePhoto = () => {
     if (triggerEl && triggerEl.hasAttribute && triggerEl.hasAttribute("data-live-photo")) {
       return true;
     }
-    if (slide.livePhoto !== undefined) {
-      return true;
-    }
-    return false;
+    return slide.livePhoto !== undefined;
+
   }
 
   /** 停止视频：渐出 + 暂停，恢复 tip、播放按钮和图片显示 */

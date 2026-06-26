@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
-import { getUser } from "#server/lib/auth";
+import {prisma} from "#server/utils/prisma";
+import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -32,11 +32,10 @@ export default defineEventHandler(async event => {
       });
     }
 
-    const updated = await prisma.links.update({
-      where: { id: Number(id) },
-      data: { enabled: !link.enabled },
+    return await prisma.links.update({
+      where: {id: Number(id)},
+      data: {enabled: !link.enabled},
     });
-    return updated;
   } catch (error) {
     throw createError({
       statusCode: 500,

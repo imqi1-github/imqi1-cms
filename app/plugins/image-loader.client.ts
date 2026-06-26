@@ -84,7 +84,7 @@ export default defineNuxtPlugin(() => {
       if (m.type === "attributes" && m.attributeName === "src") {
         const img = m.target as HTMLImageElement;
         img.removeAttribute(ATTR_LOADED);
-        processImage(img);
+        queueProcessImage(img);
       }
     }
   });
@@ -110,17 +110,96 @@ export default defineNuxtPlugin(() => {
     observeSrc(img);
   };
 
-  // 首次扫描已有图片
-  document.querySelectorAll("img").forEach(processImage);
+  // ✅ 批量处理队列：当大量图片同时插入时，攒一批在空闲时段处理，减少卡顿
+  // ✅ 额外优化：首屏外的图片延迟到 IntersectionObserver 可见时再处理
+  let processingQueue: HTMLImageElement[] = [];
+  let isFlushScheduled = false;
+
+  // IntersectionObserver 用于延迟处理不在视口内的图片
+  let intersectionObserver: IntersectionObserver | null = null;
+
+  const getIntersectionObserver = () => {
+    if (!intersectionObserver) {
+      intersectionObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const img = entry.target as HTMLImageElement;
+            intersectionObserver!.unobserve(img);
+            queueProcessImageNow(img);
+          }
+        }
+      }, {
+        rootMargin: '200px', // 提前200px开始准备
+      });
+    }
+    return intersectionObserver;
+  };
+
+  const queueProcessImage = (img: HTMLImageElement) => {
+    if (shouldSkip(img)) return;
+
+    // 如果图片已经加载完成，立即处理
+    if (img.complete && img.naturalHeight > 0) {
+      queueProcessImageNow(img);
+      return;
+    }
+
+    // 检查图片是否已经在DOM树中
+    if (!img.isConnected) {
+      queueProcessImageNow(img);
+      return;
+    }
+
+    // 检查图片是否在视口外，如果在视口外，等待进入视口再处理
+    const rect = img.getBoundingClientRect();
+    const isOutsideViewport = rect.top > window.innerHeight * 2 && rect.bottom < 0;
+    if (isOutsideViewport) {
+      // 图片在视口外很远，延迟到可见时再处理
+      getIntersectionObserver().observe(img);
+      return;
+    }
+
+    // 否则加入队列批量处理
+    queueProcessImageNow(img);
+  };
+
+  const queueProcessImageNow = (img: HTMLImageElement) => {
+    if (shouldSkip(img)) return;
+    processingQueue.push(img);
+
+    if (!isFlushScheduled) {
+      isFlushScheduled = true;
+      // 在浏览器空闲时批量处理，避免阻塞主线程
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(flushProcessingQueue, { timeout: 200 });
+      } else {
+        // 降级处理：用 setTimeout
+        setTimeout(flushProcessingQueue, 0);
+      }
+    }
+  };
+
+  const flushProcessingQueue = () => {
+    isFlushScheduled = false;
+    const queue = processingQueue.slice();
+    processingQueue = [];
+
+    for (const img of queue) {
+      processImage(img);
+    }
+  };
+
+  // 首次扫描已有图片 - 也使用批量处理
+  document.querySelectorAll("img").forEach(queueProcessImage);
 
   // 监听动态插入的节点（Markdown 渲染、JS createElement、组件挂载等）
   const childObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node instanceof HTMLImageElement) {
-          processImage(node);
+          queueProcessImage(node);
         } else if (node instanceof Element) {
-          node.querySelectorAll("img").forEach(processImage);
+          node.querySelectorAll("img").forEach(queueProcessImage);
         }
       }
     }
@@ -130,4 +209,15 @@ export default defineNuxtPlugin(() => {
     childList: true,
     subtree: true,
   });
+
+  // 清理 observer 在页面卸载时
+  if (import.meta.client) {
+    window.addEventListener('beforeunload', () => {
+      if (intersectionObserver) {
+        intersectionObserver.disconnect();
+      }
+      attrObserver.disconnect();
+      childObserver.disconnect();
+    });
+  }
 });

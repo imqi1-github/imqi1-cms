@@ -28,8 +28,7 @@ export const redis = redisConfig
   ? new Redis({
       ...redisConfig,
       retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
+        return Math.min(times * 50, 2000);
       },
       maxRetriesPerRequest: 3,
     })
@@ -63,19 +62,6 @@ if (redis && redisConfig) {
   console.log(`[Redis] 当前状态: ${redis.status}`);
 } else {
   console.log("[Redis] 未配置 Redis 连接，将使用本地缓存或无缓存模式");
-}
-
-// 导出 Redis 检查函数
-export function isRedisAvailable(): boolean {
-  return redis !== null && redis.status === "ready";
-}
-
-// 优雅关闭
-export async function closeRedis() {
-  if (redis) {
-    await redis.quit();
-    console.log("[Redis] 连接已优雅关闭");
-  }
 }
 
 export default redis;

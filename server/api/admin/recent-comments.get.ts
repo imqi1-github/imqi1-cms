@@ -1,5 +1,5 @@
-import { prisma } from "#server/utils/prisma";
-import { getUser } from "#server/lib/auth";
+import {prisma} from "#server/utils/prisma";
+import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -13,9 +13,9 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const comments = await prisma.comments.findMany({
+    return await prisma.comments.findMany({
       take: 5,
-      orderBy: { create_time: "desc" },
+      orderBy: {create_time: "desc"},
       include: {
         posts: {
           select: {
@@ -25,8 +25,6 @@ export default defineEventHandler(async event => {
         },
       },
     });
-
-    return comments;
   } catch (error) {
     throw createError({
       statusCode: 500,

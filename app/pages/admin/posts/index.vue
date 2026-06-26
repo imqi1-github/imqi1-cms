@@ -298,7 +298,7 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <Label for="category-filter">分类:</Label>
             <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: any) => filterByCategory(v ?? null)">
-              <SelectTrigger class="w-[180px]">
+              <SelectTrigger class="w-45">
                 <SelectValue placeholder="全部分类" />
               </SelectTrigger>
               <SelectContent>
@@ -312,7 +312,7 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <Label for="tag-filter">标签:</Label>
             <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: any) => filterByTag(v ?? null)">
-              <SelectTrigger class="w-[180px]">
+              <SelectTrigger class="w-45">
                 <SelectValue placeholder="全部标签" />
               </SelectTrigger>
               <SelectContent>
@@ -324,7 +324,7 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
             <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: any) => filterByStatus(v ?? null)">
-              <SelectTrigger class="w-[140px]">
+              <SelectTrigger class="w-35">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>

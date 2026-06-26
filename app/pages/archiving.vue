@@ -26,16 +26,6 @@ function formatDate(dateStr: string | Date) {
   return `${month}月${day}日`;
 }
 
-// 格式化完整日期
-function formatFullDate(dateStr: string | Date) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("zh-CN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
 // 折叠状态管理 - 默认只有第一个（最新的）月份展开
 const expandedMonths = ref<Set<string>>(new Set());
 

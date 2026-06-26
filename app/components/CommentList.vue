@@ -269,10 +269,10 @@ function handleCommentSubmitted() {
               @click="loadMore"
               :disabled="loadingMore"
               class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-              <span v-if="loadingMore" class="flex items-center gap-2">
+              <div v-if="loadingMore" class="flex items-center gap-2">
                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 加载中...
-              </span>
+              </div>
               <span v-else>加载更多评论</span>
             </button>
           </div>
@@ -286,23 +286,5 @@ function handleCommentSubmitted() {
 /* 根级评论不需要缩进 */
 :deep(ul.space-y-6) > li > div.flex {
   padding-left: 0;
-}
-
-/* 评论列表过渡动画 */
-.comment-fade-enter-active,
-.comment-fade-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-}
-
-.comment-fade-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.comment-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
 }
 </style>

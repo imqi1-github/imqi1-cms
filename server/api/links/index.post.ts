@@ -1,7 +1,7 @@
-import { prisma } from "#server/utils/prisma";
-import { notifyFriendLinkApplication } from "#server/utils/mail";
-import { validateLinkData } from "#server/utils/validation";
-import { siteConfig } from "~~/site.config";
+import {prisma} from "#server/utils/prisma";
+import {notifyFriendLinkApplication} from "#server/utils/mail";
+import {validateLinkData} from "#server/utils/validation";
+import {siteConfig} from "~~/site.config";
 
 // 检测页面是否包含指定链接
 async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promise<boolean> {
@@ -29,9 +29,7 @@ async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promis
 
     // 检查页面中是否包含本站链接（完全匹配数据库中的URL）
     const pageLower = html.toLowerCase();
-    const containsLink = pageLower.includes(targetUrl.toLowerCase());
-
-    return containsLink;
+    return pageLower.includes(targetUrl.toLowerCase());
   } catch (error: any) {
     console.error('检查友链页面出错:', error.message);
     return false;
@@ -108,11 +106,9 @@ export default defineEventHandler(async event => {
     const forceSubmit = body.forceSubmit === true;
 
     let autoApproved = false;
-    let needCheckBacklink = false;
 
     // 如果开启了自动审核，且不是强制提交，且用户填写了友链地址
     if (linkAutoApprove && !forceSubmit && body.blogLinkUrl) {
-      needCheckBacklink = true;
       console.log(`开始检测友链: ${body.blogLinkUrl} 是否包含 ${siteUrl}`);
       const hasBacklink = await checkPageContainsLink(body.blogLinkUrl, siteUrl);
 

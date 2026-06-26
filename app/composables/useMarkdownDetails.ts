@@ -15,7 +15,7 @@ export function useMarkdownDetails() {
       detailsContainer.innerHTML = `
         <div class="markdown-details my-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
-            class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
             <span class="font-medium text-slate-900 dark:text-slate-100">${summary}</span>
             <span class="transform transition-transform duration-200 text-slate-500 dark:text-slate-400 text-[10px]">
               ▼

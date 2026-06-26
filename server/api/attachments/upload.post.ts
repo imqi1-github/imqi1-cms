@@ -40,16 +40,6 @@ function validateFileMagicNumber(buffer: Buffer, mimeType: string): boolean {
 // 最大文件大小 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-// 上传目录
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
-
-// 确保上传目录存在
-function ensureUploadDir() {
-  if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  }
-}
-
 // 生成唯一文件名
 function generateFileName(originalName: string): string {
   const ext = path.extname(originalName);

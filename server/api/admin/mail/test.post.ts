@@ -1,5 +1,5 @@
-import { sendTestEmail } from '#server/utils/mail'
-import { getUser } from "#server/lib/auth";
+import {sendTestEmail} from '#server/utils/mail'
+import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -23,8 +23,7 @@ export default defineEventHandler(async event => {
       })
     }
 
-    const result = await sendTestEmail(to)
-    return result
+    return await sendTestEmail(to)
   } catch (error) {
     throw createError({
       statusCode: 500,

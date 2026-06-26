@@ -298,7 +298,7 @@ onMounted(() => {
                 </div>
               </TableCell>
               <TableCell>
-                <a :href="sub.url" target="_blank" class="text-primary hover:underline truncate block max-w-[300px]">
+                <a :href="sub.url" target="_blank" class="text-primary hover:underline truncate block max-w-75">
                   {{ sub.url }}
                 </a>
               </TableCell>

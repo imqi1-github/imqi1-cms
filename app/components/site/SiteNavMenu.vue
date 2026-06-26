@@ -4,7 +4,7 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 const router = useRouter();
-const props = defineProps({
+defineProps({
   siteName: {
     type: String,
     default: "默认站点",

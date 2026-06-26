@@ -25,7 +25,7 @@ function formatLocation(location: string): string {
   if (parts.length === 0) return "";
 
   // 优先返回城市（第2部分），没有城市则返回省份（第1部分）
-  let result = "";
+  let result: string;
   if (parts.length >= 2) {
     result = parts[1] ?? ""; // 例如：辽宁-沈阳-沈河区 → 沈阳
   } else {

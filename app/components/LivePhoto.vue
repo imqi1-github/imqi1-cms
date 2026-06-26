@@ -14,9 +14,11 @@ const props = withDefaults(
     alt?: string;
     class?: string;
     hoverPlay?: boolean; // 是否悬浮播放，默认 true
+    lazy?: boolean; // 是否开启可见性懒加载，默认 true（仅对非实况照片生效）
   }>(),
   {
     hoverPlay: true,
+    lazy: true,
   },
 );
 
@@ -64,6 +66,54 @@ const cleanSrc = computed(() => cleanLivePhotoUrl(props.src));
 
 // 是否为实况照片
 const isLive = computed(() => isLivePhoto(props.src));
+
+// ✅ 懒加载状态：是否已经开始加载
+const shouldLoad = ref<boolean>(!props.lazy || isLive.value);
+// ✅ IntersectionObserver 单例（全局共享，性能更好）
+let lazyObserver: IntersectionObserver | null = null;
+
+// 实际加载的 src：懒加载时只有在可见后才设置
+const actualSrc = computed(() => {
+  if (!shouldLoad.value) return '';
+  return isLive.value ? cleanSrc.value : props.src;
+});
+
+// 初始化懒加载监听
+const initLazyLoading = (el: HTMLElement) => {
+  if (!props.lazy || isLive.value) return;
+
+  if (!('IntersectionObserver' in window)) {
+    // 浏览器不支持，直接加载
+    shouldLoad.value = true;
+    return;
+  }
+
+  if (!lazyObserver) {
+    // 创建全局共享的 observer，提前 300px 开始加载
+    lazyObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          // 进入视口，开始加载
+          const img = entry.target as HTMLImageElement;
+          lazyObserver!.unobserve(img);
+          // @ts-ignore - 我们在 dataset 中存储了回调
+          img.__livePhotoLoadCallback?.();
+        }
+      }
+    }, {
+      rootMargin: '300px 0px', // 提前 300px 开始加载，用户滚动到的时候已经加载好
+      threshold: 0.01,
+    });
+  }
+
+  // 存储加载回调，observer 触发时调用
+  // @ts-ignore
+  el.__livePhotoLoadCallback = () => {
+    shouldLoad.value = true;
+  };
+
+  lazyObserver.observe(el);
+};
 
 // 计算包裹容器的样式
 const wrapperStyle = computed(() => {
@@ -123,9 +173,20 @@ const mediaStyle = computed<CSSProperties>(() => {
 let isUnmounted = false;
 // ✅ 用于取消实况视频提取请求
 let extractAbortController: AbortController | null = null;
+// 保存 observer 引用用于卸载
+let observedElement: HTMLElement | null = null;
 
 // 初始化实况照片
 onMounted(async () => {
+  // ✅ 初始化懒加载
+  if (wrapperRef.value) {
+    observedElement = wrapperRef.value;
+    initLazyLoading(wrapperRef.value);
+  } else if (imgRef.value) {
+    observedElement = imgRef.value;
+    initLazyLoading(imgRef.value);
+  }
+
   if (!isLive.value) {
     return;
   }
@@ -398,6 +459,13 @@ onUnmounted(() => {
     extractAbortController = null;
   }
 
+  // ✅ 清理懒加载 observer
+  if (lazyObserver && observedElement) {
+    lazyObserver.unobserve(observedElement);
+    // @ts-ignore
+    delete observedElement.__livePhotoLoadCallback;
+  }
+
   // 清理所有定时器
   // if (imgOpacityTimer !== null) {
   //   clearTimeout(imgOpacityTimer);
@@ -436,6 +504,7 @@ onUnmounted(() => {
       :src="cleanSrc"
       :alt="alt"
       v-bind="fancyboxAttrs"
+      loading="lazy"
       class="live-photo-image w-full h-full max-h-[inherit] transition-opacity duration-300 ease-in-out object-cover"
       :style="{
         opacity: imgOpacity / 100,
@@ -484,13 +553,42 @@ onUnmounted(() => {
     </div>
   </div>
 
-  <!-- 非实况照片，直接显示图片 -->
-  <img v-else :src="src" :alt="alt" :class="props.class" v-bind="fancyboxAttrs" />
+  <!-- 非实况照片，支持懒加载 -->
+  <div
+    v-else
+    ref="wrapperRef"
+    :class="['live-photo-lazy-wrapper', props.class]"
+    :style="{
+      // 默认使用 3/4 占位宽高比，避免高度为0导致布局错乱
+      aspectRatio: shouldLoad ? 'unset' : '3/4',
+    }">
+    <img
+      v-if="shouldLoad"
+      ref="imgRef"
+      :src="actualSrc"
+      :alt="alt"
+      v-bind="fancyboxAttrs"
+      loading="lazy"
+      class="block w-full h-full max-h-37.5 object-cover transition-opacity duration-300 opacity-0"
+      @load="(e) => { (e.target as HTMLImageElement).classList.add('opacity-100'); }" />
+    <!-- 占位骨架屏（未加载时显示） -->
+    <div
+      v-if="!shouldLoad"
+      class="absolute inset-0 bg-slate-100 dark:bg-slate-800 animate-pulse"></div>
+  </div>
 </template>
 
 <style scoped>
 .live-photo-wrapper {
   position: relative;
   overflow: hidden;
+}
+
+.live-photo-lazy-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  min-height: 100px;
 }
 </style>

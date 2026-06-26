@@ -147,10 +147,8 @@ const isActive = (href: string) => {
     return true
   }
   // 对于有子路由的页面，检查是否以该路径开头且后面跟着 /
-  if (route.path.startsWith(href + '/')) {
-    return true
-  }
-  return false
+  return route.path.startsWith(href + '/');
+
 }
 
 const handleLogout = async () => {
@@ -268,16 +266,3 @@ const handleLogout = async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 淡入淡出动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

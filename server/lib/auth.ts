@@ -131,19 +131,5 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.default.compare(password, hashedPassword);
 }
 
-// 需要认证的中间件
-export async function requireAuth(event: any) {
-  const user = await getUser(event);
-
-  if (!user) {
-    throw createError({
-      statusCode: 401,
-      message: "Unauthorized",
-    });
-  }
-
-  return user;
-}
-
 // 导出重置函数，供配置更改时调用
 export { resetSessionStore };

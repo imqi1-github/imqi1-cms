@@ -1,6 +1,6 @@
-import { prisma } from "#server/utils/prisma";
-import { getUser } from "#server/lib/auth";
-import { validateLinkData } from "#server/utils/validation";
+import {prisma} from "#server/utils/prisma";
+import {getUser} from "#server/lib/auth";
+import {validateLinkData} from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
       avatar: body.avatar,
     });
 
-    const link = await prisma.links.create({
+    return await prisma.links.create({
       data: {
         name: body.name,
         link: body.link,
@@ -31,7 +31,6 @@ export default defineEventHandler(async event => {
         avatar: body.avatar || null,
       },
     });
-    return link;
   } catch (error) {
     throw createError({
       statusCode: 500,

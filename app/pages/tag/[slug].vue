@@ -123,7 +123,7 @@ function triggerFadeIn() {
 // 监听数据加载状态，触发渐入渐出动画
 watch(pending, (newVal, oldVal) => {
   // 数据加载完成，触发渐入动画
-  if (oldVal === true && newVal === false) {
+  if (oldVal && !newVal) {
     // 设置页面标题供导航栏使用
     if (tag.value?.name) {
       const { setPageTitle } = usePageTitle();
@@ -146,7 +146,7 @@ watch(pending, (newVal, oldVal) => {
   }
 
   // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
-  if (oldVal === false && newVal === true && tag.value) {
+  if (!oldVal && newVal && tag.value) {
     document.querySelectorAll(".fade-in-element").forEach(el => {
       el.classList.remove("opacity-100");
       el.classList.add("opacity-0");

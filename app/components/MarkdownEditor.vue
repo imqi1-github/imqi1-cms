@@ -80,7 +80,6 @@ const handlePaste = async (event: ClipboardEvent) => {
   try {
     // 获取光标位置
     const start = textarea.selectionStart
-    const end = textarea.selectionEnd
     const text = props.modelValue
 
     // 在光标位置插入上传占位符

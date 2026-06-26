@@ -70,7 +70,7 @@ export default defineEventHandler(async event => {
         const pubDate = new Date(post.create_time).toUTCString();
 
         // 清理描述，移除 HTML 标签，并截断添加省略号
-        let description = "";
+        let description: string;
         const rawDesc = post.desc || post.content || "";
         const cleanDesc = rawDesc.replace(/<[^>]*>/g, "");
 

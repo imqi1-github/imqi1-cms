@@ -1,7 +1,4 @@
-import { PLAYER_MANAGER_KEY, type PlayerManager } from '~/plugins/player-manager.client';
-
-// 播放器类型
-export type PlayerType = 'footer' | 'meting';
+import { type PlayerManager } from '~/plugins/player-manager.client';
 
 // 使用播放器管理器
 export function usePlayerManager() {

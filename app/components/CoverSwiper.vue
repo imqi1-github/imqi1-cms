@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, onUnmounted, watch, useTemplateRef } from "vue";
+import { ref, onMounted, onUnmounted, watch, useTemplateRef } from "vue";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import Swiper from "swiper";
 import { Navigation, Pagination, Mousewheel } from "swiper/modules";
@@ -240,7 +240,6 @@ watch(
 .swiper-slide-title {
   text-align: center;
   color: white;
-  padding: 8px 12px;
   width: 100%;
   font-size: 13px;
   line-height: 1.4;

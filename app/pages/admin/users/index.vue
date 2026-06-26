@@ -13,8 +13,8 @@ const isOnlyUser = computed(() => users.value.length <= 1);
 // 判断是否可以删除用户（不是自己且不是唯一用户）
 function canDeleteUser(userId: number) {
   if (isOnlyUser.value) return false;
-  if (currentUser.value && currentUser.value.uid === userId) return false;
-  return true;
+  return !(currentUser.value && currentUser.value.uid === userId);
+
 }
 
 // 获取禁用删除按钮的提示信息

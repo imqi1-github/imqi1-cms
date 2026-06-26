@@ -30,8 +30,7 @@ async function fetchSiteSettings() {
         throw new Error('Invalid response format');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '获取站点设置失败';
-      errorSettings.value = errorMessage;
+      errorSettings.value = error instanceof Error ? error.message : '获取站点设置失败';
       console.error('获取站点设置失败:', error);
       throw error;
     } finally {

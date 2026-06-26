@@ -154,13 +154,6 @@ const toggleTag = (tagId: number, checked: boolean) => {
   }
 };
 
-// 获取已选分类名称
-const selectedCategoriesLabel = computed(() => {
-  if (selectedCategoryIds.value.length === 0) return "选择分类";
-  const names = categories.value.filter(c => selectedCategoryIds.value.includes(c.mid)).map(c => c.name);
-  return names.join(", ");
-});
-
 // 旅行地图地点关联
 const travels = ref<any[]>([]);
 const travelKeyword = ref("");
@@ -246,7 +239,6 @@ function disassociateTravel(travel: any) {
 
 // 附件相关
 const attachments = ref<any[]>([]);
-const showUploadDialog = ref(false);
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const fileInputRef = ref<HTMLInputElement | null>(null);

@@ -3,7 +3,6 @@ import "@/assets/css/fancybox.css";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { siteConfig } from "~~/site.config";
-import type { MenuItems } from "~/directives/contextMenu";
 
 // 导入前台通知 composable
 const { success, error: showError, notify } = useFrontNotification();
@@ -254,9 +253,7 @@ const isRequiredFieldsFilled = computed(() => {
   }
 
   // 修改友链时必须已选中要修改的友链
-  if (formMode.value === 'edit' && !selectedLink.value) return false;
-
-  return true;
+  return !(formMode.value === 'edit' && !selectedLink.value);
 });
 
 // 选择友链

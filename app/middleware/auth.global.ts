@@ -1,4 +1,4 @@
-export default defineNuxtRouteMiddleware(async (to, from) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   // 跳过非 admin 路径
   if (!to.path.startsWith('/admin')) {
     return

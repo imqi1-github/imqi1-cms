@@ -91,10 +91,6 @@ const formatFileSize = (size: string | number) => {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 };
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("zh-CN");
-};
-
 async function deleteAttachment(item: any) {
   const confirmed = confirm(`确定要删除附件 "${item.name}" 吗？`);
   if (!confirmed) return;

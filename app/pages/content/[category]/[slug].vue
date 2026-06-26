@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
-import { siteConfig } from "~~/site.config";
+import {zh_CN} from "@/assets/js/zh_CN.umd.js";
+import {siteConfig} from "~~/site.config";
 import Swiper from "swiper";
-import { Navigation, Pagination, Mousewheel } from "swiper/modules";
+import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { computed, onMounted, onUnmounted, ref, watch, useTemplateRef } from "vue";
+import {computed, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -103,12 +103,11 @@ watch(
     if (postId) {
       relatedPostsPending.value = true;
       try {
-        const data = await $fetch(`/api/related-posts/${postId}?limit=3`, {
+        relatedPostsData.value = await $fetch(`/api/related-posts/${postId}?limit=3`, {
           headers: {
             "x-ssr-internal-request": "true",
           },
         });
-        relatedPostsData.value = data;
       } catch (error) {
         console.error("获取相关文章失败:", error);
         relatedPostsData.value = { success: false, data: [] };
@@ -690,7 +689,7 @@ onMounted(async () => {
         detailsContainer.innerHTML = `
         <div class="markdown-details my-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
-            class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
             <span class="font-medium text-slate-900 dark:text-slate-100">${summary}</span>
             <span class="transform transition-transform duration-200 text-slate-500 dark:text-slate-400 text-[10px]">
               ▼
@@ -789,7 +788,7 @@ onMounted(async () => {
         calloutContainer.className = `markdown-callout my-4 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
         calloutContainer.innerHTML = `
         <div class="flex items-start gap-3">
-          <div class="${config.iconColor} flex-shrink-0 mt-1">
+          <div class="${config.iconColor} shrink-0 mt-1">
             ${config.icon}
           </div>
           <div class="flex-1 ${config.textColor}">
@@ -828,7 +827,7 @@ onMounted(async () => {
             ${
               image
                 ? `
-              <div class="w-36 h-36 flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900">
+              <div class="w-36 h-36 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900">
                 <img
                   src="${image}"
                   alt="${title}"
@@ -844,7 +843,7 @@ onMounted(async () => {
                 <h3 class="min-w-0 text-lg font-bold text-slate-900 dark:text-slate-100 line-clamp-2 break-words">
                   ${title}
                 </h3>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               </div>
               ${
                 description
@@ -856,7 +855,7 @@ onMounted(async () => {
                   : ""
               }
               <div class="mt-3 flex min-w-0 items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3 flex-shrink-0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3 shrink-0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <span class="min-w-0 flex-1 truncate">${url}</span>
               </div>
             </div>
@@ -894,7 +893,7 @@ onMounted(async () => {
             </h3>
             <div class="min-w-0 flex flex-1 items-center justify-end gap-2 text-slate-400 dark:text-slate-500">
               <span class="min-w-0 flex-1 text-xs truncate text-right">${url}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 flex-shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </div>
           </div>
         </a>
@@ -1115,7 +1114,7 @@ onMounted(async () => {
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-1">
                     ${repoName}
                   </h3>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 dark:text-slate-500 shrink-0 mt-0.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </div>
 
                 <!-- 描述 -->
@@ -2038,7 +2037,6 @@ onUnmounted(() => {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  margin: 20px 0;
   cursor: zoom-in;
   max-height: 600px;
   margin: auto;

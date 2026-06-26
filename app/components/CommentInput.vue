@@ -377,31 +377,6 @@ function insertEmoji(key: string) {
     textarea.focus();
   });
 }
-
-// 格式化表情占位符为图片
-function formatEmojiPlaceholder(text: string): string {
-  // 匹配 :[prefix-name] 格式
-  const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
-
-  return text.replace(emojiRegex, (match, prefix, name) => {
-    // 通过 prefix 查找对应的 category
-    let category: string | null = null;
-    for (const [cat, config] of Object.entries(categoryConfig)) {
-      if (config.prefix === prefix) {
-        category = cat;
-        break;
-      }
-    }
-
-    if (!category) return match;
-
-    const key = prefix + name;
-    const emojis = emojisData[category as keyof typeof emojisData] as Record<string, string> | undefined;
-    if (!emojis || !emojis[key]) return match;
-
-    return emojis[key]!;
-  });
-}
 </script>
 
 <template>
