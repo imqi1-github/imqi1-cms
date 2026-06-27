@@ -80,7 +80,7 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode", "@vite-pwa/nuxt"],
+  modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode", "@vite-pwa/nuxt", "@nuxt/eslint"],
 
   colorMode: {
     classSuffix: "",
