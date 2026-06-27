@@ -49,7 +49,7 @@ export async function resolveCity(ip: string): Promise<CityInfo> {
 
   // 简化版 ipdb 可能直接返回「南京」「重庆」「新疆」这类单字段。
   // 先按坐标表判断城市，再按省级判断；否则旧逻辑会把「南京」当作境外 country。
-  const direct = stripSuffix(raw.replace(/^中国[–—\-]?/, ""));
+  const direct = stripSuffix(raw.replace(/^中国[–—-]?/, ""));
   if (direct && CITY_COORDS[direct]) {
     return {
       city: PROVINCES.has(direct) ? null : direct,
@@ -60,9 +60,9 @@ export async function resolveCity(ip: string): Promise<CityInfo> {
   }
 
   // 去「中国」前缀后按分隔符切分：典型「辽宁-沈阳-沈河区」或「辽宁省-沈阳市-沈河区」
-  const loc = raw.replace(/^中国[–—\-]?/, "");
+  const loc = raw.replace(/^中国[–—-]?/, "");
   const parts = loc
-    .split(/[–—\-]/)
+    .split(/[–—-]/)
     .map(p => p.trim())
     .filter(Boolean);
 

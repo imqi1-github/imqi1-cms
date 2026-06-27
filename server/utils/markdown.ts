@@ -1,9 +1,10 @@
 import MarkdownIt from "markdown-it";
+import type Renderer from "markdown-it/lib/renderer.mjs";
+import type Token from "markdown-it/lib/token.mjs";
 import Shiki from "@shikijs/markdown-it";
+import type { ThemeRegistration } from "shiki";
 import { transformerNotationHighlight, transformerNotationDiff } from "@shikijs/transformers";
 import container from "markdown-it-container";
-import { escapeAttribute, escapeHtml, sanitizeHtml } from "~~/lib/html";
-
 // 只加载常见语言，减少服务端内存占用
 import javascript from "@shikijs/langs/javascript";
 import typescript from "@shikijs/langs/typescript";
@@ -33,17 +34,56 @@ import mermaid from "@shikijs/langs/mermaid";
 import ini from "@shikijs/langs/ini";
 import powershell from "@shikijs/langs/powershell";
 
-import islandLightTheme from '@/shiki/island_light'
-import islandDarkTheme from '@/shiki/island_dark'
+import { escapeAttribute, escapeHtml, sanitizeHtml } from "~~/lib/html";
+import islandLightTheme from "@/shiki/island_light";
+import islandDarkTheme from "@/shiki/island_dark";
+
+type RenderRule = NonNullable<Renderer["rules"]["link_open"]>;
 
 // 自定义主题需要断言为 Shiki 接受的格式
-const lightTheme = islandLightTheme as any;
-const darkTheme = islandDarkTheme as any;
+const lightTheme = islandLightTheme as ThemeRegistration;
+const darkTheme = islandDarkTheme as ThemeRegistration;
 
 const supportedLanguages = new Set([
-  "javascript", "js", "typescript", "ts", "python", "py", "java", "cpp", "c++", "c", "css", "html", "json",
-  "bash", "sh", "shell", "sql", "php", "ruby", "rb", "go", "rust", "rs", "swift", "kotlin", "kt", "scala",
-  "yaml", "yml", "toml", "markdown", "md", "vue", "tsx", "jsx", "mermaid", "ini", "powershell", "ps1",
+  "javascript",
+  "js",
+  "typescript",
+  "ts",
+  "python",
+  "py",
+  "java",
+  "cpp",
+  "c++",
+  "c",
+  "css",
+  "html",
+  "json",
+  "bash",
+  "sh",
+  "shell",
+  "sql",
+  "php",
+  "ruby",
+  "rb",
+  "go",
+  "rust",
+  "rs",
+  "swift",
+  "kotlin",
+  "kt",
+  "scala",
+  "yaml",
+  "yml",
+  "toml",
+  "markdown",
+  "md",
+  "vue",
+  "tsx",
+  "jsx",
+  "mermaid",
+  "ini",
+  "powershell",
+  "ps1",
 ]);
 
 const simpleMd = new MarkdownIt({
@@ -70,23 +110,41 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   });
 
   // 自定义链接渲染规则（新窗口打开）
-  md.renderer.rules.link_open = (tokens: any[], idx: number, options: any, env: any, self: any) => {
-    const aIndex = tokens[idx].attrIndex("target");
-    if (aIndex < 0) {
-      tokens[idx].attrPush(["target", "_blank"]);
-    } else {
-      tokens[idx].attrs[aIndex][1] = "_blank";
+  md.renderer.rules.link_open = (
+    tokens: Token[],
+    idx: number,
+    options: Parameters<RenderRule>[2],
+    env: Parameters<RenderRule>[3],
+    self: Renderer,
+  ) => {
+    const token = tokens[idx];
+
+    if (!token) {
+      return "";
     }
-    const relIndex = tokens[idx].attrIndex("rel");
+
+    const aIndex = token.attrIndex("target");
+    if (aIndex < 0) {
+      token.attrPush(["target", "_blank"]);
+    } else {
+      // @ts-expect-error MarkdownIt已经确保了 attrs 存在
+      token.attrs[aIndex][1] = "_blank";
+    }
+    const relIndex = token.attrIndex("rel");
     if (relIndex < 0) {
-      tokens[idx].attrPush(["rel", "noopener noreferrer"]);
+      token.attrPush(["rel", "noopener noreferrer"]);
     }
     return self.renderToken(tokens, idx, options);
   };
 
   // 自定义图片渲染规则（包装成 figure 并添加标题）
-  md.renderer.rules.image = (tokens: any[], idx: number, options: any, env: any, self: any) => {
+  md.renderer.rules.image = (tokens: Token[], idx: number, options: Parameters<RenderRule>[2], env: Parameters<RenderRule>[3], self: Renderer) => {
     const token = tokens[idx];
+
+    if (!token) {
+      return "";
+    }
+
     token.attrSet("loading", "lazy");
     token.attrSet("class", "markdown-image");
     token.attrSet("data-fancybox", "gallery");
@@ -149,12 +207,17 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
   );
 
   // 自定义代码块渲染规则 - 处理 "语言+文件名" 格式 + 未知语言 fallback
-  const defaultFence = md.renderer.rules.fence || function(tokens: any[], idx: number, options: any, env: any, self: any) {
-    return self.renderToken(tokens, idx, options);
-  };
+  const defaultFence =
+    md.renderer.rules.fence ||
+    function (tokens: Token[], idx: number, options: Parameters<RenderRule>[2], env: Parameters<RenderRule>[3], self: Renderer) {
+      return self.renderToken(tokens, idx, options);
+    };
 
   function normalizeClassName(s: string): string {
-    return s.trim().replace(/\s+/g, "-").replace(/[<>"'&`]/g, "-");
+    return s
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[<>"'&`]/g, "-");
   }
 
   function parseFenceInfo(info: string) {
@@ -180,8 +243,13 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     };
   }
 
-  md.renderer.rules.fence = (tokens: any[], idx: number, options: any, env: any, self: any) => {
+  md.renderer.rules.fence = (tokens: Token[], idx: number, options: Parameters<RenderRule>[2], env: Parameters<RenderRule>[3], self: Renderer) => {
     const token = tokens[idx];
+
+    if (!token) {
+      return "";
+    }
+
     const info = token.info || "";
     const { shikiLang, className } = parseFenceInfo(info);
     const renderPlainCode = () => {
@@ -200,10 +268,11 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     }
 
     const shikiClassName = normalizeClassName(shikiLang);
-    const restoreClassName = (html: string) => html.replace(
-      /class="([^"]*)\blanguage-(?:json|text|plaintext)(\s|$)([^"]*)"/,
-      (_match: string, before: string, after: string, rest: string) => `class="${before}language-${className}${after}${rest}"`
-    );
+    const restoreClassName = (html: string) =>
+      html.replace(
+        /class="([^"]*)\blanguage-(?:json|text|plaintext)(\s|$)([^"]*)"/,
+        (_match: string, before: string, after: string, rest: string) => `class="${before}language-${className}${after}${rest}"`,
+      );
 
     token.info = shikiLang;
 
@@ -237,12 +306,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 只匹配以 "details" 开头的内容
       return params.trim().match(/^details\s+(.*)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取标题（去掉 "details" 前缀）
-      let summary = info.replace(/^details\s+/, "").trim() || "展开";
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取标题（去掉 "details" 前缀）
+      const summary = info.replace(/^details\s+/, "").trim() || "展开";
+
+      if (token.nesting === 1) {
         // 开始容器
         return `<div class="markdown-details-wrapper" data-summary="${escapeAttribute(summary)}">`;
       } else {
@@ -258,12 +333,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "video URL" 格式
       return params.trim().match(/^video\s+(.+)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取视频 URL（去掉 "video" 前缀）
-      let url = info.replace(/^video\s+/, "").trim();
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取视频 URL（去掉 "video" 前缀）
+      const url = info.replace(/^video\s+/, "").trim();
+
+      if (token.nesting === 1) {
         // 开始容器
         return `<div class="markdown-video-wrapper" data-url="${escapeAttribute(url)}">`;
       } else {
@@ -279,12 +360,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "callout type" 格式
       return params.trim().match(/^callout\s+(success|warning|error|info)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取类型（去掉 "callout" 前缀）
-      let type = info.replace(/^callout\s+/, "").trim();
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取类型（去掉 "callout" 前缀）
+      const type = info.replace(/^callout\s+/, "").trim();
+
+      if (token.nesting === 1) {
         // 开始容器
         return `<div class="markdown-callout-wrapper" data-type="${escapeAttribute(type)}">`;
       } else {
@@ -300,12 +387,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "card url | title | description | image" 格式
       return params.trim().match(/^card\s+(.+)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取参数（去掉 "card" 前缀）
-      let paramsStr = info.replace(/^card\s+/, "").trim();
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取参数（去掉 "card" 前缀）
+      const paramsStr = info.replace(/^card\s+/, "").trim();
+
+      if (token.nesting === 1) {
         // 开始容器，将参数存储在 data 属性中
         return `<div class="markdown-card-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
@@ -321,8 +414,14 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "swiper" 格式（不需要额外参数）
       return params.trim().match(/^swiper$/);
     },
-    render: (tokens: any[], idx: number) => {
-      if (tokens[idx].nesting === 1) {
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
+
+      if (!token) {
+        return "";
+      }
+
+      if (token.nesting === 1) {
         // 开始容器
         return `<div class="markdown-swiper-wrapper">`;
       } else {
@@ -338,12 +437,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "repo URL" 格式
       return params.trim().match(/^repo\s+(https:\/\/(?:github|gitee)\.com\/[^/\s]+\/[^/\s]+)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取仓库 URL（去掉 "repo" 前缀）
-      let url = info.replace(/^repo\s+/, "").trim();
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取仓库 URL（去掉 "repo" 前缀）
+      const url = info.replace(/^repo\s+/, "").trim();
+
+      if (token.nesting === 1) {
         // 开始容器
         return `<div class="markdown-repo-wrapper" data-url="${escapeAttribute(url)}">`;
       } else {
@@ -362,12 +467,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 3. :::music playlist netease 123456:::
       return params.trim().match(/^music\s+(.+)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取参数（去掉 "music" 前缀）
-      let paramsStr = info.replace(/^music\s+/, "").trim();
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取参数（去掉 "music" 前缀）
+      const paramsStr = info.replace(/^music\s+/, "").trim();
+
+      if (token.nesting === 1) {
         // 开始容器，将参数存储在 data 属性中
         return `<div class="markdown-music-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
@@ -383,12 +494,18 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "simple-card url | title" 格式
       return params.trim().match(/^simple-card\s+(.+)$/);
     },
-    render: (tokens: any[], idx: number) => {
-      const info = tokens[idx].info.trim();
-      // 提取参数（去掉 "simple-card" 前缀）
-      let paramsStr = info.replace(/^simple-card\s+/, "").trim();
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
 
-      if (tokens[idx].nesting === 1) {
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      // 提取参数（去掉 "simple-card" 前缀）
+      const paramsStr = info.replace(/^simple-card\s+/, "").trim();
+
+      if (token.nesting === 1) {
         // 开始容器，将参数存储在 data 属性中
         return `<div class="markdown-simple-card-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
@@ -404,8 +521,14 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       // 匹配 "waterfall" 格式（不需要额外参数）
       return params.trim().match(/^waterfall$/);
     },
-    render: (tokens: any[], idx: number) => {
-      if (tokens[idx].nesting === 1) {
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
+
+      if (!token) {
+        return "";
+      }
+
+      if (token.nesting === 1) {
         // 开始容器
         return `<div class="markdown-waterfall-wrapper">`;
       } else {
@@ -434,40 +557,40 @@ const musicPlatforms: MusicPlatform[] = [
     name: "netease",
     regex: /https:\/\/music\.163\.com\/(playlist|song|album|artist)\?id=(\d+)/i,
     getServer: () => "netease",
-    getType: (match) => match[1] ?? "",
-    getId: (match) => match[2] ?? ""
+    getType: match => match[1] ?? "",
+    getId: match => match[2] ?? "",
   },
   // QQ音乐
   {
     name: "tencent",
     regex: /https:\/\/y\.qq\.com\/n\/ryqq\/(playlist|songDetail|albumDetail)\/(\d+)/i,
     getServer: () => "tencent",
-    getType: (match) => {
+    getType: match => {
       const typeMap: Record<string, string> = {
         playlist: "playlist",
         songDetail: "song",
-        albumDetail: "album"
+        albumDetail: "album",
       };
       return typeMap[match[1] ?? ""] || "song";
     },
-    getId: (match) => match[2] ?? ""
+    getId: match => match[2] ?? "",
   },
   // 酷我音乐
   {
     name: "kuwo",
     regex: /https:\/\/www\.kuwo\.cn\/(playlist|song|album)\/(\d+)/i,
     getServer: () => "kuwo",
-    getType: (match) => match[1] ?? "",
-    getId: (match) => match[2] ?? ""
+    getType: match => match[1] ?? "",
+    getId: match => match[2] ?? "",
   },
   // 酷狗音乐
   {
     name: "kugou",
     regex: /https:\/\/www\.kugou\.com\/(song|album|playlist)\/(\w+)\.html/i,
     getServer: () => "kugou",
-    getType: (match) => match[1] ?? "",
-    getId: (match) => match[2] ?? ""
-  }
+    getType: match => match[1] ?? "",
+    getId: match => match[2] ?? "",
+  },
 ];
 
 // 检测并转换音乐链接
@@ -475,7 +598,7 @@ function transformMusicLinks(content: string): string {
   let transformedContent = content;
 
   musicPlatforms.forEach(platform => {
-    const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, 'g');
+    const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, "g");
     transformedContent = transformedContent.replace(regex, (match, linkText, ...args) => {
       const matchArray = args.slice(0, -2) as RegExpMatchArray;
       const server = platform.getServer();

@@ -1,6 +1,9 @@
-import prisma from "#server/utils/prisma";
 import * as fs from "fs";
 import * as path from "path";
+
+import type {comments} from "@prisma/client";
+
+import prisma from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
 // 邮件日志目录
@@ -20,7 +23,7 @@ function getLogFilePath() {
 }
 
 // 写入日志
-function writeLog(level: string, message: string, data?: any) {
+function writeLog(level: string, message: string, data?: Record<string, unknown>) {
   ensureLogDir();
   const timestamp = new Date().toISOString();
   const logEntry = {
@@ -210,7 +213,7 @@ export async function sendTestEmail(to: string): Promise<{ success: boolean; mes
 }
 
 // 发送新评论通知
-export async function sendCommentNotification(comment: any, postTitle: string): Promise<boolean> {
+export async function sendCommentNotification(comment: comments, postTitle: string): Promise<boolean> {
   const config = await getMailConfig();
 
   // 检查是否需要通知管理员
@@ -225,7 +228,6 @@ export async function sendCommentNotification(comment: any, postTitle: string): 
     return false;
   }
 
-  const siteInfo = await getSiteInfo();
   const postUrl = await getPostUrl(comment.cid);
 
   return await sendMail({
@@ -262,7 +264,7 @@ export function getRecentLogs(limit = 50): Array<{
   timestamp: string;
   level: string;
   message: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }> {
   ensureLogDir();
 
@@ -276,7 +278,7 @@ export function getRecentLogs(limit = 50): Array<{
   const content = fs.readFileSync(logPath, "utf-8");
   const lines = content.trim().split("\n");
 
-  const logs: any[] = [];
+  const logs: Array<{timestamp: string; level: string; message: string; [key: string]: unknown}> = [];
   for (const line of lines.reverse()) {
     try {
       logs.push(JSON.parse(line));

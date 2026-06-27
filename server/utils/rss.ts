@@ -1,4 +1,6 @@
+import { PrismaClientKnownRequestError } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
+
 import { prisma } from "./prisma";
 
 const parser = new XMLParser({
@@ -8,10 +10,10 @@ const parser = new XMLParser({
 });
 
 // 提取文本内容（处理解析后的对象或字符串）
-function getTextValue(value: any): string | undefined {
+function getTextValue(value: unknown): string | undefined {
   if (value === null || value === undefined) return undefined;
   if (typeof value === "string") return value;
-  if (typeof value === "object" && value["#text"]) return value["#text"];
+  if (typeof value === "object" && value !== null && "#text" in value && typeof value["#text"] === "string") return value["#text"];
   return String(value);
 }
 
@@ -163,7 +165,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       } catch (error) {
         console.error(error);
         // 忽略重复链接错误
-        if ((error as any).code?.includes("P2002")) continue;
+        if (error instanceof PrismaClientKnownRequestError && error.code.includes("P2002")) continue;
         throw error;
       }
     }

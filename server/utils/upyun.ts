@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+
 import prisma from "./prisma";
 
 // 又拍云 API 端点
@@ -154,11 +155,11 @@ export async function uploadToUpYun(
     // 返回完整的访问 URL
     const url = `${domain ?? ""}${filePath}`;
     return { success: true, url };
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     return {
       success: false,
-      error: `上传失败: ${error.message || "未知错误"}`,
+      error: `上传失败: ${error instanceof Error ? error.message : "未知错误"}`,
     };
   }
 }

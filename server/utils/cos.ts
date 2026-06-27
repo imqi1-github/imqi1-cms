@@ -1,4 +1,5 @@
 import {createHash, createHmac} from "crypto";
+
 import {prisma} from "./prisma";
 
 // COS配置接口
@@ -316,11 +317,11 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
       success: true,
       url: fileUrl,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     return {
       success: false,
-      error: error.message || "COS上传失败",
+      error: (error instanceof Error ? error.message : String(error)) || "COS上传失败",
     };
   }
 }
@@ -427,11 +428,11 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
     return {
       success: true,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     return {
       success: false,
-      error: error.message || "COS删除失败",
+      error: (error instanceof Error ? error.message : String(error)) || "COS删除失败",
     };
   }
 }

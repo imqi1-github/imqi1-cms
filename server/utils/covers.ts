@@ -27,11 +27,12 @@ export function parseCovers(
   if (!Array.isArray(parsed)) return [];
 
   return parsed
-    .map((item: any) => {
+    .map((item: unknown) => {
       if (typeof item === "string") return { url: item, desc: "" };
+      const obj = (item ?? {}) as Record<string, unknown>;
       return {
-        url: item.url ?? item.cover ?? "",
-        desc: item.title ?? item.desc ?? "",
+        url: (obj.url as string) ?? (obj.cover as string) ?? "",
+        desc: (obj.title as string) ?? (obj.desc as string) ?? "",
       };
     })
     .filter(item => item.url);

@@ -185,7 +185,7 @@ export function validateAttachmentData(data: {
 /**
  * 验证系统设置数据
  */
-export function validateSettingsData(data: Record<string, any>): void {
+export function validateSettingsData(data: Record<string, string | null | undefined>): void {
   // 站点基本信息
   if (data.siteName) {
     validateMaxLength(data.siteName, 100, "站点名称");

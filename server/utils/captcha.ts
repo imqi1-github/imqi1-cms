@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
-import { getCookie, setCookie } from "h3";
+
+import { getCookie, setCookie, type H3Event } from "h3";
 import { initialize, svg2png } from "svg2png-wasm";
 
 /**
@@ -170,7 +171,7 @@ function cleanup() {
 /**
  * 签发一个新的验证码：生成答案、存内存、写 httpOnly cookie，返回 PNG Buffer（位图）。
  */
-export async function issueCaptcha(event: any): Promise<Buffer> {
+export async function issueCaptcha(event: H3Event): Promise<Buffer> {
   cleanup();
 
   const answer = randomText();
@@ -196,7 +197,7 @@ export async function issueCaptcha(event: any): Promise<Buffer> {
  * 校验验证码：一次性消费（无论成败都删除），大小写不敏感。
  * @returns 是否校验通过
  */
-export function verifyCaptcha(event: any, input: string): boolean {
+export function verifyCaptcha(event: H3Event, input: string): boolean {
   const token = getCookie(event, CAPTCHA_COOKIE);
   if (!token || !input) return false;
 

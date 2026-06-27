@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import { getCookie, setCookie } from "h3";
+
+import { getCookie, setCookie, type H3Event } from "h3";
 
 /**
  * 生成 CSRF Token
@@ -14,7 +15,7 @@ export function generateCsrfToken(): string {
  * @param event H3Event
  * @returns CSRF Token 或 null
  */
-export function getStoredCsrfToken(event: any): string | null {
+export function getStoredCsrfToken(event: H3Event): string | null {
   const token = getCookie(event, "csrf_token");
   return token || null;
 }
@@ -24,7 +25,7 @@ export function getStoredCsrfToken(event: any): string | null {
  * @param event H3Event
  * @returns 生成的 CSRF Token
  */
-export function setCsrfToken(event: any): string {
+export function setCsrfToken(event: H3Event): string {
   const token = generateCsrfToken();
 
   setCookie(event, "csrf_token", token, {
@@ -44,7 +45,7 @@ export function setCsrfToken(event: any): string {
  * @param providedToken 用户提供的 token
  * @returns 是否验证通过
  */
-export function validateCsrfToken(event: any, providedToken: string): boolean {
+export function validateCsrfToken(event: H3Event, providedToken: string): boolean {
   const storedToken = getStoredCsrfToken(event);
 
   if (!storedToken) {
@@ -74,7 +75,7 @@ export function validateCsrfToken(event: any, providedToken: string): boolean {
  * @param event H3Event
  * @returns CSRF Token
  */
-export function ensureCsrfToken(event: any): string {
+export function ensureCsrfToken(event: H3Event): string {
   let token = getStoredCsrfToken(event);
 
   if (!token) {
