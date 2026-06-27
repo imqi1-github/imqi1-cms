@@ -1,6 +1,8 @@
+import type { H3Event } from "h3";
+import { setCookie, getCookie, deleteCookie } from "h3";
+
 import { prisma } from "#server/utils/prisma";
 import { getSessionStore, resetSessionStore } from "#server/utils/session-store";
-import { setCookie, getCookie, deleteCookie } from "h3";
 
 export interface SessionUser {
   uid: number;
@@ -26,7 +28,7 @@ function generateAuthCode(): string {
 }
 
 // 设置 session cookie
-export async function setSession(event: any, user: Omit<SessionUser, "authCode">): Promise<SessionUser> {
+export async function setSession(event: H3Event, user: Omit<SessionUser, "authCode">): Promise<SessionUser> {
   const sessionId = generateSessionId();
   const authCode = generateAuthCode();
   const expires = Date.now() + SESSION_MAX_AGE * 1000;
@@ -62,7 +64,7 @@ export async function setSession(event: any, user: Omit<SessionUser, "authCode">
 }
 
 // 获取当前用户
-export async function getUser(event: any): Promise<SessionUser | null> {
+export async function getUser(event: H3Event): Promise<SessionUser | null> {
   const sessionId = getCookie(event, SESSION_COOKIE_NAME);
 
   if (!sessionId) {
@@ -114,7 +116,7 @@ export async function getUser(event: any): Promise<SessionUser | null> {
 }
 
 // 清除 session
-export async function clearSession(event: any) {
+export async function clearSession(event: H3Event) {
   const sessionId = getCookie(event, SESSION_COOKIE_NAME);
 
   if (sessionId) {

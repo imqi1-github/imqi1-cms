@@ -1,4 +1,5 @@
 import { createError, defineEventHandler, getRequestURL, proxyRequest, setResponseHeader } from "h3";
+
 import { resolveAmapProxyTarget } from "#shared/amap-proxy";
 
 export default defineEventHandler(event => {

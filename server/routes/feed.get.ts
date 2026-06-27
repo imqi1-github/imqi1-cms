@@ -7,7 +7,7 @@ export default defineEventHandler(async event => {
     // 获取站点设置（逐 key 读取，与其他 API 一致）
     const meta = await prisma.informations.findMany();
     const infoMap: Record<string, string> = {};
-    meta.forEach((item: any) => {
+    meta.forEach((item) => {
       infoMap[item.key] = item.value;
     });
 
@@ -81,7 +81,7 @@ export default defineEventHandler(async event => {
         }
 
         // 解析封面图片
-        let coverImage = "";
+        let coverImage: string;
         let mediaContent = "";
         let enclosure = "";
 
