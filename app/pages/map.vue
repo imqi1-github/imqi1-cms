@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+
 import { CITY_COORDS } from "~~/shared/city-coords";
 import { siteConfig } from "~~/site.config";
 
@@ -246,7 +247,7 @@ onUnmounted(() => {
     <!-- 地图主体 -->
     <div v-if="pending && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
       <div class="text-center text-white">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"/>
         <p class="mt-3">加载中...</p>
       </div>
     </div>

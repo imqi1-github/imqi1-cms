@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
 
 // 导入前台通知 composable
-const { success, error: showError, notify } = useFrontNotification();
+const { success, error: showError, } = useFrontNotification();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -15,7 +16,7 @@ const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteN
 const showLinkUrlInput = computed(() => siteSettings.value?.linkAutoApprove === true);
 
 // 获取友链数据
-const { data: linksData, pending, error, refresh } = await useFetch("/api/links", {
+const { data: linksData, pending, error } = await useFetch("/api/links", {
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -472,7 +473,7 @@ onUnmounted(() => {
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header class="animate-fade-in" ref="fancyboxContainer">
+    <header ref="fancyboxContainer" class="animate-fade-in">
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"
@@ -480,7 +481,7 @@ onUnmounted(() => {
         :src="publicAsset('/imgs/links-cover.png')"
         alt="封面"
         loading="lazy"
-        class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800" />
+        class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800" >
 
       <!-- 标题 -->
       <h1 class="text-[3em] font-extrabold mb-2.5">友链</h1>
@@ -517,9 +518,9 @@ onUnmounted(() => {
           友链顺序不分先后，每一个都值得一看。
         </blockquote>
         <button
-          @click="checkAllLinks"
           :disabled="isCheckingLinks"
-          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5 w-fit cursor-pointer">
+          class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center gap-1.5 w-fit cursor-pointer"
+          @click="checkAllLinks">
           <Icon name="lucide:refresh-cw" class="size-4" />
           <span v-if="isCheckingLinks">检测中...</span>
           <span v-else>检测友链</span>
@@ -528,7 +529,7 @@ onUnmounted(() => {
 
       <!-- 加载状态 -->
       <div v-if="pending" class="py-10 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
         <p class="mt-2 text-slate-500">加载中...</p>
       </div>
 
@@ -562,16 +563,14 @@ onUnmounted(() => {
             <span
               v-if="linkStatuses[link.id]?.status === 'checking'"
               aria-hidden="true"
-              class="absolute inline-flex size-2 rounded-full bg-blue-500 opacity-60 animate-ping">
-            </span>
+              class="absolute inline-flex size-2 rounded-full bg-blue-500 opacity-60 animate-ping"/>
             <span
               class="relative size-2 rounded-full"
               :class="{
                 'bg-green-500': linkStatuses[link.id]?.status === 'up',
                 'bg-red-500': linkStatuses[link.id]?.status === 'down',
                 'bg-blue-500': linkStatuses[link.id]?.status === 'checking',
-              }">
-            </span>
+              }"/>
           </span>
 
           <!-- 头部：头像 + 名称/描述 -->
@@ -584,7 +583,7 @@ onUnmounted(() => {
                   :alt="link.name"
                   class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                   loading="lazy"
-                  @error="link.avatar = ''" />
+                  @error="link.avatar = ''" >
               </template>
               <template v-else>
                 {{ link.name.charAt(0).toUpperCase() }}
@@ -631,7 +630,7 @@ onUnmounted(() => {
             :src="publicAsset(org.icon)"
             :alt="org.name"
             class="w-6 h-6 object-contain rounded-full"
-            loading="lazy" />
+            loading="lazy" >
           <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors">{{ org.name }}</span>
         </a>
       </div>
@@ -647,7 +646,7 @@ onUnmounted(() => {
             <img
               :src="siteConfig.links.profile.siteAvatar"
               :alt="siteConfig.links.profile.siteName"
-              class="w-20 h-20 rounded-xl object-cover cursor-context-menu" />
+              class="w-20 h-20 rounded-xl object-cover cursor-context-menu" >
           </div>
           <!-- 信息 -->
           <div class="flex-1 space-y-1">
@@ -679,18 +678,18 @@ onUnmounted(() => {
       <div class="flex items-center gap-6 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
         <label class="flex items-center gap-2 cursor-pointer">
           <input
-            type="radio"
             v-model="formMode"
+            type="radio"
             value="apply"
-            class="w-4 h-4 text-blue-600 cursor-pointer" />
+            class="w-4 h-4 text-blue-600 cursor-pointer" >
           <span class="text-sm font-medium text-gray-900 dark:text-gray-100">申请友链</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer">
           <input
-            type="radio"
             v-model="formMode"
+            type="radio"
             value="edit"
-            class="w-4 h-4 text-blue-600" />
+            class="w-4 h-4 text-blue-600" >
           <span class="text-sm font-medium text-gray-900 dark:text-gray-100">修改友链</span>
         </label>
       </div>
@@ -740,7 +739,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 申请表单 -->
-      <form @submit.prevent="() => handleSubmit()" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="() => handleSubmit()">
         <!-- 修改模式：选择要修改的友链 -->
         <div v-if="formMode === 'edit'" class="mb-4">
           <!-- 已选择友链时显示 -->
@@ -749,7 +748,7 @@ onUnmounted(() => {
               <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-semibold text-lg shrink-0 overflow-hidden">
                   <template v-if="selectedLink.avatar">
-                    <img :src="selectedLink.avatar" :alt="selectedLink.name" class="w-full h-full object-cover" />
+                    <img :src="selectedLink.avatar" :alt="selectedLink.name" class="w-full h-full object-cover" >
                   </template>
                   <template v-else>
                     {{ selectedLink.name?.charAt(0).toUpperCase() }}
@@ -762,8 +761,8 @@ onUnmounted(() => {
               </div>
               <button
                 type="button"
-                @click="cancelSelection"
-                class="px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                class="px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                @click="cancelSelection">
                 重新选择
               </button>
             </div>
@@ -777,33 +776,33 @@ onUnmounted(() => {
                 v-model="linkSearchQuery"
                 type="text"
                 placeholder="搜索友链名称或链接..."
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
             </div>
 
             <!-- 首字母筛选 -->
             <div class="flex flex-wrap gap-2 mb-3">
               <button
                 type="button"
-                @click="selectedFilterLetter = '全部'"
                 :class="[
                   'px-3 py-1 text-sm rounded transition-colors cursor-pointer',
                   selectedFilterLetter === '全部'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-slate-300 dark:hover:bg-slate-600'
-                ]">
+                ]"
+                @click="selectedFilterLetter = '全部'">
                 全部
               </button>
               <button
                 v-for="letter in linkFirstLetters"
                 :key="letter"
                 type="button"
-                @click="selectedFilterLetter = letter"
                 :class="[
                   'px-3 py-1 text-sm rounded transition-colors cursor-pointer',
                   selectedFilterLetter === letter
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-slate-300 dark:hover:bg-slate-600'
-                ]">
+                ]"
+                @click="selectedFilterLetter = letter">
                 {{ letter }}
               </button>
             </div>
@@ -813,11 +812,11 @@ onUnmounted(() => {
               <div
                 v-for="link in filteredLinks"
                 :key="link.id"
-                @click="selectLink(link)"
-                class="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                class="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                @click="selectLink(link)">
                 <div class="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-semibold shrink-0 overflow-hidden">
                   <template v-if="link.avatar">
-                    <img :src="link.avatar" :alt="link.name" class="w-full h-full object-cover" />
+                    <img :src="link.avatar" :alt="link.name" class="w-full h-full object-cover" >
                   </template>
                   <template v-else>
                     {{ link.name?.charAt(0).toUpperCase() }}
@@ -848,7 +847,7 @@ onUnmounted(() => {
                 v-model="formData.name"
                 type="text"
                 :placeholder="formMode === 'edit' ? '新名称 *' : '名称 *'"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
             </div>
             <div>
               <label for="link-url" class="sr-only">链接</label>
@@ -857,7 +856,7 @@ onUnmounted(() => {
                 v-model="formData.link"
                 type="text"
                 :placeholder="formMode === 'edit' ? '新链接 *' : '链接 *'"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
             </div>
           </div>
 
@@ -869,7 +868,7 @@ onUnmounted(() => {
                 v-model="formData.sort"
                 type="text"
                 placeholder="分类"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
             </div>
             <div>
               <label for="link-avatar" class="sr-only">头像</label>
@@ -878,7 +877,7 @@ onUnmounted(() => {
                 v-model="formData.avatar"
                 type="text"
                 placeholder="头像"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
+                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
             </div>
           </div>
 
@@ -890,7 +889,7 @@ onUnmounted(() => {
               v-model="formData.blogLinkUrl"
               type="text"
               placeholder="能看到友情链接的地址 *"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" />
+              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
           </div>
         </template>
 
@@ -907,8 +906,8 @@ onUnmounted(() => {
         <button
           v-if="showForceSubmit && formMode === 'apply' && !submitting"
           type="button"
-          @click="() => handleSubmit(true)"
-          class="ml-2 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors">
+          class="ml-2 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors"
+          @click="() => handleSubmit(true)">
           仍然提交
         </button>
       </form>

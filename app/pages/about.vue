@@ -12,7 +12,7 @@
         <div class="pl-8">
           <div
             class="w-48 h-48 rounded-full border-6 border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden mb-8 transition-colors duration-300">
-            <img :src="siteConfig.siteAvatarPath" :alt="siteConfig.ownerName" class="w-full h-full object-cover" />
+            <img :src="siteConfig.siteAvatarPath" :alt="siteConfig.ownerName" class="w-full h-full object-cover" >
           </div>
           <h1
             class="text-slate-900 dark:text-slate-100 text-[clamp(3rem,8vw,6rem)] font-black tracking-tight leading-[.9] mb-4 transition-colors duration-300">
@@ -57,21 +57,21 @@
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="aspect-video rounded-2xl overflow-hidden relative">
-            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/jixi.webp')" alt="沈阳" />
+            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/jixi.webp')" alt="沈阳" >
             <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="text-xs mb-1 opacity-80">来自</div>
               <div class="text-lg font-semibold">黑龙江省鸡西市</div>
             </div>
           </div>
           <div class="aspect-video rounded-2xl overflow-hidden relative">
-            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/ysu.webp')" alt="燕山大学" />
+            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/ysu.webp')" alt="燕山大学" >
             <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="text-xs mb-1 opacity-80">毕业于</div>
               <div class="text-lg font-semibold">燕山大学</div>
             </div>
           </div>
           <div class="aspect-video rounded-2xl overflow-hidden relative">
-            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/shenyang.webp')" alt="秦皇岛" />
+            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/shenyang.webp')" alt="秦皇岛" >
             <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="text-xs mb-1 opacity-80">现居</div>
               <div class="text-lg font-semibold">辽宁省沈阳市</div>
@@ -95,142 +95,142 @@
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/regex.svg')"
                 alt="Regex"
-                title="正则表达式" />
+                title="正则表达式" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/c.svg')"
                 alt="C"
-                title="C" />
+                title="C" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/cpp.svg')"
                 alt="C++"
-                title="C++" />
+                title="C++" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/java.svg')"
                 alt="Java"
-                title="Java" />
+                title="Java" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/sqlite.svg')"
                 alt="SQLite"
-                title="SQLite" />
+                title="SQLite" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/mysql.svg')"
                 alt="MySQL"
-                title="MySQL" />
+                title="MySQL" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/html.svg')"
                 alt="HTML"
-                title="HTML" />
+                title="HTML" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/css.svg')"
                 alt="CSS"
-                title="CSS" />
+                title="CSS" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/js.svg')"
                 alt="JavaScript"
-                title="JavaScript" />
+                title="JavaScript" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/php.svg')"
                 alt="PHP"
-                title="PHP" />
+                title="PHP" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/md.svg')"
                 alt="Markdown"
-                title="Markdown" />
+                title="Markdown" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/latex.svg')"
                 alt="LaTeX"
-                title="LaTeX" />
+                title="LaTeX" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/python.svg')"
                 alt="Python"
-                title="Python" />
+                title="Python" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/qt.svg')"
                 alt="Qt"
-                title="Qt" />
+                title="Qt" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/regex.svg')"
                 alt="Regex"
-                title="正则表达式" />
+                title="正则表达式" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/c.svg')"
                 alt="C"
-                title="C" />
+                title="C" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/cpp.svg')"
                 alt="C++"
-                title="C++" />
+                title="C++" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/java.svg')"
                 alt="Java"
-                title="Java" />
+                title="Java" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/sqlite.svg')"
                 alt="SQLite"
-                title="SQLite" />
+                title="SQLite" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/mysql.svg')"
                 alt="MySQL"
-                title="MySQL" />
+                title="MySQL" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/html.svg')"
                 alt="HTML"
-                title="HTML" />
+                title="HTML" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/css.svg')"
                 alt="CSS"
-                title="CSS" />
+                title="CSS" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/js.svg')"
                 alt="JavaScript"
-                title="JavaScript" />
+                title="JavaScript" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/php.svg')"
                 alt="PHP"
-                title="PHP" />
+                title="PHP" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/md.svg')"
                 alt="Markdown"
-                title="Markdown" />
+                title="Markdown" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/latex.svg')"
                 alt="LaTeX"
-                title="LaTeX" />
+                title="LaTeX" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/python.svg')"
                 alt="Python"
-                title="Python" />
+                title="Python" >
               <img
                 class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
                 :src="publicAsset('/skills/qt.svg')"
                 alt="Qt"
-                title="Qt" />
+                title="Qt" >
             </div>
           </div>
         </div>
@@ -299,7 +299,7 @@
         <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-8 transition-colors duration-300">
           <div class="flex items-center gap-8 mb-8">
             <div class="shrink-0 max-sm:hidden">
-              <img :src="publicAsset('/imgs/enfj.svg')" alt="ENTJ" class="w-32 h-32 object-contain" />
+              <img :src="publicAsset('/imgs/enfj.svg')" alt="ENTJ" class="w-32 h-32 object-contain" >
             </div>
             <div class="flex-1">
               <div class="text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">主人公 · ENTJ-A</div>
@@ -330,7 +330,7 @@
               <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.extroversion + '%' }"></div>
+                  :style="{ width: animatedMbtiData.extroversion + '%' }"/>
               </div>
               <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.extroversion }}%
@@ -341,7 +341,7 @@
               <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.intuition + '%' }"></div>
+                  :style="{ width: animatedMbtiData.intuition + '%' }"/>
               </div>
               <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.intuition }}%
@@ -352,7 +352,7 @@
               <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.thinking + '%' }"></div>
+                  :style="{ width: animatedMbtiData.thinking + '%' }"/>
               </div>
               <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.thinking }}%
@@ -363,7 +363,7 @@
               <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.prospecting + '%' }"></div>
+                  :style="{ width: animatedMbtiData.prospecting + '%' }"/>
               </div>
               <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.prospecting }}%
@@ -374,7 +374,7 @@
               <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
                 <div
                   class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.assertive + '%' }"></div>
+                  :style="{ width: animatedMbtiData.assertive + '%' }"/>
               </div>
               <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
                 {{ animatedMbtiData.assertive }}%
@@ -469,7 +469,7 @@
           <div class="absolute -top-36 left-0 text-[12em] text-slate-200 dark:text-slate-700 size-fit -z-1 opacity-55 transition-colors duration-300">
             "
           </div>
-          山海寻梦，不觉其远<br />前路迢迢，阔步而行
+          山海寻梦，不觉其远<br >前路迢迢，阔步而行
         </div>
         <div class="text-slate-600 dark:text-slate-400 mt-6 pl-12 relative transition-colors duration-300">—— 习近平 · 二〇二六年新年贺词</div>
       </div>
@@ -546,7 +546,7 @@
           <div class="bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden transition-colors duration-300">
             <div
               class="bg-blue-600 dark:bg-blue-400 h-full rounded-full transition-all duration-1800 ease-out"
-              :style="{ width: pledgeBarWidth + '%' }"></div>
+              :style="{ width: pledgeBarWidth + '%' }"/>
           </div>
         </div>
         <a
@@ -583,7 +583,7 @@
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
               你所看到的这一版网站是我制作的第二款主题，第一款框架，整体采用 Nuxt 4 编写，我给这个 CMS 取名为 Glass。
             </p>
-            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300"></p>
+            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300"/>
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
               这款主题从 2026 年 4 月 1 日开始制作，保留了之前 Typecho 版本的绝大多数功能，可以让我在更改技术栈的同时，继续使用之前的功能。
             </p>
@@ -593,12 +593,13 @@
       </div>
     </div>
 
-    <div class="my-24 mx-4 w-px"></div>
+    <div class="my-24 mx-4 w-px"/>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+
 import { siteConfig } from "~~/site.config";
 
 // 使用全局站点设置
@@ -642,9 +643,6 @@ const animatedStats = ref({
   tagsNum: 0,
 });
 
-// 模拟内容
-const content = ref("");
-
 // MBTI数据
 const mbtiData = ref({
   extroversion: 70,
@@ -675,7 +673,7 @@ const pledgeBarWidth = ref(0);
 
 // 数字动画函数
 const animateNumber = (from: number, to: number, duration: number, callback: (value: number) => void) => {
-  let start = performance.now();
+  const start = performance.now();
   let current = from;
   const range = to - from;
 

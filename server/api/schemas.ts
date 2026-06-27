@@ -116,6 +116,7 @@ export const SiteSettingsSchema = z.object({
   postPageSize: z.number(),
   feedCacheInterval: z.number(),
   linkAutoApprove: z.boolean(),
+  musicPlaylistId: z.string(),
 });
 
 export const SiteSettingsResponseSchema = z.object({

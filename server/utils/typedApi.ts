@@ -1,4 +1,4 @@
-import type { H3Event, EventHandler } from "h3";
+import type { H3Event } from "h3";
 import type { z, ZodType } from "zod";
 import { createError, defineEventHandler, getQuery, readBody } from "h3";
 
@@ -37,7 +37,7 @@ export function defineTypedApiHandler<
 >(
   definition: TypedApiDefinition<TQuery, TBody, TResponse>,
   handler: (event: H3Event, validated: Validated<TQuery, TBody>) => TResult | Promise<TResult>,
-): EventHandler {
+) {
   return defineEventHandler(async (event: H3Event) => {
     let validatedQuery: Infer<TQuery> = undefined as Infer<TQuery>;
     let validatedBody: Infer<TBody> = undefined as Infer<TBody>;

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
+import { computed, nextTick, onMounted, watch } from "vue";
+
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
-import { computed, nextTick, onMounted, watch } from "vue";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -144,7 +145,7 @@ onUnmounted(() => {
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header class="animate-fade-in" ref="fancyboxContainer">
+    <header ref="fancyboxContainer" class="animate-fade-in">
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"
@@ -153,7 +154,7 @@ onUnmounted(() => {
         alt="封面"
         loading="lazy"
         class="w-full aspect-video max-h-37.5 object-cover border border-gray-200 dark:border-gray-700 mb-2.5 cursor-zoom-in bg-gray-100 dark:bg-gray-800"
-        @error="handleCoverError" />
+        @error="handleCoverError" >
 
       <!-- 标题 -->
       <h1 class="text-[3em] font-extrabold mb-2.5">留言</h1>

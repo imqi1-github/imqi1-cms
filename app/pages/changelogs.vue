@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+
 import { siteConfig } from "~~/site.config";
 import {
   CHANGELOG_TYPES,
@@ -196,7 +197,7 @@ usePageSeo({
 
     <!-- 加载状态 -->
     <div v-if="pending" class="flex items-center justify-center py-20">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
       <p class="ml-3 text-slate-500">加载中...</p>
     </div>
 
@@ -218,14 +219,14 @@ usePageSeo({
           <button
             v-for="classType in classTypes"
             :key="classType.label"
-            @click="classType.type === null ? clearFilter() : selectType(classType.type)"
+            v-tooltip.right="classType.label"
             :class="[
               'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
               (selectedType === null && classType.type === null) || selectedType === classType.type
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
-            v-tooltip.right="classType.label"
+            @click="classType.type === null ? clearFilter() : selectType(classType.type)"
           >
             <Icon :name="classType.icon" class="size-4 lg:size-5" />
           </button>
@@ -234,9 +235,9 @@ usePageSeo({
 
       <!-- 右侧日志列表 -->
       <main class="flex-1 min-w-0">
-        <div class="space-y-8" :key="animatinKey">
+        <div :key="animatinKey" class="space-y-8">
           <section
-            v-for="(group, index) in filteredData"
+            v-for="group in filteredData"
             :key="`${group.year}-${group.month}`"
             class="animate-fade-in"
           >

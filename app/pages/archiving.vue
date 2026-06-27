@@ -93,7 +93,7 @@ onMounted(() => {
 
     <!-- 加载状态 -->
     <div v-if="pending" class="flex items-center justify-center py-20">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
       <p class="ml-3 text-muted-foreground">加载中...</p>
     </div>
 
@@ -113,8 +113,8 @@ onMounted(() => {
         :style="{ animationDelay: `${index * 50}ms` }">
         <!-- 月份标题 - 可点击 -->
         <button
-          @click="toggleMonth(group.year, group.month)"
-          class="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+          class="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer"
+          @click="toggleMonth(group.year, group.month)">
           <div class="flex items-center gap-2">
             <Icon
               :name="isMonthExpanded(group.year, group.month) ? 'lucide:chevron-down' : 'lucide:chevron-right'"

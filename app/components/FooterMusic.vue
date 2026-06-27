@@ -17,7 +17,7 @@ const btnShell = computed(() =>
 // 解析音乐播放列表 ID
 const playlistConfig = computed(() => {
   const config = settings.value?.musicPlaylistId || "9255074836 || netease";
-  const [id, server = "netease"] = config.split("||").map((s: string) => s.trim());
+  const [id = "", server = "netease"] = config.split("||").map((s: string) => s.trim());
   return { id, server };
 });
 

@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "prebuild": "bun tsx scripts/generate-api-types.ts && node scripts/generate-build-hash.mjs",
+    "prebuild": "node scripts/generate-build-hash.mjs",
     "serve": "node scripts/file-server.mjs",
     "build": "nuxt build",
     "postbuild": "node scripts/copy-data.mjs && node scripts/update-sw-cdn.mjs",
@@ -11,7 +11,6 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "api:types": "tsx scripts/generate-api-types.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",

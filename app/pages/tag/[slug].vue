@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
@@ -17,7 +18,7 @@ const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
 const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取标签文章数据
-const { data, pending, error, refresh } = await useFetch(`/api/tag/${slug}/posts`, {
+const { data, pending, error } = await useFetch(`/api/tag/${slug}/posts`, {
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -244,7 +245,7 @@ onMounted(() => {
     <div class="max-w-225 mx-auto">
       <!-- 加载中 - 仅首次加载时显示 -->
       <div v-if="pending && !tag" class="py-20 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
         <p class="mt-2 text-slate-500">加载中...</p>
       </div>
 
@@ -290,7 +291,7 @@ onMounted(() => {
                 :src="post.covers[0]?.url"
                 :alt="post.title"
                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                loading="lazy" />
+                loading="lazy" >
               <!-- 多封面角标 -->
               <div
                 v-if="post.many_covers && post.covers.length > 1"
@@ -324,17 +325,17 @@ onMounted(() => {
               </NuxtLink>
 
               <div class="text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
-                <span class="flex items-center" v-tooltip="`最后更新时间`">
+                <span v-tooltip="`最后更新时间`" class="flex items-center">
                   <Icon name="ri-time-line" class="size-4" />
                   {{ formatDate(post.updated) }}
                 </span>
-                <span v-if="post.categoryName" class="flex items-center" v-tooltip="`分类`">
+                <span v-if="post.categoryName" v-tooltip="`分类`" class="flex items-center">
                   <Icon name="ri:menu-line" class="size-4" />
                   <NuxtLink :to="`/category/${post.categorySlug}`" class="hover:text-blue-600 dark:hover:text-blue-400 mr-1 transition-colors">
                     {{ post.categoryName }}
                   </NuxtLink>
                 </span>
-                <span class="flex items-center" v-tooltip="`评论数量`">
+                <span v-tooltip="`评论数量`" class="flex items-center">
                   <Icon name="ri-chat-2-line" class="size-4" />
                   {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                 </span>
@@ -355,22 +356,22 @@ onMounted(() => {
             class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
             <div
-              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
+              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"/>
 
             <!-- 文章信息骨架 -->
             <div class="px-5 pb-2 pt-1 mt-auto">
               <!-- 标题骨架 -->
-              <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"></div>
+              <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"/>
 
               <!-- 信息骨架 -->
               <div class="flex items-center flex-wrap gap-2 my-1">
-                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
-                <div class="h-3 w-20 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
-                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
+                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
+                <div class="h-3 w-20 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
+                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
               </div>
 
               <!-- 描述骨架 -->
-              <div class="h-3.5 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse overflow-wrap break-word"></div>
+              <div class="h-3.5 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse overflow-wrap break-word"/>
             </div>
           </div>
         </div>
@@ -387,8 +388,8 @@ onMounted(() => {
       <div v-if="pagination && pagination.totalPages > 1" class="flex justify-center gap-2 mt-10">
         <button
           v-if="pagination.page > 1"
-          @click="goToPage(pagination.page - 1)"
-          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          @click="goToPage(pagination.page - 1)">
           <Icon name="ri-arrow-left-double-line" />
         </button>
 
@@ -396,8 +397,8 @@ onMounted(() => {
 
         <button
           v-if="pagination.page < pagination.totalPages"
-          @click="goToPage(pagination.page + 1)"
-          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          @click="goToPage(pagination.page + 1)">
           <Icon name="ri-arrow-right-double-line" />
         </button>
       </div>

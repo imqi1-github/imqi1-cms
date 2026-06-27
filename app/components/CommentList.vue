@@ -124,10 +124,10 @@ watch(
         commentInterval.value = Number(settings.commentInterval);
       }
       if (settings.commentRequireMail !== undefined) {
-        requireMail.value = settings.commentRequireMail === true || settings.commentRequireMail === 'true';
+        requireMail.value = settings.commentRequireMail === true;
       }
       if (settings.commentRequireLink !== undefined) {
-        requireLink.value = settings.commentRequireLink === true || settings.commentRequireLink === 'true';
+        requireLink.value = settings.commentRequireLink === true;
       }
     }
   },
@@ -153,10 +153,10 @@ onMounted(async () => {
       commentInterval.value = Number(settings.commentInterval);
     }
     if (settings.commentRequireMail !== undefined) {
-      requireMail.value = settings.commentRequireMail === true || settings.commentRequireMail === 'true';
+      requireMail.value = settings.commentRequireMail === true;
     }
     if (settings.commentRequireLink !== undefined) {
-      requireLink.value = settings.commentRequireLink === true || settings.commentRequireLink === 'true';
+      requireLink.value = settings.commentRequireLink === true;
     }
   }
 
@@ -188,7 +188,7 @@ function handleCommentSubmitted() {
   <div class="mt-5 min-h-50">
     <!-- 加载状态（首次加载） -->
     <div v-if="loading" class="py-8 text-center">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
       <p class="mt-2 text-slate-500">加载评论中...</p>
     </div>
 
@@ -196,14 +196,14 @@ function handleCommentSubmitted() {
     <div v-else-if="error" class="py-8 text-center">
       <Icon name="lucide:alert-circle" class="size-8 text-red-500 mx-auto mb-2" />
       <p class="text-red-500">{{ error }}</p>
-      <button @click="() => fetchComments()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">重试</button>
+      <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" @click="() => fetchComments()">重试</button>
     </div>
 
     <!-- 评论框（加载完成后显示） -->
     <template v-else>
       <!-- 刷新指示器 -->
       <div v-if="refreshing" class="py-2 text-center">
-        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"/>
       </div>
 
       <!-- 默认评论框 -->
@@ -266,11 +266,11 @@ function handleCommentSubmitted() {
           <!-- 加载更多 -->
           <div v-if="hasMore" class="mt-6 text-center">
             <button
-              @click="loadMore"
               :disabled="loadingMore"
-              class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+              class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              @click="loadMore">
               <div v-if="loadingMore" class="flex items-center gap-2">
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"/>
                 加载中...
               </div>
               <span v-else>加载更多评论</span>

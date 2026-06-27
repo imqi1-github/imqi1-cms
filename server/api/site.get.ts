@@ -22,10 +22,32 @@ type SettingKey =
   | "commentRequireLink"
   | "postPageSize"
   | "feedCacheInterval"
-  | "linkAutoApprove";
+  | "linkAutoApprove"
+  | "musicPlaylistId";
 
-// 2. 强类型 defaults
-const defaults: Record<SettingKey, string | boolean | number> = {
+// 2. 精确的站点设置类型（与 SiteSettingsSchema 对齐，供 InternalApi 推断）
+interface SiteSettings {
+  siteName: string;
+  siteUrl: string;
+  siteDesc: string;
+  siteIcp: string;
+  homeCustomText: string;
+  photoCategorySlug: string;
+  commentEnabled: boolean;
+  commentAvatarService: string;
+  commentPageSize: number;
+  commentMaxLevel: number;
+  commentInterval: number;
+  commentRequireMail: boolean;
+  commentRequireLink: boolean;
+  postPageSize: number;
+  feedCacheInterval: number;
+  linkAutoApprove: boolean;
+  musicPlaylistId: string;
+}
+
+// 3. 强类型 defaults
+const defaults: SiteSettings = {
   siteName: siteConfig.siteName,
   siteUrl: siteConfig.siteUrl,
   siteDesc: siteConfig.seo.description,
@@ -42,19 +64,23 @@ const defaults: Record<SettingKey, string | boolean | number> = {
   postPageSize: 12,
   feedCacheInterval: 8,
   linkAutoApprove: false,
+  musicPlaylistId: "9255074836 || netease",
 };
 
-// 3. DB 返回类型收紧
+// 4. DB 返回类型收紧
 type MetaItem = {
   key: SettingKey;
   value: string;
 };
 
-function sanitizePublicSettings(settings: Record<SettingKey, string | boolean | number>): Record<SettingKey, string | boolean | number> {
+// 可变的中间状态：值类型是联合体，允许循环里按 key 写入；最后断言为精确 SiteSettings
+type MutableSettings = Record<SettingKey, string | boolean | number>;
+
+function sanitizePublicSettings(settings: MutableSettings): SiteSettings {
   return {
     ...settings,
     homeCustomText: sanitizeHtml(String(settings.homeCustomText || "")),
-  };
+  } as SiteSettings;
 }
 
 export default defineTypedApiHandler(
@@ -72,7 +98,7 @@ export default defineTypedApiHandler(
         },
       })) as MetaItem[];
 
-      const settings: Record<SettingKey, string | boolean | number> = {
+      const settings: MutableSettings = {
         ...defaults,
       };
 

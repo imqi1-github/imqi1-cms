@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+
 import { siteConfig } from "~~/site.config";
 
 // 获取路由
 const route = useRoute();
-const router = useRouter();
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -88,7 +88,7 @@ const scrollToHeading = (id: string) => {
 };
 
 // 点击目录项，只滚动不更新 URL
-const handleTocClick = (id: string, text: string) => {
+const handleTocClick = (id: string) => {
   scrollToHeading(id);
 };
 
@@ -255,7 +255,7 @@ onUnmounted(() => {
   <div class="max-w-275 mx-auto">
     <!-- 加载状态 -->
     <div v-if="pending" class="flex items-center justify-center py-20">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
       <p class="ml-3 text-muted-foreground">加载中...</p>
     </div>
 
@@ -293,10 +293,9 @@ onUnmounted(() => {
         <aside class="toc-sidebar hidden lg:block w-39 shrink-0 order-first">
           <nav class="toc-nav sticky top-12 pt-12">
             <h3 class="px-4 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">目录</h3>
-            <ul class="space-y-1" v-if="showToc">
+            <ul v-if="showToc" class="space-y-1">
               <li v-for="item in tocItems" :key="item.id" class="wrap-anywhere overflow-hidden text-ellipsis">
                 <button
-                  @click="handleTocClick(item.id, item.text)"
                   :class="[
                     'w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200',
                     'hover:bg-slate-100 dark:hover:bg-slate-800',
@@ -304,7 +303,8 @@ onUnmounted(() => {
                       ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium'
                       : 'text-slate-600 dark:text-slate-400',
                   ]"
-                  :style="{ paddingLeft: `${(item.level - 1) * 0.75 + 0.25}rem` }">
+                  :style="{ paddingLeft: `${(item.level - 1) * 0.75 + 0.25}rem` }"
+                  @click="handleTocClick(item.id)">
                   {{ item.text }}
                 </button>
               </li>
@@ -313,7 +313,7 @@ onUnmounted(() => {
         </aside>
 
         <!-- 协议正文 -->
-        <div class="min-w-0 flex-1 opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body" v-html="page.renderedContent"></div>
+        <div class="min-w-0 flex-1 opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body" v-html="page.renderedContent"/>
       </div>
     </div>
   </div>
