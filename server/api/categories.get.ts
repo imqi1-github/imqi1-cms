@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
       })),
     };
   } catch (error) {
-    console.error("获取分类失败:", error);
+    console.error(error);
     return {
       success: false,
       data: [],

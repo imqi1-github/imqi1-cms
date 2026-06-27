@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     // 从 meta 表获取留言板关联的文章 ID
     const messagePostIdMeta = await prisma.informations.findUnique({
@@ -32,6 +32,7 @@ export default defineEventHandler(async event => {
       data: { postId: messagePostId },
     };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取留言板配置失败",

@@ -73,7 +73,7 @@ export default defineEventHandler(async event => {
     }
 
     // 记录详细的错误信息
-    console.error("删除用户失败:", error);
+    console.error(error);
 
     // 检查是否是外键约束错误
     if (error.code === 'P2003') {

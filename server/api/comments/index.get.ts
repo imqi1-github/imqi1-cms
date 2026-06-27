@@ -1,6 +1,29 @@
 import { prisma } from "#server/utils/prisma";
 import { getIpLocation } from "#server/utils/qqwry";
 
+// 评论查询结果类型（对应 findMany select 字段）
+interface CommentItem {
+  coid: number;
+  cid: number;
+  name: string;
+  mail: string | null;
+  link: string | null;
+  content: string;
+  create_time: Date;
+  status: number;
+  parent_id: number | null;
+  agent: string | null;
+  ip: string | null;
+}
+
+// 带 children 和额外字段的评论树节点
+interface CommentNode extends CommentItem {
+  children: CommentNode[];
+  parent_name: string | null;
+  location: string;
+  isp: string;
+}
+
 export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
@@ -41,8 +64,8 @@ export default defineEventHandler(async event => {
       },
     });
 
-    const commentMap = new Map<number, any>();
-    const rootComments: any[] = [];
+    const commentMap = new Map<number, CommentNode>();
+    const rootComments: CommentNode[] = [];
 
     // 批量查询 IP 归属地
     for (const comment of comments) {
@@ -57,17 +80,17 @@ export default defineEventHandler(async event => {
       if (!location) return "";
 
       // 去掉"中国"前缀；若 IP 数据只能定位到国家级，则保底显示「中国」。
-      let loc = location.replace(/^中国[–—\-]?/, "");
+      const loc = location.replace(/^中国[–—-]?/, "");
       if (!loc.trim() && location.startsWith("中国")) return "中国";
 
       // 按"–"或"—"或"-"分割
-      const parts = loc.split(/[–—\-]/).map(p => p.trim()).filter(p => p);
+      const parts = loc.split(/[–—-]/).map(p => p.trim()).filter(p => p);
 
       if (parts.length === 0) return "";
 
       // 优先返回城市（第2部分），没有城市则返回省份（第1部分）
       // parts[0] 通常是省份，parts[1] 通常是城市，parts[2] 是区县
-      let result = "";
+      let result: string;
       if (parts.length >= 2) {
         result = parts[1] ?? ""; // 例如：辽宁-沈阳-沈河区 → 沈阳
       } else {
@@ -134,6 +157,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
+    console.error(error);
     if (error instanceof Error) {
       throw createError({
         statusCode: 400,

@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     // 获取所有已发布的页面
     const pages = await prisma.posts.findMany({
@@ -67,7 +67,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error("获取站点地图失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取站点地图失败",

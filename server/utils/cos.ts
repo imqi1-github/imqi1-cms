@@ -49,7 +49,7 @@ async function getCosConfig(): Promise<CosConfig | null> {
       Region: config.cosRegion,
     };
   } catch (error) {
-    console.error("获取COS配置失败:", error);
+    console.error(error);
     return null;
   }
 }
@@ -101,7 +101,7 @@ async function getCosDomain(): Promise<{ source: string; cdn: string }> {
       cdn: domains.cosCdnDomain || "",
     };
   } catch (error) {
-    console.error("获取COS域名失败:", error);
+    console.error(error);
     return { source: "", cdn: "" };
   }
 }
@@ -295,7 +295,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[COS上传] 失败:", {
+      console.error({
         status: response.status,
         statusText: response.statusText,
         body: errorText,
@@ -317,7 +317,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
       url: fileUrl,
     };
   } catch (error: any) {
-    console.error("[COS上传] 异常:", error);
+    console.error(error);
     return {
       success: false,
       error: error.message || "COS上传失败",
@@ -361,7 +361,8 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
         try {
           const urlObj = new URL(fileUrl);
           filePath = urlObj.pathname;
-        } catch {
+        } catch (error) {
+          console.error(error);
           // 如果解析失败，使用默认逻辑
           filePath = "/" + fileUrl.split("/").slice(3).join("/");
         }
@@ -410,7 +411,7 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[COS删除] 失败:", {
+      console.error({
         status: response.status,
         statusText: response.statusText,
         body: errorText,
@@ -427,7 +428,7 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
       success: true,
     };
   } catch (error: any) {
-    console.error("[COS删除] 异常:", error);
+    console.error(error);
     return {
       success: false,
       error: error.message || "COS删除失败",

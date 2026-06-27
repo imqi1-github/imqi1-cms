@@ -52,6 +52,7 @@ export default defineEventHandler(async event => {
       message: "分类更新成功",
     };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新文章分类失败",

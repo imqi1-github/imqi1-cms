@@ -90,7 +90,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error("获取文章失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取文章列表失败",

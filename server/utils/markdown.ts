@@ -215,11 +215,13 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       } else if (className && !result.includes(`language-${className}`)) {
         result = restoreClassName(result);
       }
-    } catch {
+    } catch (error) {
+      console.error(error);
       token.info = "json";
       try {
         result = restoreClassName(defaultFence(tokens, idx, options, env, self));
-      } catch {
+      } catch (error2) {
+        console.error(error2);
         result = renderPlainCode();
       }
     } finally {

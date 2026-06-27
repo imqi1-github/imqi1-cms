@@ -26,6 +26,7 @@ export default defineEventHandler(async event => {
       },
     });
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取最新评论失败",

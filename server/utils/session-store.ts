@@ -85,7 +85,8 @@ export class FileSessionStore implements SessionStore {
       }
       fs.unlinkSync(filePath);
       return null;
-    } catch {
+    } catch (error) {
+      console.error(error);
       return null;
     }
   }
@@ -121,7 +122,8 @@ export class FileSessionStore implements SessionStore {
           if (session.userId === userId) {
             fs.unlinkSync(filePath);
           }
-        } catch {
+        } catch (error) {
+          console.error(error);
           // 忽略错误
         }
       }
@@ -144,7 +146,8 @@ export class FileSessionStore implements SessionStore {
           if (session.expires < now) {
             fs.unlinkSync(filePath);
           }
-        } catch {
+        } catch (error) {
+          console.error(error);
           // 忽略错误
         }
       }
@@ -174,7 +177,8 @@ export class DatabaseSessionStore implements SessionStore {
         authCode: session.authCode,
         expires: session.expires.getTime(),
       };
-    } catch {
+    } catch (error) {
+      console.error(error);
       return null;
     }
   }
@@ -199,7 +203,8 @@ export class DatabaseSessionStore implements SessionStore {
   async delete(sessionId: string): Promise<void> {
     try {
       await prisma.sessions.delete({ where: { id: sessionId } });
-    } catch {
+    } catch (error) {
+      console.error(error);
       // 忽略错误
     }
   }
@@ -260,7 +265,8 @@ export async function getSessionConfig(): Promise<{ storeType: SessionStoreType 
     });
     const storeType = (meta?.value as SessionStoreType) || "file";
     return { storeType };
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { storeType: "file" };
   }
 }

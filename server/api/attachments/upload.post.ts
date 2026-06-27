@@ -1,12 +1,13 @@
+import { randomUUID } from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+
 import { getUser } from "#server/lib/auth";
 import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
 import { uploadToUpYun, type ImageProcessOptions } from "#server/utils/upyun";
 import { validateAttachmentData } from "#server/utils/validation";
-import { randomUUID } from "crypto";
-import * as fs from "fs";
-import * as path from "path";
 
 // 允许的文件类型
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
@@ -218,12 +219,7 @@ export default defineEventHandler(async event => {
 
       // 如果是图片且配置了后缀，传递给上传函数
       const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-      const result = await uploadToCOS(
-        buffer,
-        fileName,
-        file.type,
-        isImage ? imageSuffix : undefined
-      );
+      const result = await uploadToCOS(buffer, fileName, file.type, isImage ? imageSuffix : undefined);
 
       if (!result.success) {
         throw createError({
@@ -270,15 +266,12 @@ export default defineEventHandler(async event => {
         storage: uploadLocation,
       },
     };
-  } catch (error: any) {
-    // 如果是已知的错误，直接抛出
-    if (error.statusCode) {
-      throw error;
-    }
+  } catch (error) {
+    console.error(error);
 
     throw createError({
       statusCode: 500,
-      message: error.message || "上传失败",
+      message: "获取上传附件失败",
     });
   }
 });

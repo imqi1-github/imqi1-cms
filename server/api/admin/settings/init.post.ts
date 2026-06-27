@@ -63,7 +63,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error("初始化配置失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "初始化配置失败",

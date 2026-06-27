@@ -117,6 +117,7 @@ export default defineEventHandler(async event => {
       data: updatedUser,
     };
   } catch (error: any) {
+    console.error(error);
     if (error.statusCode === 404 || error.statusCode === 400) {
       throw error;
     }

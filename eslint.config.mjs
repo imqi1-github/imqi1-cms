@@ -42,7 +42,6 @@ export default withNuxt({
     // =========================
     // 通用 JS/TS
     // =========================
-    "no-console": "warn",
     '@typescript-eslint/no-unused-vars': 'error'
   },
 });

@@ -40,6 +40,7 @@ export default defineEventHandler(async event => {
       create_time: post.create_time,
     }));
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取热门文章失败",

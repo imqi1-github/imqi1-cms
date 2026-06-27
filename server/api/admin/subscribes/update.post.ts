@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
       data: result,
     };
   } catch (error) {
-    console.error('[API] 更新订阅失败:', error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: '更新订阅失败',

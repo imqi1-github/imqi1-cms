@@ -71,7 +71,8 @@ function getInstance(): IPDB | null {
   try {
     ipdbInstance = new IPDB(dbPath);
     return ipdbInstance;
-  } catch {
+  } catch (error) {
+    console.error(error);
     dbDisabled = true;
     return null;
   }
@@ -160,7 +161,8 @@ export async function queryIpLocation(ip: string): Promise<IpDetail | null> {
     const detail = result.code === 0 && result.data ? toDetail(result.data as IpdbData) : null;
     setCached(normalizedIp, detail);
     return detail;
-  } catch {
+  } catch (error) {
+    console.error(error);
     setCached(normalizedIp, null);
     return null;
   }

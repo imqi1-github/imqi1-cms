@@ -77,6 +77,7 @@ export default defineEventHandler(async event => {
       data: modificationLink,
     };
   } catch (error) {
+    console.error(error);
     if (error instanceof Error) {
       throw createError({
         statusCode: 400,

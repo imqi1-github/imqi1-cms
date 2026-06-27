@@ -25,6 +25,7 @@ export default defineEventHandler(async event => {
 
     return await sendTestEmail(to)
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: error instanceof Error ? error.message : '发送测试邮件失败',

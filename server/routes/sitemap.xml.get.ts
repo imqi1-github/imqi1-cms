@@ -272,7 +272,7 @@ ${urls.join("\n")}
 
     return xml;
   } catch (error) {
-    console.error("[sitemap] 生成 sitemap 失败:", error);
+    console.error(error);
 
     // 即使出错也返回基本的 sitemap
     const config = useRuntimeConfig();

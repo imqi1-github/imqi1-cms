@@ -54,6 +54,7 @@ export default defineEventHandler(async event => {
       message: "标签更新成功",
     };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新文章标签失败",

@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     const links = await prisma.links.findMany({
       where: {
@@ -25,6 +25,7 @@ export default defineEventHandler(async event => {
       data: links
     };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取友链列表失败",

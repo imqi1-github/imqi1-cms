@@ -19,7 +19,8 @@ export function parseCovers(
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return [];
   }
 

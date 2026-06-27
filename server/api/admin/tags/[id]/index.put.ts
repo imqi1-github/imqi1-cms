@@ -47,6 +47,7 @@ export default defineEventHandler(async event => {
     });
     return tag;
   } catch (error: any) {
+    console.error(error);
     if (error.code === "P2025") {
       throw createError({
         statusCode: 404,

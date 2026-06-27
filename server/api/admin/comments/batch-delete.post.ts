@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
       count: result.count,
     };
   } catch (error) {
-    console.error("批量删除评论失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "批量删除失败",

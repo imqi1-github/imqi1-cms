@@ -1,7 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     const meta = await prisma.informations.findMany({
       where: {
@@ -16,12 +16,13 @@ export default defineEventHandler(async event => {
       siteUrl: siteConfig.siteUrl,
     };
 
-    meta.forEach((meta: any) => {
+    meta.forEach(meta => {
       settings[meta.key] = meta.value;
     });
 
     return settings;
   } catch (error) {
+    console.error(error);
     return {
       siteName: siteConfig.siteName,
       siteUrl: siteConfig.siteUrl,

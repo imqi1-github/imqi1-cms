@@ -109,7 +109,8 @@ function readWasmFile(): Buffer {
   for (const path of WASM_PATHS) {
     try {
       return readFileSync(path);
-    } catch {
+    } catch (error) {
+      console.error(error);
       // 兼容 .output/server 运行目录与源码开发目录。
     }
   }
@@ -131,7 +132,8 @@ function getCaptchaFont(): Uint8Array | undefined {
     try {
       captchaFont = readFileSync(path);
       return captchaFont;
-    } catch {
+    } catch (error) {
+      console.error(error);
       // 兼容开发目录与 .output/server 运行目录，找不到则尝试下一个路径。
     }
   }

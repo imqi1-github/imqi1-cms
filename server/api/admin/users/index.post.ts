@@ -74,6 +74,7 @@ export default defineEventHandler(async event => {
     });
     return newUser;
   } catch (error: any) {
+    console.error(error);
     if (error.statusCode === 400) {
       throw error;
     }

@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
       data: relations.map(r => r.metas),
     };
   } catch (error) {
-    console.error("获取文章分类失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取文章分类失败",

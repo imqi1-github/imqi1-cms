@@ -1,7 +1,7 @@
-import {prisma} from "#server/utils/prisma";
-import {notifyFriendLinkApplication} from "#server/utils/mail";
-import {validateLinkData} from "#server/utils/validation";
-import {siteConfig} from "~~/site.config";
+import { prisma } from "#server/utils/prisma";
+import { notifyFriendLinkApplication } from "#server/utils/mail";
+import { validateLinkData } from "#server/utils/validation";
+import { siteConfig } from "~~/site.config";
 
 // 检测页面是否包含指定链接
 async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promise<boolean> {
@@ -10,12 +10,12 @@ async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promis
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
 
     const response = await fetch(pageUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       },
       signal: controller.signal,
-      redirect: 'follow',
+      redirect: "follow",
     });
 
     clearTimeout(timeoutId);
@@ -30,8 +30,8 @@ async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promis
     // 检查页面中是否包含本站链接（完全匹配数据库中的URL）
     const pageLower = html.toLowerCase();
     return pageLower.includes(targetUrl.toLowerCase());
-  } catch (error: any) {
-    console.error('检查友链页面出错:', error.message);
+  } catch (error) {
+    console.error(error);
     return false;
   }
 }
@@ -79,7 +79,8 @@ export default defineEventHandler(async event => {
       // 验证友链地址是否为有效URL
       try {
         new URL(body.blogLinkUrl);
-      } catch {
+      } catch (error) {
+        console.error(error);
         throw createError({
           statusCode: 400,
           message: "友链地址不是有效的URL",
@@ -90,17 +91,17 @@ export default defineEventHandler(async event => {
     // 获取后台设置
     const settings = await prisma.informations.findMany({
       where: {
-        key: { in: ['linkAutoApprove', 'siteUrl'] }
-      }
+        key: { in: ["linkAutoApprove", "siteUrl"] },
+      },
     });
 
     const settingsMap: Record<string, string> = {};
-    settings.forEach((s: any) => {
+    settings.forEach((s) => {
       settingsMap[s.key] = s.value;
     });
 
-    const linkAutoApprove = settingsMap['linkAutoApprove'] === 'true';
-    const siteUrl = settingsMap['siteUrl'] || siteConfig.siteUrl;
+    const linkAutoApprove = settingsMap["linkAutoApprove"] === "true";
+    const siteUrl = settingsMap["siteUrl"] || siteConfig.siteUrl;
 
     // 判断是否强制提交（跳过检测，直接进入待审核）
     const forceSubmit = body.forceSubmit === true;
@@ -113,14 +114,14 @@ export default defineEventHandler(async event => {
       const hasBacklink = await checkPageContainsLink(body.blogLinkUrl, siteUrl);
 
       if (hasBacklink) {
-        console.log('检测到友链，自动通过申请');
+        console.log("检测到友链，自动通过申请");
         autoApproved = true;
       } else {
         // 检测失败，返回错误信息
         return {
           code: 400,
           message: "链接检测失败，请检查是否正确添加本站友链",
-          needRetry: true // 标识需要重试
+          needRetry: true, // 标识需要重试
         };
       }
     }
@@ -132,8 +133,8 @@ export default defineEventHandler(async event => {
         link: body.link.trim(),
         desc: body.sort?.trim() || null,
         avatar: body.avatar?.trim() || null,
-        enabled: autoApproved // 如果检测到友链则自动启用
-      }
+        enabled: autoApproved, // 如果检测到友链则自动启用
+      },
     });
 
     // 友链申请通知 - 通知站长
@@ -142,12 +143,11 @@ export default defineEventHandler(async event => {
 
     return {
       code: 200,
-      message: autoApproved
-        ? "系统已检测到贵站已添加本站友链，申请已自动通过"
-        : "申请友链成功，等待管理员审核",
-      data: link
+      message: autoApproved ? "系统已检测到贵站已添加本站友链，申请已自动通过" : "申请友链成功，等待管理员审核",
+      data: link,
     };
   } catch (error) {
+    console.error(error);
     if (error instanceof Error) {
       throw createError({
         statusCode: 400,

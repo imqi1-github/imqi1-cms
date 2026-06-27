@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { CITY_COORDS } from "~~/shared/city-coords";

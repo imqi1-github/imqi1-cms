@@ -318,7 +318,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error("获取首页数据失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取首页数据失败",

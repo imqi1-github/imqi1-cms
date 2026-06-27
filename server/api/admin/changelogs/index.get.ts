@@ -24,6 +24,7 @@ export default defineEventHandler(async event => {
       createTime: log.create_time,
     }));
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取更新日志失败",

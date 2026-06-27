@@ -1,17 +1,17 @@
-import { XMLParser } from 'fast-xml-parser';
-import { prisma } from './prisma';
+import { XMLParser } from "fast-xml-parser";
+import { prisma } from "./prisma";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
-  attributeNamePrefix: '_',
-  textNodeName: '#text',
+  attributeNamePrefix: "_",
+  textNodeName: "#text",
 });
 
 // 提取文本内容（处理解析后的对象或字符串）
 function getTextValue(value: any): string | undefined {
   if (value === null || value === undefined) return undefined;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && value['#text']) return value['#text'];
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value["#text"]) return value["#text"];
   return String(value);
 }
 
@@ -19,7 +19,7 @@ function getTextValue(value: any): string | undefined {
 function truncateWithEllipsis(text: string | undefined, maxLength: number): string | undefined {
   if (!text) return undefined;
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
+  return text.substring(0, maxLength) + "...";
 }
 
 // 带超时的fetch
@@ -30,13 +30,14 @@ async function fetchWithTimeout(url: string, timeout = 30000): Promise<Response>
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; RSS Reader)',
+        "User-Agent": "Mozilla/5.0 (compatible; RSS Reader)",
       },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
     return response;
   } catch (error) {
+    console.error(error);
     clearTimeout(timeoutId);
     throw error;
   }
@@ -71,8 +72,8 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       for (const item of rssItems) {
         // 处理 atom:link 可能是数组
         let link = getTextValue(item.link);
-        if (!link && item['atom:link']) {
-          const atomLinks = Array.isArray(item['atom:link']) ? item['atom:link'] : [item['atom:link']];
+        if (!link && item["atom:link"]) {
+          const atomLinks = Array.isArray(item["atom:link"]) ? item["atom:link"] : [item["atom:link"]];
           for (const al of atomLinks) {
             if (al._href) {
               link = al._href;
@@ -82,11 +83,11 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
         }
 
         items.push({
-          title: getTextValue(item.title) || 'Untitled',
-          link: link || '',
+          title: getTextValue(item.title) || "Untitled",
+          link: link || "",
           description: getTextValue(item.description),
-          content: getTextValue(item['content:encoded']) || getTextValue(item.content),
-          author: getTextValue(item.author) || getTextValue(item['dc:creator']),
+          content: getTextValue(item["content:encoded"]) || getTextValue(item.content),
+          author: getTextValue(item.author) || getTextValue(item["dc:creator"]),
           pubDate: getTextValue(item.pubDate) ? new Date(getTextValue(item.pubDate)!) : undefined,
         });
       }
@@ -96,7 +97,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       const atomEntries = Array.isArray(feed.feed.entry) ? feed.feed.entry : [feed.feed.entry];
       for (const entry of atomEntries) {
         // 处理 link 可能是数组或对象
-        let link = '';
+        let link = "";
         if (Array.isArray(entry.link)) {
           for (const l of entry.link) {
             if (l._href) {
@@ -109,12 +110,12 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
         }
 
         // 处理 author
-        let author = '';
+        let author = "";
         if (entry.author) {
           if (Array.isArray(entry.author)) {
-            author = getTextValue(entry.author[0]?.name) ?? '';
+            author = getTextValue(entry.author[0]?.name) ?? "";
           } else {
-            author = getTextValue(entry.author.name) ?? '';
+            author = getTextValue(entry.author.name) ?? "";
           }
         }
 
@@ -122,8 +123,8 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
         const dateValue = getTextValue(entry.published) || getTextValue(entry.updated);
 
         items.push({
-          title: getTextValue(entry.title) || 'Untitled',
-          link: link || '',
+          title: getTextValue(entry.title) || "Untitled",
+          link: link || "",
           description: getTextValue(entry.summary),
           content: getTextValue(entry.content),
           author: author,
@@ -135,7 +136,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
     // 检查是否成功解析到文章
     if (items.length === 0) {
       console.warn(`[订阅更新] 订阅 ${subscribeId} 未解析到任何文章，可能不是标准的 RSS/Atom 格式`);
-      return { success: false, error: '未解析到任何文章，请检查 RSS 源格式' };
+      return { success: false, error: "未解析到任何文章，请检查 RSS 源格式" };
     }
 
     // 每个订阅源最多保存10篇文章
@@ -160,8 +161,9 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
           update: {}, // 已存在则不更新
         });
       } catch (error) {
+        console.error(error);
         // 忽略重复链接错误
-        if ((error as any).code?.includes('P2002')) continue;
+        if ((error as any).code?.includes("P2002")) continue;
         throw error;
       }
     }
@@ -175,14 +177,14 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
     console.log(`[订阅更新] 订阅 ${subscribeId} 更新成功，获取了 ${postsToSave.length} 篇文章`);
     return { success: true, count: postsToSave.length };
   } catch (error) {
-    console.error(`[订阅更新] 订阅 ${subscribeId} 失败:`, error);
+    console.error(error);
     return { success: false, error: (error as Error).message };
   }
 }
 
 // 更新所有订阅
 export async function updateAllSubscribes() {
-  console.log('[订阅更新] 开始更新所有订阅');
+  console.log("[订阅更新] 开始更新所有订阅");
   const subscribes = await prisma.subscribes.findMany();
   console.log(`[订阅更新] 找到 ${subscribes.length} 个订阅源`);
 
@@ -224,12 +226,12 @@ export async function getSubscribePosts() {
     },
     include: {
       subscribeposts: {
-        orderBy: { pubDate: 'desc' },
+        orderBy: { pubDate: "desc" },
         take: 10,
       },
     },
     orderBy: {
-      lastUpdated: 'desc',
+      lastUpdated: "desc",
     },
   });
 

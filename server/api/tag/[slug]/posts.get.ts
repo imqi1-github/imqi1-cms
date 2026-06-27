@@ -157,7 +157,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error("获取标签文章失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       statusMessage: "获取标签文章失败",

@@ -1,7 +1,8 @@
+import { SearchQuerySchema, SearchResponseSchema } from "./schemas";
+
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
 import { defineTypedApiHandler } from "#server/utils/typedApi";
-import { SearchQuerySchema, SearchResponseSchema } from "./schemas";
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
 
 // 搜索关键词净化
@@ -46,6 +47,7 @@ async function getSearchSettings() {
       cacheExpire: Number(settingsMap["searchCacheExpire"]) || 300,
     };
   } catch (error) {
+    console.error(error);
     // 如果获取设置失败，返回默认值（禁用缓存）
     return {
       cacheEnabled: false,
@@ -87,9 +89,25 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "");
 }
 
+// 搜索结果文章类型（对应 findMany select 字段）
+interface SearchPostItem {
+  cid: number;
+  title: string;
+  slug: string | null;
+  desc: string | null;
+  content: string | null;
+  create_time: Date;
+  postrelations: {
+    metas: {
+      name: string;
+      slug: string;
+    };
+  }[];
+}
+
 // 格式化搜索结果（分类信息已通过 postrelations 关联查询获取）
-function formatSearchResults(posts: any[], query: string) {
-  return posts.map((post: any) => {
+function formatSearchResults(posts: SearchPostItem[], query: string) {
+  return posts.map((post) => {
     const category = post.postrelations?.[0]?.metas;
 
     // 提取正文纯文本
@@ -153,7 +171,7 @@ export default defineTypedApiHandler(
           };
         }
       } catch (error) {
-        console.error("[搜索缓存读取失败]:", error);
+        console.error(error);
         // 缓存失败时继续执行数据库查询
       }
     }
@@ -221,7 +239,7 @@ export default defineTypedApiHandler(
         );
         console.log(`[搜索缓存已保存] 关键词: "${q}", 过期时间: ${searchSettings.cacheExpire}秒`);
       } catch (error) {
-        console.error("[搜索缓存保存失败]:", error);
+        console.error(error);
       }
     }
 
@@ -231,7 +249,7 @@ export default defineTypedApiHandler(
       data: responseData,
     };
   } catch (error) {
-    console.error("[搜索失败]:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       statusMessage: "搜索失败",

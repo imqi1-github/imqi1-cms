@@ -89,11 +89,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error: any) {
-    console.error("创建分类失败:", {
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode,
-    });
+    console.error(error);
 
     // 如果是我们抛出的错误，直接传递
     if (error.statusCode) {

@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     // 获取已发布的文章数
     const publishedPostsNum = await prisma.posts.count({
@@ -41,7 +41,7 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error("获取站点统计失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取站点统计失败",

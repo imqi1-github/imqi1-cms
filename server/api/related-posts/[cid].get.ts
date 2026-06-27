@@ -155,7 +155,7 @@ export default defineEventHandler(async event => {
       data,
     };
   } catch (error) {
-    console.error("获取相关文章失败:", error);
+    console.error(error);
     return {
       success: false,
       data: [],

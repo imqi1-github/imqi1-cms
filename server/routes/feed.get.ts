@@ -136,7 +136,7 @@ ${mediaContent}
 
     return rssXml;
   } catch (error) {
-    console.error("生成 RSS 失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "生成 RSS 失败",

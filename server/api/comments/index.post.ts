@@ -1,3 +1,7 @@
+import DOMPurify from "isomorphic-dompurify";
+
+import { CommentCreateSchema, CommentItemSchema } from "../schemas";
+
 import { getUser } from "#server/lib/auth";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { verifyCaptcha } from "#server/utils/captcha";
@@ -5,9 +9,8 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
 import { defineTypedApiHandler } from "#server/utils/typedApi";
-import { CommentCreateSchema, CommentItemSchema } from "../schemas";
 import { validateCommentData } from "#server/utils/validation";
-import DOMPurify from "isomorphic-dompurify";
+
 
 // HTML 净化配置 - 只允许安全的标签和属性
 const PURIFY_CONFIG = {
@@ -120,7 +123,8 @@ export default defineTypedApiHandler(
         if (url.protocol !== "http:" && url.protocol !== "https:") {
           throw new Error("Invalid link protocol");
         }
-      } catch {
+      } catch (error) {
+        console.error(error);
         throw createError({
           statusCode: 400,
           message: "链接格式不正确",
@@ -232,7 +236,8 @@ export default defineTypedApiHandler(
       needModeration: commentStatus === 0,
       auditResult: auditConfig.enabled ? auditResult : null,
     };
-  } catch (error: any) {
+  } catch (error) {
+    console.error(error);
     if (error instanceof Error) {
       throw createError({
         statusCode: 400,

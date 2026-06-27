@@ -49,7 +49,8 @@ export default defineEventHandler(async event => {
   let data: unknown;
   try {
     data = JSON.parse(source);
-  } catch {
+  } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 400,
       message: "JSON 格式错误，无法解析",

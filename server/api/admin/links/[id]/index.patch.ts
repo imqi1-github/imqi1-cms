@@ -56,6 +56,7 @@ export default defineEventHandler(async event => {
       },
     });
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新链接失败",

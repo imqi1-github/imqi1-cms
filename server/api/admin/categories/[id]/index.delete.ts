@@ -121,7 +121,7 @@ export default defineEventHandler(async event => {
     }
 
     // 记录详细的错误信息
-    console.error("删除分类失败:", error);
+    console.error(error);
 
     throw createError({
       statusCode: 500,

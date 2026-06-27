@@ -42,6 +42,7 @@ export default defineEventHandler(async event => {
     });
     return subscribe;
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新订阅失败",

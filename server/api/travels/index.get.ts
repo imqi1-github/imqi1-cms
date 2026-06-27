@@ -1,7 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { parseCovers } from "#server/utils/covers";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     const travels = await prisma.travels.findMany({
       where: { enabled: true },
@@ -64,6 +64,7 @@ export default defineEventHandler(async event => {
       data,
     };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取旅行地点失败",

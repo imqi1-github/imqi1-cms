@@ -29,6 +29,7 @@ export default defineEventHandler(async event => {
       },
     });
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取链接列表失败",

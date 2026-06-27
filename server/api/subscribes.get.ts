@@ -18,7 +18,7 @@ export default defineEventHandler(async event => {
       data: limitedPosts,
     };
   } catch (error) {
-    console.error('获取订阅文章失败:', error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: '获取订阅文章失败',

@@ -45,7 +45,8 @@ export async function getUpYunConfig(): Promise<UpYunConfig | null> {
     }
 
     return { bucket, operator, password, domain };
-  } catch {
+  } catch (error) {
+    console.error(error);
     return null;
   }
 }
@@ -154,6 +155,7 @@ export async function uploadToUpYun(
     const url = `${domain ?? ""}${filePath}`;
     return { success: true, url };
   } catch (error: any) {
+    console.error(error);
     return {
       success: false,
       error: `上传失败: ${error.message || "未知错误"}`,
@@ -194,7 +196,8 @@ export async function deleteFromUpYun(filePath: string): Promise<boolean> {
     });
 
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error(error);
     return false;
   }
 }

@@ -32,6 +32,7 @@ export default defineEventHandler(async event => {
       },
     });
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "创建链接失败",

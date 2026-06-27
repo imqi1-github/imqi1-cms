@@ -53,6 +53,7 @@ export default defineEventHandler(event => {
       };
     }
   } catch (error) {
+    console.error(error);
     console.warn(
       "referer 解析失败:",
       referer,

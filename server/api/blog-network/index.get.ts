@@ -1,5 +1,6 @@
 import { resolve4, resolve6 } from "node:dns/promises";
 import { isIP } from "node:net";
+
 import { prisma } from "#server/utils/prisma";
 import { getIpLocation } from "#server/utils/qqwry";
 import { resolveCity } from "#server/utils/ip-location";
@@ -27,7 +28,8 @@ function domainOf(url: string): string | null {
   try {
     const u = new URL(url.startsWith("http") ? url : `https://${url}`);
     return u.hostname.toLowerCase().replace(/^www\./, "");
-  } catch {
+  } catch (error) {
+    console.error(error);
     return null;
   }
 }
@@ -46,8 +48,8 @@ function uniqueValues(values: Array<string | null | undefined>): string[] {
 
 function simplifyRawLocation(raw: string): string {
   return raw
-    .replace(/^中国[–—\-]?/, "")
-    .split(/[–—\-]/)
+    .replace(/^中国[–—-]?/, "")
+    .split(/[–—-]/)
     .map(p => p.trim())
     .filter(Boolean)
     .slice(0, 2)

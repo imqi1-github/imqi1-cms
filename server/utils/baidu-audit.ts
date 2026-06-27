@@ -51,7 +51,7 @@ async function getAccessToken(apiKey: string, secretKey: string): Promise<string
 
     return null;
   } catch (error) {
-    console.error("获取百度 access_token 出错:", error);
+    console.error(error);
     return null;
   }
 }
@@ -104,7 +104,7 @@ export async function auditText(text: string): Promise<{ conclusion: string; con
     const result: BaiduAuditResult = await response.json();
 
     if (result.error_code) {
-      console.error("百度审核出错:", result.error_msg);
+      console.error(result.error_msg);
       return { conclusion: "审核服务异常", conclusionType: 0 };
     }
 
@@ -113,7 +113,7 @@ export async function auditText(text: string): Promise<{ conclusion: string; con
       conclusionType: result.conclusionType || 0,
     };
   } catch (error) {
-    console.error("调用百度审核API出错:", error);
+    console.error(error);
     return { conclusion: "审核服务异常", conclusionType: 0 };
   }
 }

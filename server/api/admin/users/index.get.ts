@@ -15,6 +15,7 @@ export default defineEventHandler(async event => {
     const users = await prisma.users.findMany();
     return users;
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取用户列表失败",

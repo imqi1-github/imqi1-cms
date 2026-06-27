@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     const tags = await prisma.metas.findMany({
       where: {
@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
       data: tags,
     };
   } catch (error) {
-    console.error("获取标签列表失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       statusMessage: "获取标签列表失败",

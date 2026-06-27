@@ -20,7 +20,7 @@ async function runUpdate() {
     const result = await updateAllSubscribes();
     console.log(`[RSS订阅] 自动更新完成: 成功 ${result.success}/${result.total}`);
   } catch (error) {
-    console.error('[RSS订阅] 自动更新失败:', error);
+    console.error(error);
   }
 }
 

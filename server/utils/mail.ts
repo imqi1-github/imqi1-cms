@@ -150,6 +150,7 @@ export async function sendMail(options: MailOptions): Promise<boolean> {
 
     return true;
   } catch (error) {
+    console.error(error);
     if (config.logEnabled) {
       writeLog("error", "邮件发送失败", {
         to: options.to,
@@ -201,6 +202,7 @@ export async function sendTestEmail(to: string): Promise<{ success: boolean; mes
     writeLog("info", "测试邮件发送成功", { to });
     return { success: true, message: "测试邮件发送成功" };
   } catch (error) {
+    console.error(error);
     const errorMsg = error instanceof Error ? error.message : String(error);
     writeLog("error", "测试邮件发送失败", { to, error: errorMsg });
     return { success: false, message: `发送失败: ${errorMsg}` };
@@ -279,7 +281,8 @@ export function getRecentLogs(limit = 50): Array<{
     try {
       logs.push(JSON.parse(line));
       if (logs.length >= limit) break;
-    } catch {
+    } catch (error) {
+      console.error(error);
       // 忽略无法解析的行
     }
   }

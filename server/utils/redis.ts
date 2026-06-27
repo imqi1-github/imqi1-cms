@@ -46,7 +46,7 @@ if (redis && redisConfig) {
   });
 
   redis.on("error", (error) => {
-    console.error("[Redis] 连接错误:", error);
+    console.error(error);
   });
 
   redis.on("close", () => {

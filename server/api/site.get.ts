@@ -1,11 +1,31 @@
+import { SiteSettingsResponseSchema } from "./schemas";
+
 import { prisma } from "#server/utils/prisma";
 import { defineTypedApiHandler } from "#server/utils/typedApi";
-import { SiteSettingsResponseSchema } from "./schemas";
 import { sanitizeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
 
-// 默认值
-const defaults: Record<string, any> = {
+// 1. 先定义 key 类型（核心）
+type SettingKey =
+  | "siteName"
+  | "siteUrl"
+  | "siteDesc"
+  | "siteIcp"
+  | "homeCustomText"
+  | "photoCategorySlug"
+  | "commentEnabled"
+  | "commentAvatarService"
+  | "commentPageSize"
+  | "commentMaxLevel"
+  | "commentInterval"
+  | "commentRequireMail"
+  | "commentRequireLink"
+  | "postPageSize"
+  | "feedCacheInterval"
+  | "linkAutoApprove";
+
+// 2. 强类型 defaults
+const defaults: Record<SettingKey, string | boolean | number> = {
   siteName: siteConfig.siteName,
   siteUrl: siteConfig.siteUrl,
   siteDesc: siteConfig.seo.description,
@@ -24,7 +44,13 @@ const defaults: Record<string, any> = {
   linkAutoApprove: false,
 };
 
-function sanitizePublicSettings(settings: Record<string, any>): Record<string, any> {
+// 3. DB 返回类型收紧
+type MetaItem = {
+  key: SettingKey;
+  value: string;
+};
+
+function sanitizePublicSettings(settings: Record<SettingKey, string | boolean | number>): Record<SettingKey, string | boolean | number> {
   return {
     ...settings,
     homeCustomText: sanitizeHtml(String(settings.homeCustomText || "")),
@@ -36,47 +62,55 @@ export default defineTypedApiHandler(
     response: SiteSettingsResponseSchema,
     description: "获取站点公共设置",
   },
-  async (event) => {
-  // 设置缓存头 - CDN 和浏览器缓存 5 分钟
-  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+  async event => {
+    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
-  try {
-    const meta = await prisma.informations.findMany({
-      where: {
-        key: { in: Object.keys(defaults) },
-      },
-    });
+    try {
+      const meta = (await prisma.informations.findMany({
+        where: {
+          key: { in: Object.keys(defaults) as SettingKey[] },
+        },
+      })) as MetaItem[];
 
-    const settings: Record<string, any> = { ...defaults };
+      const settings: Record<SettingKey, string | boolean | number> = {
+        ...defaults,
+      };
 
-    // 从数据库覆盖值
-    meta.forEach((meta: any) => {
-      if (settings.hasOwnProperty(meta.key)) {
-        const value = meta.value;
+      for (const item of meta) {
+        const key = item.key;
+        const defaultValue = defaults[key];
 
-        // 布尔值转换
-        if (typeof defaults[meta.key] === "boolean") {
-          settings[meta.key] = value === "true";
+        // boolean
+        if (typeof defaultValue === "boolean") {
+          settings[key] = item.value === "true";
+          continue;
         }
-        // 数字值转换 - 使用 isNaN 检查而不是 || 运算符，避免 0 被当作 falsy 值
-        else if (typeof defaults[meta.key] === "number") {
-          // 空字符串或 null 应该使用默认值
-          if (value === "" || value === null || value === undefined) {
-            settings[meta.key] = defaults[meta.key];
+
+        // number
+        if (typeof defaultValue === "number") {
+          if (item.value === "" || item.value == null) {
+            settings[key] = defaultValue;
           } else {
-            const numValue = Number(value);
-            settings[meta.key] = isNaN(numValue) ? defaults[meta.key] : numValue;
+            const num = Number(item.value);
+            settings[key] = Number.isNaN(num) ? defaultValue : num;
           }
+          continue;
         }
-        // 其他类型直接使用
-        else {
-          settings[meta.key] = value;
-        }
-      }
-    });
 
-    return { success: true, data: sanitizePublicSettings(settings) };
-  } catch (error) {
-    return { success: true, data: sanitizePublicSettings(defaults) };
-  }
-});
+        // string
+        settings[key] = item.value;
+      }
+
+      return {
+        success: true,
+        data: sanitizePublicSettings(settings),
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        success: true,
+        data: sanitizePublicSettings(defaults),
+      };
+    }
+  },
+);

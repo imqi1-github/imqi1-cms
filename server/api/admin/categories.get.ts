@@ -36,7 +36,7 @@ export default defineEventHandler(async event => {
       postCount: category._count.postrelations,
     }));
   } catch (error: any) {
-    console.error("获取分类失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取分类失败",

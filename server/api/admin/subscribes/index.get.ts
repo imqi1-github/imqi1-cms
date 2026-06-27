@@ -14,6 +14,7 @@ export default defineEventHandler(async event => {
   try {
     return await prisma.subscribes.findMany();
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取订阅列表失败",

@@ -57,7 +57,8 @@ export function parseChangelogContent(raw: string | null | undefined): Changelog
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
-  } catch {
+  } catch (error) {
+    console.error(error);
     // 非法 JSON：当作单段旧 desc 文本
     return [{ type: "其他", value: raw }];
   }

@@ -74,7 +74,7 @@ export default defineEventHandler(async event => {
       data: formattedComments,
     };
   } catch (error) {
-    console.error("获取最近评论失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取最近评论失败",

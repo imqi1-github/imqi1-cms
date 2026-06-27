@@ -43,6 +43,7 @@ export default defineEventHandler(async event => {
 
     return user;
   } catch (error: any) {
+    console.error(error);
     if (error.statusCode === 404) {
       throw error;
     }

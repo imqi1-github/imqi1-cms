@@ -78,7 +78,7 @@ export default defineEventHandler(async event => {
       data: comment,
     };
   } catch (error) {
-    console.error("更新评论失败:", error);
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新评论失败",

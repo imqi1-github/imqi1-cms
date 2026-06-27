@@ -28,6 +28,7 @@ export default defineEventHandler(async event => {
       users: usersCount,
     };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取统计数据失败",

@@ -27,6 +27,7 @@ export default defineEventHandler(async event => {
     });
     return { success: true };
   } catch (error) {
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "删除旅行地点失败",

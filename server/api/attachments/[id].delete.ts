@@ -1,11 +1,13 @@
+import * as fs from "fs";
+import * as path from "path";
+
+import { createError, getQuery, getRouterParam } from "h3";
+
 import { getUser } from "#server/lib/auth";
 import { deleteFromCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
 import { deleteFromUpYun } from "#server/utils/upyun";
-import * as fs from "fs";
-import { createError, getQuery, getRouterParam } from "h3";
-import * as path from "path";
 
 export default defineEventHandler(async event => {
   try {
@@ -67,13 +69,13 @@ export default defineEventHandler(async event => {
       // 删除又拍云文件
       const deleted = await deleteFromUpYun(attachment.url);
       if (!deleted) {
-        console.error("删除又拍云文件失败:", attachment.url);
+        console.error(attachment.url);
       }
     } else if (attachment.storage === "cos") {
       // 删除腾讯云COS文件
       const result = await deleteFromCOS(attachment.url);
       if (!result.success) {
-        console.error("删除COS文件失败:", result.error);
+        console.error(result.error);
       }
     } else {
       // 删除本地文件
@@ -82,7 +84,7 @@ export default defineEventHandler(async event => {
         try {
           fs.unlinkSync(filePath);
         } catch (err) {
-          console.error("删除本地文件失败:", err);
+          console.error(err);
         }
       }
     }
@@ -96,14 +98,18 @@ export default defineEventHandler(async event => {
       success: true,
       message: "删除成功",
     };
-  } catch (error: any) {
-    if (error.statusCode) {
+  } catch (error) {
+    console.error(error);
+
+    if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
 
+    const message = error instanceof Error ? error.message : "删除失败";
+
     throw createError({
       statusCode: 500,
-      message: error.message || "删除失败",
+      message,
     });
   }
 });
