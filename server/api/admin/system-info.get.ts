@@ -36,7 +36,7 @@ export default defineEventHandler(async event => {
         unit: 'MB',
       },
       database: {
-        version: (dbVersion as any)[0]?.version || 'Unknown',
+        version: (dbVersion as Array<{ version: string }>)[0]?.version || 'Unknown',
       },
       attachments: {
         count: attachmentCount,

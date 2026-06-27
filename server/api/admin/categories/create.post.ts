@@ -88,16 +88,16 @@ export default defineEventHandler(async event => {
         desc: category.desc,
       },
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
 
     // 如果是我们抛出的错误，直接传递
-    if (error.statusCode) {
+    if (error instanceof Error && 'statusCode' in error) {
       throw error;
     }
 
     // 处理 Prisma 唯一约束冲突
-    if (error.code === 'P2002') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2002') {
       throw createError({
         statusCode: 400,
         message: "分类名称或标识已存在",

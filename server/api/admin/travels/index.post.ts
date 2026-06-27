@@ -48,7 +48,7 @@ export default defineEventHandler(async event => {
 
   // 关联文章 cid 列表：非数组或留空视为不关联，否则校验为整数并去重
   const cidList: number[] = Array.isArray(cids)
-    ? Array.from(new Set(cids.map((c: any) => Number(c)).filter((c: number) => Number.isInteger(c))))
+    ? Array.from(new Set(cids.map(c => Number(c)).filter((c: number) => Number.isInteger(c))))
     : [];
 
   // 验证字段长度

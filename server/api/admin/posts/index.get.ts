@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 
@@ -20,7 +22,7 @@ export default defineEventHandler(async event => {
     const tagId = query.tag ? Number(query.tag) : undefined;
     const status = query.status ? Number(query.status) : undefined;
 
-    const where: any = {
+    const where: Prisma.postsWhereInput = {
       type: 0, // 0: 文章
     };
 
@@ -33,14 +35,15 @@ export default defineEventHandler(async event => {
     }
 
     if (tagId) {
-      where.AND = where.AND || [];
-      where.AND.push({
-        postrelations: {
-          some: {
-            mid: tagId,
+      where.AND = [
+        {
+          postrelations: {
+            some: {
+              mid: tagId,
+            },
           },
         },
-      });
+      ];
     }
 
     if (status !== undefined) {

@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async () => {
   try {
     // 获取所有已发布的文章（type=0），包含分类信息
     const posts = await prisma.posts.findMany({
@@ -59,7 +59,7 @@ export default defineEventHandler(async event => {
       });
 
       return acc;
-    }, {} as Record<string, { year: number; month: number; posts: any[] }>);
+    }, {} as Record<string, { year: number; month: number; posts: { cid: number; title: string; slug: string; categorySlug: string | null; createTime: Date }[] }>);
 
     // 转换为数组并按日期排序
     const sortedGroups = Object.values(grouped).sort((a, b) => {

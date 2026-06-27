@@ -56,15 +56,15 @@ export default defineEventHandler(async event => {
         name: attachment.title,
       },
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error(error)
-    if (error.statusCode) {
+    if (error instanceof Error && 'statusCode' in error) {
       throw error
     }
 
     throw createError({
       statusCode: 500,
-      message: error.message || '更新附件失败',
+      message: (error instanceof Error ? error.message : String(error)) || '更新附件失败',
     })
   }
 })

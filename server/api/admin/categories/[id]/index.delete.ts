@@ -114,9 +114,9 @@ export default defineEventHandler(async event => {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     // 如果是我们抛出的错误，直接传递
-    if (error.statusCode) {
+    if (error instanceof Error && 'statusCode' in error) {
       throw error;
     }
 
@@ -125,7 +125,7 @@ export default defineEventHandler(async event => {
 
     throw createError({
       statusCode: 500,
-      message: "删除分类失败: " + (error.message || "未知错误"),
+      message: "删除分类失败: " + ((error instanceof Error ? error.message : String(error)) || "未知错误"),
     });
   }
 });

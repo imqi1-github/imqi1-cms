@@ -87,7 +87,7 @@ export default defineEventHandler(async event => {
   // 仅当请求显式携带 cids 时才全量同步关联（toggleEnabled 不传 cids，避免误清空）
   if (cids !== undefined) {
     const cidList: number[] = Array.isArray(cids)
-      ? Array.from(new Set(cids.map((c: any) => Number(c)).filter((c: number) => Number.isInteger(c))))
+      ? Array.from(new Set(cids.map(c => Number(c)).filter((c: number) => Number.isInteger(c))))
       : [];
 
     await prisma.posttravels.deleteMany({ where: { travel_id: id } });

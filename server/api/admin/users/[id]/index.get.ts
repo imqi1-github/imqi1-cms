@@ -42,10 +42,13 @@ export default defineEventHandler(async event => {
     }
 
     return user;
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    if (error.statusCode === 404) {
-      throw error;
+    if (error instanceof Error && "statusCode" in error) {
+      const statusCode = (error as { statusCode: unknown }).statusCode;
+      if (statusCode === 404) {
+        throw error;
+      }
     }
     throw createError({
       statusCode: 500,

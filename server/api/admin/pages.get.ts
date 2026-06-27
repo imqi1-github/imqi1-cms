@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 
@@ -18,7 +20,7 @@ export default defineEventHandler(async event => {
     const pageSize = parseInt(query.pageSize as string) || 10;
     const status = query.status !== undefined ? parseInt(query.status as string) : undefined;
 
-    const where: any = {
+    const where: Prisma.postsWhereInput = {
       type: 1, // 1: 页面
     };
 
@@ -47,7 +49,7 @@ export default defineEventHandler(async event => {
 
     // 获取每个页面的分类
     const pagesWithRelations = await Promise.all(
-      posts.map(async (post: any) => {
+      posts.map(async post => {
         const relations = await prisma.postrelations.findMany({
           where: { cid: post.cid },
           select: {

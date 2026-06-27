@@ -35,7 +35,7 @@ export default defineEventHandler(async event => {
       desc: category.desc,
       postCount: category._count.postrelations,
     }));
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     throw createError({
       statusCode: 500,

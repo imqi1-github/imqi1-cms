@@ -2,7 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
 // 默认值配置
-const defaults: Record<string, any> = {
+const defaults: Record<string, string | number | boolean> = {
   siteName: siteConfig.siteName,
   siteUrl: siteConfig.siteUrl,
   siteDesc: siteConfig.seo.description,

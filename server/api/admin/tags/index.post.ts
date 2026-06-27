@@ -38,9 +38,9 @@ export default defineEventHandler(async event => {
       },
     });
     return tag;
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    if (error.code === "P2002") {
+    if (error instanceof Error && 'code' in error && error.code === "P2002") {
       throw createError({
         statusCode: 400,
         message: "标签名称已存在",

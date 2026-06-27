@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client'
+
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
 
@@ -18,7 +20,7 @@ export default defineEventHandler(async event => {
     const search = query.search as string | undefined
 
     // 构建查询条件
-    const where: any = {}
+    const where: Prisma.attachmentsWhereInput = {}
 
     if (type && type !== 'all') {
       where.type = type
@@ -66,15 +68,15 @@ export default defineEventHandler(async event => {
         pageSize,
       },
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    if (error.statusCode) {
+    if (error instanceof Error && 'statusCode' in error) {
       throw error
     }
 
     throw createError({
       statusCode: 500,
-      message: error.message || '获取附件列表失败',
+      message: (error instanceof Error ? error.message : String(error)) || '获取附件列表失败',
     })
   }
 })

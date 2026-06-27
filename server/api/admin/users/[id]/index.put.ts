@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateUserData } from "#server/utils/validation";
@@ -83,7 +85,7 @@ export default defineEventHandler(async event => {
     }
 
     // 构建更新数据
-    const updateData: any = {
+    const updateData: Prisma.usersUpdateInput = {
       name,
       nickname: nickname || null,
       mail,
@@ -116,10 +118,13 @@ export default defineEventHandler(async event => {
       success: true,
       data: updatedUser,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    if (error.statusCode === 404 || error.statusCode === 400) {
-      throw error;
+    if (error instanceof Error && "statusCode" in error) {
+      const statusCode = (error as { statusCode: unknown }).statusCode;
+      if (statusCode === 404 || statusCode === 400) {
+        throw error;
+      }
     }
     throw createError({
       statusCode: 500,

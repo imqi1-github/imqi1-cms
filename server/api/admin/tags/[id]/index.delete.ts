@@ -49,9 +49,9 @@ export default defineEventHandler(async event => {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    if (error.statusCode) {
+    if (error instanceof Error && 'statusCode' in error) {
       throw error;
     }
     throw createError({

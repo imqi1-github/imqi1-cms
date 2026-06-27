@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validatePostData } from "#server/utils/validation";
@@ -60,7 +62,7 @@ export default defineEventHandler(async event => {
   }
 
   // 准备更新数据
-  const updateData: any = {
+  const updateData: Prisma.postsUpdateInput = {
     title,
     desc,
     content,

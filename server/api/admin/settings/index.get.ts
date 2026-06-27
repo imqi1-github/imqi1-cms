@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
     const meta = await prisma.informations.findMany();
 
     // 默认值
-    const defaults: Record<string, any> = {
+    const defaults: Record<string, string | number | boolean> = {
       siteName: siteConfig.siteName,
       siteUrl: siteConfig.siteUrl,
       siteDesc: siteConfig.seo.description,
@@ -75,11 +75,11 @@ export default defineEventHandler(async event => {
       searchCacheExpire: 300,
     };
 
-    const settings: Record<string, any> = { ...defaults };
+    const settings: Record<string, string | number | boolean> = { ...defaults };
 
     // 从数据库覆盖值
-    meta.forEach((meta: any) => {
-      if (!settings.hasOwnProperty(meta.key)) return;
+    meta.forEach((meta) => {
+      if (!Object.hasOwn(settings, meta.key)) return;
 
       const value = meta.value;
 

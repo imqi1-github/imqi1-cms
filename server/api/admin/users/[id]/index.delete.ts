@@ -66,9 +66,9 @@ export default defineEventHandler(async event => {
       where: { uid: Number(id) },
     });
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     // 如果是我们抛出的错误，直接传递
-    if (error.statusCode) {
+    if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
 
@@ -76,7 +76,12 @@ export default defineEventHandler(async event => {
     console.error(error);
 
     // 检查是否是外键约束错误
-    if (error.code === 'P2003') {
+    if (
+      error !== null &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: unknown }).code === "P2003"
+    ) {
       throw createError({
         statusCode: 400,
         message: "该用户有关联的数据，无法删除",
@@ -84,7 +89,12 @@ export default defineEventHandler(async event => {
     }
 
     // 检查是否是记录不存在
-    if (error.code === 'P2025') {
+    if (
+      error !== null &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: unknown }).code === "P2025"
+    ) {
       throw createError({
         statusCode: 404,
         message: "用户不存在",
@@ -93,7 +103,7 @@ export default defineEventHandler(async event => {
 
     throw createError({
       statusCode: 500,
-      message: "删除用户失败: " + (error.message || "未知错误"),
+      message: "删除用户失败: " + (error instanceof Error ? error.message : "未知错误"),
     });
   }
 });

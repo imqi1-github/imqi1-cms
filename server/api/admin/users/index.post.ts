@@ -73,7 +73,7 @@ export default defineEventHandler(async event => {
       },
     });
     return newUser;
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     if (error.statusCode === 400) {
       throw error;
