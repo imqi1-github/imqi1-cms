@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
 import {CHANGELOG_TYPES, type ChangelogEntry, getChangelogMeta} from "~~/shared/changelog";
-
-type ChangelogItem = InternalApi["/api/admin/changelogs"]["get"][number];
+import type {ChangelogItem} from "~/types/pages/admin/changelogs/logs";
 
 const toast = useToast();
 const logs = ref<ChangelogItem[]>([]);

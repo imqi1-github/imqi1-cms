@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type Category = InternalApi["/api/admin/categories"]["get"][number];
-type Tag = InternalApi["/api/admin/tags"]["get"][number];
-type AdminPost = NonNullable<InternalApi["/api/admin/posts"]["get"]["data"]>[number];
+import type {AdminPost, Category, Tag} from "~/types/pages/admin/posts";
 
 const router = useRouter();
 const route = useRoute();

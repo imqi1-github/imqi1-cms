@@ -1,19 +1,6 @@
 import { prisma } from "#server/utils/prisma";
-import { renderChangelogContent, type RenderedChangelogEntry } from "#server/utils/changelog";
-
-// 解析后的单条更新日志
-interface ChangelogEntry {
-  id: number;
-  content: RenderedChangelogEntry[];
-  createTime: Date;
-}
-
-// 按月分组后的结构
-interface ChangelogGroup {
-  year: number;
-  month: number;
-  logs: ChangelogEntry[];
-}
+import { renderChangelogContent } from "#server/utils/changelog";
+import type { ChangelogGroup } from "#server/types/apis/changelog";
 
 export default defineEventHandler(async event => {
   try {

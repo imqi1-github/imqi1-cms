@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-import { parseUserAgent } from "~/utils/parseUserAgent";
-
-type CommentsResponse = InternalApi["/api/admin/comments"]["get"];
-type CommentItem = NonNullable<CommentsResponse["data"][number]>;
+import {parseUserAgent} from "~/utils/parseUserAgent";
+import type {CommentItem} from "~/types/pages/admin/comments";
 
 const route = useRoute();
 const router = useRouter();

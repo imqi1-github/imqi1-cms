@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type SubscribeItem = InternalApi["/api/admin/subscribes"]["get"][number];
-type SubscribesUpdateResponse = InternalApi["/api/admin/subscribes/update"]["post"];
+import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/pages/admin/subscribe";
 
 const toast = useToast();
 const subscribes = ref<SubscribeItem[]>([]);

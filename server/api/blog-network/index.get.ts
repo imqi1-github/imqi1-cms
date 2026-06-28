@@ -5,6 +5,7 @@ import { prisma } from "#server/utils/prisma";
 import { getIpLocation } from "#server/utils/qqwry";
 import { resolveCity } from "#server/utils/ip-location";
 import { CITY_COORDS, matchForeignCoord, type Coord } from "~~/shared/city-coords";
+import type { Bucket, ResolvedPoint } from "#server/types/apis/blog-network";
 
 /**
  * 博客网络聚合端点（/map「博客网络」tab）
@@ -38,9 +39,6 @@ function domainOf(url: string): string | null {
 function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([p, new Promise<T>(r => setTimeout(() => r(fallback), ms))]);
 }
-
-type Bucket = "ok" | "overseas" | "unknown";
-type ResolvedPoint = { coord: Coord; locations: string[]; isps: string[] };
 
 function uniqueValues(values: Array<string | null | undefined>): string[] {
   return [...new Set(values.map(v => (v || "").trim()).filter(Boolean))];
@@ -101,12 +99,10 @@ function normalizeServerIsp(isp: string): string {
 }
 
 // IP → 坐标 + 桶分类（国内 city→province→；境外 country→FOREIGN_COORDS 子串匹配）
-function coordForInfo(info: {
-  city: string | null;
-  province: string | null;
-  isDomestic: boolean;
-  country: string;
-}): { coord: Coord | null; bucket: Bucket } {
+function coordForInfo(info: { city: string | null; province: string | null; isDomestic: boolean; country: string }): {
+  coord: Coord | null;
+  bucket: Bucket;
+} {
   if (info.isDomestic) {
     const coord = (info.city && CITY_COORDS[info.city]) || (info.province && CITY_COORDS[info.province]) || null;
     // 国内按理总能命中省级质心；命中不到视为 unknown（不打点）
@@ -127,8 +123,16 @@ async function resolveDomain(domain: string): Promise<{ points: ResolvedPoint[];
     ips = [domain];
   } else {
     const [v4, v6] = await Promise.all([
-      withTimeout(resolve4(domain).catch(() => []), 5000, []),
-      withTimeout(resolve6(domain).catch(() => []), 5000, []),
+      withTimeout(
+        resolve4(domain).catch(() => []),
+        5000,
+        [],
+      ),
+      withTimeout(
+        resolve6(domain).catch(() => []),
+        5000,
+        [],
+      ),
     ]);
     ips = [...new Set([...v4, ...v6])];
   }
@@ -171,10 +175,7 @@ export default defineEventHandler(async () => {
   ]);
 
   // 归一化 + 按域名去重，订阅优先
-  const byDomain = new Map<
-    string,
-    { type: "subscribe" | "link"; id: number; name: string; avatar: string | null; url: string }
-  >();
+  const byDomain = new Map<string, { type: "subscribe" | "link"; id: number; name: string; avatar: string | null; url: string }>();
   for (const s of subscribes) {
     const d = domainOf(s.url);
     if (!d) continue;
@@ -192,7 +193,7 @@ export default defineEventHandler(async () => {
   const resolved = await Promise.all(
     blogs.map(async b => {
       const d = domainOf(b.url);
-      const res = d ? await resolveDomain(d) : ({ points: [], bucket: "unknown" as Bucket });
+      const res = d ? await resolveDomain(d) : { points: [], bucket: "unknown" as Bucket };
       return { blog: b, ...res };
     }),
   );

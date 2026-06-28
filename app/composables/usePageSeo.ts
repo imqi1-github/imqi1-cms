@@ -17,21 +17,7 @@
  * });
  * ```
  */
-import type { ComputedRef, Ref } from "vue";
-
-/** 可被 useHead 接受的元数据值类型 */
-type MetaValue = string | ComputedRef<string> | Ref<string>;
-
-interface PageSeoOptions {
-  /** 完整页面标题（通常包含站点名，如 "友情链接 - ImQi1"） */
-  title: MetaValue;
-  /** SEO description，同时用于 og:description / twitter:description */
-  description?: MetaValue;
-  /** SEO keywords */
-  keywords?: MetaValue;
-  /** og:type，默认 "website"，文章页传 "article" */
-  ogType?: string;
-}
+import type {PageSeoOptions} from "~/types/composables/pages-seo";
 
 export function usePageSeo(options: PageSeoOptions): void {
   const { title, description, keywords, ogType = "website" } = options;

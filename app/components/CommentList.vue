@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import type { InternalApi } from "nitropack/types";
 
 const props = defineProps<{
   postId: number;
@@ -76,7 +77,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
 
   try {
     const response = await fetch(`/api/comments?cid=${props.postId}&page=${page}&pageSize=${pageSize.value}`);
-    const data = await response.json();
+    const data: InternalApi["/api/comments"]["get"] = await response.json();
 
     if (data.code === 200) {
       if (page === 1 || isRefresh) {
@@ -91,7 +92,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
     } else {
       error.value = data.message || "获取评论失败";
     }
-  } catch (err) {
+  } catch {
     error.value = "网络错误，请稍后重试";
   } finally {
     loading.value = false;

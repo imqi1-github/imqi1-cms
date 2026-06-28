@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
-import type { FancyboxOptions } from "@fancyapps/ui";
-import type { InternalApi } from "nitropack/types";
+import type {FancyboxOptions} from "@fancyapps/ui";
+import type {InternalApi} from "nitropack/types";
 import Swiper from "swiper";
 import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
@@ -11,6 +11,7 @@ import {computed, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue"
 
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
+import type {TocItem} from "~/types/pages/content";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -126,13 +127,6 @@ const relatedPosts = computed(() => {
   if (!relatedPostsData.value?.success || !post.value) return [];
   return relatedPostsData.value.data.slice(0, 3);
 });
-
-// 目录相关
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
 
 const tocItems = ref<TocItem[]>([]);
 const activeTocId = ref("");

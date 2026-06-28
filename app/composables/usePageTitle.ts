@@ -1,9 +1,3 @@
-// 页面分类状态（用于文章页面包屑）
-interface PageCategory {
-  name: string;
-  slug: string;
-}
-
 export function usePageTitle() {
   // 页面标题状态：用 useState 按 SSR 请求隔离，避免生产环境模块级 ref 跨请求串号。
   const currentPageTitle = useState<string | null>("page-title:title", () => null);

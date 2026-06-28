@@ -8,7 +8,7 @@ import { verifyCaptcha } from "#server/utils/captcha";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
-import { defineTypedApiHandler } from "#server/utils/typedApi";
+import { defineTypedApiHandler } from "#server/types/typedApi";
 import { validateCommentData } from "#server/utils/validation";
 
 

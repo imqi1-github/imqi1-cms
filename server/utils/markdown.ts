@@ -1,3 +1,4 @@
+
 import MarkdownIt from "markdown-it";
 import type Renderer from "markdown-it/lib/renderer.mjs";
 import type Token from "markdown-it/lib/token.mjs";
@@ -37,19 +38,18 @@ import powershell from "@shikijs/langs/powershell";
 import { escapeAttribute, escapeHtml, sanitizeHtml } from "~~/lib/html";
 import islandLightTheme from "@/shiki/island_light";
 import islandDarkTheme from "@/shiki/island_dark";
-
-type RenderRule = NonNullable<Renderer["rules"]["link_open"]>;
+import type { RenderRule, MusicPlatform } from "#server/types/utils/markdown";
 
 // 自定义主题需要断言为 Shiki 接受的格式
 const lightTheme = islandLightTheme as ThemeRegistration;
 const darkTheme = islandDarkTheme as ThemeRegistration;
 
 const supportedLanguages = new Set([
-  "javascript",
-  "js",
-  "typescript",
-  "ts",
-  "python",
+    "javascript",
+    "js",
+    "typescript",
+    "ts",
+    "python",
   "py",
   "java",
   "cpp",
@@ -540,15 +540,6 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
   mdInstance = md;
   return md;
-}
-
-// 音乐平台 URL 解析规则
-interface MusicPlatform {
-  name: string;
-  regex: RegExp;
-  getServer: () => string;
-  getType: (match: RegExpMatchArray) => string;
-  getId: (match: RegExpMatchArray) => string;
 }
 
 const musicPlatforms: MusicPlatform[] = [

@@ -7,18 +7,8 @@
  * 对外（API 响应）的条目带 html：{ type, value, html }，html 由 renderSimpleMarkdown 渲染。
  */
 import { renderSimpleMarkdown } from "#server/utils/markdown";
-import {
-  isChangelogType,
-  type ChangelogEntry,
-  type ChangelogType,
-} from "~~/shared/changelog";
-
-/** 带渲染结果的对外条目 */
-export interface RenderedChangelogEntry {
-  type: ChangelogType;
-  value: string;
-  html: string;
-}
+import { isChangelogType, type ChangelogEntry } from "~~/shared/changelog";
+import type { RenderedChangelogEntry } from "#server/types/utils/rendered-changelog";
 
 /**
  * 把任意输入规整为干净的条目数组（用于入库前）。
@@ -87,9 +77,7 @@ export function stringifyChangelogContent(entries: ChangelogEntry[]): string {
 }
 
 /** 渲染条目数组为对外结构（每条带 html） */
-export function renderChangelogEntries(
-  entries: ChangelogEntry[],
-): RenderedChangelogEntry[] {
+export function renderChangelogEntries(entries: ChangelogEntry[]): RenderedChangelogEntry[] {
   return entries.map(entry => ({
     type: entry.type,
     value: entry.value,

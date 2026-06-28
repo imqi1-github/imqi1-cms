@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { MENU_ITEMS_KEY } from "~/directives/contextMenu";
+import { MENU_ITEMS_KEY, type MenuElement } from "~/directives/contextMenu";
+import type { MenuItems } from "~/types/context-menu";
 
-const route = useRoute();
 const router = useRouter();
 const { notify } = useFrontNotification();
 
@@ -16,7 +16,7 @@ const inputTarget = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
 const imageTarget = ref<HTMLImageElement | null>(null);
 const menuRef = ref<HTMLElement | null>(null);
 const isCommentArea = ref(false); // 是否在评论区
-const customMenuItems = ref<any[] | null>(null); // 自定义菜单项
+const customMenuItems = ref<MenuItems | null>(null); // 自定义菜单项
 
 // 关闭菜单
 const closeMenu = () => {
@@ -57,14 +57,14 @@ const handleContextMenu = (e: MouseEvent) => {
 
   // 判断菜单类型
   const selection = window.getSelection()?.toString().trim();
-  const target = e.target as HTMLElement;
+  const target = e.target as MenuElement;
 
   // 检查是否有自定义菜单项（从目标元素或其父元素中查找）
-  let currentElement: HTMLElement | null = target;
+  let currentElement: MenuElement | null = target;
   customMenuItems.value = null;
 
   while (currentElement) {
-    const items = (currentElement as any)[MENU_ITEMS_KEY];
+    const items = currentElement[MENU_ITEMS_KEY];
     if (items) {
       customMenuItems.value = items;
       break;
@@ -73,13 +73,13 @@ const handleContextMenu = (e: MouseEvent) => {
   }
 
   // 检测是否在评论区
-  const closestComment = (target as HTMLElement).closest('.comment-item, .comment-list, [class*="comment"]');
+  const closestComment = target.closest('.comment-item, .comment-list, [class*="comment"]');
   isCommentArea.value = !!closestComment;
 
   // 使用 closest() 查找目标元素或其父元素
-  const closestLink = (target as HTMLElement).closest("a");
-  const closestInput = (target as HTMLElement).closest("input, textarea");
-  const closestImage = (target as HTMLElement).closest("img");
+  const closestLink = target.closest("a");
+  const closestInput = target.closest("input, textarea");
+  const closestImage = target.closest("img");
 
   if (closestImage) {
     menuType.value = "image";

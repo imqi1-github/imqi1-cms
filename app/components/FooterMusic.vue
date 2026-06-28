@@ -31,10 +31,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <Transition v-if="isLoaded && currentSong" name="fade">
+  <TransitionGroup name="fade">
     <button
+      v-if="isLoaded && currentSong"
       class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5 group"
       :class="btnShell"
+      v-bind="$attrs"
       @click="togglePlay">
       <!-- 进度条背景 -->
       <span
@@ -61,7 +63,7 @@ onMounted(() => {
           {{ isPlaying ? '暂停播放' : '开始播放' }}
         </span>
     </button>
-  </Transition>
+  </TransitionGroup>
 </template>
 
 <style scoped>

@@ -1,15 +1,7 @@
 // @meting/core 仅在请求到达时动态加载，避免冷启动时拉入
 // （仅在 /api/meting 路由内部使用）
 
-// Meting API 返回的歌曲数据结构
-interface MetingSong {
-  name: string;
-  artist: string | string[];
-  source: string;
-  url_id: string;
-  pic_id: string;
-  lyric_id: string;
-}
+import type { MetingSong, FormattedSong } from "#server/types/apis/meting";
 
 // 允许的音乐服务域名白名单
 const ALLOWED_REDIRECT_DOMAINS = [
@@ -251,15 +243,6 @@ export default defineEventHandler(async event => {
     });
   }
 });
-
-// 格式化后的歌曲信息
-interface FormattedSong {
-  name: string;
-  artist: string;
-  url: string;
-  pic: string;
-  lrc: string;
-}
 
 // 格式化响应（支持 JSON 和 JSONP）
 function formatResponse(data: FormattedSong[], format: string | undefined, callback: string | undefined) {

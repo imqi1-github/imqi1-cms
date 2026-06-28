@@ -1,7 +1,4 @@
-import type { InternalApi } from "nitropack/types";
-
-// 从 InternalApi 推导站点设置的真实类型（与 server/api/site.get.ts 的 SiteSettings 对齐）
-type SiteSettings = NonNullable<InternalApi["/api/site"]["get"]["data"]>;
+import type {SiteSettings} from "~/types/composables/setting";
 
 // 全局站点设置状态
 const siteSettings = ref<SiteSettings | null>(null);

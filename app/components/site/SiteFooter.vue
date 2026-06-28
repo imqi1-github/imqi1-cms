@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { siteConfig } from "~~/site.config";
+import {siteConfig} from "~~/site.config";
+import type {FooterIcon} from "~/types/components/site/footer";
 
 const route = useRoute();
 
@@ -22,15 +23,6 @@ const isTravelPage = computed(() => route.path === "/map");
 
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 const siteIcp = computed(() => siteSettings.value?.siteIcp || "");
-
-// 页脚图标数据
-interface FooterIcon {
-  name: string;
-  icon: string; // 图标组件名
-  href: string;
-  title: string;
-  target?: string;
-}
 
 const blogStackIcons: FooterIcon[] = [
   {
@@ -451,7 +443,9 @@ onUnmounted(() => {
       </ClientOnly>
 
       <!-- PC端：页脚音乐播放器 -->
-      <FooterMusic class="max-md:hidden" />
+      <div class="max-md:hidden">
+        <FooterMusic />
+      </div>
 
       <!-- 移动端：菜单切换按钮 -->
       <ClientOnly>

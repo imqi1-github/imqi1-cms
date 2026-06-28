@@ -32,6 +32,8 @@
 
 <script setup lang="ts">
 // 获取目标跳转地址
+import type {ApiError} from "~/types/pages/login";
+
 const route = useRoute()
 const redirectTo = computed(() => route.query.to as string || '/admin')
 
@@ -44,9 +46,6 @@ const form = reactive({
 
 const loading = ref(false)
 const csrfToken = ref('')
-
-// 在组件挂载时获取 CSRF token 并检查登录状态
-type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
 
 onMounted(async () => {
   // 检查是否已经登录

@@ -1,5 +1,5 @@
-import { PrismaClientKnownRequestError } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
 import { prisma } from "./prisma";
 

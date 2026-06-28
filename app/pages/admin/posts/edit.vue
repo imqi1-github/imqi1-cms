@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import type { AcceptableValue } from "reka-ui";
-import type { InternalApi } from "nitropack/types";
-
-type Category = InternalApi["/api/admin/categories"]["get"][number];
-type Tag = InternalApi["/api/admin/tags"]["get"][number];
-type PostMeta = NonNullable<InternalApi["/api/admin/post-categories/:id"]["get"]["data"]>[number];
-type Travel = InternalApi["/api/admin/travels"]["get"][number];
-type Attachment = NonNullable<InternalApi["/api/attachments/list"]["get"]["data"]>[number];
+import type {AcceptableValue} from "reka-ui";
+import type {InternalApi} from "nitropack/types";
+import type {Attachment, Category, PostMeta, Tag, Travel} from "~/types/pages/admin/posts";
 
 const route = useRoute();
 const router = useRouter();

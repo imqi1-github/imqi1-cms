@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 
-import { siteConfig } from "~~/site.config";
-
-interface SubscribeSource {
-  id: number;
-  name: string;
-  avatar: string | null;
-  postCount: number;
-}
+import {siteConfig} from "~~/site.config";
+import type {SubscribeSource} from "~/types/pages/subscribe";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();

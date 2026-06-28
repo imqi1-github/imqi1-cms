@@ -1,25 +1,5 @@
 import { prisma } from "#server/utils/prisma";
-
-interface BaiduAuditResult {
-  conclusion: string;
-  conclusionType: number;
-  data?: Array<{
-    type: number;
-    subType: number;
-    conclusion: string;
-    conclusionType: number;
-    msg: string;
-  }>;
-  error_code?: number;
-  error_msg?: string;
-}
-
-interface AuditConfig {
-  enabled: boolean;
-  apiKey: string;
-  secretKey: string;
-  checkAdmin: boolean;
-}
+import type { BaiduAuditResult, AuditConfig } from "#server/types/utils/baidu-audit";
 
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 

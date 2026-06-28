@@ -2,20 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { prisma } from "#server/utils/prisma";
+import type { SessionData, SessionStore } from "#server/types/utils/session-store";
 
-export interface SessionData {
-  userId: number;
-  authCode: string;
-  expires: number;
-}
-
-export interface SessionStore {
-  get(sessionId: string): Promise<SessionData | null>;
-  set(sessionId: string, data: SessionData): Promise<void>;
-  delete(sessionId: string): Promise<void>;
-  clearUserSessions(userId: number): Promise<void>;
-  cleanup(): Promise<void>;
-}
 
 // 内存存储
 export class MemorySessionStore implements SessionStore {

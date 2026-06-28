@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types"
-
-type UserDetail = InternalApi["/api/admin/users/:id"]["get"]
-type ApiError = { statusCode?: number; message?: string; data?: { message?: string } }
+import type {ApiError, UserDetail} from "~/types/pages/admin/users";
 
 const route = useRoute()
 const router = useRouter()

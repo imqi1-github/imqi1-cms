@@ -3,25 +3,19 @@
  * 用于在指令和 ContextMenu 组件之间传递自定义菜单项
  */
 
-interface CustomMenuItem {
-  icon?: string;
-  label: string;
-  action: (e: MouseEvent) => void;
-  divider?: boolean;
-  disabled?: boolean;
-  danger?: boolean;
-}
+import type { MenuItems } from "~/types/context-menu";
 
-type CustomMenuItems = CustomMenuItem[];
+// 向后兼容的类型别名
+export type CustomMenuItems = MenuItems;
 
 // 在模块顶层创建单例响应式状态
-const customMenuItems = ref<CustomMenuItems | null>(null);
+const customMenuItems = ref<MenuItems | null>(null);
 const customMenuTarget = ref<HTMLElement | null>(null);
 
 /**
  * 设置自定义菜单项
  */
-export const setCustomMenu = (items: CustomMenuItems, target: HTMLElement) => {
+export const setCustomMenu = (items: MenuItems, target: HTMLElement) => {
   customMenuItems.value = items;
   customMenuTarget.value = target;
 };
@@ -45,3 +39,4 @@ export const useCustomContextMenu = () => {
     clearCustomMenu,
   };
 };
+

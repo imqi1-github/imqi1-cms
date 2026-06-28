@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { siteConfig } from "~~/site.config";
+import {siteConfig} from "~~/site.config";
+import type {BreadcrumbItem} from "~/types/components/site/header";
 
 const route = useRoute();
 
@@ -12,14 +13,6 @@ const { getPageTitle, getPageIcon, getPageCategory } = usePageTitle();
 const pageTitle = computed(() => getPageTitle().value || null);
 const pageIcon = computed(() => getPageIcon().value || null);
 const pageCategory = computed(() => getPageCategory().value || null);
-
-// 面包屑数据
-interface BreadcrumbItem {
-  name: string;
-  icon?: string;
-  href?: string;
-  isCurrent?: boolean;
-}
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const path = route.path;

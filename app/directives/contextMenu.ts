@@ -5,8 +5,8 @@
  * menuItems 类型：
  * Array<{
  *   icon?: string;                    // 图标名称（可选）
- *   label: string;                    // 菜单项文字
- *   action: (e: MouseEvent) => void;  // 点击执行的函数
+ *   label: string;                    // 菜单项文字（必需）
+ *   action: (e: MouseEvent) => void;  // 点击执行的函数（必需）
  *   divider?: boolean;                // 是否为分隔线（可选）
  *   disabled?: boolean;               // 是否禁用（可选）
  *   danger?: boolean;                 // 是否为危险操作（可选，红色样式）
@@ -17,26 +17,17 @@
 
 import type { Directive } from "vue";
 
-interface MenuItem {
-  icon?: string;
-  label?: string;
-  action?: (e: MouseEvent) => void;
-  divider?: boolean;
-  disabled?: boolean;
-  danger?: boolean;
-}
-
-type MenuItems = MenuItem[];
+import type { MenuElement, MenuItems, MenuItem } from "~/types/context-menu";
 
 // 挂载在 DOM 元素上的属性名（导出供 ContextMenu 组件读取）
 export const MENU_ITEMS_KEY = "_customMenuItems";
 
 // 写入/更新挂载元素上的菜单项
-function applyMenuItems(el: HTMLElement, items: unknown) {
-  (el as any)[MENU_ITEMS_KEY] = items;
+function applyMenuItems(el: MenuElement, items: MenuItems) {
+  el[MENU_ITEMS_KEY] = items;
 }
 
-const contextMenuDirective: Directive<HTMLElement, MenuItems> = {
+const contextMenuDirective: Directive<MenuElement, MenuItems> = {
   // SSR 支持：服务端不渲染任何特殊属性
   getSSRProps() {
     return {};
@@ -53,7 +44,7 @@ const contextMenuDirective: Directive<HTMLElement, MenuItems> = {
   },
 
   unmounted(el) {
-    applyMenuItems(el, undefined);
+    applyMenuItems(el, []);
   },
 };
 
@@ -68,5 +59,6 @@ function isValidItems(value: unknown): value is MenuItems {
 
 export default contextMenuDirective;
 
-// 导出类型
-export type { MenuItem, MenuItems };
+// 导出类型（从统一定义文件重新导出，保持向后兼容）
+export type { MenuItem, MenuItems, MenuElement };
+

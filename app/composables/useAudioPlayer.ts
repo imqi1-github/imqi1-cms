@@ -1,13 +1,5 @@
 import { usePlayerManager } from "./usePlayerManager";
-
-// 音乐数据
-interface Song {
-  name: string;
-  artist: string;
-  url: string;
-  pic: string;
-  lrc: string;
-}
+import type { Song } from "~/types/composables/song";
 
 // ===== 模块级：仅客户端使用的单例资源 =====
 // 这些不参与 SSR 渲染（SSR 期间从不被读取或修改），可安全放在模块顶层：
@@ -24,7 +16,7 @@ let isInitialized = false;
 const playerId = `footer-${Date.now()}-${Math.random()}`;
 
 // 音乐播放器失败计数相关常量（歌单拉取失败 + 单首播放卡顿/失败共用同一计数）
-const METING_FAILURE_COUNT_KEY = 'meting_api_failure_count';
+const METING_FAILURE_COUNT_KEY = "meting_api_failure_count";
 const MAX_FAILURE_COUNT = 3;
 
 // 获取失败次数
@@ -67,13 +59,13 @@ function getPlayerManager() {
 // 避免 SSR 时多个请求共享同一份模块级 ref 导致串号。
 export function useAudioPlayer() {
   // 共享响应式状态（SSR 安全）
-  const playlist = useState<Song[]>('audio:playlist', () => []);
-  const currentSong = useState<Song | null>('audio:currentSong', () => null);
-  const isPlaying = useState<boolean>('audio:isPlaying', () => false);
-  const isLoaded = useState<boolean>('audio:isLoaded', () => false);
-  const progress = useState<number>('audio:progress', () => 0);
-  const shouldAutoPlay = useState<boolean>('audio:shouldAutoPlay', () => false);
-  const playedIndices = useState<number[]>('audio:playedIndices', () => []);
+  const playlist = useState<Song[]>("audio:playlist", () => []);
+  const currentSong = useState<Song | null>("audio:currentSong", () => null);
+  const isPlaying = useState<boolean>("audio:isPlaying", () => false);
+  const isLoaded = useState<boolean>("audio:isLoaded", () => false);
+  const progress = useState<number>("audio:progress", () => 0);
+  const shouldAutoPlay = useState<boolean>("audio:shouldAutoPlay", () => false);
+  const playedIndices = useState<number[]>("audio:playedIndices", () => []);
 
   // 获取下一首未播放的歌曲
   function getNextSong(): Song | null {
@@ -163,7 +155,7 @@ export function useAudioPlayer() {
     // 通知播放器管理器，暂停其他所有播放器
     const manager = getPlayerManager();
     if (manager) {
-      manager.notifyPlay('footer', playerId);
+      manager.notifyPlay("footer", playerId);
     }
   };
 
@@ -217,7 +209,7 @@ export function useAudioPlayer() {
     // 注册到播放器管理器
     const manager = getPlayerManager();
     if (manager) {
-      manager.registerPlayer('footer', playerId, () => {
+      manager.registerPlayer("footer", playerId, () => {
         if (audio) {
           audio.pause();
         }
@@ -313,7 +305,7 @@ export function useAudioPlayer() {
     // 从播放器管理器中注销
     const manager = getPlayerManager();
     if (manager) {
-      manager.unregisterPlayer('footer', playerId);
+      manager.unregisterPlayer("footer", playerId);
     }
 
     if (audio) {

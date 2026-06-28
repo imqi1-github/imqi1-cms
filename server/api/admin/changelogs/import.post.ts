@@ -1,15 +1,8 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateChangelogData } from "#server/utils/validation";
-import {
-  normalizeChangelogEntries,
-  stringifyChangelogContent,
-} from "#server/utils/changelog";
-
-interface ParsedRecord {
-  entries: unknown;
-  createTime?: string;
-}
+import { normalizeChangelogEntries, stringifyChangelogContent } from "#server/utils/changelog";
+import type { ChangelogInputJson, ChangelogInputRecord, ParsedRecord } from "#server/types/apis/changelog-import";
 
 /**
  * 从 JSON 文件导入更新日志（一键导入）。
@@ -46,9 +39,9 @@ export default defineEventHandler(async event => {
   }
 
   // 解析 JSON
-  let data: unknown;
+  let data: ChangelogInputJson;
   try {
-    data = JSON.parse(source);
+    data = JSON.parse(source) as ChangelogInputJson;
   } catch (error) {
     console.error(error);
     throw createError({
@@ -58,9 +51,9 @@ export default defineEventHandler(async event => {
   }
 
   // 统一解析为「记录列表」（每条记录写入一行 changelogs）
-  const records: ParsedRecord[] = [];
-  const asRecord = (v: unknown): Record<string, unknown> | null =>
-    v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+  const records: (ParsedRecord | ChangelogInputRecord)[] = [];
+  const asRecord = (v: unknown): ChangelogInputRecord | null =>
+    v && typeof v === "object" && !Array.isArray(v) && "entries" in v ? (v as ChangelogInputRecord) : null;
 
   if (Array.isArray(data)) {
     const firstObj = asRecord(data[0]);
@@ -69,11 +62,13 @@ export default defineEventHandler(async event => {
     if (looksLikeMulti) {
       // 多条记录：[{ entries, createTime? }, ...]
       for (const item of data) {
-        const obj = asRecord(item) ?? {};
-        records.push({
-          entries: obj.entries,
-          createTime: typeof obj.createTime === "string" ? obj.createTime : undefined,
-        });
+        const obj = asRecord(item);
+        if (obj) {
+          records.push({
+            entries: obj.entries,
+            createTime: obj.createTime,
+          });
+        }
       }
     } else {
       // 单条记录：整个数组就是一条记录的条目
@@ -85,7 +80,7 @@ export default defineEventHandler(async event => {
       // 单个 { entries: [...], createTime? }
       records.push({
         entries: obj.entries,
-        createTime: typeof obj.createTime === "string" ? obj.createTime : undefined,
+        createTime: obj.createTime,
       });
     } else {
       throw createError({

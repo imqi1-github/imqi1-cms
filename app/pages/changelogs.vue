@@ -1,30 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 
-import { siteConfig } from "~~/site.config";
-import {
-  CHANGELOG_TYPES,
-  CHANGELOG_META,
-  getChangelogMeta,
-} from "~~/shared/changelog";
-
-interface ChangelogEntry {
-  type: string;
-  value: string;
-  html: string;
-}
-
-interface ChangelogLog {
-  id: number;
-  content: ChangelogEntry[];
-  createTime: string | Date;
-}
-
-interface ChangelogGroup {
-  year: number;
-  month: number;
-  logs: ChangelogLog[];
-}
+import {siteConfig} from "~~/site.config";
+import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta,} from "~~/shared/changelog";
+import type {ChangelogEntry, ChangelogGroup} from "~/types/pages/changelog";
 
 const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {
   headers: {

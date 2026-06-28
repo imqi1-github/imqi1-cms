@@ -1,9 +1,5 @@
 <script setup lang="ts">
-interface Notification {
-  id: string;
-  message: string;
-  type: "success" | "error" | "info";
-}
+import type {Notification} from "~/types/components/notification";
 
 const notifications = ref<Notification[]>([]);
 

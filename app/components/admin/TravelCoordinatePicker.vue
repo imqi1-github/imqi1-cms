@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import "@amap/amap-jsapi-types";
 
-import { loadAmap } from "~/utils/amap-loader";
+import {loadAmap} from "~/utils/amap-loader";
+import type {
+  AMapMapEvent,
+  AMapMapInstance,
+  AMapNamespace,
+  LngLatInput,
+  LngLatTuple
+} from "~/types/components/admin/amap";
 
 const props = defineProps<{
   longitude: string | number | null;
@@ -25,40 +32,10 @@ const mapEl = ref<HTMLElement | null>(null);
 const loading = ref(true);
 const loadError = ref(false);
 
-// 高德地图 SDK 命名空间类型别名（避免与下方局部变量 amap 命名冲突）
-type AMapNamespace = typeof AMap;
-
-// AMap.Map 实例还带有类型声明中未暴露的 resize 方法
-type AMapMapInstance = AMap.Map & { resize?(): void };
-
-// 高德经纬度对象（运行时由 SDK 提供，具备 getLng/getLat）
-interface AMapLngLatLike {
-  getLng(): unknown;
-  getLat(): unknown;
-}
-
-// 普通坐标对象（手动输入或序列化数据）
-interface CoordRecord {
-  lng?: unknown;
-  lat?: unknown;
-  longitude?: unknown;
-  latitude?: unknown;
-}
-
-// normalizeLngLat 的合法输入：数组 | 高德 LngLat | 坐标对象
-type LngLatInput = AMapLngLatLike | CoordRecord;
-
-// 地图点击 / 拖拽事件负载（均带 lnglat）
-interface AMapMapEvent {
-  lnglat: LngLatInput;
-}
-
 let _amap: AMapNamespace | null = null;
 let map: AMapMapInstance | null = null;
 let marker: AMap.Marker | null = null;
 let updatingFromPicker = false;
-
-type LngLatTuple = [number, number];
 
 function normalizeLngLat(value: LngLatInput | null | undefined): LngLatTuple | null {
   if (Array.isArray(value)) {

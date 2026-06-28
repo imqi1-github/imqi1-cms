@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 
-import { siteConfig } from "~~/site.config";
+import {siteConfig} from "~~/site.config";
+import type {TocItem} from "~/types/pages/toc";
 
 // 获取路由
 const route = useRoute();
@@ -27,13 +28,6 @@ const { setPageTitle } = usePageTitle();
 
 // 页面标题
 const pageTitle = ref(`协议 - ${siteName.value}`);
-
-// 目录相关
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
 
 const tocItems = ref<TocItem[]>([]);
 const activeTocId = ref("");

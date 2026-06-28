@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import {onBeforeUnmount, onMounted, ref} from 'vue'
 
-import { usePlayerManager } from '~/composables/usePlayerManager'
+import type APlayerType from '~/lib/aplayer/player.js'
+import {usePlayerManager} from '~/composables/usePlayerManager'
 import "~/assets/css/aplayer.css"
+import type {AudioItem, MetingOptions} from "~/pages/components/meting-player";
 
 // 获取播放器管理器
 const playerManager = usePlayerManager()
@@ -41,8 +43,8 @@ const props = defineProps({
 })
 
 const container = ref<HTMLElement>()
-let APlayer: any = null
-let aplayerInstance: any = null
+let APlayer: typeof APlayerType;
+let aplayerInstance: APlayerType | null = null;
 // 标记组件是否已卸载
 let isUnmounted = false
 
@@ -58,7 +60,7 @@ onMounted(async () => {
     }
 
     // 获取音乐数据
-    let audioData: any[] = []
+    let audioData: AudioItem[] = []
 
     if (props.url) {
       // 直接使用 URL
@@ -91,7 +93,7 @@ onMounted(async () => {
     }
 
     // 初始化 APlayer
-    const options: any = {
+    const options: MetingOptions = {
       container: container.value,
       audio: audioData,
       mutex: props.mutex,
@@ -112,7 +114,7 @@ onMounted(async () => {
 
     // 将实例引用存储到容器元素上，方便其他播放器访问
     if (container.value) {
-      (container.value as any).__aplayer__ = aplayerInstance
+      (container.value as HTMLElement & { __aplayer__?: APlayerType }).__aplayer__ = aplayerInstance
     }
 
     // 注册到播放器管理器
@@ -149,7 +151,7 @@ onBeforeUnmount(() => {
   }
   // 清理容器上的引用
   if (container.value) {
-    delete (container.value as any).__aplayer__
+    delete (container.value as HTMLElement & { __aplayer__?: APlayerType }).__aplayer__
   }
 })
 </script>

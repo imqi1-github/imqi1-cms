@@ -1,23 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, useTemplateRef } from "vue";
+import {onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
 import Swiper from "swiper";
-import { Navigation, Pagination, Mousewheel } from "swiper/modules";
+import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "@/assets/css/fancybox.css";
-
-interface Cover {
-  url: string;
-  desc?: string;
-}
-
-interface Props {
-  covers: Cover[];
-  isPhotoCategory?: boolean;
-}
+import type {Props} from "~/pages/components/cover-swiper";
 
 const props = withDefaults(defineProps<Props>(), {
   isPhotoCategory: false,
@@ -25,8 +16,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const swiperContainer = ref<HTMLElement>();
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let swiperInstance: any = null;
-let FancyboxModule: any = null;
+let swiperInstance: Swiper | null = null;
+let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 // ✅ 标记组件是否已卸载
 let isUnmounted = false;
 
@@ -108,7 +99,7 @@ onMounted(async () => {
     },
     idle: false,
     autoFocus: false,
-  } as any));
+  }));
 });
 
 // 合并清理逻辑

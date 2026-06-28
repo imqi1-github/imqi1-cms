@@ -1,19 +1,6 @@
 <script setup lang="ts">
 import LivePhoto from "./LivePhoto.vue";
-
-interface WaterfallItem {
-  url: string;
-  title: string;
-  desc?: string;
-  cid?: number;
-  slug?: string;
-  categorySlug?: string;
-}
-
-interface Props {
-  asLink?: boolean;
-  items?: WaterfallItem[];
-}
+import type {Props, WaterfallItem} from "~/pages/components/waterfall";
 
 const props = withDefaults(defineProps<Props>(), {
   asLink: true,

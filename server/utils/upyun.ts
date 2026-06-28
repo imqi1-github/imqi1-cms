@@ -2,23 +2,10 @@ import * as crypto from "crypto";
 
 import prisma from "./prisma";
 
+import type { UpYunConfig, UploadResult } from "#server/types/utils/upyun";
+
 // 又拍云 API 端点
 const UPYUN_API_ENDPOINT = "v0.api.upyun.com";
-
-// 又拍云配置接口
-export interface UpYunConfig {
-  bucket: string; // 服务名称
-  operator: string; // 操作员
-  password: string; // 密码
-  domain?: string; // 绑定域名
-}
-
-// 上传结果接口
-export interface UploadResult {
-  success: boolean;
-  url?: string;
-  error?: string;
-}
 
 // 从数据库获取又拍云配置
 export async function getUpYunConfig(): Promise<UpYunConfig | null> {

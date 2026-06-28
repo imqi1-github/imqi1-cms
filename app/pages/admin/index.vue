@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type RecentPost = InternalApi["/api/admin/recent-posts"]["get"][number];
-type RecentComment = InternalApi["/api/admin/recent-comments"]["get"][number];
-type PopularPost = InternalApi["/api/admin/popular-posts"]["get"][number];
+import type {PopularPost, RecentComment, RecentPost} from "~/types/pages/admin";
 
 const router = useRouter()
 const loading = ref(true)

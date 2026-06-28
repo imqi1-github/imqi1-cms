@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types"
-
-type AttachmentDetail = NonNullable<InternalApi["/api/admin/attachments/:id"]["get"]["data"]>
-type ApiError = { statusCode?: number; message?: string; data?: { message?: string } }
+import type {ApiError, AttachmentDetail} from "~/types/pages/admin/attachments";
 
 const route = useRoute()
 const toast = useToast()

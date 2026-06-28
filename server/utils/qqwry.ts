@@ -4,31 +4,8 @@ import { isIP } from "node:net";
 
 import IPDB from "ipdb";
 
-export interface IpLocationInfo {
-  country: string;   // 国家或地区
-  area: string;      // 运营商或具体位置
-}
+import type { CachedLocation, IpdbData } from "#server/types/utils/qqwry";
 
-export interface IpDetail extends IpLocationInfo {
-  beginIP: string;
-  endIP: string;
-}
-
-type IpdbData = {
-  country_name?: string;
-  region_name?: string;
-  city_name?: string;
-  district_name?: string;
-  owner_domain?: string;
-  isp_domain?: string;
-  ip?: string;
-  bitmask?: number;
-};
-
-type CachedLocation = {
-  value: IpDetail | null;
-  expires: number;
-};
 
 const DB_FILE = "qqwry.ipdb";
 const CACHE_TTL = 24 * 60 * 60 * 1000;

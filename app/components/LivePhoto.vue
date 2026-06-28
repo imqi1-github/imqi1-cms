@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, useAttrs, type CSSProperties } from "vue";
-import { useMediaQuery } from "@vueuse/core";
+import {type CSSProperties, onMounted, ref, useAttrs} from "vue";
+import {useMediaQuery} from "@vueuse/core";
 
-import { useLivePhoto } from "~/composables/useLivePhoto";
+import {useLivePhoto} from "~/composables/useLivePhoto";
+import type {LivePhotoElement} from "~/types/components/live-photo";
 
 // 禁用自动属性继承，手动控制属性传递
 defineOptions({
@@ -27,10 +28,10 @@ const attrs = useAttrs();
 
 // 过滤出fancybox相关的属性，只传给img
 const fancyboxAttrs = computed(() => {
-  const result: Record<string, any> = {};
+  const result: Record<string, string> = {};
   (Object.keys(attrs) as Array<keyof typeof attrs>).forEach(key => {
     if (key.startsWith("data-") || key === "id" || key === "title" || key === "loading") {
-      result[key] = attrs[key];
+      result[key] = attrs[key] as string;
     }
   });
   // 标记实况照片，供 Fancybox 灯箱识别后在灯箱内提供实况视频播放
@@ -80,7 +81,7 @@ const actualSrc = computed(() => {
 });
 
 // 初始化懒加载监听
-const initLazyLoading = (el: HTMLElement) => {
+const initLazyLoading = (el: LivePhotoElement) => {
   if (!props.lazy || isLive.value) return;
 
   if (!('IntersectionObserver' in window)) {
@@ -95,9 +96,8 @@ const initLazyLoading = (el: HTMLElement) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
           // 进入视口，开始加载
-          const img = entry.target as HTMLImageElement;
+          const img = entry.target as LivePhotoElement;
           lazyObserver!.unobserve(img);
-          // @ts-ignore - 我们在 dataset 中存储了回调
           img.__livePhotoLoadCallback?.();
         }
       }
@@ -108,7 +108,6 @@ const initLazyLoading = (el: HTMLElement) => {
   }
 
   // 存储加载回调，observer 触发时调用
-  // @ts-ignore
   el.__livePhotoLoadCallback = () => {
     shouldLoad.value = true;
   };
@@ -175,7 +174,7 @@ let isUnmounted = false;
 // ✅ 用于取消实况视频提取请求
 let extractAbortController: AbortController | null = null;
 // 保存 observer 引用用于卸载
-let observedElement: HTMLElement | null = null;
+let observedElement: LivePhotoElement | null = null;
 
 // 初始化实况照片
 onMounted(async () => {
@@ -314,7 +313,7 @@ const handleMouseEnter = async () => {
         isPlaying.value = true;
       }
     })
-    .catch(err => {
+    .catch(() => {
       // ✅ 异步回调中也检查组件状态
       if (!isUnmounted) {
         // 播放失败时恢复显示图片
@@ -463,7 +462,6 @@ onUnmounted(() => {
   // ✅ 清理懒加载 observer
   if (lazyObserver && observedElement) {
     lazyObserver.unobserve(observedElement);
-    // @ts-ignore
     delete observedElement.__livePhotoLoadCallback;
   }
 

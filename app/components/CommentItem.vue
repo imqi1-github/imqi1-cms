@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { parseUserAgent } from "~/utils/parseUserAgent";
+import {parseUserAgent} from "~/utils/parseUserAgent";
+import type {MD5Block} from "~/types/md5";
 
 const props = defineProps<{
   comment: any;
@@ -57,13 +58,6 @@ const getLinkText = (url: string) => {
     return url;
   }
 };
-
-type MD5Block = [
-  number, number, number, number,
-  number, number, number, number,
-  number, number, number, number,
-  number, number, number, number
-];
 
 const md5 = (string: string): string => {
   function md5cycle(x: number[], k: MD5Block) {

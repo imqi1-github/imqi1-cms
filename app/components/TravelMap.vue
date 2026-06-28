@@ -1,42 +1,19 @@
 <script setup lang="ts">
 import "@amap/amap-jsapi-types";
 
-import { loadAmap } from "~/utils/amap-loader";
-
-interface TravelPost {
-  url: string;
-  title: string;
-  coverCount: number;
-  manyCovers: boolean;
-}
-
-interface Reader {
-  name: string;
-  url: string | null;
-  articleTitle: string | null;
-  articleUrl: string | null;
-  comment: string | null;
-  avatar: string | null;
-}
-
-interface Place {
-  id: number;
-  name: string;
-  desc: string | null;
-  cover: string | null;
-  longitude: number;
-  latitude: number;
-  posts: TravelPost[];
-  // 访客分布视图：该城市内的每位访客（昵称 / 网址 / 评论文章）。我的足迹视图留空。
-  readers?: Reader[];
-  // 博客网络视图：站点头像（标记用）+ 来源（订阅/友链）+ 跳转信息。其它视图留空。
-  avatar?: string | null;
-  source?: "subscribe" | "link";
-  sourceId?: number | string;
-  targetUrl?: string | null;
-  serverLocation?: string | null;
-  serverIsp?: string | null;
-}
+import {loadAmap} from "~/utils/amap-loader";
+import type {
+  AMapClusterEvent,
+  AMapMapInstance,
+  AMapNamespace,
+  ClusterPoint,
+  CoordRecord,
+  LngLatInput,
+  LngLatTuple,
+  MapPoint,
+  Place,
+  Reader
+} from "~/types/components/map";
 
 const props = defineProps<{
   places: Place[];
@@ -61,11 +38,11 @@ const isDark = computed(() => colorMode.value === "dark");
 
 const loadError = ref(false);
 const loading = ref(true);
-let map: any = null;
-let cluster: any = null;
-let infoWindow: any = null;
-// 缓存 AMap 命名空间，供 buildPoints/createCluster 等可复用函数在 onMounted 之后引用
-let AMapRef: any = null;
+
+let _amap: AMapNamespace | null = null;
+let map: AMapMapInstance | null = null;
+let cluster: AMap.MarkerClusterer | null = null;
+let infoWindow: AMap.InfoWindow | null = null;
 // 每个标记上次渲染的内容签名：缩放时内容未变就跳过 setContent，
 // 避免重复重建 <img> 导致头像重新加载/闪烁/重新请求。
 const lastMarkerContent = new WeakMap<object, string>();
@@ -82,30 +59,24 @@ const INFO_OFFSET_PIN_Y = -44;
 const INFO_OFFSET_VISITOR_Y = -30;
 const INFO_OFFSET_CLUSTER_Y = -30;
 
-type LngLatTuple = [number, number];
-
-type MapPoint = { lnglat: LngLatTuple; id: number; place: Place };
-
-// 聚合点击时从 clusterData 规整出的点：lnglat 已规范化且非空（类型上保证非 null，
-// 消除下方 center 经 || 链推断为可空时、center[0] 的"possibly null"告警）
-type ClusterPoint = { id?: number; place?: Place; lnglat: LngLatTuple };
-
-function normalizeLngLat(value: any): LngLatTuple | null {
+function normalizeLngLat(value: LngLatInput | null | undefined): LngLatTuple | null {
   if (Array.isArray(value)) {
     const lng = Number(value[0]);
     const lat = Number(value[1]);
     return Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : null;
   }
 
-  if (value && typeof value.getLng === "function" && typeof value.getLat === "function") {
+  if (value && "getLng" in value && "getLat" in value) {
     const lng = Number(value.getLng());
     const lat = Number(value.getLat());
     return Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : null;
   }
 
-  if (value && typeof value === "object") {
-    const lng = Number(value.lng ?? value.longitude);
-    const lat = Number(value.lat ?? value.latitude);
+  // 类型守卫：检查 value 是否为 CoordRecord（具有 lng/longitude/lat/latitude 属性的对象）
+  if (value && !Array.isArray(value) && "lng" in value) {
+    const coord = value as CoordRecord;
+    const lng = Number(coord.lng ?? coord.longitude);
+    const lat = Number(coord.lat ?? coord.latitude);
     return Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : null;
   }
 
@@ -124,16 +95,22 @@ function averageLngLat(lnglats: LngLatTuple[]): LngLatTuple | null {
   ]);
 }
 
-function collectClusterLngLats(clusterData: any[]): LngLatTuple[] {
+function collectClusterLngLats(clusterData: unknown[]): LngLatTuple[] {
   const lnglats: LngLatTuple[] = [];
 
-  const pushPoint = (point: any) => {
-    const lnglat = normalizeLngLat(point?.lnglat ?? point);
+  const pushPoint = (point: unknown) => {
+    // 类型守卫：检查 point 是否具有 lnglat 属性
+    const hasLnglat = point && typeof point === "object" && "lnglat" in point;
+    let lnglatInput: LngLatInput | null | undefined = point as LngLatInput | null | undefined;
+    if (hasLnglat) {
+      lnglatInput = (point as { lnglat?: LngLatInput }).lnglat ?? point as LngLatInput;
+    }
+    const lnglat = normalizeLngLat(lnglatInput);
     if (lnglat) lnglats.push(lnglat);
   };
 
-  clusterData.forEach(item => {
-    const originData = item?._amapMarker?.originData;
+  clusterData.forEach((item: unknown) => {
+    const originData = (item as { _amapMarker?: { originData?: unknown[] } })?._amapMarker?.originData;
     if (Array.isArray(originData) && originData.length) {
       originData.flat().forEach(pushPoint);
     } else {
@@ -146,19 +123,25 @@ function collectClusterLngLats(clusterData: any[]): LngLatTuple[] {
 
 // 从聚合数据里规整出原始 cluster point（id / lnglat），用于按 id 反查完整 place 求读者数之和。
 // 高德克隆 clusterData 时会裁剪自定义嵌套字段，但 id 与 lnglat 一般保留；originData 嵌套时展开。
-function collectClusterPoints(clusterData: any[]): { id?: number; lnglat: LngLatTuple | null }[] {
+function collectClusterPoints(clusterData: unknown[]): { id?: number; lnglat: LngLatTuple | null }[] {
   const out: { id?: number; lnglat: LngLatTuple | null }[] = [];
 
-  const pushPoint = (point: any) => {
-    const id = Number(point?.id);
+  const pushPoint = (point: unknown) => {
+    const id = Number((point as { id?: unknown })?.id);
+    // 类型守卫：检查 point 是否具有 lnglat 属性
+    const hasLnglat = point && typeof point === "object" && "lnglat" in point;
+    let lnglatInput: LngLatInput | null | undefined = point as LngLatInput | null | undefined;
+    if (hasLnglat) {
+      lnglatInput = (point as { lnglat?: LngLatInput }).lnglat ?? point as LngLatInput;
+    }
     out.push({
       ...(Number.isFinite(id) ? { id } : {}),
-      lnglat: normalizeLngLat(point?.lnglat ?? point),
+      lnglat: normalizeLngLat(lnglatInput),
     });
   };
 
-  clusterData.forEach(item => {
-    const originData = item?._amapMarker?.originData;
+  clusterData.forEach((item: unknown) => {
+    const originData = (item as { _amapMarker?: { originData?: unknown[] } })?._amapMarker?.originData;
     if (Array.isArray(originData) && originData.length) {
       originData.flat().forEach(pushPoint);
     } else {
@@ -399,7 +382,7 @@ function buildInfoContent(place: Place) {
 }
 
 function openInfo(content: string, lnglat: LngLatTuple, offsetY = INFO_OFFSET_PIN_Y) {
-  if (!map || !AMapRef) return;
+  if (!map || !_amap) return;
   // AMap 2.0 的 InfoWindow#setOptions 对 offset 的解析不稳定，会把 Pixel 解析成
   // Pixel(undefined, undefined)；构造函数传 offset 是稳定的。不同类型点位需要不同距离时，
   // 直接重建 InfoWindow，避免点击时报 Invalid Object: Pixel(undefined, undefined)。
@@ -408,9 +391,9 @@ function openInfo(content: string, lnglat: LngLatTuple, offsetY = INFO_OFFSET_PI
   } catch {
     /* noop */
   }
-  infoWindow = new AMapRef.InfoWindow({
+  infoWindow = new _amap.InfoWindow({
     isCustom: true,
-    offset: new AMapRef.Pixel(0, offsetY),
+    offset: new _amap.Pixel(0, offsetY),
     closeWhenClickMap: true,
     autoMove: true,
   });
@@ -471,14 +454,14 @@ function fitChinaView() {
  * 会触发头像重新加载/重新请求），offset 每次都设置（廉价且幂等）。
  * 这样地图缩放重渲染时，内容未变的标记不再重建 DOM，头像不再反复加载。
  */
-function applyMarker(marker: any, html: string, offset: any) {
+function applyMarker(marker: AMap.Marker, html: string, offset: AMap.Pixel) {
   if (lastMarkerContent.get(marker) !== html) {
     marker.setContent(html);
     lastMarkerContent.set(marker, html);
   }
   marker.setOffset(offset);
 }
-function applyMarkerElement(marker: any, key: string, element: HTMLElement, offset: any) {
+function applyMarkerElement(marker: AMap.Marker, key: string, element: HTMLElement, offset: AMap.Pixel) {
   if (lastMarkerContent.get(marker) !== key) {
     marker.setContent(element);
     lastMarkerContent.set(marker, key);
@@ -521,40 +504,48 @@ function createCluster(points: MapPoint[]) {
   const effectiveMax = props.maxZoom ?? 20;
 
   // clusterData 自定义/嵌套字段会被高德裁剪 → 按 id 从规范的 props.places 反查完整 place
-  const findPlace = (d: any): Place | undefined => {
-    const pid = d?.id ?? d?.place?.id;
-    return (pid != null ? props.places.find(p => p.id === pid) : undefined) ?? d?.place ?? undefined;
+  const findPlace = (d: unknown): Place | undefined => {
+    const pid = (d as { id?: unknown; place?: Place })?.id ?? (d as { place?: Place })?.place?.id;
+    return (pid != null ? props.places.find(p => p.id === pid) : undefined) ?? (d as { place?: Place })?.place ?? undefined;
   };
 
-  const c = new AMapRef.MarkerCluster(map, points, {
+  if (!_amap) throw new Error("AMap not loaded");
+  if (!map) throw new Error("Map not initialized");
+
+  // 捕获局部变量，确保在回调中 _amap 和 map 非空（已在上方的 if 检查中保证）
+  const amap = _amap;
+  const mapInstance = map;
+
+  const c = new amap.MarkerClusterer(mapInstance, points as unknown as AMap.Marker[], {
     // gridSize：聚合网格像素阈值，越大越易聚成一坨。2000 会把全国点压成一个；
     // 用 AMap 默认 60，仅聚合屏幕上紧挨的点，分散点各自显示。
     gridSize: 60,
     maxZoom: effectiveMax,
-    renderClusterMarker: (context: any) => {
+    renderClusterMarker: (context: { clusterData?: unknown[]; marker: AMap.Marker; count?: number; getPosition?: () => LngLatInput }) => {
       const lnglats = collectClusterLngLats(context.clusterData || []);
       // 访客分布：圈内读者人数之和；我的足迹：聚合的城市点数。
       const count = hasReaders
         ? collectClusterPoints(context.clusterData || []).reduce((sum, cp) => sum + readerCountOf(cp), 0)
-        : lnglats.length || context.count || context.clusterData.length;
+        : lnglats.length || context.count || (context.clusterData?.length ?? 0);
       const center = averageLngLat(lnglats);
 
       if (center) context.marker.setPosition(center);
       // 内容未变则跳过 setContent（避免重建 <img> / 头像重新加载），offset 每次设置（廉价幂等）
-      applyMarker(context.marker, clusterHtml(count), new AMapRef.Pixel(-clusterSize(count) / 2, -clusterSize(count) / 2));
+      applyMarker(context.marker, clusterHtml(count), new amap.Pixel(-clusterSize(count) / 2, -clusterSize(count) / 2));
     },
-    renderMarker: (context: any) => {
+    // @ts-expect-error d.ts未声明，但是实际存在
+    renderMarker: (context: { data?: unknown[]; marker: AMap.Marker }) => {
       // 博客网络：单点始终用头像圆标。即使 avatar 为空，也用站点名首个汉字/字符生成占位头像，
-      // 与订阅页头像 fallback 同原则；不能退回默认 pin，否则无头像站点看起来像“丢了”。
+      // 与订阅页头像 fallback 同原则；不能退回默认 pin，否则无头像站点看起来像”丢了”。
       const place0 = findPlace(context.data?.[0]);
       if (!hasReaders && place0?.source) {
         const markerElement = blogMarkerElement(place0);
-        applyMarkerElement(context.marker, markerElement.key, markerElement.element, new AMapRef.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
+        applyMarkerElement(context.marker, markerElement.key, markerElement.element, new amap.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
         return;
       }
       // 我的足迹：单点用蓝色圆点（与访客分布单读者同款）
       if (!hasReaders) {
-        applyMarker(context.marker, singleDotHtml(), new AMapRef.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
+        applyMarker(context.marker, singleDotHtml(), new amap.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
         return;
       }
       // 访客分布单点：按 id 优先反查该城市读者数（规避高德对 place.readers 的克隆裁剪）
@@ -562,26 +553,34 @@ function createCluster(points: MapPoint[]) {
       const rc = cp0 ? readerCountOf(cp0) : 1;
       if (rc > 1) {
         // 多位访客：数字圆圈（数字 = 读者数，与聚合圈同款）——如沈阳 6 位访客显示「6」
-        applyMarker(context.marker, clusterHtml(rc), new AMapRef.Pixel(-clusterSize(rc) / 2, -clusterSize(rc) / 2));
+        applyMarker(context.marker, clusterHtml(rc), new amap.Pixel(-clusterSize(rc) / 2, -clusterSize(rc) / 2));
       } else {
         // 单读者：显示该访客头像（头像加载失败时降级首字母），让访客分布不再只是匿名圆点。
         // 这里复用同一个 DOM 元素，避免高德缩放重建 marker 实例时 setContent(string) 重新解析 <img>。
         const reader = place0?.readers?.[0] ?? null;
         const markerElement = readerMarkerElement(place0?.id ?? 0, reader);
-        applyMarkerElement(context.marker, markerElement.key, markerElement.element, new AMapRef.Pixel(-VISITOR_AVATAR_SIZE / 2, -VISITOR_AVATAR_SIZE / 2));
+        applyMarkerElement(context.marker, markerElement.key, markerElement.element, new amap.Pixel(-VISITOR_AVATAR_SIZE / 2, -VISITOR_AVATAR_SIZE / 2));
       }
     },
   });
 
   // 点击：单点弹该城市气泡；多点若还能放大且跨度足够则放大展开，否则（已到上限 / 同坐标分不开）
   // 弹「合并气泡」列出圈内全部读者——避免同省质心重叠点死循环放大、点击无反应。
-  c.on("click", (item: any) => {
+  c.on("click", (item: AMapClusterEvent) => {
     const data: ClusterPoint[] = (item.clusterData || [])
-      .map((d: any): ClusterPoint | null => {
-        const lnglat = normalizeLngLat(d?.lnglat);
-        return lnglat ? { id: d?.id, place: d?.place, lnglat } : null;
+      .map((d: unknown): ClusterPoint | null => {
+        // 类型守卫：检查 d 是否具有 lnglat 属性（排除 AMapLngLatLike 类型）
+        const hasLnglat = d && typeof d === "object" && "lnglat" in d;
+        let lnglatInput: LngLatInput | null | undefined = d as LngLatInput | null | undefined;
+        if (hasLnglat) {
+          lnglatInput = (d as { lnglat?: LngLatInput }).lnglat ?? d as LngLatInput;
+        }
+        const lnglat = normalizeLngLat(lnglatInput);
+        const rawId = (d as { id?: unknown })?.id ?? (d as { place?: Place })?.place?.id;
+        const pid = typeof rawId === "number" ? rawId : undefined;
+        return lnglat ? { id: pid, place: (d as { place?: Place })?.place, lnglat } : null;
       })
-      .filter((d: any | null): d is ClusterPoint => d !== null);
+      .filter((d: ClusterPoint | null): d is ClusterPoint => d !== null);
     if (!data.length) return;
 
     if (data.length === 1) {
@@ -596,7 +595,8 @@ function createCluster(points: MapPoint[]) {
     const lngs = data.map(d => d.lnglat[0]);
     const lats = data.map(d => d.lnglat[1]);
     const span = Math.max(Math.max(...lngs) - Math.min(...lngs), Math.max(...lats) - Math.min(...lats));
-    const canZoomMore = map.getZoom() < effectiveMax - 0.5;
+    const currentZoom = mapInstance.getZoom();
+    const canZoomMore = currentZoom < effectiveMax - 0.5;
 
     // 博客网络聚合簇：始终弹「合并站点清单」，不缩放展开——blog 是扁平目录（点→卡片→跳转），
     // 缩放钻入反而要多次点击才看到卡片；且同服务器/同城多 blog 同坐标本就分不开。
@@ -607,7 +607,7 @@ function createCluster(points: MapPoint[]) {
       // 跨度够、还能放大 → 放大展开（仅我的足迹）
       const markerLngLat = normalizeLngLat(item.marker?.getPosition?.());
       const lnglat = markerLngLat || averageLngLat(data.map(d => d.lnglat));
-      if (lnglat) map.setZoomAndCenter(Math.min(map.getZoom() + 2, effectiveMax), lnglat);
+      if (lnglat) mapInstance.setZoomAndCenter(Math.min(currentZoom + 2, effectiveMax), lnglat);
     } else {
       // 已到上限 / 点太近（同坐标）/ 博客或访客分布：合并圈内所有 place，弹聚合气泡
       const places = data.map(findPlace).filter((p): p is Place => Boolean(p));
@@ -647,20 +647,21 @@ onMounted(async () => {
     return;
   }
   try {
-    const AMap: any = await loadAmap({
+    _amap = await loadAmap({
       version: "2.0",
       plugins: ["AMap.MarkerCluster"],
       useProxy: amapUseProxy,
       key: amapKey,
       securityJsCode: amapSecurityCode,
     });
-    AMapRef = AMap;
+
+    if (!_amap) throw new Error("高德地图加载失败");
 
     const initialPoints = buildPoints(props.places);
     const hasPlaces = initialPoints.length > 0;
     // 初次主题直接读 html 类，避免 colorMode ref 解析滞后导致"先亮后暗"
     const initDark = document.documentElement.classList.contains("dark");
-    map = new AMap.Map("travel-map", {
+    map = new _amap.Map("travel-map", {
       zoom: hasPlaces ? 5 : 4,
       center: hasPlaces ? initialPoints[0]!.lnglat : [104, 35],
       viewMode: "2D",
@@ -669,7 +670,7 @@ onMounted(async () => {
       // 缩放区间：[最小下限, 最大上限]。最小下限防缩到全球视图；最大上限访客分布限制城市级。
       // 运行时切视图改 min/max 用下方 watch + setZooms。
       zooms: [props.minZoom ?? MIN_ZOOM_DEFAULT, props.maxZoom ?? 20],
-    });
+    } as AMap.MapOptions & { resizeEnable?: boolean });
     // 等底图瓦片(含样式)渲染完成再撤掉遮罩，杜绝初次加载的亮色闪烁
     map.on("complete", () => {
       loading.value = false;
@@ -686,7 +687,7 @@ onMounted(async () => {
       autoMove: true,
     });
     // InfoWindow 内关闭按钮（原生 HTML onclick）回调
-    (window as any).__closeTravelInfo = () => {
+    (window as Window & { __closeTravelInfo?: () => void }).__closeTravelInfo = () => {
       try {
         infoWindow?.close();
       } catch {
@@ -759,9 +760,9 @@ watch(
 watch(
   () => props.places,
   np => {
-    if (!map || !AMapRef) return;
+    if (!map || !_amap) return;
     infoWindow?.close();
-    cluster?.setMap(null);
+    cluster?.setMap(null as unknown as AMap.Map);
     cluster = null;
     const points = buildPoints(np);
     if (points.length) {
@@ -801,7 +802,7 @@ onUnmounted(() => {
     document.removeEventListener("click", linkClickHandler);
     linkClickHandler = null;
   }
-  delete (window as any).__closeTravelInfo;
+  delete (window as Window & { __closeTravelInfo?: () => void }).__closeTravelInfo;
 });
 </script>
 

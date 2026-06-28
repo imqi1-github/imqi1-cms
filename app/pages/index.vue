@@ -631,11 +631,12 @@
 </template>
 
 <script setup lang="ts">
-import { type ComponentPublicInstance, onMounted, onUnmounted, ref } from "vue";
+import {type ComponentPublicInstance, onMounted, onUnmounted, ref} from "vue";
 
 import MetingPlayer from "~/components/MetingPlayer.vue";
-import { siteConfig } from "~~/site.config";
-import { getChangelogMeta } from "~~/shared/changelog";
+import {siteConfig} from "~~/site.config";
+import {getChangelogMeta} from "~~/shared/changelog";
+import type {GridItem} from "~/types/pages";
 
 // 目录导航数据
 const tocItems = [
@@ -821,16 +822,6 @@ const photoCategorySlug = computed(() => homeData.value?.data?.site?.photoCatego
 
 // 联系链接配置
 const contactLinks = ref(siteConfig.social);
-
-// 样式选择区域数据
-interface GridItem {
-  text: string;
-  href?: string;
-  isLink?: boolean;
-  isCode?: boolean;
-  hasIcon?: boolean;
-  isCategory?: boolean;
-}
 
 const themeItems = computed(() => [
   {

@@ -1,50 +1,11 @@
 import { SiteSettingsResponseSchema } from "./schemas";
 
 import { prisma } from "#server/utils/prisma";
-import { defineTypedApiHandler } from "#server/utils/typedApi";
+import { defineTypedApiHandler } from "#server/types/typedApi";
 import { sanitizeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
+import type { SiteSettings, SettingKey, MutableSettings } from "#server/types/apis/setting";
 
-// 1. 先定义 key 类型（核心）
-type SettingKey =
-  | "siteName"
-  | "siteUrl"
-  | "siteDesc"
-  | "siteIcp"
-  | "homeCustomText"
-  | "photoCategorySlug"
-  | "commentEnabled"
-  | "commentAvatarService"
-  | "commentPageSize"
-  | "commentMaxLevel"
-  | "commentInterval"
-  | "commentRequireMail"
-  | "commentRequireLink"
-  | "postPageSize"
-  | "feedCacheInterval"
-  | "linkAutoApprove"
-  | "musicPlaylistId";
-
-// 2. 精确的站点设置类型（与 SiteSettingsSchema 对齐，供 InternalApi 推断）
-interface SiteSettings {
-  siteName: string;
-  siteUrl: string;
-  siteDesc: string;
-  siteIcp: string;
-  homeCustomText: string;
-  photoCategorySlug: string;
-  commentEnabled: boolean;
-  commentAvatarService: string;
-  commentPageSize: number;
-  commentMaxLevel: number;
-  commentInterval: number;
-  commentRequireMail: boolean;
-  commentRequireLink: boolean;
-  postPageSize: number;
-  feedCacheInterval: number;
-  linkAutoApprove: boolean;
-  musicPlaylistId: string;
-}
 
 // 3. 强类型 defaults
 const defaults: SiteSettings = {
@@ -67,14 +28,6 @@ const defaults: SiteSettings = {
   musicPlaylistId: "9255074836 || netease",
 };
 
-// 4. DB 返回类型收紧
-type MetaItem = {
-  key: SettingKey;
-  value: string;
-};
-
-// 可变的中间状态：值类型是联合体，允许循环里按 key 写入；最后断言为精确 SiteSettings
-type MutableSettings = Record<SettingKey, string | boolean | number>;
 
 function sanitizePublicSettings(settings: MutableSettings): SiteSettings {
   return {

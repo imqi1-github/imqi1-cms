@@ -1,12 +1,5 @@
-import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost } from "#shared/amap-proxy";
-
-interface LoadAmapOptions {
-  version?: string;
-  plugins?: string[];
-  useProxy?: boolean;
-  key?: string;
-  securityJsCode?: string;
-}
+import {buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost} from "#shared/amap-proxy";
+import type {LoadAmapOptions} from "~/types/utils/amap";
 
 const AMAP_SCRIPT_CALLBACK = "__onAmapProxyLoaded";
 

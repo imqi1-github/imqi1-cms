@@ -1,16 +1,7 @@
-import { ref } from 'vue'
+import {ref} from 'vue'
 
-import { defineNuxtPlugin } from '#app'
-
-// 播放器类型
-export type PlayerType = 'footer' | 'meting'
-
-// 播放器管理器接口
-interface PlayerManager {
-  registerPlayer: (type: PlayerType, id: string, pause: () => void) => void
-  unregisterPlayer: (type: PlayerType, id: string) => void
-  notifyPlay: (type: PlayerType, id: string) => void
-}
+import {defineNuxtPlugin} from '#app'
+import type {PlayerManager, PlayerType} from "~/types/plugins/player-manager";
 
 // 使用字符串 key
 const PLAYER_MANAGER_KEY = 'playerManager'
@@ -81,5 +72,4 @@ export default defineNuxtPlugin((nuxtApp) => {
 })
 
 // 导出类型和 key 常量
-export type { PlayerManager }
 export { PLAYER_MANAGER_KEY }

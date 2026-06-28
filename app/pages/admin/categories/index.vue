@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type CategoryItem = InternalApi["/api/admin/categories"]["get"][number];
-type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+import {type ApiError, type CategoryItem, toast} from "~/types/pages/admin/categories";
 
 const router = useRouter();
-const toast = useToast();
 
 const loading = ref(true);
 const categories = ref<CategoryItem[]>([]);

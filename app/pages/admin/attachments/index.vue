@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type AttachmentItem = NonNullable<NonNullable<InternalApi["/api/admin/attachments/all"]["get"]["data"]>["list"]>[number];
+import type {AttachmentItem} from "~/types/pages/admin/attachments";
 
 const toast = useToast();
 const loading = ref(true);

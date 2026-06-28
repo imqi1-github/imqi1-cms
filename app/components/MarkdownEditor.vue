@@ -95,7 +95,7 @@ const handlePaste = async (event: ClipboardEvent) => {
     // 先插入所有占位符
     let newText = text
     let offset = 0
-    placeholders.forEach((placeholder, index) => {
+    placeholders.forEach((placeholder) => {
       const pos = start + offset
       newText = newText.slice(0, pos) + placeholder + '\n' + newText.slice(pos)
       offset += placeholder.length + 1
@@ -126,7 +126,7 @@ const handlePaste = async (event: ClipboardEvent) => {
         const res = await $fetch(`/api/attachments/upload?cid=${props.postId}`, {
           method: 'POST',
           body: formData,
-        }) as any
+        })
 
         if (res?.success) {
           // 替换占位符为实际的图片链接
@@ -146,7 +146,7 @@ const handlePaste = async (event: ClipboardEvent) => {
             description: file.name,
           })
         }
-      } catch (error) {
+      } catch {
         // 上传失败，移除占位符
         const placeholder = placeholders[i]
         const currentText = props.modelValue

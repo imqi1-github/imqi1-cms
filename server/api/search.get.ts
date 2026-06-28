@@ -2,8 +2,9 @@ import { SearchQuerySchema, SearchResponseSchema } from "./schemas";
 
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
-import { defineTypedApiHandler } from "#server/utils/typedApi";
+import { defineTypedApiHandler } from "#server/types/typedApi";
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
+import type { SearchPostItem } from "#server/types/apis/serach";
 
 // 搜索关键词净化
 function sanitizeSearchKeyword(keyword: string): string {
@@ -37,10 +38,13 @@ async function getSearchSettings() {
       },
     });
 
-    const settingsMap = settings.reduce((acc, item) => {
-      acc[item.key] = item.value;
-      return acc;
-    }, {} as Record<string, string>);
+    const settingsMap = settings.reduce(
+      (acc, item) => {
+        acc[item.key] = item.value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
 
     return {
       cacheEnabled: settingsMap["searchCacheEnabled"] === "true",
@@ -89,25 +93,9 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "");
 }
 
-// 搜索结果文章类型（对应 findMany select 字段）
-interface SearchPostItem {
-  cid: number;
-  title: string;
-  slug: string | null;
-  desc: string | null;
-  content: string | null;
-  create_time: Date;
-  postrelations: {
-    metas: {
-      name: string;
-      slug: string;
-    };
-  }[];
-}
-
 // 格式化搜索结果（分类信息已通过 postrelations 关联查询获取）
 function formatSearchResults(posts: SearchPostItem[], query: string) {
-  return posts.map((post) => {
+  return posts.map(post => {
     const category = post.postrelations?.[0]?.metas;
 
     // 提取正文纯文本
@@ -140,119 +128,112 @@ export default defineTypedApiHandler(
     try {
       const q = sanitizeSearchKeyword(query.q);
 
-    if (!q) {
+      if (!q) {
+        return {
+          code: 200,
+          message: "搜索成功",
+          data: {
+            results: [],
+            total: 0,
+            query: "",
+          },
+        };
+      }
+
+      // 获取搜索设置
+      const searchSettings = await getSearchSettings();
+
+      // ========== Redis 缓存逻辑 ==========
+      if (searchSettings.cacheEnabled && redis) {
+        const cacheKey = `search:${q}:all`;
+
+        try {
+          // 尝试从缓存获取
+          const cached = await redis.get(cacheKey);
+          if (cached) {
+            console.log(`[搜索缓存命中] 关键词: "${q}"`);
+            return {
+              code: 200,
+              message: "搜索成功（来自缓存）",
+              data: JSON.parse(cached) as typeof responseData,
+            };
+          }
+        } catch (error) {
+          console.error(error);
+          // 缓存失败时继续执行数据库查询
+        }
+      }
+
+      // ========== 数据库搜索（LIKE 搜索，获取所有结果）==========
+      const posts = await prisma.posts.findMany({
+        where: {
+          AND: [
+            { status: 1 },
+            { type: 0 },
+            {
+              OR: [{ title: { contains: q } }, { desc: { contains: q } }, { content: { contains: q } }],
+            },
+          ],
+        },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          desc: true,
+          content: true,
+          create_time: true,
+          postrelations: {
+            where: {
+              metas: { type: "category" },
+            },
+            select: {
+              metas: {
+                select: {
+                  name: true,
+                  slug: true,
+                },
+              },
+            },
+            take: 1,
+          },
+        },
+        orderBy: { create_time: "desc" },
+      });
+
+      const total = posts.length;
+      console.log(`[LIKE 搜索] 关键词: "${q}", 找到 ${total} 条结果`);
+
+      // 格式化结果（传入搜索关键词用于高亮）
+      const results = formatSearchResults(posts, q);
+
+      const responseData = {
+        results,
+        total,
+        query: q,
+      };
+
+      // ========== 缓存搜索结果 ==========
+      if (searchSettings.cacheEnabled && redis && results.length > 0) {
+        try {
+          const cacheKey = `search:${q}:all`;
+          await redis.setex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
+          console.log(`[搜索缓存已保存] 关键词: "${q}", 过期时间: ${searchSettings.cacheExpire}秒`);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
       return {
         code: 200,
         message: "搜索成功",
-        data: {
-          results: [],
-          total: 0,
-          query: "",
-        },
+        data: responseData,
       };
+    } catch (error) {
+      console.error(error);
+      throw createError({
+        statusCode: 500,
+        statusMessage: "搜索失败",
+      });
     }
-
-    // 获取搜索设置
-    const searchSettings = await getSearchSettings();
-
-    // ========== Redis 缓存逻辑 ==========
-    if (searchSettings.cacheEnabled && redis) {
-      const cacheKey = `search:${q}:all`;
-
-      try {
-        // 尝试从缓存获取
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log(`[搜索缓存命中] 关键词: "${q}"`);
-          return {
-            code: 200,
-            message: "搜索成功（来自缓存）",
-            data: JSON.parse(cached) as typeof responseData,
-          };
-        }
-      } catch (error) {
-        console.error(error);
-        // 缓存失败时继续执行数据库查询
-      }
-    }
-
-    // ========== 数据库搜索（LIKE 搜索，获取所有结果）==========
-    const posts = await prisma.posts.findMany({
-      where: {
-        AND: [
-          { status: 1 },
-          { type: 0 },
-          {
-            OR: [
-              { title: { contains: q } },
-              { desc: { contains: q } },
-              { content: { contains: q } },
-            ],
-          },
-        ],
-      },
-      select: {
-        cid: true,
-        title: true,
-        slug: true,
-        desc: true,
-        content: true,
-        create_time: true,
-        postrelations: {
-          where: {
-            metas: { type: "category" },
-          },
-          select: {
-            metas: {
-              select: {
-                name: true,
-                slug: true,
-              },
-            },
-          },
-          take: 1,
-        },
-      },
-      orderBy: { create_time: "desc" },
-    });
-
-    const total = posts.length;
-    console.log(`[LIKE 搜索] 关键词: "${q}", 找到 ${total} 条结果`);
-
-    // 格式化结果（传入搜索关键词用于高亮）
-    const results = formatSearchResults(posts, q);
-
-    const responseData = {
-      results,
-      total,
-      query: q,
-    };
-
-    // ========== 缓存搜索结果 ==========
-    if (searchSettings.cacheEnabled && redis && results.length > 0) {
-      try {
-        const cacheKey = `search:${q}:all`;
-        await redis.setex(
-          cacheKey,
-          searchSettings.cacheExpire,
-          JSON.stringify(responseData)
-        );
-        console.log(`[搜索缓存已保存] 关键词: "${q}", 过期时间: ${searchSettings.cacheExpire}秒`);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    return {
-      code: 200,
-      message: "搜索成功",
-      data: responseData,
-    };
-  } catch (error) {
-    console.error(error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: "搜索失败",
-    });
-  }
-});
+  },
+);

@@ -4,7 +4,6 @@ import { printWelcomeBanner } from "../lib/welcome-banner";
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
-const router = useRouter();
 
 // 加载页品牌文字（站点域名大写形式）
 const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();

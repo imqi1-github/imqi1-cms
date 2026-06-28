@@ -3,15 +3,7 @@ import { createHash } from "node:crypto";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { CITY_COORDS } from "~~/shared/city-coords";
-
-interface Reader {
-  name: string;
-  url: string | null;
-  articleTitle: string | null;
-  articleUrl: string | null;
-  comment: string | null;
-  avatar: string | null;
-}
+import type { Reader } from "#server/types/apis/reader";
 
 /**
  * 读者足迹（访客分布）聚合端点
@@ -146,7 +138,7 @@ export default defineEventHandler(async () => {
           : categorySlug && postSlug
             ? `/content/${categorySlug}/${postSlug}#comment-${row.coid}`
             : null;
-        const articleTitle = isMessagePost ? "留言板" : row.posts?.title ?? null;
+        const articleTitle = isMessagePost ? "留言板" : (row.posts?.title ?? null);
 
         const reader: Reader = {
           name: row.name?.trim() || "匿名读者",

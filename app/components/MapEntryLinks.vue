@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { siteConfig } from "~~/site.config";
+import {siteConfig} from "~~/site.config";
+
+import type {Capsule} from "~/types/components/map";
 
 // 地图入口（小胶囊）。两种用法：
 // 1) views：按「相关性」传入要展示的视图——订阅页/友链页/首页放「博客网络」，留言板放「访客分布」…。
@@ -23,8 +25,6 @@ const MAP = {
   footprint: { value: "footprint", label: "访客分布", icon: "ri:user-location-line" },
   blogs: { value: "blogs", label: "博客网络", icon: "ri:global-line" },
 } as const;
-
-type Capsule = { key: string; label: string; icon: string; to: string };
 
 const items = computed<Capsule[]>(() => {
   if (!linksEnabled) return [];

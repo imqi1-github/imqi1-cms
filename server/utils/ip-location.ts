@@ -13,17 +13,7 @@
 
 import { getIpLocation } from "#server/utils/qqwry";
 import { CITY_COORDS, PROVINCES } from "~~/shared/city-coords";
-
-export interface CityInfo {
-  /** 城市名（去后缀，如「沈阳」）；只有省级时为 null */
-  city: string | null;
-  /** 省级名（去后缀，如「辽宁」「内蒙古」）；境外为 null */
-  province: string | null;
-  /** 是否国内（含港澳台） */
-  isDomestic: boolean;
-  /** 国家/地区名：国内为「中国」，境外为 qqwry 给的国名（中文或当地文字） */
-  country: string;
-}
+import type { CityInfo } from "#server/types/utils/ip-location";
 
 // 行政区划后缀，城市/省份名去掉后与内置坐标表 key 对齐
 const ADMIN_SUFFIX = /(省|市|区|县|镇|乡|街道|地区|开发区|高新区|新区|新城|自治区|自治州|盟|旗)$/g;

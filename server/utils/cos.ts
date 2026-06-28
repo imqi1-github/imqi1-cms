@@ -1,27 +1,8 @@
-import {createHash, createHmac} from "crypto";
+import { createHash, createHmac } from "crypto";
 
-import {prisma} from "./prisma";
+import { prisma } from "./prisma";
 
-// COS配置接口
-interface CosConfig {
-  SecretId: string;
-  SecretKey: string;
-  Bucket: string;
-  Region: string;
-}
-
-// 上传结果接口
-export interface CosUploadResult {
-  success: boolean;
-  url?: string;
-  error?: string;
-}
-
-// 删除结果接口
-export interface CosDeleteResult {
-  success: boolean;
-  error?: string;
-}
+import type { CosConfig } from "#server/types/utils/cos";
 
 // 获取COS配置
 async function getCosConfig(): Promise<CosConfig | null> {
