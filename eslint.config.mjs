@@ -21,6 +21,7 @@ export default withNuxt({
     // script setup / composition API
     "vue/component-name-in-template-casing": ["error", "PascalCase"],
     "vue/padding-line-between-blocks": ["error", "always"],
+    "vue/require-default-prop": "off",
 
     // =========================
     // TypeScript 规范

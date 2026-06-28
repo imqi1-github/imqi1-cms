@@ -1,5 +1,6 @@
-import { defineNuxtPlugin } from '#app'
 import { ref } from 'vue'
+
+import { defineNuxtPlugin } from '#app'
 
 // 播放器类型
 export type PlayerType = 'footer' | 'meting'

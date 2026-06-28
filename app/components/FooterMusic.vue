@@ -33,14 +33,14 @@ onMounted(() => {
 <template>
   <Transition v-if="isLoaded && currentSong" name="fade">
     <button
-      @click="togglePlay"
       class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5 group"
-      :class="btnShell">
+      :class="btnShell"
+      @click="togglePlay">
       <!-- 进度条背景 -->
       <span
         class="absolute left-0 right-0 top-0 bottom-0 bg-linear-to-r from-blue-500 to-purple-500 transition-all duration-300"
         :class="isPlaying ? 'opacity-15' : 'opacity-0'"
-        :style="{ width: `${progress}%` }"></span>
+        :style="{ width: `${progress}%` }"/>
 
       <!-- 歌曲名称 -->
       <span class="relative z-1 min-w-0 flex-1">
@@ -55,7 +55,7 @@ onMounted(() => {
         :alt="currentSong.name"
         class="spin-slow relative z-1 h-full shrink-0 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
         :style="{ 'animation-play-state': isPlaying ? 'running' : 'paused' }"
-        loading="lazy" />
+        loading="lazy" >
 
         <span class="absolute inset-0 text-xs text-white bg-blue-600 z-2 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-150 ease-in-out">
           {{ isPlaying ? '暂停播放' : '开始播放' }}

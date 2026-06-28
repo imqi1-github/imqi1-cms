@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 
-// 导入前台通知 composable
-const { success, error: showError } = useFrontNotification();
-
 // 导入表情数据
 import emojisData from "~/assets/emojis.json";
+
+// 导入前台通知 composable
+const { success, error: showError } = useFrontNotification();
 
 const props = defineProps<{
   postId: number;
@@ -388,8 +388,8 @@ function insertEmoji(key: string) {
       <button
         v-if="isReply"
         type="button"
-        @click="cancelReply"
-        class="cursor-pointer rounded border-0 bg-transparent px-2 py-1 text-[0.875em] text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+        class="cursor-pointer rounded border-0 bg-transparent px-2 py-1 text-[0.875em] text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+        @click="cancelReply">
         取消回复
       </button>
     </div>
@@ -415,21 +415,21 @@ function insertEmoji(key: string) {
          字段名刻意避开 website/url 等自动填充关键词，降低误填概率。 -->
     <div v-if="showGuestFields" class="pointer-events-none absolute -left-2499.75 -top-2499.75 size-px overflow-hidden opacity-0" aria-hidden="true">
       <label for="comment-hp">附加信息</label>
-      <input id="comment-hp" v-model="honeypot" type="text" name="hp_field" tabindex="-1" autocomplete="off" />
+      <input id="comment-hp" v-model="honeypot" type="text" name="hp_field" tabindex="-1" autocomplete="off" >
     </div>
 
     <div class="mb-2.5 flex w-full flex-wrap gap-2.5">
       <template v-if="isLoggedIn">
-        <input v-model="formData.name" type="hidden" name="name" />
-        <input v-model="formData.mail" type="hidden" name="mail" />
-        <input v-model="formData.link" type="hidden" name="link" />
+        <input v-model="formData.name" type="hidden" name="name" >
+        <input v-model="formData.mail" type="hidden" name="mail" >
+        <input v-model="formData.link" type="hidden" name="link" >
         <div class="flex h-8 flex-1 items-center gap-2 text-[0.875em] text-slate-700 dark:text-slate-300">
           <span class="overflow-hidden text-ellipsis whitespace-nowrap">已登录用户：</span>
           <img
             v-if="currentUser?.avatar"
             :src="currentUser.avatar"
             :alt="loggedInDisplayName"
-            class="size-5.5 shrink-0 rounded-full border border-[rgb(229,224,224)] bg-slate-200 object-cover" />
+            class="size-5.5 shrink-0 rounded-full border border-[rgb(229,224,224)] bg-slate-200 object-cover" >
         </div>
       </template>
       <template v-else-if="showGuestFields">
@@ -441,7 +441,7 @@ function insertEmoji(key: string) {
             type="text"
             placeholder="昵称 *"
             class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
-            required />
+            required >
         </div>
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
           <label for="comment-input-mail" class="sr-only">邮箱</label>
@@ -450,7 +450,7 @@ function insertEmoji(key: string) {
             v-model="formData.mail"
             type="email"
             :placeholder="requireMail ? '邮箱 *' : '邮箱'"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" >
         </div>
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
           <label for="comment-input-link" class="sr-only">链接</label>
@@ -459,7 +459,7 @@ function insertEmoji(key: string) {
             v-model="formData.link"
             type="url"
             :placeholder="requireLink ? '链接 *' : '链接'"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" />
+            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" >
         </div>
       </template>
       <!-- 图形验证码（仅未登录用户显示，与昵称/邮箱/链接同行） -->
@@ -473,7 +473,7 @@ function insertEmoji(key: string) {
           class="h-8 min-w-0 flex-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
           maxlength="6"
           autocomplete="off"
-          required />
+          required >
         <img
           v-if="captchaUrl"
           :src="captchaUrl"
@@ -481,16 +481,16 @@ function insertEmoji(key: string) {
           alt="验证码"
           title="点击刷新验证码"
           loading="lazy"
-          @click="refreshCaptcha" />
+          @click="refreshCaptcha" >
       </div>
 
       <div class="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:justify-end">
         <div class="relative">
           <button
+            v-tooltip="'表情'"
             type="button"
             class="flex h-7 cursor-pointer items-center justify-center rounded-md border-0 bg-slate-100 px-3 text-[0.875em] font-semibold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-            @click="showEmoji = !showEmoji"
-            v-tooltip="'表情'">
+            @click="showEmoji = !showEmoji">
             <Icon name="ri:emoji-sticker-line" class="size-4" />
           </button>
           <!-- 表情面板 - 悬浮 -->
@@ -521,7 +521,7 @@ function insertEmoji(key: string) {
                   :alt="emoji.name"
                   :title="emoji.name"
                   class="size-8 cursor-pointer rounded p-0.5 object-contain transition-colors duration-150 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  @click="insertEmoji(emoji.key)" />
+                  @click="insertEmoji(emoji.key)" >
               </div>
             </div>
           </Transition>
@@ -529,8 +529,8 @@ function insertEmoji(key: string) {
         <button
           type="button"
           class="flex h-7 cursor-pointer items-center justify-center rounded-md border-0 bg-blue-600 px-3 text-[0.875em] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-          @click="submitComment"
-          :disabled="submitting">
+          :disabled="submitting"
+          @click="submitComment">
           {{ submitting ? "提交中..." : "提交评论" }}
         </button>
       </div>

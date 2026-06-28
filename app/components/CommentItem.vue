@@ -258,8 +258,8 @@ function handleCommentSubmitted() {
       <div class="relative w-10 h-10 shrink-0">
         <button
           v-if="canReply"
-          class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
           v-tooltip="'回复'"
+          class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
           @click="startReply(comment)">
           <Icon name="ri-reply-fill" class="size-4" />
         </button>
@@ -268,7 +268,7 @@ function handleCommentSubmitted() {
           :src="avatarUrl"
           :alt="comment.name"
           class="w-10 h-10 rounded-full shrink-0 object-cover bg-slate-100 dark:bg-slate-700"
-          loading="lazy" />
+          loading="lazy" >
         <div
           v-else
           class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-semibold text-lg text-slate-700 dark:text-slate-300 shrink-0">
@@ -286,8 +286,8 @@ function handleCommentSubmitted() {
           </span>
           <a
             v-if="comment.link"
-            :href="comment.link"
             v-tooltip="'点击前往'"
+            :href="comment.link"
             class="text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 transition-colors no-underline"
             target="_blank"
             rel="noreferrer noopener nofollow">
@@ -302,21 +302,21 @@ function handleCommentSubmitted() {
 
         <!-- 底部信息 -->
         <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-300">
-          <span class="flex items-center gap-1" v-tooltip="'评论时间'">
+          <span v-tooltip="'评论时间'" class="flex items-center gap-1">
             <Icon name="ri-time-fill" class="size-4" />
             {{ formatDate(comment.create_time) }}
           </span>
           <span v-if="parsedAgent.browser || parsedAgent.os" class="flex items-center gap-1">
-            <Icon :name="parsedAgent.browserIcon" class="size-4" v-tooltip="parsedAgent.browser" />
-            <Icon :name="parsedAgent.osIcon" class="size-4" v-tooltip="parsedAgent.os" />
+            <Icon v-tooltip="parsedAgent.browser" :name="parsedAgent.browserIcon" class="size-4" />
+            <Icon v-tooltip="parsedAgent.os" :name="parsedAgent.osIcon" class="size-4" />
           </span>
-          <span v-else class="flex items-center gap-1" v-tooltip="'未知设备'">
+          <span v-else v-tooltip="'未知设备'" class="flex items-center gap-1">
             <Icon name="ri-computer-line" class="size-4" />
           </span>
-          <span v-if="comment.location" class="flex items-center gap-1" v-tooltip="'位置'">
+          <span v-if="comment.location" v-tooltip="'位置'" class="flex items-center gap-1">
             <Icon name="ri-map-pin-2-fill" class="size-4" />{{ comment.location }}
           </span>
-          <span v-if="comment.isp" class="flex items-center gap-1" v-tooltip="'运营商'">
+          <span v-if="comment.isp" v-tooltip="'运营商'" class="flex items-center gap-1">
             <Icon name="ri-earth-fill" class="size-4" />{{ comment.isp }}</span>
         </div>
       </div>

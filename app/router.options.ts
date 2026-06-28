@@ -8,10 +8,11 @@
 //
 // 其余分支（同页 hash、scrollToTop meta、savedPosition、过渡完成后回顶/锚点）忠实沿用 Nuxt 默认实现。
 import { START_LOCATION } from "vue-router";
+import type { RouterConfig } from "@nuxt/schema";
+
 import { useNuxtApp } from "#app/nuxt";
 import { isChangingPage } from "#app/components/utils";
 import { useRouter } from "#app/composables/router";
-import type { RouterConfig } from "@nuxt/schema";
 
 export default <RouterConfig>{
   scrollBehavior(to, from, savedPosition) {

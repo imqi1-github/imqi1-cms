@@ -1,6 +1,7 @@
+import smoothScroll from 'smoothscroll';
+
 import tplListItem from './template/list-item.js';
 import utils from './utils';
-import smoothScroll from 'smoothscroll';
 
 class List {
     constructor(player) {

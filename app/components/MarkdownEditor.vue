@@ -612,10 +612,10 @@ const actions = {
     <textarea
       ref="textareaRef"
       :value="modelValue"
-      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-      @paste="handlePaste"
       class="flex-1 w-full p-4 resize-none outline-none font-mono text-sm bg-background"
       placeholder="开始编写你的 Markdown 文章...&#10;&#10;提示：可以直接粘贴图片，会自动上传并插入"
+      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+      @paste="handlePaste"
     />
   </div>
 </template>

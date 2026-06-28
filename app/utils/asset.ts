@@ -10,13 +10,11 @@
 // - 业务路由（/about、/api/...）不会被前缀。
 // - 绝对资源 URL（http/https/blob/data:image）直接返回。
 
-const STATIC_ASSET_RE =
-  /^\/(imgs|skills|icons|fonts|emojis|uploads)\//;
+const STATIC_ASSET_RE = /^\/(imgs|skills|icons|fonts|emojis|uploads)\//;
 
 // robots.txt 不在此列：它由 Nitro 直接在主域返回（不走 CDN），
 // 否则跨主机跳转会让 robots 规则只对 CDN 子域生效。
-const STATIC_ASSET_FILE_RE =
-  /^\/(favicon\.ico|manifest\.webmanifest|sitemap\.xsl)$/;
+const STATIC_ASSET_FILE_RE = /^\/(favicon\.ico|manifest\.webmanifest|sitemap\.xsl)$/;
 
 const ABSOLUTE_RE = /^(https?:)?\/\//i;
 const SAFE_DATA_RE = /^data:image\//i;
@@ -28,10 +26,7 @@ export interface PublicAssetOptions {
   raw?: boolean;
 }
 
-export function publicAsset(
-  input?: string | null,
-  options: PublicAssetOptions = {},
-): string {
+export function publicAsset(input?: string | null, options: PublicAssetOptions = {}): string {
   if (!input) return "";
   if (ABSOLUTE_RE.test(input) || SAFE_DATA_RE.test(input) || BLOB_RE.test(input)) return input;
   if (SCHEME_RE.test(input)) return "";
@@ -39,11 +34,10 @@ export function publicAsset(
   if (options.raw) return input;
   if (input.startsWith("/_nuxt/")) return input;
 
-  const isStatic =
-    STATIC_ASSET_RE.test(input) || STATIC_ASSET_FILE_RE.test(input);
+  const isStatic = STATIC_ASSET_RE.test(input) || STATIC_ASSET_FILE_RE.test(input);
   if (!isStatic) return input;
 
-  let cdnBase = "";
+  let cdnBase: string;
   try {
     const config = useRuntimeConfig();
     cdnBase = (config.public.cdnBase as string | undefined) || "";

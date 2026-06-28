@@ -1,4 +1,4 @@
-import { type PlayerManager } from '~/plugins/player-manager.client';
+import type { PlayerManager } from '~/plugins/player-manager.client';
 
 // 使用播放器管理器
 export function usePlayerManager() {

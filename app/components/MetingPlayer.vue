@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+
 import { usePlayerManager } from '~/composables/usePlayerManager'
 import "~/assets/css/aplayer.css"
 
@@ -154,7 +155,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="aplayer-container **:duration-300"></div>
+  <div ref="container" class="aplayer-container **:duration-300"/>
 </template>
 
 <style scoped>

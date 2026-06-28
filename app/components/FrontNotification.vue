@@ -78,8 +78,8 @@ const iconColors = {
           <Icon :name="icons[notification.type]" :class="['size-5 shrink-0 mt-0.5', iconColors[notification.type]]" />
           <p class="text-sm font-medium flex-1">{{ notification.message }}</p>
           <button
-            @click="remove(notification.id)"
-            class="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+            class="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+            @click="remove(notification.id)">
             <Icon name="ri:close-line" class="size-4" />
           </button>
         </div>

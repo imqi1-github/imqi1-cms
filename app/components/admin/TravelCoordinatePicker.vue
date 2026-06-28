@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import "@amap/amap-jsapi-types";
+
 import { loadAmap } from "~/utils/amap-loader";
 
 const props = defineProps<{
@@ -23,27 +25,55 @@ const mapEl = ref<HTMLElement | null>(null);
 const loading = ref(true);
 const loadError = ref(false);
 
-let AMap: any = null;
-let map: any = null;
-let marker: any = null;
+// 高德地图 SDK 命名空间类型别名（避免与下方局部变量 amap 命名冲突）
+type AMapNamespace = typeof AMap;
+
+// AMap.Map 实例还带有类型声明中未暴露的 resize 方法
+type AMapMapInstance = AMap.Map & { resize?(): void };
+
+// 高德经纬度对象（运行时由 SDK 提供，具备 getLng/getLat）
+interface AMapLngLatLike {
+  getLng(): unknown;
+  getLat(): unknown;
+}
+
+// 普通坐标对象（手动输入或序列化数据）
+interface CoordRecord {
+  lng?: unknown;
+  lat?: unknown;
+  longitude?: unknown;
+  latitude?: unknown;
+}
+
+// normalizeLngLat 的合法输入：数组 | 高德 LngLat | 坐标对象
+type LngLatInput = AMapLngLatLike | CoordRecord;
+
+// 地图点击 / 拖拽事件负载（均带 lnglat）
+interface AMapMapEvent {
+  lnglat: LngLatInput;
+}
+
+let _amap: AMapNamespace | null = null;
+let map: AMapMapInstance | null = null;
+let marker: AMap.Marker | null = null;
 let updatingFromPicker = false;
 
 type LngLatTuple = [number, number];
 
-function normalizeLngLat(value: any): LngLatTuple | null {
+function normalizeLngLat(value: LngLatInput | null | undefined): LngLatTuple | null {
   if (Array.isArray(value)) {
     const lng = Number(value[0]);
     const lat = Number(value[1]);
     return isValidLngLat(lng, lat) ? [lng, lat] : null;
   }
 
-  if (value && typeof value.getLng === "function" && typeof value.getLat === "function") {
+  if (value && "getLng" in value && "getLat" in value) {
     const lng = Number(value.getLng());
     const lat = Number(value.getLat());
     return isValidLngLat(lng, lat) ? [lng, lat] : null;
   }
 
-  if (value && typeof value === "object") {
+  if (value) {
     const lng = Number(value.lng ?? value.longitude);
     const lat = Number(value.lat ?? value.latitude);
     return isValidLngLat(lng, lat) ? [lng, lat] : null;
@@ -104,7 +134,7 @@ function ensureMarker(lnglat: LngLatTuple) {
       map,
     });
 
-    marker.on("dragend", (event: any) => {
+    marker.on("dragend", (event: AMapMapEvent) => {
       selectLngLat(event.lnglat, false);
     });
   } else {
@@ -134,7 +164,7 @@ function syncMarkerFromProps() {
   }
 }
 
-function selectLngLat(value: any, moveCenter = true) {
+function selectLngLat(value: LngLatInput | null | undefined, moveCenter = true) {
   const lnglat = normalizeLngLat(value);
   if (!lnglat || !map) return;
 
@@ -160,20 +190,21 @@ onMounted(async () => {
   }
 
   try {
-    AMap = await loadAmap({
+    _amap = await loadAmap({
       version: "2.0",
       useProxy: amapUseProxy,
       key: amapKey,
       securityJsCode: amapSecurityCode,
     });
 
+    if (!_amap) throw new Error("高德地图加载失败");
+
     const initialLngLat = formLngLat();
     const initDark = document.documentElement.classList.contains("dark");
-    map = new AMap.Map(mapEl.value, {
+    map = new _amap.Map(mapEl.value as HTMLDivElement, {
       zoom: initialLngLat ? 13 : 4,
       center: initialLngLat || [104, 35],
       viewMode: "2D",
-      resizeEnable: true,
       mapStyle: initDark ? "amap://styles/dark" : "amap://styles/whitesmoke",
     });
 
@@ -181,7 +212,7 @@ onMounted(async () => {
       loading.value = false;
       scheduleResize();
     });
-    map.on("click", (event: any) => {
+    map.on("click", (event: AMapMapEvent) => {
       selectLngLat(event.lnglat);
     });
 
@@ -220,18 +251,18 @@ onUnmounted(() => {
     map = null;
   }
   marker = null;
-  AMap = null;
+  _amap = null;
 });
 </script>
 
 <template>
   <div class="space-y-2">
     <div class="relative h-48 sm:h-72 overflow-hidden rounded-md border bg-muted">
-      <div ref="mapEl" class="travel-coordinate-picker-map h-full w-full"></div>
+      <div ref="mapEl" class="travel-coordinate-picker-map h-full w-full"/>
 
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-muted">
         <div class="text-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
           <p class="mt-2 text-sm text-muted-foreground">地图加载中...</p>
         </div>
       </div>

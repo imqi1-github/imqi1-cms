@@ -52,8 +52,8 @@ const handleContextMenu = (e: MouseEvent) => {
   e.preventDefault();
 
   // fixed 定位使用视口坐标，不需要加滚动距离
-  let left = e.clientX;
-  let top = e.clientY;
+  const left = e.clientX;
+  const top = e.clientY;
 
   // 判断菜单类型
   const selection = window.getSelection()?.toString().trim();
@@ -468,52 +468,52 @@ onUnmounted(() => {
   <div
     v-if="visible"
     ref="menuRef"
-    @click.stop
     class="context-menu font-serif fixed z-10000 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-40"
-    :style="{ left: `${x}px`, top: `${y}px` }">
+    :style="{ left: `${x}px`, top: `${y}px` }"
+    @click.stop>
     <ul class="py-1">
       <!-- 常驻按钮：返回、前进、刷新、回到顶部 -->
       <li
-        @click="handleBack"
-        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+        @click="handleBack">
         <Icon name="ri:arrow-left-line" class="size-4" />
         <span>返回</span>
       </li>
       <li
-        @click="handleForward"
-        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+        @click="handleForward">
         <Icon name="ri:arrow-right-line" class="size-4" />
         <span>前进</span>
       </li>
       <li
-        @click="handleRefresh"
-        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+        @click="handleRefresh">
         <Icon name="ri:refresh-line" class="size-4" />
         <span>刷新</span>
       </li>
       <li
-        @click="handleScrollToTop"
-        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+        class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+        @click="handleScrollToTop">
         <Icon name="ri:arrow-up-line" class="size-4" />
         <span>回到顶部</span>
       </li>
 
       <!-- 自定义菜单项（如果有） -->
       <template v-if="customMenuItems && customMenuItems.length > 0">
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <template v-for="(item, index) in customMenuItems" :key="index">
-          <li v-if="item.divider" class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+          <li v-if="item.divider" class="border-t border-gray-200 dark:border-gray-700 my-1"/>
           <li
             v-else
-            @click="
-              item.action($event);
-              closeMenu();
-            "
             :class="[
               'px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2',
               { 'opacity-50 pointer-events-none': item.disabled },
               { 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20': item.danger },
-            ]">
+            ]"
+            @click="
+              item.action($event);
+              closeMenu();
+            ">
             <Icon v-if="item.icon" :name="item.icon" class="size-4" />
             <span>{{ item.label }}</span>
           </li>
@@ -522,22 +522,22 @@ onUnmounted(() => {
 
       <!-- 默认菜单的其他选项 -->
       <template v-if="menuType === 'default'">
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <li
-          @click="handleCopyLink"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyLink">
           <Icon name="ri:link" class="size-4" />
           <span>复制本页链接</span>
         </li>
         <li
-          @click="handleCopyTitle"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyTitle">
           <Icon name="ri:heading" class="size-4" />
           <span>复制页面标题</span>
         </li>
         <li
-          @click="handleCopyTitleAndLink"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyTitleAndLink">
           <Icon name="ri:file-text-line" class="size-4" />
           <span>复制标题和链接</span>
         </li>
@@ -545,22 +545,22 @@ onUnmounted(() => {
 
       <!-- 文本菜单选项 -->
       <template v-if="menuType === 'text'">
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <li
-          @click="handleSiteSearch"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleSiteSearch">
           <Icon name="ri:search-line" class="size-4" />
           <span>站内搜索</span>
         </li>
         <li
-          @click="handleBaiduSearch"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleBaiduSearch">
           <Icon name="ri:baidu-fill" class="size-4" />
           <span>百度搜索</span>
         </li>
         <li
-          @click="handleBingSearch"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleBingSearch">
           <svg xmlns="http://www.w3.org/2000/svg" class="size-4" width="256" height="388" viewBox="0 0 256 388">
             <defs>
               <radialGradient
@@ -603,21 +603,21 @@ onUnmounted(() => {
           <span>Bing搜索</span>
         </li>
         <li
-          @click="handleGoogleSearch"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleGoogleSearch">
           <Icon name="material-icon-theme:google" class="size-4" />
           <span>Google搜索</span>
         </li>
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <li
-          @click="handleCopyText"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyText">
           <Icon name="ri:file-copy-line" class="size-4" />
           <span>复制文本</span>
         </li>
         <li
-          @click="handleSelectAll"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleSelectAll">
           <Icon name="ri:checkbox-circle-line" class="size-4" />
           <span>全选</span>
         </li>
@@ -625,22 +625,22 @@ onUnmounted(() => {
 
       <!-- 链接菜单选项 -->
       <template v-if="menuType === 'link'">
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <li
-          @click="handleCopyLinkText"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyLinkText">
           <Icon name="ri:file-text-line" class="size-4" />
           <span>复制链接文字</span>
         </li>
         <li
-          @click="handleCopyLinkUrl"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyLinkUrl">
           <Icon name="ri:link" class="size-4" />
           <span>复制链接地址</span>
         </li>
         <li
-          @click="handleOpenLink"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleOpenLink">
           <Icon name="ri:external-link-line" class="size-4" />
           <span>访问链接</span>
         </li>
@@ -648,22 +648,22 @@ onUnmounted(() => {
 
       <!-- 图片菜单选项 -->
       <template v-if="menuType === 'image'">
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <li
-          @click="handleCopyImageLink"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyImageLink">
           <Icon name="ri:link" class="size-4" />
           <span>复制图片链接</span>
         </li>
         <li
-          @click="handleCopyImage"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyImage">
           <Icon name="ri:image-add-line" class="size-4" />
           <span>复制图片</span>
         </li>
         <li
-          @click="handleDownloadImage"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleDownloadImage">
           <Icon name="ri:download-2-line" class="size-4" />
           <span>下载图片</span>
         </li>
@@ -672,48 +672,48 @@ onUnmounted(() => {
       <!-- 输入框菜单 -->
       <template v-if="menuType === 'input'">
         <li
-          @click="handleSelectAllInput"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleSelectAllInput">
           <Icon name="ri:checkbox-circle-line" class="size-4" />
           <span>全选</span>
         </li>
         <li
-          @click="handleCopyInput"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCopyInput">
           <Icon name="ri:file-copy-line" class="size-4" />
           <span>复制</span>
         </li>
         <li
-          @click="handleCutInput"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleCutInput">
           <Icon name="ri:scissors-cut-line" class="size-4" />
           <span>剪切</span>
         </li>
         <li
-          @click="handlePasteInput"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handlePasteInput">
           <Icon name="ri:clipboard-line" class="size-4" />
           <span>粘贴</span>
         </li>
 
         <!-- 如果在输入框内有选中文字，显示搜索功能 -->
         <template v-if="inputTarget && inputTarget.selectionStart !== inputTarget.selectionEnd">
-          <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+          <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
           <li
-            @click="handleSiteSearch"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleSiteSearch">
             <Icon name="ri:search-line" class="size-4" />
             <span>站内搜索</span>
           </li>
           <li
-            @click="handleBaiduSearch"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleBaiduSearch">
             <Icon name="ri:baidu-fill" class="size-4" />
             <span>百度搜索</span>
           </li>
           <li
-            @click="handleBingSearch"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleBingSearch">
             <svg xmlns="http://www.w3.org/2000/svg" class="size-4" width="256" height="388" viewBox="0 0 256 388">
               <defs>
                 <radialGradient
@@ -756,8 +756,8 @@ onUnmounted(() => {
             <span>Bing搜索</span>
           </li>
           <li
-            @click="handleGoogleSearch"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleGoogleSearch">
             <Icon name="material-icon-theme:google" class="size-4" />
             <span>Google搜索</span>
           </li>
@@ -765,38 +765,38 @@ onUnmounted(() => {
 
         <!-- 转大写功能（非评论区显示） -->
         <template v-if="!isCommentArea">
-          <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+          <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
           <li
-            @click="handleToUpperCase"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleToUpperCase">
             <Icon name="ri:arrow-up-line" class="size-4" />
             <span>转大写</span>
           </li>
           <li
-            @click="handleToLowerCase"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleToLowerCase">
             <Icon name="ri:arrow-down-line" class="size-4" />
             <span>转小写</span>
           </li>
           <li
-            @click="handleCapitalize"
-            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @click="handleCapitalize">
             <Icon name="ri:text" class="size-4" />
             <span>首字母大写</span>
           </li>
         </template>
 
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
         <li
-          @click="handleClearInput"
-          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          @click="handleClearInput">
           <Icon name="ri:delete-bin-line" class="size-4" />
           <span>清空</span>
         </li>
       </template>
 
       <!-- 常驻显示的提示信息 -->
-      <li class="border-t border-gray-200 dark:border-gray-700 my-1"></li>
+      <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
       <li class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-default">
         <Icon name="ri:keyboard-line" class="size-3" />
         <span>按住 Ctrl 可打开原始菜单</span>

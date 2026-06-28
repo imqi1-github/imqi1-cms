@@ -1,4 +1,5 @@
 import { createVNode, render, type Component } from "vue";
+
 import LivePhoto from "~/components/LivePhoto.vue";
 
 /**

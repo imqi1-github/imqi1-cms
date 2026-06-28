@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, useAttrs, type CSSProperties } from "vue";
 import { useMediaQuery } from "@vueuse/core";
+
 import { useLivePhoto } from "~/composables/useLivePhoto";
 
 // 禁用自动属性继承，手动控制属性传递
@@ -509,7 +510,7 @@ onUnmounted(() => {
       :style="{
         opacity: imgOpacity / 100,
         ...mediaStyle,
-      }" />
+      }" >
 
     <!-- 视频容器 -->
     <video
@@ -570,11 +571,11 @@ onUnmounted(() => {
       v-bind="fancyboxAttrs"
       loading="lazy"
       class="block w-full h-full max-h-37.5 object-cover transition-opacity duration-300 opacity-0"
-      @load="(e) => { (e.target as HTMLImageElement).classList.add('opacity-100'); }" />
+      @load="(e) => { (e.target as HTMLImageElement).classList.add('opacity-100'); }" >
     <!-- 占位骨架屏（未加载时显示） -->
     <div
       v-if="!shouldLoad"
-      class="absolute inset-0 bg-slate-100 dark:bg-slate-800 animate-pulse"></div>
+      class="absolute inset-0 bg-slate-100 dark:bg-slate-800 animate-pulse"/>
   </div>
 </template>
 

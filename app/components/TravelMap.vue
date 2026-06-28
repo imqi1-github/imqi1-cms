@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import "@amap/amap-jsapi-types";
+
 import { loadAmap } from "~/utils/amap-loader";
 
 interface TravelPost {
@@ -805,11 +807,11 @@ onUnmounted(() => {
 
 <template>
   <div class="relative h-full w-full">
-    <div id="travel-map" class="h-full w-full bg-gray-100 dark:bg-gray-900"></div>
+    <div id="travel-map" class="h-full w-full bg-gray-100 dark:bg-gray-900"/>
 
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
       <div class="text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
         <p class="mt-2 text-sm text-slate-500">地图加载中...</p>
       </div>
     </div>

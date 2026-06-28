@@ -12,7 +12,7 @@ interface WaterfallItem {
 
 interface Props {
   asLink?: boolean;
-  items: WaterfallItem[];
+  items?: WaterfallItem[];
 }
 
 const props = withDefaults(defineProps<Props>(), {

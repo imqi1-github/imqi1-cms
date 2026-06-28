@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, useTemplateRef } from "vue";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import Swiper from "swiper";
 import { Navigation, Pagination, Mousewheel } from "swiper/modules";
+
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -158,10 +159,10 @@ watch(
       </div>
     </div>
     <div class="flex justify-between items-center h-8">
-      <div class="swiper-pagination"></div>
+      <div class="swiper-pagination"/>
       <div class="swiper-buttons absolute right-0">
-        <div class="swiper-button-prev"></div>
-        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"/>
+        <div class="swiper-button-next"/>
       </div>
     </div>
     </div>

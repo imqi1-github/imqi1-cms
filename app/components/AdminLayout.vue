@@ -239,18 +239,18 @@ const handleLogout = async () => {
 
             <!-- 返回主页按钮 -->
             <Button
+              v-tooltip="'返回主页'"
               variant="ghost"
               size="icon"
               class="mr-2"
-              v-tooltip="'返回主页'"
               @click="() => navigateTo('/', { open: { target: '_blank' } })">
               <Icon name="lucide:home" class="size-5" />
             </Button>
 
             <Button
+              v-tooltip="'退出登录'"
               variant="ghost"
               size="icon"
-              v-tooltip="'退出登录'"
               @click="handleLogout"
             >
               <Icon name="lucide:log-out" class="size-5" />

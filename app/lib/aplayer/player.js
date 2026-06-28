@@ -1,4 +1,5 @@
 import Promise from 'promise-polyfill';
+
 import Bar from './bar';
 import Controller from './controller';
 import Events from './events';
@@ -9,7 +10,6 @@ import handleOption from './options';
 import Storage from './storage';
 import Template from './template';
 import Timer from './timer';
-
 import utils from './utils';
 
 const instances = [];

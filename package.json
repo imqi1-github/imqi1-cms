@@ -72,6 +72,7 @@
   },
   "packageManager": "bun@1.3.10+30e609e08",
   "devDependencies": {
+    "@amap/amap-jsapi-types": "^0.0.15",
     "@iconify-json/lucide": "^1.2.101",
     "@iconify-json/ri": "^1.2.10",
     "@nuxt/eslint": "^1.16.0",
