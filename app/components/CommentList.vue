@@ -2,12 +2,14 @@
 import { onMounted, ref } from "vue";
 import type { InternalApi } from "nitropack/types";
 
+import type { Comment, CommentFormData, ReplyState } from "~/types/components/comment";
+
 const props = defineProps<{
   postId: number;
   loadAllComments?: boolean;
 }>();
 
-const comments = ref<any[]>([]);
+const comments = ref<Comment[]>([]);
 const loading = ref(true);
 const refreshing = ref(false);
 const error = ref("");
@@ -28,21 +30,21 @@ const { isLoggedIn, isLoadingAuth } = useAuth();
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 
-const replyState = ref({
+const replyState = ref<ReplyState>({
   isReplying: false,
-  replyTo: null as { id: number; name: string } | null,
-  targetCommentId: null as number | null,
+  replyTo: null,
+  targetCommentId: null,
 });
 
 // 共享的表单数据（所有CommentInput实例共用）
-const formData = ref({
+const formData = ref<CommentFormData>({
   content: "",
   name: "",
   mail: "",
   link: "",
 });
 
-function startReply(comment: any) {
+function startReply(comment: Comment) {
   replyState.value = {
     isReplying: true,
     replyTo: {

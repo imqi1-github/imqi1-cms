@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {siteConfig} from "~~/site.config";
-
 import type {Capsule} from "~/types/components/map";
 
 // 地图入口（小胶囊）。两种用法：

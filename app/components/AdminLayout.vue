@@ -154,7 +154,7 @@ const isActive = (href: string) => {
 const handleLogout = async () => {
   try {
     await $fetch('/api/auth/logout', { method: 'POST' })
-  } catch (e) {
+  } catch {
     // 忽略错误
   } finally {
     await navigateTo('/login')

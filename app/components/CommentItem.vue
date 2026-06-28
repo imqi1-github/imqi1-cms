@@ -1,36 +1,27 @@
 <script setup lang="ts">
-import {parseUserAgent} from "~/utils/parseUserAgent";
-import type {MD5Block} from "~/types/md5";
+import { parseUserAgent } from "~/utils/parseUserAgent";
+import type { MD5Block } from "~/types/md5";
+import type { CommentWithChildren, CommentFormData, ReplyState } from "~/types/components/comment";
 
 const props = defineProps<{
-  comment: any;
+  comment: CommentWithChildren;
   postId: number;
-  replyState: {
-    isReplying: boolean;
-    replyTo: { id: number; name: string } | null;
-    targetCommentId: number | null;
-  };
+  replyState: ReplyState;
   avatarService: string;
   maxLevel: number;
   currentLevel: number;
   commentInterval: number;
   requireMail: boolean;
   requireLink: boolean;
-  formData?: {
-    content: string;
-    name: string;
-    mail: string;
-    link: string;
-  };
+  formData: CommentFormData;
 }>();
 
 const emit = defineEmits<{
-  (e: "start-reply", comment: any): void;
-  (e: "cancel-reply"): void;
-  (e: "comment-submitted"): void;
+  (e: "start-reply", comment: CommentWithChildren): void;
+  (e: "cancel-reply" | "comment-submitted"): void;
 }>();
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | Date) => {
   const date = new Date(dateString);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
@@ -232,7 +223,7 @@ const canReply = computed(() => {
   return props.maxLevel > 0 && props.currentLevel < props.maxLevel;
 });
 
-function startReply(comment: any) {
+function startReply(comment: CommentWithChildren) {
   emit("start-reply", comment);
 }
 
@@ -311,7 +302,8 @@ function handleCommentSubmitted() {
             <Icon name="ri-map-pin-2-fill" class="size-4" />{{ comment.location }}
           </span>
           <span v-if="comment.isp" v-tooltip="'运营商'" class="flex items-center gap-1">
-            <Icon name="ri-earth-fill" class="size-4" />{{ comment.isp }}</span>
+            <Icon name="ri-earth-fill" class="size-4" />{{ comment.isp }}
+          </span>
         </div>
       </div>
     </div>
@@ -331,7 +323,7 @@ function handleCommentSubmitted() {
     </div>
 
     <!-- 子评论（递归） -->
-    <div v-if="comment.children?.length > 0" class="mt-4">
+    <div v-if="comment.children && comment.children?.length > 0" class="mt-4">
       <ul class="space-y-4">
         <CommentItem
           v-for="child in comment.children"

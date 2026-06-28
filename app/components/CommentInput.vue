@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
 
-// 导入表情数据
 import emojisData from "~/assets/emojis.json";
+import type { CommentFormData } from "~/types/components/comment";
+import type { CsrfTokenResponse } from "~/types/apis/csrf";
+import type { CommentSubmitResponse } from "~/types/apis/comment";
 
 // 导入前台通知 composable
 const { success, error: showError } = useFrontNotification();
@@ -17,17 +19,12 @@ const props = defineProps<{
   commentInterval?: number;
   requireMail?: boolean;
   requireLink?: boolean;
-  formData?: {
-    content: string;
-    name: string;
-    mail: string;
-    link: string;
-  };
+  formData?: CommentFormData;
 }>();
 
 const emit = defineEmits<{
-  (e: "cancel-reply"): void;
-  (e: "comment-submitted"): void;
+  (e: "cancel-reply" | "comment-submitted"): void;
+  (e: "update:formData", value: CommentFormData): void;
 }>();
 
 const submitting = ref(false);
@@ -71,11 +68,8 @@ const formData = computed({
   get: () => props.formData || localFormData.value,
   set: value => {
     if (props.formData) {
-      // 逐个属性修改，保持响应性
-      if (value.content !== undefined) props.formData.content = value.content;
-      if (value.name !== undefined) props.formData.name = value.name;
-      if (value.mail !== undefined) props.formData.mail = value.mail;
-      if (value.link !== undefined) props.formData.link = value.link;
+      // 通过 emit 通知父组件更新，避免直接修改 props
+      emit("update:formData", value);
     } else {
       // 修改本地状态
       localFormData.value = value;
@@ -146,8 +140,8 @@ onMounted(() => {
     fillCommentUserInfo();
 
     // 评论框只需要单独获取 CSRF token；登录状态和站点设置复用全局状态。
-    $fetch("/api/csrf/token", { credentials: "include" })
-      .then((csrfRes: any) => {
+    $fetch<CsrfTokenResponse>("/api/csrf/token", { credentials: "include" })
+      .then(csrfRes => {
         if (csrfRes?.data?.token) {
           csrfToken.value = csrfRes.data.token;
         }
@@ -268,7 +262,7 @@ async function submitComment() {
 
   submitting.value = true;
   try {
-    const response: any = await $fetch("/api/comments", {
+    const response = await $fetch<CommentSubmitResponse>("/api/comments", {
       method: "POST",
       credentials: "include",
       body: {
@@ -329,12 +323,12 @@ async function submitComment() {
         refreshCaptcha();
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // 提取错误消息 - 网络错误或其他异常
     let errorMessage = "网络错误，请稍后重试";
-    if (error?.data?.message) {
+    if (error && typeof error === "object" && "data" in error && error.data && typeof error.data === "object" && "message" in error.data && typeof error.data.message === "string") {
       errorMessage = error.data.message;
-    } else if (error?.message && !error.message.includes("[POST]")) {
+    } else if (error instanceof Error && !error.message.includes("[POST]")) {
       errorMessage = error.message;
     }
 
