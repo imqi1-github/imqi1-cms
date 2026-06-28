@@ -1,11 +1,17 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type UserItem = InternalApi["/api/admin/users"]["get"][number];
+type CurrentUser = InternalApi["/api/auth/me"]["get"];
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+
 const router = useRouter();
 const loading = ref(true);
-const users = ref<any[]>([]);
+const users = ref<UserItem[]>([]);
 const showAddModal = ref(false);
 const newUser = ref({ name: "", nickname: "", mail: "", password: "", role: 0 });
 const toast = useToast();
-const currentUser = ref<any>(null);
+const currentUser = ref<CurrentUser | null>(null);
 
 // 计算是否只有一个用户
 const isOnlyUser = computed(() => users.value.length <= 1);
@@ -30,7 +36,7 @@ async function fetchUsers() {
     // 获取当前用户信息
     currentUser.value = await $fetch("/api/auth/me");
 
-    users.value = (await ($fetch as any)("/api/admin/users")) as any[];
+    users.value = await $fetch("/api/admin/users");
   } catch (error) {
     console.error("获取用户失败:", error);
     users.value = [];
@@ -51,7 +57,8 @@ async function addUser() {
     toast.success({
       message: "用户创建成功",
     });
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
     console.error("添加失败:", error);
     // 优先读 error.data.message（后端 createError 抛出的业务错误）
     let errorMessage = "添加失败";
@@ -79,14 +86,15 @@ async function deleteUser(id: number) {
   if (confirmed) {
     try {
       await $fetch(
-        `/api/admin/users/${id}?csrfToken=${encodeURIComponent(((await $fetch("/api/csrf/token", { credentials: "include" })) as any).data.token)}`,
+        `/api/admin/users/${id}?csrfToken=${encodeURIComponent((await $fetch("/api/csrf/token", { credentials: "include" })).data.token)}`,
         { method: "DELETE" },
       );
       await fetchUsers();
       toast.success({
         message: "用户已删除",
       });
-    } catch (error: any) {
+    } catch (rawError: unknown) {
+      const error = rawError as ApiError;
       console.error("删除失败:", error);
 
       // 提取错误信息
@@ -95,8 +103,8 @@ async function deleteUser(id: number) {
         errorMessage = error.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
+      } else if (typeof rawError === "string") {
+        errorMessage = rawError;
       }
 
       toast.error({

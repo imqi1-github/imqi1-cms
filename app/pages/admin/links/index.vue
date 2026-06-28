@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type LinkItem = InternalApi["/api/admin/links"]["get"][number];
+
 const toast = useToast();
 const loading = ref(true);
-const links = ref<any[]>([]);
+const links = ref<LinkItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newLink = ref({ name: "", link: "", desc: "", avatar: "" });
-const editingLink = ref<any>(null);
+const editingLink = ref<LinkItem | null>(null);
 const editLinkForm = ref({ name: "", link: "", desc: "", avatar: "" });
 
 async function fetchLinks() {
   loading.value = true;
   try {
-    links.value = (await ($fetch as any)("/api/admin/links")) as any[];
+    links.value = await $fetch("/api/admin/links");
   } catch (error) {
     console.error("获取友情链接失败:", error);
     links.value = [];
@@ -40,7 +44,7 @@ async function addLink() {
   }
 }
 
-async function toggleEnabled(link: any) {
+async function toggleEnabled(link: LinkItem) {
   try {
     await $fetch(`/api/admin/links/${link.id}/toggle`, { method: "PATCH" });
     toast.success({
@@ -55,7 +59,7 @@ async function toggleEnabled(link: any) {
   }
 }
 
-function openEditModal(link: any) {
+function openEditModal(link: LinkItem) {
   editingLink.value = link;
   editLinkForm.value = {
     name: link.name || "",
@@ -104,7 +108,7 @@ async function deleteLink(id: number) {
   }
 }
 
-async function approveModification(link: any, approve: boolean) {
+async function approveModification(link: LinkItem, approve: boolean) {
   const action = approve ? "批准" : "拒绝";
   const confirmed = confirm(approve ? `确定要批准此修改吗？\n\n原友链"${link.originalLink?.name}"将被更新为新信息。` : "确定要拒绝此修改申请吗？");
 
@@ -237,11 +241,11 @@ onMounted(() => {
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
                 <template v-if="link.isModification && link.modificationStatus === 'pending'">
-                  <Button variant="outline" size="sm" @click="approveModification(link, true)" class="text-green-600 hover:text-green-700">
+                  <Button variant="outline" size="sm" class="text-green-600 hover:text-green-700" @click="approveModification(link, true)">
                     <Icon name="lucide:check" class="size-4 mr-1" />
                     批准
                   </Button>
-                  <Button variant="outline" size="sm" @click="approveModification(link, false)" class="text-red-600 hover:text-red-700">
+                  <Button variant="outline" size="sm" class="text-red-600 hover:text-red-700" @click="approveModification(link, false)">
                     <Icon name="lucide:x" class="size-4 mr-1" />
                     拒绝
                   </Button>
@@ -318,11 +322,11 @@ onMounted(() => {
 
           <div class="flex items-center justify-end pt-2 border-t gap-1">
             <template v-if="link.isModification && link.modificationStatus === 'pending'">
-              <Button variant="outline" size="sm" @click="approveModification(link, true)" class="text-green-600 hover:text-green-700">
+              <Button variant="outline" size="sm" class="text-green-600 hover:text-green-700" @click="approveModification(link, true)">
                 <Icon name="lucide:check" class="size-4 mr-1" />
                 批准
               </Button>
-              <Button variant="outline" size="sm" @click="approveModification(link, false)" class="text-red-600 hover:text-red-700">
+              <Button variant="outline" size="sm" class="text-red-600 hover:text-red-700" @click="approveModification(link, false)">
                 <Icon name="lucide:x" class="size-4 mr-1" />
                 拒绝
               </Button>

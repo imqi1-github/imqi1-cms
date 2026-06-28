@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import type { AcceptableValue } from "reka-ui";
+import type { InternalApi } from "nitropack/types";
+
+type Category = InternalApi["/api/admin/categories"]["get"][number];
+type Tag = InternalApi["/api/admin/tags"]["get"][number];
+type PostMeta = NonNullable<InternalApi["/api/admin/post-categories/:id"]["get"]["data"]>[number];
+type Travel = InternalApi["/api/admin/travels"]["get"][number];
+type Attachment = NonNullable<InternalApi["/api/attachments/list"]["get"]["data"]>[number];
 
 const route = useRoute();
 const router = useRouter();
@@ -44,17 +51,17 @@ const tags = ref(""); // 标签
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
 // 分类相关
-const categories = ref<any[]>([]);
+const categories = ref<Category[]>([]);
 const selectedCategoryIds = ref<number[]>([]);
 
 // 标签相关
-const tagList = ref<any[]>([]);
+const tagList = ref<Tag[]>([]);
 const selectedTagIds = ref<number[]>([]);
 
 // 获取分类列表
 const fetchCategories = async () => {
   try {
-    const res = (await ($fetch as any)("/api/admin/categories")) as any[];
+    const res = await $fetch<Category[]>("/api/admin/categories");
     categories.value = res || [];
   } catch (error) {
     console.error("获取分类失败:", error);
@@ -64,7 +71,7 @@ const fetchCategories = async () => {
 // 获取标签列表
 const fetchTags = async () => {
   try {
-    const res = (await ($fetch as any)("/api/admin/tags")) as any[];
+    const res = await $fetch<Tag[]>("/api/admin/tags");
     tagList.value = res || [];
   } catch (error) {
     console.error("获取标签失败:", error);
@@ -76,9 +83,9 @@ const fetchPostCategories = async () => {
   if (!postId.value) return;
 
   try {
-    const res = (await $fetch(`/api/admin/post-categories/${postId.value}`)) as any;
+    const res = await $fetch(`/api/admin/post-categories/${postId.value}`);
     if (res?.success) {
-      selectedCategoryIds.value = res.data.map((c: any) => c.mid);
+      selectedCategoryIds.value = res.data.map((c: PostMeta) => c.mid);
     }
   } catch (error) {
     console.error("获取文章分类失败:", error);
@@ -90,9 +97,9 @@ const fetchPostTags = async () => {
   if (!postId.value) return;
 
   try {
-    const res = (await $fetch(`/api/admin/post-tags/${postId.value}`)) as any;
+    const res = await $fetch(`/api/admin/post-tags/${postId.value}`);
     if (res?.success) {
-      selectedTagIds.value = res.data.map((t: any) => t.mid);
+      selectedTagIds.value = res.data.map((t: PostMeta) => t.mid);
     }
   } catch (error) {
     console.error("获取文章标签失败:", error);
@@ -155,14 +162,14 @@ const toggleTag = (tagId: number, checked: boolean) => {
 };
 
 // 旅行地图地点关联
-const travels = ref<any[]>([]);
+const travels = ref<Travel[]>([]);
 const travelKeyword = ref("");
 const selectedTravelId = ref("");
 
 // 获取全部旅行地点
 const fetchTravels = async () => {
   try {
-    const res = await ($fetch as any)("/api/admin/travels");
+    const res = await $fetch<Travel[]>("/api/admin/travels");
     travels.value = Array.isArray(res) ? res : [];
   } catch (error) {
     console.error("获取旅行地点失败:", error);
@@ -189,7 +196,7 @@ const availableTravels = computed(() => {
 });
 
 // 多对多：增/减当前文章与某地点的关联，PUT 携带全量 cids
-async function setTravelPost(travel: any, add: boolean) {
+async function setTravelPost(travel: Travel, add: boolean) {
   const pid = postId.value;
   if (pid == null) return;
   const current: number[] = Array.isArray(travel.cids) ? travel.cids : [];
@@ -233,12 +240,12 @@ function onPickTravel(value: AcceptableValue) {
 }
 
 // 取消某地点与当前文章的关联
-function disassociateTravel(travel: any) {
+function disassociateTravel(travel: Travel) {
   setTravelPost(travel, false);
 }
 
 // 附件相关
-const attachments = ref<any[]>([]);
+const attachments = ref<Attachment[]>([]);
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -249,7 +256,7 @@ const fetchAttachments = async () => {
   if (!postId.value) return;
 
   try {
-    const res = (await $fetch(`/api/attachments/list?cid=${postId.value}`)) as any;
+    const res = await $fetch(`/api/attachments/list?cid=${postId.value}`);
     if (res?.success) {
       attachments.value = res.data || [];
     }
@@ -334,10 +341,10 @@ const uploadFiles = async (files: File[]) => {
       }
 
       try {
-        const res = (await $fetch(`/api/attachments/upload?cid=${postId.value}`, {
+        const res = await $fetch(`/api/attachments/upload?cid=${postId.value}`, {
           method: "POST",
           body: formData,
-        })) as any;
+        });
 
         if (res?.success) {
           attachments.value.push(res.data);
@@ -346,7 +353,7 @@ const uploadFiles = async (files: File[]) => {
             description: file.name,
           });
         }
-      } catch (error) {
+      } catch {
         toast.error({
           message: "上传失败",
           description: file.name,
@@ -362,7 +369,7 @@ const uploadFiles = async (files: File[]) => {
 };
 
 // 删除附件
-const deleteAttachment = async (attachment: any) => {
+const deleteAttachment = async (attachment: Attachment) => {
   const confirmed = confirm(`确定要删除附件 "${attachment.name}" 吗？`);
   if (!confirmed) return;
 
@@ -381,7 +388,7 @@ const deleteAttachment = async (attachment: any) => {
     toast.success({
       message: "删除成功",
     });
-  } catch (error) {
+  } catch {
     toast.error({
       message: "删除失败",
     });
@@ -414,8 +421,8 @@ const fetchPost = async () => {
   loading.value = true;
   try {
     const res = await $fetch(`/api/admin/posts/${postId.value}`);
-    if ((res as any).success) {
-      const post = (res as any).data;
+    if (res?.success) {
+      const post = res.data;
       title.value = post.title || "";
       description.value = post.desc || "";
       slug.value = post.slug || "";
@@ -428,8 +435,8 @@ const fetchPost = async () => {
       // 解析封面数据：从 JSON 格式转为输入框格式
       if (post.covers) {
         try {
-          const coversArray = JSON.parse(post.covers);
-          coversInput.value = coversArray.map((c: any) => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ""}`).join("\n");
+          const coversArray = JSON.parse(post.covers) as Array<{ url?: string; cover?: string; title?: string }>;
+          coversInput.value = coversArray.map(c => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ""}`).join("\n");
         } catch {
           coversInput.value = "";
         }
@@ -454,10 +461,13 @@ const fetchPost = async () => {
       await nextTick();
       saveInitialContent();
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const msg = e && typeof e === "object" && "data" in e && e.data && typeof e.data === "object" && "message" in e.data
+      ? String(e.data.message)
+      : (e instanceof Error ? e.message : "请稍后重试");
     toast.error({
       message: "获取文章失败",
-      description: e?.data?.message || "请稍后重试",
+      description: msg,
     });
   } finally {
     loading.value = false;
@@ -578,7 +588,7 @@ const savePost = async () => {
       tags: tags.value,
     };
 
-    let res;
+    let res: InternalApi["/api/admin/posts/:cid"]["put"] | InternalApi["/api/admin/posts"]["post"];
     if (isEdit.value && postId.value) {
       // 更新文章
       res = await $fetch(`/api/admin/posts/${postId.value}`, {
@@ -593,14 +603,14 @@ const savePost = async () => {
       });
     }
 
-    if ((res as any).success) {
+    if (res?.success) {
       toast.success({
         message: isEdit.value ? "文章更新成功" : "文章创建成功",
       });
 
       // 如果是新建，跳转到编辑页面
       if (!isEdit.value) {
-        const newCid = (res as any).data.cid;
+        const newCid = res.data.cid;
         // 更新 postId 引用
         postId.value = newCid;
         await fetchAttachments();
@@ -616,10 +626,13 @@ const savePost = async () => {
       await nextTick();
       saveInitialContent();
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const msg = e && typeof e === "object" && "data" in e && e.data && typeof e.data === "object" && "message" in e.data
+      ? String(e.data.message)
+      : (e instanceof Error ? e.message : "请稍后重试");
     toast.error({
       message: "保存失败",
-      description: e?.data?.message || "请稍后重试",
+      description: msg,
     });
   } finally {
     loading.value = false;
@@ -967,7 +980,7 @@ watch(postId, newCid => {
           <!-- 附件管理 Tab -->
           <TabsContent value="attachments" class="mt-6">
             <!-- 隐藏的文件输入 -->
-            <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" />
+            <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" >
 
             <Card>
               <CardHeader>
@@ -1034,7 +1047,7 @@ watch(postId, newCid => {
                           v-if="item.type === 'image'"
                           :src="item.url"
                           :alt="item.name"
-                          class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform" >
                         <div v-else class="flex flex-col items-center text-muted-foreground">
                           <Icon name="lucide:film" class="size-12 mb-2" />
                           <span class="text-xs">视频预览</span>
@@ -1044,10 +1057,10 @@ watch(postId, newCid => {
                       <!-- 操作遮罩 -->
                       <div
                         class="absolute inset-0 top-[calc(100%-40px)] bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
-                        <Button variant="secondary" size="sm" class="h-7 text-xs px-2" @click.stop="copyLink(item.url)" title="复制链接">
+                        <Button variant="secondary" size="sm" class="h-7 text-xs px-2" title="复制链接" @click.stop="copyLink(item.url)">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>
-                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" @click.stop="deleteAttachment(item)" title="删除">
+                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" title="删除" @click.stop="deleteAttachment(item)">
                           <Icon name="lucide:trash-2" class="size-3" />
                         </Button>
                       </div>
@@ -1142,7 +1155,7 @@ watch(postId, newCid => {
                     <Checkbox
                       :id="`category-${category.mid}`"
                       :model-value="selectedCategoryIds.includes(category.mid)"
-                      @update:model-value="(checked: any) => toggleCategory(category.mid, !!checked)" />
+                      @update:model-value="(checked: boolean | string | number | null) => toggleCategory(category.mid, !!checked)" />
                     <Label :for="`category-${category.mid}`" class="text-sm font-normal cursor-pointer flex-1">
                       {{ category.name }}
                       <span class="text-xs text-muted-foreground">({{ category.postCount }})</span>
@@ -1169,7 +1182,7 @@ watch(postId, newCid => {
                     <Checkbox
                       :id="`tag-${tag.mid}`"
                       :model-value="selectedTagIds.includes(tag.mid)"
-                      @update:model-value="(checked: any) => toggleTag(tag.mid, !!checked)" />
+                      @update:model-value="(checked: boolean | string | number | null) => toggleTag(tag.mid, !!checked)" />
                     <Label :for="`tag-${tag.mid}`" class="text-sm font-normal cursor-pointer flex-1">
                       {{ tag.name }}
                       <span class="text-xs text-muted-foreground">({{ tag.postCount }})</span>

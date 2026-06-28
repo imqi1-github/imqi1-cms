@@ -167,7 +167,7 @@ export default defineTypedApiHandler(
           return {
             code: 200,
             message: "搜索成功（来自缓存）",
-            data: JSON.parse(cached),
+            data: JSON.parse(cached) as typeof responseData,
           };
         }
       } catch (error) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
+import type { FancyboxOptions } from "@fancyapps/ui";
 import { computed, nextTick, onMounted, watch } from "vue";
 
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
@@ -68,7 +69,7 @@ usePageSeo({
 });
 
 const fancyboxContainer = useTemplateRef("fancyboxContainer");
-let FancyboxModule: any = null;
+let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
 // 封面加载失败时回退到 nopic
 const nopicUrl = publicAsset("/imgs/nopic.png");
@@ -131,7 +132,7 @@ onMounted(async () => {
   <div class="fancybox__footer"></div>
 </div>`,
     },
-  } as any);
+  } as Partial<FancyboxOptions>);
 });
 
 onUnmounted(() => {

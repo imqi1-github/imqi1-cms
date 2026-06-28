@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+
 import { siteConfig } from "~~/site.config";
+
+interface SubscribeSource {
+  id: number;
+  name: string;
+  avatar: string | null;
+  postCount: number;
+}
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -22,7 +30,7 @@ usePageSeo({
 const { data: postsRes, pending, error: fetchError, refresh } = await useFetch("/api/subscribes", {
   headers: { "x-ssr-internal-request": "true" },
 });
-const posts = computed(() => ((postsRes.value as any)?.data || []) as any[]);
+const posts = computed(() => postsRes.value?.data || []);
 const error = computed<string | null>(() =>
   fetchError.value ? fetchError.value.message || "获取订阅文章失败" : null,
 );
@@ -124,7 +132,7 @@ onUnmounted(() => {
 
 // 订阅源列表（含随机洗牌）。用 ref 而非 computed，并在 onMounted（仅客户端）计算，
 // 避免 SSR 与客户端各自随机一次导致 hydration 不一致。
-const subscribes = ref<any[]>([]);
+const subscribes = ref<SubscribeSource[]>([]);
 
 function computeSubscribes() {
   const subscribeMap = new Map();
@@ -249,7 +257,7 @@ watch(() => selectedSourceId.value, async () => {
 
     <!-- 加载占位：客户端重新拉取（如错误重试）时避免空白 -->
     <div v-if="!isLoaded" class="flex items-center justify-center py-20">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"/>
       <p class="ml-3 text-muted-foreground">加载中...</p>
     </div>
 
@@ -276,14 +284,14 @@ watch(() => selectedSourceId.value, async () => {
           class="sticky top-22 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-fit max-h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
         >
           <button
-            @click="clearFilter"
+            v-tooltip.right="'全部订阅'"
             :class="[
               'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
               !selectedSourceId
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
-            v-tooltip.right="'全部订阅'"
+            @click="clearFilter"
           >
             <Icon name="lucide:layout-grid" class="size-4 lg:size-5" />
           </button>
@@ -292,14 +300,14 @@ watch(() => selectedSourceId.value, async () => {
           <button
             v-for="subscribe in displayedSubscribes"
             :key="subscribe.id"
-            @click="selectSubscribe(subscribe.id)"
+            v-tooltip.right="subscribe.name"
             :class="[
               'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg overflow-hidden transition-all border-2',
               selectedSourceId === subscribe.id
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
             ]"
-            v-tooltip.right="subscribe.name"
+            @click="selectSubscribe(subscribe.id)"
           >
             <!-- 头像 -->
             <template v-if="subscribe.avatar">
@@ -308,7 +316,7 @@ watch(() => selectedSourceId.value, async () => {
                 :alt="subscribe.name"
                 class="w-full h-full object-cover"
                 loading="lazy"
-              />
+              >
             </template>
             <template v-else>
               <span class="font-semibold text-xs lg:text-sm">
@@ -321,9 +329,9 @@ watch(() => selectedSourceId.value, async () => {
           <button
             v-if="remainingCount > 0 && !isExpanded"
             key="expand-subscribes"
-            @click="toggleExpanded($event)"
-            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden"
             v-tooltip.right="expandTooltip"
+            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden"
+            @click="toggleExpanded($event)"
           >
             <span class="font-semibold text-xs lg:text-sm text-slate-600 dark:text-slate-400">
               +{{ remainingCount }}
@@ -333,9 +341,9 @@ watch(() => selectedSourceId.value, async () => {
           <button
             v-else-if="remainingCount > 0"
             key="collapse-subscribes"
-            @click="toggleExpanded($event)"
-            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden"
             v-tooltip.right="collapseTooltip"
+            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden"
+            @click="toggleExpanded($event)"
           >
             <span class="font-semibold text-xs lg:text-sm text-red-500 dark:text-red-400">
               ×
@@ -347,7 +355,7 @@ watch(() => selectedSourceId.value, async () => {
       <!-- 右侧文章列表 -->
       <main class="flex-1 min-w-0">
         <!-- 文章列表 -->
-        <div class="space-y-6" :key="animatinKey">
+        <div :key="animatinKey" class="space-y-6">
           <article
             v-for="post in filteredPosts"
             :key="post.id"
@@ -356,9 +364,9 @@ watch(() => selectedSourceId.value, async () => {
             <div class="flex items-start gap-4">
               <!-- 订阅源头像 -->
               <button
-                @click="selectSubscribe(post.subscribeId)"
                 class="shrink-0"
                 :title="post.subscribeName"
+                @click="selectSubscribe(post.subscribeId)"
               >
                 <Avatar class="size-10">
                   <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />

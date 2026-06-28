@@ -1,13 +1,18 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type CategoryItem = InternalApi["/api/admin/categories"]["get"][number];
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+
 const router = useRouter();
 const toast = useToast();
 
 const loading = ref(true);
-const categories = ref<any[]>([]);
+const categories = ref<CategoryItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newCategory = ref({ name: "", slug: "", desc: "" });
-const editingCategory = ref<any>(null);
+const editingCategory = ref<CategoryItem | null>(null);
 const csrfToken = ref("");
 
 async function fetchCategories() {
@@ -15,11 +20,11 @@ async function fetchCategories() {
   try {
     // 获取 CSRF token
     const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
-    if (csrfRes && (csrfRes as any).data?.token) {
-      csrfToken.value = (csrfRes as any).data.token;
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
     }
 
-    categories.value = (await ($fetch as any)("/api/admin/categories")) as any[];
+    categories.value = await $fetch("/api/admin/categories");
   } catch (error) {
     console.error("获取分类失败:", error);
     categories.value = [];
@@ -45,7 +50,8 @@ async function addCategory() {
     closeAddModal();
     toast.success({ message: "分类创建成功" });
     await fetchCategories();
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
     console.error("添加失败 - 完整错误对象:", error);
     console.error("错误状态码:", error?.statusCode);
     console.error("错误消息:", error?.message);
@@ -64,7 +70,7 @@ async function addCategory() {
   }
 }
 
-function openEditModal(category: any) {
+function openEditModal(category: CategoryItem) {
   editingCategory.value = { ...category };
   showEditModal.value = true;
 }
@@ -120,7 +126,8 @@ async function updateCategory() {
     closeEditModal();
     toast.success({ message: "分类更新成功" });
     await fetchCategories();
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
     console.error("更新失败:", error);
     let errorMessage = "更新失败";
     if (error?.data?.message) {
@@ -151,7 +158,8 @@ async function deleteCategory(mid: number) {
       await $fetch(`/api/admin/categories/${mid}?csrfToken=${encodeURIComponent(csrfToken.value)}`, { method: "DELETE" });
       toast.success({ message: "分类删除成功" });
       await fetchCategories();
-    } catch (error: any) {
+    } catch (rawError: unknown) {
+      const error = rawError as ApiError;
       console.error("删除失败:", error);
       let errorMessage = "删除失败";
       if (error?.data?.message) {
@@ -167,7 +175,7 @@ async function deleteCategory(mid: number) {
   }
 }
 
-function viewCategoryPosts(category: any) {
+function viewCategoryPosts(category: CategoryItem) {
   router.push(`/admin/posts?category=${category.mid}`);
 }
 

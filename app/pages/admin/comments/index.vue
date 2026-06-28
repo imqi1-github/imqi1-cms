@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
 import { parseUserAgent } from "~/utils/parseUserAgent";
+
+type CommentsResponse = InternalApi["/api/admin/comments"]["get"];
+type CommentItem = NonNullable<CommentsResponse["data"][number]>;
 
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const loading = ref(true);
-const comments = ref<any[]>([]);
+const comments = ref<CommentItem[]>([]);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const filterCid = ref<number | null>(null); // 筛选的文章ID
@@ -18,7 +23,7 @@ const pagination = ref({
 
 // 编辑对话框状态
 const editDialogOpen = ref(false);
-const editingComment = ref<any>(null);
+const editingComment = ref<CommentItem | null>(null);
 const editForm = ref({
   name: "",
   mail: "",
@@ -109,13 +114,13 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
     if (filterCid.value) {
       url += `&cid=${filterCid.value}`;
     }
-    const res = (await $fetch(url)) as any;
+    const res = await $fetch(url);
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
     // 更新 URL（如果需要）
     if (updateUrl) {
-      const query: any = {};
+      const query: Record<string, string> = {};
       if (page > 1) query.page = page.toString();
       if (filterCid.value) query.cid = filterCid.value.toString();
       await router.push({ query });
@@ -141,7 +146,7 @@ function clearFilter() {
 }
 
 // 打开编辑对话框
-function openEditDialog(comment: any) {
+function openEditDialog(comment: CommentItem) {
   editingComment.value = comment;
   editForm.value = {
     name: comment.name || "",
@@ -158,17 +163,17 @@ async function saveEdit() {
   if (!editingComment.value) return;
 
   try {
-    const res = (await $fetch(`/api/admin/comments/${editingComment.value.coid}`, {
+    await $fetch(`/api/admin/comments/${editingComment.value.coid}`, {
       method: "PATCH",
       body: editForm.value,
-    })) as any;
+    });
 
     toast.success({
       message: "评论更新成功",
     });
     editDialogOpen.value = false;
     await fetchComments(pagination.value.page, false);
-  } catch (error) {
+  } catch {
     toast.error({
       message: "更新失败",
     });
@@ -186,7 +191,7 @@ async function setStatus(coid: number, status: number) {
     toast.success({
       message: "状态已更新",
     });
-  } catch (error) {
+  } catch {
     toast.error({
       message: "操作失败",
     });
@@ -202,7 +207,7 @@ async function deleteComment(coid: number) {
       toast.success({
         message: "评论已删除",
       });
-    } catch (error) {
+    } catch {
       toast.error({
         message: "删除失败",
       });
@@ -224,7 +229,7 @@ async function batchDelete() {
         method: "POST",
         body: { ids: selectedIds.value },
       });
-      toast.success({ message: (res as any).message || "批量删除成功" });
+      toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];
       await fetchComments(pagination.value.page, false);
     } catch (error) {
@@ -242,11 +247,11 @@ function goToPage(page: number) {
   }
 }
 
-function getPostTitle(comment: any) {
+function getPostTitle(comment: CommentItem) {
   return comment.posts?.title || "未知";
 }
 
-function getCommentFrontendUrl(comment: any) {
+function getCommentFrontendUrl(comment: CommentItem) {
   const post = comment.posts;
   if (!post?.slug) return null;
   if (post.slug === "messages") return `/messages#comment-${comment.coid}`;
@@ -256,7 +261,7 @@ function getCommentFrontendUrl(comment: any) {
   return `/content/${categorySlug}/${post.slug}#comment-${comment.coid}`;
 }
 
-function openFrontendComment(comment: any) {
+function openFrontendComment(comment: CommentItem) {
   const url = getCommentFrontendUrl(comment);
   if (!url) {
     toast.error({ message: "无法定位前台评论" });
@@ -311,11 +316,11 @@ onMounted(() => {
         </p>
       </div>
       <div class="flex items-center gap-2 w-full sm:w-auto">
-        <Button v-if="filterCid" variant="outline" @click="clearFilter" class="flex-1 sm:flex-none">
+        <Button v-if="filterCid" variant="outline" class="flex-1 sm:flex-none" @click="clearFilter">
           <Icon name="lucide:x" class="mr-2 size-4" />
           显示所有评论
         </Button>
-        <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" @click="batchDelete" class="flex-1 sm:flex-none">
+        <Button v-if="selectedIds.length > 0" variant="destructive" :disabled="deleting" class="flex-1 sm:flex-none" @click="batchDelete">
           <Icon name="lucide:trash-2" class="mr-2 size-4" />
           {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
         </Button>
@@ -330,7 +335,7 @@ onMounted(() => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead class="w-12"></TableHead>
+                <TableHead class="w-12"/>
                 <TableHead>评论者</TableHead>
                 <TableHead>内容</TableHead>
                 <TableHead>文章</TableHead>
@@ -506,8 +511,8 @@ onMounted(() => {
             <div class="flex items-start gap-3">
               <Checkbox
                 :model-value="selectedIds.includes(comment.coid)"
-                @update:model-value="toggleSelect(comment.coid)"
-                class="mt-1" />
+                class="mt-1"
+                @update:model-value="toggleSelect(comment.coid)" />
               <Avatar class="size-10">
                 <AvatarImage
                   v-if="comment.avatarUrl"
@@ -612,8 +617,8 @@ onMounted(() => {
             <div class="flex items-start gap-2 sm:gap-3">
               <Checkbox
                 :model-value="selectedIds.includes(comment.coid)"
-                @update:model-value="toggleSelect(comment.coid)"
-                class="mt-1" />
+                class="mt-1"
+                @update:model-value="toggleSelect(comment.coid)" />
               <Avatar class="size-8 sm:size-10">
                 <AvatarImage
                   v-if="comment.avatarUrl"
@@ -692,7 +697,7 @@ onMounted(() => {
           共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
         </p>
         <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
-          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)" class="h-8 px-2">
+          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" class="h-8 px-2" @click="goToPage(pagination.page - 1)">
             <Icon name="lucide:chevron-left" class="size-4" />
             <span class="hidden sm:inline ml-1">上一页</span>
           </Button>
@@ -708,7 +713,7 @@ onMounted(() => {
               {{ page }}
             </Button>
           </div>
-          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)" class="h-8 px-2">
+          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" class="h-8 px-2" @click="goToPage(pagination.page + 1)">
             <span class="hidden sm:inline mr-1">下一页</span>
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>

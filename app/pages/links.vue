@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
+import type { FancyboxOptions } from "@fancyapps/ui";
+import type { InternalApi } from "nitropack/types";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
+
+type LinkItem = NonNullable<InternalApi["/api/links"]["get"]["data"]>[number];
 
 // 导入前台通知 composable
 const { success, error: showError, } = useFrontNotification();
@@ -67,7 +71,7 @@ const saveLinkStatuses = () => {
 };
 
 // 检测单个友链
-const checkLink = async (link: any) => {
+const checkLink = async (link: LinkItem) => {
   if (!link.link || shouldStopChecking.value) return;
 
   linkStatuses.value[link.id] = {
@@ -100,7 +104,7 @@ const checkLink = async (link: any) => {
 
     // 每检测完一个友链就立即保存
     saveLinkStatuses();
-  } catch (err) {
+  } catch {
     // 如果是主动中断，不显示错误
     if (shouldStopChecking.value) return;
 
@@ -158,7 +162,7 @@ const checkAllLinks = async () => {
     if (!shouldStopChecking.value && hasCheckedAnyLink) {
       success("友链检测完成");
     }
-  } catch (err) {
+  } catch {
     if (!shouldStopChecking.value) {
       showError("检测友链失败");
     }
@@ -240,7 +244,7 @@ const linkFirstLetters = computed(() => {
 });
 
 // 选中的友链
-const selectedLink = ref<any>(null);
+const selectedLink = ref<LinkItem | null>(null);
 
 // 检查必填字段是否已填写
 const isRequiredFieldsFilled = computed(() => {
@@ -258,7 +262,7 @@ const isRequiredFieldsFilled = computed(() => {
 });
 
 // 选择友链
-const selectLink = (link: any) => {
+const selectLink = (link: LinkItem) => {
   selectedLink.value = link;
   formData.value.name = link.name || "";
   formData.value.link = link.link || "";
@@ -374,7 +378,7 @@ const handleSubmit = async (forceSubmit = false) => {
         showError(data.message || "提交失败，请重试");
       }
     }
-  } catch (error) {
+  } catch {
     submitError.value = "网络错误，请稍后重试";
     showError("网络错误，请稍后重试");
   } finally {
@@ -383,7 +387,7 @@ const handleSubmit = async (forceSubmit = false) => {
 };
 
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let FancyboxModule: any = null;
+let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
 // 初始化滚动渐入动画
 onMounted(async () => {
@@ -448,7 +452,7 @@ onMounted(async () => {
   <div class="fancybox__footer"></div>
 </div>`,
     },
-  } as any);
+  } as Partial<FancyboxOptions>);
 });
 
 onUnmounted(() => {

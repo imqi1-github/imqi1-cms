@@ -24,7 +24,7 @@ if (import.meta.client && !initialQ && !nuxtApp.isHydrating) {
 }
 
 // 搜索结果
-const { data, pending, error, refresh } = await useFetch<{ data?: { results: any[]; total: number } }>("/api/search", {
+const { data, pending, error, refresh } = await useFetch("/api/search", {
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -39,12 +39,18 @@ const { data, pending, error, refresh } = await useFetch<{ data?: { results: any
   watch: false,
   // 标记错误已处理，避免全局 toast 重复提示
   onResponseError({ error: fetchError }) {
-    (fetchError as any).__handled__ = true;
+    (fetchError as Error & { __handled__?: boolean }).__handled__ = true;
   },
 });
 
-const results = computed(() => data.value?.data?.results || []);
-const total = computed(() => data.value?.data?.total || 0);
+const results = computed(() => {
+  const d = data.value;
+  return d && "data" in d ? d.data.results || [] : [];
+});
+const total = computed(() => {
+  const d = data.value;
+  return d && "data" in d ? d.data.total || 0 : 0;
+});
 
 // 页面元数据
 usePageSeo({
@@ -165,13 +171,13 @@ function highlightKeyword(text: string, keyword: string) {
         <Icon name="ri:search-line" aria-hidden="true" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" mode="svg" />
         <input
           id="search-input"
+          ref="searchInputRef"
           v-model="searchKeyword"
           type="text"
           aria-label="搜索文章标题、内容"
           placeholder="搜索文章标题、内容..."
           class="w-full pl-12 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-300"
-          ref="searchInputRef"
-          @keydown="handleKeydown" />
+          @keydown="handleKeydown" >
         <Button
           v-if="searchKeyword"
           variant="ghost"
@@ -191,7 +197,7 @@ function highlightKeyword(text: string, keyword: string) {
     <div v-if="searchKeyword" role="status" aria-live="polite" aria-atomic="true" class="animate-fade-in">
       <!-- 加载状态 -->
       <div v-if="pending" class="relative py-20">
-        <div aria-hidden="true" class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <div aria-hidden="true" class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
         <p class="text-center text-muted-foreground mt-4">搜索中...</p>
       </div>
 

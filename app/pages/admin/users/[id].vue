@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types"
+
+type UserDetail = InternalApi["/api/admin/users/:id"]["get"]
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } }
+
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -6,7 +11,7 @@ const userId = route.params.id as string
 
 const loading = ref(true)
 const saving = ref(false)
-const user = ref<any>(null)
+const user = ref<UserDetail | null>(null)
 const csrfToken = ref('')
 
 // 表单数据
@@ -25,8 +30,8 @@ async function fetchUser() {
   try {
     // 获取 CSRF token
     const csrfRes = await $fetch('/api/csrf/token', { credentials: 'include' })
-    if (csrfRes && (csrfRes as any).data?.token) {
-      csrfToken.value = (csrfRes as any).data.token
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token
     }
 
     const data = await $fetch(`/api/admin/users/${userId}`)
@@ -39,7 +44,8 @@ async function fetchUser() {
       avatar: data.avatar || '',
       role: data.role,
     }
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
     console.error('获取用户失败:', error)
     toast.error({
       message: '获取用户失败',
@@ -68,7 +74,8 @@ async function saveUser() {
     })
     toast.success({ message: '用户更新成功' })
     router.push('/admin/users')
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
     console.error('更新失败:', error)
     toast.error({
       message: '更新失败',

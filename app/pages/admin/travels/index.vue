@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type TravelItem = InternalApi["/api/admin/travels"]["get"][number];
+type PostListItem = NonNullable<InternalApi["/api/admin/posts"]["get"]["data"]>[number];
+
 const toast = useToast();
 const loading = ref(true);
-const travels = ref<any[]>([]);
-const posts = ref<any[]>([]);
+const travels = ref<TravelItem[]>([]);
+const posts = ref<PostListItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 
@@ -16,7 +21,7 @@ const defaultForm = () => ({
   sort: "0",
 });
 const newTravel = ref(defaultForm());
-const editingTravel = ref<any>(null);
+const editingTravel = ref<TravelItem | null>(null);
 const editTravelForm = ref(defaultForm());
 const addPostKeyword = ref("");
 const editPostKeyword = ref("");
@@ -40,12 +45,12 @@ function toggleCid(cids: string[], cid: string, checked: boolean) {
   else if (!checked && idx !== -1) cids.splice(idx, 1);
 }
 
-function postTitles(travel: any) {
+function postTitles(travel: TravelItem) {
   const list = travel.posts ?? [];
   if (!list.length) return "";
   const shown = list
     .slice(0, 2)
-    .map((p: any) => p.title)
+    .map(p => p.title)
     .join("、");
   return list.length > 2 ? `${shown} 等${list.length}篇` : shown;
 }
@@ -53,7 +58,7 @@ function postTitles(travel: any) {
 async function fetchTravels() {
   loading.value = true;
   try {
-    travels.value = (await ($fetch as any)("/api/admin/travels")) as any[];
+    travels.value = await $fetch("/api/admin/travels");
   } catch (error) {
     console.error("获取旅行地点失败:", error);
     travels.value = [];
@@ -64,7 +69,7 @@ async function fetchTravels() {
 
 async function fetchPosts() {
   try {
-    const res = await ($fetch as any)("/api/admin/posts?pageSize=999");
+    const res = await $fetch("/api/admin/posts?pageSize=999");
     posts.value = res?.data ?? [];
   } catch (error) {
     console.error("获取文章列表失败:", error);
@@ -134,7 +139,7 @@ async function addTravel() {
   }
 }
 
-function openEditModal(travel: any) {
+function openEditModal(travel: TravelItem) {
   editPostKeyword.value = "";
   editingTravel.value = travel;
   editTravelForm.value = {
@@ -172,7 +177,7 @@ async function saveEdit() {
   }
 }
 
-async function toggleEnabled(travel: any) {
+async function toggleEnabled(travel: TravelItem) {
   try {
     await $fetch(`/api/admin/travels/${travel.id}`, {
       method: "PUT",
@@ -208,7 +213,7 @@ async function deleteTravel(id: number) {
   }
 }
 
-function formatCoord(travel: any) {
+function formatCoord(travel: TravelItem) {
   const lng = Number(travel.longitude);
   const lat = Number(travel.latitude);
   if (Number.isNaN(lng) || Number.isNaN(lat)) return "-";
@@ -283,7 +288,7 @@ onMounted(() => {
             <TableCell>
               <div class="flex items-center gap-3">
                 <div class="size-8 rounded-md bg-muted overflow-hidden shrink-0 flex items-center justify-center">
-                  <img v-if="travel.cover" :src="travel.cover" :alt="travel.name" class="w-full h-full object-cover" />
+                  <img v-if="travel.cover" :src="travel.cover" :alt="travel.name" class="w-full h-full object-cover" >
                   <Icon v-else name="lucide:map-pin" class="size-4 text-muted-foreground" />
                 </div>
                 <div class="flex flex-col">
@@ -339,7 +344,7 @@ onMounted(() => {
         <div v-for="travel in travels" :key="travel.id" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <div class="size-8 rounded-md bg-muted overflow-hidden shrink-0 flex items-center justify-center">
-              <img v-if="travel.cover" :src="travel.cover" :alt="travel.name" class="w-full h-full object-cover" />
+              <img v-if="travel.cover" :src="travel.cover" :alt="travel.name" class="w-full h-full object-cover" >
               <Icon v-else name="lucide:map-pin" class="size-4 text-muted-foreground" />
             </div>
             <div class="flex-1 min-w-0">

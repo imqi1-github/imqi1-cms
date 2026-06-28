@@ -1,11 +1,17 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type Category = InternalApi["/api/admin/categories"]["get"][number];
+type Tag = InternalApi["/api/admin/tags"]["get"][number];
+type AdminPost = NonNullable<InternalApi["/api/admin/posts"]["get"]["data"]>[number];
+
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const loading = ref(true);
-const posts = ref<any[]>([]);
-const categories = ref<any[]>([]);
-const tags = ref<any[]>([]);
+const posts = ref<AdminPost[]>([]);
+const categories = ref<Category[]>([]);
+const tags = ref<Tag[]>([]);
 const selectedCategory = ref<number | null>(null);
 const selectedTag = ref<number | null>(null);
 const selectedStatus = ref<number | null>(null);
@@ -92,7 +98,7 @@ function toggleSelect(cid: number) {
 
 async function fetchCategories() {
   try {
-    categories.value = (await ($fetch as any)("/api/admin/categories")) as any[];
+    categories.value = await $fetch<Category[]>("/api/admin/categories");
   } catch (error) {
     console.error("获取分类失败:", error);
     categories.value = [];
@@ -101,7 +107,7 @@ async function fetchCategories() {
 
 async function fetchTags() {
   try {
-    tags.value = (await ($fetch as any)("/api/admin/tags")) as any[];
+    tags.value = await $fetch<Tag[]>("/api/admin/tags");
   } catch (error) {
     console.error("获取标签失败:", error);
     tags.value = [];
@@ -129,7 +135,7 @@ async function fetchPosts(page: number = 1, updateUrl: boolean = true) {
       params.append("status", selectedStatus.value.toString());
     }
 
-    const res = (await $fetch(`/api/admin/posts?${params.toString()}`)) as any;
+    const res = await $fetch(`/api/admin/posts?${params.toString()}`);
     posts.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
@@ -200,7 +206,7 @@ async function batchDelete() {
         method: "POST",
         body: { ids: selectedIds.value },
       });
-      toast.success({ message: (res as any).message || "批量删除成功" });
+      toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];
       await fetchPosts(pagination.value.page, false);
     } catch (error) {
@@ -224,7 +230,7 @@ function editPost(cid: number) {
   router.push(`/admin/posts/edit?cid=${cid}`);
 }
 
-async function previewPost(post: any) {
+async function previewPost(post: AdminPost) {
   // 获取文章的第一个分类
   let categorySlug = 'uncategorized';
   if (post.postrelations && post.postrelations.length > 0) {
@@ -297,7 +303,7 @@ onMounted(() => {
         <div class="flex flex-wrap gap-4">
           <div class="flex items-center gap-2">
             <Label for="category-filter">分类:</Label>
-            <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: any) => filterByCategory(v ?? null)">
+            <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: number | null) => filterByCategory(v ?? null)">
               <SelectTrigger class="w-45">
                 <SelectValue placeholder="全部分类" />
               </SelectTrigger>
@@ -311,7 +317,7 @@ onMounted(() => {
           </div>
           <div class="flex items-center gap-2">
             <Label for="tag-filter">标签:</Label>
-            <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: any) => filterByTag(v ?? null)">
+            <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: number | null) => filterByTag(v ?? null)">
               <SelectTrigger class="w-45">
                 <SelectValue placeholder="全部标签" />
               </SelectTrigger>
@@ -323,7 +329,7 @@ onMounted(() => {
           </div>
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
-            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: any) => filterByStatus(v ?? null)">
+            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: number | null) => filterByStatus(v ?? null)">
               <SelectTrigger class="w-35">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
@@ -349,7 +355,7 @@ onMounted(() => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12"></TableHead>
+              <TableHead class="w-12"/>
               <TableHead>标题</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>分类</TableHead>

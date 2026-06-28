@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type SubscribeItem = InternalApi["/api/admin/subscribes"]["get"][number];
+type SubscribesUpdateResponse = InternalApi["/api/admin/subscribes/update"]["post"];
+
 const toast = useToast();
-const subscribes = ref<any[]>([]);
+const subscribes = ref<SubscribeItem[]>([]);
 const loading = ref(false);
 const showAddForm = ref(false);
 const showEditForm = ref(false);
@@ -19,7 +24,7 @@ const editingSubscribe = ref<{ id: number | null; name: string; url: string; ava
 // 加载站点设置
 async function loadSettings() {
   try {
-    const settings = await ($fetch as any)("/api/admin/settings") as any;
+    const settings = await $fetch("/api/admin/settings");
     if (settings?.feedCacheInterval) {
       feedCacheInterval.value = settings.feedCacheInterval;
     }
@@ -32,7 +37,7 @@ async function loadSettings() {
 async function loadSubscribes() {
   loading.value = true;
   try {
-    subscribes.value = (await ($fetch as any)("/api/admin/subscribes")) as any[];
+    subscribes.value = await $fetch("/api/admin/subscribes");
   } catch (error) {
     console.error("获取订阅失败:", error);
     subscribes.value = [];
@@ -80,9 +85,9 @@ async function updateSubscribes() {
   updating.value = true;
   updateResult.value = null;
   try {
-    const response = (await $fetch("/api/admin/subscribes/update", {
+    const response: SubscribesUpdateResponse = await $fetch("/api/admin/subscribes/update", {
       method: "POST",
-    })) as any;
+    });
     updateResult.value = response.data;
     toast.success({
       message: "更新完成",
@@ -107,7 +112,7 @@ function cancelAdd() {
   showAddForm.value = false;
 }
 
-function openEditForm(subscribe: any) {
+function openEditForm(subscribe: SubscribeItem) {
   editingSubscribe.value = {
     id: subscribe.id,
     name: subscribe.name,
@@ -217,7 +222,7 @@ onMounted(() => {
         <!-- 添加表单 -->
         <div v-if="showAddForm" class="mb-6 p-4 border rounded-lg bg-muted/30">
           <h4 class="font-medium mb-4">添加新订阅</h4>
-          <form @submit.prevent="addSubscribe" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form class="grid grid-cols-1 md:grid-cols-4 gap-4" @submit.prevent="addSubscribe">
             <Input v-model="newSubscribe.name" placeholder="订阅名称" required />
             <Input v-model="newSubscribe.url" type="url" placeholder="RSS URL" required />
             <Input v-model="newSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />
@@ -231,7 +236,7 @@ onMounted(() => {
         <!-- 编辑表单 -->
         <div v-if="showEditForm" class="mb-6 p-4 border rounded-lg bg-primary/5 border-primary/50">
           <h4 class="font-medium mb-4">编辑订阅</h4>
-          <form @submit.prevent="updateSubscribe" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form class="grid grid-cols-1 md:grid-cols-4 gap-4" @submit.prevent="updateSubscribe">
             <Input v-model="editingSubscribe.name" placeholder="订阅名称" required />
             <Input v-model="editingSubscribe.url" type="url" placeholder="RSS URL" required />
             <Input v-model="editingSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />

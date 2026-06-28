@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type RecentPost = InternalApi["/api/admin/recent-posts"]["get"][number];
+type RecentComment = InternalApi["/api/admin/recent-comments"]["get"][number];
+type PopularPost = InternalApi["/api/admin/popular-posts"]["get"][number];
+
 const router = useRouter()
 const loading = ref(true)
 const stats = ref({
@@ -46,9 +52,9 @@ const systemInfo = ref({
   attachments: { count: 0, totalSize: 0 },
 })
 
-const recentPosts = ref<any[]>([])
-const recentComments = ref<any[]>([])
-const popularPosts = ref<any[]>([])
+const recentPosts = ref<RecentPost[]>([])
+const recentComments = ref<RecentComment[]>([])
+const popularPosts = ref<PopularPost[]>([])
 
 const statCards = [
   {
@@ -135,12 +141,12 @@ async function fetchData() {
       $fetch('/api/admin/recent-comments'),
       $fetch('/api/admin/popular-posts'),
     ])
-    stats.value = statsRes as any
-    detailedStats.value = detailedRes as any
-    systemInfo.value = systemRes as any
-    recentPosts.value = postsRes as any[]
-    recentComments.value = commentsRes as any[]
-    popularPosts.value = popularRes as any[]
+    stats.value = statsRes
+    detailedStats.value = detailedRes
+    systemInfo.value = systemRes
+    recentPosts.value = postsRes
+    recentComments.value = commentsRes
+    popularPosts.value = popularRes
   } catch (error) {
     console.error('获取数据失败:', error)
   } finally {
@@ -198,7 +204,7 @@ onMounted(() => {
     <!-- 页面标题 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
       <h2 class="text-xl sm:text-2xl font-bold">仪表盘</h2>
-      <Button @click="createPost" class="w-full sm:w-auto">
+      <Button class="w-full sm:w-auto" @click="createPost">
         <Icon name="lucide:plus" class="mr-2 size-4" />
         新建文章
       </Button>

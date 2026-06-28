@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
@@ -18,7 +19,7 @@ const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
 const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取分类文章数据
-const { data, pending, error, refresh } = await useFetch(`/api/category/${slug}/posts`, {
+const { data, pending, error } = await useFetch(`/api/category/${slug}/posts`, {
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -39,8 +40,8 @@ const { data: tagsData } = await useFetch("/api/tags", {
 const tagSlugMap = computed(() => {
   const map = new Map<string, string>();
   if (tagsData.value?.data) {
-    tagsData.value.data.forEach((tag: any) => {
-      map.set(tag.name, tag.slug);
+    tagsData.value.data.forEach(tag => {
+      map.set(tag.name, tag.slug ?? "");
     });
   }
   return map;
@@ -305,7 +306,7 @@ onMounted(() => {
     <div :class="['mx-auto', isPhotoCategory ? 'photo-category-shell' : 'max-w-225 flex flex-col justify-center items-center']">
       <!-- 加载中 - 仅首次加载时显示 -->
       <div v-if="pending && !category" class="py-20 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
         <p class="mt-2 text-slate-500">加载中...</p>
       </div>
 
@@ -332,8 +333,8 @@ onMounted(() => {
           <button
             type="button"
             :disabled="pagination.page <= 1 || pending"
-            @click="goToPage(pagination.page - 1)"
-            class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
+            class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300"
+            @click="goToPage(pagination.page - 1)">
             <Icon name="ri-arrow-left-double-line" />
           </button>
           <span class="photo-page-current inline-flex items-baseline justify-center min-w-10 px-1 leading-1 whitespace-nowrap">
@@ -343,8 +344,8 @@ onMounted(() => {
           <button
             type="button"
             :disabled="pagination.page >= pagination.totalPages || pending"
-            @click="goToPage(pagination.page + 1)"
-            class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300">
+            class="inline-flex items-center justify-center w-6 h-6 cursor-pointer rounded-full text-slate-500 bg-transparent hover:bg-gray-200 hover:text-slate-500 disabled:text-slate-300 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-300"
+            @click="goToPage(pagination.page + 1)">
             <Icon name="ri-arrow-right-double-line" />
           </button>
         </nav>
@@ -363,7 +364,7 @@ onMounted(() => {
             <!-- 图片占位 -->
             <div
               class="w-full h-full bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse"
-              :style="{ minHeight: getSkeletonHeight(i) + 'px' }"></div>
+              :style="{ minHeight: getSkeletonHeight(i) + 'px' }"/>
           </div>
         </div>
 
@@ -403,7 +404,7 @@ onMounted(() => {
                 :src="post.covers[0]?.url"
                 :alt="post.title"
                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
-                loading="lazy" />
+                loading="lazy" >
               <!-- 多封面角标 -->
               <div
                 v-if="post.many_covers && post.covers.length > 1"
@@ -437,11 +438,11 @@ onMounted(() => {
               </NuxtLink>
 
               <div class="text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
-                <span class="flex items-center" v-tooltip="`最后更新时间`">
+                <span v-tooltip="`最后更新时间`" class="flex items-center">
                   <Icon name="ri-time-line" class="size-4" />
                   {{ formatDate(post.updated) }}
                 </span>
-                <span v-if="post.tags.length > 0" class="flex items-center flex-wrap" v-tooltip="`标签`">
+                <span v-if="post.tags.length > 0" v-tooltip="`标签`" class="flex items-center flex-wrap">
                   <Icon name="ri-hashtag" class="size-4" />
                   <NuxtLink
                     v-for="(tagName, index) in post.tags"
@@ -451,7 +452,7 @@ onMounted(() => {
                     {{ tagName }}
                   </NuxtLink>
                 </span>
-                <span class="flex items-center" v-tooltip="`评论数量`">
+                <span v-tooltip="`评论数量`" class="flex items-center">
                   <Icon name="ri-chat-2-line" class="size-4" />
                   {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                 </span>
@@ -472,22 +473,22 @@ onMounted(() => {
             class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
             <div
-              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"></div>
+              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"/>
 
             <!-- 文章信息骨架 -->
             <div class="px-5 pb-2 pt-1 mt-auto">
               <!-- 标题骨架 -->
-              <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"></div>
+              <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"/>
 
               <!-- 信息骨架 -->
               <div class="flex items-center flex-wrap gap-2 my-1">
-                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
-                <div class="h-3 w-20 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
-                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"></div>
+                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
+                <div class="h-3 w-20 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
+                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
               </div>
 
               <!-- 描述骨架 -->
-              <div class="h-3.5 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse overflow-wrap break-word"></div>
+              <div class="h-3.5 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse overflow-wrap break-word"/>
             </div>
           </div>
         </div>
@@ -504,8 +505,8 @@ onMounted(() => {
       <div v-if="!isPhotoCategory && pagination && pagination.totalPages > 1" class="flex justify-center gap-2 mt-10">
         <button
           v-if="pagination.page > 1"
-          @click="goToPage(pagination.page - 1)"
-          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+          @click="goToPage(pagination.page - 1)">
           <Icon name="ri-arrow-left-double-line" />
         </button>
 
@@ -513,8 +514,8 @@ onMounted(() => {
 
         <button
           v-if="pagination.page < pagination.totalPages"
-          @click="goToPage(pagination.page + 1)"
-          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+          class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+          @click="goToPage(pagination.page + 1)">
           <Icon name="ri-arrow-right-double-line" />
         </button>
       </div>

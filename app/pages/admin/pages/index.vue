@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type PageItem = NonNullable<InternalApi["/api/admin/pages"]["get"]["data"]>[number];
+
 const router = useRouter();
 const toast = useToast();
 const loading = ref(true);
-const pages = ref<any[]>([]);
+const pages = ref<PageItem[]>([]);
 const selectedStatus = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
@@ -98,7 +102,7 @@ async function fetchPages(page: number = 1) {
       params.append("status", selectedStatus.value.toString());
     }
 
-    const res = (await $fetch(`/api/admin/pages?${params.toString()}`)) as any;
+    const res = await $fetch(`/api/admin/pages?${params.toString()}`);
     pages.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
   } catch (error) {
@@ -142,7 +146,7 @@ async function batchDelete() {
         method: "POST",
         body: { ids: selectedIds.value },
       });
-      toast.success({ message: (res as any).message || "批量删除成功" });
+      toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];
       await fetchPages(pagination.value.page);
     } catch (error) {
@@ -237,7 +241,7 @@ onMounted(() => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12"></TableHead>
+              <TableHead class="w-12"/>
               <TableHead>标题</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>状态</TableHead>
@@ -357,7 +361,7 @@ onMounted(() => {
           class="border rounded-lg p-4 space-y-3 transition-colors"
           :class="{ 'bg-muted/50 border-primary': selectedIds.includes(page.cid) }">
           <div class="flex items-start gap-3">
-            <Checkbox :model-value="selectedIds.includes(page.cid)" @update:model-value="toggleSelect(page.cid)" class="mt-1" />
+            <Checkbox :model-value="selectedIds.includes(page.cid)" class="mt-1" @update:model-value="toggleSelect(page.cid)" />
             <div class="flex-1 min-w-0">
               <h3 class="font-medium text-base truncate">{{ page.title }}</h3>
               <p class="text-sm text-muted-foreground font-mono mt-1 truncate">{{ page.slug || "-" }}</p>

@@ -15,14 +15,14 @@
           <Label for="password">密码</Label>
           <Input
             id="password"
-            type="password"
             v-model="form.password"
+            type="password"
             placeholder="请输入密码"
             @keyup.enter="handleLogin"
           />
         </div>
 
-        <Button class="w-full" @click="handleLogin" :disabled="loading">
+        <Button class="w-full" :disabled="loading" @click="handleLogin">
           {{ loading ? '登录中...' : '登录' }}
         </Button>
       </CardContent>
@@ -46,11 +46,13 @@ const loading = ref(false)
 const csrfToken = ref('')
 
 // 在组件挂载时获取 CSRF token 并检查登录状态
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+
 onMounted(async () => {
   // 检查是否已经登录
   try {
     const verifyRes = await $fetch('/api/auth/verify')
-    if ((verifyRes as any).valid) {
+    if (verifyRes.valid) {
       // 已经登录，跳转到后台
       await navigateTo(redirectTo.value)
       return
@@ -62,8 +64,8 @@ onMounted(async () => {
   // 获取 CSRF token
   try {
     const csrfRes = await $fetch('/api/csrf/token')
-    if (csrfRes && (csrfRes as any).data?.token) {
-      csrfToken.value = (csrfRes as any).data.token
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token
     }
   } catch (error) {
     console.error('获取 CSRF token 失败:', error)
@@ -85,7 +87,7 @@ const handleLogin = async () => {
 
   try {
     console.log('开始登录，发送请求到 /api/auth/login')
-    const res: any = await $fetch('/api/auth/login', {
+    const res = await $fetch('/api/auth/login', {
       method: 'POST',
       body: {
         ...form,
@@ -109,7 +111,8 @@ const handleLogin = async () => {
     console.log('开始跳转')
     // 使用 window.location.href 而不是 navigateTo，确保服务器端渲染时能读取到 cookie
     window.location.href = redirectTo.value
-  } catch (e: any) {
+  } catch (rawError: unknown) {
+    const e = rawError as ApiError;
     toast.error({
       message: '登录失败',
       description: e?.data?.message || '请检查用户名和密码',

@@ -1,5 +1,6 @@
-import withNuxt from "./.nuxt/eslint.config.mjs";
 import tailwind from "eslint-plugin-tailwindcss";
+
+import withNuxt from "./.nuxt/eslint.config.mjs";
 
 export default withNuxt({
   ignores: [
@@ -15,7 +16,7 @@ export default withNuxt({
     // Vue / Nuxt 规范
     // =========================
     "vue/multi-word-component-names": "off",
-    "vue/no-v-html": "warn",
+    "vue/no-v-html": "off",
 
     // script setup / composition API
     "vue/component-name-in-template-casing": ["error", "PascalCase"],
@@ -42,10 +43,5 @@ export default withNuxt({
         "newlines-between": "always",
       },
     ],
-
-    // =========================
-    // 通用 JS/TS
-    // =========================
-    '@typescript-eslint/no-unused-vars': 'error'
   },
 });

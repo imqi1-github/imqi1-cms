@@ -9,7 +9,7 @@
           <h1 class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
           </h1>
-          <div class="mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"></div>
+          <div class="mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"/>
         </div>
 
         <!-- 头像区域 -->
@@ -17,7 +17,7 @@
           <img
             :src="siteConfig.siteAvatarPath"
             alt="头像"
-            class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" />
+            class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" >
         </div>
 
         <!-- 滚动提示 -->
@@ -31,10 +31,10 @@
         <div class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center animate-fade-in">
           <template v-for="(link, index) in contactLinks" :key="index">
             <NuxtLink
+              v-tooltip="link.name"
               :href="link.link"
               :target="link.target ? '_blank' : undefined"
               :aria-label="link.name"
-              v-tooltip="link.name"
               class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
               <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
             </NuxtLink>
@@ -44,7 +44,7 @@
     </div>
 
     <!-- 占位section，用于撑开页面高度 -->
-    <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true"></section>
+    <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true"/>
 
     <!-- 为什么要做这个网站 -->
     <section class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-why-title">
@@ -98,7 +98,7 @@
       </section>
 
       <!-- 大间隔 -->
-      <div class="h-62.5"></div>
+      <div class="h-62.5"/>
 
       <!-- 样式选择 -->
       <div ref="sectionStyle" class="-mt-5 mx-auto max-w-200 animate-fade-in">
@@ -178,17 +178,17 @@
                   <div v-else-if="rightItem.type === 'layout'" class="relative h-75 w-75 group">
                     <div
                       class="absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
-                      <img :src="publicAsset('/imgs/shenyang.webp')" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" />
+                      <img :src="publicAsset('/imgs/shenyang.webp')" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" >
                     </div>
                     <div
-                      class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"></div>
+                      class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"/>
                   </div>
 
                   <!-- 音乐播放器 - 延迟加载 -->
                   <div v-else-if="rightItem.type === 'music'" class="relative h-75 w-75 flex items-center justify-center">
                     <ClientOnly>
                       <div class="absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
-                        <MetingPlayer server="netease" type="song" id="2142943893" :listFolded="false" :mutex="true" />
+                        <MetingPlayer id="2142943893" server="netease" type="song" :list-folded="false" :mutex="true" />
                       </div>
                       <template #fallback>
                         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-sm">
@@ -210,7 +210,7 @@
                             :src="(typeof randomPost.covers[0] === 'string' ? randomPost.covers[0] : randomPost.covers[0]?.url) || ''"
                             :alt="randomPost.title"
                             class="w-full h-full object-cover"
-                            loading="lazy" />
+                            loading="lazy" >
                           <!-- 关联地点角标 -->
                           <div
                             v-if="randomPost.travelCount > 0"
@@ -253,7 +253,7 @@
       </div>
 
       <!-- 间隔 -->
-      <div class="h-62.5"></div>
+      <div class="h-62.5"/>
 
       <!-- 最新文章 -->
       <section ref="sectionContent" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
@@ -277,7 +277,7 @@
                   :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
                   :alt="post.title"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy" />
+                  loading="lazy" >
                 <!-- 多封面角标 -->
                 <div
                   v-if="post.many_covers && post.covers.length > 1"
@@ -305,24 +305,24 @@
                   {{ post.title }}
                 </h3>
                 <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
-                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5" v-tooltip="'分类'">
+                  <div v-if="post.categories && post.categories.length > 0" v-tooltip="'分类'" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
                     <span v-for="(cat, idx) in post.categories" :key="cat.slug ?? cat.name">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
-                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
+                  <div v-if="post.tags && post.tags.length > 0" v-tooltip="'标签'" class="flex items-center gap-0.5">
                     <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
                     <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                   </div>
-                  <span class="flex items-center gap-0.5" v-tooltip="'发布时间'">
+                  <span v-tooltip="'发布时间'" class="flex items-center gap-0.5">
                     <Icon name="ri:time-line" aria-hidden="true" class="size-3" />
                     {{ formatDate(post.created) }}
                   </span>
-                  <span class="flex items-center gap-0.5" v-tooltip="'评论数量'">
+                  <span v-tooltip="'评论数量'" class="flex items-center gap-0.5">
                     <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
                     {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
                   </span>
@@ -379,7 +379,7 @@
                     :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
                     :alt="post.title"
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy" />
+                    loading="lazy" >
                   <!-- 多封面角标 -->
                   <div
                     v-if="post.many_covers && post.covers.length > 1"
@@ -407,18 +407,18 @@
                     {{ post.title }}
                   </h3>
                   <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
-                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5" v-tooltip="'标签'">
+                    <span v-if="post.tags && post.tags.length > 0" v-tooltip="'标签'" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
                       <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
                     </span>
-                    <span class="flex items-center gap-0.5" v-tooltip="'发布时间'">
+                    <span v-tooltip="'发布时间'" class="flex items-center gap-0.5">
                       <Icon name="ri:time-line" aria-hidden="true" class="size-3" />
                       <span>{{ formatDate(post.created) }}</span>
                     </span>
-                    <span class="flex items-center gap-0.5" v-tooltip="'评论数量'">
+                    <span v-tooltip="'评论数量'" class="flex items-center gap-0.5">
                       <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
                       <span>{{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}</span>
                     </span>
@@ -432,8 +432,8 @@
 
       <!-- 最新图片 -->
       <section
-        ref="sectionPhotos"
         v-if="photoImages.length > 0"
+        ref="sectionPhotos"
         class="mt-12 mx-auto max-w-275 animate-fade-in"
         aria-labelledby="index-photo-posts-title">
         <h2 id="index-photo-posts-title" class="text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
@@ -466,7 +466,7 @@
             left: `calc(${activeTocIndex * 25}% + 4px)`,
             width: 'calc(25% - 8px)',
             transition: 'left 300ms cubic-bezier(0, 0, 0.2, 1)',
-          }"></div>
+          }"/>
         <div
           v-for="(item, index) in tocItems"
           :key="item.id"
@@ -476,13 +476,13 @@
           <!-- 非激活态悬浮背景：与高亮指示框同尺寸的内嵌药丸（inset-1 与指示框四周 4px 内缩一致） -->
           <span
             v-if="activeTocIndex !== index"
-            class="absolute inset-1 rounded-full bg-gray-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:bg-gray-700"></span>
+            class="absolute inset-1 rounded-full bg-gray-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:bg-gray-700"/>
           <span class="relative">{{ item.title }}</span>
         </div>
       </div>
     </div>
     <!-- 间隔 -->
-    <div class="h-36"></div>
+    <div class="h-36"/>
 
     <!-- 阅读更多 -->
     <section class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
@@ -523,7 +523,7 @@
     </section>
 
     <!-- 间隔 -->
-    <div class="h-37.5"></div>
+    <div class="h-37.5"/>
 
     <!-- 订阅文章 -->
     <section v-if="subscribePosts.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-subscribe-posts-title">
@@ -584,7 +584,7 @@
     </section>
 
     <!-- 间隔 -->
-    <div v-if="subscribePosts.length > 0" class="h-37.5"></div>
+    <div v-if="subscribePosts.length > 0" class="h-37.5"/>
 
     <!-- 更新日志 -->
     <section v-if="recentChangelogs.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-changelogs-title">
@@ -626,12 +626,13 @@
     </section>
 
     <!-- 底部间隔 -->
-    <div class="h-37.5"></div>
+    <div class="h-37.5"/>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { type ComponentPublicInstance, onMounted, onUnmounted, ref } from "vue";
+
 import MetingPlayer from "~/components/MetingPlayer.vue";
 import { siteConfig } from "~~/site.config";
 import { getChangelogMeta } from "~~/shared/changelog";
@@ -883,7 +884,7 @@ const activeThemeIndex = ref(0);
 const themeItemRefsSet = new Set<HTMLElement>();
 const themeItemRefs = ref<HTMLElement[]>([]);
 
-const setThemeItemRef = (el: Element | any) => {
+const setThemeItemRef = (el: Element | ComponentPublicInstance | null) => {
   if (el) {
     themeItemRefsSet.add(el as HTMLElement);
     themeItemRefs.value = Array.from(themeItemRefsSet);
@@ -891,7 +892,6 @@ const setThemeItemRef = (el: Element | any) => {
 };
 
 // 滚动跟随效果 - 检查哪个item在视口中心
-let lastScrollY = 0;
 const checkVisibleItems = () => {
   const refs = themeItemRefs.value;
   if (!refs || refs.length === 0) return;

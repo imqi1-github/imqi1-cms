@@ -105,12 +105,12 @@ const testingEmail = ref(false);
 async function testEmail() {
   testingEmail.value = true;
   try {
-    const result = (await $fetch("/api/admin/mail/test", {
+    const result = await $fetch("/api/admin/mail/test", {
       method: "POST",
       body: {
         to: settings.value.adminEmail || settings.value.smtpAddress || settings.value.smtpUser,
       },
-    })) as any;
+    });
 
     if (result.success) {
       toast.success({
@@ -192,11 +192,11 @@ async function loadSettings() {
   try {
     // 获取 CSRF token
     const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
-    if (csrfRes && (csrfRes as any).data?.token) {
-      csrfToken.value = (csrfRes as any).data.token;
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
     }
 
-    settings.value = (await ($fetch as any)("/api/admin/settings")) as any;
+    settings.value = await $fetch("/api/admin/settings") as typeof settings.value;
   } catch (error) {
     console.error("获取设置失败:", error);
   } finally {
@@ -227,7 +227,7 @@ async function saveSettings() {
 
 // 重置为默认值
 async function resetToDefaults() {
-  settings.value = { ...defaultSettings } as any;
+  settings.value = { ...defaultSettings };
   showResetDialog.value = false;
   try {
     await $fetch("/api/admin/settings", {
@@ -252,9 +252,9 @@ async function resetToDefaults() {
 async function initializeMissingSettings() {
   initializing.value = true;
   try {
-    const result = (await $fetch("/api/admin/settings/init", {
+    const result = await $fetch("/api/admin/settings/init", {
       method: "POST",
-    })) as any;
+    });
 
     if (result.success) {
       toast.success({
@@ -292,8 +292,8 @@ onMounted(() => {
       <div class="flex gap-2">
         <Button
           variant="outline"
-          @click="initializeMissingSettings"
-          :disabled="initializing">
+          :disabled="initializing"
+          @click="initializeMissingSettings">
           <Icon
             :name="initializing ? 'lucide:loader-2' : 'lucide:database-zap'"
             :class="{ 'animate-spin': initializing }"

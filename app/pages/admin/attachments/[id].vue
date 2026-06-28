@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types"
+
+type AttachmentDetail = NonNullable<InternalApi["/api/admin/attachments/:id"]["get"]["data"]>
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } }
+
 const route = useRoute()
 const toast = useToast()
 const loading = ref(true)
 const saving = ref(false)
 
-const attachment = ref<any>(null)
+const attachment = ref<AttachmentDetail | null>(null)
 
 const form = ref({
   name: '',
@@ -40,12 +45,13 @@ const formatDate = (date: string) => {
 async function fetchAttachment() {
   loading.value = true
   try {
-    const res = await $fetch(`/api/admin/attachments/${route.params.id}`) as any
+    const res = await $fetch(`/api/admin/attachments/${route.params.id}`)
     if (res?.success) {
       attachment.value = res.data
       form.value.name = res.data.name
     }
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
     console.error('获取附件失败:', error)
     toast.error({
       message: error.message || '获取附件失败',
@@ -63,7 +69,7 @@ async function saveAttachment() {
       body: {
         name: form.value.name,
       },
-    } as any) as any
+    })
 
     if (res?.success) {
       toast.success({
@@ -71,7 +77,8 @@ async function saveAttachment() {
       })
       await fetchAttachment()
     }
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
     console.error('保存失败:', error)
     toast.error({
       message: error.message || '保存失败',
@@ -99,7 +106,8 @@ async function deleteAttachment() {
       message: '删除成功',
     })
     await navigateTo('/admin/attachments')
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
     console.error('删除失败:', error)
     toast.error({
       message: error.message || '删除失败',
@@ -150,7 +158,7 @@ onMounted(() => {
           <Icon name="lucide:trash-2" class="mr-2 size-4" />
           删除
         </Button>
-        <Button @click="saveAttachment" :disabled="saving || loading">
+        <Button :disabled="saving || loading" @click="saveAttachment">
           <Icon :name="saving ? 'lucide:loader-2' : 'lucide:save'" :class="{ 'animate-spin': saving }" class="mr-2 size-4" />
           {{ saving ? '保存中...' : '保存' }}
         </Button>
@@ -174,7 +182,7 @@ onMounted(() => {
                   :src="attachment.url"
                   :alt="attachment.name"
                   class="max-w-full max-h-full object-contain"
-                />
+                >
               </div>
               <!-- 视频预览 -->
               <div v-else class="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
@@ -189,7 +197,7 @@ onMounted(() => {
                 <div class="flex-1 font-mono text-xs bg-background border rounded-md px-3 py-2 truncate select-all cursor-text" :title="attachment?.url">
                   {{ attachment?.url }}
                 </div>
-                <Button variant="outline" size="icon" @click="copyLink" title="复制链接">
+                <Button variant="outline" size="icon" title="复制链接" @click="copyLink">
                   <Icon name="lucide:copy" class="size-4" />
                 </Button>
               </div>

@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
 import {CHANGELOG_TYPES, type ChangelogEntry, getChangelogMeta} from "~~/shared/changelog";
 
+type ChangelogItem = InternalApi["/api/admin/changelogs"]["get"][number];
+
 const toast = useToast();
-const logs = ref<any[]>([]);
+const logs = ref<ChangelogItem[]>([]);
 const loading = ref(true);
 const submitting = ref(false);
 const importing = ref(false);
@@ -22,7 +26,7 @@ async function loadLogs() {
   loading.value = true;
   try {
     // 调用管理员专用 API，无缓存，返回原始数据
-    logs.value = (await ($fetch as any)("/api/admin/changelogs")) as any;
+    logs.value = await $fetch("/api/admin/changelogs");
   } catch (err) {
     console.error("加载失败:", err);
   } finally {
@@ -59,12 +63,12 @@ function resetForm() {
 }
 
 // 开始编辑
-function startEdit(log: any) {
+function startEdit(log: ChangelogItem) {
   editingId.value = log.id;
   const src = Array.isArray(log?.content) ? log.content : [];
   editForm.entries =
     src.length > 0
-      ? src.map((c: any) => ({
+      ? src.map(c => ({
           type: c.type ?? "新增",
           value: c.value ?? "",
         }))
@@ -153,11 +157,13 @@ async function onImportFile(event: Event) {
       message: res?.imported ? `导入成功，共 ${res.imported} 条记录` : "导入成功",
     });
     await loadLogs();
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("导入失败:", err);
-    toast.error({
-      message: err?.data?.message || "导入失败，请检查 JSON 格式",
-    });
+    const data = err && typeof err === "object" && "data" in err ? (err as { data?: unknown }).data : undefined;
+    const msg = data && typeof data === "object" && "message" in data && typeof (data as { message: unknown }).message === "string"
+      ? (data as { message: string }).message
+      : "导入失败，请检查 JSON 格式";
+    toast.error({ message: msg });
   } finally {
     importing.value = false;
     // 清空 value，便于重复选择同一个文件
@@ -180,12 +186,12 @@ onMounted(() => {
           <p class="text-sm text-muted-foreground mt-1">管理站点更新日志内容</p>
         </div>
         <div class="flex items-center gap-2">
-          <input ref="fileInput" type="file" accept=".json,application/json" class="hidden" @change="onImportFile" />
+          <input ref="fileInput" type="file" accept=".json,application/json" class="hidden" @change="onImportFile" >
           <Button
+            v-tooltip.bottom="'JSON 格式：条目数组 [{ type, value }, ...]，一个文件 = 一条记录；多条记录可用 [{ entries: [...] }, ...]'"
             variant="outline"
             size="sm"
             :disabled="importing"
-            v-tooltip.bottom="'JSON 格式：条目数组 [{ type, value }, ...]，一个文件 = 一条记录；多条记录可用 [{ entries: [...] }, ...]'"
             @click="triggerImport">
             <Icon :name="importing ? 'lucide:loader-2' : 'lucide:upload'" class="mr-1 size-4" :class="importing ? 'animate-spin' : ''" />
             {{ importing ? "导入中..." : "导入 JSON" }}
@@ -195,7 +201,7 @@ onMounted(() => {
 
       <!-- 添加表单 -->
       <Card v-if="editingId === null" class="p-4">
-        <form @submit.prevent="save" class="space-y-3">
+        <form class="space-y-3" @submit.prevent="save">
           <!-- 条目编辑器：可重复行 -->
           <div class="space-y-2">
             <div v-for="(entry, index) in editForm.entries" :key="index" class="rounded-lg border p-3">
@@ -244,14 +250,14 @@ onMounted(() => {
 
       <!-- 加载状态 -->
       <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"/>
       </div>
 
       <!-- 日志列表 -->
       <div v-else-if="logs.length > 0" class="space-y-2">
         <Card v-for="log in logs" :key="log.id" class="p-3" :class="{ 'ring-2 ring-primary': editingId === log.id }">
           <!-- 编辑模式 -->
-          <form v-if="editingId === log.id" @submit.prevent="save" class="space-y-3">
+          <form v-if="editingId === log.id" class="space-y-3" @submit.prevent="save">
             <div class="space-y-2">
               <div v-for="(entry, index) in editForm.entries" :key="index" class="rounded-lg border p-3">
                 <div class="flex items-start gap-2">

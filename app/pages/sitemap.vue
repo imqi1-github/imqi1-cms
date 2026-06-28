@@ -101,9 +101,9 @@ usePageSeo({
       <!-- 加载状态 -->
       <div v-if="loading" class="space-y-8">
         <div v-for="i in 3" :key="i" class="animate-pulse">
-          <div class="h-6 bg-slate-200 dark:bg-gray-800 rounded w-32 mb-4"></div>
+          <div class="h-6 bg-slate-200 dark:bg-gray-800 rounded w-32 mb-4"/>
           <div class="space-y-2">
-            <div v-for="j in 5" :key="j" class="h-4 bg-slate-100 dark:bg-gray-900 rounded"></div>
+            <div v-for="j in 5" :key="j" class="h-4 bg-slate-100 dark:bg-gray-900 rounded"/>
           </div>
         </div>
       </div>

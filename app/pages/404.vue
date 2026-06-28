@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+
 import { siteConfig } from "~~/site.config";
 
 // ✅ Catch-all 路由：处理前台 404

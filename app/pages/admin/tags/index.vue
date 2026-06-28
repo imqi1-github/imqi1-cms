@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type TagItem = InternalApi["/api/admin/tags"]["get"][number];
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+
 const router = useRouter();
 const toast = useToast();
 
 const loading = ref(true);
-const tags = ref<any[]>([]);
+const tags = ref<TagItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newTag = ref({ name: "", slug: "", desc: "" });
-const editingTag = ref<any>(null);
+const editingTag = ref<TagItem | null>(null);
 
 async function fetchTags() {
   loading.value = true;
   try {
-    tags.value = (await ($fetch as any)("/api/admin/tags")) as any[];
+    tags.value = await $fetch("/api/admin/tags");
   } catch (error) {
     console.error("获取标签失败:", error);
     tags.value = [];
@@ -31,7 +36,8 @@ async function addTag() {
     showAddModal.value = false;
     toast.success({ message: "标签创建成功" });
     await fetchTags();
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
     toast.error({
       message: "添加失败",
       description: error?.data?.message || "请稍后重试",
@@ -39,7 +45,7 @@ async function addTag() {
   }
 }
 
-function openEditModal(tag: any) {
+function openEditModal(tag: TagItem) {
   editingTag.value = { ...tag };
   showEditModal.value = true;
 }
@@ -98,7 +104,8 @@ async function updateTag() {
     nextTick(() => {
       editingTag.value = null;
     });
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
     toast.error({
       message: "更新失败",
       description: error?.data?.message || "请稍后重试",
@@ -113,7 +120,8 @@ async function deleteTag(mid: number) {
       await $fetch(`/api/admin/tags/${mid}`, { method: "DELETE" });
       toast.success({ message: "标签删除成功" });
       await fetchTags();
-    } catch (error: any) {
+    } catch (rawError: unknown) {
+      const error = rawError as ApiError;
       toast.error({
         message: "删除失败",
         description: error?.data?.message || "请稍后重试",
@@ -122,7 +130,7 @@ async function deleteTag(mid: number) {
   }
 }
 
-function viewTagPosts(tag: any) {
+function viewTagPosts(tag: TagItem) {
   router.push(`/admin/posts?tag=${tag.mid}`);
 }
 

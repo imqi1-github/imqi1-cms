@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
-import {zh_CN} from "@/assets/js/zh_CN.umd.js";
-import {siteConfig} from "~~/site.config";
+import type { FancyboxOptions } from "@fancyapps/ui";
+import type { InternalApi } from "nitropack/types";
 import Swiper from "swiper";
 import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import {computed, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
+
+import {zh_CN} from "@/assets/js/zh_CN.umd.js";
+import {siteConfig} from "~~/site.config";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -93,7 +96,7 @@ const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug |
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
 // 获取相关文章（根据标签筛选）
-const relatedPostsData = ref<any>(null);
+const relatedPostsData = ref<InternalApi["/api/related-posts/:cid"]["get"] | null>(null);
 const relatedPostsPending = ref(false);
 
 // 监听文章数据，加载后再获取相关文章
@@ -258,7 +261,7 @@ watch(
 const seoMeta = computed(() => {
   if (!post.value) return {};
 
-  const fullUrl = process.client ? window.location.href : `${siteConfig.siteUrl}${route.path}`;
+  const fullUrl = import.meta.client ? window.location.href : `${siteConfig.siteUrl}${route.path}`;
 
   const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
   const description = post.value.desc || "";
@@ -448,7 +451,7 @@ watch(
 
 // Fancybox 容器引用
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let FancyboxModule: any = null;
+let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
 // Markdown 图片增强（实况照片动态挂载 LivePhoto 组件，普通图片加 caption 浮层）
 const { mount: mountMarkdownImages, unmount: unmountMarkdownImages } = useMarkdownImages();
@@ -496,7 +499,7 @@ onMounted(async () => {
       },
       idle: false,
       autoFocus: false,
-    } as any));
+    } as Partial<FancyboxOptions>));
 
     // 初始化代码复制按钮
     document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {
@@ -931,7 +934,6 @@ onMounted(async () => {
         }
 
         // 创建唯一的类名和 ID
-        const uniqueId = `markdown-swiper-${wrapperIndex}`;
         const uniqueClass = `markdown-swiper-instance-${wrapperIndex}`;
 
         // 创建轮播图元素
@@ -941,7 +943,7 @@ onMounted(async () => {
         <div class="swiper-wrapper noneed">
           ${slides
             .map(
-              (slide, index) => `
+              slide => `
             <div class="swiper-slide">
               <img
                 src="${slide.url}"
@@ -971,7 +973,7 @@ onMounted(async () => {
 
         // 初始化 Swiper
         setTimeout(() => {
-          const newSwiper = new Swiper(`.${uniqueClass}`, {
+          new Swiper(`.${uniqueClass}`, {
             modules: [Navigation, Pagination, Mousewheel],
             slidesPerView: "auto",
             spaceBetween: 20,
@@ -1061,7 +1063,6 @@ onMounted(async () => {
           const language = data.language || "";
           const stars = platform === "github" ? data.stargazers_count : data.stargazers_count;
           const forks = data.forks_count;
-          const avatarUrl = platform === "github" ? data.owner?.avatar_url : data.owner?.avatar_url;
           const isPrivate = data.private || false;
 
           // 创建仓库卡片
@@ -1341,7 +1342,7 @@ onMounted(async () => {
 
         // 动态导入并挂载 MetingPlayer 组件
         try {
-          const { MetingPlayer } = await import("~/components/MetingPlayer.vue") as any;
+          const MetingPlayer = (await import("~/components/MetingPlayer.vue")).default;
           const { createApp, h } = await import("vue");
 
           const mountEl = document.getElementById(mountId);
@@ -1648,13 +1649,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="fancyboxContainer"
+  <div
+ref="fancyboxContainer"
     :class="[
       'mx-auto w-full',
       isPhotoCategory ? (shouldReserveToc ? 'max-w-375' : 'max-w-350') : shouldReserveToc ? 'max-w-250' : 'max-w-225',
     ]">
     <div v-if="pending" class="py-20 text-center">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
       <p class="mt-2 text-slate-500">加载中...</p>
     </div>
 
@@ -1725,14 +1727,14 @@ onUnmounted(() => {
             <ul class="space-y-1 w-fit max-w-48">
               <li v-for="item in tocItems" :key="item.id" class="max-w-48 wrap-anywhere overflow-hidden text-ellipsis">
                 <button
-                  @click="scrollToHeading(item.id)"
                   :class="[
                     'block text-sm py-1 px-2 rounded transition-colors no-underline text-left',
                     item.level === 3 ? 'pl-4' : '',
                     activeTocId === item.id
                       ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800',
-                  ]">
+                  ]"
+                  @click="scrollToHeading(item.id)">
                   {{ item.text }}
                 </button>
               </li>
@@ -1744,24 +1746,24 @@ onUnmounted(() => {
         <div
           ref="contentBody"
           class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body"
-          v-html="post.renderedContent"></div>
+          v-html="post.renderedContent"/>
       </div>
 
       <!-- 元信息盒子和 CC 授权 -->
       <div class="mt-4 p-4 borde rounded-lg w-full opacity-0 translate-y-8 duration-300 ease-out meta-license-box">
         <!-- 元信息 -->
         <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-          <span class="inline-flex items-center gap-0.5" v-tooltip="'作者'">
+          <span v-tooltip="'作者'" class="inline-flex items-center gap-0.5">
             <Icon name="ri:user-line" class="size-4" />
             <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
           </span>
-          <span class="inline-flex items-center gap-0.5" v-tooltip="'发布时间'">
+          <span v-tooltip="'发布时间'" class="inline-flex items-center gap-0.5">
             <Icon name="ri:edit-2-line" class="size-4" />
             <time :datetime="post.update_time">
               {{ formatDate(post.update_time) }}
             </time>
           </span>
-          <span v-if="categories.length > 0" class="inline-flex items-center gap-0.5" v-tooltip="'分类'">
+          <span v-if="categories.length > 0" v-tooltip="'分类'" class="inline-flex items-center gap-0.5">
             <Icon name="ri:menu-line" class="size-4" />
             <NuxtLink
               v-for="(cat, index) in categories"
@@ -1771,7 +1773,7 @@ onUnmounted(() => {
               {{ cat.name }}{{ index < categories.length - 1 ? ", " : "" }}
             </NuxtLink>
           </span>
-          <span v-if="tags.length > 0" class="inline-flex items-center gap-0.5" v-tooltip="'标签'">
+          <span v-if="tags.length > 0" v-tooltip="'标签'" class="inline-flex items-center gap-0.5">
             <Icon name="ri:hashtag" class="size-4" />
             <NuxtLink
               v-for="(tag, index) in tags"
@@ -1789,7 +1791,7 @@ onUnmounted(() => {
         <!-- CC 协议授权 -->
         <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700">
           <div class="cc-license flex items-center gap-1">
-            <Icon name="ri:copyright-line" class="text-xs text-slate-600 dark:text-slate-400"></Icon>
+            <Icon name="ri:copyright-line" class="text-xs text-slate-600 dark:text-slate-400"/>
             <p class="text-xs text-slate-600 dark:text-slate-400">
               若无特别说明，本文采用
               <a
@@ -1815,7 +1817,7 @@ onUnmounted(() => {
 
       <!-- 相关文章 -->
       <div v-if="relatedPostsPending" class="article-constrained flex items-center justify-center gap-2 py-4 text-muted-foreground">
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"/>
         <span class="text-sm">加载相关文章...</span>
       </div>
       <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
@@ -1831,7 +1833,7 @@ onUnmounted(() => {
                   :src="relatedPost.covers[0]?.url"
                   :alt="relatedPost.title"
                   class="w-full h-30 object-cover transition-transform duration-300 hover:scale-105"
-                  loading="lazy" />
+                  loading="lazy" >
               </div>
               <div v-else class="flex h-30 items-center justify-center bg-gray-200 dark:bg-gray-800">
                 <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>

@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type AttachmentItem = NonNullable<NonNullable<InternalApi["/api/admin/attachments/all"]["get"]["data"]>["list"]>[number];
+
 const toast = useToast();
 const loading = ref(true);
-const attachments = ref<any[]>([]);
+const attachments = ref<AttachmentItem[]>([]);
 const selectedType = ref("all");
 const searchQuery = ref("");
 const csrfToken = ref("");
@@ -23,8 +27,8 @@ const fetchAttachments = async () => {
   try {
     // 获取 CSRF token
     const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
-    if (csrfRes && (csrfRes as any).data?.token) {
-      csrfToken.value = (csrfRes as any).data.token;
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
     }
 
     const params = new URLSearchParams({
@@ -38,7 +42,7 @@ const fetchAttachments = async () => {
       params.append("search", searchQuery.value);
     }
 
-    const res = (await $fetch(`/api/admin/attachments/all?${params}`)) as any;
+    const res = await $fetch(`/api/admin/attachments/all?${params}`);
     if (res?.success) {
       attachments.value = res.data.list || [];
       total.value = res.data.total || 0;
@@ -91,7 +95,7 @@ const formatFileSize = (size: string | number) => {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 };
 
-async function deleteAttachment(item: any) {
+async function deleteAttachment(item: AttachmentItem) {
   const confirmed = confirm(`确定要删除附件 "${item.name}" 吗？`);
   if (!confirmed) return;
 
@@ -204,7 +208,7 @@ onMounted(() => {
                   v-if="item.type === 'image'"
                   :src="item.url"
                   :alt="item.name"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform" >
                 <div v-else class="flex flex-col items-center text-muted-foreground">
                   <Icon :name="getTypeIcon(item.type)" class="size-12 mb-2" />
                   <span class="text-xs">视频预览</span>
@@ -215,13 +219,13 @@ onMounted(() => {
             <!-- 操作遮罩 -->
             <div
               class="absolute inset-0 top-[calc(100%-60px)] bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-2 pb-2">
-              <Button variant="secondary" size="sm" class="h-8" @click.stop="copyLink(item.url)" title="复制链接">
+              <Button variant="secondary" size="sm" class="h-8" title="复制链接" @click.stop="copyLink(item.url)">
                 <Icon name="lucide:copy" class="size-4" />
               </Button>
-              <Button variant="secondary" size="sm" class="h-8" @click.stop="navigateTo(`/admin/attachments/${item.id}`)" title="编辑">
+              <Button variant="secondary" size="sm" class="h-8" title="编辑" @click.stop="navigateTo(`/admin/attachments/${item.id}`)">
                 <Icon name="lucide:settings" class="size-4" />
               </Button>
-              <Button variant="destructive" size="sm" class="h-8" @click.stop="deleteAttachment(item)" title="删除">
+              <Button variant="destructive" size="sm" class="h-8" title="删除" @click.stop="deleteAttachment(item)">
                 <Icon name="lucide:trash-2" class="size-4" />
               </Button>
             </div>

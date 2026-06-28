@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import type { InternalApi } from "nitropack/types";
+
+type AttachmentItem = NonNullable<InternalApi["/api/attachments/list"]["get"]["data"]>[number];
+type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -24,7 +29,7 @@ const manyCovers = ref(false);
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
 // 附件相关
-const attachments = ref<any[]>([]);
+const attachments = ref<AttachmentItem[]>([]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const dragOver = ref(false);
 const uploading = ref(false);
@@ -35,7 +40,7 @@ const fetchAttachments = async () => {
   if (!pageId.value) return;
 
   try {
-    const res = (await $fetch(`/api/attachments/list?cid=${pageId.value}`)) as any;
+    const res = await $fetch(`/api/attachments/list?cid=${pageId.value}`);
     if (res?.success) {
       attachments.value = res.data || [];
     }
@@ -119,10 +124,10 @@ const uploadFiles = async (files: File[]) => {
       }
 
       try {
-        const res = (await $fetch(`/api/attachments/upload?cid=${pageId.value}`, {
+        const res = await $fetch(`/api/attachments/upload?cid=${pageId.value}`, {
           method: "POST",
           body: formData,
-        })) as any;
+        });
 
         if (res?.success) {
           attachments.value.push(res.data);
@@ -131,7 +136,7 @@ const uploadFiles = async (files: File[]) => {
             description: file.name,
           });
         }
-      } catch (error) {
+      } catch {
         toast.error({
           message: "上传失败",
           description: file.name,
@@ -147,7 +152,7 @@ const uploadFiles = async (files: File[]) => {
 };
 
 // 删除附件
-const deleteAttachment = async (attachment: any) => {
+const deleteAttachment = async (attachment: AttachmentItem) => {
   const confirmed = confirm(`确定要删除附件 "${attachment.name}" 吗？`);
   if (!confirmed) return;
 
@@ -166,7 +171,7 @@ const deleteAttachment = async (attachment: any) => {
     toast.success({
       message: "删除成功",
     });
-  } catch (error) {
+  } catch {
     toast.error({
       message: "删除失败",
     });
@@ -198,7 +203,7 @@ const fetchPage = async () => {
 
   loading.value = true;
   try {
-    const res = (await $fetch(`/api/admin/posts/${pageId.value}`)) as any;
+    const res = await $fetch(`/api/admin/posts/${pageId.value}`);
     if (res?.data) {
       const page = res.data;
       title.value = page.title || "";
@@ -212,9 +217,9 @@ const fetchPage = async () => {
       // 解析封面数据：从 JSON 格式转为输入框格式
       if (page.covers) {
         try {
-          const coversArray = JSON.parse(page.covers);
+          const coversArray = JSON.parse(page.covers) as Array<{ url?: string; cover?: string; title?: string }>;
           coversInput.value = coversArray
-            .map((c: any) => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ''}`)
+            .map(c => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ''}`)
             .join('\n');
         } catch {
           coversInput.value = "";
@@ -302,14 +307,15 @@ const savePage = async (publish = false) => {
       });
 
       // 如果是新建且成功，跳转到编辑页面
-      if (!isEdit.value && (res as any).data?.cid) {
-        const newCid = (res as any).data.cid;
+      if (!isEdit.value && res.data?.cid) {
+        const newCid = res.data.cid;
         pageId.value = newCid;
         await fetchAttachments();
         await router.replace(`/admin/pages/edit?cid=${newCid}`);
       }
     }
-  } catch (error: any) {
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
     const message = error?.data?.message || error?.message || "保存失败";
     toast.error({
       message,
@@ -515,7 +521,7 @@ onUnmounted(() => {
           <!-- 附件管理 Tab -->
           <TabsContent value="attachments" class="mt-6">
             <!-- 隐藏的文件输入 -->
-            <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" />
+            <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" >
 
             <Card>
               <CardHeader>
@@ -572,7 +578,7 @@ onUnmounted(() => {
                           v-if="item.type === 'image'"
                           :src="item.url"
                           :alt="item.name"
-                          class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform" >
                         <div v-else class="flex flex-col items-center text-muted-foreground">
                           <Icon name="lucide:film" class="size-12 mb-2" />
                           <span class="text-xs">视频预览</span>
@@ -582,10 +588,10 @@ onUnmounted(() => {
                       <!-- 操作遮罩 -->
                       <div
                         class="absolute inset-0 top-[calc(100%-40px)] bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center gap-1 sm:gap-2 pb-2">
-                        <Button variant="secondary" size="sm" class="h-7 text-xs px-2" @click.stop="copyLink(item.url)" title="复制链接">
+                        <Button variant="secondary" size="sm" class="h-7 text-xs px-2" title="复制链接" @click.stop="copyLink(item.url)">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>
-                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" @click.stop="deleteAttachment(item)" title="删除">
+                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" title="删除" @click.stop="deleteAttachment(item)">
                           <Icon name="lucide:trash-2" class="size-3" />
                         </Button>
                       </div>
