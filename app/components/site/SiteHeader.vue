@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {siteConfig} from "~~/site.config";
-import type {BreadcrumbItem} from "~/types/components/site/header";
+import type {BreadcrumbItem} from "~/types/components/header";
 
 const route = useRoute();
 

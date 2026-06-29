@@ -8,7 +8,7 @@ import type {
   AMapNamespace,
   LngLatInput,
   LngLatTuple
-} from "~/types/components/admin/amap";
+} from "~/types/components/map";
 
 const props = defineProps<{
   longitude: string | number | null;
@@ -37,7 +37,7 @@ let map: AMapMapInstance | null = null;
 let marker: AMap.Marker | null = null;
 let updatingFromPicker = false;
 
-function normalizeLngLat(value: LngLatInput | null | undefined): LngLatTuple | null {
+function normalizeLngLat(value: LngLatInput): LngLatTuple | null {
   if (Array.isArray(value)) {
     const lng = Number(value[0]);
     const lat = Number(value[1]);
@@ -45,14 +45,8 @@ function normalizeLngLat(value: LngLatInput | null | undefined): LngLatTuple | n
   }
 
   if (value && "getLng" in value && "getLat" in value) {
-    const lng = Number(value.getLng());
-    const lat = Number(value.getLat());
-    return isValidLngLat(lng, lat) ? [lng, lat] : null;
-  }
-
-  if (value) {
-    const lng = Number(value.lng ?? value.longitude);
-    const lat = Number(value.lat ?? value.latitude);
+    const lng = Number(value.getLng() ?? value.lng);
+    const lat = Number(value.getLat() ?? value.lat);
     return isValidLngLat(lng, lat) ? [lng, lat] : null;
   }
 
@@ -141,7 +135,7 @@ function syncMarkerFromProps() {
   }
 }
 
-function selectLngLat(value: LngLatInput | null | undefined, moveCenter = true) {
+function selectLngLat(value: LngLatInput, moveCenter = true) {
   const lnglat = normalizeLngLat(value);
   if (!lnglat || !map) return;
 

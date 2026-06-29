@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {siteConfig} from "~~/site.config";
-import type {FooterIcon} from "~/types/components/site/footer";
+import type {FooterIcon} from "~/types/components/footer";
 
 const route = useRoute();
 

@@ -2,7 +2,7 @@
  * 地图组件类型定义
  */
 
-import type AMap from "@amap/amap-jsapi-types";
+import "@amap/amap-jsapi-types";
 
 /** 经纬度元组 */
 export type LngLatTuple = [number, number];
@@ -15,20 +15,21 @@ export type AMapMapInstance = AMap.Map & { resize?(): void; stopMove?(): void };
 
 /** 高德经纬度对象（运行时由 SDK 提供，具备 getLng/getLat） */
 export interface AMapLngLatLike {
-  getLng(): unknown;
-  getLat(): unknown;
+  getLng(): number;
+  getLat(): number;
 }
 
 /** 普通坐标对象（手动输入或序列化数据） */
 export interface CoordRecord {
-  lng?: unknown;
-  lat?: unknown;
-  longitude?: unknown;
-  latitude?: unknown;
+  lng?: number;
+  lat?: number;
+  longitude?: number;
+  latitude?: number;
 }
 
 /** normalizeLngLat / 事件回调的合法输入：数组 | 高德 LngLat | 坐标对象 */
-export type LngLatInput = readonly [unknown, unknown] | AMapLngLatLike | CoordRecord;
+// export type LngLatInput = readonly [unknown, unknown] | AMapLngLatLike | CoordRecord;
+export type LngLatInput = AMap.LngLatLike;
 
 /** 地图点击 / 拖拽事件负载（均带 lnglat） */
 export interface AMapMapEvent {

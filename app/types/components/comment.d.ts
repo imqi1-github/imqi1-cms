@@ -1,24 +1,13 @@
 /**
  * 评论组件类型定义
  */
+import type { comments } from ".prisma/client";
 
 /** 评论状态枚举 */
 export type CommentStatus = 0 | 1; // 0: 待审核, 1: 已通过
 
 /** 评论数据（基础字段） */
-export interface Comment {
-  coid: number;
-  cid: number;
-  content: string;
-  name: string;
-  mail: string | null;
-  link: string | null;
-  parent_id: number | null;
-  status: CommentStatus;
-  create_time: Date | string;
-  agent: string | null;
-  ip: string | null;
-}
+export type Comment = comments;
 
 /** 评论数据（扩展字段，用于 CommentItem 组件） */
 export interface CommentWithChildren extends Comment {
