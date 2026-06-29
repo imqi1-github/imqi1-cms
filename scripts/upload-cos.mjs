@@ -2,8 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
-import dotenv from 'dotenv'
 import readline from 'readline'
+
+import dotenv from 'dotenv'
 
 // 使用 createRequire 来导入 CommonJS 模块
 const require = createRequire(import.meta.url)
@@ -167,7 +168,7 @@ async function deleteRemoteFiles(keys) {
         Bucket: cosConfig.Bucket,
         Region: cosConfig.Region,
         Key: key
-      }, (err, data) => {
+      }, (err) => {
         if (err) reject({ key, error: err })
         else resolve({ key, success: true })
       })

@@ -1,6 +1,7 @@
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
 import { siteConfig } from "../../site.config";
 
 const adapter = new PrismaMariaDb({
@@ -298,13 +299,13 @@ Webpack 5 的模块联邦功能。`,
 
 Markdown 支持两种标题语法：
 
-### ATX 标题（使用 \#）
+### ATX 标题（使用 #）
 
-\# 一级标题
-\## 二级标题
-\### 三级标题
-\#### 四级标题
-\##### 五级标题
+# 一级标题
+## 二级标题
+### 三级标题
+#### 四级标题
+##### 五级标题
 ###### 六级标题
 
 ### Setext 标题（使用 = 和 -）

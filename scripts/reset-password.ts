@@ -1,7 +1,8 @@
+import * as readline from "readline";
+
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
-import * as readline from "readline";
 import * as dotenv from "dotenv";
 
 // 加载环境变量

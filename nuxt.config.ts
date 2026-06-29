@@ -1,7 +1,9 @@
 import { existsSync, readFileSync } from "fs";
+
+import { visualizer } from "rollup-plugin-visualizer";
+
 import { siteConfig, fullOgImage } from "./site.config";
 import { resolveAmapRuntimeConfig } from "./shared/amap-runtime";
-import { visualizer } from "rollup-plugin-visualizer";
 
 // 读取构建 hash（如果存在）
 const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
@@ -410,10 +412,10 @@ export default defineNuxtConfig({
     // 仅在 client build 时注入 visualizer，避免 server bundle 覆盖 stats.html
     "vite:extendConfig"(config, { isClient }) {
       if (!isClient) return;
-      // @ts-ignore
+      // @ts-expect-error 手动为 config 插入 visualizer 插件
       config.plugins = config.plugins || [];
       config.plugins.push(
-        // @ts-ignore
+        // @ts-expect-error 手动为 config 插入 visualizer 插件
         visualizer({
           filename: "stats.html",
           template: "treemap",
@@ -479,9 +481,9 @@ export default defineNuxtConfig({
 
     // Nitro 构建完成后复制 data 目录
     hooks: {
-      compiled: () => {
-        const { mkdirSync, copyFileSync, existsSync } = require("fs");
-        const { join } = require("path");
+      compiled: async () => {
+        const { mkdirSync, copyFileSync, existsSync } = await import("fs");
+        const { join } = await import("path");
 
         const sourceDir = join(process.cwd(), "data");
         const targetDir = join(process.cwd(), ".output", "server", "data");

@@ -155,6 +155,7 @@ function parseArgs(args) {
       case "--help":
         console.log(USAGE);
         exit(0);
+        break;
       default:
         if (a.startsWith("-")) {
           console.error(`✘ 未知参数: ${a}\n`);
@@ -203,9 +204,7 @@ function runFfmpeg(args) {
     });
     let stderr = "";
     proc.stderr.on("data", c => (stderr += c.toString()));
-    proc.on("error", err =>
-      reject(new Error(`无法启动 ffmpeg(${ffmpegBin}): ${err.message}`)),
-    );
+    proc.on("error", err => reject(new Error(`无法启动 ffmpeg(${ffmpegBin}): ${err.message}`)));
     proc.on("close", code => {
       if (code === 0) resolve();
       else reject(new Error(`ffmpeg 退出码 ${code}\n${stderr.slice(-800)}`));
@@ -251,9 +250,7 @@ async function compressOne(inputPath, opts) {
 
   // 1. 压缩 JPEG 部分(无内嵌视频时压缩整个文件)
   const jpegSource = mp4Start === -1 ? inputBuffer : inputBuffer.subarray(0, mp4Start);
-  const compressedJpeg = await sharpFn(jpegSource)
-    .jpeg({ quality: opts.jpegQuality, mozjpeg: true })
-    .toBuffer();
+  const compressedJpeg = await sharpFn(jpegSource).jpeg({ quality: opts.jpegQuality, mozjpeg: true }).toBuffer();
 
   // 非实况照片:直接写 JPEG
   if (mp4Start === -1) {
@@ -303,10 +300,7 @@ async function compressOne(inputPath, opts) {
     await writeOutput(inputPath, final, opts);
     logResult(inputPath, mp4Start, inputSize - mp4Start, compressedJpeg.byteLength, compressedMp4.byteLength, opts);
   } finally {
-    await Promise.allSettled([
-      rm(tmpIn, { force: true }),
-      rm(tmpOut, { force: true }),
-    ]);
+    await Promise.allSettled([rm(tmpIn, { force: true }), rm(tmpOut, { force: true })]);
   }
 }
 

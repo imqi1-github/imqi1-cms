@@ -2,6 +2,7 @@
 import { existsSync } from "node:fs";
 import { isIP } from "node:net";
 import { join } from "node:path";
+
 import IPDBDefault from "ipdb";
 
 const IPDB = typeof IPDBDefault === "function" ? IPDBDefault : (IPDBDefault as { default: typeof IPDBDefault }).default;

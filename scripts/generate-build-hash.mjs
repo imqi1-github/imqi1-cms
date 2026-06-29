@@ -28,15 +28,10 @@ function hasCdnConfig() {
       console.log('ℹ CDN 配置为空或无效，跳过 hash 生成');
     }
     return isValid;
-  } catch (e) {
+  } catch {
     console.warn('⚠ 无法读取 site.config.ts，默认不生成 build hash');
     return false;
   }
-}
-
-// 生成 8 字符的随机 hash
-function generateHash() {
-  return randomBytes(4).toString('hex');
 }
 
 // 生成时间戳 hash（可选，更可读）

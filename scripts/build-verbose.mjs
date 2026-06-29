@@ -95,7 +95,7 @@ function analyzeBuildOutput() {
     try {
       const serverSize = execSync(`du -sb "${join(outputDir, 'server')}"`, { encoding: 'utf-8' });
       analysis.serverSize = parseInt(serverSize.split('\t')[0]);
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -103,7 +103,7 @@ function analyzeBuildOutput() {
     try {
       const clientSize = execSync(`du -sb "${join(outputDir, 'public')}"`, { encoding: 'utf-8' });
       analysis.clientSize = parseInt(clientSize.split('\t')[0]);
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -113,10 +113,10 @@ function analyzeBuildOutput() {
     try {
       const fileCount = execSync(`find "${outputDir}" -type f | wc -l`, { encoding: 'utf-8' });
       analysis.files = parseInt(fileCount.trim());
-    } catch (e) {
+    } catch {
       // ignore
     }
-  } catch (error) {
+  } catch {
     // ignore
   }
 
@@ -207,7 +207,7 @@ async function main() {
     console.log(`  ${colors.dim}2.${colors.reset} 上传 CDN: ${colors.yellow}npm run upload:cos${colors.reset}`);
     console.log(`  ${colors.dim}3.${colors.reset} 启动服务: ${colors.yellow}npm run pm2:start${colors.reset}\n`);
 
-  } catch (error) {
+  } catch {
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     printBuildResult(false);

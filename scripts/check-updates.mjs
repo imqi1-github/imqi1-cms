@@ -42,17 +42,6 @@ const parseVersion = (version) => {
   return version.replace(/[^0-9.]/g, '').split('.').map(Number);
 };
 
-// 比较版本号
-const compareVersions = (v1, v2) => {
-  const a = parseVersion(v1);
-  const b = parseVersion(v2);
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const diff = (a[i] || 0) - (b[i] || 0);
-    if (diff !== 0) return diff;
-  }
-  return 0;
-};
-
 // 主函数
 const main = async () => {
   const outdated = getOutdatedPackages();
