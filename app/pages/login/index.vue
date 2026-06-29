@@ -32,7 +32,7 @@
 
 <script setup lang="ts">
 // 获取目标跳转地址
-import type {ApiError} from "~/types/pages/login";
+import type {ApiError} from "~/types/apis/login";
 
 const route = useRoute()
 const redirectTo = computed(() => route.query.to as string || '/admin')

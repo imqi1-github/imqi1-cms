@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LivePhoto from "./LivePhoto.vue";
 
-import type {Props, WaterfallItem} from "~/pages/components/waterfall";
+import type {Props, WaterfallItem} from "~/types/components/waterfall";
 
 const props = withDefaults(defineProps<Props>(), {
   asLink: true,

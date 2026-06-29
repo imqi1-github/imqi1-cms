@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type {AcceptableValue} from "reka-ui";
-import type {InternalApi} from "nitropack/types";
 
-import type {Attachment, Category, PostMeta, Tag, Travel} from "~/types/pages/admin/posts";
+import type {Attachment, Category, PostMeta, Tag, Travel, PostApiResponse} from "~/types/apis/admin/posts";
 
 const route = useRoute();
 const router = useRouter();
@@ -584,7 +583,7 @@ const savePost = async () => {
       tags: tags.value,
     };
 
-    let res: InternalApi["/api/admin/posts/:cid"]["put"] | InternalApi["/api/admin/posts"]["post"];
+    let res: PostApiResponse;
     if (isEdit.value && postId.value) {
       // 更新文章
       res = await $fetch(`/api/admin/posts/${postId.value}`, {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {ApiError, UserDetail} from "~/types/pages/admin/users";
+import type {ApiError, UserDetail} from "~/types/apis/admin/users";
 
 const route = useRoute()
 const router = useRouter()

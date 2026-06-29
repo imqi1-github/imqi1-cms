@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {AttachmentItem} from "~/types/pages/admin/attachments";
+import type {AttachmentItem} from "~/types/apis/admin/attachments";
 
 const toast = useToast();
 const loading = ref(true);

@@ -9,3 +9,5 @@ export interface HandledError {
   __handled__?: boolean;
   response?: ErrorResponse;
 }
+
+export type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };

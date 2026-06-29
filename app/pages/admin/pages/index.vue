@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type PageItem = NonNullable<InternalApi["/api/admin/pages"]["get"]["data"]>[number];
+import type { PageItem } from "~/types/apis/admin/pages";
 
 const router = useRouter();
 const toast = useToast();

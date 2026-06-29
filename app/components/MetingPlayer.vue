@@ -4,7 +4,7 @@ import {onBeforeUnmount, onMounted, ref} from 'vue'
 import type APlayerType from '~/lib/aplayer/player.js'
 import {usePlayerManager} from '~/composables/usePlayerManager'
 import "~/assets/css/aplayer.css"
-import type {AudioItem, MetingOptions} from "~/pages/components/meting-player";
+import type {AudioItem, MetingOptions} from "~/types/components/meting-player";
 
 // 获取播放器管理器
 const playerManager = usePlayerManager()

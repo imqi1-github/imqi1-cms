@@ -3,7 +3,7 @@ import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 
 import {siteConfig} from "~~/site.config";
 import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta,} from "~~/shared/changelog";
-import type {ChangelogEntry, ChangelogGroup} from "~/types/pages/changelog";
+import type {ChangelogEntry, ChangelogGroup} from "~/types/apis/changelogs";
 
 const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {
   headers: {

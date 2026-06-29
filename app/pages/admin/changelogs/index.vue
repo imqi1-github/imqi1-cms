@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {CHANGELOG_TYPES, type ChangelogEntry, getChangelogMeta} from "~~/shared/changelog";
-import type {ChangelogItem} from "~/types/pages/admin/changelogs/logs";
+import type {ChangelogItem} from "~/types/apis/admin/changelogs/logs";
 
 const toast = useToast();
 const logs = ref<ChangelogItem[]>([]);
@@ -23,7 +23,7 @@ async function loadLogs() {
   loading.value = true;
   try {
     // 调用管理员专用 API，无缓存，返回原始数据
-    logs.value = await $fetch("/api/admin/changelogs");
+    logs.value = await $fetch<ChangelogItem[]>("/api/admin/changelogs");
   } catch (err) {
     console.error("加载失败:", err);
   } finally {

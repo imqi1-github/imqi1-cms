@@ -636,7 +636,7 @@ import {type ComponentPublicInstance, onMounted, onUnmounted, ref} from "vue";
 import MetingPlayer from "~/components/MetingPlayer.vue";
 import {siteConfig} from "~~/site.config";
 import {getChangelogMeta} from "~~/shared/changelog";
-import type {GridItem} from "~/types/pages";
+import type {GridItem} from "~/types/apis";
 
 // 目录导航数据
 const tocItems = [

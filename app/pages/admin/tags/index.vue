@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type TagItem = InternalApi["/api/admin/tags"]["get"][number];
-type ApiError = { statusCode?: number; message?: string; data?: { message?: string } };
+import type { TagItem } from "~/types/apis/admin/tags";
+import type { ApiError } from "~/types/error";
 
 const router = useRouter();
 const toast = useToast();
@@ -13,6 +11,7 @@ const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newTag = ref({ name: "", slug: "", desc: "" });
 const editingTag = ref<TagItem | null>(null);
+const editTagForm = ref({ name: "", slug: "", desc: "" });
 
 async function fetchTags() {
   loading.value = true;
@@ -46,7 +45,12 @@ async function addTag() {
 }
 
 function openEditModal(tag: TagItem) {
-  editingTag.value = { ...tag };
+  editingTag.value = tag;
+  editTagForm.value = {
+    name: tag.name,
+    slug: tag.slug || "",
+    desc: tag.desc || "",
+  };
   showEditModal.value = true;
 }
 
@@ -91,11 +95,7 @@ async function updateTag() {
   try {
     await $fetch(`/api/admin/tags/${editingTag.value.mid}`, {
       method: "PUT",
-      body: {
-        name: editingTag.value.name,
-        slug: editingTag.value.slug,
-        desc: editingTag.value.desc,
-      },
+      body: editTagForm.value,
     });
     showEditModal.value = false;
     toast.success({ message: "标签更新成功" });
@@ -103,6 +103,7 @@ async function updateTag() {
     // 延迟清空编辑数据，避免 Dialog 关闭动画过程中出现渲染错误
     nextTick(() => {
       editingTag.value = null;
+      editTagForm.value = { name: "", slug: "", desc: "" };
     });
   } catch (rawError: unknown) {
     const error = rawError as ApiError;
@@ -335,15 +336,15 @@ onMounted(() => {
           <div class="space-y-4 py-4">
             <div class="space-y-2">
               <Label for="edit-name">名称</Label>
-              <Input id="edit-name" v-model="editingTag.name" placeholder="标签名称" required />
+              <Input id="edit-name" v-model="editTagForm.name" placeholder="标签名称" required />
             </div>
             <div class="space-y-2">
               <Label for="edit-slug">Slug</Label>
-              <Input id="edit-slug" v-model="editingTag.slug" placeholder="标签 URL 标识" />
+              <Input id="edit-slug" v-model="editTagForm.slug" placeholder="标签 URL 标识" />
             </div>
             <div class="space-y-2">
               <Label for="edit-desc">描述</Label>
-              <Textarea id="edit-desc" v-model="editingTag.desc" placeholder="标签描述" rows="3" />
+              <Textarea id="edit-desc" v-model="editTagForm.desc" placeholder="标签描述" rows="3" />
             </div>
           </div>
           <DialogFooter>

@@ -184,6 +184,8 @@ const defaultSettings = {
   cosImageSuffix: "webp",
   sessionStoreType: "memory",
   linkAutoApprove: false,
+  searchCacheEnabled: false,
+  searchCacheExpire: 300,
 };
 
 // 加载设置

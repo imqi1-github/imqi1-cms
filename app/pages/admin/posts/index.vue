@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {AdminPost, Category, Tag} from "~/types/pages/admin/posts";
+import type {AdminPost, Category, Tag} from "~/types/apis/admin/posts";
 
 const router = useRouter();
 const route = useRoute();

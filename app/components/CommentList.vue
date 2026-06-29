@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import type { InternalApi } from "nitropack/types";
 
+import type { CommentsApiResponse } from "~/types/apis/comments";
 import type { Comment, CommentFormData, ReplyState } from "~/types/components/comment";
 
 const props = defineProps<{
@@ -79,7 +79,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
 
   try {
     const response = await fetch(`/api/comments?cid=${props.postId}&page=${page}&pageSize=${pageSize.value}`);
-    const data: InternalApi["/api/comments"]["get"] = await response.json();
+    const data: CommentsApiResponse = await response.json();
 
     if (data.code === 200) {
       if (page === 1 || isRefresh) {
@@ -167,7 +167,7 @@ onMounted(async () => {
   if (props.loadAllComments) {
     const actualPageSize = 10000;
     const response = await fetch(`/api/comments?cid=${props.postId}&page=1&pageSize=${actualPageSize}`);
-    const data = await response.json();
+    const data: CommentsApiResponse = await response.json();
     if (data.code === 200) {
       comments.value = data.data;
       // 使用 totalAllComments 显示所有评论总数（包括子评论）

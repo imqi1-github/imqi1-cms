@@ -1,5 +1,36 @@
 <script setup lang="ts">
-import {type ApiError, type CategoryItem, toast} from "~/types/pages/admin/categories";
+import {type CategoryItem, toast} from "~/types/apis/admin/categories";
+import type { ApiError } from "~/types/error";
+
+interface CsrfResponse {
+  data: {
+    token: string;
+  };
+}
+
+interface CategoryCreateResponse {
+  success: boolean;
+  data: {
+    mid: number;
+    name: string;
+    slug: string | null;
+    desc: string | null;
+  };
+}
+
+interface CategoryUpdateResponse {
+  success: boolean;
+  data: {
+    mid: number;
+    name: string;
+    slug: string | null;
+    desc: string | null;
+  };
+}
+
+interface CategoryDeleteResponse {
+  success: boolean;
+}
 
 const router = useRouter();
 
@@ -9,18 +40,19 @@ const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newCategory = ref({ name: "", slug: "", desc: "" });
 const editingCategory = ref<CategoryItem | null>(null);
+const editCategoryForm = ref({ name: "", slug: "", desc: "" });
 const csrfToken = ref("");
 
 async function fetchCategories() {
   loading.value = true;
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }
 
-    categories.value = await $fetch("/api/admin/categories");
+    categories.value = await $fetch<CategoryItem[]>("/api/admin/categories");
   } catch (error) {
     console.error("获取分类失败:", error);
     categories.value = [];
@@ -34,7 +66,7 @@ async function addCategory() {
     console.log("准备创建分类，CSRF token:", csrfToken.value);
     console.log("分类数据:", newCategory.value);
 
-    const result = await $fetch("/api/admin/categories/create", {
+    const result = await $fetch<CategoryCreateResponse>("/api/admin/categories/create", {
       method: "POST",
       body: {
         csrfToken: csrfToken.value,
@@ -67,56 +99,36 @@ async function addCategory() {
 }
 
 function openEditModal(category: CategoryItem) {
-  editingCategory.value = { ...category };
+  editingCategory.value = category;
+  editCategoryForm.value = {
+    name: category.name || "",
+    slug: category.slug || "",
+    desc: category.desc || "",
+  };
   showEditModal.value = true;
 }
 
 // 关闭添加弹窗
 function closeAddModal() {
   showAddModal.value = false;
-  nextTick(() => {
-    newCategory.value = { name: "", slug: "", desc: "" };
-  });
 }
 
 // 关闭编辑弹窗
 function closeEditModal() {
   showEditModal.value = false;
-  nextTick(() => {
-    editingCategory.value = null;
-  });
-}
-
-// 处理 Dialog open 状态变化
-function handleAddModalOpenChange(open: boolean) {
-  showAddModal.value = open;
-  if (!open) {
-    nextTick(() => {
-      newCategory.value = { name: "", slug: "", desc: "" };
-    });
-  }
-}
-
-function handleEditModalOpenChange(open: boolean) {
-  showEditModal.value = open;
-  if (!open) {
-    nextTick(() => {
-      editingCategory.value = null;
-    });
-  }
 }
 
 async function updateCategory() {
   if (!editingCategory.value) return;
 
   try {
-    await $fetch(`/api/admin/categories/${editingCategory.value.mid}`, {
+    await $fetch<CategoryUpdateResponse>(`/api/admin/categories/${editingCategory.value.mid}`, {
       method: "PUT",
       body: {
         csrfToken: csrfToken.value,
-        name: editingCategory.value.name,
-        slug: editingCategory.value.slug,
-        desc: editingCategory.value.desc,
+        name: editCategoryForm.value.name,
+        slug: editCategoryForm.value.slug,
+        desc: editCategoryForm.value.desc,
       },
     });
     closeEditModal();
@@ -151,7 +163,7 @@ async function deleteCategory(mid: number) {
   const confirmed = confirm("确定要删除这个分类吗？删除后文章将不再关联此分类。");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/categories/${mid}?csrfToken=${encodeURIComponent(csrfToken.value)}`, { method: "DELETE" });
+      await $fetch<CategoryDeleteResponse>(`/api/admin/categories/${mid}?csrfToken=${encodeURIComponent(csrfToken.value)}`, { method: "DELETE" });
       toast.success({ message: "分类删除成功" });
       await fetchCategories();
     } catch (rawError: unknown) {
@@ -359,7 +371,7 @@ onMounted(() => {
     </Card>
 
     <!-- 添加分类弹窗 -->
-    <Dialog :open="showAddModal" @update:open="handleAddModalOpenChange">
+    <Dialog v-model:open="showAddModal">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>新建分类</DialogTitle>
@@ -389,7 +401,7 @@ onMounted(() => {
     </Dialog>
 
     <!-- 编辑分类弹窗 -->
-    <Dialog :open="showEditModal" @update:open="handleEditModalOpenChange">
+    <Dialog v-model:open="showEditModal">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>编辑分类</DialogTitle>
@@ -399,15 +411,15 @@ onMounted(() => {
           <div class="space-y-4 py-4">
             <div class="space-y-2">
               <Label for="edit-name">名称</Label>
-              <Input id="edit-name" v-model="editingCategory.name" placeholder="分类名称" required />
+              <Input id="edit-name" v-model="editCategoryForm.name" placeholder="分类名称" required />
             </div>
             <div class="space-y-2">
               <Label for="edit-slug">Slug</Label>
-              <Input id="edit-slug" v-model="editingCategory.slug" placeholder="英文标识 (如: tech)" />
+              <Input id="edit-slug" v-model="editCategoryForm.slug" placeholder="英文标识 (如: tech)" />
             </div>
             <div class="space-y-2">
               <Label for="edit-desc">描述</Label>
-              <Textarea id="edit-desc" v-model="editingCategory.desc" placeholder="分类描述" rows="3" />
+              <Textarea id="edit-desc" v-model="editCategoryForm.desc" placeholder="分类描述" rows="3" />
             </div>
           </div>
           <DialogFooter>

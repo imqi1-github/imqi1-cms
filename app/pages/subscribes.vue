@@ -2,7 +2,7 @@
 import {computed, onMounted, ref, watch} from "vue";
 
 import {siteConfig} from "~~/site.config";
-import type {SubscribeSource} from "~/types/pages/subscribe";
+import type {SubscribeSource} from "~/types/apis/subscribes";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();

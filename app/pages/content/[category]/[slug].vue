@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
-import type {FancyboxOptions} from "@fancyapps/ui";
-import type {InternalApi} from "nitropack/types";
+import type { RelatedPost } from "~/types/apis/content/related-posts";
 import Swiper from "swiper";
 import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
@@ -11,7 +10,7 @@ import {computed, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue"
 
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
-import type {TocItem} from "~/types/pages/content";
+import type {TocItem} from "~/types/apis/content";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -97,7 +96,7 @@ const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug |
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
 // 获取相关文章（根据标签筛选）
-const relatedPostsData = ref<InternalApi["/api/related-posts/:cid"]["get"] | null>(null);
+const relatedPostsData = ref<{ success: boolean; data: RelatedPost[] } | null>(null);
 const relatedPostsPending = ref(false);
 
 // 监听文章数据，加载后再获取相关文章
@@ -107,7 +106,7 @@ watch(
     if (postId) {
       relatedPostsPending.value = true;
       try {
-        relatedPostsData.value = await $fetch(`/api/related-posts/${postId}?limit=3`, {
+        relatedPostsData.value = await $fetch<{ success: boolean; data: RelatedPost[] }>(`/api/related-posts/${postId}?limit=3`, {
           headers: {
             "x-ssr-internal-request": "true",
           },
@@ -473,27 +472,25 @@ onMounted(async () => {
     // 初始化 Fancybox（参照友情链接页面）
     FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
       l10n: zh_CN,
-      placeFocusBack: false,
       Hash: false,
-      trapFocus: false,
-      closeExisting: false,
-      zoomEffect: true,
       Carousel: {
-        Panzoom: {
-          maxScale: 2,
+        Zoomable: {
+          Panzoom: {
+            maxScale: 2,
+          },
         },
         Toolbar: {
           display: {
             left: ["infobar"],
-            middle: ["zoomIn", "zoomOut", "toggle1to1"],
+            middle: ["zoomIn", "zoomOut", "toggleZoom", "rotateCCW", "rotateCW", "flipX", "flipY"],
             right: ["thumbs", "close"],
           },
         },
-        Autoplay: false,
+        Autoplay: {
+          autoStart: false,
+        },
       },
-      idle: false,
-      autoFocus: false,
-    } as Partial<FancyboxOptions>));
+    }));
 
     // 初始化代码复制按钮
     document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {

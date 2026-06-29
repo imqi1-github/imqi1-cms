@@ -2,7 +2,7 @@
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 
 import {siteConfig} from "~~/site.config";
-import type {TocItem} from "~/types/pages/toc";
+import type {TocItem} from "~/types/apis/toc";
 
 // 获取路由
 const route = useRoute();

@@ -90,3 +90,53 @@ export type ClusterPoint = { id?: number; place?: Place; lnglat: LngLatTuple };
 
 /** 胶囊导航项 */
 export type Capsule = { key: string; label: string; icon: string; to: string };
+
+export type TravelItem = {
+  name: string;
+  create_time: string;
+  posts: {
+      cid: number;
+      title: string;
+  }[];
+  desc: string | null;
+  id: number;
+  enabled: boolean;
+  cover: string | null;
+  longitude: number;
+  latitude: number;
+  sort: number;
+  cids: number[];
+}
+
+export type PostListItem = {
+  create_time: string;
+  desc: string | null;
+  cid: number;
+  type: number;
+  title: string;
+  slug: string | null;
+  content: string | null;
+  update_time: string;
+  status: number;
+  comment_num: number;
+  many_covers: boolean;
+  covers: string | null;
+  show_toc: boolean;
+  tags: string | null;
+  uid: number;
+  user: {
+      name: string;
+      uid: number;
+      avatar: string | null;
+  };
+  postrelations: {
+      cid: number;
+      mid: number;
+      metas: {
+          name: string;
+          type: string;
+          slug: string | null;
+          mid: number;
+      };
+  }[];
+}

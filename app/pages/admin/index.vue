@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {PopularPost, RecentComment, RecentPost} from "~/types/pages/admin";
+import type {PopularPost, RecentComment, RecentPost} from "~/types/apis/admin";
 
 const router = useRouter()
 const loading = ref(true)

@@ -8,7 +8,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "@/assets/css/fancybox.css";
-import type {Props} from "~/pages/components/cover-swiper";
+import type {Props} from "~/types/components/cover-swiper";
 
 const props = withDefaults(defineProps<Props>(), {
   isPhotoCategory: false,
@@ -78,28 +78,26 @@ onMounted(async () => {
   }
 
   FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
-    l10n: zh_CN,
-    placeFocusBack: false,
-    Hash: false,
-    trapFocus: false,
-    closeExisting: false,
-    zoomEffect: true,
-    Carousel: {
-      Panzoom: {
-        maxScale: 2,
-      },
-      Toolbar: {
-        display: {
-          left: ["infobar"],
-          middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX", "flipY"],
-          right: ["thumbs", "close"],
+      l10n: zh_CN,
+      Hash: false,
+      Carousel: {
+        Zoomable: {
+          Panzoom: {
+            maxScale: 2,
+          },
+        },
+        Toolbar: {
+          display: {
+            left: ["infobar"],
+            middle: ["zoomIn", "zoomOut", "toggleZoom", "rotateCCW", "rotateCW", "flipX", "flipY"],
+            right: ["thumbs", "close"],
+          },
+        },
+        Autoplay: {
+          autoStart: false,
         },
       },
-      Autoplay: false,
-    },
-    idle: false,
-    autoFocus: false,
-  }));
+    }));
 });
 
 // 合并清理逻辑

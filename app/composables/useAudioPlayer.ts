@@ -218,7 +218,7 @@ export function useAudioPlayer() {
     }
 
     try {
-      const response = await $fetch(`/api/meting?type=playlist&server=${playlistConfig.server}&id=${playlistConfig.id}`);
+      const response = await $fetch<Song[]>(`/api/meting?type=playlist&server=${playlistConfig.server}&id=${playlistConfig.id}`);
 
       if (response && Array.isArray(response)) {
         // 请求成功，重置失败计数

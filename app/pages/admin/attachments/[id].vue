@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type {ApiError, AttachmentDetail} from "~/types/pages/admin/attachments";
+import type {AttachmentDetail} from "~/types/apis/admin/attachments";
+import type {ApiError} from "~/types/error";
 
 const route = useRoute()
 const toast = useToast()

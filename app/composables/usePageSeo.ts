@@ -17,7 +17,7 @@
  * });
  * ```
  */
-import type {PageSeoOptions} from "~/types/composables/pages-seo";
+import type {PageSeoOptions} from "~/types/composables/seo";
 
 export function usePageSeo(options: PageSeoOptions): void {
   const { title, description, keywords, ogType = "website" } = options;

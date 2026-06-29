@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type TravelItem = InternalApi["/api/admin/travels"]["get"][number];
-type PostListItem = NonNullable<InternalApi["/api/admin/posts"]["get"]["data"]>[number];
+import type {PostListItem, TravelItem} from "~/types/components/map";
 
 const toast = useToast();
 const loading = ref(true);

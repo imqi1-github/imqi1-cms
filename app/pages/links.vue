@@ -5,7 +5,7 @@ import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
-import type {LinkItem} from "~/types/pages/setting";
+import type {LinkItem} from "~/types/apis/links";
 
 // 导入前台通知 composable
 const { success, error: showError, } = useFrontNotification();

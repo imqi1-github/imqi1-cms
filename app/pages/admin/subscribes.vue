@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/pages/admin/subscribe";
+import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/apis/admin/subscribe";
 
 const toast = useToast();
 const subscribes = ref<SubscribeItem[]>([]);
@@ -22,8 +22,8 @@ const editingSubscribe = ref<{ id: number | null; name: string; url: string; ava
 async function loadSettings() {
   try {
     const settings = await $fetch("/api/admin/settings");
-    if (settings?.feedCacheInterval) {
-      feedCacheInterval.value = settings.feedCacheInterval;
+    if (settings && settings.feedCacheInterval) {
+      feedCacheInterval.value = Number(settings.feedCacheInterval);
     }
   } catch (error) {
     console.error("获取设置失败:", error);
@@ -34,7 +34,7 @@ async function loadSettings() {
 async function loadSubscribes() {
   loading.value = true;
   try {
-    subscribes.value = await $fetch("/api/admin/subscribes");
+    subscribes.value = await $fetch<SubscribeItem[]>("/api/admin/subscribes");
   } catch (error) {
     console.error("获取订阅失败:", error);
     subscribes.value = [];
@@ -82,7 +82,7 @@ async function updateSubscribes() {
   updating.value = true;
   updateResult.value = null;
   try {
-    const response: SubscribesUpdateResponse = await $fetch("/api/admin/subscribes/update", {
+    const response = await $fetch<SubscribesUpdateResponse>("/api/admin/subscribes/update", {
       method: "POST",
     });
     updateResult.value = response.data;
@@ -150,7 +150,11 @@ function cancelEdit() {
   showEditForm.value = false;
 }
 
-function formatDate(date: string | null) {
+function formatDate(date: Date | string | null) {
+  if (date instanceof Date) {
+    return date.toLocaleDateString("zh-CN");
+  }
+
   if (!date) return "从未更新";
   const d = new Date(date);
   const now = new Date();

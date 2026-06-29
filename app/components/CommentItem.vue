@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { parseUserAgent } from "~/utils/parseUserAgent";
 import type { MD5Block } from "~/types/md5";
-import type { CommentWithChildren, CommentFormData, ReplyState } from "~/types/components/comment";
+import type { Comment, CommentFormData, ReplyState } from "~/types/components/comment";
 
 const props = defineProps<{
-  comment: CommentWithChildren;
+  comment: Comment;
   postId: number;
   replyState: ReplyState;
   avatarService: string;
@@ -17,7 +17,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "start-reply", comment: CommentWithChildren): void;
+  (e: "start-reply", comment: Comment): void;
   (e: "cancel-reply" | "comment-submitted"): void;
 }>();
 
@@ -223,7 +223,7 @@ const canReply = computed(() => {
   return props.maxLevel > 0 && props.currentLevel < props.maxLevel;
 });
 
-function startReply(comment: CommentWithChildren) {
+function startReply(comment: Comment) {
   emit("start-reply", comment);
 }
 
@@ -323,7 +323,7 @@ function handleCommentSubmitted() {
     </div>
 
     <!-- 子评论（递归） -->
-    <div v-if="comment.children && comment.children?.length > 0" class="mt-4">
+    <div v-if="comment.children.length > 0" class="mt-4">
       <ul class="space-y-4">
         <CommentItem
           v-for="child in comment.children"

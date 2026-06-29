@@ -4,7 +4,8 @@ import { onMounted, watch } from "vue";
 import emojisData from "~/assets/emojis.json";
 import type { CommentFormData } from "~/types/components/comment";
 import type { CsrfTokenResponse } from "~/types/apis/csrf";
-import type { CommentSubmitResponse } from "~/types/apis/comment";
+
+import type {CommentSubmitResponse} from "~/types/apis/comments";
 
 // 导入前台通知 composable
 const { success, error: showError } = useFrontNotification();

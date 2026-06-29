@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {parseUserAgent} from "~/utils/parseUserAgent";
-import type {CommentItem} from "~/types/pages/admin/comments";
+import type {CommentItem} from "~/types/apis/admin/comments";
 
 const route = useRoute();
 const router = useRouter();
@@ -110,7 +110,10 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
     if (filterCid.value) {
       url += `&cid=${filterCid.value}`;
     }
-    const res = await $fetch(url);
+    const res = await $fetch<{
+      data: CommentItem[];
+      pagination: { page: number; pageSize: number; total: number; totalPages: number };
+    }>(url);
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
@@ -221,7 +224,7 @@ async function batchDelete() {
   if (confirmed) {
     deleting.value = true;
     try {
-      const res = await $fetch("/api/admin/comments/batch-delete", {
+      const res = await $fetch<{ message?: string }>("/api/admin/comments/batch-delete", {
         method: "POST",
         body: { ids: selectedIds.value },
       });
@@ -308,7 +311,7 @@ onMounted(() => {
       <div>
         <h2 class="text-2xl font-bold">评论管理</h2>
         <p class="text-sm text-muted-foreground mt-1">
-          {{ filterCid ? `筛选文章: ${comments[0]?.post?.title || ''}` : '审核和管理用户评论' }}
+          {{ filterCid ? `筛选文章: ${comments[0]?.posts?.title || ''}` : '审核和管理用户评论' }}
         </p>
       </div>
       <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -429,7 +432,7 @@ onMounted(() => {
                 </Badge>
               </TableCell>
               <TableCell>
-                <div class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</div>
+                <div class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</div>
                 <div class="text-xs text-muted-foreground">{{ comment.ip }}</div>
               </TableCell>
               <TableCell class="text-right">
@@ -539,7 +542,7 @@ onMounted(() => {
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
-                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
+                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</span>
                 <span>{{ comment.ip }}</span>
               </div>
             </div>
@@ -645,7 +648,7 @@ onMounted(() => {
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="truncate">{{ getPostTitle(comment) }}</span>
                 </Button>
-                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent).os, parseUserAgent(comment.agent).browser].filter(Boolean).join(' · ') }}</span>
+                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</span>
                 <span>{{ comment.ip }}</span>
               </div>
             </div>

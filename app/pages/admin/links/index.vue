@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { InternalApi } from "nitropack/types";
-
-type LinkItem = InternalApi["/api/admin/links"]["get"][number];
+import type { LinkItem } from "~/types/apis/admin/links";
 
 const toast = useToast();
 const loading = ref(true);
