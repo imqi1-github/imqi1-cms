@@ -2,7 +2,7 @@
 import tplListItem from './list-item.js'
 
 export default function (data) {
-  const { options, icons, cover, getObject } = data
+  const { options, icons, cover } = data
 
   if (!options.fixed) {
     return `

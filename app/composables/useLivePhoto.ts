@@ -8,7 +8,7 @@ export const useLivePhoto = () => {
     try {
       const res = await fetch(imgUrl, {
         cache: "force-cache",
-        signal,  // ✅ 支持传入 AbortSignal 用于取消请求
+        signal, // ✅ 支持传入 AbortSignal 用于取消请求
       });
       const buffer = await res.arrayBuffer();
       const bytes = new Uint8Array(buffer);
@@ -36,9 +36,9 @@ export const useLivePhoto = () => {
       // 提取从 ftyp 开始到文件末尾的所有数据作为视频
       const videoBlob = new Blob([bytes.slice(start)], { type: "video/mp4" });
       return URL.createObjectURL(videoBlob);
-    } catch (e: any) {
+    } catch (e) {
       // ✅ 忽略用户主动取消的请求（快速切换页面时的正常行为）
-      if (e?.name === "AbortError") {
+      if (e instanceof DOMException && e.name === "AbortError") {
         return null;
       }
       console.error("[useLivePhoto] 提取实况视频失败:", e);

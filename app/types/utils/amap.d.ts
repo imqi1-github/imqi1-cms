@@ -22,3 +22,14 @@ export interface ParsedAgent {
   name?: string;
   server?: string;
 }
+
+type AmapWindow = Window & {
+  AMap?: typeof AMap;
+
+  _AMapSecurityConfig?: {
+    serviceHost?: string;
+    securityJsCode?: string;
+  };
+
+  __onAmapProxyLoaded?: (error?: unknown) => void;
+};

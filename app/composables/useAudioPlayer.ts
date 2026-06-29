@@ -1,4 +1,5 @@
 import { usePlayerManager } from "./usePlayerManager";
+
 import type { Song } from "~/types/composables/song";
 
 // ===== 模块级：仅客户端使用的单例资源 =====
@@ -217,7 +218,7 @@ export function useAudioPlayer() {
     }
 
     try {
-      const response = await $fetch<any>(`/api/meting?type=playlist&server=${playlistConfig.server}&id=${playlistConfig.id}`);
+      const response = await $fetch(`/api/meting?type=playlist&server=${playlistConfig.server}&id=${playlistConfig.id}`);
 
       if (response && Array.isArray(response)) {
         // 请求成功，重置失败计数

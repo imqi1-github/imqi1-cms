@@ -7,17 +7,18 @@
 // 因此这里对 #comment- 哈希只回顶部、不直接给 el，既消除告警，又保留同窗口 SPA 导航。
 //
 // 其余分支（同页 hash、scrollToTop meta、savedPosition、过渡完成后回顶/锚点）忠实沿用 Nuxt 默认实现。
-import { START_LOCATION } from "vue-router";
+import { START_LOCATION, type RouteLocationNormalizedLoaded } from "vue-router";
 import type { RouterConfig } from "@nuxt/schema";
 
 import { useNuxtApp } from "#app/nuxt";
 import { isChangingPage } from "#app/components/utils";
 import { useRouter } from "#app/composables/router";
+import type { NuxtAppWithTransition, RouterOptionsWithScrollType } from "~/types/router";
 
 export default <RouterConfig>{
   scrollBehavior(to, from, savedPosition) {
     const nuxtApp = useNuxtApp();
-    const hashScrollBehaviour = (useRouter().options as any)?.scrollBehaviorType ?? "auto";
+    const hashScrollBehaviour = (useRouter().options as RouterOptionsWithScrollType).scrollBehaviorType ?? "auto";
 
     // 同页（仅 hash 变化）：评论等锚点元素通常已在 DOM，沿用默认即可，不告警。
     if (to.path.replace(/\/$/, "") === from.path.replace(/\/$/, "")) {
@@ -37,9 +38,8 @@ export default <RouterConfig>{
     }
 
     // —— 以下忠实复刻 Nuxt 默认（跨页、非评论锚点）——
-    const scrollToTopMeta = (to.meta as any).scrollToTop;
-    const routeAllowsScrollToTop =
-      typeof scrollToTopMeta === "function" ? scrollToTopMeta(to, from) : scrollToTopMeta;
+    const scrollToTopMeta = to.meta.scrollToTop;
+    const routeAllowsScrollToTop = typeof scrollToTopMeta === "function" ? scrollToTopMeta(to, from) : scrollToTopMeta;
     if (routeAllowsScrollToTop === false) {
       return false;
     }
@@ -52,7 +52,7 @@ export default <RouterConfig>{
       };
       nuxtApp.hooks.hookOnce("page:loading:end", () => {
         // ~transitionPromise 为 Nuxt 内部字段：等当前页面过渡完成后再滚动，避免滚动半过渡的页面。
-        const transitionPromise = (nuxtApp as any)["~transitionPromise"];
+        const transitionPromise = (nuxtApp as NuxtAppWithTransition)["~transitionPromise"];
         if (transitionPromise) {
           transitionPromise.then(doScroll);
         } else {
@@ -81,15 +81,15 @@ function _getHashElementScrollMarginTop(selector: string): number {
 
 /** 计算目标滚动位置：savedPosition 优先；有 hash 滚到锚点；否则回顶部 */
 function _calculatePosition(
-  to: { hash?: string },
-  from: { hash?: string },
-  savedPosition: unknown,
-  defaultHashScrollBehaviour: string,
+  to: RouteLocationNormalizedLoaded,
+  from: RouteLocationNormalizedLoaded,
+  savedPosition: ScrollOptions | null,
+  defaultHashScrollBehaviour: ScrollBehavior,
 ) {
   if (savedPosition) {
     return savedPosition;
   }
-  const isPageNavigation = isChangingPage(to as any, from as any);
+  const isPageNavigation = isChangingPage(to, from);
   if (to.hash) {
     return {
       el: to.hash,

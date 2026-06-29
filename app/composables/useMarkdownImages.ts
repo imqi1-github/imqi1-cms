@@ -1,6 +1,7 @@
 import { createVNode, render, type Component } from "vue";
 
 import LivePhoto from "~/components/LivePhoto.vue";
+import type { NuxtVueApp } from "~/types/nuxt";
 
 /**
  * Markdown 图片增强
@@ -28,7 +29,7 @@ export const useMarkdownImages = () => {
   const getAppContext = () => {
     try {
       // vueApp._context 是 Vue 应用实例的 appContext（公开 API 之外的稳定内部字段）
-      return (useNuxtApp().vueApp as any)._context;
+      return (useNuxtApp().vueApp as NuxtVueApp)._context;
     } catch {
       return undefined;
     }

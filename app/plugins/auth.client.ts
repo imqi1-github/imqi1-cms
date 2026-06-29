@@ -1,7 +1,7 @@
 export default defineNuxtPlugin(() => {
   const isLogin = (): boolean => {
-    return useCookie('session').value !== undefined
-  }
+    return useCookie("session").value !== undefined;
+  };
 
   /**
    * 验证会话是否有效（检查是否在其他设备登录）
@@ -9,17 +9,17 @@ export default defineNuxtPlugin(() => {
    */
   const verifySession = async (): Promise<boolean> => {
     try {
-      const res = await $fetch('/api/auth/verify')
-      return (res as any).valid === true
+      const res = await $fetch("/api/auth/verify");
+      return res.valid;
     } catch {
-      return false
+      return false;
     }
-  }
+  };
 
   return {
     provide: {
       isLogin,
       verifySession,
     },
-  }
-})
+  };
+});

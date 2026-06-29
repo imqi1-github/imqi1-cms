@@ -1,3 +1,5 @@
+import type { FancyboxConfig, FancyboxEventHandler, FancyboxLike, FancyboxSlide } from "~/types/fancybox";
+
 /**
  * Fancybox 灯箱实况照片增强
  *
@@ -53,12 +55,10 @@ export const useFancyboxLivePhoto = () => {
   }
 
   /** 移除灯箱内所有实况照片的覆盖层（tip / 按钮 / 视频） */
-  function removeAllOverlays(fancybox: any) {
+  function removeAllOverlays(fancybox?: FancyboxLike) {
     const container = fancybox?.getContainer?.();
     if (container) {
-      container
-        .querySelectorAll(".flp-tip, .flp-play-btn, .flp-video")
-        .forEach((el: Element) => el.remove());
+      container.querySelectorAll(".flp-tip, .flp-play-btn, .flp-video").forEach((el: Element) => el.remove());
     }
     // 清理挂载容器上的状态 class
     currentMountEl?.classList.remove("flp-host", "is-flp-playing");
@@ -77,7 +77,7 @@ export const useFancyboxLivePhoto = () => {
   }
 
   /** 完整清理：DOM + Blob URL + 状态 + 取消进行中的请求 */
-  function fullCleanup(fancybox?: any) {
+  function fullCleanup(fancybox?: FancyboxLike) {
     // ✅ 先取消正在进行的视频提取
     if (extractAbortController) {
       extractAbortController.abort();
@@ -89,14 +89,13 @@ export const useFancyboxLivePhoto = () => {
   }
 
   /** 判断是否为实况照片（检查 DOM 属性或 slide 数据） */
-  function isLivePhotoSlide(slide: any): boolean {
+  function isLivePhotoSlide(slide: FancyboxSlide | null | undefined): boolean {
     if (!slide) return false;
     const triggerEl = slide?.triggerEl;
     if (triggerEl && triggerEl.hasAttribute && triggerEl.hasAttribute("data-live-photo")) {
       return true;
     }
     return slide.livePhoto !== undefined;
-
   }
 
   /** 停止视频：渐出 + 暂停，恢复 tip、播放按钮和图片显示 */
@@ -200,7 +199,7 @@ export const useFancyboxLivePhoto = () => {
    * - 左上角：▶ 实况 标识
    * - 右下角：播放/暂停按钮
    */
-  function injectOverlays(slide: any): boolean {
+  function injectOverlays(slide: FancyboxSlide | null | undefined): boolean {
     const slideEl = slide?.el as HTMLElement | undefined;
     if (!slideEl) {
       return false;
@@ -218,7 +217,7 @@ export const useFancyboxLivePhoto = () => {
     // 避免重复注入
     if (slideEl.querySelector(".flp-tip")) return false;
 
-    const imageUrl: string | undefined = slide.src || slide?.triggerEl?.src;
+    const imageUrl: string | undefined = slide?.src || slide?.triggerEl?.src;
     if (!imageUrl) {
       return false;
     }
@@ -265,7 +264,7 @@ export const useFancyboxLivePhoto = () => {
   }
 
   /** 轮询注入，直到 slide.el 可用或达到最大尝试次数 */
-  function tryInjectWithRetry(fancybox: any, maxAttempts = 10) {
+  function tryInjectWithRetry(fancybox: FancyboxLike, maxAttempts = 10) {
     const tryInject = (attempt: number) => {
       const slide = fancybox?.getSlide?.();
       if (slide?.el) {
@@ -286,14 +285,19 @@ export const useFancyboxLivePhoto = () => {
    * - Carousel.change：开始切换时停止视频
    * - close / destroy：完整清理
    */
-  function enhanceConfig(config: Record<string, any> = {}): Record<string, any> {
-    const userOn: Record<string, Function> = config.on || {};
+  function enhanceConfig(config: FancyboxConfig = {}): FancyboxConfig {
+    const userOn: Record<string, FancyboxEventHandler> = config.on || {};
 
-    const wrap = (key: string, handler: (...args: any[]) => void) => {
+    const wrap = (key: string, handler: (fancybox: FancyboxLike, ...args: unknown[]) => void) => {
       const orig = userOn[key];
-      return (...args: any[]) => {
-        if (orig) orig(...args);
-        handler(...args);
+
+      return (...args: unknown[]) => {
+        orig?.(...args);
+
+        const fancybox = args[0] as FancyboxLike | undefined;
+        if (!fancybox) return;
+
+        handler(fancybox, ...args.slice(1));
       };
     };
 
@@ -301,28 +305,29 @@ export const useFancyboxLivePhoto = () => {
       ...config,
       on: {
         ...userOn,
-        ready: wrap("ready", (fancybox: any) => {
+        ready: wrap("ready", fancybox => {
           requestAnimationFrame(() => tryInjectWithRetry(fancybox));
         }),
-        "Carousel.ready": wrap("Carousel.ready", (fancybox: any) => {
+        "Carousel.ready": wrap("Carousel.ready", fancybox => {
           requestAnimationFrame(() => {
-            const slide = fancybox?.getSlide?.();
+            const slide = fancybox.getSlide?.();
             if (slide?.el) injectOverlays(slide);
           });
         }),
-        "Carousel.settle": wrap("Carousel.settle", (fancybox: any, _carousel: any, slide?: any) => {
+        "Carousel.settle": wrap("Carousel.settle", (fancybox, _carousel, slide) => {
           removeAllOverlays(fancybox);
           revokeVideo();
-          const targetSlide = slide || fancybox?.getSlide?.();
+
+          const targetSlide = slide || fancybox.getSlide?.();
           if (targetSlide) injectOverlays(targetSlide);
         }),
         "Carousel.change": wrap("Carousel.change", () => {
           stopVideo();
         }),
-        close: wrap("close", (fancybox: any) => {
+        close: wrap("close", (fancybox: FancyboxLike) => {
           fullCleanup(fancybox);
         }),
-        destroy: wrap("destroy", (fancybox: any) => {
+        destroy: wrap("destroy", (fancybox: FancyboxLike) => {
           fullCleanup(fancybox);
         }),
       },

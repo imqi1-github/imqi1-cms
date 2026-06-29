@@ -11,6 +11,7 @@ export default defineEventHandler(async event => {
     return {
       valid: false,
       message: "会话已失效，可能已在其他设备登录",
+      user: null,
     };
   }
 

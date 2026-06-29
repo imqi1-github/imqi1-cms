@@ -1,9 +1,9 @@
-import {buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost} from "#shared/amap-proxy";
-import type {LoadAmapOptions} from "~/types/utils/amap";
+import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost } from "#shared/amap-proxy";
+import type { LoadAmapOptions, AmapWindow } from "~/types/utils/amap";
 
-const AMAP_SCRIPT_CALLBACK = "__onAmapProxyLoaded";
+const AMAP_SCRIPT_CALLBACK = "__onAmapProxyLoaded" as const;
 
-let amapLoadPromise: Promise<any> | null = null;
+let amapLoadPromise: Promise<typeof AMap> | null = null;
 let loadedVersion: string | null = null;
 let loadedMode: "proxy" | "direct" | null = null;
 const loadedPlugins = new Set<string>();
@@ -19,33 +19,33 @@ function resetLoaderState() {
   loadedPlugins.clear();
 }
 
-function getBrowserWindow() {
+function getBrowserWindow(): AmapWindow {
   if (typeof window === "undefined" || typeof document === "undefined") {
     throw new Error("AMap can only be loaded in the browser.");
   }
 
-  return window as Window & Record<string, any>;
+  return window as AmapWindow;
 }
 
-async function loadMissingPlugins(AMap: any, plugins: string[]) {
+async function loadMissingPlugins(_AMap: typeof AMap, plugins: string[]) {
   const missingPlugins = plugins.filter(plugin => !loadedPlugins.has(plugin));
-  if (!missingPlugins.length) return AMap;
+  if (!missingPlugins.length) return _AMap;
 
-  if (typeof AMap?.plugin !== "function") {
+  if (typeof _AMap?.plugin !== "function") {
     throw new Error("AMap.plugin is not available.");
   }
 
-  await new Promise<void>((resolve) => {
-    AMap.plugin(missingPlugins, () => {
+  await new Promise<void>(resolve => {
+    _AMap.plugin(missingPlugins, () => {
       missingPlugins.forEach(plugin => loadedPlugins.add(plugin));
       resolve();
     });
   });
 
-  return AMap;
+  return _AMap;
 }
 
-export async function loadAmap(options: LoadAmapOptions = {}) {
+export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AMap> {
   const version = options.version || "2.0";
   const plugins = normalizePlugins(options.plugins);
   const useProxy = options.useProxy !== false;
@@ -85,7 +85,7 @@ export async function loadAmap(options: LoadAmapOptions = {}) {
       }
 
       browserWindow[AMAP_SCRIPT_CALLBACK] = (error?: unknown) => {
-        delete browserWindow[AMAP_SCRIPT_CALLBACK];
+        delete browserWindow.__onAmapProxyLoaded;
 
         if (error) {
           resetLoaderState();
@@ -113,7 +113,7 @@ export async function loadAmap(options: LoadAmapOptions = {}) {
             key: options.key!,
           });
       script.onerror = () => {
-        delete browserWindow[AMAP_SCRIPT_CALLBACK];
+        delete browserWindow.__onAmapProxyLoaded;
         resetLoaderState();
         reject(new Error("Failed to load the proxied AMap script."));
       };

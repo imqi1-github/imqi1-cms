@@ -15,7 +15,7 @@ let hasInitialized = false;
 async function checkAuthStatus() {
   if (import.meta.client) {
     try {
-      const res = await $fetch('/api/auth/verify') as any;
+      const res = await $fetch('/api/auth/verify');
       isLoggedIn.value = res?.valid || false;
       currentUser.value = res?.valid ? res.user || null : null;
     } catch {

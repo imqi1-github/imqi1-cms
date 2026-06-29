@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {AcceptableValue} from "reka-ui";
 import type {InternalApi} from "nitropack/types";
+
 import type {Attachment, Category, PostMeta, Tag, Travel} from "~/types/pages/admin/posts";
 
 const route = useRoute();
