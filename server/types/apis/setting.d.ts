@@ -1,4 +1,4 @@
-type SettingKey =
+export type SettingKey =
   | "siteName"
   | "siteUrl"
   | "siteDesc"
@@ -17,7 +17,7 @@ type SettingKey =
   | "linkAutoApprove"
   | "musicPlaylistId";
 
-interface SiteSettings {
+export interface SiteSettings {
   siteName: string;
   siteUrl: string;
   siteDesc: string;
@@ -37,7 +37,7 @@ interface SiteSettings {
   musicPlaylistId: string;
 }
 
-type MetaItem = {
+export type MetaItem = {
   key: SettingKey;
   value: string;
 };

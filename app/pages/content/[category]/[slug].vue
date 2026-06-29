@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
-import type { RelatedPost } from "~/types/apis/content/related-posts";
+
 import Swiper from "swiper";
 import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
@@ -8,6 +8,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import {computed, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
 
+import type { RelatedPost } from "~/types/apis/content/related-posts";
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
 import type {TocItem} from "~/types/apis/content";

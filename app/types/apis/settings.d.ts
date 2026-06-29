@@ -6,7 +6,6 @@ export type SettingKey =
   | "homeCustomText"
   | "photoCategorySlug"
   | "commentEnabled"
-  | "commentModeration"
   | "commentAvatarService"
   | "commentPageSize"
   | "commentMaxLevel"
@@ -16,9 +15,7 @@ export type SettingKey =
   | "postPageSize"
   | "feedCacheInterval"
   | "linkAutoApprove"
-  | "musicPlaylistId"
-  | "searchCacheEnabled"
-  | "searchCacheExpire";
+  | "musicPlaylistId";
 
 export interface SiteSettings {
   siteName: string;
@@ -28,7 +25,6 @@ export interface SiteSettings {
   homeCustomText: string;
   photoCategorySlug: string;
   commentEnabled: boolean;
-  commentModeration: boolean;
   commentAvatarService: string;
   commentPageSize: number;
   commentMaxLevel: number;
@@ -39,6 +35,4 @@ export interface SiteSettings {
   feedCacheInterval: number;
   linkAutoApprove: boolean;
   musicPlaylistId: string;
-  searchCacheEnabled: boolean;
-  searchCacheExpire: number;
 }

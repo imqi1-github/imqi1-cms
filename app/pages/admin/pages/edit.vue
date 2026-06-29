@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { AttachmentItem } from "~/types/apis/admin/attachments";
+import type { PublicAttachment, PublicAttachmentListResponse, PublicAttachmentUploadResponse } from "~/types/apis/attachments";
+import type { PostDetailResponse } from "~/types/apis/admin/pages";
 import type { ApiError } from "~/types/error";
 
 const route = useRoute();
@@ -27,7 +28,7 @@ const manyCovers = ref(false);
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
 // 附件相关
-const attachments = ref<AttachmentItem[]>([]);
+const attachments = ref<PublicAttachment[]>([]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const dragOver = ref(false);
 const uploading = ref(false);
@@ -38,7 +39,7 @@ const fetchAttachments = async () => {
   if (!pageId.value) return;
 
   try {
-    const res = await $fetch(`/api/attachments/list?cid=${pageId.value}`);
+    const res = await $fetch<PublicAttachmentListResponse>(`/api/attachments/list?cid=${pageId.value}`);
     if (res?.success) {
       attachments.value = res.data || [];
     }
@@ -122,7 +123,7 @@ const uploadFiles = async (files: File[]) => {
       }
 
       try {
-        const res = await $fetch(`/api/attachments/upload?cid=${pageId.value}`, {
+        const res = await $fetch<PublicAttachmentUploadResponse>(`/api/attachments/upload?cid=${pageId.value}`, {
           method: "POST",
           body: formData,
         });
@@ -150,7 +151,7 @@ const uploadFiles = async (files: File[]) => {
 };
 
 // 删除附件
-const deleteAttachment = async (attachment: AttachmentItem) => {
+const deleteAttachment = async (attachment: PublicAttachment) => {
   const confirmed = confirm(`确定要删除附件 "${attachment.name}" 吗？`);
   if (!confirmed) return;
 
@@ -201,7 +202,7 @@ const fetchPage = async () => {
 
   loading.value = true;
   try {
-    const res = await $fetch(`/api/admin/posts/${pageId.value}`);
+    const res = await $fetch<PostDetailResponse>(`/api/admin/posts/${pageId.value}`);
     if (res?.data) {
       const page = res.data;
       title.value = page.title || "";
@@ -284,16 +285,16 @@ const savePage = async (publish = false) => {
       covers: coversValue,
     };
 
-    let res;
+    let res: PostDetailResponse | undefined;
     if (isEdit.value && pageId.value) {
       // 更新
-      res = await $fetch(`/api/admin/posts/${pageId.value}`, {
+      res = await $fetch<PostDetailResponse>(`/api/admin/posts/${pageId.value}`, {
         method: "PUT",
         body,
       });
     } else {
       // 新建
-      res = await $fetch("/api/admin/posts", {
+      res = await $fetch<PostDetailResponse>("/api/admin/posts", {
         method: "POST",
         body,
       });

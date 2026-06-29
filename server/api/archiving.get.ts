@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import type { ArchiveGroup } from "#server/types/apis/archiving";
 
 export default defineEventHandler(async () => {
   try {
@@ -59,7 +60,7 @@ export default defineEventHandler(async () => {
       });
 
       return acc;
-    }, {} as Record<string, { year: number; month: number; posts: { cid: number; title: string; slug: string; categorySlug: string | null; createTime: Date }[] }>);
+    }, {} as Record<string, ArchiveGroup>);
 
     // 转换为数组并按日期排序
     const sortedGroups = Object.values(grouped).sort((a, b) => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type {ApiError, CurrentUser, UserItem} from "~/types/apis/admin/users";
+import type {CurrentUser, UserItem} from "~/types/apis/admin/users";
+import type {ApiError} from "~/types/error";
 
 const router = useRouter();
 const loading = ref(true);
@@ -30,9 +31,9 @@ async function fetchUsers() {
   loading.value = true;
   try {
     // 获取当前用户信息
-    currentUser.value = await $fetch("/api/auth/me");
+    currentUser.value = await $fetch<CurrentUser>("/api/auth/me");
 
-    users.value = await $fetch("/api/admin/users");
+    users.value = await $fetch<UserItem[]>("/api/admin/users");
   } catch (error) {
     console.error("获取用户失败:", error);
     users.value = [];

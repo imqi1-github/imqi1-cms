@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {AttachmentItem} from "~/types/apis/admin/attachments";
+import type {AttachmentItem, AttachmentListResponse} from "~/types/apis/admin/attachments";
 
 const toast = useToast();
 const loading = ref(true);
@@ -40,7 +40,7 @@ const fetchAttachments = async () => {
       params.append("search", searchQuery.value);
     }
 
-    const res = await $fetch(`/api/admin/attachments/all?${params}`);
+    const res = await $fetch<AttachmentListResponse>(`/api/admin/attachments/all?${params}`);
     if (res?.success) {
       attachments.value = res.data.list || [];
       total.value = res.data.total || 0;

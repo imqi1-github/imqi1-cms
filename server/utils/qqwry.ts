@@ -4,7 +4,7 @@ import { isIP } from "node:net";
 
 import IPDB from "ipdb";
 
-import type { CachedLocation, IpdbData } from "#server/types/utils/qqwry";
+import type { CachedLocation, IpdbData, IpDetail } from "#server/types/utils/qqwry";
 
 
 const DB_FILE = "qqwry.ipdb";

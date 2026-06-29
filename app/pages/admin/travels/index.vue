@@ -55,7 +55,7 @@ function postTitles(travel: TravelItem) {
 async function fetchTravels() {
   loading.value = true;
   try {
-    travels.value = await $fetch("/api/admin/travels");
+    travels.value = await $fetch<TravelItem[]>("/api/admin/travels");
   } catch (error) {
     console.error("获取旅行地点失败:", error);
     travels.value = [];
@@ -66,7 +66,7 @@ async function fetchTravels() {
 
 async function fetchPosts() {
   try {
-    const res = await $fetch("/api/admin/posts?pageSize=999");
+    const res = await $fetch<{ data: PostListItem[] }>("/api/admin/posts?pageSize=999");
     posts.value = res?.data ?? [];
   } catch (error) {
     console.error("获取文章列表失败:", error);

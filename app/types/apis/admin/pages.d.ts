@@ -21,8 +21,8 @@ export interface PageItem {
 	slug: string | null;
 	desc: string | null;
 	content: string | null;
-	create_time: Date;
-	update_time: Date;
+	create_time: string;
+	update_time: string;
 	status: number;
 	comment_num: number;
 	many_covers: boolean;
@@ -33,4 +33,49 @@ export interface PageItem {
 	uid: number;
 	user: User;
 	relations: PostRelation[];
+}
+
+/** 页面列表分页信息（/api/admin/pages） */
+export interface PagePagination {
+	page: number;
+	pageSize: number;
+	total: number;
+	totalPages: number;
+	hasMore: boolean;
+}
+
+/** 页面列表接口响应（/api/admin/pages） */
+export interface PageListResponse {
+	data: PageItem[];
+	pagination: PagePagination;
+}
+
+/** 页面/文章详情（/api/admin/posts/:cid GET 返回的 data，原始 posts 字段 + user） */
+export interface PostDetail {
+	cid: number;
+	title: string;
+	slug: string | null;
+	desc: string | null;
+	content: string | null;
+	create_time: string;
+	update_time: string;
+	status: number;
+	comment_num: number;
+	many_covers: boolean;
+	covers: string | null;
+	show_toc: boolean;
+	tags: string | null;
+	type: number;
+	uid: number;
+	user: {
+		uid: number;
+		name: string;
+		avatar: string | null;
+	};
+}
+
+/** 页面/文章详情接口响应 */
+export interface PostDetailResponse {
+	success: boolean;
+	data: PostDetail;
 }

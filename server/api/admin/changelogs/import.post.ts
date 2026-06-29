@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateChangelogData } from "#server/utils/validation";
 import { normalizeChangelogEntries, stringifyChangelogContent } from "#server/utils/changelog";
 import type { ChangelogInputJson, ChangelogInputRecord, ParsedRecord } from "#server/types/apis/changelog-import";
+import type { ChangelogEntry } from "~~/shared/changelog";
 
 /**
  * 从 JSON 文件导入更新日志（一键导入）。
@@ -72,7 +73,7 @@ export default defineEventHandler(async event => {
       }
     } else {
       // 单条记录：整个数组就是一条记录的条目
-      records.push({ entries: data });
+      records.push({ entries: data as ChangelogEntry[] });
     }
   } else {
     const obj = asRecord(data);

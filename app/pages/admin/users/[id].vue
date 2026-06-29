@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type {ApiError, UserDetail} from "~/types/apis/admin/users";
+import type {UserDetail} from "~/types/apis/admin/users";
+import type {ApiError} from "~/types/error";
 
 const route = useRoute()
 const router = useRouter()
@@ -31,7 +32,7 @@ async function fetchUser() {
       csrfToken.value = csrfRes.data.token
     }
 
-    const data = await $fetch(`/api/admin/users/${userId}`)
+    const data = await $fetch<UserDetail>(`/api/admin/users/${userId}`)
     user.value = data
     formData.value = {
       name: data.name,

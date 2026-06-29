@@ -4,8 +4,8 @@ export interface RecentPost {
 	slug: string | null;
 	desc: string | null;
 	content: string | null;
-	create_time: Date;
-	update_time: Date;
+	create_time: string;
+	update_time: string;
 	status: number;
 	comment_num: number;
 	many_covers: boolean;
@@ -23,7 +23,7 @@ export interface RecentComment {
 	mail: string | null;
 	link: string | null;
 	content: string;
-	create_time: Date;
+	create_time: string;
 	status: number;
 	parent_id: number | null;
 	agent: string | null;
@@ -39,5 +39,5 @@ export interface PopularPost {
 	title: string;
 	views: number;
 	commentsCount: number;
-	create_time: Date;
+	create_time: string;
 }

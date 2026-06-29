@@ -2,7 +2,7 @@ import { createHash, createHmac } from "crypto";
 
 import { prisma } from "./prisma";
 
-import type { CosConfig } from "#server/types/utils/cos";
+import type { CosConfig, CosDeleteResult, CosUploadResult } from "#server/types/utils/cos";
 
 // 获取COS配置
 async function getCosConfig(): Promise<CosConfig | null> {

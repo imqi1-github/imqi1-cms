@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { siteConfig } from "~~/site.config";
+import type { AdminSettings } from "~/types/apis/admin/settings";
 
 const loading = ref(true);
 const activeTab = ref("basic");
@@ -8,7 +9,7 @@ const toast = useToast();
 const csrfToken = ref("");
 const initializing = ref(false);
 
-const settings = ref({
+const settings = ref<AdminSettings>({
   siteName: siteConfig.siteName,
   siteUrl: siteConfig.siteUrl,
   siteDesc: siteConfig.seo.description,
@@ -198,7 +199,7 @@ async function loadSettings() {
       csrfToken.value = csrfRes.data.token;
     }
 
-    settings.value = await $fetch("/api/admin/settings") as typeof settings.value;
+    settings.value = await $fetch<AdminSettings>("/api/admin/settings");
   } catch (error) {
     console.error("获取设置失败:", error);
   } finally {

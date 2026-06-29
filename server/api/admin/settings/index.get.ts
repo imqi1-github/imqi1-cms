@@ -82,15 +82,16 @@ export default defineEventHandler(async event => {
       if (!Object.hasOwn(settings, meta.key)) return;
 
       const value = meta.value;
+      const defaultValue = defaults[meta.key];
 
       // 布尔值转换
-      if (typeof defaults[meta.key] === "boolean") {
+      if (typeof defaultValue === "boolean") {
         settings[meta.key] = value === "true";
       }
       // 数字值转换
-      else if (typeof defaults[meta.key] === "number") {
+      else if (typeof defaultValue === "number") {
         const numValue = Number(value);
-        settings[meta.key] = isNaN(numValue) ? defaults[meta.key] : numValue;
+        settings[meta.key] = isNaN(numValue) ? defaultValue : numValue;
       }
       // 其他类型直接使用
       else {

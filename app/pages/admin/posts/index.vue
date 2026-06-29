@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type {AcceptableValue} from "reka-ui";
+
 import type {AdminPost, Category, Tag} from "~/types/apis/admin/posts";
 
 const router = useRouter();
@@ -131,7 +133,7 @@ async function fetchPosts(page: number = 1, updateUrl: boolean = true) {
       params.append("status", selectedStatus.value.toString());
     }
 
-    const res = await $fetch(`/api/admin/posts?${params.toString()}`);
+    const res = await $fetch<{ data: AdminPost[]; pagination: typeof pagination.value }>(`/api/admin/posts?${params.toString()}`);
     posts.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
@@ -230,7 +232,7 @@ async function previewPost(post: AdminPost) {
   // 获取文章的第一个分类
   let categorySlug = 'uncategorized';
   if (post.postrelations && post.postrelations.length > 0) {
-    categorySlug = post.postrelations[0].metas.slug;
+    categorySlug = post.postrelations[0]?.metas.slug ?? 'uncategorized';
   }
 
   // 使用 slug 或 cid 构建 URL
@@ -299,7 +301,7 @@ onMounted(() => {
         <div class="flex flex-wrap gap-4">
           <div class="flex items-center gap-2">
             <Label for="category-filter">分类:</Label>
-            <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: number | null) => filterByCategory(v ?? null)">
+            <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: AcceptableValue) => filterByCategory(v == null ? null : Number(v))">
               <SelectTrigger class="w-45">
                 <SelectValue placeholder="全部分类" />
               </SelectTrigger>
@@ -313,7 +315,7 @@ onMounted(() => {
           </div>
           <div class="flex items-center gap-2">
             <Label for="tag-filter">标签:</Label>
-            <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: number | null) => filterByTag(v ?? null)">
+            <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: AcceptableValue) => filterByTag(v == null ? null : Number(v))">
               <SelectTrigger class="w-45">
                 <SelectValue placeholder="全部标签" />
               </SelectTrigger>
@@ -325,7 +327,7 @@ onMounted(() => {
           </div>
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
-            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: number | null) => filterByStatus(v ?? null)">
+            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: AcceptableValue) => filterByStatus(v == null ? null : Number(v))">
               <SelectTrigger class="w-35">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>

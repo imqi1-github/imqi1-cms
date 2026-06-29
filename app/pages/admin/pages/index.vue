@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PageItem } from "~/types/apis/admin/pages";
+import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 
 const router = useRouter();
 const toast = useToast();
@@ -100,7 +100,7 @@ async function fetchPages(page: number = 1) {
       params.append("status", selectedStatus.value.toString());
     }
 
-    const res = await $fetch(`/api/admin/pages?${params.toString()}`);
+    const res = await $fetch<PageListResponse>(`/api/admin/pages?${params.toString()}`);
     pages.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
   } catch (error) {

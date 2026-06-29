@@ -4,7 +4,7 @@ import { prisma } from "#server/utils/prisma";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { sanitizeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
-import type { SiteSettings, SettingKey, MutableSettings } from "#server/types/apis/setting";
+import type { SiteSettings, SettingKey, MutableSettings, MetaItem } from "#server/types/apis/setting";
 
 
 // 3. 强类型 defaults

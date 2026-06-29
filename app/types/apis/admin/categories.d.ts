@@ -1,5 +1,3 @@
-import type { ApiError } from "~/types/error";
-
 export interface CategoryItem {
 	mid: number;
 	name: string;

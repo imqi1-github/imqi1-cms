@@ -16,7 +16,7 @@ const editTagForm = ref({ name: "", slug: "", desc: "" });
 async function fetchTags() {
   loading.value = true;
   try {
-    tags.value = await $fetch("/api/admin/tags");
+    tags.value = await $fetch<TagItem[]>("/api/admin/tags");
   } catch (error) {
     console.error("获取标签失败:", error);
     tags.value = [];

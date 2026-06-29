@@ -1,4 +1,3 @@
-import type { ApiError } from "~/types/error";
 import type { TagItem } from "./tags";
 
 export interface Category {
@@ -13,7 +12,6 @@ export type Tag = TagItem;
 export interface PostUser {
 	uid: number;
 	name: string;
-	nickname: string | null;
 	avatar: string | null;
 }
 
@@ -34,8 +32,8 @@ export interface AdminPost {
 	slug: string | null;
 	desc: string | null;
 	content: string | null;
-	create_time: Date;
-	update_time: Date;
+	create_time: string;
+	update_time: string;
 	status: number;
 	comment_num: number;
 	many_covers: boolean;
@@ -63,7 +61,12 @@ export interface Travel {
 	latitude: number;
 	sort: number;
 	enabled: boolean;
-	create_time: Date;
+	/** Prisma DateTime，经 Nitro 序列化为 string */
+	create_time: string;
+	/** 关联文章（{cid,title}[]，/api/admin/travels 展平返回） */
+	posts: { cid: number; title: string }[];
+	/** 关联文章 cid 列表（posts.map(p => p.cid)） */
+	cids: number[];
 }
 
 export interface Attachment {

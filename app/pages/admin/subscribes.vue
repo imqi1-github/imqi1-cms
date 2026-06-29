@@ -21,7 +21,7 @@ const editingSubscribe = ref<{ id: number | null; name: string; url: string; ava
 // 加载站点设置
 async function loadSettings() {
   try {
-    const settings = await $fetch("/api/admin/settings");
+    const settings = await $fetch<Record<string, string | number | boolean>>("/api/admin/settings");
     if (settings && settings.feedCacheInterval) {
       feedCacheInterval.value = Number(settings.feedCacheInterval);
     }

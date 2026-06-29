@@ -251,7 +251,7 @@ const fetchAttachments = async () => {
   if (!postId.value) return;
 
   try {
-    const res = await $fetch(`/api/attachments/list?cid=${postId.value}`);
+    const res = await $fetch<{ success: boolean; data: Attachment[] }>(`/api/attachments/list?cid=${postId.value}`);
     if (res?.success) {
       attachments.value = res.data || [];
     }
@@ -336,7 +336,7 @@ const uploadFiles = async (files: File[]) => {
       }
 
       try {
-        const res = await $fetch(`/api/attachments/upload?cid=${postId.value}`, {
+        const res = await $fetch<{ success: boolean; data: Attachment }>(`/api/attachments/upload?cid=${postId.value}`, {
           method: "POST",
           body: formData,
         });
@@ -415,7 +415,7 @@ const fetchPost = async () => {
 
   loading.value = true;
   try {
-    const res = await $fetch(`/api/admin/posts/${postId.value}`);
+    const res = await $fetch<PostApiResponse>(`/api/admin/posts/${postId.value}`);
     if (res?.success) {
       const post = res.data;
       title.value = post.title || "";
@@ -586,13 +586,13 @@ const savePost = async () => {
     let res: PostApiResponse;
     if (isEdit.value && postId.value) {
       // 更新文章
-      res = await $fetch(`/api/admin/posts/${postId.value}`, {
+      res = await $fetch<PostApiResponse>(`/api/admin/posts/${postId.value}`, {
         method: "PUT",
         body,
       });
     } else {
       // 创建文章
-      res = await $fetch("/api/admin/posts", {
+      res = await $fetch<PostApiResponse>("/api/admin/posts", {
         method: "POST",
         body,
       });

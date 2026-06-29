@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {AttachmentDetail} from "~/types/apis/admin/attachments";
+import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse} from "~/types/apis/admin/attachments";
 import type {ApiError} from "~/types/error";
 
 const route = useRoute()
@@ -8,6 +8,11 @@ const loading = ref(true)
 const saving = ref(false)
 
 const attachment = ref<AttachmentDetail | null>(null)
+
+// 动态 id 拼出的 URL 会同时命中 `/api/admin/attachments/:id` 与字面路由 `/all`，
+// 导致响应类型变成两者并集、可用方法被取交集只剩 get。这里用显式返回类型泛型绕过路由推断，
+// 既收敛响应类型又避免对 InternalApi 全表做 MatchedRoutes 深递归（会触发"堆栈深度过高"）。
+const attachmentDetailUrl = `/api/admin/attachments/${route.params.id}`;
 
 const form = ref({
   name: '',
@@ -43,7 +48,7 @@ const formatDate = (date: string) => {
 async function fetchAttachment() {
   loading.value = true
   try {
-    const res = await $fetch(`/api/admin/attachments/${route.params.id}`)
+    const res = await $fetch<AttachmentDetailResponse>(attachmentDetailUrl)
     if (res?.success) {
       attachment.value = res.data
       form.value.name = res.data.name
@@ -62,7 +67,7 @@ async function fetchAttachment() {
 async function saveAttachment() {
   saving.value = true
   try {
-    const res = await $fetch(`/api/admin/attachments/${route.params.id}`, {
+    const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl, {
       method: 'PATCH',
       body: {
         name: form.value.name,
