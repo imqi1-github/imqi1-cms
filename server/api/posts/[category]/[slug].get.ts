@@ -21,7 +21,9 @@ export default defineEventHandler(async event => {
   }
 
   // 构建查询条件
-  // uncategorized 是兜底分类：仅按 slug 匹配文章，容错数据库中分类关系缺失/不完整的情况
+  // uncategorized 是兜底分类：仅匹配「没有任何分类」的文章。
+  // 若文章已归属某个分类，则通过 uncategorized 访问视为 404（slug 失效），
+  // 避免同一篇文章存在多个详情页 URL。
   const isUncategorized = categorySlug === "uncategorized";
   const post = await prisma.posts.findFirst({
     where: {
@@ -29,7 +31,15 @@ export default defineEventHandler(async event => {
       type: 0, // 0: 文章
       status: 1, // 只返回已发布的文章 (status: 1 = 已发布)
       ...(isUncategorized
-        ? {}
+        ? {
+            postrelations: {
+              none: {
+                metas: {
+                  type: "category",
+                },
+              },
+            },
+          }
         : {
             postrelations: {
               some: {

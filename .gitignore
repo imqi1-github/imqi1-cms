@@ -33,6 +33,11 @@ pids
 # Bundle analysis
 stats.html
 
+# Mini program (uni-app) build outputs
+mini/dist
+mini/unpackage
+mini/.vite
+
 /app/generated/prisma
 
 .old-theme

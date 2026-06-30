@@ -266,15 +266,15 @@
             :key="post.cid"
             :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
             :aria-label="`阅读文章：${post.title}`"
-            class="group block no-underline">
+            class="block no-underline">
             <div
-              class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 hover:shadow-sm transition-all duration-300 h-55 flex flex-col">
-              <!-- 封面 -->
-              <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
+              class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
+              <!-- 封面占满整卡 -->
+              <div v-if="post.covers && post.covers.length > 0" class="absolute inset-0">
                 <img
                   :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
                   :alt="post.title"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                   loading="lazy" >
                 <!-- 多封面角标 -->
                 <div
@@ -293,25 +293,30 @@
                 </div>
               </div>
               <!-- 无封面占位 -->
-              <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
+              <div v-else class="absolute inset-0 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
                 <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
               </div>
-              <!-- 文章信息 -->
-              <div class="p-3">
+              <!-- 文章信息（底部毛玻璃带） -->
+              <div
+                class="relative mt-auto w-full p-3"
+                :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                 <h3
-                  class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  class="font-medium text-sm line-clamp-2 mb-2 transition-colors"
+                  :class="post.covers && post.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'">
                   {{ post.title }}
                 </h3>
-                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
-                  <div v-if="post.categories && post.categories.length > 0" v-tooltip="'分类'" class="flex items-center gap-0.5">
+                <div
+                  class="flex items-center gap-2 text-xs flex-wrap"
+                  :class="post.covers && post.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
+                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
-                    <span v-for="(cat, idx) in post.categories" :key="cat.slug ?? cat.name">
+                    <span v-for="(cat, idx) in post.categories" :key="cat.slug ?? cat.name" v-tooltip="'分类'" :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
-                  <div v-if="post.tags && post.tags.length > 0" v-tooltip="'标签'" class="flex items-center gap-0.5">
+                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                    <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name">
+                    <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name" v-tooltip="'标签'" :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
@@ -368,15 +373,15 @@
               :key="post.cid"
               :to="`/content/${categoryData.category.slug}/${post.slug || post.cid}`"
               :aria-label="`阅读文章：${post.title}`"
-              class="group block no-underline flex-[1_0_200px]">
+              class="block no-underline flex-[1_0_200px]">
               <div
-                class="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 hover:shadow-sm transition-all duration-300 h-55 flex flex-col">
-                <!-- 封面 -->
-                <div v-if="post.covers && post.covers.length > 0" class="relative aspect-video overflow-hidden grow">
+                class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
+                <!-- 封面占满整卡 -->
+                <div v-if="post.covers && post.covers.length > 0" class="absolute inset-0">
                   <img
                     :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
                     :alt="post.title"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    class="absolute inset-0 w-full h-full object-cover hover:scale-[1.03] transition-transform duration-300"
                     loading="lazy" >
                   <!-- 多封面角标 -->
                   <div
@@ -395,19 +400,24 @@
                   </div>
                 </div>
                 <!-- 无封面占位 -->
-                <div v-else class="bg-slate-100 dark:bg-gray-800 flex items-center justify-center grow">
+                <div v-else class="absolute inset-0 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
                   <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
                 </div>
-                <!-- 文章信息 -->
-                <div class="p-3">
+                <!-- 文章信息（底部毛玻璃带） -->
+                <div
+                  class="relative mt-auto w-full p-3"
+                  :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                   <h3
-                    class="text-slate-900 dark:text-white font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    class="font-medium text-sm line-clamp-2 mb-2 transition-colors"
+                    :class="post.covers && post.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'">
                     {{ post.title }}
                   </h3>
-                  <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400 flex-wrap">
-                    <span v-if="post.tags && post.tags.length > 0" v-tooltip="'标签'" class="flex items-center gap-0.5">
+                  <div
+                    class="flex items-center gap-2 text-xs flex-wrap"
+                    :class="post.covers && post.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
+                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                      <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name">
+                      <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name" v-tooltip="'标签'" :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
@@ -629,12 +639,12 @@
 </template>
 
 <script setup lang="ts">
-import {type ComponentPublicInstance, onMounted, onUnmounted, ref} from "vue";
+import { type ComponentPublicInstance, onMounted, onUnmounted, ref } from "vue";
 
 import MetingPlayer from "~/components/MetingPlayer.vue";
-import {siteConfig} from "~~/site.config";
-import {getChangelogMeta} from "~~/shared/changelog";
-import type {GridItem} from "~/types/apis";
+import type { GridItem } from "~/types/apis";
+import { getChangelogMeta } from "~~/shared/changelog";
+import { siteConfig } from "~~/site.config";
 
 // 目录导航数据
 const tocItems = [

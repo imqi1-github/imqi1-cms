@@ -394,16 +394,16 @@ onMounted(() => {
           <div
             v-for="post in posts"
             :key="post.cid"
-            class="flex flex-col rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm hover:shadow-md border border-transparent hover:border-blue-500 dark:hover:border-blue-600 group transition-all duration-300">
-            <!-- 封面 -->
+            class="relative flex flex-col h-70 max-md:h-65 overflow-hidden rounded-[15px] shadow-sm hover:shadow-md border border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-600 group transition-all duration-300">
+            <!-- 封面占满整卡 -->
             <NuxtLink
               v-if="post.covers.length > 0"
               :to="`/content/${slug}/${post.slug}`"
-              class="flex flex-col relative h-50 max-md:h-50 overflow-hidden rounded-t-[15px] grow">
+              class="absolute inset-0">
               <img
                 :src="post.covers[0]?.url"
                 :alt="post.title"
-                class="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                 loading="lazy" >
               <!-- 多封面角标 -->
               <div
@@ -425,30 +425,37 @@ onMounted(() => {
             <!-- 无封面占位 -->
             <div
               v-else
-              class="relative h-50 max-md:h-50 overflow-hidden rounded-t-[15px] bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+              class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
               <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ post.title[0] }}</span>
             </div>
 
-            <!-- 文章信息 -->
-            <div class="px-5 pb-2 pt-1 mt-auto">
+            <!-- 文章信息（底部毛玻璃带） -->
+            <div
+              class="relative mt-auto w-full px-5 pb-2 pt-1.5"
+              :class="post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
               <NuxtLink
                 :to="`/content/${slug}/${post.slug}`"
-                class="text-[1.5em] font-extrabold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors my-1 block">
+                class="text-[1.5em] font-extrabold my-1 block transition-colors"
+                :class="post.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-500'">
                 {{ post.title }}
               </NuxtLink>
 
-              <div class="text-xs text-slate-600 dark:text-slate-400 my-1 flex flex-wrap gap-2">
+              <div
+                class="text-xs my-1 flex flex-wrap gap-2"
+                :class="post.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
                 <span v-tooltip="`最后更新时间`" class="flex items-center">
                   <Icon name="ri-time-line" class="size-4" />
                   {{ formatDate(post.updated) }}
                 </span>
-                <span v-if="post.tags.length > 0" v-tooltip="`标签`" class="flex items-center flex-wrap">
+                <span v-if="post.tags.length > 0" class="flex items-center flex-wrap">
                   <Icon name="ri-hashtag" class="size-4" />
                   <NuxtLink
                     v-for="(tagName, index) in post.tags"
                     :key="index"
+                    v-tooltip="`标签`"
                     :to="`/tag/${tagSlugMap.get(tagName) || tagName}`"
-                    class="hover:text-blue-600 dark:hover:text-blue-400 mr-1 transition-colors">
+                    class="mr-1 transition-colors"
+                    :class="post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                     {{ tagName }}
                   </NuxtLink>
                 </span>
@@ -458,7 +465,10 @@ onMounted(() => {
                 </span>
               </div>
 
-              <p v-if="post.desc" class="text-[0.9em] text-slate-600 dark:text-slate-400 overflow-wrap break-word">
+              <p
+                v-if="post.desc"
+                class="text-[0.9em] overflow-wrap break-word"
+                :class="post.covers.length > 0 ? 'text-white/70' : 'text-slate-600 dark:text-slate-400'">
                 {{ post.desc }}
               </p>
             </div>
@@ -470,13 +480,12 @@ onMounted(() => {
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="flex flex-col h-75 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
-            <!-- 封面骨架 -->
-            <div
-              class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"/>
+            class="relative flex flex-col h-70 max-md:h-65 overflow-hidden rounded-[15px] bg-slate-100 dark:bg-gray-800 animate-pulse shadow-sm">
+            <!-- 封面骨架（占满整卡） -->
+            <div class="absolute inset-0 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30"/>
 
             <!-- 文章信息骨架 -->
-            <div class="px-5 pb-2 pt-1 mt-auto">
+            <div class="relative mt-auto w-full px-5 pb-2 pt-1.5">
               <!-- 标题骨架 -->
               <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"/>
 

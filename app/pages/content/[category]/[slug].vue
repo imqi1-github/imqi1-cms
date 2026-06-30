@@ -1818,22 +1818,34 @@ ref="fancyboxContainer"
           <div
             v-for="relatedPost in relatedPosts"
             :key="relatedPost.cid"
-            class="flex-1 min-w-50 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:border-blue-600 transition-colors duration-300 min-h-50">
-            <NuxtLink :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`" class="flex flex-col">
-              <div v-if="relatedPost.covers && relatedPost.covers.length > 0" class="overflow-hidden">
+            class="flex-1 min-w-50 min-h-50 relative flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-600 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all duration-300">
+            <NuxtLink :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`" class="group flex flex-col size-full">
+              <div v-if="relatedPost.covers && relatedPost.covers.length > 0" class="absolute inset-0">
                 <img
                   :src="relatedPost.covers[0]?.url"
                   :alt="relatedPost.title"
-                  class="w-full h-30 object-cover transition-transform duration-300 hover:scale-105"
+                  class="object-cover group-hover:scale-[1.03] transition-transform duration-300"
                   loading="lazy" >
               </div>
-              <div v-else class="flex h-30 items-center justify-center bg-gray-200 dark:bg-gray-800">
+              <div v-else class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
                 <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>
               </div>
-              <div class="px-4 py-2">
-                <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1 line-clamp-1">{{ relatedPost.title }}</h4>
-                <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">{{ relatedPost.desc || "暂无描述" }}</p>
-                <div class="mt-1 text-xs text-slate-500 dark:text-slate-500">
+              <div
+                class="w-full px-4 py-2"
+                :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'cover-backdrop text-white absolute -bottom-1' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
+                <h4
+                  class="font-semibold line-clamp-1"
+                  :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white' : 'text-slate-900 dark:text-slate-100'">
+                  {{ relatedPost.title }}
+                </h4>
+                <p
+                  class="text-xs line-clamp-1"
+                  :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
+                  {{ relatedPost.desc || "暂无描述" }}
+                </p>
+                <div
+                  class="mt-0.5 text-xs"
+                  :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white/70' : 'text-slate-500 dark:text-slate-500'">
                   {{ formatDate(relatedPost.created) }}
                 </div>
               </div>

@@ -425,6 +425,12 @@ html.with-fancybox body.hide-scrollbar {
   }
 }
 
+/* 文章卡片：封面占满整卡时，底部文字带的毛玻璃效果 */
+.cover-backdrop {
+  -webkit-backdrop-filter: saturate(1.8) blur(20px) brightness(0.7);
+  backdrop-filter: saturate(1.8) blur(20px) brightness(0.7);
+}
+
 /* 旋转动画（只旋转 spinner） */
 @keyframes img-loading-spin {
   from {

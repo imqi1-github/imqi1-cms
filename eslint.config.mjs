@@ -5,7 +5,8 @@ import withNuxt from "./.nuxt/eslint.config.mjs";
 export default withNuxt({
   ignores: [
     "scripts",
-    "node_modules"
+    "node_modules",
+    "mini"
   ],
   plugins: {
     tailwindcss: tailwind,
