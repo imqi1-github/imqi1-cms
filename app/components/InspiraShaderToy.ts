@@ -234,6 +234,7 @@ export class InspiraShaderToy {
     canvas.addEventListener("touchmove", (event: TouchEvent) => {
       event.preventDefault();
       const touch = event.touches[0];
+      if (!touch) return;
       const { x: newX, y: newY } = getScaledMousePos(touch);
 
       this.iMouse.x = newX;
@@ -249,6 +250,7 @@ export class InspiraShaderToy {
       event.preventDefault();
       isMouseDown = true;
       const touch = event.touches[0];
+      if (!touch) return;
       const { x: clickX, y: clickY } = getScaledMousePos(touch);
 
       if (this._mouseMode === "click") {
