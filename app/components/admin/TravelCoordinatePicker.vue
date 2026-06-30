@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import "@amap/amap-jsapi-types";
-
 import {loadAmap} from "~/utils/amap-loader";
 import type {
   AMapMapEvent,
