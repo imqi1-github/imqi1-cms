@@ -458,10 +458,18 @@ onMounted(async () => {
   try {
     // 动态导入 Fancybox（仅客户端）
     FancyboxModule = await import("@fancyapps/ui");
-    // 动态导入 Swiper（仅客户端，避免静态打包进共享 chunk）
-    const [{ default: Swiper }, { Mousewheel, Navigation, Pagination }] = await Promise.all([
+    // 动态导入 Swiper（仅客户端，避免静态打包进共享 chunk）。
+    // 直接 import 具体模块文件而非 `swiper/modules` barrel，避免整体打包 16 个模块。
+    const [
+      { default: Swiper },
+      { default: Navigation },
+      { default: Pagination },
+      { default: Mousewheel },
+    ] = await Promise.all([
       import("swiper"),
-      import("swiper/modules"),
+      import("swiper/modules/navigation.mjs"),
+      import("swiper/modules/pagination.mjs"),
+      import("swiper/modules/mousewheel.mjs"),
     ]);
     // 404 页面动画（初始状态）
     if (isNotFound.value) {

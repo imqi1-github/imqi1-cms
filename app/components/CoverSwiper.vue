@@ -8,8 +8,10 @@ import "swiper/css/pagination";
 import "@/assets/css/fancybox.css";
 import type {Props} from "~/types/components/cover-swiper";
 
-// Swiper 模块懒加载缓存：避免静态 import 把 swiper（~156kB）打进共享 chunk。
-// 首次初始化时动态加载，后续复用同一 Promise，保证 onMounted/watch 竞态下只加载一次。
+// Swiper 懒加载缓存：避免静态 import 把 swiper 主体打进共享 chunk。
+// 注意：必须直接动态 import 具体模块文件（swiper/modules/*.mjs），而非
+// `swiper/modules` barrel 入口——后者会让 Rollup 把全部 16 个模块整体打包（~215kB）。
+// 仅类型用 `swiper/modules`，编译期擦除不影响运行时体积。
 type SwiperDeps = {
   Swiper: typeof import("swiper").default;
   Mousewheel: typeof import("swiper/modules").Mousewheel;
@@ -19,14 +21,17 @@ type SwiperDeps = {
 let swiperDepsPromise: Promise<SwiperDeps> | null = null;
 const loadSwiper = () => {
   if (!swiperDepsPromise) {
-    swiperDepsPromise = Promise.all([import("swiper"), import("swiper/modules")]).then(
-      ([swiper, modules]) => ({
-        Swiper: swiper.default,
-        Mousewheel: modules.Mousewheel,
-        Navigation: modules.Navigation,
-        Pagination: modules.Pagination,
-      }),
-    );
+    swiperDepsPromise = Promise.all([
+      import("swiper"),
+      import("swiper/modules/navigation.mjs"),
+      import("swiper/modules/pagination.mjs"),
+      import("swiper/modules/mousewheel.mjs"),
+    ]).then(([swiper, Navigation, Pagination, Mousewheel]) => ({
+      Swiper: swiper.default,
+      Mousewheel: Mousewheel.default,
+      Navigation: Navigation.default,
+      Pagination: Pagination.default,
+    }));
   }
   return swiperDepsPromise;
 };
