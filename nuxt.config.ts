@@ -13,7 +13,7 @@ const isProduction = process.env.NODE_ENV === "production";
 const hasCdn = siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http");
 const cdnURL = isProduction && hasCdn ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl) : "";
 const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path);
-const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com https://mapplugin.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; connect-src 'self' https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
+const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com https://mapplugin.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {
