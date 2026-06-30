@@ -368,6 +368,8 @@ html.with-fancybox body.hide-scrollbar {
   display: block;
   animation: img-skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   overflow: hidden;
+  max-width: 100%;
+  height: 100%;
 }
 
 /* 图片本身：加载中时移出可视区 */

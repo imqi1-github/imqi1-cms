@@ -15,8 +15,6 @@ type IpdbData = {
   district_name?: string;
   owner_domain?: string;
   isp_domain?: string;
-  ip?: string;
-  bitmask?: number;
 };
 
 function usage(): string {
@@ -72,7 +70,119 @@ function formatValue(value: string): string {
   return value || "未知";
 }
 
-function main() {
+type ZxincResponse = {
+  code: number;
+  data?: {
+    myip?: string;
+    location?: string;
+    country?: string;
+    local?: string;
+  };
+};
+
+async function fetchZxincLocation(ip: string): Promise<string> {
+  const url = `https://ip.zxinc.org/api.php?type=json&ip=${encodeURIComponent(ip)}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return `zxinc HTTP ${response.status}`;
+    const json = (await response.json()) as ZxincResponse;
+    if (json.code !== 0 || !json.data) return "zxinc 未找到";
+    return json.data.location || json.data.country || "未知";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `zxinc 查询失败: ${message}`;
+  }
+}
+
+type IpResult = {
+  rawIp: string;
+  valid: boolean;
+  localLocation: string;
+  localIsp: string;
+  localError: string;
+  zxincLocation: string;
+};
+
+async function queryOne(ipdb: InstanceType<typeof IPDB>, rawIp: string): Promise<IpResult> {
+  const ip = normalizeIp(rawIp);
+  if (!isIP(ip)) {
+    return { rawIp, valid: false, localLocation: "", localIsp: "", localError: "", zxincLocation: "" };
+  }
+
+  let localLocation = "未知";
+  let localIsp = "";
+  let localError = "";
+  try {
+    const result = ipdb.find(ip, { language: "CN" });
+    if (result.code === 0 && result.data) {
+      const data = result.data as IpdbData;
+      localLocation = formatValue(buildLocation(data));
+      localIsp = formatValue(buildIsp(data));
+    } else {
+      localLocation = "未找到";
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    localError = `本地查询失败: ${message}`;
+  }
+
+  const zxincLocation = await fetchZxincLocation(ip);
+  return { rawIp, valid: true, localLocation, localIsp, localError, zxincLocation };
+}
+
+function displayWidth(value: string): number {
+  let width = 0;
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    // CJK / 全角字符按 2 列计算（简化判定：CJK 统一表意文字及常见全角区间）
+    const wide = code >= 0x1100 && (
+      code <= 0x115f
+      || code >= 0x2e80 && code <= 0xa4cf
+      || code >= 0xac00 && code <= 0xd7a3
+      || code >= 0xf900 && code <= 0xfaff
+      || code >= 0xfe30 && code <= 0xfe4f
+      || code >= 0xff00 && code <= 0xff60
+      || code >= 0xffe0 && code <= 0xffe6
+      || code >= 0x20000 && code <= 0x2fffd
+      || code >= 0x30000 && code <= 0x3fffd
+    );
+    width += wide ? 2 : 1;
+  }
+  return width;
+}
+
+function padRight(value: string, width: number): string {
+  const w = displayWidth(value);
+  return w >= width ? value : `${value}${" ".repeat(width - w)}`;
+}
+
+function renderResults(results: IpResult[]): void {
+  const srcWidth = Math.max(displayWidth("[本地]"), displayWidth("[zxinc]")) + 2;
+  const locWidth = Math.max(8, ...results
+    .filter(r => r.valid && !r.localError)
+    .map(r => displayWidth(r.localLocation))) + 2;
+
+  for (const r of results) {
+    console.log("─".repeat(srcWidth + locWidth + 28));
+    console.log(`  ${r.rawIp}`);
+    console.log("─".repeat(srcWidth + locWidth + 28));
+
+    if (!r.valid) {
+      console.log("  无效 IP");
+      continue;
+    }
+
+    if (r.localError) {
+      console.log(`  ${padRight("[本地]", srcWidth)}${r.localError}`);
+    } else {
+      console.log(`  ${padRight("[本地]", srcWidth)}${padRight(r.localLocation, locWidth)}${r.localIsp}`);
+    }
+    console.log(`  ${padRight("[zxinc]", srcWidth)}${r.zxincLocation}`);
+  }
+  console.log("─".repeat(srcWidth + locWidth + 28));
+}
+
+async function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
     console.log(usage());
@@ -88,31 +198,8 @@ function main() {
   const dbPath = resolveDbPath();
   const ipdb = new IPDB(dbPath);
 
-  for (const rawIp of args) {
-    const ip = normalizeIp(rawIp);
-    if (!isIP(ip)) {
-      console.log(`${rawIp}\t无效 IP`);
-      continue;
-    }
-
-    try {
-      const result = ipdb.find(ip, { language: "CN" });
-      if (result.code !== 0 || !result.data) {
-        console.log(`${rawIp}\t未找到`);
-        continue;
-      }
-
-      const data = result.data as IpdbData;
-      const location = buildLocation(data);
-      const isp = buildIsp(data);
-      const range = data.ip && data.bitmask ? `${data.ip}/${data.bitmask}` : "";
-      const suffix = range ? `\t${range}` : "";
-      console.log(`${rawIp}\t${formatValue(location)}\t${formatValue(isp)}${suffix}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.log(`${rawIp}\t查询失败: ${message}`);
-    }
-  }
+  const results = await Promise.all(args.map(rawIp => queryOne(ipdb, rawIp)));
+  renderResults(results);
 }
 
 try {
