@@ -31,12 +31,13 @@ usePageSeo({
 // 初始化404页面动画
 onMounted(() => {
   nextTick(() => {
-    const element = document.querySelector(".animate-fade-in:not(.fade-in-start)");
-    if (element) {
+    const elements = document.querySelectorAll(".animate-fade-in:not(.fade-in-start)");
+    if (elements.length) {
       // 延迟触发动画，等待 app.vue 的页面过渡完成（一次 fadeDuration）
+      // 文字与 canvas 一起渐入，避免从其他页面进入时 canvas 突然出现而闪烁
       setTimeout(() => {
         requestAnimationFrame(() => {
-          element.classList.add("fade-in-start");
+          elements.forEach((el) => el.classList.add("fade-in-start"));
         });
       }, siteConfig.pageTransition.fadeDuration);
     }
@@ -48,7 +49,7 @@ onMounted(() => {
   <div class="relative w-full overflow-hidden place-self-center justify-self-center h-96">
     <!-- Inspira UI - Singularity Background（黑洞背景，WebGL 着色器） -->
     <ClientOnly>
-      <SingularityBackground class="absolute inset-0 z-0" mouse-mode="hover" :speed="0.8" :mouse-sensitivity="0.3" />
+      <SingularityBackground class="animate-fade-in no-transform absolute inset-0 z-0" mouse-mode="hover" :speed="0.8" :mouse-sensitivity="0.3" />
       <template #fallback>
         <div class="absolute inset-0 z-0 bg-slate-900" />
       </template>
@@ -81,5 +82,10 @@ onMounted(() => {
 .animate-fade-in.fade-in-start {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* canvas 背景：只走 opacity 过渡，避免 translateY 让黑洞背景偏移 */
+.animate-fade-in.no-transform {
+  transform: none;
 }
 </style>
