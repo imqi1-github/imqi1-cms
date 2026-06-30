@@ -54,6 +54,7 @@
     "markdown-it-container": "^4.0.0",
     "nodemailer": "^8.0.4",
     "nuxt": "^4.4.2",
+    "ogl": "^1.0.11",
     "promise-polyfill": "^8.3.0",
     "reka-ui": "^2.9.3",
     "shadcn-nuxt": "^2.4.3",
