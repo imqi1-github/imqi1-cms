@@ -87,13 +87,13 @@ export default defineNuxtConfig({
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode", "@vite-pwa/nuxt", "@nuxt/eslint"],
 
   icon: {
-    // 服务端用本地已安装的 @iconify-json/* 集合渲染（不存在按需 scan，
-    // 整集合进服务端 bundle，但不影响客户端体积）。
-    // clientBundle.scan 扫描源码，只把实际用到的图标打入客户端 bundle，
-    // 避免默认全量打包整个图标集（lucide+ri 全量约 1.6MB），
-    // 客户端 hydrate 时无需异步请求图标，首屏不再闪烁。
+    // 服务端用本地已安装的 @iconify-json/* 集合渲染，SSR 时把用到的图标
+    // SVG 数据通过 Nuxt payload 下发，客户端 hydration 时直接从 payload
+    // 注册图标（addIcon），首屏无需异步请求、不闪烁。
+    // 不启用 clientBundle.scan：避免把图标数据重复内联进客户端 JS chunk
+    // （此前约 122KB），改为纯按需——SSR 图标走 payload，仅客户端动态
+    // 出现、SSR 未覆盖到的图标才回退到 /api/_nuxt_icon 拉取（有缓存）。
     serverBundle: "local",
-    clientBundle: { scan: true },
   },
 
   colorMode: {

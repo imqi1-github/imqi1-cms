@@ -1682,7 +1682,7 @@ ref="fancyboxContainer"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
           :class="[
-            'w-full h-full object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
+            'w-full h-37.5 object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
             isPhotoCategory ? 'max-h-150' : 'max-h-37.5',
           ].join(' ')" />
 

@@ -227,7 +227,7 @@ onMounted(() => {
   </div>
 
   <Toaster />
-  <ContextMenu class="right-button" />
+  <LazyContextMenu class="right-button" />
   <FrontNotification />
 </template>
 
