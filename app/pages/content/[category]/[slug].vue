@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 
-import Swiper from "swiper";
-import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -460,6 +458,11 @@ onMounted(async () => {
   try {
     // 动态导入 Fancybox（仅客户端）
     FancyboxModule = await import("@fancyapps/ui");
+    // 动态导入 Swiper（仅客户端，避免静态打包进共享 chunk）
+    const [{ default: Swiper }, { Mousewheel, Navigation, Pagination }] = await Promise.all([
+      import("swiper"),
+      import("swiper/modules"),
+    ]);
     // 404 页面动画（初始状态）
     if (isNotFound.value) {
       nextTick(() => {

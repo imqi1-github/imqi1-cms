@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import {onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
-import Swiper from "swiper";
-import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
@@ -10,13 +8,36 @@ import "swiper/css/pagination";
 import "@/assets/css/fancybox.css";
 import type {Props} from "~/types/components/cover-swiper";
 
+// Swiper 模块懒加载缓存：避免静态 import 把 swiper（~156kB）打进共享 chunk。
+// 首次初始化时动态加载，后续复用同一 Promise，保证 onMounted/watch 竞态下只加载一次。
+type SwiperDeps = {
+  Swiper: typeof import("swiper").default;
+  Mousewheel: typeof import("swiper/modules").Mousewheel;
+  Navigation: typeof import("swiper/modules").Navigation;
+  Pagination: typeof import("swiper/modules").Pagination;
+};
+let swiperDepsPromise: Promise<SwiperDeps> | null = null;
+const loadSwiper = () => {
+  if (!swiperDepsPromise) {
+    swiperDepsPromise = Promise.all([import("swiper"), import("swiper/modules")]).then(
+      ([swiper, modules]) => ({
+        Swiper: swiper.default,
+        Mousewheel: modules.Mousewheel,
+        Navigation: modules.Navigation,
+        Pagination: modules.Pagination,
+      }),
+    );
+  }
+  return swiperDepsPromise;
+};
+
 const props = withDefaults(defineProps<Props>(), {
   isPhotoCategory: false,
 });
 
 const swiperContainer = ref<HTMLElement>();
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let swiperInstance: Swiper | null = null;
+let swiperInstance: import("swiper").default | null = null;
 let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 // ✅ 标记组件是否已卸载
 let isUnmounted = false;
@@ -24,8 +45,10 @@ let isUnmounted = false;
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
 
-const initSwiper = () => {
+const initSwiper = async () => {
   if (!swiperContainer.value || props.covers.length === 0) return;
+
+  const { Swiper, Mousewheel, Navigation, Pagination } = await loadSwiper();
 
   // ✅ 异步操作后检查 DOM 是否还存在
   if (isUnmounted || !swiperContainer.value) {

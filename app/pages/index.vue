@@ -88,9 +88,7 @@
             </div>
           </div>
           <div class="mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
-            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，到现在仍持续更新中。这一版主题前后端采用 Nuxt4 搭建，配合
-            Tailwindcss，构建了现代化的响应式布局，同时集成了 APlayer 音乐播放器、Fancy Apps
-            图片灯箱等富媒体组件，为文章内容提供更丰富的交互体验。整个系统支持完整的博客功能，并具备完善的后台管理系统，实现了真正意义上的全栈内容管理系统。
+            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，至今持续更新中。这一版基于 Nuxt 4 与 TypeScript 前后端同构搭建，配合 Tailwind CSS 构建现代化响应式布局，集成 APlayer 音乐播放器、Fancybox 图片灯箱、实况照片与轮播等富媒体组件，为文章内容提供更丰富的交互体验。系统涵盖文章、评论、友链、订阅、归档与搜索等完整博客功能，配合完善的后台管理，构成一套真正意义上的全栈内容管理系统。
           </div>
         </div>
       </section>
