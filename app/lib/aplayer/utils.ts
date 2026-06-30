@@ -4,25 +4,25 @@ const utils = {
     /**
      * Parse second to time string
      *
-     * @param {Number} second
-     * @return {String} 00:00 or 00:00:00
+     * @param second
+     * @return 00:00 or 00:00:00
      */
-    secondToTime: (second) => {
-        const add0 = (num) => (num < 10 ? '0' + num : '' + num);
+    secondToTime: (second: number): string => {
+        const add0 = (num: number): string => (num < 10 ? '0' + num : '' + num);
         const hour = Math.floor(second / 3600);
         const min = Math.floor((second - hour * 3600) / 60);
         const sec = Math.floor(second - hour * 3600 - min * 60);
         return (hour > 0 ? [hour, min, sec] : [min, sec]).map(add0).join(':');
     },
 
-    isMobile: isMobile,
+    isMobile,
 
     storage: {
-        set: (key, value) => {
+        set: (key: string, value: string): void => {
             localStorage.setItem(key, value);
         },
 
-        get: (key) => localStorage.getItem(key),
+        get: (key: string): string | null => localStorage.getItem(key),
     },
 
     nameMap: {
@@ -34,20 +34,18 @@ const utils = {
     /**
      * get random order, using Fisher–Yates shuffle
      */
-    randomOrder: (length) => {
-        function shuffle(arr) {
+    randomOrder: (length: number): number[] => {
+        function shuffle(arr: number[]): number[] {
             for (let i = arr.length - 1; i >= 0; i--) {
                 const randomIndex = Math.floor(Math.random() * (i + 1));
-                const itemAtIndex = arr[randomIndex];
-                arr[randomIndex] = arr[i];
+                const itemAtIndex = arr[randomIndex]!;
+                arr[randomIndex] = arr[i]!;
                 arr[i] = itemAtIndex;
             }
             return arr;
         }
         return shuffle(
-            [...Array(length)].map(function(item, i) {
-                return i;
-            })
+            Array.from({ length }, (_item, i) => i),
         );
     },
 };

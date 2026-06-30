@@ -9,3 +9,13 @@ declare module "swiper/css/free-mode";
 declare module "swiper/css/grid";
 declare module "*.css";
 declare module "*.vue";
+
+declare module "smoothscroll" {
+  const smoothScroll: (
+    to: number,
+    duration: number,
+    callback?: (() => void) | null,
+    element?: HTMLElement,
+  ) => void;
+  export default smoothScroll;
+}

@@ -143,7 +143,7 @@ export const siteConfig = defineSiteConfig({
       siteName: `${_name} / ${_nickname}`,
       siteUrl: _url,
       siteDescription: _displayName,
-      siteAvatar: "https://cravatar.cn/avatar/2841d29eeabab633ae116c7b2c97e3bf?s=512",
+      siteAvatar: "https://cn.cravatar.com/avatar/2841d29eeabab633ae116c7b2c97e3bf?s=512",
     },
   },
 

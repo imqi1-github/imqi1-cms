@@ -1,13 +1,8 @@
+import type { ParsedAgent } from "~/types/parse-user-agent";
+
 /**
  * 解析 User Agent 字符串，返回浏览器和操作系统信息
  */
-
-export interface ParsedAgent {
-  browser: string | null;
-  os: string | null;
-  browserIcon: string;
-  osIcon: string;
-}
 
 // 浏览器映射
 const browsers: Record<string, { name: string; icon: string }> = {

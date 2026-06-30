@@ -10,6 +10,8 @@
 // - 业务路由（/about、/api/...）不会被前缀。
 // - 绝对资源 URL（http/https/blob/data:image）直接返回。
 
+import type { PublicAssetOptions } from "~/types/asset";
+
 const STATIC_ASSET_RE = /^\/(imgs|skills|icons|fonts|emojis|uploads)\//;
 
 // robots.txt 不在此列：它由 Nitro 直接在主域返回（不走 CDN），
@@ -20,11 +22,6 @@ const ABSOLUTE_RE = /^(https?:)?\/\//i;
 const SAFE_DATA_RE = /^data:image\//i;
 const BLOB_RE = /^blob:/i;
 const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
-
-export interface PublicAssetOptions {
-  /** 强制返回原始路径，不加 CDN 前缀 */
-  raw?: boolean;
-}
 
 export function publicAsset(input?: string | null, options: PublicAssetOptions = {}): string {
   if (!input) return "";

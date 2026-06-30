@@ -1,7 +1,22 @@
-import tplLrc from './template/lrc.js';
+import tplLrc from './template/lrc';
+import type APlayer from './player';
+
+import type { LrcLine } from '~/types/aplayer';
 
 class Lrc {
-    constructor(options) {
+    container: HTMLElement;
+
+    async: boolean;
+
+    player: APlayer;
+
+    parsed: LrcLine[][];
+
+    index: number;
+
+    current: LrcLine[];
+
+    constructor(options: { container: HTMLElement; async: boolean; player: APlayer }) {
         this.container = options.container;
         this.async = options.async;
         this.player = options.player;
@@ -28,30 +43,30 @@ class Lrc {
         }
     }
 
-    update(currentTime = this.player.audio.currentTime) {
-        if (this.index > this.current.length - 1 || currentTime < this.current[this.index][0] || (!this.current[this.index + 1] || currentTime >= this.current[this.index + 1][0])) {
+    update(currentTime: number = this.player.audio.currentTime) {
+        if (this.index > this.current.length - 1 || currentTime < this.current[this.index]![0] || (!this.current[this.index + 1] || currentTime >= this.current[this.index + 1]![0])) {
             for (let i = 0; i < this.current.length; i++) {
-                if (currentTime >= this.current[i][0] && (!this.current[i + 1] || currentTime < this.current[i + 1][0])) {
+                if (currentTime >= this.current[i]![0] && (!this.current[i + 1] || currentTime < this.current[i + 1]![0])) {
                     this.index = i;
                     this.container.style.transform = `translateY(${-this.index * 18}px)`;
                     this.container.style.webkitTransform = `translateY(${-this.index * 18}px)`;
-                    this.container.getElementsByClassName('aplayer-lrc-current')[0].classList.remove('aplayer-lrc-current');
-                    this.container.getElementsByTagName('p')[i].classList.add('aplayer-lrc-current');
+                    this.container.getElementsByClassName('aplayer-lrc-current')[0]?.classList.remove('aplayer-lrc-current');
+                    this.container.getElementsByTagName('p')[i]?.classList.add('aplayer-lrc-current');
                 }
             }
         }
     }
 
-    switch(index) {
+    switch(index: number) {
         if (!this.parsed[index]) {
             if (!this.async) {
-                if (this.player.list.audios[index].lrc) {
-                    this.parsed[index] = this.parse(this.player.list.audios[index].lrc);
+                if (this.player.list.audios[index]!.lrc) {
+                    this.parsed[index] = this.parse(this.player.list.audios[index]!.lrc!);
                 } else {
-                    this.parsed[index] = [['00:00', 'Not available']];
+                    this.parsed[index] = [['00:00', 'Not available']] as unknown as LrcLine[];
                 }
             } else {
-                this.parsed[index] = [['00:00', 'Loading']];
+                this.parsed[index] = [['00:00', 'Loading']] as unknown as LrcLine[];
                 const xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = () => {
                     if (index === this.player.list.index && xhr.readyState === 4) {
@@ -59,51 +74,51 @@ class Lrc {
                             this.parsed[index] = this.parse(xhr.responseText);
                         } else {
                             this.player.notice(`LRC file request fails: status ${xhr.status}`);
-                            this.parsed[index] = [['00:00', 'Not available']];
+                            this.parsed[index] = [['00:00', 'Not available']] as unknown as LrcLine[];
                         }
                         this.container.innerHTML = tplLrc({
-                            lyrics: this.parsed[index],
+                            lyrics: this.parsed[index]!,
                         });
                         this.update(0);
-                        this.current = this.parsed[index];
+                        this.current = this.parsed[index]!;
                     }
                 };
-                const apiurl = this.player.list.audios[index].lrc;
-                xhr.open('get', apiurl, true);
+                const apiurl = this.player.list.audios[index]!.lrc;
+                xhr.open('get', apiurl!, true);
                 xhr.send(null);
             }
         }
 
         this.container.innerHTML = tplLrc({
-            lyrics: this.parsed[index],
+            lyrics: this.parsed[index]!,
         });
-        this.current = this.parsed[index];
+        this.current = this.parsed[index]!;
         this.update(0);
     }
 
     /**
      * Parse lrc, suppose multiple time tag
      *
-     * @param {String} lrc_s - Format:
+     * @param lrc_s - Format:
      * [mm:ss]lyric
      * [mm:ss.xx]lyric
      * [mm:ss.xxx]lyric
      * [mm:ss.xx][mm:ss.xx][mm:ss.xx]lyric
      * [mm:ss.xx]<mm:ss.xx>lyric
      *
-     * @return {String} [[time, text], [time, text], [time, text], ...]
+     * @return [[time, text], [time, text], [time, text], ...]
      */
-    parse(lrc_s) {
+    parse(lrc_s: string): LrcLine[] {
         if (lrc_s) {
             lrc_s = lrc_s.replace(/([^\]^\n])\[/g, (match, p1) => p1 + '\n[');
             const lyric = lrc_s.split('\n');
-            let lrc = [];
+            let lrc: LrcLine[] = [];
             const lyricLen = lyric.length;
             for (let i = 0; i < lyricLen; i++) {
                 // match lrc time
-                const lrcTimes = lyric[i].match(/\[(\d{2}):(\d{2})(\.(\d{2,3}))?]/g);
+                const lrcTimes = lyric[i]!.match(/\[(\d{2}):(\d{2})(\.(\d{2,3}))?]/g);
                 // match lrc text
-                const lrcText = lyric[i]
+                const lrcText = lyric[i]!
                     .replace(/.*\[(\d{2}):(\d{2})(\.(\d{2,3}))?]/g, '')
                     .replace(/<(\d{2}):(\d{2})(\.(\d{2,3}))?>/g, '')
                     .replace(/^\s+|\s+$/g, '');
@@ -112,10 +127,10 @@ class Lrc {
                     // handle multiple time tag
                     const timeLen = lrcTimes.length;
                     for (let j = 0; j < timeLen; j++) {
-                        const oneTime = /\[(\d{2}):(\d{2})(\.(\d{2,3}))?]/.exec(lrcTimes[j]);
-                        const min2sec = oneTime[1] * 60;
-                        const sec2sec = parseInt(oneTime[2]);
-                        const msec2sec = oneTime[4] ? parseInt(oneTime[4]) / ((oneTime[4] + '').length === 2 ? 100 : 1000) : 0;
+                        const oneTime = /\[(\d{2}):(\d{2})(\.(\d{2,3}))?]/.exec(lrcTimes[j]!)!;
+                        const min2sec = Number(oneTime[1]) * 60;
+                        const sec2sec = parseInt(oneTime[2]!, 10);
+                        const msec2sec = oneTime[4] ? parseInt(oneTime[4], 10) / ((oneTime[4] as string).length === 2 ? 100 : 1000) : 0;
                         const lrcTime = min2sec + sec2sec + msec2sec;
                         lrc.push([lrcTime, lrcText]);
                     }
@@ -130,7 +145,7 @@ class Lrc {
         }
     }
 
-    remove(index) {
+    remove(index: number) {
         this.parsed.splice(index, 1);
     }
 

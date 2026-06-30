@@ -1,8 +1,19 @@
 import utils from './utils';
 import Icons from './icons';
+import type APlayer from './player';
+
+import type { DragEvent } from '~/types/aplayer';
+
+const eventClientX = (e: DragEvent): number =>
+    (e as MouseEvent).clientX || (e as TouchEvent).changedTouches[0]!.clientX;
+
+const eventClientY = (e: DragEvent): number =>
+    (e as MouseEvent).clientY || (e as TouchEvent).changedTouches[0]!.clientY;
 
 class Controller {
-    constructor(player) {
+    player: APlayer;
+
+    constructor(player: APlayer) {
         this.player = player;
 
         this.initPlayButton();
@@ -25,19 +36,19 @@ class Controller {
     }
 
     initPlayBar() {
-        const thumbMove = (e) => {
-            let percentage = ((e.clientX || e.changedTouches[0].clientX) - this.player.template.barWrap.getBoundingClientRect().left) / this.player.template.barWrap.clientWidth;
+        const thumbMove = (e: DragEvent) => {
+            let percentage = (eventClientX(e) - this.player.template.barWrap.getBoundingClientRect().left) / this.player.template.barWrap.clientWidth;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.bar.set('played', percentage, 'width');
-            this.player.lrc && this.player.lrc.update(percentage * this.player.duration);
+            this.player.lrc?.update(percentage * this.player.duration);
             this.player.template.ptime.innerHTML = utils.secondToTime(percentage * this.player.duration);
         };
 
-        const thumbUp = (e) => {
-            document.removeEventListener(utils.nameMap.dragEnd, thumbUp);
-            document.removeEventListener(utils.nameMap.dragMove, thumbMove);
-            let percentage = ((e.clientX || e.changedTouches[0].clientX) - this.player.template.barWrap.getBoundingClientRect().left) / this.player.template.barWrap.clientWidth;
+        const thumbUp = (e: DragEvent) => {
+            document.removeEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
+            document.removeEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
+            let percentage = (eventClientX(e) - this.player.template.barWrap.getBoundingClientRect().left) / this.player.template.barWrap.clientWidth;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.bar.set('played', percentage, 'width');
@@ -47,8 +58,8 @@ class Controller {
 
         this.player.template.barWrap.addEventListener(utils.nameMap.dragStart, () => {
             this.player.disableTimeupdate = true;
-            document.addEventListener(utils.nameMap.dragMove, thumbMove);
-            document.addEventListener(utils.nameMap.dragEnd, thumbUp);
+            document.addEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
+            document.addEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
         });
     }
 
@@ -63,18 +74,18 @@ class Controller {
             }
         });
 
-        const thumbMove = (e) => {
-            let percentage = 1 - ((e.clientY || e.changedTouches[0].clientY) - this.player.template.volumeBar.getBoundingClientRect().top) / this.player.template.volumeBar.clientHeight;
+        const thumbMove = (e: DragEvent) => {
+            let percentage = 1 - (eventClientY(e) - this.player.template.volumeBar.getBoundingClientRect().top) / this.player.template.volumeBar.clientHeight;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.volume(percentage);
         };
 
-        const thumbUp = (e) => {
+        const thumbUp = (e: DragEvent) => {
             this.player.template.volumeBarWrap.classList.remove('aplayer-volume-bar-wrap-active');
-            document.removeEventListener(utils.nameMap.dragEnd, thumbUp);
-            document.removeEventListener(utils.nameMap.dragMove, thumbMove);
-            let percentage = 1 - ((e.clientY || e.changedTouches[0].clientY) - this.player.template.volumeBar.getBoundingClientRect().top) / this.player.template.volumeBar.clientHeight;
+            document.removeEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
+            document.removeEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
+            let percentage = 1 - (eventClientY(e) - this.player.template.volumeBar.getBoundingClientRect().top) / this.player.template.volumeBar.clientHeight;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.volume(percentage);
@@ -82,8 +93,8 @@ class Controller {
 
         this.player.template.volumeBarWrap.addEventListener(utils.nameMap.dragStart, () => {
             this.player.template.volumeBarWrap.classList.add('aplayer-volume-bar-wrap-active');
-            document.addEventListener(utils.nameMap.dragMove, thumbMove);
-            document.addEventListener(utils.nameMap.dragEnd, thumbUp);
+            document.addEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
+            document.addEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
         });
     }
 
@@ -152,10 +163,10 @@ class Controller {
         this.player.template.lrcButton.addEventListener('click', () => {
             if (this.player.template.lrcButton.classList.contains('aplayer-icon-lrc-inactivity')) {
                 this.player.template.lrcButton.classList.remove('aplayer-icon-lrc-inactivity');
-                this.player.lrc && this.player.lrc.show();
+                this.player.lrc?.show();
             } else {
                 this.player.template.lrcButton.classList.add('aplayer-icon-lrc-inactivity');
-                this.player.lrc && this.player.lrc.hide();
+                this.player.lrc?.hide();
             }
         });
     }

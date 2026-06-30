@@ -37,7 +37,7 @@ function avatarUrl(mail: string | null, service: string): string | null {
   const hash = createHash("md5").update(mail.toLowerCase().trim()).digest("hex");
   const serviceUrls: Record<string, string> = {
     gravatar: "https://www.gravatar.com/avatar",
-    cravatar: "https://cravatar.cn/avatar",
+    cravatar: "https://cn.cravatar.com/avatar",
     weavatar: "https://weavatar.com/avatar",
   };
   const baseUrl = serviceUrls[service] || serviceUrls.gravatar;

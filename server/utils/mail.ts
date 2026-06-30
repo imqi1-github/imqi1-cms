@@ -5,6 +5,7 @@ import type {comments} from "@prisma/client";
 
 import prisma from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
+import type { MailOptions } from "#server/types/utils/mail";
 
 // 邮件日志目录
 const LOG_DIR = path.join(process.cwd(), "logs", "mail");
@@ -94,14 +95,6 @@ async function createTransporter() {
       pass: config.password,
     },
   });
-}
-
-// 邮件接口
-export interface MailOptions {
-  to: string;
-  subject: string;
-  text?: string;
-  html?: string;
 }
 
 // 发送邮件

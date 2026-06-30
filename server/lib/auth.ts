@@ -3,16 +3,7 @@ import { setCookie, getCookie, deleteCookie } from "h3";
 
 import { prisma } from "#server/utils/prisma";
 import { getSessionStore, resetSessionStore } from "#server/utils/session-store";
-
-export interface SessionUser {
-  uid: number;
-  name: string;
-  nickname: string | null;
-  mail: string;
-  avatar: string | null;
-  role: number;
-  authCode: string;
-}
+import type { SessionUser } from "#server/types/auth";
 
 const SESSION_COOKIE_NAME = "session";
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days

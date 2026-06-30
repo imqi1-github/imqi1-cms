@@ -1,4 +1,12 @@
+import type { EventHandler } from '~/types/aplayer';
+
 class Events {
+    events: Record<string, EventHandler[]>;
+
+    audioEvents: string[];
+
+    playerEvents: string[];
+
     constructor() {
         this.events = {};
 
@@ -30,24 +38,27 @@ class Events {
         this.playerEvents = ['destroy', 'listshow', 'listhide', 'listadd', 'listremove', 'listswitch', 'listclear', 'noticeshow', 'noticehide', 'lrcshow', 'lrchide'];
     }
 
-    on(name, callback) {
+    on(name: string, callback: EventHandler) {
         if (this.type(name) && typeof callback === 'function') {
-            if (!this.events[name]) {
-                this.events[name] = [];
-            }
-            this.events[name].push(callback);
-        }
-    }
-
-    trigger(name, data) {
-        if (this.events[name] && this.events[name].length) {
-            for (let i = 0; i < this.events[name].length; i++) {
-                this.events[name][i](data);
+            const list = this.events[name];
+            if (list) {
+                list.push(callback);
+            } else {
+                this.events[name] = [callback];
             }
         }
     }
 
-    type(name) {
+    trigger(name: string, data?: unknown) {
+        const list = this.events[name];
+        if (list && list.length) {
+            for (let i = 0; i < list.length; i++) {
+                list[i]!(data);
+            }
+        }
+    }
+
+    type(name: string): 'player' | 'audio' | null {
         if (this.playerEvents.indexOf(name) !== -1) {
             return 'player';
         } else if (this.audioEvents.indexOf(name) !== -1) {

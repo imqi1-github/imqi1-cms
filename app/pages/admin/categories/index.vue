@@ -1,38 +1,15 @@
 <script setup lang="ts">
-import {type CategoryItem, toast} from "~/types/apis/admin/categories";
+import type {
+  CategoryCreateResponse,
+  CategoryDeleteResponse,
+  CategoryItem,
+  CategoryUpdateResponse,
+  CsrfResponse,
+} from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
 
-interface CsrfResponse {
-  data: {
-    token: string;
-  };
-}
-
-interface CategoryCreateResponse {
-  success: boolean;
-  data: {
-    mid: number;
-    name: string;
-    slug: string | null;
-    desc: string | null;
-  };
-}
-
-interface CategoryUpdateResponse {
-  success: boolean;
-  data: {
-    mid: number;
-    name: string;
-    slug: string | null;
-    desc: string | null;
-  };
-}
-
-interface CategoryDeleteResponse {
-  success: boolean;
-}
-
 const router = useRouter();
+const toast = useToast();
 
 const loading = ref(true);
 const categories = ref<CategoryItem[]>([]);

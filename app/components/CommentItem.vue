@@ -208,7 +208,7 @@ const getAvatarUrl = (email: string | null | undefined): string | null => {
   const service = props.avatarService || "gravatar";
   const serviceUrls: Record<string, string> = {
     gravatar: "https://www.gravatar.com/avatar",
-    cravatar: "https://cravatar.cn/avatar",
+    cravatar: "https://cn.cravatar.com/avatar",
     weavatar: "https://weavatar.com/avatar",
   };
   const baseUrl = serviceUrls[service] || serviceUrls.gravatar;

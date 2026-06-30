@@ -69,7 +69,7 @@ export default defineEventHandler(async event => {
         mail: true,
         avatar: true,
         role: true,
-        create: true,
+        create_time: true,
       },
     });
     return newUser;

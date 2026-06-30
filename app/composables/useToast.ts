@@ -1,10 +1,6 @@
 import { toast } from 'vue-sonner'
 
-export type ToastProps = {
-  message: string
-  description?: string
-  duration?: number
-}
+import type { ToastProps } from '@/types/toast'
 
 export const useToast = () => {
   const success = (props: ToastProps) => {

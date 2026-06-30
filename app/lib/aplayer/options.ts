@@ -1,7 +1,9 @@
-export default (options) => {
+import type { APlayerOptions, ResolvedAPlayerOptions } from '~/types/aplayer';
+
+export default (options: APlayerOptions): ResolvedAPlayerOptions => {
     // default options
     const defaultOption = {
-        container: options.element || document.getElementsByClassName('aplayer')[0],
+        container: options.element || document.getElementsByClassName('aplayer')[0] as HTMLElement,
         mini: options.narrow || options.fixed || false,
         fixed: false,
         mutex: true,
@@ -18,27 +20,28 @@ export default (options) => {
     };
     for (const defaultKey in defaultOption) {
         if (Object.prototype.hasOwnProperty.call(defaultOption, defaultKey) && !Object.prototype.hasOwnProperty.call(options, defaultKey)) {
-            options[defaultKey] = defaultOption[defaultKey];
+            (options as Record<string, unknown>)[defaultKey] = (defaultOption as Record<string, unknown>)[defaultKey];
         }
     }
 
-    options.listMaxHeight = parseFloat(options.listMaxHeight);
+    options.listMaxHeight = parseFloat(String(options.listMaxHeight));
 
-    if (Object.prototype.toString.call(options.audio) !== '[object Array]') {
-        options.audio = [options.audio];
+    let audio = options.audio;
+    if (!Array.isArray(audio)) {
+        audio = audio ? [audio] : [];
     }
-
-    options.audio.map((item) => {
+    audio.map((item) => {
         item.name = item.name || item.title || 'Audio name';
         item.artist = item.artist || item.author || 'Audio artist';
         item.cover = item.cover || item.pic;
         item.type = item.type || 'normal';
         return item;
     });
+    options.audio = audio;
 
-    if (options.audio.length <= 1 && options.loop === 'one') {
+    if (audio.length <= 1 && options.loop === 'one') {
         options.loop = 'all';
     }
 
-    return options;
+    return options as ResolvedAPlayerOptions;
 };

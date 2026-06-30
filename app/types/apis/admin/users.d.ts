@@ -6,7 +6,7 @@ export interface UserItem {
 	avatar: string | null;
 	mail: string;
 	/** Prisma DateTime，经 Nitro 序列化为 string */
-	create: string;
+	create_time: string;
 	auth_code: string | null;
 	role: number;
 }
@@ -19,7 +19,7 @@ export interface UserDetail {
 	avatar: string | null;
 	mail: string;
 	/** Prisma DateTime，经 Nitro 序列化为 string */
-	create: string;
+	create_time: string;
 	role: number;
 }
 

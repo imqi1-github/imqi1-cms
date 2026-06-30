@@ -1,5 +1,5 @@
 // 将 art-template 转换为 JavaScript 模板函数
-export default function (data) {
+export default function (data: { lyrics: [number, string][] }): string {
   const { lyrics } = data
 
   return lyrics.map((item, i) => `

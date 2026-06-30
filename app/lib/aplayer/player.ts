@@ -1,4 +1,3 @@
-import Promise from 'promise-polyfill';
 
 import Bar from './bar';
 import Controller from './controller';
@@ -12,16 +11,56 @@ import Template from './template';
 import Timer from './timer';
 import utils from './utils';
 
-const instances = [];
+import type { APlayerAudio, APlayerOptions, HlsInstance, ResolvedAPlayerOptions } from '~/types/aplayer';
+
+const instances: APlayer[] = [];
 
 class APlayer {
+    options: ResolvedAPlayerOptions;
+
+    container: HTMLElement;
+
+    paused: boolean;
+
+    playedPromise: Promise<void>;
+
+    mode: 'normal' | 'mini';
+
+    randomOrder: number[];
+
+    template!: Template;
+
+    lrc?: Lrc;
+
+    events!: Events;
+
+    storage!: Storage;
+
+    bar!: Bar;
+
+    controller!: Controller;
+
+    timer!: Timer;
+
+    list!: List;
+
+    audio!: HTMLAudioElement;
+
+    hls?: HlsInstance | null;
+
+    arrow: boolean;
+
+    disableTimeupdate?: boolean;
+
+    noticeTime?: ReturnType<typeof setTimeout>;
+
     /**
      * APlayer constructor function
      *
-     * @param {Object} options - See README
+     * @param options - See README
      * @constructor
      */
-    constructor(options) {
+    constructor(options: APlayerOptions) {
         this.options = handleOption(options);
         this.container = this.options.container;
         this.paused = true;
@@ -50,7 +89,7 @@ class APlayer {
             const lrcEle = this.container.getElementsByClassName('aplayer-lrc-content');
             for (let i = 0; i < lrcEle.length; i++) {
                 if (this.options.audio[i]) {
-                    this.options.audio[i].lrc = lrcEle[i].innerHTML;
+                    this.options.audio[i]!.lrc = lrcEle[i]!.innerHTML;
                 }
             }
         }
@@ -103,12 +142,13 @@ class APlayer {
         this.audio.preload = this.options.preload;
 
         for (let i = 0; i < this.events.audioEvents.length; i++) {
-            this.audio.addEventListener(this.events.audioEvents[i], (e) => {
-                this.events.trigger(this.events.audioEvents[i], e);
+            const eventName = this.events.audioEvents[i]!;
+            this.audio.addEventListener(eventName, (e) => {
+                this.events.trigger(eventName, e);
             });
         }
 
-        this.volume(this.storage.get('volume'), true);
+        this.volume(this.storage.get('volume') as number, true);
     }
 
     bindEvents() {
@@ -128,7 +168,7 @@ class APlayer {
         this.on('timeupdate', () => {
             if (!this.disableTimeupdate) {
                 this.bar.set('played', this.audio.currentTime / this.duration, 'width');
-                this.lrc && this.lrc.update();
+                this.lrc?.update();
                 const currentTime = utils.secondToTime(this.audio.currentTime);
                 if (this.template.ptime.innerHTML !== currentTime) {
                     this.template.ptime.innerHTML = currentTime;
@@ -163,7 +203,7 @@ class APlayer {
         });
 
         // audio download error: an error occurs
-        let skipTime;
+        let skipTime: ReturnType<typeof setTimeout> | undefined;
         let errorTimes = 0;
         this.on("error", () => {
             if (this.list.audios.length > 1) {
@@ -178,19 +218,19 @@ class APlayer {
                     }, 2000);
                     errorTimes = 0;
                 } else {
-                    this.audio.src = this.list.audios[this.list.index].url;
+                    this.audio.src = this.list.audios[this.list.index]!.url as string;
                     if (!this.paused) {
                         this.play();
                     }
                 }
             } else if (this.list.audios.length === 1) {
-                const error = this.audio.error;
+                const error = this.audio.error!;
                 if (error.code === 4) return;
                 errorTimes++;
                 if (errorTimes > 2) {
                     this.notice("播放歌曲时遇到错误。");
                 } else {
-                    this.audio.src = this.list.audios[0].url;
+                    this.audio.src = this.list.audios[0]!.url as string;
                     if (!this.paused) {
                         this.play();
                     }
@@ -198,7 +238,9 @@ class APlayer {
             }
         });
         this.events.on('listswitch', () => {
-            skipTime && clearTimeout(skipTime);
+            if (skipTime) {
+                clearTimeout(skipTime);
+            }
         });
 
         // multiple audio play
@@ -231,47 +273,51 @@ class APlayer {
         });
     }
 
-    setAudio(audio) {
+    setAudio(audio: APlayerAudio) {
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
         }
         let type = audio.type;
-        if (this.options.customAudioType && this.options.customAudioType[type]) {
-            if (Object.prototype.toString.call(this.options.customAudioType[type]) === '[object Function]') {
-                this.options.customAudioType[type](this.audio, audio, this);
+        if (this.options.customAudioType && this.options.customAudioType[type as string]) {
+            if (typeof this.options.customAudioType[type as string] === 'function') {
+                this.options.customAudioType[type as string]!(this.audio, audio, this);
             } else {
                 console.error(`Illegal customType: ${type}`);
             }
         } else {
             if (!type || type === 'auto') {
-                if (/m3u8(#|\?|$)/i.exec(audio.url)) {
+                if (/m3u8(#|\?|$)/i.exec(audio.url as string)) {
                     type = 'hls';
                 } else {
                     type = 'normal';
                 }
             }
             if (type === 'hls') {
-                if (window.Hls.isSupported()) {
-                    this.hls = new window.Hls();
-                    this.hls.loadSource(audio.url);
+                if (window.Hls!.isSupported()) {
+                    this.hls = new window.Hls!();
+                    this.hls.loadSource(audio.url as string);
                     this.hls.attachMedia(this.audio);
                 } else if (this.audio.canPlayType('application/x-mpegURL') || this.audio.canPlayType('application/vnd.apple.mpegURL')) {
-                    this.audio.src = audio.url;
+                    this.audio.src = audio.url as string;
                 } else {
                     this.notice('Error: HLS is not supported.');
                 }
             } else if (type === 'normal') {
-                this.audio.src = audio.url;
+                this.audio.src = audio.url as string;
             }
         }
     }
 
-    theme(color = this.list.audios[this.list.index].theme || this.options.theme, index = this.list.index, isReset = true) {
+    theme(color: string = this.list.audios[this.list.index]!.theme || this.options.theme, index: number = this.list.index, isReset: boolean = true) {
         if (isReset) {
-            this.list.audios[index] && (this.list.audios[index].theme = color);
+            if (this.list.audios[index]) {
+                this.list.audios[index]!.theme = color;
+            }
         }
-        this.template.listCurs[index] && (this.template.listCurs[index].style.backgroundColor = color);
+        if (this.template.listCurs[index]) {
+            this.template.listCurs[index]!.style.backgroundColor = color;
+        }
         if (index === this.list.index) {
             this.template.pic.style.backgroundColor = color;
             this.template.played.style.background = color;
@@ -280,7 +326,7 @@ class APlayer {
         }
     }
 
-    seek(time) {
+    seek(time: number) {
         time = Math.max(time, 0);
         time = Math.min(time, this.duration);
         this.audio.currentTime = time;
@@ -288,7 +334,7 @@ class APlayer {
         this.template.ptime.innerHTML = utils.secondToTime(time);
     }
 
-    get duration() {
+    get duration(): number {
         return isNaN(this.audio.duration) ? 0 : this.audio.duration;
     }
 
@@ -304,7 +350,7 @@ class APlayer {
         if (this.options.mutex) {
             for (let i = 0; i < instances.length; i++) {
                 if (this !== instances[i]) {
-                    instances[i].pause();
+                    instances[i]!.pause();
                 }
             }
         }
@@ -317,7 +363,7 @@ class APlayer {
         if (playPromise) {
             playPromise.catch((e) => {
                 console.warn(e);
-                if (e.name === 'NotAllowedError') {
+                if ((e as DOMException).name === 'NotAllowedError') {
                     this.setUIPaused();
                 }
             });
@@ -354,8 +400,8 @@ class APlayer {
     /**
      * Set volume
      */
-    volume(percentage, nostorage) {
-        percentage = parseFloat(percentage);
+    volume(percentage?: number, nostorage?: boolean): number {
+        percentage = parseFloat(String(percentage));
         if (!isNaN(percentage)) {
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
@@ -378,7 +424,7 @@ class APlayer {
     /**
      * bind events
      */
-    on(name, callback) {
+    on(name: string, callback: (data?: unknown) => void) {
         this.events.on(name, callback);
     }
 
@@ -394,17 +440,17 @@ class APlayer {
     }
 
     // abandoned
-    switchAudio(index) {
+    switchAudio(index: number) {
         this.list.switch(index);
     }
 
     // abandoned
-    addAudio(audios) {
+    addAudio(audios: APlayerAudio | APlayerAudio[]) {
         this.list.add(audios);
     }
 
     // abandoned
-    removeAudio(index) {
+    removeAudio(index: number) {
         this.list.remove(index);
     }
 
@@ -420,7 +466,7 @@ class APlayer {
         this.events.trigger('destroy');
     }
 
-    setMode(mode = 'normal') {
+    setMode(mode: 'normal' | 'mini' = 'normal') {
         this.mode = mode;
         if (mode === 'mini') {
             this.container.classList.add('aplayer-narrow');
@@ -429,9 +475,9 @@ class APlayer {
         }
     }
 
-    notice(text, time = 2000, opacity = 0.8) {
+    notice(text: string, time: number = 2000, opacity: number = 0.8) {
         this.template.notice.innerHTML = text;
-        this.template.notice.style.opacity = opacity;
+        this.template.notice.style.opacity = String(opacity);
         if (this.noticeTime) {
             clearTimeout(this.noticeTime);
         }
@@ -440,44 +486,40 @@ class APlayer {
         });
         if (time) {
             this.noticeTime = setTimeout(() => {
-                this.template.notice.style.opacity = 0;
+                this.template.notice.style.opacity = String(0);
                 this.events.trigger('noticehide');
             }, time);
         }
     }
 
-    prevIndex() {
-        if (this.list.audios.length > 1) {
-            if (this.options.order === 'list') {
-                return this.list.index - 1 < 0 ? this.list.audios.length - 1 : this.list.index - 1;
-            } else if (this.options.order === 'random') {
-                const index = this.randomOrder.indexOf(this.list.index);
-                if (index === 0) {
-                    return this.randomOrder[this.randomOrder.length - 1];
-                } else {
-                    return this.randomOrder[index - 1];
-                }
-            }
-        } else {
+    prevIndex(): number {
+        if (this.list.audios.length <= 1) {
             return 0;
         }
+        if (this.options.order === 'list') {
+            return this.list.index - 1 < 0 ? this.list.audios.length - 1 : this.list.index - 1;
+        }
+        // order === 'random'
+        const index = this.randomOrder.indexOf(this.list.index);
+        if (index === 0) {
+            return this.randomOrder[this.randomOrder.length - 1]!;
+        }
+        return this.randomOrder[index - 1]!;
     }
 
-    nextIndex() {
-        if (this.list.audios.length > 1) {
-            if (this.options.order === 'list') {
-                return (this.list.index + 1) % this.list.audios.length;
-            } else if (this.options.order === 'random') {
-                const index = this.randomOrder.indexOf(this.list.index);
-                if (index === this.randomOrder.length - 1) {
-                    return this.randomOrder[0];
-                } else {
-                    return this.randomOrder[index + 1];
-                }
-            }
-        } else {
+    nextIndex(): number {
+        if (this.list.audios.length <= 1) {
             return 0;
         }
+        if (this.options.order === 'list') {
+            return (this.list.index + 1) % this.list.audios.length;
+        }
+        // order === 'random'
+        const index = this.randomOrder.indexOf(this.list.index);
+        if (index === this.randomOrder.length - 1) {
+            return this.randomOrder[0]!;
+        }
+        return this.randomOrder[index + 1]!;
     }
 
     skipBack() {
@@ -486,11 +528,6 @@ class APlayer {
 
     skipForward() {
         this.list.switch(this.nextIndex());
-    }
-
-    static get version() {
-        /* global APLAYER_VERSION */
-        return APLAYER_VERSION;
     }
 }
 

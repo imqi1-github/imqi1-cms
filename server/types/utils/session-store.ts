@@ -11,3 +11,6 @@ export interface SessionStore {
   clearUserSessions(userId: number): Promise<void>;
   cleanup(): Promise<void>;
 }
+
+// 存储类型
+export type SessionStoreType = "memory" | "file" | "database";

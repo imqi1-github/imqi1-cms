@@ -206,7 +206,7 @@ onMounted(() => {
                 {{ getRoleBadge(user.role).label }}
               </Badge>
             </TableCell>
-            <TableCell>{{ formatDate(user.create) }}</TableCell>
+            <TableCell>{{ formatDate(user.create_time) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
                 <Button variant="ghost" size="icon" class="size-8" @click="router.push(`/admin/users/${user.uid}`)">
@@ -262,7 +262,7 @@ onMounted(() => {
           </div>
 
           <div class="flex items-center justify-between pt-2 border-t">
-            <span class="text-xs text-muted-foreground">{{ formatDate(user.create) }}</span>
+            <span class="text-xs text-muted-foreground">{{ formatDate(user.create_time) }}</span>
             <div class="flex items-center gap-1">
               <Button variant="ghost" size="icon" class="size-8" @click="router.push(`/admin/users/${user.uid}`)">
                 <Icon name="lucide:pencil" class="size-4" />

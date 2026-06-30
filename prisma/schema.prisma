@@ -118,12 +118,12 @@ model postrelations {
 }
 
 model sessions {
-  id        String   @id
-  userId    Int
-  authCode  String
-  expires   DateTime
-  createdAt DateTime @default(now())
-  data      String?
+  id          String   @id
+  userId      Int
+  authCode    String
+  expires     DateTime
+  create_time DateTime @default(now())
+  data        String?
 
   @@index([expires], map: "Sessions_expires_idx")
   @@index([userId], map: "Sessions_userId_idx")
@@ -154,16 +154,16 @@ model subscribeposts {
 }
 
 model users {
-  uid       Int      @id @default(autoincrement())
-  name      String   @unique(map: "Users_name_key")
-  nickname  String?
-  avatar    String?
-  mail      String   @unique(map: "Users_mail_key")
-  password  String
-  create    DateTime @default(now())
-  auth_code String?
-  role      Int      @default(0)
-  posts     posts[]
+  uid         Int      @id @default(autoincrement())
+  name        String   @unique(map: "Users_name_key")
+  nickname    String?
+  avatar      String?
+  mail        String   @unique(map: "Users_mail_key")
+  password    String
+  create_time DateTime @default(now())
+  auth_code   String?
+  role        Int      @default(0)
+  posts       posts[]
 }
 
 model travels {

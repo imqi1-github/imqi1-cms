@@ -353,7 +353,7 @@ onMounted(() => {
           <div
             v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
-            class="flex flex-col h-50 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
+            class="flex flex-col h-75 overflow-hidden rounded-[15px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm">
             <!-- 封面骨架 -->
             <div
               class="h-50 max-md:h-50 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse rounded-t-[15px]"/>

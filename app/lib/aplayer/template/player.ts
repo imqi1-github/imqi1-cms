@@ -1,7 +1,11 @@
 // 将 art-template 转换为 JavaScript 模板函数
-import tplListItem from './list-item.js'
+import type Icons from '../icons';
 
-export default function (data) {
+import tplListItem from './list-item'
+
+import type { ResolvedAPlayerOptions } from '~/types/aplayer';
+
+export default function (data: { options: ResolvedAPlayerOptions; icons: typeof Icons; cover: string; getObject?: (obj: unknown) => unknown }): string {
   const { options, icons, cover } = data
 
   if (!options.fixed) {

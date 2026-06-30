@@ -280,7 +280,7 @@ watch(() => selectedSourceId.value, async () => {
           <button
             v-tooltip.right="'全部订阅'"
             :class="[
-              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
+              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 cursor-pointer',
               !selectedSourceId
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
@@ -296,7 +296,7 @@ watch(() => selectedSourceId.value, async () => {
             :key="subscribe.id"
             v-tooltip.right="subscribe.name"
             :class="[
-              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg overflow-hidden transition-all border-2',
+              'flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg overflow-hidden transition-all border-2 cursor-pointer',
               selectedSourceId === subscribe.id
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
@@ -324,7 +324,7 @@ watch(() => selectedSourceId.value, async () => {
             v-if="remainingCount > 0 && !isExpanded"
             key="expand-subscribes"
             v-tooltip.right="expandTooltip"
-            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden"
+            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden cursor-pointer"
             @click="toggleExpanded($event)"
           >
             <span class="font-semibold text-xs lg:text-sm text-slate-600 dark:text-slate-400">

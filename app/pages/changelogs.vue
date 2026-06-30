@@ -200,7 +200,7 @@ usePageSeo({
             :key="classType.label"
             v-tooltip.right="classType.label"
             :class="[
-              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2',
+              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 cursor-pointer',
               (selectedType === null && classType.type === null) || selectedType === classType.type
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
                 : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'

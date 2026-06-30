@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import {onBeforeUnmount, onMounted, ref} from 'vue'
 
-import type APlayerType from '~/lib/aplayer/player.js'
+import type APlayerType from '~/lib/aplayer/player'
 import {usePlayerManager} from '~/composables/usePlayerManager'
 import "~/assets/css/aplayer.css"
+import type {APlayerLoop, APlayerOrder, APlayerPreload} from "~/types/aplayer";
 import type {AudioItem, MetingOptions} from "~/types/components/meting-player";
 
 // 获取播放器管理器
@@ -51,7 +52,7 @@ let isUnmounted = false
 onMounted(async () => {
   if (import.meta.client) {
     // 动态导入 APlayer
-    const module = await import('~/lib/aplayer/player.js')
+    const module = await import('~/lib/aplayer/player')
     APlayer = module.default
 
     // ✅ 异步操作后检查：组件已卸载则直接返回
@@ -103,9 +104,9 @@ onMounted(async () => {
 
     // 添加可选参数
     if (props.theme) options.theme = props.theme
-    if (props.loop) options.loop = props.loop
-    if (props.order) options.order = props.order
-    if (props.preload) options.preload = props.preload
+    if (props.loop) options.loop = props.loop as APlayerLoop
+    if (props.order) options.order = props.order as APlayerOrder
+    if (props.preload) options.preload = props.preload as APlayerPreload
     if (props.volume) options.volume = parseFloat(props.volume)
     if (props.listFolded) options.listFolded = props.listFolded
     if (props.listMaxHeight) options.listMaxHeight = parseFloat(props.listMaxHeight)

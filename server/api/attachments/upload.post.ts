@@ -6,8 +6,9 @@ import { getUser } from "#server/lib/auth";
 import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
-import { uploadToUpYun, type ImageProcessOptions } from "#server/utils/upyun";
+import { uploadToUpYun } from "#server/utils/upyun";
 import { validateAttachmentData } from "#server/utils/validation";
+import type { ImageProcessOptions } from "#server/types/utils/upyun";
 
 // 允许的文件类型
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];

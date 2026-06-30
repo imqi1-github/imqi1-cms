@@ -1,5 +1,7 @@
 // 将 art-template 转换为 JavaScript 模板函数
-export default function (data) {
+import type { APlayerAudio } from '~/types/aplayer';
+
+export default function (data: { theme: string; audio: APlayerAudio[]; index: number }): string {
   const { theme, audio, index } = data
 
   return audio.map((item, i) => `

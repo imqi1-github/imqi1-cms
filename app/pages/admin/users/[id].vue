@@ -119,7 +119,7 @@ onMounted(() => {
             <div>
               <h3 class="text-lg font-semibold">{{ user.name }}</h3>
               <p class="text-sm text-muted-foreground">用户ID: {{ user.uid }}</p>
-              <p class="text-sm text-muted-foreground">注册时间: {{ formatDate(user.create) }}</p>
+              <p class="text-sm text-muted-foreground">注册时间: {{ formatDate(user.create_time) }}</p>
             </div>
           </div>
 

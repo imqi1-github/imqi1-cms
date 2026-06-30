@@ -283,9 +283,3 @@ export const StatsResponseSchema = z.object({
   linksCount: z.number(),
   subscribesCount: z.number(),
 });
-
-export type StandardResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};

@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { prisma } from "#server/utils/prisma";
-import type { SessionData, SessionStore } from "#server/types/utils/session-store";
+import type { SessionData, SessionStore, SessionStoreType } from "#server/types/utils/session-store";
 
 
 // 内存存储
@@ -212,9 +212,6 @@ export class DatabaseSessionStore implements SessionStore {
     });
   }
 }
-
-// 存储类型
-export type SessionStoreType = "memory" | "file" | "database";
 
 // 获取存储实例
 let currentStore: SessionStore | null = null;

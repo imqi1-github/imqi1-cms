@@ -12,3 +12,10 @@ export interface UploadResult {
   url?: string;
   error?: string;
 }
+
+// 图片处理配置接口
+export interface ImageProcessOptions {
+  enabled: boolean;
+  thumbnailVersion?: string;
+  outputMode?: string;
+}

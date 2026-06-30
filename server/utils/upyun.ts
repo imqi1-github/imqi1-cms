@@ -2,7 +2,7 @@ import * as crypto from "crypto";
 
 import prisma from "./prisma";
 
-import type { UpYunConfig, UploadResult } from "#server/types/utils/upyun";
+import type { ImageProcessOptions, UpYunConfig, UploadResult } from "#server/types/utils/upyun";
 
 // 又拍云 API 端点
 const UPYUN_API_ENDPOINT = "v0.api.upyun.com";
@@ -51,13 +51,6 @@ function generateSignature(method: string, uri: string, date: string, passwordMd
 // 密码 MD5 加密
 function md5Password(password: string): string {
   return crypto.createHash("md5").update(password, "utf-8").digest("hex");
-}
-
-// 图片处理配置接口
-export interface ImageProcessOptions {
-  enabled: boolean;
-  thumbnailVersion?: string;
-  outputMode?: string;
 }
 
 // 上传文件到又拍云
