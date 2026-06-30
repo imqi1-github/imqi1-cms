@@ -27,20 +27,18 @@
       </div>
 
       <!-- 联系链接 -->
-      <ClientOnly>
-        <div class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center animate-fade-in">
-          <template v-for="(link, index) in contactLinks" :key="index">
-            <NuxtLink
-              v-tooltip="link.name"
-              :href="link.link"
-              :target="link.target ? '_blank' : undefined"
-              :aria-label="link.name"
-              class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
-              <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
-            </NuxtLink>
-          </template>
-        </div>
-      </ClientOnly>
+      <div class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center animate-fade-in">
+        <template v-for="(link, index) in contactLinks" :key="index">
+          <NuxtLink
+            v-tooltip="link.name"
+            :href="link.link"
+            :target="link.target ? '_blank' : undefined"
+            :aria-label="link.name"
+            class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white">
+            <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
+          </NuxtLink>
+        </template>
+      </div>
     </div>
 
     <!-- 占位section，用于撑开页面高度 -->

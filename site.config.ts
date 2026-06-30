@@ -91,7 +91,7 @@ export const siteConfig = defineSiteConfig({
     },
     {
       name: "虫洞",
-      icon: "boxicons:planet-filled",
+      icon: "ri:earth-fill",
       link: "https://foreverblog.cn/go.html",
       target: true,
     }

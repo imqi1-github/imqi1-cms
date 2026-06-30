@@ -568,7 +568,7 @@ onUnmounted(() => {
       :alt="alt"
       v-bind="fancyboxAttrs"
       loading="lazy"
-      class="block w-full h-full max-h-37.5 object-cover transition-opacity duration-300 opacity-0"
+      class="block w-full h-full object-cover transition-opacity duration-300 opacity-0"
       @load="(e) => { (e.target as HTMLImageElement).classList.add('opacity-100'); }" >
     <!-- 占位骨架屏（未加载时显示） -->
     <div
