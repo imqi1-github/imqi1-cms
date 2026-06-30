@@ -42,19 +42,7 @@ export interface CommentSubmitResponse {
 	auditResult: unknown | null;
 }
 
-/** 提交评论请求体 */
-export interface CommentSubmitBody {
-	csrfToken: string;
-	cid: number;
-	content: string;
-	name: string;
-	mail: string;
-	link: string;
-	parent_id: number | null;
-	website: string; // 蜜罐字段
-	captcha?: string; // 图形验证码
-}
-
+/** 评论列表项（后台管理用） */
 export interface CommentItem {
 	coid: number;
 	cid: number;

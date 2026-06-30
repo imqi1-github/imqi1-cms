@@ -63,5 +63,3 @@ if (redis && redisConfig) {
 } else {
   console.log("[Redis] 未配置 Redis 连接，将使用本地缓存或无缓存模式");
 }
-
-export default redis;

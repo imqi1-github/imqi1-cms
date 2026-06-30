@@ -145,25 +145,6 @@ export function validateSubscribeData(data: {
 }
 
 /**
- * 验证订阅文章数据
- */
-export function validateSubscribePostData(data: {
-  title?: string;
-  link?: string;
-  author?: string | null;
-}): void {
-  if (data.title) {
-    validateMaxLength(data.title, 500, "标题");
-  }
-  if (data.link) {
-    validateMaxLength(data.link, 500, "链接");
-  }
-  if (data.author) {
-    validateMaxLength(data.author, 255, "作者");
-  }
-}
-
-/**
  * 验证附件数据
  */
 export function validateAttachmentData(data: {

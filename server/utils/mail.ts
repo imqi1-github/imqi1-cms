@@ -1,8 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import type {comments} from "@prisma/client";
-
 import prisma from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 import type { MailOptions } from "#server/types/utils/mail";
@@ -203,86 +201,6 @@ export async function sendTestEmail(to: string): Promise<{ success: boolean; mes
     writeLog("error", "测试邮件发送失败", { to, error: errorMsg });
     return { success: false, message: `发送失败: ${errorMsg}` };
   }
-}
-
-// 发送新评论通知
-export async function sendCommentNotification(comment: comments, postTitle: string): Promise<boolean> {
-  const config = await getMailConfig();
-
-  // 检查是否需要通知管理员
-  if (!config.notifyAdmin || !config.adminEmail) {
-    return false;
-  }
-
-  if (config.pushType === "none") {
-    writeLog("warn", "邮件推送未启用，跳过评论通知", {
-      commentId: comment.coid,
-    });
-    return false;
-  }
-
-  const postUrl = await getPostUrl(comment.cid);
-
-  return await sendMail({
-    to: config.adminEmail,
-    subject: `新评论提醒：${comment.name} 评论了您的文章`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">新评论通知</h2>
-        <p>您的文章 <strong>${postTitle}</strong> 收到了一条新评论：</p>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-          <p style="margin: 0 0 10px 0;"><strong>${comment.name}</strong> 说：</p>
-          <p style="margin: 0; color: #666;">${comment.content}</p>
-        </div>
-        <p style="color: #999; font-size: 12px;">
-          邮箱: ${comment.mail || "未填写"}<br>
-          IP: ${comment.ip || "未知"}
-        </p>
-        <p style="margin-top: 20px;">
-          <a href="${postUrl}" style="display: inline-block; padding: 10px 20px; background: #0070f3; color: white; text-decoration: none; border-radius: 5px;">
-            查看评论
-          </a>
-        </p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #999; font-size: 12px;">
-          发送时间: ${new Date().toLocaleString("zh-CN")}
-        </p>
-      </div>
-    `,
-  });
-}
-
-// 获取最近的邮件日志
-export function getRecentLogs(limit = 50): Array<{
-  timestamp: string;
-  level: string;
-  message: string;
-  [key: string]: unknown;
-}> {
-  ensureLogDir();
-
-  const today = new Date().toISOString().split("T")[0];
-  const logPath = path.join(LOG_DIR, `${today}.log`);
-
-  if (!fs.existsSync(logPath)) {
-    return [];
-  }
-
-  const content = fs.readFileSync(logPath, "utf-8");
-  const lines = content.trim().split("\n");
-
-  const logs: Array<{timestamp: string; level: string; message: string; [key: string]: unknown}> = [];
-  for (const line of lines.reverse()) {
-    try {
-      logs.push(JSON.parse(line));
-      if (logs.length >= limit) break;
-    } catch (error) {
-      console.error(error);
-      // 忽略无法解析的行
-    }
-  }
-
-  return logs;
 }
 
 // 获取站点信息

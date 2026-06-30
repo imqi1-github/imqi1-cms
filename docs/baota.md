@@ -36,7 +36,7 @@ wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh && sudo
 
 在宝塔面板内，创建数据库。
 
-如果没有旧数据，就用 git clone 克隆项目到 /www/wwwroot/glass 目录下，然后安装依赖、执行 `npx prisma generate`、`npx prisma migrate deploy` 创建数据库，使用 `NODE_ENV=production npx prisma db seed` 初始化数据库。
+如果没有旧数据，就用 git clone 克隆项目到 /www/wwwroot/glass 目录下，然后安装依赖、执行 `npx prisma generate` 创建数据库客户端，再在 SQL 管理工具中执行 `scripts/migrations/sync-schema.sql` 建表，最后执行 `scripts/init-db.sql` 初始化管理员账户。
 
 在宝塔面板内，进入【网站】-【Node项目】，添加项目。
 

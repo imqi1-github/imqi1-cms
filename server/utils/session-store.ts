@@ -256,9 +256,3 @@ export async function getSessionConfig(): Promise<{ storeType: SessionStoreType 
     return { storeType: "file" };
   }
 }
-
-// 重置存储实例（配置更改时调用）
-export function resetSessionStore(): void {
-  currentStore = null;
-  currentStoreType = null;
-}

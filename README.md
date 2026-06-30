@@ -71,11 +71,11 @@ cp .env.example .env
 # DB_PASSWORD="password"
 # DB_NAME="imqi1"
 
-# 运行数据库迁移
-bun run prisma:migrate
+# 同步数据库结构（首次/升级 schema 后执行）
+# 在 SQL 管理工具中执行 scripts/migrations/sync-schema.sql
 
-# 初始化种子数据
-bun run prisma:seed
+# 初始化管理员账户
+bun run db:init
 
 # 启动开发服务器
 bun run dev
@@ -166,7 +166,6 @@ nodejs-imqi1/
 │   └── lib/               # 服务端库
 ├── prisma/                # Prisma 配置
 │   ├── schema.prisma     # 数据库模型
-│   └── seed/             # 种子数据脚本
 ├── public/                # 静态资源
 ├── lib/                   # 共享库
 │   └── utils.ts          # 工具函数
@@ -191,16 +190,15 @@ bun run prisma:studio    # 打开 Prisma Studio
 
 ```bash
 bun run build            # 构建生产版本
-bun run build:upload     # 上传到腾讯云 CDN
-bun run build:debug      # 调试模式构建
+bun run upload:cos       # 上传到腾讯云 COS
 ```
 
 ### 数据库
 
 ```bash
-bun run prisma:migrate   # 运行数据库迁移
-bun run prisma:seed      # 初始化种子数据
-bun run db:reset         # 重置数据库
+bun run prisma:generate  # 生成 Prisma 客户端
+bun run db:init          # 初始化管理员账户
+bun run prisma:studio    # 可视化查看数据库
 ```
 
 ### PM2 部署

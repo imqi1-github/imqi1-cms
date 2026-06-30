@@ -2,7 +2,7 @@ import type { H3Event } from "h3";
 import { setCookie, getCookie, deleteCookie } from "h3";
 
 import { prisma } from "#server/utils/prisma";
-import { getSessionStore, resetSessionStore } from "#server/utils/session-store";
+import { getSessionStore } from "#server/utils/session-store";
 import type { SessionUser } from "#server/types/auth";
 
 const SESSION_COOKIE_NAME = "session";
@@ -121,6 +121,3 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   const bcrypt = await import("bcryptjs");
   return bcrypt.default.compare(password, hashedPassword);
 }
-
-// 导出重置函数，供配置更改时调用
-export { resetSessionStore };
