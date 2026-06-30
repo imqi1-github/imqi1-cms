@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
+import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
@@ -8,32 +9,18 @@ import "swiper/css/pagination";
 import "@/assets/css/fancybox.css";
 import type {Props} from "~/types/components/cover-swiper";
 
-// Swiper 懒加载缓存：避免静态 import 把 swiper 主体打进共享 chunk。
-// 注意：必须直接动态 import 具体模块文件（swiper/modules/*.mjs），而非
-// `swiper/modules` barrel 入口——后者会让 Rollup 把全部 16 个模块整体打包（~215kB）。
-// 仅类型用 `swiper/modules`，编译期擦除不影响运行时体积。
-type SwiperDeps = {
-  Swiper: typeof import("swiper").default;
-  Mousewheel: typeof import("swiper/modules").Mousewheel;
-  Navigation: typeof import("swiper/modules").Navigation;
-  Pagination: typeof import("swiper/modules").Pagination;
-};
-let swiperDepsPromise: Promise<SwiperDeps> | null = null;
+// swiper 主体（Swiper 类，~156kB）懒加载，避免静态打包进共享 chunk、拖累首屏。
+// 3 个模块用静态具名 import：能 tree-shake 只留用到的 3 个（合计 ~45kB），
+// 不会像 `await import("swiper/modules")` 那样把 16 个模块整体打包（215kB）。
+// 注意：swiper 的 package.json exports 未暴露 modules/*.mjs 子路径，无法直接
+// 动态 import 具体模块文件，故模块走静态 import，仅主体动态加载。
+type SwiperType = typeof import("swiper").default;
+let swiperPromise: Promise<SwiperType> | null = null;
 const loadSwiper = () => {
-  if (!swiperDepsPromise) {
-    swiperDepsPromise = Promise.all([
-      import("swiper"),
-      import("swiper/modules/navigation.mjs"),
-      import("swiper/modules/pagination.mjs"),
-      import("swiper/modules/mousewheel.mjs"),
-    ]).then(([swiper, Navigation, Pagination, Mousewheel]) => ({
-      Swiper: swiper.default,
-      Mousewheel: Mousewheel.default,
-      Navigation: Navigation.default,
-      Pagination: Pagination.default,
-    }));
+  if (!swiperPromise) {
+    swiperPromise = import("swiper").then(m => m.default);
   }
-  return swiperDepsPromise;
+  return swiperPromise;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,7 +40,7 @@ const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
 const initSwiper = async () => {
   if (!swiperContainer.value || props.covers.length === 0) return;
 
-  const { Swiper, Mousewheel, Navigation, Pagination } = await loadSwiper();
+  const Swiper = await loadSwiper();
 
   // ✅ 异步操作后检查 DOM 是否还存在
   if (isUnmounted || !swiperContainer.value) {

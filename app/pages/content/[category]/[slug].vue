@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 
+import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -458,19 +459,10 @@ onMounted(async () => {
   try {
     // 动态导入 Fancybox（仅客户端）
     FancyboxModule = await import("@fancyapps/ui");
-    // 动态导入 Swiper（仅客户端，避免静态打包进共享 chunk）。
-    // 直接 import 具体模块文件而非 `swiper/modules` barrel，避免整体打包 16 个模块。
-    const [
-      { default: Swiper },
-      { default: Navigation },
-      { default: Pagination },
-      { default: Mousewheel },
-    ] = await Promise.all([
-      import("swiper"),
-      import("swiper/modules/navigation.mjs"),
-      import("swiper/modules/pagination.mjs"),
-      import("swiper/modules/mousewheel.mjs"),
-    ]);
+    // 动态导入 Swiper 主体（仅客户端，避免静态打包进共享 chunk）。
+    // 3 个模块已在文件顶部静态具名 import（tree-shake 后只含 3 个，~45kB），
+    // 不随主体动态加载——swiper 的 exports 未暴露 modules/*.mjs 子路径，无法动态 import 具体文件。
+    const { default: Swiper } = await import("swiper");
     // 404 页面动画（初始状态）
     if (isNotFound.value) {
       nextTick(() => {
