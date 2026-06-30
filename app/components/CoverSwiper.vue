@@ -149,7 +149,7 @@ watch(
     </div>
     <div class="flex justify-between items-center h-8">
       <div class="swiper-pagination"/>
-      <div class="swiper-buttons absolute right-0">
+      <div class="swiper-buttons absolute right-0 mt-1.5">
         <div class="swiper-button-prev"/>
         <div class="swiper-button-next"/>
       </div>
