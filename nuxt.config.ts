@@ -85,10 +85,12 @@ export default defineNuxtConfig({
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode", "@vite-pwa/nuxt", "@nuxt/eslint"],
 
   icon: {
-    // 只把源码中实际用到的图标打入 server/client bundle（scan），
-    // 避免默认全量打包整个图标集（lucide+ri 全量约 1.6MB）。
-    // clientBundle 打包后客户端 hydrate 时无需异步请求图标，首屏不再闪烁。
-    serverBundle: { scan: true },
+    // 服务端用本地已安装的 @iconify-json/* 集合渲染（不存在按需 scan，
+    // 整集合进服务端 bundle，但不影响客户端体积）。
+    // clientBundle.scan 扫描源码，只把实际用到的图标打入客户端 bundle，
+    // 避免默认全量打包整个图标集（lucide+ri 全量约 1.6MB），
+    // 客户端 hydrate 时无需异步请求图标，首屏不再闪烁。
+    serverBundle: "local",
     clientBundle: { scan: true },
   },
 
