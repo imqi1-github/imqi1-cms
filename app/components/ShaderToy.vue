@@ -10,6 +10,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, type HTMLAttributes } from "vue";
+
 import { InspiraShaderToy, type MouseMode } from "./InspiraShaderToy";
 
 interface Props {

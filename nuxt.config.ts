@@ -427,7 +427,6 @@ export default defineNuxtConfig({
       // @ts-expect-error 手动为 config 插入 visualizer 插件
       config.plugins = config.plugins || [];
       config.plugins.push(
-        // @ts-expect-error 手动为 config 插入 visualizer 插件
         visualizer({
           filename: "stats.html",
           template: "treemap",
