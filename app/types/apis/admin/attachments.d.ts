@@ -10,8 +10,8 @@ export interface AttachmentItem {
 	name: string;
 	type: string;
 	url: string;
-	/** 文件大小，列表接口暂不支持，返回 "-" */
-	size: string;
+	/** 文件字节数；历史记录可能为 0，前端显示为 "-" */
+	size: number;
 	/** Prisma Date 经序列化为 string */
 	createTime: string;
 	post: AttachmentItemPost | null;

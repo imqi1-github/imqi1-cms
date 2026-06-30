@@ -74,7 +74,8 @@ export interface Attachment {
 	name: string;
 	type: string;
 	url: string;
-	size: string;
+	/** 文件字节数；历史记录可能为 0，前端显示为 "-" */
+	size: number;
 }
 
 export interface PostResponse {

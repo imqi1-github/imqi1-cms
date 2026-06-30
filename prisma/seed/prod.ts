@@ -74,9 +74,7 @@ async function main() {
   console.log("🌱 [生产环境] 开始生成种子数据...");
 
   // 检查是否已有管理员用户
-  const existingAdmin = await prisma.users.findFirst({
-    where: { role: 1 },
-  });
+  const existingAdmin = await prisma.users.findFirst({});
 
   if (!existingAdmin) {
     throw new Error("未找到管理员用户。生产环境 seed 不再创建默认弱口令管理员，请先通过后台初始化或专用测试脚本创建用户。");

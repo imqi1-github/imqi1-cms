@@ -44,7 +44,7 @@ CREATE TABLE `users` (
   `password` VARCHAR(191) NOT NULL,
   `create` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `auth_code` VARCHAR(191) NULL,
-  `role` INT NOT NULL DEFAULT 0,
+
   PRIMARY KEY (`uid`),
   UNIQUE INDEX `Users_name_key`(`name`),
   UNIQUE INDEX `Users_mail_key`(`mail`)
@@ -210,8 +210,8 @@ CREATE TABLE `subscribeposts` (
 
 -- 插入管理员用户
 -- 默认密码：admin123 (使用 bcryptjs 生成，salt rounds = 10)
-INSERT INTO `users` (`name`, `nickname`, `mail`, `password`, `role`)
-VALUES ('admin', '管理员', 'admin@example.com', '$2a$10$vtD5ulRH6k9Lt0iLcoa66.9A9nqqo1wPgdxab2v0nCuim/eaZGidu', 1);
+INSERT INTO `users` (`name`, `nickname`, `mail`, `password`)
+VALUES ('admin', '管理员', 'admin@example.com', '$2a$10$vtD5ulRH6k9Lt0iLcoa66.9A9nqqo1wPgdxab2v0nCuim/eaZGidu');
 
 -- 插入系统配置信息
 INSERT INTO `informations` (`key`, `value`) VALUES

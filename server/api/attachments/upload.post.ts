@@ -252,6 +252,7 @@ export default defineEventHandler(async event => {
         title: file.name,
         url: fileUrl,
         storage: uploadLocation,
+        size: file.size,
       },
     });
 
@@ -262,7 +263,7 @@ export default defineEventHandler(async event => {
         name: attachment.title,
         type: attachment.type,
         url: attachment.url,
-        size: formatFileSize(file.size),
+        size: file.size,
         create_time: attachment.create_time,
         storage: uploadLocation,
       },
@@ -276,9 +277,3 @@ export default defineEventHandler(async event => {
     });
   }
 });
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}

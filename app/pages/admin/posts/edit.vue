@@ -246,6 +246,14 @@ const uploadProgress = ref(0);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const dragOver = ref(false);
 
+// 格式化文件大小
+function formatFileSize(bytes: number) {
+  if (!bytes || bytes === 0) return "-";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
 // 获取附件列表
 const fetchAttachments = async () => {
   if (!postId.value) return;
@@ -1065,7 +1073,7 @@ watch(postId, newCid => {
                         <p class="text-xs font-medium truncate" :title="item.name">
                           {{ item.name }}
                         </p>
-                        <p class="text-xs text-muted-foreground">{{ item.size }}</p>
+                        <p class="text-xs text-muted-foreground">{{ formatFileSize(item.size) }}</p>
                       </div>
                     </div>
                   </div>

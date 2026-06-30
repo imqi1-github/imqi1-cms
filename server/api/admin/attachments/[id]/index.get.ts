@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import * as path from "path";
 
 import prisma from "#server/utils/prisma";
@@ -43,29 +42,12 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 获取文件信息
-    let fileSize = 0;
+    // 宽高暂未采集；格式由扩展名推断（本地与云存储均适用）
     const width: number | null = null;
     const height: number | null = null;
-    let format: string | null = null;
-
-    const filePath = path.join(process.cwd(), "public", attachment.url);
-    if (fs.existsSync(filePath)) {
-      const stats = fs.statSync(filePath);
-      fileSize = stats.size;
-
-      // 尝试获取图片尺寸
-      if (attachment.type === "image") {
-        try {
-          // 简单的格式检测
-          const ext = path.extname(filePath).toLowerCase();
-          format = ext.slice(1);
-        } catch (error) {
-          console.error(error);
-          // 忽略错误
-        }
-      }
-    }
+    const format = attachment.type === "image"
+      ? path.extname(attachment.url).toLowerCase().slice(1) || null
+      : null;
 
     return {
       success: true,
@@ -74,7 +56,7 @@ export default defineEventHandler(async event => {
         name: attachment.title,
         type: attachment.type,
         url: attachment.url,
-        size: fileSize,
+        size: attachment.size,
         width,
         height,
         format,

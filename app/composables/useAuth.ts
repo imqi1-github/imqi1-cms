@@ -7,7 +7,6 @@ const currentUser = ref<{
   nickname: string | null;
   mail: string | null;
   avatar: string | null;
-  role: number;
 } | null>(null);
 let hasInitialized = false;
 

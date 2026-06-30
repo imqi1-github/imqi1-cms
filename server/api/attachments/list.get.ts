@@ -46,7 +46,7 @@ export default defineEventHandler(async event => {
         name: a.title,
         type: a.type,
         url: a.url,
-        size: "-",
+        size: a.size,
         create_time: a.create_time,
       })),
     };

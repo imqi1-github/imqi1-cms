@@ -77,7 +77,6 @@ export async function getUser(event: H3Event): Promise<SessionUser | null> {
       nickname: true,
       mail: true,
       avatar: true,
-      role: true,
       auth_code: true,
     },
   });
@@ -101,7 +100,6 @@ export async function getUser(event: H3Event): Promise<SessionUser | null> {
     nickname: user.nickname,
     mail: user.mail,
     avatar: user.avatar,
-    role: user.role,
     authCode: session.authCode,
   };
 }

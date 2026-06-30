@@ -4,8 +4,8 @@ export interface PublicAttachment {
 	name: string;
 	type: string;
 	url: string;
-	/** 文件大小展示值（list 为 "-"，upload 为格式化字符串） */
-	size: string;
+	/** 文件字节数；历史记录可能为 0，前端显示为 "-" */
+	size: number;
 	/** Prisma DateTime，经 Nitro 序列化为 string */
 	create_time: string;
 	/** 上传接口额外返回，list 接口无此字段 */

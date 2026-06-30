@@ -979,7 +979,6 @@ async function main() {
       nickname: "管理员",
       mail: "admin@example.com",
       password: hashedPassword,
-      role: 1,
     },
   });
   console.log(`   ✅ 用户: ${admin.name} / 123456`);

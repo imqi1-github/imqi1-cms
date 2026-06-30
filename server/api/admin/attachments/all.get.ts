@@ -59,7 +59,7 @@ export default defineEventHandler(async event => {
           name: a.title,
           type: a.type,
           url: a.url,
-          size: '-', // 暂不支持文件大小
+          size: a.size,
           createTime: a.create_time,
           post: a.posts,
         })),

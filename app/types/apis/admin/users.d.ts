@@ -1,16 +1,3 @@
-/** 用户列表项（/api/admin/users GET，findMany 全字段，含 auth_code） */
-export interface UserItem {
-	uid: number;
-	name: string;
-	nickname: string | null;
-	avatar: string | null;
-	mail: string;
-	/** Prisma DateTime，经 Nitro 序列化为 string */
-	create_time: string;
-	auth_code: string | null;
-	role: number;
-}
-
 /** 用户详情（/api/admin/users/:id GET，select 不含 auth_code） */
 export interface UserDetail {
 	uid: number;
@@ -20,7 +7,6 @@ export interface UserDetail {
 	mail: string;
 	/** Prisma DateTime，经 Nitro 序列化为 string */
 	create_time: string;
-	role: number;
 }
 
 export interface CurrentUser {
@@ -29,5 +15,4 @@ export interface CurrentUser {
 	nickname: string | null;
 	avatar: string | null;
 	mail: string;
-	role: number;
 }

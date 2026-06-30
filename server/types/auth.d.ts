@@ -5,6 +5,5 @@ export interface SessionUser {
   nickname: string | null;
   mail: string;
   avatar: string | null;
-  role: number;
   authCode: string;
 }

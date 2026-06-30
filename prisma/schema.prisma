@@ -13,6 +13,7 @@ model attachments {
   title       String
   url         String
   storage     String   @default("local")
+  size        Int      @default(0)
   create_time DateTime @default(now())
   posts       posts    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Attachment_cid_fkey")
 
@@ -162,7 +163,6 @@ model users {
   password    String
   create_time DateTime @default(now())
   auth_code   String?
-  role        Int      @default(0)
   posts       posts[]
 }
 

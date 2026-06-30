@@ -35,7 +35,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const { name, nickname, mail, password, avatar, role } = updateBody;
+  const { name, nickname, mail, password, avatar } = updateBody;
 
   if (!name || !mail) {
     throw createError({
@@ -90,7 +90,6 @@ export default defineEventHandler(async event => {
       nickname: nickname || null,
       mail,
       avatar: avatar || null,
-      role: role !== undefined ? Number(role) : existingUser.role,
     };
 
     // 如果提供了新密码，则更新密码
@@ -109,7 +108,6 @@ export default defineEventHandler(async event => {
         nickname: true,
         mail: true,
         avatar: true,
-        role: true,
         create_time: true,
       },
     });

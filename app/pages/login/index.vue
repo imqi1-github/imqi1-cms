@@ -6,6 +6,17 @@
       </CardHeader>
 
       <CardContent class="space-y-4">
+        <!-- 无管理员账户提示 -->
+        <div
+          v-if="!hasUser"
+          class="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+          <Icon name="ri:information-line" class="size-4 shrink-0 mt-0.5" />
+          <div class="space-y-1">
+            <p class="font-medium">尚未创建管理员账户</p>
+            <p>开发环境运行 <code class="rounded bg-amber-100 px-1 dark:bg-amber-900">bun run db:init</code>，生产环境执行 <code class="rounded bg-amber-100 px-1 dark:bg-amber-900">scripts/init-db.sql</code> 创建管理员后即可登录。</p>
+          </div>
+        </div>
+
         <div class="space-y-2">
           <Label for="username">用户名</Label>
           <Input id="username" v-model="form.username" placeholder="请输入用户名" />
@@ -33,6 +44,7 @@
 <script setup lang="ts">
 // 获取目标跳转地址
 import type {ApiError} from "~/types/apis/login";
+import type {AuthStatus} from "~/types/apis/auth";
 
 const route = useRoute()
 const redirectTo = computed(() => route.query.to as string || '/admin')
@@ -46,6 +58,7 @@ const form = reactive({
 
 const loading = ref(false)
 const csrfToken = ref('')
+const hasUser = ref(true)
 
 onMounted(async () => {
   // 检查是否已经登录
@@ -68,6 +81,15 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('获取 CSRF token 失败:', error)
+  }
+
+  // 检查是否已存在可登录用户（单用户初始化提示）
+  try {
+    const statusRes = await $fetch<AuthStatus>('/api/auth/status')
+    hasUser.value = statusRes.hasUser
+  } catch {
+    // 接口异常时默认不显示提示，避免阻断登录
+    hasUser.value = true
   }
 })
 

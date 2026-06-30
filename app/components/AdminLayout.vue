@@ -36,7 +36,7 @@ const pageTitle = computed(() => {
     '/admin/comments': '评论管理',
     '/admin/categories': '分类管理',
     '/admin/tags': '标签管理',
-    '/admin/users': '用户管理',
+    '/admin/users': '账户设置',
     '/admin/links': '友情链接',
     '/admin/travels': '旅行地点',
     '/admin/attachments': '附件管理',
@@ -102,9 +102,9 @@ const navItems = [
     icon: 'lucide:tag',
   },
   {
-    title: '用户管理',
+    title: '账户设置',
     href: '/admin/users',
-    icon: 'lucide:users',
+    icon: 'lucide:user-cog',
   },
   {
     title: '友情链接',
