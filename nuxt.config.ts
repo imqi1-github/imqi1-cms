@@ -13,7 +13,9 @@ const isProduction = process.env.NODE_ENV === "production";
 const hasCdn = siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http");
 const cdnURL = isProduction && hasCdn ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl) : "";
 const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path);
-const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${siteConfig.cdnUrl} https://webapi.amap.com https://mapplugin.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${siteConfig.cdnUrl}; img-src 'self' data: https: blob: ${siteConfig.cdnUrl}; font-src 'self' data: ${siteConfig.cdnUrl}; manifest-src 'self' ${siteConfig.cdnUrl}; media-src 'self' https: data: blob:; connect-src 'self' ${siteConfig.cdnUrl} https://api.github.com https://gitee.com https://webapi.amap.com https://jsapi.amap.com https://restapi.amap.com blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
+// CSP 中使用的 CDN 源：未配置时回退为空字符串，避免拼接出字面量 "undefined" 导致该指令失效
+const cspCdn = hasCdn ? siteConfig.cdnUrl : "";
+const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${cspCdn} https://*.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${cspCdn}; img-src 'self' data: https: blob: ${cspCdn}; font-src 'self' data: ${cspCdn}; manifest-src 'self' ${cspCdn}; media-src 'self' https: data: blob:; connect-src 'self' ${cspCdn} https://api.github.com https://gitee.com https://*.amap.com blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {

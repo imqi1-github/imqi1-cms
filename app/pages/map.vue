@@ -279,7 +279,7 @@ onUnmounted(() => {
           v-for="opt in viewOptions"
           :key="opt.value"
           type="button"
-          class="flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-sm transition-colors sm:justify-start sm:px-3"
+          class="flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-sm transition-colors sm:justify-start sm:px-3 cursor-pointer"
           :class="
             view === opt.value
               ? 'bg-blue-600 text-white shadow'
