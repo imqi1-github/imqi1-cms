@@ -2419,8 +2419,8 @@ ref="fancyboxContainer"
 .markdown-body :deep(pre.shiki .file-label.has-icon::before) {
   content: "";
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background-image: var(--icon-url);
   background-size: cover;
   background-repeat: no-repeat;
