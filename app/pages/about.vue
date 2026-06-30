@@ -1,12 +1,18 @@
 <template>
   <div class="m-auto max-w-7xl min-h-screen overflow-x-hidden relative w-full">
     <div
-      class="bottom-0 text-slate-100 dark:text-slate-800 text-[clamp(4rem,12vw,16rem)] font-extrabold left-[3%] tracking-tighter pointer-events-none leading-[.8] fixed [text-orientation:mixed] select-none [writing-mode:sideways-lr] z-0 transition-colors duration-300">
+      class="bottom-0 text-slate-100 dark:text-slate-800 text-[clamp(4rem,12vw,16rem)] font-extrabold left-[3%] tracking-tighter leading-[.8] fixed [text-orientation:mixed] select-none [writing-mode:sideways-lr] z-0 transition-colors duration-300">
       <h1 id="about-page-title" class="sr-only">关于我</h1>
       {{ brandDomain }}
     </div>
 
-    <div class="p-10 md:p-6 max-sm:p-4 relative z-10">
+    <!-- Inspira UI 交互式网格（右下角固定装饰） -->
+    <div
+      class="fixed right-0 bottom-0 z-0 h-[min(60vh,520px)] w-[min(60vw,520px)] mask-[radial-gradient(ellipse_at_bottom_right,black_40%,transparent_78%)]">
+      <InteractiveGridPattern class="h-full w-full border-none" :squares="[20, 20]" />
+    </div>
+
+    <div class="p-10 md:p-6 max-sm:p-4 relative z-10 pointer-events-none about-pass-through">
       <!-- 头部区域 -->
       <div class="ready grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-32 max-md:gap-32">
         <div class="pl-8">
@@ -244,42 +250,42 @@
           兴趣广泛
         </h2>
         <div class="flex flex-wrap gap-4 pt-3">
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">💻</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >编程</span
             >
           </div>
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">🎮</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >游戏</span
             >
           </div>
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">🎸</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >音乐</span
             >
           </div>
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">📸</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >摄影</span
             >
           </div>
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">📚</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
               >阅读</span
             >
           </div>
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
+          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
             <span class="block text-2xl mb-2">✈️</span>
             <span
               class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
@@ -876,5 +882,19 @@ onUnmounted(() => {
 
 .animate-scroll-diagonal:hover {
   animation-play-state: paused;
+}
+
+/* 事件穿透：内容容器整体不接收指针事件，让背后 fixed 的网格能被 hover；
+   仅交互元素重新启用，保证链接/按钮/图片/输入框可点击且保留 hover 效果。
+   代价：正文文字无法在空白处选中。 */
+.about-pass-through :deep(a),
+.about-pass-through :deep(button),
+.about-pass-through :deep(img),
+.about-pass-through :deep(input),
+.about-pass-through :deep(textarea),
+.about-pass-through :deep(select),
+.about-pass-through :deep(label),
+.about-pass-through :deep(.interest-card) {
+  pointer-events: auto;
 }
 </style>

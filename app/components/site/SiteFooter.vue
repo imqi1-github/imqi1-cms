@@ -468,4 +468,29 @@ onUnmounted(() => {
 .no-underline {
   text-decoration: none;
 }
+
+/* 按钮整体出现/消失（进度 < 10% 时隐藏 ↔ 显示） */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+/* 进度圆环 ↔ 返回顶部箭头 之间的切换（mode="out-in"） */
+.icon-fade-enter-active,
+.icon-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.icon-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.7);
+}
+.icon-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.7);
+}
 </style>
