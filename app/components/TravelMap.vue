@@ -169,6 +169,10 @@ function serverMetaText(place: Place) {
   const isp = (place.serverIsp || "").trim();
   if (!location && !isp) return "";
 
+  if (!location && isp) return isp;
+
+  if (!isp && location) return location;
+
   if (isp.endsWith("CDN")) {
     const carrier = isp.replace(/CDN$/, "");
     return `CDN · ${location}${carrier}`;
