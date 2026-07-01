@@ -9,7 +9,7 @@
           <h1 class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
           </h1>
-          <div class="mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce"/>
+          <div class="mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce" />
         </div>
 
         <!-- 头像区域 -->
@@ -43,7 +43,7 @@
     </div>
 
     <!-- 占位section，用于撑开页面高度 -->
-    <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true"/>
+    <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true" />
 
     <!-- 为什么要做这个网站 -->
     <section v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-why-title">
@@ -89,13 +89,15 @@
             </div>
           </div>
           <div class="mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
-            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，至今持续更新中。这一版基于 Nuxt 4 与 TypeScript 前后端同构搭建，配合 Tailwind CSS 构建现代化响应式布局，集成 APlayer 音乐播放器、Fancybox 图片灯箱、实况照片与轮播等富媒体组件，为文章内容提供更丰富的交互体验。系统涵盖文章、评论、友链、订阅、归档与搜索等完整博客功能，配合完善的后台管理，构成一套真正意义上的全栈内容管理系统。
+            本站主题为 Glass，是我制作的第二款主题，从 2026 年 4 月开始制作，至今持续更新中。这一版基于 Nuxt 4 与 TypeScript 前后端同构搭建，配合
+            Tailwind CSS 构建现代化响应式布局，集成 APlayer 音乐播放器、Fancybox
+            图片灯箱、实况照片与轮播等富媒体组件，为文章内容提供更丰富的交互体验。系统涵盖文章、评论、友链、订阅、归档与搜索等完整博客功能，配合完善的后台管理，构成一套真正意义上的全栈内容管理系统。
           </div>
         </div>
       </section>
 
       <!-- 大间隔 -->
-      <div class="h-62.5"/>
+      <div class="h-62.5" />
 
       <!-- 样式选择 -->
       <div ref="sectionStyle" v-scroll-reveal class="-mt-5 mx-auto max-w-200">
@@ -164,10 +166,18 @@
                     </code>
                     <div
                       class="grid grid-cols-2 grid-rows-2 place-items-center justify-items-center text-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded shadow-sm h-19 w-19 absolute left-14 top-8 animate-float-delay-2">
-                      <span><Icon name="ri:attachment-line" class="text-slate-600 dark:text-gray-400" /></span>
-                      <span><Icon name="ri:file-zip-fill" class="text-slate-600 dark:text-gray-400" /></span>
-                      <span><Icon name="ri:video-fill" class="text-slate-600 dark:text-gray-400" /></span>
-                      <span><Icon name="ri:restart-line" class="text-slate-600 dark:text-gray-400" /></span>
+                      <span>
+                        <Icon name="ri:attachment-line" class="text-slate-600 dark:text-gray-400" />
+                      </span>
+                      <span>
+                        <Icon name="ri:file-zip-fill" class="text-slate-600 dark:text-gray-400" />
+                      </span>
+                      <span>
+                        <Icon name="ri:video-fill" class="text-slate-600 dark:text-gray-400" />
+                      </span>
+                      <span>
+                        <Icon name="ri:restart-line" class="text-slate-600 dark:text-gray-400" />
+                      </span>
                     </div>
                   </div>
 
@@ -175,10 +185,14 @@
                   <div v-else-if="rightItem.type === 'layout'" class="relative h-75 w-75 group">
                     <div
                       class="absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
-                      <img :src="publicAsset('/imgs/shenyang.webp')" loading="lazy" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" >
+                      <img
+                        :src="publicAsset('/imgs/shenyang.webp')"
+                        loading="lazy"
+                        class="absolute inset-0 aspect-square object-cover"
+                        alt="沈阳站" >
                     </div>
                     <div
-                      class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"/>
+                      class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm" />
                   </div>
 
                   <!-- 音乐播放器 - 延迟加载 -->
@@ -250,22 +264,34 @@
       </div>
 
       <!-- 间隔 -->
-      <div class="h-62.5"/>
+      <div class="h-62.5" />
 
       <!-- 最新文章 -->
       <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-recent-posts-title">
-        <h2 id="index-recent-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
-        <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
-        <div class="text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 id="index-recent-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
+            <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
+            <div class="text-slate-500 dark:text-gray-400 text-sm">生活中的小事、照片，感兴趣的技术等</div>
+          </div>
+
+          <!-- 查看更多 -->
+          <template v-if="recentPosts.length > 0">
+            <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
+              查看全部文章
+              <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
+            </NuxtLink>
+          </template>
+        </div>
 
         <!-- 文章列表 -->
-        <div v-if="recentPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-if="recentPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
           <NuxtLink
             v-for="post in recentPosts"
             :key="post.cid"
             :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
             :aria-label="`阅读文章：${post.title}`"
-            class="block no-underline">
+            class="block no-underline group">
             <div
               class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
               <!-- 封面占满整卡 -->
@@ -292,7 +318,7 @@
                 </div>
               </div>
               <!-- 无封面占位 -->
-              <div v-else class="absolute inset-0 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+              <div v-else class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
                 <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
               </div>
               <!-- 文章信息（底部毛玻璃带） -->
@@ -301,7 +327,11 @@
                 :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                 <h3
                   class="font-medium text-sm line-clamp-2 mb-2 transition-colors"
-                  :class="post.covers && post.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'">
+                  :class="
+                    post.covers && post.covers.length > 0
+                      ? 'text-white hover:text-blue-100'
+                      : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
+                  ">
                   {{ post.title }}
                 </h3>
                 <div
@@ -309,13 +339,21 @@
                   :class="post.covers && post.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
                   <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
-                    <span v-for="(cat, idx) in post.categories" :key="cat.slug ?? cat.name" v-tooltip="'分类'" :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                    <span
+                      v-for="(cat, idx) in post.categories"
+                      :key="cat.slug ?? cat.name"
+                      v-tooltip="'分类'"
+                      :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                       {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
                     </span>
                   </div>
                   <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                    <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name" v-tooltip="'标签'" :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                    <span
+                      v-for="(tag, idx) in post.tags.slice(0, 2)"
+                      :key="tag.slug ?? tag.name"
+                      v-tooltip="'标签'"
+                      :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                       {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                     </span>
                     <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
@@ -337,14 +375,6 @@
         <!-- 无文章状态 -->
         <div v-else class="text-center py-12 text-slate-500 dark:text-gray-400">
           <p>暂无文章</p>
-        </div>
-
-        <!-- 查看更多 -->
-        <div v-if="recentPosts.length > 0" class="text-center mt-8">
-          <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
-            查看全部文章
-            <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
-          </NuxtLink>
         </div>
       </section>
 
@@ -399,7 +429,7 @@
                   </div>
                 </div>
                 <!-- 无封面占位 -->
-                <div v-else class="absolute inset-0 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
+                <div v-else class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
                   <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
                 </div>
                 <!-- 文章信息（底部毛玻璃带） -->
@@ -408,7 +438,11 @@
                   :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                   <h3
                     class="font-medium text-sm line-clamp-2 mb-2 transition-colors"
-                    :class="post.covers && post.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'">
+                    :class="
+                      post.covers && post.covers.length > 0
+                        ? 'text-white hover:text-blue-100'
+                        : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
+                    ">
                     {{ post.title }}
                   </h3>
                   <div
@@ -416,7 +450,11 @@
                     :class="post.covers && post.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
                     <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                      <span v-for="(tag, idx) in post.tags.slice(0, 2)" :key="tag.slug ?? tag.name" v-tooltip="'标签'" :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                      <span
+                        v-for="(tag, idx) in post.tags.slice(0, 2)"
+                        :key="tag.slug ?? tag.name"
+                        v-tooltip="'标签'"
+                        :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                         {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
                       </span>
                       <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
@@ -474,7 +512,7 @@
             left: `calc(${activeTocIndex * 25}% + 4px)`,
             width: 'calc(25% - 8px)',
             transition: 'left 300ms cubic-bezier(0, 0, 0.2, 1)',
-          }"/>
+          }" />
         <div
           v-for="(item, index) in tocItems"
           :key="item.id"
@@ -484,13 +522,13 @@
           <!-- 非激活态悬浮背景：与高亮指示框同尺寸的内嵌药丸（inset-1 与指示框四周 4px 内缩一致） -->
           <span
             v-if="activeTocIndex !== index"
-            class="absolute inset-1 rounded-full bg-gray-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:bg-gray-700"/>
+            class="absolute inset-1 rounded-full bg-gray-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:bg-gray-700" />
           <span class="relative">{{ item.title }}</span>
         </div>
       </div>
     </div>
     <!-- 间隔 -->
-    <div class="h-36"/>
+    <div class="h-36" />
 
     <!-- 阅读更多 -->
     <section v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-read-more-title">
@@ -498,40 +536,40 @@
       <div class="flex flex-wrap justify-center gap-4 mt-8">
         <NuxtLink
           to="/subscribes"
-          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >我的订阅</NuxtLink
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">
+          我的订阅</NuxtLink
         >
         <NuxtLink
           href="/agreement"
-          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >协议</NuxtLink
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">
+          协议</NuxtLink
         >
         <NuxtLink
           href="/sitemap"
-          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >站点地图</NuxtLink
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">
+          站点地图</NuxtLink
         >
         <NuxtLink
           href="/archiving"
-          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >归档</NuxtLink
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">
+          归档</NuxtLink
         >
         <NuxtLink
           to="/changelogs"
-          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >更新日志</NuxtLink
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">
+          更新日志</NuxtLink
         >
         <NuxtLink
           to="/feed"
           target="_blank"
-          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors"
-          >订阅本站</NuxtLink
+          class="px-6 py-2.5 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-700 dark:text-gray-200 transition-colors">
+          订阅本站</NuxtLink
         >
       </div>
     </section>
 
     <!-- 间隔 -->
-    <div class="h-37.5"/>
+    <div class="h-37.5" />
 
     <!-- 订阅文章 -->
     <section v-if="subscribePosts.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-subscribe-posts-title">
@@ -592,7 +630,7 @@
     </section>
 
     <!-- 间隔 -->
-    <div v-if="subscribePosts.length > 0" class="h-37.5"/>
+    <div v-if="subscribePosts.length > 0" class="h-37.5" />
 
     <!-- 更新日志 -->
     <section v-if="recentChangelogs.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-changelogs-title">
@@ -609,16 +647,17 @@
 
       <!-- 日志列表 -->
       <div class="space-y-4">
-        <div v-for="log in recentChangelogs" :key="log.id" class="border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all">
+        <div
+          v-for="log in recentChangelogs"
+          :key="log.id"
+          class="border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all">
           <div class="mb-2">
             <span class="text-sm text-muted-foreground">{{ formatChangelogDate(log.create_time) }}</span>
           </div>
           <div class="space-y-2">
             <div v-for="(entry, i) in log.content" :key="i" class="flex items-start gap-3">
               <!-- 类型徽标 -->
-              <div
-                :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 flex items-center gap-1 ${getChangelogMeta(entry.type).color}`"
-              >
+              <div :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 flex items-center gap-1 ${getChangelogMeta(entry.type).color}`">
                 <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
                 {{ getChangelogMeta(entry.type).label }}
               </div>
@@ -634,7 +673,7 @@
     </section>
 
     <!-- 底部间隔 -->
-    <div class="h-37.5"/>
+    <div class="h-37.5" />
   </div>
 </template>
 
@@ -1026,6 +1065,7 @@ onMounted(() => {
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }

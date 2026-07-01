@@ -5,7 +5,7 @@ import { Mousewheel, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch, type App } from "vue";
 
 import type { RelatedPost } from "~/types/apis/content/related-posts";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
@@ -433,6 +433,12 @@ let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
 // Markdown 图片增强（实况照片动态挂载 LivePhoto 组件，普通图片加 caption 浮层）
 const { mount: mountMarkdownImages, unmount: unmountMarkdownImages } = useMarkdownImages();
+
+// 动态挂载的 MetingPlayer 子应用实例 —— 必须在 onUnmounted 中逐个 unmount，否则每篇带音乐块的文章导航都会累积一个完整 Vue 子应用 + APlayer 实例（事件监听/定时器/Web Audio 节点泄露）
+const metingApps: App[] = [];
+
+// 动态创建的 Swiper 实例 —— 必须在 onUnmounted 中逐个 destroy，否则每次导航累积 Navigation/Pagination/Mousewheel 监听 + resize observer
+const markdownSwipers: import("swiper").default[] = [];
 
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
@@ -948,7 +954,7 @@ onMounted(async () => {
 
         // 初始化 Swiper
         setTimeout(() => {
-          new Swiper(`.${uniqueClass}`, {
+          const swiper = new Swiper(`.${uniqueClass}`, {
             modules: [Navigation, Pagination, Mousewheel],
             slidesPerView: "auto",
             spaceBetween: 20,
@@ -971,6 +977,7 @@ onMounted(async () => {
             resistance: true,
             resistanceRatio: 0.85,
           });
+          markdownSwipers.push(swiper);
         }, 100);
       });
 
@@ -1332,6 +1339,7 @@ onMounted(async () => {
             });
 
             app.mount(mountEl);
+            metingApps.push(app);
           }
         } catch (error) {
           console.error("Failed to load music player:", error);
@@ -1593,6 +1601,26 @@ onUnmounted(() => {
     FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
   }
   window.removeEventListener("scroll", handleTocScroll);
+
+  // 卸载所有动态挂载的 MetingPlayer 子应用（触发其 onBeforeUnmount：APlayer.destroy、注销播放器、清定时器/监听）
+  while (metingApps.length) {
+    const app = metingApps.pop();
+    try {
+      app?.unmount();
+    } catch {
+      // 子应用卸载失败不应阻断其余清理
+    }
+  }
+
+  // 销毁所有动态创建的 Swiper 实例（含 Navigation/Pagination/Mousewheel 模块监听 + resize observer）
+  while (markdownSwipers.length) {
+    const swiper = markdownSwipers.pop();
+    try {
+      swiper?.destroy(true, true);
+    } catch {
+      // 单个 Swiper 销毁失败不阻断其余清理
+    }
+  }
 
   // 卸载所有动态挂载的 LivePhoto 组件（触发其 onUnmounted 清理 Blob URL、定时器）
   unmountMarkdownImages();

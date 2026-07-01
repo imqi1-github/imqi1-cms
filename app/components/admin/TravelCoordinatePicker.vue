@@ -34,6 +34,8 @@ let _amap: AMapNamespace | null = null;
 let map: AMapMapInstance | null = null;
 let marker: AMap.Marker | null = null;
 let updatingFromPicker = false;
+// loading 兜底 setTimeout 句柄 —— 卸载时取消，避免写 loading ref / 在销毁的地图上 scheduleResize
+let loadingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 function normalizeLngLat(value: LngLatInput): LngLatTuple | null {
   if (Array.isArray(value)) {
@@ -189,7 +191,7 @@ onMounted(async () => {
       ensureMarker(initialLngLat);
     }
 
-    window.setTimeout(() => {
+    loadingFallbackTimer = setTimeout(() => {
       loading.value = false;
       scheduleResize();
     }, 3000);
@@ -215,6 +217,10 @@ watch(
 );
 
 onUnmounted(() => {
+  if (loadingFallbackTimer) {
+    clearTimeout(loadingFallbackTimer);
+    loadingFallbackTimer = null;
+  }
   if (map) {
     map.destroy();
     map = null;

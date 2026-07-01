@@ -165,6 +165,16 @@ export function useAudioPlayer() {
     shouldAutoPlay.value = false;
   };
 
+  // canplay 一次性监听 —— 保存引用以便 cleanup 时移除，避免 teardown 时仍在加载导致卸载后 audio.play()
+  const playWhenReady = () => {
+    if (shouldAutoPlay.value && audio) {
+      audio.play().catch(err => {
+        console.error("自动播放下一首失败:", err);
+      });
+    }
+    audio?.removeEventListener("canplay", playWhenReady);
+  };
+
   // 创建 Audio 实例
   function createAudio(song: Song) {
     // 销毁旧的实例
@@ -279,16 +289,6 @@ export function useAudioPlayer() {
       if (shouldAutoPlay.value && audio) {
         audio.load();
 
-        // 监听 canplay 事件，确保音频可以播放后再开始播放
-        const playWhenReady = () => {
-          if (shouldAutoPlay.value && audio) {
-            audio.play().catch(err => {
-              console.error("自动播放下一首失败:", err);
-            });
-          }
-          audio?.removeEventListener("canplay", playWhenReady);
-        };
-
         audio.addEventListener("canplay", playWhenReady);
       }
     }
@@ -318,6 +318,7 @@ export function useAudioPlayer() {
       audio.removeEventListener("canplaythrough", handleCanPlayThrough);
       audio.removeEventListener("playing", handlePlaying);
       audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("canplay", playWhenReady);
     }
   }
 

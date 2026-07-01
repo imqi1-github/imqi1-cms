@@ -13,6 +13,12 @@ const eventClientY = (e: DragEvent): number =>
 class Controller {
     player: APlayer;
 
+    // 拖拽中的 document 级监听 —— 保存引用以便 destroy 时移除（拖拽中销毁会泄露）
+    private barThumbMove?: (e: DragEvent) => void;
+    private barThumbUp?: (e: DragEvent) => void;
+    private volumeThumbMove?: (e: DragEvent) => void;
+    private volumeThumbUp?: (e: DragEvent) => void;
+
     constructor(player: APlayer) {
         this.player = player;
 
@@ -46,8 +52,7 @@ class Controller {
         };
 
         const thumbUp = (e: DragEvent) => {
-            document.removeEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
-            document.removeEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
+            this.removeBarDragListeners();
             let percentage = (eventClientX(e) - this.player.template.barWrap.getBoundingClientRect().left) / this.player.template.barWrap.clientWidth;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
@@ -55,6 +60,9 @@ class Controller {
             this.player.seek(percentage * this.player.duration);
             this.player.disableTimeupdate = false;
         };
+
+        this.barThumbMove = thumbMove;
+        this.barThumbUp = thumbUp;
 
         this.player.template.barWrap.addEventListener(utils.nameMap.dragStart, () => {
             this.player.disableTimeupdate = true;
@@ -83,19 +91,49 @@ class Controller {
 
         const thumbUp = (e: DragEvent) => {
             this.player.template.volumeBarWrap.classList.remove('aplayer-volume-bar-wrap-active');
-            document.removeEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
-            document.removeEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
+            this.removeVolumeDragListeners();
             let percentage = 1 - (eventClientY(e) - this.player.template.volumeBar.getBoundingClientRect().top) / this.player.template.volumeBar.clientHeight;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.volume(percentage);
         };
 
+        this.volumeThumbMove = thumbMove;
+        this.volumeThumbUp = thumbUp;
+
         this.player.template.volumeBarWrap.addEventListener(utils.nameMap.dragStart, () => {
             this.player.template.volumeBarWrap.classList.add('aplayer-volume-bar-wrap-active');
             document.addEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
             document.addEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
         });
+    }
+
+    // 移除进度条拖拽的 document 监听（thumbUp 正常触发时调用，destroy 时兜底）
+    private removeBarDragListeners() {
+        if (this.barThumbMove) {
+            document.removeEventListener(utils.nameMap.dragMove, this.barThumbMove as EventListener);
+        }
+        if (this.barThumbUp) {
+            document.removeEventListener(utils.nameMap.dragEnd, this.barThumbUp as EventListener);
+        }
+    }
+
+    // 移除音量条拖拽的 document 监听
+    private removeVolumeDragListeners() {
+        if (this.volumeThumbMove) {
+            document.removeEventListener(utils.nameMap.dragMove, this.volumeThumbMove as EventListener);
+        }
+        if (this.volumeThumbUp) {
+            document.removeEventListener(utils.nameMap.dragEnd, this.volumeThumbUp as EventListener);
+        }
+    }
+
+    /**
+     * 销毁拖拽监听 —— player.destroy() 兜底调用，防止拖拽中销毁导致 document 监听泄露
+     */
+    destroy() {
+        this.removeBarDragListeners();
+        this.removeVolumeDragListeners();
     }
 
     initOrderButton() {

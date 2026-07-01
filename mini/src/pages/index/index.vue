@@ -1,571 +1,320 @@
 <script setup lang="ts">
-import { heroStats, quickEntries, recentPhotos, recentPosts } from '@/data/home'
-import type { Post } from '@/types/post'
+import { articles } from '@/data/home'
+import type { ArticleCard } from '@/types/post'
+import TheTabBar from '@/components/TheTabBar.vue'
 
-function onPostTap(post: Post) {
-  uni.showToast({ title: post.title, icon: 'none', duration: 1200 })
+// 死数据阶段：仅 UI 预览，点击给出反馈，后续接真实路由
+const goArticle = (a: ArticleCard) => {
+  uni.showToast({ title: `预览：${a.title}`, icon: 'none' })
 }
-
-function onEntryTap(label: string) {
-  uni.showToast({ title: `${label}（占位）`, icon: 'none', duration: 1000 })
-}
-
-function onMoreTap(label: string) {
-  uni.showToast({ title: `查看全部${label}（占位）`, icon: 'none', duration: 1000 })
+const todo = (label: string) => {
+  uni.showToast({ title: `${label}（开发中）`, icon: 'none' })
 }
 </script>
 
 <template>
-  <view class="page bg-[#ffffff] min-h-screen">
-    <!-- ============ HERO ============ -->
-    <view class="hero px-32 pt-48 pb-40">
-      <view class="mono hero__eyebrow text-[#1d4ed8]">
-        <text class="hero__dot" /> // imqi1.com
-      </view>
-
-      <view class="hero__title mt-16">
-        <text class="text-[#0f172a]">
-          IM
-        </text><text class="text-[#dc2626]">
-          QI1
-        </text><text class="text-[#0f172a]">
-          .COM
-        </text>
-      </view>
-      <view class="hero__rule" />
-
-      <view class="hero__tagline mt-20 text-[#334155]">
-        记录代码、旅行与生活
-      </view>
-      <view class="mono hero__meta mt-12 text-[#94a3b8]">
-        nuxt · typescript · prisma · uni-app
-      </view>
-
-      <!-- 数据条 -->
-      <view class="hero__stats mt-40">
-        <view
-          v-for="(s, i) in heroStats"
-          :key="s.label"
-          class="hero__stat"
-          :class="{ 'hero__stat--last': i === heroStats.length - 1 }"
-        >
-          <view class="hero__stat-value text-[#0f172a]">
-            {{ s.value }}
-          </view>
-          <view class="mono hero__stat-label text-[#94a3b8]">
-            {{ s.label }}
-          </view>
-        </view>
-      </view>
-
-      <!-- 快捷入口 -->
-      <scroll-view
-        scroll-x
-        enable-flex
-        class="hero__entries mt-40"
-      >
-        <view
-          v-for="entry in quickEntries"
-          :key="entry.label"
-          class="entry"
-          hover-class="entry--active"
-          :hover-stay-time="80"
-          @tap="onEntryTap(entry.label)"
-        >
-          <wd-icon
-            :name="entry.icon"
-            size="32rpx"
-            custom-class="text-[#1d4ed8]"
-          />
-          <text class="entry__label">
-            {{ entry.label }}
+  <view class="page">
+    <!-- 英雄区：蓝色渐变卡片 -->
+    <view class="hero">
+      <view class="hero__glow" />
+      <view class="hero__bar">
+        <view class="brand">
+          <view class="brand__dot" />
+          <text class="brand__name">
+            imqi1
           </text>
         </view>
-      </scroll-view>
-    </view>
-
-    <!-- ============ 最新文章 ============ -->
-    <view class="section px-32 pt-24">
-      <view class="section__head">
-        <view class="mono section__eyebrow text-[#1d4ed8]">
-          // latest-posts
-        </view>
-        <view class="section__title text-[#0f172a]">
-          最新发布
-        </view>
-        <view class="section__sub text-[#64748b]">
-          生活中的小事、照片，感兴趣的技术
-        </view>
       </view>
 
-      <view class="post-list mt-24">
-        <view
-          v-for="post in recentPosts"
-          :key="post.cid"
-          class="post"
-          hover-class="post--active"
-          :hover-stay-time="80"
-          @tap="onPostTap(post)"
+      <text class="hero__eyebrow">
+        BLOG
+      </text>
+      <view class="hero__title">
+        记录代码，<br>也记录生活。
+      </view>
+      <text class="hero__sub">
+        技术笔记、城市漫步、随手拍，偶尔写点没用的东西。
+      </text>
+
+      <view class="hero__actions">
+        <wd-button
+          type="primary"
+          size="medium"
+          custom-style="background-color:#ffffff;color:#2563eb;border:none"
+          @click="todo('浏览文章')"
         >
-          <view class="post__cover">
-            <wd-img
-              :src="post.cover"
-              width="100%"
-              height="100%"
-              mode="aspectFill"
-              custom-class="post__img"
-            >
-              <template #error>
-                <view class="post__cover-fallback">
-                  <text class="text-[#cbd5e1]">
-                    {{ post.title.charAt(0) }}
-                  </text>
-                </view>
-              </template>
-            </wd-img>
-            <!-- 关联地点角标 -->
-            <view
-              v-if="post.travelCount && post.travelCount > 0"
-              class="post__pin"
-            >
-              <wd-icon
-                name="location"
-                size="20rpx"
-                custom-class="text-[#ffffff]"
-              />
-              <text>{{ post.travelCount }}</text>
-            </view>
-          </view>
-
-          <view class="post__body">
-            <view class="post__cat text-[#1d4ed8]">
-              <wd-icon
-                name="folder"
-                size="22rpx"
-                custom-class="text-[#1d4ed8]"
-              />
-              <text>{{ post.category.name }}</text>
-            </view>
-            <view class="post__title text-[#0f172a]">
-              {{ post.title }}
-            </view>
-            <view class="post__desc text-[#64748b]">
-              {{ post.desc }}
-            </view>
-            <view class="post__meta text-[#94a3b8]">
-              <view class="post__meta-item">
-                <wd-icon
-                  name="clock"
-                  size="22rpx"
-                />
-                <text>{{ post.created }}</text>
-              </view>
-              <view class="post__meta-item">
-                <wd-icon
-                  name="chat"
-                  size="22rpx"
-                />
-                <text>{{ post.commentsNum > 0 ? `${post.commentsNum} 评论` : '暂无评论' }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <view
-        class="more mt-32"
-        hover-class="more--active"
-        :hover-stay-time="80"
-        @tap="onMoreTap('文章')"
-      >
-        <text>查看全部文章</text>
-        <wd-icon
-          name="arrow-right"
-          size="24rpx"
-        />
+          浏览文章
+        </wd-button>
+        <wd-button
+          type="primary"
+          size="medium"
+          custom-style="background-color:rgba(255,255,255,0.14);color:#ffffff;border:1px solid rgba(255,255,255,0.55)"
+          @click="todo('关于')"
+        >
+          关于
+        </wd-button>
       </view>
     </view>
 
-    <!-- ============ 最新图片 ============ -->
-    <view class="section px-32 pt-48">
+    <!-- 最近发布 -->
+    <view class="section">
       <view class="section__head">
-        <view class="mono section__eyebrow text-[#1d4ed8]">
-          // recent-photos
+        <view class="section__title">
+          <text class="section__name">
+            最近发布的文章
+          </text>
         </view>
-        <view class="section__title text-[#0f172a]">
-          最新图片
-        </view>
-        <view class="section__sub text-[#64748b]">
-          小物件、风景，值得记录的瞬间
+        <view
+          class="section__more"
+          @tap="todo('查看全部')"
+        >
+          <text>查看全部</text>
+          <wd-icon
+            name="arrow-right"
+            size="28rpx"
+          />
         </view>
       </view>
 
-      <scroll-view
-        scroll-x
-        enable-flex
-        class="photo-scroll mt-24"
-      >
+      <view class="grid">
         <view
-          v-for="photo in recentPhotos"
-          :key="photo.id"
-          class="photo"
-          hover-class="photo--active"
-          :hover-stay-time="80"
+          v-for="a in articles"
+          :key="a.id"
+          class="card"
+          @tap="goArticle(a)"
         >
-          <view class="photo__frame">
+          <view class="card__cover">
             <wd-img
-              :src="photo.url"
+              :src="a.cover"
               width="100%"
-              height="100%"
+              height="200rpx"
               mode="aspectFill"
-              custom-class="photo__img"
             />
           </view>
-          <text class="photo__cap text-[#64748b]">
-            {{ photo.desc }}
-          </text>
+          <view class="card__body">
+            <text class="card__title">
+              {{ a.title }}
+            </text>
+            <view class="card__meta">
+              <wd-icon
+                name="clock"
+                size="22rpx"
+              />
+              <text class="card__time">
+                {{ a.publishedAt }}
+              </text>
+            </view>
+          </view>
         </view>
-      </scroll-view>
+      </view>
+
+      <view class="end">
+        <view class="end__line" />
+        <text class="end__text">
+          已经到底啦
+        </text>
+        <view class="end__line" />
+      </view>
     </view>
 
-    <!-- ============ FOOTER ============ -->
-    <view class="footer px-32 pt-64 pb-48">
-      <view class="mono footer__line text-[#94a3b8]">
-        // built with uni-app · vue3 · unocss
-      </view>
-      <view class="footer__copy text-[#cbd5e1]">
-        © 2026 imqi1
-      </view>
-    </view>
+    <TheTabBar active="index" />
   </view>
 </template>
 
-<style lang="scss">
-// 等宽字体栈：mp-weixin 无 Web 字体，用系统 mono 体现「代码博客」气质
-.mono {
-  font-family: 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+<style lang="scss" scoped>
+.page {
+  min-height: 100vh;
+  background: var(--bg);
 }
 
-// ---------- HERO ----------
-.hero__eyebrow {
+/* ===== 英雄区 ===== */
+.hero {
+  position: relative;
+  overflow: hidden;
+  margin: 24rpx 24rpx 0;
+  padding: 40rpx 36rpx 44rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
+  box-shadow: 0 16rpx 40rpx rgb(37 99 235 / 28%);
+  color: #fff;
+}
+
+/* 装饰光晕 */
+.hero__glow {
+  position: absolute;
+  top: -120rpx;
+  right: -80rpx;
+  width: 320rpx;
+  height: 320rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 22%) 0%, rgb(255 255 255) 70%);
+  pointer-events: none;
+}
+
+.hero__bar {
+  position: relative;
   display: flex;
   align-items: center;
-  font-size: 24rpx;
-  letter-spacing: 0.04em;
+  justify-content: space-between;
 }
 
-.hero__dot {
-  display: inline-block;
-  width: 12rpx;
-  height: 12rpx;
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand__dot {
+  width: 16rpx;
+  height: 16rpx;
   border-radius: 50%;
-  background: #dc2626;
-  margin-right: 12rpx;
-  // 呼吸动画：暗示「在线」
-  animation: pulse 2.4s ease-in-out infinite;
+  background: #fff;
+  margin-right: 14rpx;
+}
+
+.brand__name {
+  font-size: 32rpx;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.hero__eyebrow {
+  position: relative;
+  display: block;
+  margin-top: 56rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: rgb(255 255 255 / 85%);
 }
 
 .hero__title {
-  font-weight: 900;
-  font-size: 104rpx;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.hero__rule {
-  width: 64rpx;
-  height: 6rpx;
-  background: #dc2626;
-  border-radius: 3rpx;
+  position: relative;
   margin-top: 20rpx;
-}
-
-.hero__tagline {
-  font-size: 30rpx;
-  font-weight: 500;
-}
-
-.hero__meta {
-  font-size: 22rpx;
-  letter-spacing: 0.02em;
-}
-
-.hero__stats {
-  display: flex;
-  align-items: stretch;
-}
-
-.hero__stat {
-  flex: 1;
-  padding-right: 24rpx;
-  margin-right: 24rpx;
-  border-right: 2rpx solid #f1f5f9;
-
-  &--last {
-    border-right: none;
-    margin-right: 0;
-    padding-right: 0;
-  }
-}
-
-.hero__stat-value {
-  font-size: 44rpx;
+  font-size: 60rpx;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  color: #fff;
 }
 
-.hero__stat-label {
-  font-size: 22rpx;
-  margin-top: 10rpx;
+.hero__sub {
+  position: relative;
+  display: block;
+  margin-top: 24rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: rgb(255 255 255 / 82%);
 }
 
-.hero__entries {
-  // 横向滚动入口：消除滚动条留白
-  white-space: nowrap;
-}
-
-.entry {
+.hero__actions {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 120rpx;
-  height: 120rpx;
-  margin-right: 20rpx;
-  background: #f8fafc;
-  border: 2rpx solid #f1f5f9;
-  border-radius: 20rpx;
-  transition: background 0.15s ease;
-
-  &--active {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-  }
-
-  &:last-child {
-    margin-right: 32rpx;
-  }
+  gap: 24rpx;
+  margin-top: 48rpx;
 }
 
-.entry__label {
-  font-size: 22rpx;
-  color: #475569;
-  margin-top: 12rpx;
+/* ===== 最近发布 ===== */
+.section {
+  padding: 48rpx 24rpx 64rpx;
 }
 
-// ---------- SECTION ----------
-.section__eyebrow {
-  font-size: 24rpx;
-  letter-spacing: 0.04em;
+.section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+  padding: 0 16rpx;
 }
 
 .section__title {
-  font-size: 44rpx;
-  font-weight: 800;
-  line-height: 1.2;
-  margin-top: 12rpx;
-}
-
-.section__sub {
-  font-size: 26rpx;
-  margin-top: 10rpx;
-}
-
-// ---------- 文章卡片 ----------
-.post-list {
   display: flex;
-  flex-direction: column;
-  gap: 28rpx;
+  align-items: baseline;
 }
 
-.post {
-  background: #ffffff;
-  border: 2rpx solid #f1f5f9;
-  border-radius: 24rpx;
-  overflow: hidden;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+.section__name {
+  font-size: 36rpx;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
 
-  &--active {
-    transform: scale(0.985);
-    border-color: #dbeafe;
+.section__more {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--brand);
+
+  text {
+    margin-right: 6rpx;
   }
 }
 
-.post__cover {
-  position: relative;
-  width: 100%;
-  height: 360rpx;
-  background: #f8fafc;
-}
-
-.post__img {
-  display: block;
-}
-
-.post__cover-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 80rpx;
-  font-weight: 800;
-}
-
-.post__pin {
-  position: absolute;
-  top: 20rpx;
-  right: 20rpx;
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 8rpx 16rpx;
-  border-radius: 100rpx;
-  background: rgba(15, 23, 42, 0.6);
-  color: #ffffff;
-  font-size: 22rpx;
-  backdrop-filter: blur(8rpx);
-}
-
-.post__body {
-  padding: 24rpx 28rpx 28rpx;
-}
-
-.post__cat {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  font-size: 24rpx;
-  font-weight: 600;
-}
-
-.post__title {
-  font-size: 32rpx;
-  font-weight: 700;
-  line-height: 1.4;
-  margin-top: 12rpx;
-  // 两行省略
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.post__desc {
-  font-size: 26rpx;
-  line-height: 1.5;
-  margin-top: 10rpx;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.post__meta {
-  display: flex;
-  align-items: center;
+/* ===== 卡片网格 ===== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 24rpx;
-  margin-top: 20rpx;
-  font-size: 24rpx;
 }
 
-.post__meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  height: 88rpx;
-  border: 2rpx solid #f1f5f9;
-  border-radius: 100rpx;
-  font-size: 26rpx;
-  color: #1d4ed8;
-  transition: background 0.15s ease;
-
-  &--active {
-    background: #eff6ff;
-  }
-}
-
-// ---------- 图片横向滚动 ----------
-.photo-scroll {
-  white-space: nowrap;
-}
-
-.photo {
-  display: inline-flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  width: 300rpx;
-  margin-right: 20rpx;
-
-  &:last-child {
-    margin-right: 32rpx;
-  }
-
-  &--active {
-    opacity: 0.85;
-  }
-}
-
-.photo__frame {
-  width: 300rpx;
-  height: 300rpx;
+.card {
+  background: var(--card);
   border-radius: 20rpx;
   overflow: hidden;
-  background: #f8fafc;
+  box-shadow: 0 8rpx 24rpx rgb(15 23 42 / 6%);
 }
 
-.photo__cap {
-  font-size: 24rpx;
+.card__cover {
+  background: var(--line);
+}
+
+.card__body {
+  padding: 20rpx 22rpx 24rpx;
+}
+
+.card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 27rpx;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+  /* 单行标题也占满两行高度，保证卡片底对齐 */
+  min-height: 78rpx;
+}
+
+.card__meta {
+  display: flex;
+  align-items: center;
   margin-top: 14rpx;
-  text-align: center;
+  color: var(--muted);
 }
 
-// ---------- FOOTER ----------
-.footer {
-  text-align: center;
-}
-
-.footer__line {
+.card__time {
+  margin-left: 8rpx;
   font-size: 22rpx;
 }
 
-.footer__copy {
+/* ===== 底部 ===== */
+.end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 56rpx;
+}
+
+.end__line {
+  width: 64rpx;
+  height: 2rpx;
+  background: var(--line);
+}
+
+.end__text {
+  margin: 0 20rpx;
   font-size: 22rpx;
-  margin-top: 12rpx;
+  letter-spacing: 0.15em;
+  color: var(--muted);
 }
-
-// ---------- 进入动画 ----------
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24rpx); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.hero__eyebrow,
-.hero__title,
-.hero__rule,
-.hero__tagline,
-.hero__meta,
-.hero__stats,
-.hero__entries {
-  animation: fadeUp 0.5s ease both;
-}
-.hero__title { animation-delay: 0.05s; }
-.hero__rule { animation-delay: 0.1s; }
-.hero__tagline { animation-delay: 0.15s; }
-.hero__meta { animation-delay: 0.2s; }
-.hero__stats { animation-delay: 0.25s; }
-.hero__entries { animation-delay: 0.3s; }
 </style>

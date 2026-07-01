@@ -49,6 +49,8 @@ const lastMarkerContent = new WeakMap<object, string>();
 const avatarMarkerElementCache = new Map<string, HTMLElement>();
 // InfoWindow 内文章链接的委托点击监听（原生 HTML <a> 默认整页刷新，改走 Nuxt 路由）
 let linkClickHandler: ((e: MouseEvent) => void) | null = null;
+// loading 兜底 setTimeout 句柄 —— complete 触发或卸载时取消，避免卸载后写 loading ref
+let loadingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 const MAP_FONT_FAMILY = '"Noto Serif SC", serif';
 // 自定义 InfoWindow 的垂直偏移：高德的 offset 是相对坐标点的像素偏移。
@@ -678,7 +680,7 @@ onMounted(async () => {
       loading.value = false;
     });
     // 兜底：complete 未触发时也不让 loading 卡死
-    window.setTimeout(() => {
+    loadingFallbackTimer = setTimeout(() => {
       loading.value = false;
     }, 3000);
     // isCustom：用纯自定义 HTML，去掉 InfoWindow 自带的白底外壳/箭头/关闭键
@@ -794,11 +796,23 @@ watch(
 );
 
 onUnmounted(() => {
+  if (loadingFallbackTimer) {
+    clearTimeout(loadingFallbackTimer);
+    loadingFallbackTimer = null;
+  }
+  // 先把聚合从地图摘除，触发其内部 marker/监听清理，再销毁地图，避免依赖 map.destroy 兜底
+  if (cluster) {
+    try {
+      cluster.setMap(null);
+    } catch {
+      /* noop */
+    }
+    cluster = null;
+  }
   if (map) {
     map.destroy();
     map = null;
   }
-  cluster = null;
   avatarMarkerElementCache.clear();
   if (linkClickHandler) {
     document.removeEventListener("click", linkClickHandler);

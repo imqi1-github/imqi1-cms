@@ -2,6 +2,8 @@
 import type {Notification} from "~/types/components/notification";
 
 const notifications = ref<Notification[]>([]);
+// 自动移除的 setTimeout 句柄 —— 卸载时全部取消，避免写已卸载组件的 ref
+const removeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 // 显示通知
 const show = (message: string, type: "success" | "error" | "info" = "info") => {
@@ -9,13 +11,21 @@ const show = (message: string, type: "success" | "error" | "info" = "info") => {
   notifications.value.push({ id, message, type });
 
   // 5秒后自动移除
-  setTimeout(() => {
-    remove(id);
-  }, 5000);
+  removeTimers.set(
+    id,
+    setTimeout(() => {
+      remove(id);
+    }, 5000),
+  );
 };
 
 // 移除通知
 const remove = (id: string) => {
+  const timer = removeTimers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    removeTimers.delete(id);
+  }
   const index = notifications.value.findIndex(n => n.id === id);
   if (index > -1) {
     notifications.value.splice(index, 1);
@@ -33,6 +43,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener("front-notification", handleNotification);
+  for (const timer of removeTimers.values()) {
+    clearTimeout(timer);
+  }
+  removeTimers.clear();
 });
 
 // 图标映射

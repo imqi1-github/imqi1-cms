@@ -4,6 +4,12 @@ export default defineNuxtPlugin(() => {
   const ATTR_LOADING = "data-img-loading";
   const ATTR_LOADED = "data-img-loaded";
   const WRAPPER_CLASS = "img-loading-wrapper";
+  const CLEANUP_EVENT = "img-loading-plugin:cleanup";
+  // HMR / dev 重载时先通知旧实例清理全局监听与 observer，避免重复注册
+  window.dispatchEvent(new Event(CLEANUP_EVENT));
+  let isDisposed = false;
+  // 15s 加载超时定时器 id（存在 img 自定义属性上）—— markDone 或 img 移除时清除，避免游离 img 闭包驻留 15s
+  const ATTR_TIMER = "data-img-loading-timer";
 
   // 跳过无需处理的图片
   const shouldSkip = (img: HTMLImageElement): boolean => {
@@ -24,12 +30,16 @@ export default defineNuxtPlugin(() => {
     const parent = img.parentNode;
     if (!parent) return;
 
-    // 保存原有的 inline style 和 class
+    // 保存图片的尺寸/布局类到 wrapper，尽量不改变原图在 flex/grid/inline 场景中的占位
     const wrapper = document.createElement("div");
-    // 复制图片的宽高类到 wrapper，保持原有布局
-    const widthClasses = (img.className.match(/(^|\s)w-\S+/g) || []).join(" ");
-    const heightClasses = (img.className.match(/(^|\s)h-\S+/g) || []).join(" ");
-    wrapper.className = `${WRAPPER_CLASS} ${widthClasses} ${heightClasses}`;
+    const preservedClasses = img.className
+      .split(/\s+/)
+      .filter(cls => /^(?:size-|w-|h-|min-w-|min-h-|max-w-|max-h-|aspect-|shrink|grow|basis-|flex-|self-|place-self-|rounded|overflow-)/.test(cls));
+    wrapper.className = [WRAPPER_CLASS, ...preservedClasses].join(" ");
+
+    const imgStyle = window.getComputedStyle(img);
+    wrapper.style.display = imgStyle.display === "inline" ? "inline-block" : imgStyle.display;
+    wrapper.style.verticalAlign = imgStyle.verticalAlign;
 
     // 将图片包裹进容器，保持原有布局
     parent.replaceChild(wrapper, img);
@@ -44,6 +54,12 @@ export default defineNuxtPlugin(() => {
   const markDone = (img: HTMLImageElement) => {
     img.removeAttribute(ATTR_LOADING);
     img.setAttribute(ATTR_LOADED, "true");
+    // 清除加载超时定时器，避免 img 已加载完成仍持有闭包 15s
+    const timer = img.getAttribute(ATTR_TIMER);
+    if (timer) {
+      clearTimeout(Number(timer));
+      img.removeAttribute(ATTR_TIMER);
+    }
     // 隐藏 spinner，spinner 由 CSS 基于 img-loaded 父类隐藏
     const wrapper = img.parentElement;
     if (wrapper?.classList.contains(WRAPPER_CLASS)) {
@@ -60,33 +76,44 @@ export default defineNuxtPlugin(() => {
 
     wrapImage(img);
 
-    window.setTimeout(() => {
+    const timerId = window.setTimeout(() => {
+      if (isDisposed) return;
+      img.removeAttribute(ATTR_TIMER);
       if (!img.hasAttribute(ATTR_LOADED)) {
         markDone(img);
       }
     }, LOADING_TIMEOUT);
+    img.setAttribute(ATTR_TIMER, String(timerId));
+  };
+
+  const cleanupImage = (img: HTMLImageElement) => {
+    // MutationObserver 无 unobserve 单目标 API，只能 disconnect() 全部 —— 这里不处理 attrObserver，
+    // 单个 img 的 src 监听开销极小，img 被 GC 后观察自然失效。
+    // IntersectionObserver 支持 unobserve，需主动取消以释放视口观察。
+    intersectionObserver?.unobserve(img);
+    processingQueue = processingQueue.filter(item => item !== img);
+    const timer = img.getAttribute(ATTR_TIMER);
+    if (timer) {
+      clearTimeout(Number(timer));
+      img.removeAttribute(ATTR_TIMER);
+    }
+  };
+
+  const handleDocumentLoad = (e: Event) => {
+    if (e.target instanceof HTMLImageElement) {
+      markDone(e.target);
+    }
+  };
+
+  const handleDocumentError = (e: Event) => {
+    if (e.target instanceof HTMLImageElement) {
+      markDone(e.target);
+    }
   };
 
   // Capture 阶段事件代理：能捕获所有 img 的 load/error，包括后续动态创建的
-  document.addEventListener(
-    "load",
-    e => {
-      if (e.target instanceof HTMLImageElement) {
-        markDone(e.target);
-      }
-    },
-    true,
-  );
-
-  document.addEventListener(
-    "error",
-    e => {
-      if (e.target instanceof HTMLImageElement) {
-        markDone(e.target);
-      }
-    },
-    true,
-  );
+  document.addEventListener("load", handleDocumentLoad, true);
+  document.addEventListener("error", handleDocumentError, true);
 
   // 监听 src 属性变更（Vue 响应式更新 src 时重新进入加载态）
   const attrObserver = new MutationObserver(mutations => {
@@ -215,6 +242,18 @@ export default defineNuxtPlugin(() => {
           node.querySelectorAll("img").forEach(queueProcessImage);
         }
       }
+      // 节点移除时停止观察，避免游离 img 强引用 + 闭包常驻到关页（SPA 导航时旧页 img 会被 Vue 移出 DOM）
+      for (const node of m.removedNodes) {
+        const removedImgs =
+          node instanceof HTMLImageElement
+            ? [node]
+            : node instanceof Element
+              ? Array.from(node.querySelectorAll("img"))
+              : [];
+        for (const img of removedImgs) {
+          cleanupImage(img);
+        }
+      }
     }
   });
 
@@ -223,14 +262,25 @@ export default defineNuxtPlugin(() => {
     subtree: true,
   });
 
-  // 清理 observer 在页面卸载时
-  if (import.meta.client) {
-    window.addEventListener("beforeunload", () => {
-      if (intersectionObserver) {
-        intersectionObserver.disconnect();
-      }
-      attrObserver.disconnect();
-      childObserver.disconnect();
-    });
-  }
+  const cleanupPlugin = () => {
+    if (isDisposed) return;
+    isDisposed = true;
+    window.removeEventListener(CLEANUP_EVENT, cleanupPlugin);
+    window.removeEventListener("beforeunload", cleanupPlugin);
+    document.removeEventListener("load", handleDocumentLoad, true);
+    document.removeEventListener("error", handleDocumentError, true);
+    if (intersectionObserver) {
+      intersectionObserver.disconnect();
+      intersectionObserver = null;
+    }
+    attrObserver.disconnect();
+    childObserver.disconnect();
+    const queuedImages = processingQueue.slice();
+    processingQueue = [];
+    queuedImages.forEach(cleanupImage);
+  };
+
+  window.addEventListener(CLEANUP_EVENT, cleanupPlugin, { once: true });
+  window.addEventListener("beforeunload", cleanupPlugin, { once: true });
 });
+

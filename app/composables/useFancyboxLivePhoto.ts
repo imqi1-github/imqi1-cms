@@ -26,8 +26,11 @@ export const useFancyboxLivePhoto = () => {
   // ---- 模块级状态（跨事件回调共享）----
   let currentVideoUrl: string | null = null;
   let currentVideoEl: HTMLVideoElement | null = null;
+  let currentVideoEndedHandler: (() => void) | null = null;
+  let stopVideoResetTimer: ReturnType<typeof setTimeout> | null = null;
   let currentTipEl: HTMLElement | null = null;
   let currentPlayBtnEl: HTMLElement | null = null;
+  let currentPlayBtnClickHandler: ((e: MouseEvent) => void) | null = null;
   let currentImageUrl: string | null = null;
   // 覆盖层挂载容器（图片的父元素 .f-panzoom__wrapper），视频挂到这里
   // 这样视频 inset:0 只覆盖图片区域，不会遮挡 caption
@@ -54,8 +57,24 @@ export const useFancyboxLivePhoto = () => {
     currentMountEl.classList.toggle("is-flp-playing", playing);
   }
 
+  function cleanupOverlayListeners() {
+    if (currentVideoEl && currentVideoEndedHandler) {
+      currentVideoEl.removeEventListener("ended", currentVideoEndedHandler);
+    }
+    if (currentPlayBtnEl && currentPlayBtnClickHandler) {
+      currentPlayBtnEl.removeEventListener("click", currentPlayBtnClickHandler);
+    }
+    if (stopVideoResetTimer) {
+      clearTimeout(stopVideoResetTimer);
+      stopVideoResetTimer = null;
+    }
+    currentVideoEndedHandler = null;
+    currentPlayBtnClickHandler = null;
+  }
+
   /** 移除灯箱内所有实况照片的覆盖层（tip / 按钮 / 视频） */
   function removeAllOverlays(fancybox?: FancyboxLike) {
+    cleanupOverlayListeners();
     const container = fancybox?.getContainer?.();
     if (container) {
       container.querySelectorAll(".flp-tip, .flp-play-btn, .flp-video").forEach((el: Element) => el.remove());
@@ -105,10 +124,14 @@ export const useFancyboxLivePhoto = () => {
       currentVideoEl.pause();
       const el = currentVideoEl;
       // 渐出动画结束后重置进度（与 transition 时长一致）
-      setTimeout(() => {
+      if (stopVideoResetTimer) {
+        clearTimeout(stopVideoResetTimer);
+      }
+      stopVideoResetTimer = setTimeout(() => {
         if (el && !el.classList.contains("is-visible")) {
           el.currentTime = 0;
         }
+        stopVideoResetTimer = null;
       }, 300);
     }
     // 恢复 wrapper 内图片等内容的显示（与视频渐出同步交叉淡入）
@@ -163,7 +186,8 @@ export const useFancyboxLivePhoto = () => {
       video.muted = true;
       video.setAttribute("playsinline", "");
       video.preload = "auto";
-      video.addEventListener("ended", () => stopVideo());
+      currentVideoEndedHandler = () => stopVideo();
+      video.addEventListener("ended", currentVideoEndedHandler);
       mountEl.appendChild(video);
       currentVideoEl = video;
 
@@ -252,11 +276,12 @@ export const useFancyboxLivePhoto = () => {
         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="50 30" />
       </svg>
     `;
-    playBtn.addEventListener("click", e => {
+    currentPlayBtnClickHandler = e => {
       e.stopPropagation();
       e.preventDefault();
       toggleVideo();
-    });
+    };
+    playBtn.addEventListener("click", currentPlayBtnClickHandler);
     slideEl.appendChild(playBtn);
     currentPlayBtnEl = playBtn;
 

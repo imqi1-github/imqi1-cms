@@ -33,6 +33,8 @@ let swiperInstance: import("swiper").default | null = null;
 let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 // ✅ 标记组件是否已卸载
 let isUnmounted = false;
+// 延迟初始化的 setTimeout 句柄 —— 卸载时取消，避免待执行回调在销毁后触发 initSwiper
+let initTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
@@ -80,7 +82,7 @@ const initSwiper = async () => {
 
 onMounted(async () => {
   // 延迟初始化，确保 DOM 已渲染
-  setTimeout(() => {
+  initTimer = setTimeout(() => {
     initSwiper();
   }, 100);
 
@@ -120,6 +122,12 @@ onUnmounted(() => {
   // ✅ 先标记为已卸载
   isUnmounted = true;
 
+  // 取消待执行的延迟初始化回调
+  if (initTimer) {
+    clearTimeout(initTimer);
+    initTimer = null;
+  }
+
   // 销毁 Swiper
   if (swiperInstance && !swiperInstance.destroyed) {
     swiperInstance.destroy(true, true);
@@ -135,7 +143,7 @@ onUnmounted(() => {
 watch(
   () => props.covers,
   () => {
-    setTimeout(() => {
+    initTimer = setTimeout(() => {
       initSwiper();
     }, 100);
   },

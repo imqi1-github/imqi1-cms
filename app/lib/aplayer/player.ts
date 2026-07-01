@@ -54,6 +54,12 @@ class APlayer {
 
     noticeTime?: ReturnType<typeof setTimeout>;
 
+    // 错误重试定时器 —— destroy 时清理，避免销毁后 skipForward 触发
+    skipTime?: ReturnType<typeof setTimeout>;
+
+    // audio 事件绑定的 handler 引用 —— destroy 时逐个 removeEventListener（原实现只 add 不 remove，依赖 audio 被 GC）
+    private audioHandlers: { name: string; handler: (e: Event) => void }[] = [];
+
     /**
      * APlayer constructor function
      *
@@ -143,9 +149,11 @@ class APlayer {
 
         for (let i = 0; i < this.events.audioEvents.length; i++) {
             const eventName = this.events.audioEvents[i]!;
-            this.audio.addEventListener(eventName, (e) => {
+            const handler = (e: Event) => {
                 this.events.trigger(eventName, e);
-            });
+            };
+            this.audio.addEventListener(eventName, handler);
+            this.audioHandlers.push({ name: eventName, handler });
         }
 
         this.volume(this.storage.get('volume') as number, true);
@@ -203,14 +211,13 @@ class APlayer {
         });
 
         // audio download error: an error occurs
-        let skipTime: ReturnType<typeof setTimeout> | undefined;
         let errorTimes = 0;
         this.on("error", () => {
             if (this.list.audios.length > 1) {
                 errorTimes++;
                 if (errorTimes > 2) {
                     this.notice("歌曲播放出现错误，两秒后播放新歌曲。");
-                    skipTime = setTimeout(() => {
+                    this.skipTime = setTimeout(() => {
                         this.skipForward();
                         if (!this.paused) {
                             this.play();
@@ -238,8 +245,8 @@ class APlayer {
             }
         });
         this.events.on('listswitch', () => {
-            if (skipTime) {
-                clearTimeout(skipTime);
+            if (this.skipTime) {
+                clearTimeout(this.skipTime);
             }
         });
 
@@ -460,6 +467,19 @@ class APlayer {
     destroy() {
         instances.splice(instances.indexOf(this), 1);
         this.pause();
+        // 清理待执行的定时器，避免销毁后回调操作已释放的资源
+        if (this.skipTime) {
+            clearTimeout(this.skipTime);
+        }
+        if (this.noticeTime) {
+            clearTimeout(this.noticeTime);
+        }
+        // 移除 audio 事件监听（原实现仅靠 audio 被 GC，MetingPlayer 子应用持引用时不保证释放）
+        for (const { name, handler } of this.audioHandlers) {
+            this.audio.removeEventListener(name, handler);
+        }
+        this.audioHandlers = [];
+        this.controller.destroy();
         this.container.innerHTML = '';
         this.audio.src = '';
         this.timer.destroy();

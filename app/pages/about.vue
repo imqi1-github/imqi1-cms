@@ -33,23 +33,22 @@
           <div class="text-slate-800 dark:text-slate-200 text-2xl font-medium leading-relaxed mb-8 transition-colors duration-300">
             我热爱编程，喜欢记录生活，分享有趣的事情。这是我的个人博客，记录着技术、生活和思考。
           </div>
-          <div class="flex flex-wrap gap-3 justify-end max-md:justify-start">
-            <span
-              class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
-              >💻 全栈开发者</span
-            >
-            <span
-              class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
-              >📸 摄影爱好者</span
-            >
-            <span
-              class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
-              >🎵 音乐迷</span
-            >
-            <span
-              class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-sm px-4 py-2 transition-colors duration-300"
-              >✍️ 博主</span
-            >
+          <div class="pointer-events-auto flex justify-end max-md:justify-start">
+            <div
+              class="profile-tag-carousel relative min-h-10 min-w-36 overflow-hidden rounded-full border border-slate-200 bg-slate-100 px-4 py-2 dark:border-slate-700 dark:bg-slate-800 transition-colors duration-300"
+              @mouseenter="stopProfileTagCarousel"
+              @mouseleave="startProfileTagCarousel"
+              @focusin="stopProfileTagCarousel"
+              @focusout="startProfileTagCarousel">
+              <Transition name="profile-tag" mode="out-in">
+                <span
+                  :key="activeProfileTag.label"
+                  class="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
+                  <span>{{ activeProfileTag.icon }}</span>
+                  <span>{{ activeProfileTag.label }}</span>
+                </span>
+              </Transition>
+            </div>
           </div>
         </div>
       </div>
@@ -88,155 +87,100 @@
       </div>
 
       <!-- 技多不压身 -->
-      <div class="ready ml-[50%] mb-24 max-md:ml-0">
+      <div class="ready ml-[32%] mb-24 max-md:ml-0">
         <div class="text-blue-600 dark:text-blue-400 text-xs font-bold mb-2 transition-colors duration-300">02</div>
         <h2
           class="text-slate-900 dark:text-slate-100 text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-none mb-8 transition-colors duration-300">
           技多不压身
         </h2>
-        <div class="overflow-hidden py-16 relative">
-          <div class="ml-[-10%] transform -rotate-12 transform-origin-center w-[120%]">
-            <div class="flex gap-4 animate-scroll-diagonal w-max">
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/regex.svg')"
-                alt="Regex"
-                title="正则表达式" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/c.svg')"
-                alt="C"
-                title="C" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/cpp.svg')"
-                alt="C++"
-                title="C++" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/java.svg')"
-                alt="Java"
-                title="Java" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/sqlite.svg')"
-                alt="SQLite"
-                title="SQLite" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/mysql.svg')"
-                alt="MySQL"
-                title="MySQL" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/html.svg')"
-                alt="HTML"
-                title="HTML" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/css.svg')"
-                alt="CSS"
-                title="CSS" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/js.svg')"
-                alt="JavaScript"
-                title="JavaScript" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/php.svg')"
-                alt="PHP"
-                title="PHP" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/md.svg')"
-                alt="Markdown"
-                title="Markdown" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/latex.svg')"
-                alt="LaTeX"
-                title="LaTeX" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/python.svg')"
-                alt="Python"
-                title="Python" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/qt.svg')"
-                alt="Qt"
-                title="Qt" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/regex.svg')"
-                alt="Regex"
-                title="正则表达式" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/c.svg')"
-                alt="C"
-                title="C" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/cpp.svg')"
-                alt="C++"
-                title="C++" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/java.svg')"
-                alt="Java"
-                title="Java" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/sqlite.svg')"
-                alt="SQLite"
-                title="SQLite" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/mysql.svg')"
-                alt="MySQL"
-                title="MySQL" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/html.svg')"
-                alt="HTML"
-                title="HTML" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/css.svg')"
-                alt="CSS"
-                title="CSS" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/js.svg')"
-                alt="JavaScript"
-                title="JavaScript" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/php.svg')"
-                alt="PHP"
-                title="PHP" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/md.svg')"
-                alt="Markdown"
-                title="Markdown" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/latex.svg')"
-                alt="LaTeX"
-                title="LaTeX" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/python.svg')"
-                alt="Python"
-                title="Python" >
-              <img
-                class="bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0 w-16 h-16 object-contain p-3 transition-all hover:-translate-y-2"
-                :src="publicAsset('/skills/qt.svg')"
-                alt="Qt"
-                title="Qt" >
+        <div
+          class="skill-carousel pointer-events-auto relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-800/80 p-3 shadow-xl shadow-blue-500/5 backdrop-blur transition-colors duration-300"
+          @mouseenter="stopSkillCarousel"
+          @mouseleave="startSkillCarousel"
+          @focusin="stopSkillCarousel"
+          @focusout="startSkillCarousel">
+          <div class="pointer-events-none absolute inset-0 opacity-70">
+            <div class="absolute -right-20 -top-24 size-64 rounded-full bg-blue-500/10 blur-3xl"/>
+          </div>
+          <div class="pointer-events-none absolute right-6 top-6 z-10 hidden md:block">
+            <div class="relative flex size-20 items-center justify-center">
+              <div class="skill-orbit absolute inset-0 rounded-full border border-blue-500/20 dark:border-blue-400/20"/>
+              <span class="relative text-slate-300 dark:text-slate-700 text-4xl font-black leading-none transition-colors duration-300">
+                0{{ activeSkillIndex + 1 }}
+              </span>
+            </div>
+          </div>
+
+          <Transition :name="skillSlideTransitionName" mode="out-in">
+            <div :key="activeSkillGroup.key" class="relative p-5 pr-6 md:p-6">
+              <div>
+                <div class="mb-4 flex items-center gap-3">
+                  <span class="h-px w-10 bg-blue-600 dark:bg-blue-400"/>
+                  <span class="text-xs font-bold uppercase tracking-[0.28em] text-blue-600 dark:text-blue-400 transition-colors duration-300">
+                    {{ activeSkillGroup.eyebrow }}
+                  </span>
+                </div>
+                <div class="mb-4 flex flex-wrap items-end gap-x-4 gap-y-2">
+                  <h3 class="text-slate-950 dark:text-slate-50 text-[clamp(2.1rem,5.5vw,4rem)] font-black leading-none tracking-tight transition-colors duration-300">
+                    {{ activeSkillGroup.title }}
+                  </h3>
+                  <span class="rounded-full border border-blue-500/20 bg-white/70 px-3 py-1 text-xs font-semibold text-blue-600 dark:bg-slate-900/40 dark:text-blue-300 transition-colors duration-300">
+                    {{ activeSkillGroup.role }}
+                  </span>
+                </div>
+                <p class="mb-6 max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300 transition-colors duration-300">
+                  {{ activeSkillGroup.summary }}
+                </p>
+                <div class="grid min-h-48 grid-cols-2 gap-3 lg:min-h-31 lg:grid-cols-3">
+                  <div
+                    v-for="stack in activeSkillGroup.stacks"
+                    :key="stack.label"
+                    class="group flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2.5 text-slate-800 shadow-sm transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-100">
+                    <img
+                      v-if="stack.icon"
+                      :src="publicAsset(stack.icon)"
+                      :alt="stack.label"
+                      class="size-6 shrink-0 object-contain transition-transform duration-300 group-hover:scale-110" >
+                    <span
+                      v-else
+                      class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-[0.68rem] font-black uppercase tracking-tight text-white dark:bg-blue-500">
+                      {{ stack.mark }}
+                    </span>
+                    <span class="text-sm font-semibold leading-tight">{{ stack.label }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <div class="relative mt-1 grid grid-cols-1 gap-2 border-t border-slate-200 p-2.5 dark:border-slate-700 md:mt-0 md:grid-cols-[1fr_auto]">
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <button
+                v-for="(group, index) in skillGroups"
+                :key="group.key"
+                type="button"
+                class="cursor-pointer rounded-2xl px-3 py-2.5 text-left transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                :class="activeSkillIndex === index ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 dark:bg-blue-500' : 'text-slate-600 hover:bg-white hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-900/50 dark:hover:text-blue-300'"
+                :aria-pressed="activeSkillIndex === index"
+                @click="selectSkillGroup(index)">
+                <span class="block text-sm font-bold">{{ group.tabTitle }}</span>
+              </button>
+            </div>
+            <div class="flex items-center justify-end gap-2 md:pl-2">
+              <button
+                type="button"
+                class="flex size-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all duration-200 hover:border-blue-500 hover:bg-blue-600 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-blue-500"
+                aria-label="查看上一个技术方向"
+                @click="showPrevSkillGroup">
+                <Icon name="ri:arrow-left-line" class="size-5" />
+              </button>
+              <button
+                type="button"
+                class="flex size-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all duration-200 hover:border-blue-500 hover:bg-blue-600 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-blue-500"
+                aria-label="查看下一个技术方向"
+                @click="showNextSkillGroup">
+                <Icon name="ri:arrow-right-line" class="size-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -250,47 +194,71 @@
           兴趣广泛
         </h2>
         <div class="flex flex-wrap gap-4 pt-3">
-          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
-            <span class="block text-2xl mb-2">💻</span>
-            <span
-              class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
-              >编程</span
-            >
+          <div class="interest-card h-32 w-20 perspective-midrange">
+            <div class="interest-card-inner relative size-full rounded-lg transition-transform duration-300 transform-3d">
+              <div class="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-slate-100 p-6 text-center transition-colors duration-300 backface-hidden dark:bg-slate-800">
+                <span class="mb-2 block text-2xl">💻</span>
+                <span class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">编程</span>
+              </div>
+              <div class="absolute inset-0 overflow-hidden rounded-lg backface-hidden transform-[rotateY(180deg)]">
+                <img :src="publicAsset('/imgs/program.webp')" alt="编程" class="no-img-loading size-full object-cover" >
+              </div>
+            </div>
           </div>
-          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
-            <span class="block text-2xl mb-2">🎮</span>
-            <span
-              class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
-              >游戏</span
-            >
+          <div class="interest-card h-32 w-20 perspective-midrange">
+            <div class="interest-card-inner relative size-full rounded-lg transition-transform duration-300 transform-3d">
+              <div class="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-slate-100 p-6 text-center transition-colors duration-300 backface-hidden dark:bg-slate-800">
+                <span class="mb-2 block text-2xl">🎮</span>
+                <span class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">游戏</span>
+              </div>
+              <div class="absolute inset-0 overflow-hidden rounded-lg backface-hidden transform-[rotateY(180deg)]">
+                <img :src="publicAsset('/imgs/game.webp')" alt="游戏" class="no-img-loading size-full object-cover" >
+              </div>
+            </div>
           </div>
-          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
-            <span class="block text-2xl mb-2">🎸</span>
-            <span
-              class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
-              >音乐</span
-            >
+          <div class="interest-card h-32 w-20 perspective-midrange">
+            <div class="interest-card-inner relative size-full rounded-lg transition-transform duration-300 transform-3d">
+              <div class="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-slate-100 p-6 text-center transition-colors duration-300 backface-hidden dark:bg-slate-800">
+                <span class="mb-2 block text-2xl">🎸</span>
+                <span class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">音乐</span>
+              </div>
+              <div class="absolute inset-0 overflow-hidden rounded-lg backface-hidden transform-[rotateY(180deg)]">
+                <img :src="publicAsset('/imgs/music.webp')" alt="音乐" class="no-img-loading size-full object-cover" >
+              </div>
+            </div>
           </div>
-          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
-            <span class="block text-2xl mb-2">📸</span>
-            <span
-              class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
-              >摄影</span
-            >
+          <div class="interest-card h-32 w-20 perspective-midrange">
+            <div class="interest-card-inner relative size-full rounded-lg transition-transform duration-300 transform-3d">
+              <div class="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-slate-100 p-6 text-center transition-colors duration-300 backface-hidden dark:bg-slate-800">
+                <span class="mb-2 block text-2xl">📸</span>
+                <span class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">摄影</span>
+              </div>
+              <div class="absolute inset-0 overflow-hidden rounded-lg backface-hidden transform-[rotateY(180deg)]">
+                <img :src="publicAsset('/imgs/photo.webp')" alt="摄影" class="no-img-loading size-full object-cover" >
+              </div>
+            </div>
           </div>
-          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
-            <span class="block text-2xl mb-2">📚</span>
-            <span
-              class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
-              >阅读</span
-            >
+          <div class="interest-card h-32 w-20 perspective-midrange">
+            <div class="interest-card-inner relative size-full rounded-lg transition-transform duration-300 transform-3d">
+              <div class="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-slate-100 p-6 text-center transition-colors duration-300 backface-hidden dark:bg-slate-800">
+                <span class="mb-2 block text-2xl">📚</span>
+                <span class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">阅读</span>
+              </div>
+              <div class="absolute inset-0 overflow-hidden rounded-lg backface-hidden transform-[rotateY(180deg)]">
+                <img :src="publicAsset('/imgs/reading.webp')" alt="阅读" class="no-img-loading size-full object-cover" >
+              </div>
+            </div>
           </div>
-          <div class="interest-card bg-slate-100 dark:bg-slate-800 rounded-lg p-6 text-center transition-all w-20 hover:-translate-y-2 duration-300">
-            <span class="block text-2xl mb-2">✈️</span>
-            <span
-              class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300"
-              >旅行</span
-            >
+          <div class="interest-card h-32 w-20 perspective-midrange">
+            <div class="interest-card-inner relative size-full rounded-lg transition-transform duration-300 transform-3d">
+              <div class="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-slate-100 p-6 text-center transition-colors duration-300 backface-hidden dark:bg-slate-800">
+                <span class="mb-2 block text-2xl">✈️</span>
+                <span class="text-slate-800 dark:text-slate-200 font-medium [text-orientation:mixed] [writing-mode:vertical-rl] transition-colors duration-300">旅行</span>
+              </div>
+              <div class="absolute inset-0 overflow-hidden rounded-lg backface-hidden transform-[rotateY(180deg)]">
+                <img :src="publicAsset('/imgs/travel.webp')" alt="旅行" class="no-img-loading size-full object-cover" >
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -604,8 +572,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
+import type { ProfileTag, SkillGroup } from "~/types/pages/about";
 import { siteConfig } from "~~/site.config";
 
 // 使用全局站点设置
@@ -620,6 +589,155 @@ const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();
 
 // 注入页面加载状态
 const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
+
+const profileTags: ProfileTag[] = [
+  { icon: "💻", label: "AI全栈工程师" },
+  { icon: "📸", label: "摄影爱好者" },
+  { icon: "🎵", label: "音乐迷" },
+  { icon: "✍️", label: "博主" },
+];
+
+const activeProfileTagIndex = ref(0);
+const activeProfileTag = computed<ProfileTag>(() => profileTags[activeProfileTagIndex.value] ?? profileTags[0]!);
+const profileTagCarouselDelay = 2400;
+let profileTagCarouselTimer: ReturnType<typeof setInterval> | null = null;
+
+const stopProfileTagCarousel = () => {
+  if (!profileTagCarouselTimer) {
+    return;
+  }
+
+  clearInterval(profileTagCarouselTimer);
+  profileTagCarouselTimer = null;
+};
+
+const showNextProfileTag = () => {
+  activeProfileTagIndex.value = (activeProfileTagIndex.value + 1) % profileTags.length;
+};
+
+const startProfileTagCarousel = () => {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  stopProfileTagCarousel();
+  profileTagCarouselTimer = setInterval(showNextProfileTag, profileTagCarouselDelay);
+};
+
+const skillGroups: SkillGroup[] = [
+  {
+    key: "rag",
+    title: "RAG",
+    short: "RAG",
+    tabTitle: "RAG",
+    role: "知识增强生成",
+    eyebrow: "retrieval pipeline",
+    summary: "把散落的资料整理成可检索、可引用、可持续更新的知识上下文，让模型回答更有来源和边界。",
+    stacks: [
+      { label: "Embedding", icon: "/skills/embedding.svg" },
+      { label: "向量检索", icon: "/skills/vector.svg" },
+      { label: "Rerank", icon: "/skills/rerank.svg" },
+      { label: "知识库", icon: "/skills/knowledge.svg" },
+    ],
+  },
+  {
+    key: "agent",
+    title: "agent",
+    short: "AGT",
+    tabTitle: "Agent",
+    role: "自动化协作",
+    eyebrow: "tool orchestration",
+    summary: "围绕任务拆解、工具调用、记忆与反馈闭环，把模型从一次回答推进到可执行的工作流。",
+    stacks: [
+      { label: "Planning", icon: "/skills/planning.svg" },
+      { label: "Tool Calling", icon: "/skills/tool.svg" },
+      { label: "MCP", icon: "/skills/mcp.svg" },
+      { label: "A2A", icon: "/skills/a2a.svg" },
+      { label: "React", icon: "/skills/react.svg" },
+      { label: "Memory", icon: "/skills/memory.svg" },
+    ],
+  },
+  {
+    key: "frontend",
+    title: "前端",
+    short: "WEB",
+    tabTitle: "前端",
+    role: "体验工程",
+    eyebrow: "interface craft",
+    summary: "用 Vue 生态把信息结构、交互反馈和视觉节奏组织成稳定、顺手、可维护的界面。",
+    stacks: [
+      { label: "Vue", icon: "/skills/vuejs.svg" },
+      { label: "Vue Router", icon: "/skills/router.svg" },
+      { label: "Pinia", icon: "/skills/pinia.svg" },
+      { label: "TypeScript", icon: "/skills/typescript.svg" },
+      { label: "Tailwind CSS", icon: "/skills/tailwindcss.svg" },
+    ],
+  },
+  {
+    key: "python",
+    title: "Python",
+    short: "PY",
+    tabTitle: "Python",
+    role: "服务与脚本",
+    eyebrow: "backend toolkit",
+    summary: "用 Python 快速把想法落成服务、脚本和数据处理管线，连接 AI 能力与真实业务场景。",
+    stacks: [
+      { label: "Python", icon: "/skills/python.svg" },
+      { label: "FastAPI", icon: "/skills/fastapi.svg" },
+      { label: "Django", icon: "/skills/django.svg" },
+      { label: "Flask", icon: "/skills/flask.svg" },
+      { label: "自动化脚本", icon: "/skills/bash.svg" },
+    ],
+  },
+];
+
+const activeSkillIndex = ref(0);
+const skillSlideDirection = ref<"next" | "prev">("next");
+const skillSlideTransitionName = computed(() => `skill-slide-${skillSlideDirection.value}`);
+const activeSkillGroup = computed<SkillGroup>(() => skillGroups[activeSkillIndex.value] ?? skillGroups[0]!);
+const skillCarouselDelay = 5000;
+let skillCarouselTimer: ReturnType<typeof setInterval> | null = null;
+
+const stopSkillCarousel = () => {
+  if (!skillCarouselTimer) {
+    return;
+  }
+
+  clearInterval(skillCarouselTimer);
+  skillCarouselTimer = null;
+};
+
+const setSkillGroup = (index: number) => {
+  if (index === activeSkillIndex.value) {
+    return;
+  }
+
+  skillSlideDirection.value = index > activeSkillIndex.value ? "next" : "prev";
+  activeSkillIndex.value = index;
+};
+
+const showNextSkillGroup = () => {
+  skillSlideDirection.value = "next";
+  activeSkillIndex.value = (activeSkillIndex.value + 1) % skillGroups.length;
+};
+
+const showPrevSkillGroup = () => {
+  skillSlideDirection.value = "prev";
+  activeSkillIndex.value = (activeSkillIndex.value - 1 + skillGroups.length) % skillGroups.length;
+};
+
+const selectSkillGroup = (index: number) => {
+  setSkillGroup(index);
+};
+
+const startSkillCarousel = () => {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  stopSkillCarousel();
+  skillCarouselTimer = setInterval(showNextSkillGroup, skillCarouselDelay);
+};
 
 // SPA 导航时挂起一个 fadeDuration，让旧页渐出完成后再挂载，避免 fixed 网格 / brandDomain
 // 装饰文字（无 opacity:0 初始态）在 mainOpacity 过渡期间提前露脸闪烁。详见 useFadeOutOnNavigate。
@@ -688,6 +806,8 @@ const animateNumber = (from: number, to: number, duration: number, callback: (va
   const range = to - from;
 
   const updateNumber = (timestamp: number) => {
+    // 卸载后不再写 ref，也不再继续调度
+    if (disposed) return;
     const elapsed = timestamp - start;
     const progress = Math.min(elapsed / duration, 1);
     // 使用缓动函数
@@ -696,15 +816,21 @@ const animateNumber = (from: number, to: number, duration: number, callback: (va
     callback(current);
 
     if (progress < 1) {
-      requestAnimationFrame(updateNumber);
+      numberAnimationRafs.push(requestAnimationFrame(updateNumber));
     }
   };
 
-  requestAnimationFrame(updateNumber);
+  numberAnimationRafs.push(requestAnimationFrame(updateNumber));
 };
 
 // 滚动动画
 let scrollObserver: IntersectionObserver | null = null;
+// 数字动画的 RAF 句柄 —— 卸载时全部取消，否则 RAF 会在 teardown 后继续写 ref 直到缓动结束
+const numberAnimationRafs: number[] = [];
+// initAnimations 递归 setTimeout 的待执行 id —— 卸载时取消，避免 teardown 后仍新建 IntersectionObserver
+let initAnimationsTimer: ReturnType<typeof setTimeout> | undefined;
+// 卸载标志 —— 阻止递归与动画回调在组件销毁后继续操作 DOM/ref
+let disposed = false;
 
 onMounted(() => {
   // 立即检查首屏元素
@@ -767,9 +893,10 @@ onMounted(() => {
 
   // 等待页面过渡完成后再执行元素动画
   const initAnimations = () => {
+    if (disposed) return;
     if (pageLoading.value) {
       // 页面还在加载中，等待100ms后再检查
-      setTimeout(initAnimations, 100);
+      initAnimationsTimer = setTimeout(initAnimations, 100);
     } else {
       // 页面加载完成，执行首屏检查
       checkInitialElements();
@@ -841,10 +968,22 @@ onMounted(() => {
 
   // 启动动画初始化
   initAnimations();
+  startProfileTagCarousel();
+  startSkillCarousel();
 });
 
 onUnmounted(() => {
+  disposed = true;
+  if (initAnimationsTimer) {
+    clearTimeout(initAnimationsTimer);
+  }
+  for (const id of numberAnimationRafs) {
+    cancelAnimationFrame(id);
+  }
+  numberAnimationRafs.length = 0;
   scrollObserver?.disconnect();
+  stopProfileTagCarousel();
+  stopSkillCarousel();
 });
 </script>
 
@@ -870,27 +1009,89 @@ onUnmounted(() => {
   }
 }
 
-/* 技能滚动动画 */
-@keyframes scrollDiagonal {
-  0% {
-    transform: translateX(0);
+/* 技能轮播动画 */
+.skill-slide-next-enter-active,
+.skill-slide-next-leave-active,
+.skill-slide-prev-enter-active,
+.skill-slide-prev-leave-active {
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.skill-slide-next-enter-from,
+.skill-slide-prev-leave-to {
+  opacity: 0;
+  transform: translateX(18px);
+}
+
+.skill-slide-next-leave-to,
+.skill-slide-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-18px);
+}
+
+.skill-orbit {
+  animation: skillOrbit 14s linear infinite;
+}
+
+.skill-orbit::before {
+  background: rgb(37 99 235 / 0.5);
+  border-radius: 9999px;
+  content: "";
+  height: 0.55rem;
+  left: 50%;
+  position: absolute;
+  top: -0.275rem;
+  transform: translateX(-50%);
+  width: 0.55rem;
+}
+
+@keyframes skillOrbit {
+  from {
+    transform: rotate(0deg);
   }
   to {
-    transform: translateX(-50%);
+    transform: rotate(360deg);
   }
 }
 
-.animate-scroll-diagonal {
-  animation: scrollDiagonal 20s linear infinite;
+@media (prefers-reduced-motion: reduce) {
+  .skill-slide-next-enter-active,
+  .skill-slide-next-leave-active,
+  .skill-slide-prev-enter-active,
+  .skill-slide-prev-leave-active,
+  .skill-orbit {
+    animation: none;
+    transition: none;
+  }
 }
 
-.animate-scroll-diagonal:hover {
-  animation-play-state: paused;
+/* 身份标签轮播 */
+.profile-tag-enter-active,
+.profile-tag-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
 }
 
-/* 事件穿透：内容容器整体不接收指针事件，让背后 fixed 的网格能被 hover；
-   仅交互元素重新启用，保证链接/按钮/图片/输入框可点击且保留 hover 效果。
-   代价：正文文字无法在空白处选中。 */
+.profile-tag-enter-from {
+  opacity: 0;
+  transform: translateY(0.75rem);
+}
+
+.profile-tag-leave-to {
+  opacity: 0;
+  transform: translateY(-0.75rem);
+}
+
+/* 兴趣卡片翻转 */
+.interest-card:hover .interest-card-inner,
+.interest-card:focus-within .interest-card-inner {
+  transform: rotateY(180deg);
+}
+
+
 .about-pass-through :deep(a),
 .about-pass-through :deep(button),
 .about-pass-through :deep(img),

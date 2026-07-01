@@ -52,6 +52,10 @@ export class InspiraShaderToy {
 
   private _speed: number = 1; // Speed multiplier
 
+  // Dispose 用的清理句柄：避免 ResizeObserver / canvas 监听常驻导致 WebGL 上下文泄露
+  private _resizeObserver: ResizeObserver | null = null;
+  private _mouseHandlers: [string, EventListenerOrEventListenerObject][] = [];
+
   // Shader source
   private shaderSource: string = "";
 
@@ -199,7 +203,7 @@ export class InspiraShaderToy {
       };
     };
 
-    canvas.addEventListener("mousemove", (event: MouseEvent) => {
+    const onMouseMove = (event: MouseEvent) => {
       const { x: newX, y: newY } = getScaledMousePos(event);
 
       // Apply damping with configurable factor
@@ -214,9 +218,9 @@ export class InspiraShaderToy {
         this.iMouse.clickX = newX;
         this.iMouse.clickY = newY;
       }
-    });
+    };
 
-    canvas.addEventListener("mousedown", (event: MouseEvent) => {
+    const onMouseDown = (event: MouseEvent) => {
       isMouseDown = true;
       const { x: clickX, y: clickY } = getScaledMousePos(event);
 
@@ -224,14 +228,14 @@ export class InspiraShaderToy {
         this.iMouse.clickX = clickX;
         this.iMouse.clickY = clickY;
       }
-    });
+    };
 
-    canvas.addEventListener("mouseup", () => {
+    const onMouseUp = () => {
       isMouseDown = false;
-    });
+    };
 
     // Handle touch events for mobile
-    canvas.addEventListener("touchmove", (event: TouchEvent) => {
+    const onTouchMove = (event: TouchEvent) => {
       event.preventDefault();
       const touch = event.touches[0];
       if (!touch) return;
@@ -244,9 +248,9 @@ export class InspiraShaderToy {
         this.iMouse.clickX = newX;
         this.iMouse.clickY = newY;
       }
-    });
+    };
 
-    canvas.addEventListener("touchstart", (event: TouchEvent) => {
+    const onTouchStart = (event: TouchEvent) => {
       event.preventDefault();
       isMouseDown = true;
       const touch = event.touches[0];
@@ -257,15 +261,31 @@ export class InspiraShaderToy {
         this.iMouse.clickX = clickX;
         this.iMouse.clickY = clickY;
       }
-    });
+    };
 
-    canvas.addEventListener("touchend", () => {
+    const onTouchEnd = () => {
       isMouseDown = false;
-    });
+    };
+
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mousedown", onMouseDown);
+    canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+
+    this._mouseHandlers = [
+      ["mousemove", onMouseMove],
+      ["mousedown", onMouseDown],
+      ["mouseup", onMouseUp],
+      ["touchmove", onTouchMove],
+      ["touchstart", onTouchStart],
+      ["touchend", onTouchEnd],
+    ];
   }
 
   private setupResizeHandler(): void {
-    const resizeObserver = new ResizeObserver(() => {
+    this._resizeObserver = new ResizeObserver(() => {
       const width = this.container.clientWidth;
       const height = this.container.clientHeight;
 
@@ -290,7 +310,7 @@ export class InspiraShaderToy {
       }
     });
 
-    resizeObserver.observe(this.container);
+    this._resizeObserver.observe(this.container);
   }
 
   private compileProgram(): boolean {
@@ -518,8 +538,17 @@ export class InspiraShaderToy {
 
   public dispose(): void {
     this.pause();
-    if (this.renderer.gl.canvas.parentElement) {
-      this.renderer.gl.canvas.parentElement.removeChild(this.renderer.gl.canvas);
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
+    const canvas = this.renderer.gl.canvas;
+    for (const [type, handler] of this._mouseHandlers) {
+      canvas.removeEventListener(type, handler);
+    }
+    this._mouseHandlers = [];
+    if (canvas.parentElement) {
+      canvas.parentElement.removeChild(canvas);
     }
   }
 

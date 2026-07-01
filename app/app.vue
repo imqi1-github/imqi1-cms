@@ -18,7 +18,6 @@ const showFirstLoading = ref(true);
 // 页面加载状态
 const showPageLoading = ref(false);
 const showLoadingTimeout = ref(false);
-let hideTimer: ReturnType<typeof setTimeout> | null = null;
 let loadingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 页面过渡状态
@@ -32,10 +31,6 @@ const FADE_OUT_DURATION = siteConfig.pageTransition.fadeDuration; // 淡出动�
 const nuxtApp = useNuxtApp();
 nuxtApp.hook("page:start", () => {
   // 清除之前的定时器
-  if (hideTimer) {
-    clearTimeout(hideTimer);
-    hideTimer = null;
-  }
   if (loadingTimeoutTimer) {
     clearTimeout(loadingTimeoutTimer);
     loadingTimeoutTimer = null;

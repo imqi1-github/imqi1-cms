@@ -12,15 +12,8 @@ class Timer {
     constructor(player: APlayer) {
         this.player = player;
 
-        // requestAnimationFrame polyfill (vendor prefixed + setTimeout fallback)
-        const w = window as unknown as Record<string, unknown>;
-        window.requestAnimationFrame = (w.requestAnimationFrame ||
-            w.webkitRequestAnimationFrame ||
-            w.mozRequestAnimationFrame ||
-            w.oRequestAnimationFrame ||
-            w.msRequestAnimationFrame ||
-            ((callback: FrameRequestCallback) => window.setTimeout(callback, 1000 / 60))) as typeof window.requestAnimationFrame;
-
+        // 原实现覆写了全局 window.requestAnimationFrame（polyfill 兼容远古浏览器），
+        // 会污染宿主页面状态且随实例残留。现代浏览器原生支持，直接移除。
         this.types = ['loading'];
 
         this.init();
