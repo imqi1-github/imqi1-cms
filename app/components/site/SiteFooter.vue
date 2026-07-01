@@ -157,12 +157,11 @@ const scrollProgress = ref(0);
 const showBackToTop = ref(false);
 const showProgress = ref(false);
 
-const updateScrollProgress = () => {
-  const scrollTop = window.scrollY;
-  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+const updateScrollProgress = (scrollY: number, innerHeight: number) => {
+  const docHeight = document.documentElement.scrollHeight - innerHeight;
 
   if (docHeight > 0) {
-    scrollProgress.value = (scrollTop / docHeight) * 100;
+    scrollProgress.value = (scrollY / docHeight) * 100;
   } else {
     scrollProgress.value = 0;
   }
@@ -184,6 +183,9 @@ const updateScrollProgress = () => {
   }
 };
 
+// 滚动进度合流到全局单一 rAF tick（见 useScrollRaf）
+useScrollRaf(updateScrollProgress);
+
 const scrollToTop = () => {
   window.scrollTo({
     top: 0,
@@ -202,18 +204,12 @@ const goToAdmin = () => {
 };
 
 onMounted(() => {
-  window.addEventListener("scroll", updateScrollProgress);
-  updateScrollProgress();
   // 检查登录状态
   checkAuthStatus();
   // 获取站点设置（每个页面都会调用，但只会实际请求一次）
   fetchSiteSettings().catch(() => {
     // 静默失败，不影响页面显示
   });
-});
-
-onUnmounted(() => {
-  window.removeEventListener("scroll", updateScrollProgress);
 });
 </script>
 

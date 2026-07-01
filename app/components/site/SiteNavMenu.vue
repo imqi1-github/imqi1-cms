@@ -37,8 +37,11 @@ const navItems = [
   { name: "关于", href: "/about", icon: "ri:user-line" },
 ];
 
-// 滚动监听
+// 滚动监听（合流到全局单一 rAF tick，见 useScrollRaf）
 const isScrolled = ref(false);
+useScrollRaf(scrollY => {
+  isScrolled.value = scrollY > 20;
+});
 
 // 导航函数
 function navigate(href: string, event?: MouseEvent) {
@@ -60,19 +63,6 @@ function navigateAndClose(href: string) {
   closeMobileMenu();
 }
 
-onMounted(() => {
-  const handleScroll = () => {
-    const currentScrollY = window.scrollY;
-    isScrolled.value = currentScrollY > 20;
-  };
-
-  window.addEventListener("scroll", handleScroll, { passive: true });
-  handleScroll();
-
-  onUnmounted(() => {
-    window.removeEventListener("scroll", handleScroll);
-  });
-});
 </script>
 
 <template>

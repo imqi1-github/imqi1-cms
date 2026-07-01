@@ -236,30 +236,20 @@ watch(
   },
 );
 
-onMounted(() => {
-  const handleScroll = () => {
-    // 如果正在路由切换，忽略滚动事件
-    if (shouldIgnoreScroll) return;
+// 滚动监听（合流到全局单一 rAF tick，见 useScrollRaf）
+useScrollRaf(scrollY => {
+  // 如果正在路由切换，忽略滚动事件
+  if (shouldIgnoreScroll) return;
 
-    const currentScrollY = window.scrollY;
+  // 检测滚动方向
+  if (scrollY > lastScrollY) {
+    isScrollingDown.value = true;
+  } else if (scrollY < lastScrollY) {
+    isScrollingDown.value = false;
+  }
 
-    // 检测滚动方向
-    if (currentScrollY > lastScrollY) {
-      isScrollingDown.value = true;
-    } else if (currentScrollY < lastScrollY) {
-      isScrollingDown.value = false;
-    }
-
-    lastScrollY = currentScrollY;
-    isScrolled.value = currentScrollY > 20;
-  };
-
-  window.addEventListener("scroll", handleScroll, { passive: true });
-  handleScroll();
-
-  onUnmounted(() => {
-    window.removeEventListener("scroll", handleScroll);
-  });
+  lastScrollY = scrollY;
+  isScrolled.value = scrollY > 20;
 });
 </script>
 

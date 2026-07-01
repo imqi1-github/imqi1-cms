@@ -1799,7 +1799,7 @@ onUnmounted(() => {
                   :src="relatedPost.covers[0]?.url"
                   :alt="relatedPost.title"
                   class="object-cover group-hover:scale-[1.03] transition-transform duration-300 size-full"
-                  loading="lazy" />
+                  loading="lazy">
               </div>
               <div v-else class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
                 <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>

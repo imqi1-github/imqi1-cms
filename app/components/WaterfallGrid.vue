@@ -25,7 +25,7 @@ const getAltText = (item: WaterfallItem) => {
 <template>
   <!-- 外层：columns 容器 -->
   <div
-    class="w-full columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-1.5"
+    class="w-full columns-1 min-[465px]:columns-2 md:columns-3 lg:columns-4 gap-1.5"
   >
     <template v-for="(item, index) in items" :key="index">
       <!-- 链接模式 -->

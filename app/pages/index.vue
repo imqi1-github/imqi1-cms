@@ -17,6 +17,7 @@
           <img
             :src="siteConfig.siteAvatarPath"
             alt="头像"
+            fetchpriority="high"
             class="rounded-full max-w-50 w-50 h-50 object-cover max-md:max-w-30 max-md:w-30 max-md:h-30" >
         </div>
 
@@ -174,7 +175,7 @@
                   <div v-else-if="rightItem.type === 'layout'" class="relative h-75 w-75 group">
                     <div
                       class="absolute top-6 left-6 w-50 h-50 rounded-xl shadow-sm bg-cover bg-center border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden group-hover:-translate-x-1 duration-200">
-                      <img :src="publicAsset('/imgs/shenyang.webp')" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" >
+                      <img :src="publicAsset('/imgs/shenyang.webp')" loading="lazy" class="absolute inset-0 aspect-square object-cover" alt="沈阳站" >
                     </div>
                     <div
                       class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm"/>
@@ -638,7 +639,8 @@
 </template>
 
 <script setup lang="ts">
-import { type ComponentPublicInstance, onMounted, onUnmounted, ref } from "vue";
+import { type ComponentPublicInstance, onMounted, ref, shallowRef } from "vue";
+import { useDebounceFn, useEventListener } from "@vueuse/core";
 
 import MetingPlayer from "~/components/MetingPlayer.vue";
 import type { GridItem } from "~/types/apis";
@@ -655,6 +657,16 @@ const tocItems = [
 
 // 当前激活的目录项索引
 const activeTocIndex = ref(0);
+
+// 4 个 section 的文档相对 offsetTop 缓存（rect.top + scrollY，而非每帧随滚动变的 rect.top）
+// 样式选项 item 的文档相对 top + height 缓存（同理），供 computeStyleItems 复用
+// null 表示需重算；在 resize / 字体加载 / 兜底定时器时统一失效
+let tocOffsets: number[] | null = null;
+let styleItemMetrics: { top: number; height: number }[] | null = null;
+const invalidateOffsets = () => {
+  tocOffsets = null;
+  styleItemMetrics = null;
+};
 
 // Section refs
 const sectionFramework = ref<HTMLElement | null>(null);
@@ -681,28 +693,19 @@ const scrollToSection = (index: number) => {
   });
 };
 
-// 目录滚动监听 - 更新当前激活项
-const handleTocScroll = () => {
-  const sections = [
-    { el: sectionFramework.value, index: 0 },
-    { el: sectionStyle.value, index: 1 },
-    { el: sectionContent.value, index: 2 },
-    { el: sectionPhotos.value, index: 3 },
-  ];
-
-  const scrollY = window.scrollY;
-  const windowHeight = window.innerHeight;
-
-  for (const section of sections) {
-    if (!section.el) continue;
-    const rect = section.el.getBoundingClientRect();
-    const offsetTop = rect.top + scrollY;
-
-    // 当 section 顶部在视口上方 1/3 处时激活
-    if (scrollY >= offsetTop - windowHeight / 3 - NAV_HEIGHT) {
-      activeTocIndex.value = section.index;
-    }
+// 计算目录高亮（统一 rAF tick 内调用；用缓存 offsetTop 避免每帧 getBoundingClientRect）
+const computeToc = (scrollY: number, windowHeight: number) => {
+  if (tocOffsets === null) {
+    const sections = [sectionFramework.value, sectionStyle.value, sectionContent.value, sectionPhotos.value];
+    tocOffsets = sections.map(el => (el ? el.getBoundingClientRect().top + window.scrollY : 0));
   }
+  const offsets = tocOffsets;
+  // 当 section 顶部在视口上方 1/3 处时激活
+  offsets.forEach((offsetTop, index) => {
+    if (scrollY >= offsetTop - windowHeight / 3 - NAV_HEIGHT) {
+      activeTocIndex.value = index;
+    }
+  });
 };
 
 // 优化：使用聚合API一次性获取所有首页数据
@@ -719,8 +722,11 @@ const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteN
 // 分类信息
 const categories = computed(() => homeData.value?.data?.categories || []);
 
-// 随机文章 - 客户端单独加载（避免ISR缓存导致不随机）
-const { data: randomPostData } = await useFetch("/api/random-post", {
+// 随机文章 - 仅客户端非阻塞加载：模板在 ClientOnly 内，SSR 拿到也不显示，
+// 去掉顶层 await 解除首屏阻塞；server:false 不在 SSR 发请求，lazy:true 在 hydration 后异步发起
+const { data: randomPostData } = useFetch("/api/random-post", {
+  server: false,
+  lazy: true,
   headers: {
     "x-ssr-internal-request": "true",
   },
@@ -889,100 +895,127 @@ const setThemeItemRef = (el: Element | ComponentPublicInstance | null) => {
   }
 };
 
-// 滚动跟随效果 - 检查哪个item在视口中心
-const checkVisibleItems = () => {
+// 计算样式选择区跟随（统一 rAF tick 内调用；缓存 doc 相对 top+height，每帧纯算术：
+// itemCenter = docTop − scrollY + height/2，与 rect.top + rect.height/2 恒等。
+// 语义是"最接近视口中心"而非"是否可见"，故仍用滚动 tick 而非 IntersectionObserver）
+const computeStyleItems = (scrollY: number, viewportCenter: number) => {
   const refs = themeItemRefs.value;
   if (!refs || refs.length === 0) return;
 
-  // 找到最接近视口中心的item
+  // 缓存失效：外部 invalidate，或 refs 数量变化（homeData 刷新导致 item 增减）
+  if (styleItemMetrics === null || styleItemMetrics.length !== refs.length) {
+    styleItemMetrics = refs.map(el => {
+      if (!el) return { top: 0, height: 0 };
+      const rect = el.getBoundingClientRect();
+      return { top: rect.top + scrollY, height: rect.height };
+    });
+  }
+  const metrics = styleItemMetrics;
+
   let closestIndex = 0;
   let closestDistance = Infinity;
 
-  refs.forEach((el, index) => {
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const itemCenter = rect.top + rect.height / 2;
-    const viewportCenter = window.innerHeight / 2;
+  for (let index = 0; index < metrics.length; index++) {
+    const m = metrics[index];
+    if (!m) continue;
+    const itemCenter = m.top - scrollY + m.height / 2;
     const distance = Math.abs(itemCenter - viewportCenter);
-
     if (distance < closestDistance) {
       closestDistance = distance;
       closestIndex = index;
     }
-  });
+  }
 
   if (closestIndex !== activeThemeIndex.value) {
     activeThemeIndex.value = closestIndex;
   }
 };
 
-// 英雄区引用和样式
+// 英雄区引用和样式（shallowRef：仅整体替换触发响应，避免深属性追踪开销）
 const heroRef = ref<HTMLElement | null>(null);
-const heroStyle = ref<Record<string, string>>({
+const heroStyle = shallowRef<Record<string, string>>({
   transform: "scale(1)",
   opacity: "1",
   display: "flex",
 });
+// hero 是否处于可见态（已 display:none 后置 false，早退跳过全部计算）
+let heroVisible = true;
 
-// 滚动处理 - 英雄区缩放/淡出效果
-const handleScroll = () => {
-  const scrollTop = window.scrollY;
-  const windowHeight = window.innerHeight;
+// 计算英雄区缩放/淡出样式（统一 rAF tick 内调用；已隐藏后早退，值未变时跳过赋值）
+const computeHero = (scrollTop: number, windowHeight: number) => {
+  if (!heroRef.value) return;
+  const maxOffset = windowHeight - 500;
+  const offset = Math.min(scrollTop, maxOffset);
+  const scale = 1 - (offset / maxOffset) * 0.2;
+  const opacity = 1 - offset / maxOffset;
 
-  if (heroRef.value) {
-    const maxOffset = windowHeight - 500;
-    const offset = Math.min(scrollTop, maxOffset);
-    const scale = 1 - (offset / maxOffset) * 0.2;
-    const opacity = 1 - offset / maxOffset;
-
-    // 当滚动超过阈值时隐藏
-    if (scrollTop > windowHeight - 200) {
-      heroStyle.value = {
-        transform: `scale(${Math.max(scale, 0)})`,
-        opacity: "0",
-        display: "none",
-        pointerEvents: "none",
-      };
-    } else {
-      heroStyle.value = {
-        transform: `scale(${Math.max(scale, 0)})`,
-        opacity: Math.max(opacity, 0).toString(),
-        display: "flex",
-        pointerEvents: "auto",
-      };
-    }
+  // 超过阈值 → 隐藏态：仅首次切换时赋值，之后早退
+  if (scrollTop > windowHeight - 200) {
+    if (!heroVisible) return;
+    heroStyle.value = {
+      transform: `scale(${Math.max(scale, 0)})`,
+      opacity: "0",
+      display: "none",
+      pointerEvents: "none",
+    };
+    heroVisible = false;
+    return;
   }
+
+  // 可见态：值未变时跳过赋值，避免无意义的 :style patch
+  const transform = `scale(${Math.max(scale, 0)})`;
+  const opacityStr = Math.max(opacity, 0).toString();
+  const prev = heroStyle.value;
+  if (heroVisible && prev.transform === transform && prev.opacity === opacityStr && prev.display === "flex") {
+    return;
+  }
+  heroStyle.value = {
+    transform,
+    opacity: opacityStr,
+    display: "flex",
+    pointerEvents: "auto",
+  };
+  heroVisible = true;
 };
 
-// 滚动监听函数 - 样式选择区域跟随效果
-const handleStyleScroll = () => {
-  requestAnimationFrame(checkVisibleItems);
+// 统一 rAF 调度：scroll 事件置 dirty flag，每帧最多跑一次 tick，
+// 集中读取 DOM 避免读写交错导致的 layout thrashing
+let scrollRafPending = false;
+const onScroll = () => {
+  if (scrollRafPending) return;
+  scrollRafPending = true;
+  requestAnimationFrame(() => {
+    const scrollTop = window.scrollY;
+    const windowHeight = window.innerHeight;
+    computeHero(scrollTop, windowHeight);
+    computeToc(scrollTop, windowHeight);
+    computeStyleItems(scrollTop, windowHeight / 2);
+    scrollRafPending = false;
+  });
 };
 
-// 初始化滚动监听
+// 初始化
 onMounted(() => {
   // 标记 hydration 已完成，此后日期切换为相对时间 / 本地化格式
   isHydrated.value = true;
 
-  // 立即执行一次滚动检测，确保页面加载时状态正确
-  handleScroll();
-  checkVisibleItems();
+  // 首帧同步跑一次（无需 rAF），确保页面加载时状态正确
+  const scrollTop = window.scrollY;
+  const windowHeight = window.innerHeight;
+  computeHero(scrollTop, windowHeight);
+  computeToc(scrollTop, windowHeight);
+  computeStyleItems(scrollTop, windowHeight / 2);
 
-  // 监听滚动 - 英雄区缩放/淡出
-  window.addEventListener("scroll", handleScroll);
+  // 唯一 scroll 监听（passive：handler 不调 preventDefault，允许浏览器并行滚动）
+  useEventListener(window, "scroll", onScroll, { passive: true });
 
-  // 监听滚动 - 样式选择区域跟随效果
-  window.addEventListener("scroll", handleStyleScroll);
-
-  // 监听滚动 - 目录导航高亮
-  window.addEventListener("scroll", handleTocScroll);
-  handleTocScroll();
-});
-
-onUnmounted(() => {
-  window.removeEventListener("scroll", handleScroll);
-  window.removeEventListener("scroll", handleStyleScroll);
-  window.removeEventListener("scroll", handleTocScroll);
+  // offsetTop 缓存失效：resize（防抖）+ 字体加载 + 兜底定时器
+  useEventListener(window, "resize", useDebounceFn(invalidateOffsets, 200), { passive: true });
+  if (document.fonts) {
+    document.fonts.ready.then(invalidateOffsets);
+  }
+  // 兜底：覆盖未捕获的 layout 变化（如延迟加载的资源改变 section 高度）
+  setTimeout(invalidateOffsets, 3000);
 });
 </script>
 
