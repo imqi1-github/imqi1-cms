@@ -131,7 +131,9 @@ const handleLogin = async () => {
 
     console.log('开始跳转')
     // 使用 window.location.href 而不是 navigateTo，确保服务器端渲染时能读取到 cookie
-    window.location.href = redirectTo.value
+    // window.location.href = redirectTo.value
+    await navigateTo(redirectTo.value)
+
   } catch (rawError: unknown) {
     const e = rawError as ApiError;
     toast.error({

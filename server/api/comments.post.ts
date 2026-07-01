@@ -1,6 +1,6 @@
 import DOMPurify from "isomorphic-dompurify";
 
-import { CommentCreateSchema, CommentItemSchema } from "../schemas";
+import { CommentCreateSchema, CommentItemSchema } from "./schemas";
 
 import { getUser } from "#server/lib/auth";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
