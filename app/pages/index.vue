@@ -3,7 +3,7 @@
     <!-- 英雄区 - fixed定位，独立于section -->
     <h1 id="index-hero-title" class="sr-only">欢迎来到 {{ siteName }}</h1>
     <div ref="heroRef" class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0" :style="heroStyle">
-      <div class="flex items-center justify-between w-full opacity-0 animate-fade-in max-md:flex-col max-md:text-center max-md:gap-8">
+      <div v-scroll-reveal class="flex items-center justify-between w-full opacity-0 max-md:flex-col max-md:text-center max-md:gap-8">
         <!-- 标题区域 -->
         <div class="p-1.5">
           <h1 class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
@@ -27,7 +27,7 @@
       </div>
 
       <!-- 联系链接 -->
-      <div class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center animate-fade-in">
+      <div v-scroll-reveal class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center">
         <template v-for="(link, index) in contactLinks" :key="index">
           <NuxtLink
             v-tooltip="link.name"
@@ -45,7 +45,7 @@
     <section class="h-[calc(100vh-250px)] mb-62.5" aria-hidden="true"/>
 
     <!-- 为什么要做这个网站 -->
-    <section class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-why-title">
+    <section v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-why-title">
       <h2 id="index-why-title" class="text-slate-500 dark:text-gray-400 text-sm">？ 为什么要做这个网站</h2>
       <div class="tracking-[0.1ch] leading-[1.7em] mt-2.5 max-w-187.5">
         <p class="my-2.5 text-slate-700 dark:text-gray-300">
@@ -58,7 +58,7 @@
     <!-- 四个内容的父盒子 -->
     <div class="pt-37.5">
       <!-- 网站架构 -->
-      <section ref="sectionFramework" class="animate-fade-in" aria-labelledby="index-framework-title">
+      <section ref="sectionFramework" v-scroll-reveal aria-labelledby="index-framework-title">
         <div class="max-w-fit w-full mx-auto">
           <div class="mb-10">
             <h2 id="index-framework-title" class="text-blue-700 dark:text-blue-500 text-sm">网站架构</h2>
@@ -97,7 +97,7 @@
       <div class="h-62.5"/>
 
       <!-- 样式选择 -->
-      <div ref="sectionStyle" class="-mt-5 mx-auto max-w-200 animate-fade-in">
+      <div ref="sectionStyle" v-scroll-reveal class="-mt-5 mx-auto max-w-200">
         <div>
           <div class="mb-30 max-md:text-center">
             <h2 class="text-blue-700 dark:text-blue-500 text-sm">样式选择</h2>
@@ -252,7 +252,7 @@
       <div class="h-62.5"/>
 
       <!-- 最新文章 -->
-      <section ref="sectionContent" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-recent-posts-title">
+      <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-recent-posts-title">
         <h2 id="index-recent-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
         <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
         <div class="text-slate-500 dark:text-gray-400 text-sm mb-8">生活中的小事、照片，感兴趣的技术等</div>
@@ -348,7 +348,7 @@
       </section>
 
       <!-- 分类文章 -->
-      <section v-if="categoryRecentPosts.length > 0" class="mx-auto max-w-275 animate-fade-in">
+      <section v-if="categoryRecentPosts.length > 0" v-scroll-reveal class="mx-auto max-w-275">
         <template v-for="(categoryData, index) in categoryRecentPosts" :key="categoryData.category.slug">
           <!-- 分类标题 -->
           <div class="flex items-center justify-between mb-6">
@@ -440,7 +440,8 @@
       <section
         v-if="photoImages.length > 0"
         ref="sectionPhotos"
-        class="mt-12 mx-auto max-w-275 animate-fade-in"
+        v-scroll-reveal
+        class="mt-12 mx-auto max-w-275"
         aria-labelledby="index-photo-posts-title">
         <h2 id="index-photo-posts-title" class="text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
         <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最近发布的图片</div>
@@ -491,7 +492,7 @@
     <div class="h-36"/>
 
     <!-- 阅读更多 -->
-    <section class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-read-more-title">
+    <section v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-read-more-title">
       <h2 id="index-read-more-title" class="text-slate-800 dark:text-white text-[1.6em] font-bold text-center">阅读更多</h2>
       <div class="flex flex-wrap justify-center gap-4 mt-8">
         <NuxtLink
@@ -532,7 +533,7 @@
     <div class="h-37.5"/>
 
     <!-- 订阅文章 -->
-    <section v-if="subscribePosts.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-subscribe-posts-title">
+    <section v-if="subscribePosts.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-subscribe-posts-title">
       <div class="flex items-center justify-between mb-6">
         <div class="flex gap-6 max-sm:flex-col max-sm:gap-1">
           <div>
@@ -593,7 +594,7 @@
     <div v-if="subscribePosts.length > 0" class="h-37.5"/>
 
     <!-- 更新日志 -->
-    <section v-if="recentChangelogs.length > 0" class="mx-auto max-w-275 animate-fade-in" aria-labelledby="index-changelogs-title">
+    <section v-if="recentChangelogs.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-changelogs-title">
       <div class="flex items-center justify-between mb-6">
         <div>
           <h2 id="index-changelogs-title" class="text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
@@ -958,11 +959,8 @@ const handleStyleScroll = () => {
   requestAnimationFrame(checkVisibleItems);
 };
 
-// IntersectionObserver 实例
-let fadeInObserver: IntersectionObserver | null = null;
-
-// 初始化滚动动画
-onMounted(async () => {
+// 初始化滚动监听
+onMounted(() => {
   // 标记 hydration 已完成，此后日期切换为相对时间 / 本地化格式
   isHydrated.value = true;
 
@@ -979,61 +977,16 @@ onMounted(async () => {
   // 监听滚动 - 目录导航高亮
   window.addEventListener("scroll", handleTocScroll);
   handleTocScroll();
-
-  // 等待 ClientOnly 内容渲染完成
-  await nextTick();
-
-  // 滚动渐入效果监听
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  fadeInObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver?.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-    fadeInObserver?.observe(el);
-  });
 });
 
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
   window.removeEventListener("scroll", handleStyleScroll);
   window.removeEventListener("scroll", handleTocScroll);
-  fadeInObserver?.disconnect();
 });
 </script>
 
 <style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@keyframes fade-in {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* 浮动动画 */
 @keyframes float {
   0%,

@@ -168,9 +168,9 @@ onMounted(() => {
       id="first-loading"
       class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950"
       onclick="
-        const fadeElements = document.querySelectorAll('.animate-fade-in:not(.fade-in-start)');
+        const fadeElements = document.querySelectorAll('[data-scroll-reveal]:not([data-revealed])');
         fadeElements.forEach(el => {
-          el.classList.add('fade-in-start');
+          el.setAttribute('data-revealed', '');
         });
         this.style.display = 'none';
       ">

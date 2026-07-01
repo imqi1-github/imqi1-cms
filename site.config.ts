@@ -126,7 +126,7 @@ export const siteConfig = defineSiteConfig({
 
   // 页面过渡动画时长（ms）：app.vue 全局淡出/淡入真实时长，也是各页面等待过渡完成再启动元素动画的统一延迟
   pageTransition: {
-    fadeDuration: 300,
+    fadeDuration: 150,
   },
 
   homeCustomText: `<p>${_displayName}</p>`,

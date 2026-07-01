@@ -16,11 +16,9 @@ const searchKeyword = ref(initialQ);
 // app.vue 的页面渐出依赖「新页顶层 await 挂起 Suspense 期间、旧页 DOM 保持挂载」：
 // page:start 把 mainOpacity 置 0，只要 setup 的 await 不 resolve，旧页就不会被替换、淡出看得到。
 // 有 q 时下方 useFetch 的真实请求会自然挂起；无 q 时不发空查询，需人为挂起一个 fadeDuration
-// 复刻这个窗口，否则新页瞬间替换旧页、旧页来不及渐出。仅在客户端 SPA 导航时挂起——
-// SSR 与首屏 hydration 不需要（首屏走 first-loading 遮罩，无上一页可渐出）。
-const nuxtApp = useNuxtApp();
-if (import.meta.client && !initialQ && !nuxtApp.isHydrating) {
-  await new Promise<void>(resolve => setTimeout(resolve, siteConfig.pageTransition.fadeDuration));
+// 复刻这个窗口（见 useFadeOutOnNavigate），否则新页瞬间替换旧页、旧页来不及渐出。
+if (!initialQ) {
+  await useFadeOutOnNavigate();
 }
 
 // 搜索结果
@@ -59,15 +57,6 @@ usePageSeo({
   keywords: siteConfig.pageSeo.search.keywords,
 });
 
-// 触发渐入动画
-function triggerFadeIn() {
-  setTimeout(() => {
-    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-      el.classList.add("fade-in-start");
-    });
-  }, 50);
-}
-
 // 监听搜索关键词变化
 watch(
   () => searchKeyword.value,
@@ -82,10 +71,6 @@ watch(
     // 输入即搜（useFetch 的 watch:false 已禁用自动响应，由这里手动触发）
     if (q) {
       refresh();
-    }
-
-    if (!pending.value) {
-      triggerFadeIn();
     }
   },
 );
@@ -102,18 +87,9 @@ watch(
   },
 );
 
-// 监听 pending 状态变化
-watch(pending, newPending => {
-  if (!newPending) {
-    triggerFadeIn();
-  }
-});
-
 const searchInputRef = useTemplateRef<HTMLInputElement>("searchInputRef");
 
-// 页面挂载时触发动画
 onMounted(() => {
-  triggerFadeIn();
   searchInputRef.value?.focus();
 });
 
@@ -162,7 +138,7 @@ function highlightKeyword(text: string, keyword: string) {
 <template>
   <div class="max-w-3xl mx-auto">
     <!-- 页面标题 -->
-    <header class="mb-8 animate-fade-in">
+    <header v-scroll-reveal class="mb-8">
       <h1 class="text-[3em] font-extrabold mb-4">搜索</h1>
 
       <!-- 搜索框 -->
@@ -194,7 +170,7 @@ function highlightKeyword(text: string, keyword: string) {
     </header>
 
     <!-- 搜索结果 -->
-    <div v-if="searchKeyword" role="status" aria-live="polite" aria-atomic="true" class="animate-fade-in">
+    <div v-if="searchKeyword" v-scroll-reveal role="status" aria-live="polite" aria-atomic="true">
       <!-- 加载状态 -->
       <div v-if="pending" class="relative py-20">
         <div aria-hidden="true" class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
@@ -263,25 +239,9 @@ function highlightKeyword(text: string, keyword: string) {
     </div>
 
     <!-- 空状态 -->
-    <div v-else class="py-20 text-center animate-fade-in">
+    <div v-else v-scroll-reveal class="py-20 text-center">
       <Icon name="ri:search-line" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
       <p class="text-muted-foreground">输入关键词开始搜索</p>
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>

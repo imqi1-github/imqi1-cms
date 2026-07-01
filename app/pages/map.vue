@@ -32,6 +32,10 @@ const FOOTPRINT_MAX_ZOOM = 9;
 
 // 三个视图的数据源按需加载：首屏只请求当前 tab，切到其它 tab 时再首次请求。
 // TravelMap 内部仍只根据当前 places 重建聚合点、不重载地图。
+// SPA 导航时挂起一个 fadeDuration，让旧页渐出完成后再挂载，避免左侧视图选择 tab 浮层
+// （absolute，无 opacity:0 初始态）在 mainOpacity 过渡期间提前露脸闪烁。详见 useFadeOutOnNavigate。
+await useFadeOutOnNavigate();
+
 const fetchOptions = { headers: { "x-ssr-internal-request": "true" } };
 const {
   data: travelsData,

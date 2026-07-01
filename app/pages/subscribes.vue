@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watch} from "vue";
+import {computed, onMounted, ref} from "vue";
 
 import {siteConfig} from "~~/site.config";
 import type {SubscribeSource} from "~/types/apis/subscribes";
@@ -93,29 +93,6 @@ onMounted(() => {
   if (import.meta.client) {
     window.addEventListener('wheel', handleSidebarWheel, { passive: false });
   }
-
-  // 等待全局页面过渡完成后再初始化淡入动画
-  nextTick(() => {
-    setTimeout(() => {
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: "0px 0px -50px 0px",
-      };
-
-      const fadeInObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("fade-in-start");
-            fadeInObserver.unobserve(entry.target);
-          }
-        });
-      }, observerOptions);
-
-      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-        fadeInObserver.observe(el);
-      });
-    }, siteConfig.pageTransition.fadeDuration); // 等待全局页面淡入完成
-  });
 });
 
 onUnmounted(() => {
@@ -218,22 +195,12 @@ function selectSubscribe(sourceId: number | null) {
 function clearFilter() {
   selectSubscribe(null);
 }
-
-// 监听筛选变化，触发动画
-watch(() => selectedSourceId.value, async () => {
-  await nextTick();
-  setTimeout(() => {
-    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-      el.classList.add("fade-in-start");
-    });
-  }, 50);
-});
 </script>
 
 <template>
   <div class="container mx-auto max-w-6xl">
     <!-- 页面头部 -->
-    <header class="mb-8 animate-fade-in">
+    <header v-scroll-reveal class="mb-8">
       <h1 class="text-[3em] font-extrabold mb-2.5">订阅文章</h1>
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">来自各大订阅源的最新文章，每{{ feedCacheInterval }}小时自动更新</p>
       <ClientOnly>
@@ -256,14 +223,14 @@ watch(() => selectedSourceId.value, async () => {
     </div>
 
     <!-- 错误状态 -->
-    <div v-if="isLoaded && error" class="text-center py-16 animate-fade-in">
+    <div v-if="isLoaded && error" v-scroll-reveal class="text-center py-16">
       <Icon name="lucide:alert-circle" class="size-16 text-destructive/50 mx-auto mb-4" />
       <p class="text-muted-foreground mb-4">{{ error }}</p>
       <Button variant="outline" @click="reload">重试</Button>
     </div>
 
     <!-- 空状态 -->
-    <div v-if="isLoaded && posts.length === 0 && !error" class="text-center py-16 animate-fade-in">
+    <div v-if="isLoaded && posts.length === 0 && !error" v-scroll-reveal class="text-center py-16">
       <Icon name="lucide:rss" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
       <p class="text-muted-foreground">暂无订阅文章</p>
       <p class="text-sm text-muted-foreground mt-2">请先在后台添加订阅源并更新</p>
@@ -272,7 +239,7 @@ watch(() => selectedSourceId.value, async () => {
     <!-- 主内容区 -->
     <div v-if="isLoaded && posts.length > 0" class="flex gap-6">
       <!-- 左侧订阅源列表 -->
-      <aside class="w-12 lg:w-16 shrink-0 animate-fade-in">
+      <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
         <div
           ref="sidebarRef"
           class="sticky top-22 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-fit max-h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
@@ -353,7 +320,8 @@ watch(() => selectedSourceId.value, async () => {
           <article
             v-for="post in filteredPosts"
             :key="post.id"
-            class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition-all animate-fade-in bg-white dark:bg-slate-800/50"
+            v-scroll-reveal
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition-all bg-white dark:bg-slate-800/50"
           >
             <div class="flex items-start gap-4">
               <!-- 订阅源头像 -->
@@ -408,7 +376,7 @@ watch(() => selectedSourceId.value, async () => {
           </article>
 
           <!-- 筛选后无结果 -->
-          <div v-if="filteredPosts.length === 0 && selectedSourceId" class="text-center py-12 animate-fade-in">
+          <div v-if="filteredPosts.length === 0 && selectedSourceId" v-scroll-reveal class="text-center py-12">
             <Icon name="lucide:file-question" class="size-12 text-muted-foreground/30 mx-auto mb-3" />
             <p class="text-muted-foreground">该订阅源暂无文章</p>
           </div>
@@ -419,20 +387,6 @@ watch(() => selectedSourceId.value, async () => {
 </template>
 
 <style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* 隐藏滚动条 */
 .scrollbar-hide {
   -ms-overflow-style: none !important;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, onUnmounted, ref, watch} from "vue";
+import {computed, onMounted, onUnmounted, ref} from "vue";
 
 import {siteConfig} from "~~/site.config";
 import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta,} from "~~/shared/changelog";
@@ -111,42 +111,12 @@ onMounted(() => {
   if (import.meta.client) {
     window.addEventListener('wheel', handleSidebarWheel, { passive: false });
   }
-
-  // 初始化滚动渐入动画
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  const fadeInObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-    fadeInObserver.observe(el);
-  });
 });
 
 onUnmounted(() => {
   if (import.meta.client) {
     window.removeEventListener('wheel', handleSidebarWheel);
   }
-});
-
-// 监听筛选变化，触发动画
-watch(() => selectedType.value, async () => {
-  await nextTick();
-  setTimeout(() => {
-    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-      el.classList.add("fade-in-start");
-    });
-  }, 50);
 });
 
 // 页面元数据
@@ -160,7 +130,7 @@ usePageSeo({
 <template>
   <div class="container mx-auto max-w-6xl">
     <!-- 页面标题 -->
-    <header class="mb-8 animate-fade-in">
+    <header v-scroll-reveal class="mb-8">
       <h1 class="text-[3em] font-extrabold mb-2.5">更新日志</h1>
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">记录每一次迭代与改进</p>
       <NuxtLink
@@ -181,7 +151,7 @@ usePageSeo({
     </div>
 
     <!-- 错误状态 -->
-    <div v-else-if="error" class="py-20 text-center animate-fade-in">
+    <div v-else-if="error" v-scroll-reveal class="py-20 text-center">
       <Icon name="lucide:alert-circle" class="size-12 text-red-500 mx-auto mb-4" />
       <h2 class="text-xl font-bold mb-2">加载失败</h2>
       <p class="text-slate-500">获取更新日志时出错，请稍后再试。</p>
@@ -190,7 +160,7 @@ usePageSeo({
     <!-- 主内容区 -->
     <div v-else-if="data?.data && data.data.length > 0" class="flex gap-6">
       <!-- 左侧分类筛选 -->
-      <aside class="w-12 lg:w-16 shrink-0 animate-fade-in">
+      <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
         <div
           ref="sidebarRef"
           class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-hit pr-1 scrollbar-hide"
@@ -218,7 +188,7 @@ usePageSeo({
           <section
             v-for="group in filteredData"
             :key="`${group.year}-${group.month}`"
-            class="animate-fade-in"
+            v-scroll-reveal
           >
             <!-- 月份标题 -->
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
@@ -273,7 +243,7 @@ usePageSeo({
           </section>
 
           <!-- 筛选后无结果 -->
-          <div v-if="filteredData.length === 0 && selectedType" class="text-center py-12 animate-fade-in">
+          <div v-if="filteredData.length === 0 && selectedType" v-scroll-reveal class="text-center py-12">
             <Icon name="lucide:file-question" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p class="text-slate-500 dark:text-slate-400">该分类暂无日志</p>
           </div>
@@ -282,7 +252,7 @@ usePageSeo({
     </div>
 
     <!-- 空状态 -->
-    <div v-else class="py-20 text-center animate-fade-in">
+    <div v-else v-scroll-reveal class="py-20 text-center">
       <Icon name="lucide:file-text" class="size-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
       <p class="text-slate-500 dark:text-slate-400">暂无更新日志</p>
     </div>
@@ -290,20 +260,6 @@ usePageSeo({
 </template>
 
 <style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* 细滚动条样式 */
 aside div::-webkit-scrollbar {
   width: 4px;

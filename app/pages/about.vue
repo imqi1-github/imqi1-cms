@@ -621,6 +621,10 @@ const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();
 // 注入页面加载状态
 const pageLoading = inject<Ref<boolean>>("pageLoading", ref(false));
 
+// SPA 导航时挂起一个 fadeDuration，让旧页渐出完成后再挂载，避免 fixed 网格 / brandDomain
+// 装饰文字（无 opacity:0 初始态）在 mainOpacity 过渡期间提前露脸闪烁。详见 useFadeOutOnNavigate。
+await useFadeOutOnNavigate();
+
 // 获取统计数据
 const { data: statsData } = await useFetch("/api/stats", {
   headers: {

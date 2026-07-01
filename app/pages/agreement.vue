@@ -167,33 +167,6 @@ usePageSeo({
   keywords: siteConfig.pageSeo.agreement.keywords,
 });
 
-// 监听 404 状态，触发错误页动画
-watch(isNotFound, () => {
-  // 只在客户端执行
-  if (!import.meta.client) return;
-
-  if (isNotFound.value) {
-    nextTick(() => {
-      const notFoundElement = document.querySelector(".animate-fade-in");
-      if (notFoundElement && !notFoundElement.classList.contains("fade-in-start")) {
-        notFoundElement.classList.add("fade-in-start");
-      }
-    });
-  }
-});
-
-// 监听页面数据加载完成，触发渐入动画
-watch(page, newPage => {
-  if (!import.meta.client || !newPage) return;
-
-  nextTick(() => {
-    const pageContent = document.querySelector(".animate-fade-in:not(.fade-in-start)");
-    if (pageContent) {
-      pageContent.classList.add("fade-in-start");
-    }
-  });
-});
-
 // 监听路由 hash 变化
 watch(
   () => route.hash,
@@ -204,31 +177,8 @@ watch(
   },
 );
 
-// 初始化滚动渐入动画
+// 初始化目录与 hash 滚动
 onMounted(() => {
-  // 初始化滚动渐入动画
-  const observerOptions = {
-    threshold: 0.01,
-    rootMargin: "0px",
-  };
-
-  const fadeInObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // 观察所有需要滚动渐入的元素（包括404和正常内容）
-  nextTick(() => {
-    document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-      fadeInObserver.observe(el);
-    });
-  });
-
-  // 初始化目录和处理 hash 滚动
   nextTick(async () => {
     extractToc();
     window.addEventListener("scroll", handleTocScroll);
@@ -256,7 +206,8 @@ onUnmounted(() => {
     <!-- 404 状态 -->
     <div
       v-else-if="isNotFound"
-      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full animate-fade-in">
+      v-scroll-reveal="{ threshold: 0.01, rootMargin: '0px', translateY: 20 }"
+      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full">
       <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
         <Icon name="ri:close-large-fill" class="text-red-500" />
         <span>页面未找到</span>
@@ -270,7 +221,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 页面内容 -->
-    <div v-else-if="page" class="animate-fade-in">
+    <div v-else-if="page" v-scroll-reveal="{ threshold: 0.01, rootMargin: '0px', translateY: 20 }">
       <!-- 标题区域 -->
       <header class="text-center">
         <h1 class="text-[3em] font-extrabold mb-2.5">{{ page.title }}</h1>
@@ -314,20 +265,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 渐入动画基础类 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .opacity-0 {
   opacity: 0;
 }

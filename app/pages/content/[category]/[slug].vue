@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 
-import {Mousewheel, Navigation, Pagination} from "swiper/modules";
+import { Mousewheel, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import {computed, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
+import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue";
 
 import type { RelatedPost } from "~/types/apis/content/related-posts";
-import {zh_CN} from "@/assets/js/zh_CN.umd.js";
-import {siteConfig} from "~~/site.config";
-import type {TocItem} from "~/types/apis/content";
+import { zh_CN } from "@/assets/js/zh_CN.umd.js";
+import { siteConfig } from "~~/site.config";
+import type { TocItem } from "~/types/apis/content";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -400,21 +400,6 @@ watch(
   },
 );
 
-// 监听 404 状态，触发错误页动画
-watch(isNotFound, () => {
-  // 只在客户端执行
-  if (!import.meta.client) return;
-
-  if (isNotFound.value) {
-    nextTick(() => {
-      const notFound = document.querySelector(".not-found-fade-in");
-      if (notFound) {
-        notFound.classList.add("fade-in-start");
-      }
-    });
-  }
-});
-
 // 监听路由 hash 变化，滚动到评论
 watch(
   () => route.hash,
@@ -463,38 +448,33 @@ onMounted(async () => {
     // 3 个模块已在文件顶部静态具名 import（tree-shake 后只含 3 个，~45kB），
     // 不随主体动态加载——swiper 的 exports 未暴露 modules/*.mjs 子路径，无法动态 import 具体文件。
     const { default: Swiper } = await import("swiper");
-    // 404 页面动画（初始状态）
-    if (isNotFound.value) {
-      nextTick(() => {
-        const notFound = document.querySelector(".not-found-fade-in");
-        if (notFound) {
-          notFound.classList.add("fade-in-start");
-        }
-      });
-    }
 
     // 初始化 Fancybox（参照友情链接页面）
-    FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
-      l10n: zh_CN,
-      Hash: false,
-      Carousel: {
-        Zoomable: {
-          Panzoom: {
-            maxScale: 2,
+    FancyboxModule.Fancybox.bind(
+      fancyboxContainer.value,
+      "[data-fancybox]",
+      enhanceFancyboxLivePhoto({
+        l10n: zh_CN,
+        Hash: false,
+        Carousel: {
+          Zoomable: {
+            Panzoom: {
+              maxScale: 2,
+            },
+          },
+          Toolbar: {
+            display: {
+              left: ["infobar"],
+              middle: ["zoomIn", "zoomOut", "toggleZoom", "rotateCCW", "rotateCW", "flipX", "flipY"],
+              right: ["thumbs", "close"],
+            },
+          },
+          Autoplay: {
+            autoStart: false,
           },
         },
-        Toolbar: {
-          display: {
-            left: ["infobar"],
-            middle: ["zoomIn", "zoomOut", "toggleZoom", "rotateCCW", "rotateCW", "flipX", "flipY"],
-            right: ["thumbs", "close"],
-          },
-        },
-        Autoplay: {
-          autoStart: false,
-        },
-      },
-    }));
+      }),
+    );
 
     // 初始化代码复制按钮
     document.querySelectorAll(".markdown-body pre.shiki").forEach(pre => {
@@ -1645,30 +1625,17 @@ onUnmounted(() => {
 
 <template>
   <div
-ref="fancyboxContainer"
+    ref="fancyboxContainer"
     :class="[
-      'mx-auto w-full',
+      'mx-auto w-full flex flex-col justify-center items-center',
       isPhotoCategory ? (shouldReserveToc ? 'max-w-375' : 'max-w-350') : shouldReserveToc ? 'max-w-250' : 'max-w-225',
     ]">
     <div v-if="pending" class="py-20 text-center">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
       <p class="mt-2 text-slate-500">加载中...</p>
     </div>
 
-    <div
-      v-else-if="isNotFound"
-      class="text-center flex items-center justify-center flex-col place-self-center justify-self-center size-full not-found-fade-in">
-      <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
-        <Icon name="ri:close-large-fill" class="text-red-500 mt-1" />
-        <span>页面未找到</span>
-      </h1>
-
-      <p class="text-lg text-slate-600 dark:text-slate-400 mb-8">
-        未找到内容，你可以
-        <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>
-        。
-      </p>
-    </div>
+    <NotFound v-else-if="isNotFound" />
 
     <article v-else-if="post" class="flex flex-col w-full animate-fade-in">
       <!-- 标题区域 -->
@@ -1684,10 +1651,12 @@ ref="fancyboxContainer"
           :hover-play="false"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
-          :class="[
-            'w-full h-37.5 object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
-            isPhotoCategory ? 'max-h-150' : 'max-h-37.5',
-          ].join(' ')" />
+          :class="
+            [
+              'w-full h-37.5 object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
+              isPhotoCategory ? 'max-h-150' : 'max-h-37.5',
+            ].join(' ')
+          " />
 
         <!-- 标题 -->
         <h1 id="article-title" class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 wrap-break-word">
@@ -1716,9 +1685,7 @@ ref="fancyboxContainer"
       <!-- 文章内容区域 - 带目录 -->
       <div class="flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
-        <aside
-          v-if="shouldReserveToc"
-          class="toc-sidebar hidden lg:block w-48 shrink-0 order-first mt-6">
+        <aside v-if="shouldReserveToc" class="toc-sidebar hidden lg:block w-48 shrink-0 order-first mt-6">
           <nav v-if="showToc" class="toc-nav sticky top-24 w-fit">
             <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 w-fit max-w-full">目录</h3>
             <ul class="space-y-1 w-fit max-w-48">
@@ -1743,7 +1710,7 @@ ref="fancyboxContainer"
         <div
           ref="contentBody"
           class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body"
-          v-html="post.renderedContent"/>
+          v-html="post.renderedContent" />
       </div>
 
       <!-- 元信息盒子和 CC 授权 -->
@@ -1788,7 +1755,7 @@ ref="fancyboxContainer"
         <!-- CC 协议授权 -->
         <div class="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700">
           <div class="cc-license flex items-center gap-1">
-            <Icon name="ri:copyright-line" class="text-xs text-slate-600 dark:text-slate-400"/>
+            <Icon name="ri:copyright-line" class="text-xs text-slate-600 dark:text-slate-400" />
             <p class="text-xs text-slate-600 dark:text-slate-400">
               若无特别说明，本文采用
               <a
@@ -1814,7 +1781,7 @@ ref="fancyboxContainer"
 
       <!-- 相关文章 -->
       <div v-if="relatedPostsPending" class="article-constrained flex items-center justify-center gap-2 py-4 text-muted-foreground">
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"/>
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
         <span class="text-sm">加载相关文章...</span>
       </div>
       <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
@@ -1824,20 +1791,26 @@ ref="fancyboxContainer"
             v-for="relatedPost in relatedPosts"
             :key="relatedPost.cid"
             class="flex-1 min-w-50 min-h-50 relative flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-600 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all duration-300">
-            <NuxtLink :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`" class="group flex flex-col size-full">
+            <NuxtLink
+              :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`"
+              class="group flex flex-col size-full">
               <div v-if="relatedPost.covers && relatedPost.covers.length > 0" class="absolute inset-0">
                 <img
                   :src="relatedPost.covers[0]?.url"
                   :alt="relatedPost.title"
                   class="object-cover group-hover:scale-[1.03] transition-transform duration-300 size-full"
-                  loading="lazy" >
+                  loading="lazy" />
               </div>
               <div v-else class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
                 <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>
               </div>
               <div
                 class="w-full px-4 py-2"
-                :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'cover-backdrop text-white absolute -bottom-1' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
+                :class="
+                  relatedPost.covers && relatedPost.covers.length > 0
+                    ? 'cover-backdrop text-white absolute -bottom-1'
+                    : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'
+                ">
                 <h4
                   class="font-semibold line-clamp-1"
                   :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white' : 'text-slate-900 dark:text-slate-100'">
@@ -1873,20 +1846,6 @@ ref="fancyboxContainer"
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 404 页面淡入动画 */
-.not-found-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.not-found-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .opacity-0 {
@@ -2379,7 +2338,8 @@ ref="fancyboxContainer"
   color: rgb(107 114 128);
 }
 
-.markdown-body :deep(pre.shiki:hover .copy-button), .markdown-body :deep(pre.shiki.has-file-name:hover .file-label) {
+.markdown-body :deep(pre.shiki:hover .copy-button),
+.markdown-body :deep(pre.shiki.has-file-name:hover .file-label) {
   opacity: 1;
 }
 

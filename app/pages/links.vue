@@ -387,7 +387,7 @@ const handleSubmit = async (forceSubmit = false) => {
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
 let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
-// 初始化滚动渐入动画
+// 初始化 Fancybox 与友链检测
 onMounted(async () => {
   // 动态导入 Fancybox（仅客户端）
   FancyboxModule = await import("@fancyapps/ui");
@@ -395,25 +395,6 @@ onMounted(async () => {
   loadLinkStatuses();
   // 检查是否需要自动检测
   checkIfNeedAutoCheck();
-
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  const fadeInObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-    fadeInObserver.observe(el);
-  });
 
   FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
     // === 全局选项 ===
@@ -475,7 +456,7 @@ onUnmounted(() => {
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header ref="fancyboxContainer" class="animate-fade-in">
+    <header ref="fancyboxContainer" v-scroll-reveal>
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"
@@ -512,7 +493,7 @@ onUnmounted(() => {
     </header>
 
     <!-- 友链列表区域 -->
-    <section class="my-8 animate-fade-in">
+    <section v-scroll-reveal class="my-8">
       <h2 class="sr-only">友链列表</h2>
       <div class="flex justify-between sm:items-center mb-4 max-sm:flex-col gap-3">
         <blockquote
@@ -618,7 +599,7 @@ onUnmounted(() => {
     </section>
 
     <!-- 本站加入的博客组织 -->
-    <section class="my-8 animate-fade-in">
+    <section v-scroll-reveal class="my-8">
       <h2 class="text-xl font-bold mb-4">本站已加入的博客组织</h2>
       <div class="flex flex-wrap gap-4">
         <a
@@ -639,7 +620,7 @@ onUnmounted(() => {
     </section>
 
     <!-- 本站信息卡片 -->
-    <section class="my-8 animate-fade-in">
+    <section v-scroll-reveal class="my-8">
       <h2 class="text-xl font-bold mb-4">本站信息</h2>
       <div class="bg-linear-to-br from-blue-50 to-indigo-50 dark:from-slate-800/50 dark:to-slate-900/50 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
         <div class="flex flex-col md:flex-row gap-6">
@@ -673,7 +654,7 @@ onUnmounted(() => {
     </section>
 
     <!-- 友链申请说明 -->
-    <section class="mt-12 animate-fade-in">
+    <section v-scroll-reveal class="mt-12">
       <h2 class="text-xl font-bold mb-4">{{ formMode === "apply" ? "申请友链" : "修改友链" }}</h2>
 
       <!-- 模式切换单选按钮 -->
@@ -920,19 +901,5 @@ onUnmounted(() => {
 <style scoped>
 .no-underline {
   text-decoration: none;
-}
-
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
 }
 </style>

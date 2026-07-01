@@ -1,0 +1,21 @@
+/* 滚动渐入指令 v-scroll-reveal 配套样式 */
+/* 元素属性由 directives/scrollReveal.ts 在 SSR(getSSRProps)与 mounted 时注入 */
+
+[data-scroll-reveal] {
+  opacity: 0;
+  transform: translateY(var(--scroll-reveal-y, 30px));
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-scroll-reveal][data-revealed] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 仅 opacity、不位移（canvas / 全屏背景等，避免位移错位）；
+   置于 revealed 之后，等特异性下靠源序覆盖隐藏与显现两态 */
+[data-scroll-reveal][data-no-transform] {
+  transform: none;
+}

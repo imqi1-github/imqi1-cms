@@ -57,31 +57,6 @@ function formatDateTime(date: string | Date): string {
   return "刚刚";
 }
 
-onMounted(() => {
-  // 等待全局页面过渡完成后再初始化淡入动画
-  nextTick(() => {
-    setTimeout(() => {
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: "0px 0px -50px 0px",
-      };
-
-      const fadeInObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("fade-in-start");
-            fadeInObserver.unobserve(entry.target);
-          }
-        });
-      }, observerOptions);
-
-      document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach((el) => {
-        fadeInObserver.observe(el);
-      });
-    }, siteConfig.pageTransition.fadeDuration); // 等待全局页面淡入完成
-  });
-});
-
 usePageSeo({
   title: computed(() => `站点地图 - ${siteName.value}`),
   description: siteConfig.pageSeo.sitemap.description,
@@ -91,7 +66,7 @@ usePageSeo({
 
 <template>
   <div class="min-h-screen bg-white dark:bg-[#0a0a0a]">
-    <div class="mx-auto max-w-4xl  animate-fade-in">
+    <div v-scroll-reveal class="mx-auto max-w-4xl">
       <!-- 标题 -->
       <header class="mb-12 text-center">
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">站点地图</h1>
@@ -217,19 +192,3 @@ usePageSeo({
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>

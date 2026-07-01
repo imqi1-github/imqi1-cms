@@ -60,33 +60,12 @@ function toggleMonth(year: number, month: number) {
 function isMonthExpanded(year: number, month: number): boolean {
   return expandedMonths.value.has(`${year}-${month}`);
 }
-
-onMounted(() => {
-  // 初始化滚动渐入动画
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  const fadeInObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-    fadeInObserver.observe(el);
-  });
-});
 </script>
 
 <template>
   <div class="max-w-4xl mx-auto">
     <!-- 页面标题 -->
-    <header class="mb-8 animate-fade-in">
+    <header v-scroll-reveal class="mb-8">
       <h1 class="text-[3em] font-extrabold mb-2.5">文章归档</h1>
       <p class="text-[0.8em] text-slate-600 dark:text-slate-400">共收录 {{ data?.data?.stats?.total || 0 }} 篇文章</p>
     </header>
@@ -109,7 +88,8 @@ onMounted(() => {
       <section
         v-for="(group, index) in data.data.groups"
         :key="`${group.year}-${group.month}`"
-        class="animate-fade-in border rounded-lg overflow-hidden"
+        v-scroll-reveal
+        class="border rounded-lg overflow-hidden"
         :style="{ animationDelay: `${index * 50}ms` }">
         <!-- 月份标题 - 可点击 -->
         <button
@@ -165,19 +145,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>

@@ -82,25 +82,6 @@ function handleCoverError(event: Event) {
 onMounted(async () => {
   // 动态导入 Fancybox（仅客户端）
   FancyboxModule = await import("@fancyapps/ui");
-  // 初始化滚动渐入动画
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  const fadeInObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("fade-in-start");
-        fadeInObserver.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // 观察所有需要滚动渐入的元素
-  document.querySelectorAll(".animate-fade-in:not(.fade-in-start)").forEach(el => {
-    fadeInObserver.observe(el);
-  });
 
   // 初始化 Fancybox
   FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
@@ -146,7 +127,7 @@ onUnmounted(() => {
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header ref="fancyboxContainer" class="animate-fade-in">
+    <header ref="fancyboxContainer" v-scroll-reveal>
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"
@@ -165,7 +146,7 @@ onUnmounted(() => {
     </header>
 
     <!-- 留言内容区域 -->
-    <section class="my-8 animate-fade-in">
+    <section v-scroll-reveal class="my-8">
       <!-- 未配置提示 -->
       <div v-if="!messagePostId" class="py-10 text-center">
         <Icon name="lucide:alert-circle" class="size-8 text-amber-500 mx-auto mb-2" />
@@ -178,19 +159,3 @@ onUnmounted(() => {
     </section>
   </div>
 </template>
-
-<style scoped>
-/* 滚动淡入动画 */
-.animate-fade-in {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-fade-in.fade-in-start {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>

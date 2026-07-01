@@ -242,7 +242,7 @@ onMounted(() => {
 
 <template>
   <ClientOnly>
-    <div class="max-w-225 mx-auto">
+    <div class="max-w-225 mx-auto flex flex-col justify-center items-center">
       <!-- 加载中 - 仅首次加载时显示 -->
       <div v-if="pending && !tag" class="py-20 text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
@@ -250,18 +250,7 @@ onMounted(() => {
       </div>
 
       <!-- 404 -->
-      <div
-        v-else-if="isNotFound"
-        class="text-center flex items-center justify-center flex-col py-20 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
-        <h1 class="text-[3em] font-bold mb-6 flex items-center justify-center gap-3 text-gray-900 dark:text-gray-100">
-          <Icon name="ri:close-large-fill" class="text-red-500" />
-          <span>标签不存在</span>
-        </h1>
-        <p class="text-lg text-slate-600 dark:text-slate-400">
-          未找到内容，你可以
-          <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>。
-        </p>
-      </div>
+      <NotFound v-else-if="isNotFound" title="标签不存在" />
 
       <!-- 标签文章页 -->
       <template v-else>
