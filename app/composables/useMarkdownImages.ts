@@ -1,6 +1,7 @@
 import { createVNode, render, type Component } from "vue";
 
 import LivePhoto from "~/components/LivePhoto.vue";
+import type { MarkdownImageMountOptions } from "~/types/composables/markdown-images";
 import type { NuxtVueApp } from "~/types/nuxt";
 
 /**
@@ -21,6 +22,12 @@ export const useMarkdownImages = () => {
   // 记录所有动态挂载的容器，用于卸载时清理
   let mountedContainers: HTMLElement[] = [];
 
+  const escapeHtmlAttr = (value: string) => value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
   /**
    * 获取当前 Nuxt 应用的 appContext，用于动态挂载时共享全局组件
    * 用 useNuxtApp().vueApp._context 获取，在 async setup 的 await 之后或
@@ -39,7 +46,7 @@ export const useMarkdownImages = () => {
    * 增强 markdown-body 内的所有图片
    * @param root 查询根容器，默认为 document
    */
-  const mount = (root: ParentNode = document) => {
+  const mount = (root: ParentNode = document, options: MarkdownImageMountOptions = {}) => {
     // HMR 或重复调用时，先清理旧的挂载
     unmount();
 
@@ -52,6 +59,20 @@ export const useMarkdownImages = () => {
       const className = imgEl.className || "";
       const dataFancybox = imgEl.getAttribute("data-fancybox");
       const dataCaption = imgEl.getAttribute("data-caption");
+      const resolvedDimensions = options.resolveDimensions?.(src);
+      const width = imgEl.getAttribute("width") || resolvedDimensions?.width || null;
+      const height = imgEl.getAttribute("height") || resolvedDimensions?.height || null;
+      const numericWidth = Number(width);
+      const numericHeight = Number(height);
+      const imageRatio = Number.isFinite(numericWidth) && numericWidth > 0 && Number.isFinite(numericHeight) && numericHeight > 0
+        ? numericWidth / numericHeight
+        : null;
+      const hasAspectRatio = imageRatio !== null;
+      const aspectRatio = hasAspectRatio ? `${numericWidth} / ${numericHeight}` : undefined;
+      const wrapperStyle = [
+        aspectRatio ? `aspect-ratio: ${aspectRatio};` : "",
+        imageRatio ? `--markdown-image-ratio: ${imageRatio};` : "",
+      ].filter(Boolean).join(" ");
 
       // 检查是否为实况照片
       const isLive = src.includes("#live") || alt.includes("[live]");
@@ -62,13 +83,17 @@ export const useMarkdownImages = () => {
 
         // 创建挂载容器
         const container = document.createElement("div");
-        container.className = "live-photo-container size-full";
+        container.className = "live-photo-container markdown-live-photo-container";
+        if (wrapperStyle) {
+          container.setAttribute("style", wrapperStyle);
+        }
 
         // 构造 LivePhoto 的 props，过滤掉空 attr 避免渲染成字符串 "null"
         const vnodeProps: Record<string, unknown> = {
           src: finalSrc,
           alt,
           class: className,
+          aspectRatio,
           hoverPlay: false, // 详情页内嵌实况照片走点击播放模式
           loading: "lazy",
         };
@@ -85,17 +110,19 @@ export const useMarkdownImages = () => {
 
         mountedContainers.push(container);
       } else {
-        // 普通图片：包裹 wrapper 以显示 caption 浮层
+        // 普通图片：包裹 wrapper 以保留灯箱和比例占位，标题由 markdown-it 的 figcaption 负责
         const wrapper = document.createElement("div");
-        wrapper.className = "live-photo-container w-full h-full";
+        wrapper.className = "markdown-image-container";
         wrapper.innerHTML = `
-          <div class="live-photo-wrapper relative w-full h-auto overflow-hidden ${className}">
-            <img src="${src}" alt="${alt}" ${
-              dataFancybox ? `data-fancybox="${dataFancybox}"` : ""
-            } ${dataCaption ? `data-caption="${dataCaption}"` : ""} class="w-full h-full object-cover" />
-            <div class="live-photo-name absolute bottom-0 left-0 right-0 px-2 py-1 bg-linear-to-t from-black/70 to-transparent text-white text-xs text-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-              ${alt}
-            </div>
+          <div class="markdown-image-wrapper relative overflow-hidden ${className}"${wrapperStyle ? ` style="${escapeHtmlAttr(wrapperStyle)}"` : ""}>
+            <img
+              src="${escapeHtmlAttr(src)}"
+              alt="${escapeHtmlAttr(alt)}"
+              decoding="async"
+              ${dataFancybox ? `data-fancybox="${escapeHtmlAttr(dataFancybox)}"` : ""}
+              ${dataCaption ? `data-caption="${escapeHtmlAttr(dataCaption)}"` : ""}
+              class="markdown-image"
+            />
           </div>
         `;
 

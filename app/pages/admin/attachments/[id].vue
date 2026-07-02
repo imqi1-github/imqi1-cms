@@ -45,6 +45,11 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleString('zh-CN')
 }
 
+const formatImageDimensions = (item: { width?: number | null; height?: number | null }) => {
+  if (!item.width || !item.height) return '-'
+  return `${item.width} × ${item.height}`
+}
+
 async function fetchAttachment() {
   loading.value = true
   try {
@@ -257,6 +262,10 @@ onMounted(() => {
               <div class="flex justify-between">
                 <dt class="text-muted-foreground">格式</dt>
                 <dd class="uppercase">{{ attachment.format || '-' }}</dd>
+              </div>
+              <div v-if="attachment.type === 'image'" class="flex justify-between">
+                <dt class="text-muted-foreground">宽高</dt>
+                <dd>{{ formatImageDimensions(attachment) }}</dd>
               </div>
               <Separator />
               <div class="flex justify-between">

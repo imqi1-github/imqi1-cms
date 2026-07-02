@@ -38,17 +38,7 @@ export interface AdminSettings {
 	smtpFromName: string;
 	adminEmail: string;
 	notifyAdmin: boolean;
-	uploadLocation: string;
-	upyunDomain: string;
-	upyunService: string;
-	upyunOperator: string;
-	upyunPassword: string;
-	upyunImageProcess: boolean;
-	upyunThumbnailVersion: string;
-	upyunOutputMode: string;
-	upyunTokenEnabled: boolean;
-	upyunTokenKey: string;
-	upyunTokenExpire: number;
+	uploadLocation: "local" | "cos";
 	cosSecretId: string;
 	cosSecretKey: string;
 	cosBucket: string;

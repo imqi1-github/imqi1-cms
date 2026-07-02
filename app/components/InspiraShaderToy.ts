@@ -203,8 +203,8 @@ export class InspiraShaderToy {
       };
     };
 
-    const onMouseMove = (event: MouseEvent) => {
-      const { x: newX, y: newY } = getScaledMousePos(event);
+    const onMouseMove: EventListener = event => {
+      const { x: newX, y: newY } = getScaledMousePos(event as MouseEvent);
 
       // Apply damping with configurable factor
       this.iMouse.x = this.iMouse.x * this._mouseDamping + newX * (1 - this._mouseDamping);
@@ -220,9 +220,9 @@ export class InspiraShaderToy {
       }
     };
 
-    const onMouseDown = (event: MouseEvent) => {
+    const onMouseDown: EventListener = event => {
       isMouseDown = true;
-      const { x: clickX, y: clickY } = getScaledMousePos(event);
+      const { x: clickX, y: clickY } = getScaledMousePos(event as MouseEvent);
 
       if (this._mouseMode === "click") {
         this.iMouse.clickX = clickX;
@@ -235,9 +235,10 @@ export class InspiraShaderToy {
     };
 
     // Handle touch events for mobile
-    const onTouchMove = (event: TouchEvent) => {
+    const onTouchMove: EventListener = event => {
       event.preventDefault();
-      const touch = event.touches[0];
+      const touchEvent = event as TouchEvent;
+      const touch = touchEvent.touches[0];
       if (!touch) return;
       const { x: newX, y: newY } = getScaledMousePos(touch);
 
@@ -250,10 +251,11 @@ export class InspiraShaderToy {
       }
     };
 
-    const onTouchStart = (event: TouchEvent) => {
+    const onTouchStart: EventListener = event => {
       event.preventDefault();
       isMouseDown = true;
-      const touch = event.touches[0];
+      const touchEvent = event as TouchEvent;
+      const touch = touchEvent.touches[0];
       if (!touch) return;
       const { x: clickX, y: clickY } = getScaledMousePos(touch);
 

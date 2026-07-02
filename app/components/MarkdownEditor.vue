@@ -180,6 +180,7 @@ const actions = {
   codeBlock: () => insertMarkdown('```\n', '\n```', '代码块'),
   link: () => insertMarkdown('[', '](https://example.com)', '链接文本'),
   image: () => insertMarkdown('![', '](https://example.com/image.jpg)', '图片描述'),
+  livePhoto: () => insertMarkdown(':::live-photo https://example.com/live.jpg#live 实况照片说明\n', '\n:::', ''),
   ul: () => insertMarkdown('- ', '', '列表项'),
   ol: () => insertMarkdown('1. ', '', '列表项'),
   hr: () => insertMarkdown('\n---\n', '', ''),
@@ -370,7 +371,16 @@ const actions = {
         <Icon name="lucide:image" class="size-4" />
       </Button>
 
-      <Separator orientation="vertical" class="h-6 mx-1" />
+      <!-- 实况照片 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        title="实况照片"
+        @click="actions.livePhoto"
+      >
+        <Icon name="lucide:aperture" class="size-4" />
+      </Button>
 
       <!-- 无序列表 -->
       <Button

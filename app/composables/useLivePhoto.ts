@@ -1,49 +1,81 @@
+import type { LivePhotoMedia } from "~/types/composables/live-photo";
+
 // 实况照片 Composable
 export const useLivePhoto = () => {
+  const emptyMedia = (): LivePhotoMedia => ({
+    imageUrl: null,
+    videoUrl: null,
+  });
+
+  const findMotionVideoStart = (bytes: Uint8Array): number => {
+    // 查找 ftyp 标记（MP4 文件的起始标记）
+    // ftyp 的十六进制是: 0x66 0x74 0x79 0x70
+    for (let i = 0; i < bytes.length - 8; i++) {
+      if (
+        bytes[i + 4] === 0x66 && // f
+        bytes[i + 5] === 0x74 && // t
+        bytes[i + 6] === 0x79 && // y
+        bytes[i + 7] === 0x70 // p
+      ) {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
   /**
-   * 从图片文件中提取实况视频
-   * 原理：JPEG 文件内部嵌入了一个 MP4 视频，通过查找 "ftyp" 标记来定位
+   * 一次请求中同时得到实况照片静态图和内嵌视频。
+   * JPEG 解码器会忽略尾部附加的 MP4 数据，因此完整 buffer 可以直接作为图片 Blob 使用。
    */
-  const extractMotionVideo = async (imgUrl: string, signal?: AbortSignal): Promise<string | null> => {
+  const extractLivePhotoMedia = async (imgUrl: string, signal?: AbortSignal): Promise<LivePhotoMedia> => {
     try {
       const res = await fetch(imgUrl, {
         cache: "force-cache",
         signal, // ✅ 支持传入 AbortSignal 用于取消请求
       });
+
+      if (!res.ok) {
+        throw new Error(`实况照片请求失败: ${res.status} ${res.statusText}`);
+      }
+
       const buffer = await res.arrayBuffer();
       const bytes = new Uint8Array(buffer);
+      const imageUrl = URL.createObjectURL(new Blob([buffer], { type: "image/jpeg" }));
+      const start = findMotionVideoStart(bytes);
 
-      // 查找 ftyp 标记（MP4 文件的起始标记）
-      // ftyp 的十六进制是: 0x66 0x74 0x79 0x70
-      let start = -1;
-      for (let i = 0; i < bytes.length - 8; i++) {
-        if (
-          bytes[i + 4] === 0x66 && // f
-          bytes[i + 5] === 0x74 && // t
-          bytes[i + 6] === 0x79 && // y
-          bytes[i + 7] === 0x70 // p
-        ) {
-          start = i;
-          break;
-        }
-      }
-
-      // 如果没找到 ftyp 标记，说明不是实况照片
       if (start === -1) {
-        return null;
+        return {
+          imageUrl,
+          videoUrl: null,
+        };
       }
 
-      // 提取从 ftyp 开始到文件末尾的所有数据作为视频
       const videoBlob = new Blob([bytes.slice(start)], { type: "video/mp4" });
-      return URL.createObjectURL(videoBlob);
+      return {
+        imageUrl,
+        videoUrl: URL.createObjectURL(videoBlob),
+      };
     } catch (e) {
       // ✅ 忽略用户主动取消的请求（快速切换页面时的正常行为）
       if (e instanceof DOMException && e.name === "AbortError") {
-        return null;
+        return emptyMedia();
       }
-      console.error("[useLivePhoto] 提取实况视频失败:", e);
-      return null;
+      console.error("[useLivePhoto] 提取实况媒体失败:", e);
+      return emptyMedia();
     }
+  };
+
+  /**
+   * 从图片文件中提取实况视频
+   * 原理：JPEG 文件内部嵌入了一个 MP4 视频，通过查找 "ftyp" 标记来定位
+   */
+  const extractMotionVideo = async (imgUrl: string, signal?: AbortSignal): Promise<string | null> => {
+    const media = await extractLivePhotoMedia(imgUrl, signal);
+    if (media.imageUrl) {
+      URL.revokeObjectURL(media.imageUrl);
+    }
+    return media.videoUrl;
   };
 
   /**
@@ -61,6 +93,7 @@ export const useLivePhoto = () => {
   };
 
   return {
+    extractLivePhotoMedia,
     extractMotionVideo,
     isLivePhoto,
     cleanLivePhotoUrl,

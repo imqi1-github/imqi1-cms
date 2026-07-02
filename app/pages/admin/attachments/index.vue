@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type {AttachmentItem, AttachmentListResponse} from "~/types/apis/admin/attachments";
+import type { AttachmentItem, AttachmentListResponse } from "~/types/apis/admin/attachments";
+import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
+import type { AdminPost, AdminPostListResponse } from "~/types/apis/admin/posts";
+import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
+import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
 const toast = useToast();
 const loading = ref(true);
@@ -7,12 +11,33 @@ const attachments = ref<AttachmentItem[]>([]);
 const selectedType = ref("all");
 const searchQuery = ref("");
 const csrfToken = ref("");
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const livePhotoInputRef = ref<HTMLInputElement | null>(null);
+const uploading = ref(false);
+const uploadProgress = ref(0);
+const uploadPosts = ref<AdminPost[]>([]);
+const uploadPages = ref<PageItem[]>([]);
+const selectedUploadTarget = ref("");
 
 const attachmentTypes = [
   { value: "all", label: "全部" },
   { value: "image", label: "图片" },
   { value: "video", label: "视频" },
 ];
+
+const uploadTargets = computed(() => [
+  ...uploadPosts.value.map(post => ({
+    value: String(post.cid),
+    label: post.title || `文章 #${post.cid}`,
+    type: "文章",
+  })),
+  ...uploadPages.value.map(pageItem => ({
+    value: String(pageItem.cid),
+    label: pageItem.title || `页面 #${pageItem.cid}`,
+    type: "页面",
+  })),
+]);
+
 
 // 分页
 const page = ref(1);
@@ -55,7 +80,19 @@ const fetchAttachments = async () => {
   }
 };
 
-// 监听筛选条件变化
+const fetchUploadTargets = async () => {
+  try {
+    const [postsRes, pagesRes] = await Promise.all([
+      $fetch<AdminPostListResponse>("/api/admin/posts?pageSize=999"),
+      $fetch<PageListResponse>("/api/admin/pages?pageSize=999"),
+    ]);
+    uploadPosts.value = postsRes.data || [];
+    uploadPages.value = pagesRes.data || [];
+  } catch (error) {
+    console.error("获取上传目标失败:", error);
+  }
+};
+
 watch([selectedType, searchQuery, page], () => {
   fetchAttachments();
 });
@@ -85,12 +122,122 @@ const getTypeIcon = (type: string) => {
   return map[type] || "lucide:file";
 };
 
+const ensureUploadTarget = () => {
+  if (selectedUploadTarget.value) return true;
+  toast.error({
+    message: "请选择上传归属",
+    description: "附件需要关联到文章或页面",
+  });
+  return false;
+};
+
+const handleFileSelect = () => {
+  if (!ensureUploadTarget()) return;
+  fileInputRef.value?.click();
+};
+
+const handleLivePhotoSelect = () => {
+  if (!ensureUploadTarget()) return;
+  livePhotoInputRef.value?.click();
+};
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const files = target.files;
+  if (files && files.length > 0) {
+    await uploadFiles(Array.from(files));
+  }
+  target.value = "";
+};
+
+const handleLivePhotoFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const files = target.files;
+  if (files && files.length > 0) {
+    await uploadFiles(Array.from(files), { livePhoto: true });
+  }
+  target.value = "";
+};
+
+const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {}) => {
+  if (!ensureUploadTarget()) return;
+
+  uploading.value = true;
+  uploadProgress.value = 0;
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]!;
+      const isLivePhoto = options.livePhoto === true;
+      const allowedTypes = isLivePhoto
+        ? ["image/jpeg", "image/jpg"]
+        : ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
+
+      if (!allowedTypes.includes(file.type)) {
+        toast.error({
+          message: isLivePhoto ? "实况照片仅支持 JPEG" : "不支持的文件类型",
+          description: file.name,
+        });
+        continue;
+      }
+
+      const maxSize = isLivePhoto ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error({
+          message: "文件过大",
+          description: `${file.name} 超过 ${maxSize / 1024 / 1024}MB 限制`,
+        });
+        continue;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      if (isLivePhoto) {
+        formData.append("livePhoto", "true");
+      }
+      if (csrfToken.value) {
+        formData.append("csrfToken", csrfToken.value);
+      }
+
+      try {
+        const res = await $fetch<PublicAttachmentUploadResponse>(`/api/attachments/upload?cid=${selectedUploadTarget.value}`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (res?.success) {
+          toast.success({
+            message: isLivePhoto ? "实况照片上传成功" : "上传成功",
+            description: file.name,
+          });
+        }
+      } catch {
+        toast.error({
+          message: isLivePhoto ? "实况照片上传失败" : "上传失败",
+          description: file.name,
+        });
+      }
+
+      uploadProgress.value = Math.round(((i + 1) / files.length) * 100);
+    }
+    await fetchAttachments();
+  } finally {
+    uploading.value = false;
+    uploadProgress.value = 0;
+  }
+};
+
 const formatFileSize = (size: string | number) => {
   if (size === "-" || !size) return "-";
   const bytes = Number(size);
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+};
+
+const formatImageDimensions = (item: { width?: number | null; height?: number | null }) => {
+  if (!item.width || !item.height) return "-";
+  return `${item.width} × ${item.height}`;
 };
 
 async function deleteAttachment(item: AttachmentItem) {
@@ -134,15 +281,39 @@ const copyLink = async (url: string) => {
 
 onMounted(() => {
   fetchAttachments();
+  fetchUploadTargets();
 });
 </script>
 
 <template>
   <AdminLayout>
-    <div class="flex items-center justify-between mb-6">
+    <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" >
+    <input ref="livePhotoInputRef" type="file" class="hidden" accept="image/jpeg,image/jpg" multiple @change="handleLivePhotoFileChange" >
+
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
       <div>
         <h2 class="text-2xl font-bold">附件管理</h2>
         <p class="text-sm text-muted-foreground mt-1">管理图片和视频附件</p>
+      </div>
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <Select v-model="selectedUploadTarget" :disabled="uploading || uploadTargets.length === 0">
+          <SelectTrigger class="w-full sm:w-56">
+            <SelectValue placeholder="选择上传归属" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="target in uploadTargets" :key="target.value" :value="target.value">
+              {{ target.type }}：{{ target.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Button :disabled="uploading || uploadTargets.length === 0" @click="handleLivePhotoSelect">
+          <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:aperture'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
+          上传实况照片
+        </Button>
+        <Button :disabled="uploading || uploadTargets.length === 0" @click="handleFileSelect">
+          <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:upload'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
+          {{ uploading ? `上传中 ${uploadProgress}%` : "上传附件" }}
+        </Button>
       </div>
     </div>
 
@@ -188,10 +359,10 @@ onMounted(() => {
       <div v-else-if="attachments.length === 0" class="text-center py-16">
         <Icon name="lucide:paperclip" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground text-lg mb-2">暂无附件</p>
-        <p class="text-sm text-muted-foreground mb-4">前往文章编辑页面上传附件</p>
-        <Button @click="navigateTo('/admin/posts')">
-          <Icon name="lucide:file-text" class="mr-2 size-4" />
-          前往文章管理
+        <p class="text-sm text-muted-foreground mb-4">请选择上传归属后，可直接在本页上传附件</p>
+        <Button :disabled="uploadTargets.length === 0" @click="handleFileSelect">
+          <Icon name="lucide:upload" class="mr-2 size-4" />
+          上传附件
         </Button>
       </div>
 
@@ -233,11 +404,12 @@ onMounted(() => {
               <p class="text-sm font-medium truncate" :title="item.name">
                 {{ item.name }}
               </p>
-              <div class="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-muted-foreground">
                 <Badge variant="outline" class="text-xs">
                   {{ getTypeLabel(item.type) }}
                 </Badge>
                 <span>{{ formatFileSize(item.size) }}</span>
+                <span v-if="item.type === 'image'">{{ formatImageDimensions(item) }}</span>
               </div>
               <div v-if="item.post" class="mt-1">
                 <NuxtLink :to="`/admin/posts/edit?cid=${item.post.cid}`" class="text-xs text-muted-foreground hover:text-foreground">
@@ -265,9 +437,9 @@ onMounted(() => {
           <div class="text-sm text-muted-foreground">
             <p class="font-medium text-foreground mb-1">附件使用说明</p>
             <ul class="space-y-1 list-disc list-inside">
-              <li>附件需要关联到文章才能上传，请前往文章编辑页面</li>
-              <li>点击附件可以查看详情和编辑信息</li>
-              <li>悬停在附件上可以快速复制链接、编辑或删除</li>
+              <li>先选择上传归属，可在本页直接上传普通附件或实况照片</li>
+              <li>普通附件支持 JPG、PNG、GIF、WebP、MP4、WebM，最大 10MB</li>
+              <li>实况照片请使用专用入口上传 JPEG，最大 50MB，上传时保留原文件不转格式</li>
             </ul>
           </div>
         </div>

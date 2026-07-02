@@ -203,24 +203,9 @@ export function validateSettingsData(data: Record<string, string | null | undefi
     validateMaxLength(data.adminEmail, 255, "管理员邮箱");
   }
 
-  // 又拍云设置
-  if (data.upyunDomain) {
-    validateMaxLength(data.upyunDomain, 500, "又拍云域名");
-  }
-  if (data.upyunService) {
-    validateMaxLength(data.upyunService, 100, "又拍云服务名");
-  }
-  if (data.upyunOperator) {
-    validateMaxLength(data.upyunOperator, 100, "又拍云操作员");
-  }
-  if (data.upyunThumbnailVersion) {
-    validateMaxLength(data.upyunThumbnailVersion, 100, "又拍云缩略图版本");
-  }
-  if (data.upyunOutputMode) {
-    validateMaxLength(data.upyunOutputMode, 50, "又拍云输出模式");
-  }
-  if (data.upyunTokenKey) {
-    validateMaxLength(data.upyunTokenKey, 255, "又拍云Token密钥");
+  // 上传设置
+  if (data.uploadLocation) {
+    validateMaxLength(data.uploadLocation, 50, "上传位置");
   }
 
   // 腾讯云COS设置

@@ -76,6 +76,21 @@ export interface Attachment {
 	url: string;
 	/** 文件字节数；历史记录可能为 0，前端显示为 "-" */
 	size: number;
+	width?: number | null;
+	height?: number | null;
+	format?: string | null;
+}
+
+export interface PostListPagination {
+	page: number;
+	pageSize: number;
+	total: number;
+	totalPages: number;
+}
+
+export interface AdminPostListResponse {
+	data: AdminPost[];
+	pagination: PostListPagination;
 }
 
 export interface PostResponse {

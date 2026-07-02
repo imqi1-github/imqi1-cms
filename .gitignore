@@ -53,3 +53,4 @@ new-theme.sql
 .claude
 changelogs.json
 nginx.conf
+.excluded

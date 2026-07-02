@@ -1,4 +1,5 @@
 import prisma from "#server/utils/prisma";
+import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
@@ -41,14 +42,21 @@ export default defineEventHandler(async event => {
 
     return {
       success: true,
-      data: attachments.map(a => ({
-        id: a.aid,
-        name: a.title,
-        type: a.type,
-        url: a.url,
-        size: a.size,
-        create_time: a.create_time,
-      })),
+      data: attachments.map(a => {
+        const metadata = normalizeAttachmentMetadata(a.metadata);
+        return {
+          id: a.aid,
+          name: a.title,
+          type: a.type,
+          url: a.url,
+          size: metadata.size,
+          metadata,
+          width: metadata.width,
+          height: metadata.height,
+          format: metadata.format,
+          create_time: a.create_time,
+        };
+      }),
     };
   } catch (error) {
     console.error(error);

@@ -1,5 +1,59 @@
+import path from "node:path";
+
 import { prisma } from "#server/utils/prisma";
 import { parseCovers } from "#server/utils/covers";
+import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
+
+const stripUrlDecorations = (value: string) => {
+  const hashIndex = value.indexOf("#");
+  const withoutHash = hashIndex >= 0 ? value.slice(0, hashIndex) : value;
+  const queryIndex = withoutHash.indexOf("?");
+  return queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
+};
+
+const normalizePathname = (value: string) => {
+  const clean = stripUrlDecorations(value);
+  try {
+    return new URL(clean).pathname;
+  } catch {
+    return clean;
+  }
+};
+
+const normalizeObjectKey = (value: string) => {
+  return decodeURIComponent(normalizePathname(value).replace(/^\/+/, ""));
+};
+
+const buildUrlKeys = (url: string) => {
+  const key = normalizeObjectKey(url);
+  const candidates = [key];
+
+  if (!key.startsWith("uploads/")) {
+    candidates.push(`uploads/${key}`);
+
+    const fileName = path.basename(key);
+    const datedName = /^(\d{4})-(\d{2})-\d{2}-/.exec(fileName);
+    if (datedName) {
+      candidates.push(`uploads/${datedName[1]}/${datedName[2]}/${fileName}`);
+    }
+  } else {
+    candidates.push(key.replace(/^uploads\//, ""));
+  }
+
+  const fileName = path.basename(key);
+  if (fileName) {
+    candidates.push(fileName);
+  }
+
+  return new Set(candidates.filter(Boolean));
+};
+
+const hasSharedUrlKey = (a: Set<string>, b: Set<string>) => {
+  for (const key of a) {
+    if (b.has(key)) return true;
+  }
+  return false;
+};
 
 export default defineEventHandler(async event => {
   const categorySlug = getRouterParam(event, 'slug');
@@ -84,6 +138,15 @@ export default defineEventHandler(async event => {
               },
             },
           },
+          attachments: {
+            where: {
+              type: "image",
+            },
+            select: {
+              url: true,
+              metadata: true,
+            },
+          },
           // 关联的启用地点数（封面角标用）
           travels: {
             where: { travel: { enabled: true } },
@@ -108,8 +171,24 @@ export default defineEventHandler(async event => {
     // 查找评论数量
     const commentsNum = post.comment_num || 0;
 
-    // 解析封面
-    const covers = parseCovers(post.covers);
+    // 解析封面，并用附件 metadata 补齐封面宽高，图片分类瀑布流可提前占位避免布局偏移
+    const attachmentMetadata = post.attachments.map(attachment => ({
+      keys: buildUrlKeys(attachment.url),
+      metadata: normalizeAttachmentMetadata(attachment.metadata),
+    }));
+    const covers = parseCovers(post.covers).map(cover => {
+      if (cover.width && cover.height) return cover;
+
+      const coverKeys = buildUrlKeys(cover.url);
+      const matched = attachmentMetadata.find(attachment => hasSharedUrlKey(attachment.keys, coverKeys));
+      if (!matched) return cover;
+
+      return {
+        ...cover,
+        width: matched.metadata.width,
+        height: matched.metadata.height,
+      };
+    });
 
     // 从 postrelations 中获取标签（只取 type="tag" 的）
     const tagNames = post.postrelations

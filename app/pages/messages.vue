@@ -29,7 +29,7 @@ function scrollToComment(hash: string) {
   const element = document.getElementById(`comment-${commentId}`);
   if (!element) return;
 
-  const headerOffset = 100;
+  const headerOffset = 130;
   const elementPosition = element.getBoundingClientRect().top;
   const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 

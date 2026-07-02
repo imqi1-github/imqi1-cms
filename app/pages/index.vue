@@ -789,13 +789,15 @@ const recentChangelogs = computed(() => homeData.value?.data?.changelogs || []);
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
-  const images: { url: string; desc?: string; title: string; slug: string; cid: number; categorySlug?: string }[] = [];
+  const images: { url: string; desc?: string; width?: number | null; height?: number | null; title: string; slug: string; cid: number; categorySlug?: string }[] = [];
   photoPosts.value.forEach(post => {
     if (post.covers && post.covers.length > 0) {
       post.covers.forEach(cover => {
         images.push({
           url: cover.url || (typeof cover === "string" ? cover : ""),
           desc: cover.desc,
+          width: cover.width,
+          height: cover.height,
           title: post.title,
           slug: post.slug ?? "",
           cid: post.cid,

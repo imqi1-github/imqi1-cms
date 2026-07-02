@@ -18,6 +18,7 @@ const defaults: Record<string, string | number | boolean> = {
   commentRequireLink: false,
   postPageSize: 12,
   feedCacheInterval: 8,
+  uploadLocation: "local",
 };
 
 export default defineEventHandler(async event => {

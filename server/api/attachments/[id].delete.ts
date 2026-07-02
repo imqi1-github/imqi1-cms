@@ -7,7 +7,29 @@ import { getUser } from "#server/lib/auth";
 import { deleteFromCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
-import { deleteFromUpYun } from "#server/utils/upyun";
+
+const getLocalUploadPath = (url: string) => {
+  const cleanUrl = url.trim().split("#")[0]?.split("?")[0] ?? url.trim();
+  let pathname = cleanUrl;
+
+  try {
+    pathname = new URL(cleanUrl).pathname;
+  } catch {
+    // 本地相对路径直接使用
+  }
+
+  try {
+    pathname = decodeURIComponent(pathname);
+  } catch {
+    // 解码失败时继续使用原路径
+  }
+
+  const normalized = pathname.replace(/\\/g, "/");
+  if (!normalized.startsWith("/uploads/")) return null;
+  if (normalized.split("/").some(segment => segment === "..")) return null;
+
+  return path.join(process.cwd(), "public", normalized.replace(/^\/+/, ""));
+};
 
 export default defineEventHandler(async event => {
   try {
@@ -65,22 +87,16 @@ export default defineEventHandler(async event => {
     }
 
     // 根据存储位置删除文件
-    if (attachment.storage === "upyun") {
-      // 删除又拍云文件
-      const deleted = await deleteFromUpYun(attachment.url);
-      if (!deleted) {
-        console.error(attachment.url);
-      }
-    } else if (attachment.storage === "cos") {
+    if (attachment.storage === "cos") {
       // 删除腾讯云COS文件
       const result = await deleteFromCOS(attachment.url);
       if (!result.success) {
         console.error(result.error);
       }
     } else {
-      // 删除本地文件
-      const filePath = path.join(process.cwd(), "public", attachment.url);
-      if (fs.existsSync(filePath)) {
+      // 删除本地 /uploads 文件
+      const filePath = getLocalUploadPath(attachment.url);
+      if (filePath && fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
         } catch (err) {

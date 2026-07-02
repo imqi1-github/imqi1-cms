@@ -13,9 +13,9 @@
  *   v-scroll-reveal="{ onReveal: handleReveal }"     → 进入视口时回调
  */
 export interface ScrollRevealOptions {
-  /** 触发阈值，元素可见比例达到该值时显现，默认 0.1 */
+  /** 触发阈值，元素可见比例达到该值时显现，默认 0（一像素进入即触发） */
   threshold?: number;
-  /** IntersectionObserver rootMargin，默认 "0px 0px -50px 0px"（元素进入视口底部 50px 才触发） */
+  /** IntersectionObserver rootMargin，默认 "0px"（元素进入视口即触发） */
   rootMargin?: string;
   /** Y 轴位移像素，默认 30px（agreement 页用 20px） */
   translateY?: number;

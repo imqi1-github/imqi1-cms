@@ -44,16 +44,6 @@ const settings = ref<AdminSettings>({
   adminEmail: "",
   notifyAdmin: false,
   uploadLocation: "local",
-  upyunDomain: siteConfig.cdnUrl,
-  upyunService: "",
-  upyunOperator: "",
-  upyunPassword: "",
-  upyunImageProcess: false,
-  upyunThumbnailVersion: "",
-  upyunOutputMode: "",
-  upyunTokenEnabled: false,
-  upyunTokenKey: "",
-  upyunTokenExpire: 1800,
   cosSecretId: "",
   cosSecretKey: "",
   cosBucket: "",
@@ -87,12 +77,6 @@ const smtpSecureModes = [
   { value: "none", label: "不加密" },
   { value: "ssl", label: "SSL" },
   { value: "tls", label: "TLS" },
-];
-
-const uploadLocations = [
-  { value: "local", label: "本地" },
-  { value: "upyun", label: "又拍云" },
-  { value: "cos", label: "腾讯云 COS" },
 ];
 
 const sessionStoreTypes = [
@@ -131,7 +115,7 @@ async function testEmail() {
   }
 }
 
-const defaultSettings = {
+const defaultSettings: AdminSettings = {
   siteName: siteConfig.siteName,
   siteUrl: siteConfig.siteUrl,
   siteDesc: siteConfig.seo.description,
@@ -166,16 +150,6 @@ const defaultSettings = {
   adminEmail: "",
   notifyAdmin: false,
   uploadLocation: "local",
-  upyunDomain: siteConfig.cdnUrl,
-  upyunService: "",
-  upyunOperator: "",
-  upyunPassword: "",
-  upyunImageProcess: false,
-  upyunThumbnailVersion: "",
-  upyunOutputMode: "",
-  upyunTokenEnabled: false,
-  upyunTokenKey: "",
-  upyunTokenExpire: 1800,
   cosSecretId: "",
   cosSecretKey: "",
   cosBucket: "",
@@ -665,112 +639,21 @@ onMounted(() => {
           <Card>
             <CardHeader>
               <CardTitle>附件上传设置</CardTitle>
-              <CardDescription>配置附件存储位置和云服务参数</CardDescription>
+              <CardDescription>配置附件上传存储策略和腾讯云 COS 参数</CardDescription>
             </CardHeader>
             <CardContent class="space-y-6">
-              <!-- 存储位置 -->
-              <div class="space-y-4">
-                <h4 class="text-sm font-medium">存储位置</h4>
-                <div class="space-y-2">
-                  <Label for="uploadLocation">默认位置</Label>
-                  <Select v-model="settings.uploadLocation">
-                    <SelectTrigger id="uploadLocation">
-                      <SelectValue placeholder="选择存储位置" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="location in uploadLocations" :key="location.value" :value="location.value">
-                        {{ location.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p class="text-xs text-muted-foreground">选择附件上传的默认存储位置</p>
-                </div>
-              </div>
-
-              <!-- 又拍云配置 -->
-              <div v-if="settings.uploadLocation === 'upyun'" class="space-y-4">
-                <Separator />
-
-                <!-- 基本配置 -->
-                <div class="space-y-4">
-                  <div class="flex items-center gap-2">
-                    <Icon name="lucide:cloud" class="size-4 text-primary" />
-                    <h4 class="text-sm font-medium">又拍云配置</h4>
-                  </div>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="space-y-2">
-                      <Label for="upyunService">服务名称</Label>
-                      <Input id="upyunService" v-model="settings.upyunService" placeholder="输入服务名称" />
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="upyunOperator">操作员</Label>
-                      <Input id="upyunOperator" v-model="settings.upyunOperator" placeholder="输入操作员名称" />
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="upyunPassword">密码</Label>
-                      <Input id="upyunPassword" v-model="settings.upyunPassword" type="password" placeholder="输入密码" />
-                    </div>
-                  </div>
-                  <div class="space-y-2">
-                    <Label for="upyunDomain">绑定域名</Label>
-                    <Input id="upyunDomain" v-model="settings.upyunDomain" :placeholder="siteConfig.cdnUrl" />
-                    <p class="text-xs text-muted-foreground">又拍云绑定的 CDN 域名，用于访问上传的文件</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <!-- 图片处理 -->
-                <div class="space-y-4">
-                  <h4 class="text-sm font-medium">图片处理</h4>
-                  <div class="flex items-center justify-between">
-                    <div class="space-y-0.5">
-                      <Label for="upyunImageProcess">开启图片处理</Label>
-                      <p class="text-sm text-muted-foreground">启用又拍云图片处理功能</p>
-                    </div>
-                    <Switch id="upyunImageProcess" v-model="settings.upyunImageProcess" />
-                  </div>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                      <Label for="upyunThumbnailVersion">缩略图版本名称</Label>
-                      <Input id="upyunThumbnailVersion" v-model="settings.upyunThumbnailVersion" placeholder="如: thumbnail" />
-                      <p class="text-xs text-muted-foreground">用于生成缩略图的版本标识</p>
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="upyunOutputMode">转码输出模式</Label>
-                      <Input id="upyunOutputMode" v-model="settings.upyunOutputMode" placeholder="如: avif" />
-                      <p class="text-xs text-muted-foreground">图片转码后的输出格式</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <!-- Token 防盗链 -->
-                <div class="space-y-4">
-                  <div class="flex items-center gap-2">
-                    <Icon name="lucide:shield-check" class="size-4 text-primary" />
-                    <h4 class="text-sm font-medium">Token 防盗链</h4>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="space-y-0.5">
-                      <Label for="upyunTokenEnabled">开启 Token 防盗链</Label>
-                      <p class="text-sm text-muted-foreground">启用后资源链接将包含 Token 验证</p>
-                    </div>
-                    <Switch id="upyunTokenEnabled" v-model="settings.upyunTokenEnabled" />
-                  </div>
-                  <div v-if="settings.upyunTokenEnabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                      <Label for="upyunTokenKey">密钥</Label>
-                      <Input id="upyunTokenKey" v-model="settings.upyunTokenKey" type="password" placeholder="输入防盗链密钥" />
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="upyunTokenExpire">过期时间（秒）</Label>
-                      <Input id="upyunTokenExpire" v-model.number="settings.upyunTokenExpire" type="number" min="0" placeholder="1800" />
-                      <p class="text-xs text-muted-foreground">Token 有效期，默认 1800 秒（30分钟）</p>
-                    </div>
-                  </div>
-                </div>
+              <div class="space-y-2">
+                <Label for="uploadLocation">上传策略</Label>
+                <Select v-model="settings.uploadLocation">
+                  <SelectTrigger id="uploadLocation">
+                    <SelectValue placeholder="选择上传策略" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="local">本地存储</SelectItem>
+                    <SelectItem value="cos">腾讯云 COS</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p class="text-xs text-muted-foreground">本地存储会保存到 public/uploads；腾讯云 COS 会使用下方云存储配置。</p>
               </div>
 
               <!-- 腾讯云 COS 配置 -->
@@ -838,11 +721,18 @@ onMounted(() => {
                   </div>
                 </div>
               </div>
-
-              <!-- 本地存储提示 -->
-              <div v-if="settings.uploadLocation === 'local'" class="p-8 bg-muted/30 rounded-lg text-center">
-                <Icon name="lucide:hard-drive" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p class="text-muted-foreground">使用本地存储，附件将保存在服务器本地磁盘</p>
+              <div v-else class="p-4 bg-muted/30 rounded-lg space-y-3">
+                <div class="flex items-start gap-3">
+                  <Icon name="lucide:hard-drive" class="size-5 text-blue-500 mt-0.5" />
+                  <div class="space-y-2 text-sm">
+                    <p class="font-medium">本地存储说明：</p>
+                    <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>附件会保存到项目的 <code>public/uploads</code> 目录。</li>
+                      <li>实况照片仍会保留原始 JPEG 字节，不会进行图片格式转换。</li>
+                      <li>生产环境请确保该目录会随部署持久化或挂载到持久卷。</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

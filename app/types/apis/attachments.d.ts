@@ -1,11 +1,22 @@
+export interface AttachmentMetadata {
+	size: number;
+	width: number | null;
+	height: number | null;
+	format: string | null;
+}
+
 /** 公共附件项（/api/attachments/list、/api/attachments/upload 返回的 data 元素） */
 export interface PublicAttachment {
 	id: number;
 	name: string;
 	type: string;
 	url: string;
-	/** 文件字节数；历史记录可能为 0，前端显示为 "-" */
+	/** 文件字节数；来自 metadata.size */
 	size: number;
+	metadata?: AttachmentMetadata | null;
+	width?: number | null;
+	height?: number | null;
+	format?: string | null;
 	/** Prisma DateTime，经 Nitro 序列化为 string */
 	create_time: string;
 	/** 上传接口额外返回，list 接口无此字段 */

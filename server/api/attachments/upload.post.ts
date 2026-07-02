@@ -1,14 +1,14 @@
 import { randomUUID } from "crypto";
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import * as path from "path";
 
 import { getUser } from "#server/lib/auth";
+import type { AttachmentUploadLocation, LocalUploadResult } from "#server/types/apis/upload-strategy";
+import { createAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
-import { uploadToUpYun } from "#server/utils/upyun";
 import { validateAttachmentData } from "#server/utils/validation";
-import type { ImageProcessOptions } from "#server/types/utils/upyun";
 
 // 允许的文件类型
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
@@ -41,6 +41,9 @@ function validateFileMagicNumber(buffer: Buffer, mimeType: string): boolean {
 
 // 最大文件大小 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// 实况照片保留原始 JPEG+MP4 字节，体积通常大于普通图片
+const MAX_LIVE_PHOTO_SIZE = 50 * 1024 * 1024;
+const LIVE_PHOTO_TYPES = ["image/jpeg", "image/jpg"];
 
 // 生成唯一文件名
 function generateFileName(originalName: string): string {
@@ -50,14 +53,29 @@ function generateFileName(originalName: string): string {
   return `${date}-${uuid}${ext}`;
 }
 
-// 生成上传路径（包含年月目录）
-function generateUploadPath(fileName: string): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return path.join("uploads", String(year), month, fileName);
-}
+// 本地上传
+async function uploadToLocal(fileBuffer: Buffer, fileName: string): Promise<LocalUploadResult> {
+  try {
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const uploadDir = path.join(process.cwd(), "public", "uploads", year, month);
+    await fs.mkdir(uploadDir, { recursive: true });
 
+    const filePath = path.join(uploadDir, fileName);
+    await fs.writeFile(filePath, fileBuffer);
+
+    return {
+      success: true,
+      url: `/uploads/${year}/${month}/${fileName}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "本地上传失败",
+    };
+  }
+}
 // 获取文件类型分类
 function getFileCategory(mimeType: string): "image" | "video" {
   if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return "image";
@@ -65,19 +83,10 @@ function getFileCategory(mimeType: string): "image" | "video" {
   return "image"; // 默认
 }
 
-// 本地存储上传
-async function uploadToLocal(fileBuffer: Buffer, fileName: string): Promise<string> {
-  const uploadPath = generateUploadPath(fileName);
-  const fullPath = path.join(process.cwd(), "public", uploadPath);
-
-  // 确保目录存在
-  const dirPath = path.dirname(fullPath);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-
-  fs.writeFileSync(fullPath, fileBuffer);
-  return `/${uploadPath.replace(/\\/g, "/")}`;
+function getFormatFromUrl(url: string): string | null {
+  const cleanUrl = url.split("#")[0]?.split("?")[0] ?? url;
+  const ext = path.extname(cleanUrl).toLowerCase().slice(1);
+  return ext === "jpeg" ? "jpg" : ext || null;
 }
 
 export default defineEventHandler(async event => {
@@ -117,6 +126,7 @@ export default defineEventHandler(async event => {
     const formData = await readFormData(event);
     const file = formData.get("file") as File;
     const csrfToken = formData.get("csrfToken") as string;
+    const isLivePhoto = formData.get("livePhoto") === "true";
 
     // CSRF 验证
     if (!validateCsrfToken(event, csrfToken)) {
@@ -141,6 +151,13 @@ export default defineEventHandler(async event => {
       });
     }
 
+    if (isLivePhoto && !LIVE_PHOTO_TYPES.includes(file.type)) {
+      throw createError({
+        statusCode: 400,
+        message: "实况照片必须为 JPEG 格式",
+      });
+    }
+
     // 读取文件内容（用于魔数验证）
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -154,88 +171,56 @@ export default defineEventHandler(async event => {
     }
 
     // 验证文件大小
-    if (file.size > MAX_FILE_SIZE) {
+    const maxFileSize = isLivePhoto ? MAX_LIVE_PHOTO_SIZE : MAX_FILE_SIZE;
+    if (file.size > maxFileSize) {
       throw createError({
         statusCode: 400,
-        message: `文件大小超过限制 (最大 ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+        message: `文件大小超过限制 (最大 ${maxFileSize / 1024 / 1024}MB)`,
       });
     }
 
     // 生成文件名
     const fileName = generateFileName(file.name);
 
-    // 获取上传位置配置
     const uploadLocationMeta = await prisma.informations.findUnique({
       where: { key: "uploadLocation" },
     });
-    const uploadLocation = uploadLocationMeta?.value || "local";
+    const uploadLocation = (uploadLocationMeta?.value === "cos" ? "cos" : "local") satisfies AttachmentUploadLocation;
 
-    let fileUrl: string;
+    // 获取图片后缀配置
+    const imageSuffixMeta = uploadLocation === "cos"
+      ? await prisma.informations.findUnique({
+          where: { key: "cosImageSuffix" },
+        })
+      : null;
+    const imageSuffix = imageSuffixMeta?.value || undefined;
 
-    // 根据配置选择上传方式
-    if (uploadLocation === "upyun") {
-      // 获取图片处理配置
-      const imageProcessMeta = await prisma.informations.findMany({
-        where: {
-          key: {
-            in: ["upyunImageProcess", "upyunThumbnailVersion", "upyunOutputMode"],
-          },
-        },
+    // 如果是图片且配置了后缀，传递给上传函数；实况照片必须保留原始 JPEG+MP4 字节
+    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+    const result = uploadLocation === "cos"
+      ? await uploadToCOS(buffer, fileName, file.type, isImage && !isLivePhoto ? imageSuffix : undefined)
+      : await uploadToLocal(buffer, fileName);
+
+    if (!result.success) {
+      throw createError({
+        statusCode: 500,
+        message: result.error || (uploadLocation === "cos" ? "COS上传失败" : "本地上传失败"),
       });
+    }
 
-      const imageProcessConfig: Record<string, string> = {};
-      imageProcessMeta.forEach(meta => {
-        imageProcessConfig[meta.key] = meta.value;
-      });
+    let fileUrl = result.url!;
 
-      // 构建图片处理参数
-      const imageProcess: ImageProcessOptions = {
-        enabled: imageProcessConfig.upyunImageProcess === "true",
-        thumbnailVersion: imageProcessConfig.upyunThumbnailVersion || undefined,
-        outputMode: imageProcessConfig.upyunOutputMode || undefined,
-      };
-
-      console.log("[上传] 图片处理配置:", {
-        原始值: imageProcessConfig,
-        解析后: imageProcess,
-      });
-
-      // 又拍云上传
-      const result = await uploadToUpYun(buffer, fileName, file.type, imageProcess);
-      if (!result.success) {
-        throw createError({
-          statusCode: 500,
-          message: result.error || "又拍云上传失败",
-        });
-      }
-      fileUrl = result.url!;
-    } else if (uploadLocation === "cos") {
-      // 腾讯云COS上传
-
-      // 获取图片后缀配置
-      const imageSuffixMeta = await prisma.informations.findUnique({
-        where: { key: "cosImageSuffix" },
-      });
-      const imageSuffix = imageSuffixMeta?.value || undefined;
-
-      // 如果是图片且配置了后缀，传递给上传函数
-      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-      const result = await uploadToCOS(buffer, fileName, file.type, isImage ? imageSuffix : undefined);
-
-      if (!result.success) {
-        throw createError({
-          statusCode: 500,
-          message: result.error || "COS上传失败",
-        });
-      }
-      fileUrl = result.url!;
-    } else {
-      // 本地存储
-      fileUrl = await uploadToLocal(buffer, fileName);
+    if (isLivePhoto) {
+      fileUrl = `${fileUrl}#live`;
     }
 
     // 获取文件类型分类
     const category = getFileCategory(file.type);
+    const rawMetadata = createAttachmentMetadata(buffer, file);
+    const metadata = {
+      ...rawMetadata,
+      format: getFormatFromUrl(fileUrl) ?? rawMetadata.format,
+    };
 
     // 验证字段长度
     validateAttachmentData({
@@ -252,7 +237,7 @@ export default defineEventHandler(async event => {
         title: file.name,
         url: fileUrl,
         storage: uploadLocation,
-        size: file.size,
+        metadata,
       },
     });
 
@@ -263,13 +248,21 @@ export default defineEventHandler(async event => {
         name: attachment.title,
         type: attachment.type,
         url: attachment.url,
-        size: file.size,
+        size: metadata.size,
+        metadata,
+        width: metadata.width,
+        height: metadata.height,
+        format: metadata.format,
         create_time: attachment.create_time,
         storage: uploadLocation,
       },
     };
   } catch (error) {
     console.error(error);
+
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
 
     throw createError({
       statusCode: 500,

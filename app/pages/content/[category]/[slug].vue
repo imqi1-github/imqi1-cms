@@ -5,12 +5,15 @@ import { Mousewheel, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch, type App } from "vue";
+import { computed, createVNode, onMounted, onUnmounted, ref, render, useTemplateRef, watch, type App, type Component } from "vue";
 
 import type { RelatedPost } from "~/types/apis/content/related-posts";
+import type { NuxtVueApp } from "~/types/nuxt";
+import LivePhoto from "~/components/LivePhoto.vue";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
 import type { TocItem } from "~/types/apis/content";
+import type { MarkdownAttachmentImage, MarkdownImageDimensions, MarkdownSwiperSlide, MarkdownWaterfallImage } from "~/types/pages/content-detail";
 
 const route = useRoute();
 const categorySlug = route.params.category as string;
@@ -81,7 +84,88 @@ const hasCover = computed(() => covers.value.length > 0);
 const hasManyCovers = computed(() => post.value?.many_covers && covers.value.length > 1);
 
 const contentBody = ref<HTMLElement | null>(null);
-const firstCover = computed(() => covers.value[0]?.url || "");
+const firstCover = computed(() => covers.value[0]);
+const firstCoverUrl = computed(() => firstCover.value?.url || "");
+
+const stripUrlDecorations = (value: string) => {
+  const hashIndex = value.indexOf("#");
+  const withoutHash = hashIndex >= 0 ? value.slice(0, hashIndex) : value;
+  const queryIndex = withoutHash.indexOf("?");
+  return queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
+};
+
+const getImageFileName = (value: string) => {
+  const normalized = value.replace(/\\/g, "/");
+  const segments = normalized.split("/").filter(Boolean);
+  return segments.at(-1) || "";
+};
+
+const normalizeImagePathname = (value: string) => {
+  const clean = stripUrlDecorations(value);
+  try {
+    return new URL(clean).pathname;
+  } catch {
+    return clean;
+  }
+};
+
+const normalizeImageKey = (value: string) => {
+  try {
+    return decodeURIComponent(normalizeImagePathname(value).replace(/^\/+/, ""));
+  } catch {
+    return normalizeImagePathname(value).replace(/^\/+/, "");
+  }
+};
+
+const buildImageKeys = (url: string) => {
+  const key = normalizeImageKey(url);
+  const candidates = [key];
+
+  if (!key.startsWith("uploads/")) {
+    candidates.push(`uploads/${key}`);
+
+    const fileName = getImageFileName(key);
+    const datedName = /^(\d{4})-(\d{2})-\d{2}-/.exec(fileName);
+    if (datedName) {
+      candidates.push(`uploads/${datedName[1]}/${datedName[2]}/${fileName}`);
+    }
+  } else {
+    candidates.push(key.replace(/^uploads\//, ""));
+  }
+
+  const fileName = getImageFileName(key);
+  if (fileName) {
+    candidates.push(fileName);
+  }
+
+  return new Set(candidates.filter(Boolean));
+};
+
+const hasSharedImageKey = (a: Set<string>, b: Set<string>) => {
+  for (const key of a) {
+    if (b.has(key)) return true;
+  }
+  return false;
+};
+
+const markdownImageAttachments = computed(() => {
+  const images = (post.value?.markdownImages || []) as MarkdownAttachmentImage[];
+  return images.map(image => ({
+    keys: buildImageKeys(image.url),
+    width: image.width,
+    height: image.height,
+  }));
+});
+
+const findMarkdownImageDimensions = (url: string): MarkdownImageDimensions => {
+  const imageKeys = buildImageKeys(url);
+  const matched = markdownImageAttachments.value.find(image => hasSharedImageKey(image.keys, imageKeys));
+
+  return {
+    width: matched?.width ?? null,
+    height: matched?.height ?? null,
+  };
+};
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -192,7 +276,7 @@ const scrollToComment = (hash: string) => {
   const element = document.getElementById(elementId);
 
   if (element) {
-    const headerOffset = 100;
+    const headerOffset = 130;
     const elementPosition = element.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -258,7 +342,7 @@ const seoMeta = computed(() => {
 
   const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
   const description = post.value.desc || "";
-  const coverImage = firstCover.value || "";
+  const coverImage = firstCoverUrl.value;
   const authorName = post.value.user?.nickname || post.value.user?.name || siteConfig.siteName;
   const publishDate = post.value.create_time || post.value.update_time;
   const modifyDate = post.value.update_time;
@@ -431,17 +515,121 @@ watch(
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
 let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
-// Markdown 图片增强（实况照片动态挂载 LivePhoto 组件，普通图片加 caption 浮层）
+// Markdown 图片增强（兼容旧文章中 #live / [live] 写法，普通图片加 caption 浮层）
 const { mount: mountMarkdownImages, unmount: unmountMarkdownImages } = useMarkdownImages();
+
+const escapeHtmlAttr = (value: string) => value
+  .replace(/&/g, "&amp;")
+  .replace(/"/g, "&quot;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;");
 
 // 动态挂载的 MetingPlayer 子应用实例 —— 必须在 onUnmounted 中逐个 unmount，否则每篇带音乐块的文章导航都会累积一个完整 Vue 子应用 + APlayer 实例（事件监听/定时器/Web Audio 节点泄露）
 const metingApps: App[] = [];
+
+// Markdown 内动态挂载的 LivePhoto 容器，页面卸载时必须 render(null) 触发组件清理
+const markdownLivePhotoContainers: HTMLElement[] = [];
 
 // 动态创建的 Swiper 实例 —— 必须在 onUnmounted 中逐个 destroy，否则每次导航累积 Navigation/Pagination/Mousewheel 监听 + resize observer
 const markdownSwipers: import("swiper").default[] = [];
 
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
+
+// 将非关键初始化延后到浏览器空闲帧，避免与页面渐入抢占主线程
+const runIdle = (cb: () => void) => {
+  if (import.meta.client && typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(cb, { timeout: 1000 });
+  } else {
+    setTimeout(cb, 300);
+  }
+};
+
+const unmountMarkdownLivePhotos = () => {
+  while (markdownLivePhotoContainers.length) {
+    const container = markdownLivePhotoContainers.pop();
+    if (container) {
+      render(null, container);
+    }
+  }
+};
+
+const mountLivePhoto = (container: HTMLElement, props: Record<string, unknown>) => {
+  const appContext = (useNuxtApp().vueApp as NuxtVueApp)._context;
+  const vnode = createVNode(LivePhoto as Component, props);
+  vnode.appContext = appContext;
+  render(vnode, container);
+  markdownLivePhotoContainers.push(container);
+};
+
+const parseImageLine = (line: string) => {
+  const pipeParts = line.split("|").map(part => part.trim());
+  if (pipeParts.length > 1) {
+    return {
+      src: pipeParts[0] || "",
+      caption: pipeParts.slice(1).join(" | ").trim(),
+    };
+  }
+
+  const [src = "", ...captionParts] = line.trim().split(/\s+/);
+  return {
+    src,
+    caption: captionParts.join(" ").trim(),
+  };
+};
+
+const mountMarkdownLivePhotos = () => {
+  unmountMarkdownLivePhotos();
+
+  const wrappers = document.querySelectorAll<HTMLElement>(".markdown-live-photo-wrapper");
+
+  wrappers.forEach(wrapper => {
+    const { src, caption } = parseImageLine(decodeURIComponent(wrapper.getAttribute("data-params") || ""));
+
+    if (!src) {
+      wrapper.remove();
+      return;
+    }
+
+    const dimensions = findMarkdownImageDimensions(src);
+    const aspectRatio = dimensions.width && dimensions.height ? `${dimensions.width} / ${dimensions.height}` : undefined;
+    const finalSrc = src.includes("#live") ? src : `${src}#live`;
+    mountLivePhoto(wrapper, {
+      src: finalSrc,
+      alt: caption,
+      class: "markdown-live-photo w-full max-h-150 rounded-lg",
+      aspectRatio,
+      hoverPlay: false,
+      lazy: true,
+      "data-fancybox": "gallery",
+      "data-caption": caption || "实况照片",
+    });
+  });
+
+  mountMarkdownGalleryLivePhotos(document);
+};
+
+const mountMarkdownGalleryLivePhotos = (root: ParentNode) => {
+  root.querySelectorAll<HTMLElement>(".markdown-live-photo-mount").forEach(container => {
+    const src = container.getAttribute("data-src") || "";
+    const caption = container.getAttribute("data-caption") || "";
+    const className = container.getAttribute("data-class") || "";
+    const aspectRatio = container.getAttribute("data-aspect-ratio");
+
+    if (!src) return;
+
+    mountLivePhoto(container, {
+      src,
+      alt: caption,
+      class: className,
+      aspectRatio: aspectRatio || undefined,
+      hoverPlay: false,
+      lazy: true,
+      "data-fancybox": "gallery",
+      "data-caption": caption || "图片",
+    });
+  });
+};
 
 // 初始化 Fancybox 和其他功能
 onMounted(async () => {
@@ -450,10 +638,6 @@ onMounted(async () => {
   try {
     // 动态导入 Fancybox（仅客户端）
     FancyboxModule = await import("@fancyapps/ui");
-    // 动态导入 Swiper 主体（仅客户端，避免静态打包进共享 chunk）。
-    // 3 个模块已在文件顶部静态具名 import（tree-shake 后只含 3 个，~45kB），
-    // 不随主体动态加载——swiper 的 exports 未暴露 modules/*.mjs 子路径，无法动态 import 具体文件。
-    const { default: Swiper } = await import("swiper");
 
     // 初始化 Fancybox（参照友情链接页面）
     FancyboxModule.Fancybox.bind(
@@ -528,25 +712,21 @@ onMounted(async () => {
 
       const displayLangName = formatLangName(lang);
 
-      // 检测代码行数，超过14行则折叠
-      const lineCount = code?.querySelectorAll(".line").length || 0;
-      const isCollapsed = lineCount > 14;
+      // 服务端已根据行数输出 code-collapsed，客户端只给折叠遮罩绑定展开交互，避免代码正文点击误触
+      const isCollapsed = pre.classList.contains("code-collapsed");
+      let expandButton: HTMLButtonElement | null = null;
 
       if (isCollapsed) {
-        pre.classList.add("code-collapsed");
-
-        const handler = (e: Event) => {
-          const target = e.target as HTMLElement;
-          // 不处理复制按钮的点击
-          if (target.closest(".copy-button")) return;
-
-          pre.classList.toggle("code-collapsed");
-
-          pre.removeEventListener("click", handler);
-        };
-
-        // 点击代码块切换折叠状态
-        pre.addEventListener("click", handler);
+        expandButton = document.createElement("button");
+        expandButton.type = "button";
+        expandButton.className = "code-expand-button";
+        expandButton.ariaLabel = "展开代码块";
+        expandButton.textContent = "...";
+        expandButton.addEventListener("click", e => {
+          e.stopPropagation();
+          pre.classList.remove("code-collapsed");
+          expandButton?.remove();
+        }, { once: true });
       }
 
       let fileLabel: HTMLSpanElement | null = null;
@@ -654,12 +834,18 @@ onMounted(async () => {
         pre.appendChild(langLabel);
       }
       pre.appendChild(button);
+      if (expandButton) {
+        pre.appendChild(expandButton);
+      }
     });
 
     // 初始化目录
     nextTick(() => {
-      extractToc();
-      window.addEventListener("scroll", handleTocScroll);
+      // 目录构建与滚动监听延后到 idle，避免与首屏渐入抢占主线程帧
+      runIdle(() => {
+        extractToc();
+        window.addEventListener("scroll", handleTocScroll);
+      });
 
       // 初始化折叠容器
       const wrappers = document.querySelectorAll(".markdown-details-wrapper");
@@ -712,10 +898,10 @@ onMounted(async () => {
 
         // 创建 video 元素
         const videoContainer = document.createElement("div");
-        videoContainer.className = "markdown-video-container my-6 w-fit m-auto";
+        videoContainer.className = "markdown-video-container my-6 w-full max-w-full m-auto";
         videoContainer.innerHTML = `
         <video
-          class="w-full rounded-lg shadow-lg max-h-150"
+          class="w-full aspect-video rounded-lg shadow-lg max-h-150 bg-slate-100 dark:bg-slate-800"
           controls
           preload="metadata">
           <source src="${url}" type="video/mp4">
@@ -817,6 +1003,7 @@ onMounted(async () => {
                   alt="${title}"
                   class="size-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
             `
@@ -896,15 +1083,18 @@ onMounted(async () => {
           .split("\n")
           .map(line => line.trim())
           .filter(line => line.length > 0);
-        const slides: { url: string; title: string }[] = [];
+        const slides: MarkdownSwiperSlide[] = [];
 
         // 解析每一行，提取图片 URL 和标题
         lines.forEach(line => {
           const parts = line.split("|").map(s => s.trim());
           if (parts.length >= 1 && parts[0]!.length > 0) {
+            const dimensions = findMarkdownImageDimensions(parts[0]!);
             slides.push({
               url: parts[0]!,
               title: parts[1] || "",
+              width: dimensions.width,
+              height: dimensions.height,
             });
           }
         });
@@ -923,21 +1113,22 @@ onMounted(async () => {
         swiperContainer.innerHTML = `
         <div class="swiper-wrapper noneed">
           ${slides
-            .map(
-              slide => `
+            .map(slide => {
+              const caption = slide.title || "图片";
+              const aspectRatio = slide.width && slide.height ? `${slide.width} / ${slide.height}` : "";
+              return `
             <div class="swiper-slide">
-              <img
-                src="${slide.url}"
-                alt="${slide.title || "图片"}"
-                data-fancybox="gallery"
-                data-caption="${slide.title || "图片"}"
-                class="swiper-img"
-                loading="lazy"
-              />
-              ${slide.title ? `<div class="swiper-slide-title">${slide.title}</div>` : ""}
+              <div
+                class="markdown-live-photo-mount"
+                data-src="${escapeHtmlAttr(slide.url)}"
+                data-caption="${escapeHtmlAttr(caption)}"
+                data-class="swiper-img"${aspectRatio ? `
+                data-aspect-ratio="${aspectRatio}"` : ""}
+              ></div>
+              ${slide.title ? `<div class="swiper-slide-title">${escapeHtmlAttr(slide.title)}</div>` : ""}
             </div>
-          `,
-            )
+          `;
+            })
             .join("")}
         </div>
         <div class="flex justify-between items-center h-8">
@@ -952,32 +1143,39 @@ onMounted(async () => {
         // 替换原容器
         wrapper.replaceWith(swiperContainer);
 
-        // 初始化 Swiper
+        // 初始化 Swiper（主体懒加载：仅当存在轮播图容器时才 import ~156kB 的 swiper 主体，
+        // 避免无轮播图的文章（如纯照片页）也在 onMounted 期间解析它、与首屏渐入抢主线程）
         setTimeout(() => {
-          const swiper = new Swiper(`.${uniqueClass}`, {
-            modules: [Navigation, Pagination, Mousewheel],
-            slidesPerView: "auto",
-            spaceBetween: 20,
-            loop: false,
-            mousewheel: {
-              forceToAxis: true,
-              sensitivity: 1,
-              releaseOnEdges: false,
-            },
-            navigation: {
-              nextEl: `.${uniqueClass} .swiper-button-next`,
-              prevEl: `.${uniqueClass} .swiper-button-prev`,
-            },
-            pagination: {
-              el: `.${uniqueClass} .swiper-pagination`,
-              clickable: true,
-            },
-            freeMode: false,
-            touchRatio: 1,
-            resistance: true,
-            resistanceRatio: 0.85,
-          });
-          markdownSwipers.push(swiper);
+          import("swiper")
+            .then(({ default: Swiper }) => {
+              const swiper = new Swiper(`.${uniqueClass}`, {
+                modules: [Navigation, Pagination, Mousewheel],
+                slidesPerView: "auto",
+                spaceBetween: 20,
+                loop: false,
+                mousewheel: {
+                  forceToAxis: true,
+                  sensitivity: 1,
+                  releaseOnEdges: false,
+                },
+                navigation: {
+                  nextEl: `.${uniqueClass} .swiper-button-next`,
+                  prevEl: `.${uniqueClass} .swiper-button-prev`,
+                },
+                pagination: {
+                  el: `.${uniqueClass} .swiper-pagination`,
+                  clickable: true,
+                },
+                freeMode: false,
+                touchRatio: 1,
+                resistance: true,
+                resistanceRatio: 0.85,
+              });
+              markdownSwipers.push(swiper);
+            })
+            .catch(() => {
+              // 单个轮播初始化失败不阻断其余清理
+            });
         }, 100);
       });
 
@@ -1018,7 +1216,7 @@ onMounted(async () => {
 
         // 显示加载状态
         wrapper.innerHTML = `
-        <div class="flex items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
+        <div class="markdown-repo-loading flex min-h-36 items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
           <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
           <span class="text-slate-600 dark:text-slate-400">加载仓库信息...</span>
         </div>
@@ -1178,15 +1376,18 @@ onMounted(async () => {
           .split("\n")
           .map(line => line.trim())
           .filter(line => line.length > 0);
-        const images: { url: string; caption?: string }[] = [];
+        const images: MarkdownWaterfallImage[] = [];
 
         // 解析每一行，提取图片 URL 和标题（格式：url | caption）
         lines.forEach(line => {
           const parts = line.split("|").map(s => s.trim());
           if (parts.length >= 1 && parts[0]!.length > 0) {
+            const dimensions = findMarkdownImageDimensions(parts[0]!);
             images.push({
               url: parts[0]!,
               caption: parts[1] || "",
+              width: dimensions.width,
+              height: dimensions.height,
             });
           }
         });
@@ -1208,17 +1409,18 @@ onMounted(async () => {
           const imageItem = document.createElement("div");
           imageItem.className = "waterfall-item";
 
+          const caption = img.caption || "图片";
+          const aspectRatio = img.width && img.height ? `${img.width} / ${img.height}` : "";
           imageItem.innerHTML = `
-            <div class="waterfall-img-wrapper">
-              <img
-                src="${img.url}"
-                alt="${img.caption || "图片"}"
-                data-fancybox="gallery"
-                data-caption="${img.caption || "图片"}"
-                class="waterfall-img"
-                loading="lazy"
-              />
-              ${img.caption ? `<div class="waterfall-caption">${img.caption}</div>` : ""}
+            <div class="waterfall-img-wrapper"${aspectRatio ? ` style="aspect-ratio: ${aspectRatio};"` : ""}>
+              <div
+                class="markdown-live-photo-mount"
+                data-src="${escapeHtmlAttr(img.url)}"
+                data-caption="${escapeHtmlAttr(caption)}"
+                data-class="waterfall-img"${aspectRatio ? `
+                data-aspect-ratio="${aspectRatio}"` : ""}
+              ></div>
+              ${img.caption ? `<div class="waterfall-caption">${escapeHtmlAttr(img.caption)}</div>` : ""}
             </div>
           `;
 
@@ -1311,8 +1513,8 @@ onMounted(async () => {
         const mountId = `meting-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         musicContainer.innerHTML = `
-        <div id="${mountId}" class="meting-player-wrapper">
-          <div class="flex items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
+        <div id="${mountId}" class="meting-player-wrapper min-h-24">
+          <div class="flex min-h-24 items-center justify-center p-8 border border-slate-200 dark:border-slate-700 rounded-lg">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
             <span class="text-slate-600 dark:text-slate-400">加载音乐播放器...</span>
           </div>
@@ -1357,6 +1559,11 @@ onMounted(async () => {
       // 添加轮播图样式
       const style = document.createElement("style");
       style.textContent = `
+      /* Markdown LivePhoto 动态挂载容器仅用于 Vue render/unmount，不参与布局，避免影响 Swiper/Flex 尺寸计算 */
+      .markdown-live-photo-mount {
+        display: contents;
+      }
+
       /* Markdown Swiper 样式 - 使用更具体的选择器避免影响其他轮播图 */
       .swiper-container[class*="markdown-swiper-instance"] {
         margin: 0 0 20px;
@@ -1562,6 +1769,10 @@ onMounted(async () => {
         cursor: zoom-in;
       }
 
+      .markdown-waterfall .waterfall-img-wrapper[style*="aspect-ratio"] .waterfall-img {
+        height: 100%;
+      }
+
       .markdown-waterfall .waterfall-caption {
         position: absolute;
         bottom: 0;
@@ -1587,8 +1798,13 @@ onMounted(async () => {
     `;
       document.head.appendChild(style);
 
-      // 初始化实况照片（通过动态挂载公共 LivePhoto 组件，逻辑见 composables/useMarkdownImages.ts）
-      mountMarkdownImages();
+      // 初始化实况照片（兼容旧文章中 #live / [live] 图片写法，逻辑见 composables/useMarkdownImages.ts）
+      mountMarkdownImages(document, {
+        resolveDimensions: findMarkdownImageDimensions,
+      });
+
+      // 初始化实况照片组件容器（紧凑语法：:::live-photo URL 标题）
+      mountMarkdownLivePhotos();
     });
   } catch (error) {
     console.error("页面功能初始化失败:", error);
@@ -1619,6 +1835,14 @@ onUnmounted(() => {
       swiper?.destroy(true, true);
     } catch {
       // 单个 Swiper 销毁失败不阻断其余清理
+    }
+  }
+
+  // 卸载 Markdown live-photo 组件（触发 LivePhoto 的 Blob URL、定时器、observer 清理）
+  while (markdownLivePhotoContainers.length) {
+    const container = markdownLivePhotoContainers.pop();
+    if (container) {
+      render(null, container);
     }
   }
 
@@ -1674,14 +1898,15 @@ onUnmounted(() => {
         <!-- 单封面 -->
         <LivePhoto
           v-else-if="hasCover"
-          :src="firstCover"
+          :src="firstCoverUrl"
           alt="封面"
+          :aspect-ratio="firstCover?.width && firstCover?.height ? `${firstCover.width} / ${firstCover.height}` : undefined"
           :hover-play="false"
           data-fancybox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
           :class="
             [
-              'w-full h-37.5 object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
+              'w-full h-full object-cover border border-gray-200 dark:border-gray-800 mb-5 cursor-zoom-in',
               isPhotoCategory ? 'max-h-150' : 'max-h-37.5',
             ].join(' ')
           " />
@@ -1818,7 +2043,7 @@ onUnmounted(() => {
           <div
             v-for="relatedPost in relatedPosts"
             :key="relatedPost.cid"
-            class="flex-1 min-w-50 min-h-50 relative flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-600 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all duration-300">
+            class="flex-1 min-w-50 min-h-50 relative flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-600 dark:hover:border-blue-500 hover:shadow-sm transition-all duration-300">
             <NuxtLink
               :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`"
               class="group flex flex-col size-full">
@@ -1827,7 +2052,8 @@ onUnmounted(() => {
                   :src="relatedPost.covers[0]?.url"
                   :alt="relatedPost.title"
                   class="object-cover group-hover:scale-[1.03] transition-transform duration-300 size-full"
-                  loading="lazy">
+                  loading="lazy"
+                  decoding="async">
               </div>
               <div v-else class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
                 <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>
@@ -1940,17 +2166,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.live-photo-name {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  pointer-events: none;
-}
-
 .article-constrained {
   max-width: 56.25rem; /* 900px - same as max-w-225 */
   width: 100%;
@@ -2019,6 +2234,62 @@ onUnmounted(() => {
   margin: auto;
 }
 
+/* 正文自定义组件 SSR 占位：避免客户端替换真实组件时从 0 高度突然撑开 */
+.markdown-body :deep(.markdown-video-wrapper),
+.markdown-body :deep(.markdown-video-container video) {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  background: rgb(243 244 246);
+}
+
+.dark .markdown-body :deep(.markdown-video-wrapper),
+.dark .markdown-body :deep(.markdown-video-container video) {
+  background: rgb(31 41 55);
+}
+
+.markdown-body :deep(.markdown-repo-wrapper),
+.markdown-body :deep(.markdown-card-wrapper) {
+  display: block;
+  min-height: 9rem;
+}
+
+.markdown-body :deep(.markdown-music-wrapper),
+.markdown-body :deep(.markdown-simple-card-wrapper) {
+  display: block;
+  min-height: 6rem;
+}
+
+.markdown-body :deep(.markdown-swiper-wrapper) {
+  display: block;
+  min-height: 27rem;
+}
+
+.markdown-body :deep(.markdown-waterfall-wrapper),
+.markdown-body :deep(.markdown-live-photo-wrapper) {
+  display: block;
+  min-height: min(60vh, 22rem);
+  border-radius: 0.5rem;
+  background: rgb(243 244 246);
+}
+
+.dark .markdown-body :deep(.markdown-waterfall-wrapper),
+.dark .markdown-body :deep(.markdown-live-photo-wrapper) {
+  background: rgb(31 41 55);
+}
+
+@media (max-width: 768px) {
+  .markdown-body :deep(.markdown-swiper-wrapper) {
+    min-height: 17.625rem;
+  }
+
+  .markdown-body :deep(.markdown-waterfall-wrapper),
+  .markdown-body :deep(.markdown-live-photo-wrapper) {
+    min-height: min(60vh, 18rem);
+  }
+}
+
 /* 图片标题 */
 .markdown-body :deep(.markdown-figcaption) {
   font-size: 0.875em;
@@ -2036,9 +2307,48 @@ onUnmounted(() => {
   height: auto;
   border-radius: 8px;
   cursor: zoom-in;
-  max-height: 600px;
   margin: auto;
   transition: transform 0.3s ease;
+}
+
+.markdown-body :deep(.markdown-image-container),
+.markdown-body :deep(.markdown-live-photo-container) {
+  --markdown-image-max-height: min(70vh, 46rem);
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.markdown-body :deep(.markdown-image-wrapper),
+.markdown-body :deep(.markdown-live-photo-container > .live-photo-wrapper) {
+  width: min(100%, calc(var(--markdown-image-max-height) * var(--markdown-image-ratio, 999)));
+  max-width: 100%;
+  max-height: var(--markdown-image-max-height);
+  margin-inline: auto;
+}
+
+.markdown-body :deep(.markdown-image-wrapper) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.markdown-body :deep(.markdown-image) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: var(--markdown-image-max-height);
+  object-fit: contain;
+}
+
+.markdown-body :deep(.markdown-live-photo-container > .live-photo-wrapper) {
+  overflow: hidden;
+}
+
+.markdown-body :deep(.markdown-live-photo-container .live-photo-image),
+.markdown-body :deep(.markdown-live-photo-container .live-photo-video) {
+  object-fit: contain;
 }
 
 .markdown-body
@@ -2239,29 +2549,29 @@ onUnmounted(() => {
 .markdown-body :deep(pre.shiki.code-collapsed) {
   max-height: calc(1.8em * 12 + 32px);
   overflow: hidden;
-  cursor: pointer;
 }
 
 .markdown-body :deep(pre.shiki.code-collapsed > code) {
   overflow: hidden;
 }
 
-.markdown-body :deep(pre.shiki.code-collapsed::after) {
-  content: "...";
-  font-family: "Noto Serif SC", serif;
+.markdown-body :deep(pre.shiki.code-collapsed .code-expand-button) {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 8px;
+  inset: auto 0 0;
+  z-index: 3;
+  width: 100%;
+  padding: 18px 8px 8px;
   text-align: center;
+  font-family: "Noto Serif SC", serif;
   font-size: 12px;
+  line-height: 1;
   color: rgb(107 114 128);
   background: linear-gradient(transparent, rgb(255 255 255));
-  pointer-events: none;
+  border: none;
+  cursor: pointer;
 }
 
-.dark .markdown-body :deep(pre.shiki.code-collapsed::after) {
+.dark .markdown-body :deep(pre.shiki.code-collapsed .code-expand-button) {
   background: linear-gradient(transparent, rgb(17 24 39));
   color: rgb(156 163 175);
 }

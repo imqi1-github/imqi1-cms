@@ -32,9 +32,24 @@ export default <RouterConfig>{
     }
 
     // 跨页 + 文章评论锚点：路由只回顶部（不带 el → 不触发告警），评论定位交给 [slug].vue 的 watcher。
-    // 同步返回确保「先回顶」发生在 watcher「后滚到评论」之前，二者不抢占。
+    // 延迟到页面过渡（渐出）完成后再回顶，否则同步 return 会在 page:start 渐出期间立即跳顶，
+    // 造成「点击瞬间滚到顶 → 然后才渐出」的视觉跳变。评论的最终定位由 [slug].vue 的 route.hash
+    // watcher（轮询到元素出现后 scrollToComment）负责，不依赖此处的同步回顶时序。
     if (to.hash?.startsWith("#comment-")) {
-      return { left: 0, top: 0 };
+      return new Promise(resolve => {
+        const doScroll = () => {
+          requestAnimationFrame(() => resolve({ left: 0, top: 0 }));
+        };
+        nuxtApp.hooks.hookOnce("page:loading:end", () => {
+          // ~transitionPromise 为 Nuxt 内部字段：等当前页面过渡完成后再滚动，避免滚动半过渡的页面。
+          const transitionPromise = (nuxtApp as NuxtAppWithTransition)["~transitionPromise"];
+          if (transitionPromise) {
+            transitionPromise.then(doScroll);
+          } else {
+            doScroll();
+          }
+        });
+      });
     }
 
     // —— 以下忠实复刻 Nuxt 默认（跨页、非评论锚点）——

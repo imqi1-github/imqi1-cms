@@ -13,7 +13,7 @@ model attachments {
   title       String
   url         String
   storage     String   @default("local")
-  size        Int      @default(0)
+  metadata    Json?
   create_time DateTime @default(now())
   posts       posts    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Attachment_cid_fkey")
 

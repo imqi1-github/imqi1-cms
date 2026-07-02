@@ -803,7 +803,7 @@ onUnmounted(() => {
   // 先把聚合从地图摘除，触发其内部 marker/监听清理，再销毁地图，避免依赖 map.destroy 兜底
   if (cluster) {
     try {
-      cluster.setMap(null);
+      cluster.setMap(null as unknown as AMap.Map);
     } catch {
       /* noop */
     }

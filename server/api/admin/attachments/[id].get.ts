@@ -1,6 +1,7 @@
 import * as path from "path";
 
 import prisma from "#server/utils/prisma";
+import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
@@ -42,12 +43,10 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 宽高暂未采集；格式由扩展名推断（本地与云存储均适用）
-    const width: number | null = null;
-    const height: number | null = null;
-    const format = attachment.type === "image"
+    const metadata = normalizeAttachmentMetadata(attachment.metadata);
+    const format = metadata.format ?? (attachment.type === "image"
       ? path.extname(attachment.url).toLowerCase().slice(1) || null
-      : null;
+      : null);
 
     return {
       success: true,
@@ -56,9 +55,10 @@ export default defineEventHandler(async event => {
         name: attachment.title,
         type: attachment.type,
         url: attachment.url,
-        size: attachment.size,
-        width,
-        height,
+        size: metadata.size,
+        metadata,
+        width: metadata.width,
+        height: metadata.height,
         format,
         createdAt: attachment.create_time,
         post: attachment.posts,

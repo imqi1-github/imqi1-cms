@@ -52,7 +52,7 @@ const isPhotoCategory = computed(() => slug === photoCategorySlug.value);
 
 // 将 posts 转换为瀑布流组件需要的格式（平铺所有封面）
 const waterfallItems = computed(() => {
-  const items: { url: string; title: string; desc?: string; cid?: number; slug: string; categorySlug: string }[] = [];
+  const items: { url: string; title: string; desc?: string; width?: number | null; height?: number | null; cid?: number; slug: string; categorySlug: string }[] = [];
   posts.value.forEach(post => {
     const postSlug = post.slug;
     if (post.covers && post.covers.length > 0 && postSlug) {
@@ -61,6 +61,8 @@ const waterfallItems = computed(() => {
           url: cover.url,
           title: post.title,
           desc: cover.desc,
+          width: cover.width,
+          height: cover.height,
           cid: post.cid,
           slug: postSlug,
           categorySlug: slug,
@@ -77,17 +79,25 @@ const isNotFound = computed(() => !pending.value && (!category.value || error.va
 // 骨架屏显示状态
 const showSkeleton = ref(false);
 const isPaginating = ref(false);
+const hasPlayedEntryFade = ref(false);
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 生成骨架屏随机高度 - 模拟真实瀑布流的随机效果
+// 生成图片分类翻页骨架屏随机高度 - 模拟真实瀑布流的随机效果
+const photoSkeletonHeights = ref<number[]>([]);
 const skeletonHeights = [200, 240, 280, 220, 260, 230, 270, 250, 210, 290, 215, 265, 235, 275, 225, 285];
+function refreshPhotoSkeletonHeights() {
+  photoSkeletonHeights.value = Array.from(
+    { length: skeletonCount.value },
+    () => 200 + Math.round(Math.random() * 110),
+  );
+}
 function getSkeletonHeight(index: number): number {
-  return skeletonHeights[(index - 1) % skeletonHeights.length] ?? 240;
+  return photoSkeletonHeights.value[index - 1] ?? skeletonHeights[(index - 1) % skeletonHeights.length] ?? 240;
 }
 
 // 骨架屏数量 - 根据分类类型动态调整
 const skeletonCount = computed(() => {
-  // 图片分类固定显示16个
+  // 图片分类固定显示 16 个，数量保持原来的瀑布流加载密度
   if (isPhotoCategory.value) {
     return 16;
   }
@@ -106,11 +116,13 @@ watch(pending, isLoading => {
   }
 
   if (isLoading) {
-    // 图片分类：立即显示骨架屏
-    // 普通分类：如果是翻页操作，立即显示；首次加载1秒后显示
-    if (isPhotoCategory.value || isPaginating.value) {
+    // 首次进入图片分类不显示骨架屏；翻页/页码切换时才显示骨架屏。
+    if (isPaginating.value) {
+      if (isPhotoCategory.value) {
+        refreshPhotoSkeletonHeights();
+      }
       showSkeleton.value = true;
-    } else if (category.value) {
+    } else if (!isPhotoCategory.value && category.value) {
       skeletonTimer = setTimeout(() => {
         showSkeleton.value = true;
       }, 1000);
@@ -159,17 +171,49 @@ function goToPage(newPage: number) {
   page.value = newPage;
 }
 
+// 将所有渐入元素置为隐藏初始态：
+// 普通元素 opacity-0 + translate-y-8；照片瀑布流（.photo-stream-fade）仅 opacity-0，
+// 不对其高子树施加 transform，避免逐帧重绘
+const hideFadeElements = (includeEntryFade = false) => {
+  const selector = includeEntryFade ? ".fade-in-element, .entry-fade-element" : ".fade-in-element";
+
+  document.querySelectorAll<HTMLElement>(selector).forEach(el => {
+    el.classList.remove("opacity-100", "translate-y-0", "translate-y-8");
+    el.classList.add("opacity-0");
+    if (!el.classList.contains("photo-stream-fade")) {
+      el.classList.add("translate-y-8");
+    }
+  });
+};
+
 // 触发渐入动画
-function triggerFadeIn() {
+function triggerFadeIn(includeEntryFade = false) {
   nextTick(() => {
     requestAnimationFrame(() => {
-      document.querySelectorAll(".fade-in-element").forEach(el => {
+      const selector = includeEntryFade ? ".fade-in-element, .entry-fade-element" : ".fade-in-element";
+
+      document.querySelectorAll<HTMLElement>(selector).forEach(el => {
         el.classList.remove("opacity-0", "translate-y-8");
-        el.classList.add("opacity-100", "translate-y-0");
+        el.classList.add("opacity-100");
+        // 照片瀑布流纯透明度淡入，不加 translate-y-0（避免对高子树做 transform 动画）
+        if (!el.classList.contains("photo-stream-fade")) {
+          el.classList.add("translate-y-0");
+        }
       });
     });
   });
 }
+
+const triggerEntryFadeIn = () => {
+  if (hasPlayedEntryFade.value) return;
+
+  const entryElements = document.querySelectorAll<HTMLElement>(".entry-fade-element");
+  if (!entryElements.length) return;
+
+  hasPlayedEntryFade.value = true;
+  hideFadeElements(true);
+  triggerFadeIn(true);
+};
 
 // 监听数据加载状态，触发渐入渐出动画
 watch(pending, (newVal, oldVal) => {
@@ -183,28 +227,26 @@ watch(pending, (newVal, oldVal) => {
 
     // 强制触发渐入动画
     setTimeout(() => {
+      const includeEntryFade = !hasPlayedEntryFade.value;
+
       // 对于图片分类，需要先重置状态再触发动画
       if (isPhotoCategory.value) {
-        document.querySelectorAll(".fade-in-element").forEach(el => {
-          el.classList.remove("opacity-100", "translate-y-0");
-          el.classList.add("opacity-0", "translate-y-8");
-        });
+        hideFadeElements(includeEntryFade);
         // 需要下一帧再触发动画，否则浏览器会合并DOM更新导致动画不播放
         requestAnimationFrame(() => {
-          triggerFadeIn();
+          triggerFadeIn(includeEntryFade);
+          hasPlayedEntryFade.value = true;
         });
       } else {
-        triggerFadeIn();
+        triggerFadeIn(includeEntryFade);
+        hasPlayedEntryFade.value = true;
       }
     }, 50);
   }
 
   // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
   if (!oldVal && newVal && category.value) {
-    document.querySelectorAll(".fade-in-element").forEach(el => {
-      el.classList.remove("opacity-100");
-      el.classList.add("opacity-0");
-    });
+    hideFadeElements();
   }
 });
 
@@ -219,13 +261,11 @@ watch(
 
     const pageNum = newPage ? parseInt(newPage as string) : 1;
     if (pageNum > 0 && pageNum !== page.value) {
+      isPaginating.value = true;
       page.value = pageNum;
 
       // 重置所有元素状态（只改变透明度）
-      document.querySelectorAll(".fade-in-element").forEach(el => {
-        el.classList.remove("opacity-100");
-        el.classList.add("opacity-0");
-      });
+      hideFadeElements();
 
       // 等待数据加载完成后触发动画
       setTimeout(() => {
@@ -244,10 +284,7 @@ watch(
       return;
     }
 
-    // 图片分类切换时立即显示骨架屏
-    if (isPhotoCategory.value) {
-      showSkeleton.value = true;
-    }
+    // 图片分类切换时不再显示整页骨架屏，避免瀑布流首屏额外渲染占位导致卡顿
 
     // 等待 DOM 更新
     await nextTick();
@@ -255,14 +292,9 @@ watch(
     // 等待浏览器渲染帧
     requestAnimationFrame(() => {
       // 先重置所有元素状态为初始状态
-      document.querySelectorAll(".fade-in-element").forEach(el => {
-        el.classList.remove("opacity-100", "translate-y-0");
-        el.classList.add("opacity-0", "translate-y-8");
-      });
+      hideFadeElements();
 
-      // 如果是图片分类且骨架屏正在显示，需要在数据加载完成后重新触发动画
-      // 因为此时真实内容还没渲染，需要等到骨架屏隐藏后再处理
-      if (!isPhotoCategory.value || !(showSkeleton.value || (pending.value && posts.value.length === 0))) {
+      if (!isPhotoCategory.value) {
         triggerFadeIn();
       }
     });
@@ -296,14 +328,14 @@ usePageSeo({
 onMounted(() => {
   // 延迟触发，确保 DOM 完全渲染
   setTimeout(() => {
-    triggerFadeIn();
+    triggerEntryFadeIn();
   }, 100);
 });
 </script>
 
 <template>
   <ClientOnly>
-    <div :class="['mx-auto', isPhotoCategory ? 'photo-category-shell' : 'max-w-225 flex flex-col justify-center items-center']">
+    <div :class="['mx-auto', isPhotoCategory ? 'photo-category-shell max-w-[1800px] -mt-6' : 'max-w-225 flex flex-col justify-center items-center']">
       <!-- 加载中 - 仅首次加载时显示 -->
       <div v-if="pending && !category" class="py-20 text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
@@ -318,7 +350,7 @@ onMounted(() => {
         <nav
           v-if="pagination && pagination.totalPages > 1"
           aria-label="图片分页"
-          class="photo-page-control sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-0.5 w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3">
+          class="photo-page-control entry-fade-element sticky top-[calc(100vh-3.4rem)] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 inline-grid grid-cols-[1.45rem_auto_1.45rem] items-center gap-0.5 w-max my-0 mb-2 p-[0.22rem] border border-slate-200/90 rounded-full bg-white/82 shadow-lg shadow-slate-900/8 backdrop-blur-xl max-md:top-[calc(100vh-3rem)] max-md:bottom-4 max-md:left-4 max-md:ml-3 opacity-0 translate-y-8 duration-600 ease-out">
           <button
             type="button"
             :disabled="pagination.page <= 1 || pending"
@@ -339,26 +371,28 @@ onMounted(() => {
           </button>
         </nav>
 
-        <!-- 骨架屏（加载时显示16个占位符） -->
+        <!-- 图片分类翻页骨架屏：首次进入不显示，仅页码切换/翻页加载时显示 -->
         <div
-          v-if="showSkeleton || (pending && posts.length === 0)"
-          class="2xl:columns-4 lg:max-2xl:columns-3 min-[640px]:max-lg:columns-2 max-[640px]:columns-1 gap-1.5 max-[640px]:gap-1 min-h-[180vh]">
+          v-if="showSkeleton"
+          class="w-full columns-1 min-[465px]:columns-2 md:columns-3 lg:columns-4 gap-1.5">
           <div
-            v-for="i in 16"
+            v-for="i in skeletonCount"
             :key="`skeleton-${i}`"
             class="block mb-2.5 overflow-hidden relative rounded-lg bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm"
             :style="{
               minHeight: getSkeletonHeight(i) + 'px',
             }">
-            <!-- 图片占位 -->
             <div
               class="w-full h-full bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 animate-pulse"
               :style="{ minHeight: getSkeletonHeight(i) + 'px' }"/>
           </div>
         </div>
 
-        <!-- 图片列表 -->
-        <div v-else-if="posts.length > 0" class="fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+        <!-- 图片列表：照片分类首次进入直接渲染图片流，依赖图片宽高占位，避免整页骨架屏卡顿 -->
+        <div
+          v-else-if="posts.length > 0"
+          class="fade-in-element duration-600 ease-out opacity-0"
+          :class="isPhotoCategory ? 'photo-stream-fade' : 'translate-y-8'">
           <WaterfallGrid :items="waterfallItems" />
         </div>
 
@@ -369,7 +403,7 @@ onMounted(() => {
       <!-- 普通分类 - 网格布局 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="my-12 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+        <header class="my-12 entry-fade-element opacity-0 translate-y-8 duration-600 ease-out">
           <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:menu-line" class="inline-block size-12 mr-2" />{{ category?.name }}
           </h1>
@@ -500,7 +534,7 @@ onMounted(() => {
       </template>
 
       <!-- 分页 -->
-      <div v-if="!isPhotoCategory && pagination && pagination.totalPages > 1" class="flex justify-center gap-2 mt-10">
+      <div v-if="!isPhotoCategory && pagination && pagination.totalPages > 1" class="entry-fade-element flex justify-center gap-2 mt-10 opacity-0 translate-y-8 duration-600 ease-out">
         <button
           v-if="pagination.page > 1"
           class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
@@ -522,11 +556,17 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 渐入动画 - JS 通过 .fade-in-element 选择器操作，必须保留 */
-.fade-in-element {
+/* 渐入动画 - JS 通过 .fade-in-element/.entry-fade-element 选择器操作，必须保留 */
+.fade-in-element,
+.entry-fade-element {
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 照片分类瀑布流淡入：仅透明度，提升到合成层让动画走 compositor 而非主线程逐帧重绘高子树 */
+.photo-stream-fade {
+  will-change: opacity;
 }
 
 .translate-y-0 {

@@ -19,9 +19,10 @@ const REVEALED_ATTR = "data-revealed";
 const NO_TRANSFORM_ATTR = "data-no-transform";
 const CSS_VAR_Y = "--scroll-reveal-y";
 
-// 默认配置（与原 7 个标准页面一致）
-const DEFAULT_THRESHOLD = 0.1;
-const DEFAULT_ROOT_MARGIN = "0px 0px -50px 0px";
+// 默认配置：元素一进入视口即显现（threshold 0 + 无底部收窄），
+// 避免元素已位于屏幕内但因靠近视口底部而不显示。
+const DEFAULT_THRESHOLD = 0;
+const DEFAULT_ROOT_MARGIN = "0px";
 
 // 按 threshold|rootMargin 签名复用 observer
 const observerCache = new Map<string, IntersectionObserver>();

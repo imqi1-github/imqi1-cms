@@ -2,6 +2,7 @@
 import type {AcceptableValue} from "reka-ui";
 
 import type {Attachment, Category, PostMeta, Tag, Travel, PostApiResponse} from "~/types/apis/admin/posts";
+import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
 const route = useRoute();
 const router = useRouter();
@@ -244,6 +245,7 @@ const attachments = ref<Attachment[]>([]);
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const livePhotoInputRef = ref<HTMLInputElement | null>(null);
 const dragOver = ref(false);
 
 // 格式化文件大小
@@ -252,6 +254,11 @@ function formatFileSize(bytes: number) {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function formatImageDimensions(item: { width?: number | null; height?: number | null }) {
+  if (!item.width || !item.height) return "-";
+  return `${item.width} × ${item.height}`;
 }
 
 // 获取附件列表
@@ -273,6 +280,11 @@ const handleFileSelect = () => {
   fileInputRef.value?.click();
 };
 
+// 选择实况照片
+const handleLivePhotoSelect = () => {
+  livePhotoInputRef.value?.click();
+};
+
 // 处理文件选择
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -281,6 +293,16 @@ const handleFileChange = async (event: Event) => {
     await uploadFiles(Array.from(files));
   }
   // 重置 input
+  target.value = "";
+};
+
+// 处理实况照片选择
+const handleLivePhotoFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const files = target.files;
+  if (files && files.length > 0) {
+    await uploadFiles(Array.from(files), { livePhoto: true });
+  }
   target.value = "";
 };
 
@@ -296,7 +318,7 @@ const handleDrop = async (event: DragEvent) => {
 };
 
 // 上传文件
-const uploadFiles = async (files: File[]) => {
+const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {}) => {
   if (!postId.value) {
     toast.error({
       message: "请先保存文章",
@@ -311,28 +333,35 @@ const uploadFiles = async (files: File[]) => {
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]!;
+      const isLivePhoto = options.livePhoto === true;
 
       // 验证文件类型
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
+      const allowedTypes = isLivePhoto
+        ? ["image/jpeg", "image/jpg"]
+        : ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
       if (!allowedTypes.includes(file.type)) {
         toast.error({
-          message: "不支持的文件类型",
+          message: isLivePhoto ? "实况照片仅支持 JPEG" : "不支持的文件类型",
           description: file.name,
         });
         continue;
       }
 
-      // 验证文件大小 (10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      // 验证文件大小：普通附件 10MB，实况照片 50MB
+      const maxSize = isLivePhoto ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
         toast.error({
           message: "文件过大",
-          description: `${file.name} 超过 10MB 限制`,
+          description: `${file.name} 超过 ${maxSize / 1024 / 1024}MB 限制`,
         });
         continue;
       }
 
       const formData = new FormData();
       formData.append("file", file);
+      if (isLivePhoto) {
+        formData.append("livePhoto", "true");
+      }
 
       // 获取 CSRF token
       const csrfToken = document.cookie
@@ -352,13 +381,13 @@ const uploadFiles = async (files: File[]) => {
         if (res?.success) {
           attachments.value.push(res.data);
           toast.success({
-            message: "上传成功",
+            message: isLivePhoto ? "实况照片上传成功" : "上传成功",
             description: file.name,
           });
         }
       } catch {
         toast.error({
-          message: "上传失败",
+          message: isLivePhoto ? "实况照片上传失败" : "上传失败",
           description: file.name,
         });
       }
@@ -984,6 +1013,7 @@ watch(postId, newCid => {
           <TabsContent value="attachments" class="mt-6">
             <!-- 隐藏的文件输入 -->
             <input ref="fileInputRef" type="file" class="hidden" accept="image/*,video/*" multiple @change="handleFileChange" >
+            <input ref="livePhotoInputRef" type="file" class="hidden" accept="image/jpeg,image/jpg" multiple @change="handleLivePhotoFileChange" >
 
             <Card>
               <CardHeader>
@@ -992,10 +1022,16 @@ watch(postId, newCid => {
                     <CardTitle>文章附件</CardTitle>
                     <CardDescription>管理此文章的图片和视频附件</CardDescription>
                   </div>
-                  <Button :disabled="uploading" @click="handleFileSelect">
-                    <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:upload'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
-                    {{ uploading ? `上传中 ${uploadProgress}%` : "上传附件" }}
-                  </Button>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <Button :disabled="uploading" @click="handleLivePhotoSelect">
+                      <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:aperture'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
+                      上传实况照片
+                    </Button>
+                    <Button :disabled="uploading" @click="handleFileSelect">
+                      <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:upload'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
+                      {{ uploading ? `上传中 ${uploadProgress}%` : "上传附件" }}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1011,7 +1047,7 @@ watch(postId, newCid => {
                   <Icon name="lucide:paperclip" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
                   <p class="text-muted-foreground text-lg mb-2">拖拽文件到此处</p>
                   <p class="text-sm text-muted-foreground mb-4">或点击选择文件</p>
-                  <p class="text-xs text-muted-foreground">支持 JPG、PNG、GIF、WebP、MP4、WebM，最大 10MB</p>
+                  <p class="text-xs text-muted-foreground">支持 JPG、PNG、GIF、WebP、MP4、WebM，最大 10MB；实况照片请点专用入口上传 JPEG，最大 50MB，保留原文件不转格式</p>
                 </div>
 
                 <!-- 附件列表 -->
@@ -1026,6 +1062,7 @@ watch(postId, newCid => {
                     @click="handleFileSelect">
                     <Icon name="lucide:plus" class="size-6 text-muted-foreground/30 mx-auto mb-2" />
                     <p class="text-sm text-muted-foreground">点击或拖拽上传更多附件</p>
+                    <p class="text-xs text-muted-foreground mt-1">实况照片请使用上方专用入口，上传时不转格式</p>
                   </div>
 
                   <!-- 类型筛选 -->
@@ -1073,7 +1110,10 @@ watch(postId, newCid => {
                         <p class="text-xs font-medium truncate" :title="item.name">
                           {{ item.name }}
                         </p>
-                        <p class="text-xs text-muted-foreground">{{ formatFileSize(item.size) }}</p>
+                        <div class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>{{ formatFileSize(item.size) }}</span>
+                          <span v-if="item.type === 'image'">{{ formatImageDimensions(item) }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

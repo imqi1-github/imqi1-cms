@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 
 import prisma from '#server/utils/prisma'
+import { normalizeAttachmentMetadata } from '#server/utils/attachmentMetadata'
 import { getUser } from '#server/lib/auth'
 
 export default defineEventHandler(async event => {
@@ -38,7 +39,7 @@ export default defineEventHandler(async event => {
     // 查询附件列表
     const attachments = await prisma.attachments.findMany({
       where,
-      orderBy: { create_time: 'desc' },
+      orderBy: { aid: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
@@ -54,15 +55,22 @@ export default defineEventHandler(async event => {
     return {
       success: true,
       data: {
-        list: attachments.map(a => ({
-          id: a.aid,
-          name: a.title,
-          type: a.type,
-          url: a.url,
-          size: a.size,
-          createTime: a.create_time,
-          post: a.posts,
-        })),
+        list: attachments.map(a => {
+          const metadata = normalizeAttachmentMetadata(a.metadata)
+          return {
+            id: a.aid,
+            name: a.title,
+            type: a.type,
+            url: a.url,
+            size: metadata.size,
+            metadata,
+            width: metadata.width,
+            height: metadata.height,
+            format: metadata.format,
+            createTime: a.create_time,
+            post: a.posts,
+          }
+        }),
         total,
         page,
         pageSize,

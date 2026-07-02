@@ -241,7 +241,9 @@ export const useFancyboxLivePhoto = () => {
     // 避免重复注入
     if (slideEl.querySelector(".flp-tip")) return false;
 
-    const imageUrl: string | undefined = slide?.src || slide?.triggerEl?.src;
+    const triggerEl = slide?.triggerEl;
+    const realImageUrl = triggerEl?.getAttribute?.("data-live-photo-src") || undefined;
+    const imageUrl: string | undefined = realImageUrl || slide?.src || triggerEl?.src;
     if (!imageUrl) {
       return false;
     }

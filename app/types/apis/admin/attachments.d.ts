@@ -1,3 +1,10 @@
+export interface AttachmentMetadata {
+	size: number;
+	width: number | null;
+	height: number | null;
+	format: string | null;
+}
+
 /** 附件列表项关联文章 */
 export interface AttachmentItemPost {
 	cid: number;
@@ -10,8 +17,12 @@ export interface AttachmentItem {
 	name: string;
 	type: string;
 	url: string;
-	/** 文件字节数；历史记录可能为 0，前端显示为 "-" */
+	/** 文件字节数；来自 metadata.size */
 	size: number;
+	metadata?: AttachmentMetadata | null;
+	width?: number | null;
+	height?: number | null;
+	format?: string | null;
 	/** Prisma Date 经序列化为 string */
 	createTime: string;
 	post: AttachmentItemPost | null;
@@ -31,6 +42,7 @@ export interface AttachmentDetail {
 	type: string;
 	url: string;
 	size: number;
+	metadata?: AttachmentMetadata | null;
 	width: number | null;
 	height: number | null;
 	format: string | null;

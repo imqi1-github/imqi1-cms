@@ -145,10 +145,19 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       return "";
     }
 
+    const src = token.attrGet("src") || "";
+    const alt = token.content || "";
+    const isLiveImage = src.includes("#live") || alt.includes("[live]");
+
+    if (isLiveImage) {
+      const caption = alt.replace(/\[live\]/gi, "").trim();
+      const params = caption ? `${src} | ${caption}` : src;
+      return `<div class="markdown-live-photo-wrapper" data-params="${escapeAttribute(encodeURIComponent(params))}"></div>`;
+    }
+
     token.attrSet("loading", "lazy");
     token.attrSet("class", "markdown-image");
     token.attrSet("data-fancybox", "gallery");
-    const alt = token.content || "";
     if (alt) {
       token.attrSet("data-caption", alt);
     }
@@ -251,16 +260,22 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     }
 
     const info = token.info || "";
+    const codeLines = token.content.split("\n");
+    if (codeLines[codeLines.length - 1] === "") {
+      codeLines.pop();
+    }
+    const shouldCollapse = codeLines.length > 14;
     const { shikiLang, className } = parseFenceInfo(info);
     const renderPlainCode = () => {
-      const lines = token.content.split("\n");
-      if (lines[lines.length - 1] === "") {
-        lines.pop();
-      }
-      const code = lines.map((line: string) => `<span class="line">${escapeHtml(line)}</span>`).join("\n");
+      const code = codeLines.map((line: string) => `<span class="line">${escapeHtml(line)}</span>`).join("\n");
+      const collapseClass = shouldCollapse ? " code-collapsed" : "";
       const langClass = className ? ` language-${className}` : "";
       const codeClass = className ? ` class="language-${className}"` : "";
-      return `<pre class="shiki${langClass}" tabindex="0"><code${codeClass}>${code}</code></pre>`;
+      return `<pre class="shiki${langClass}${collapseClass}" tabindex="0"><code${codeClass}>${code}</code></pre>`;
+    };
+    const applyCollapseClass = (html: string) => {
+      if (!shouldCollapse || html.includes("code-collapsed")) return html;
+      return html.replace(/<pre class="([^"]*)"/, '<pre class="$1 code-collapsed"');
     };
 
     if (!shikiLang || !supportedLanguages.has(shikiLang.toLowerCase())) {
@@ -288,7 +303,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       console.error(error);
       token.info = "json";
       try {
-        result = restoreClassName(defaultFence(tokens, idx, options, env, self));
+        result = applyCollapseClass(restoreClassName(defaultFence(tokens, idx, options, env, self)));
       } catch (error2) {
         console.error(error2);
         result = renderPlainCode();
@@ -297,7 +312,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
       token.info = info;
     }
 
-    return result;
+    return applyCollapseClass(result);
   };
 
   // 配置容器插件（用于折叠等功能）
@@ -403,6 +418,29 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
         return `<div class="markdown-card-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
       } else {
         // 结束容器
+        return `</div>`;
+      }
+    },
+  });
+
+  // 实况照片容器（紧凑语法：:::live-photo URL 标题）
+  md.use(container, "live-photo", {
+    validate: (params: string) => {
+      return params.trim().match(/^live-photo\s+(.+)$/);
+    },
+    render: (tokens: Token[], idx: number) => {
+      const token = tokens[idx];
+
+      if (!token) {
+        return "";
+      }
+
+      const info = token.info.trim();
+      const paramsStr = info.replace(/^live-photo\s+/, "").trim();
+
+      if (token.nesting === 1) {
+        return `<div class="markdown-live-photo-wrapper" data-params="${escapeAttribute(encodeURIComponent(paramsStr))}">`;
+      } else {
         return `</div>`;
       }
     },

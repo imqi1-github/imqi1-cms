@@ -159,6 +159,7 @@ watch(
         <LivePhoto
           :src="cover.url"
           :alt="cover.desc || '封面'"
+          :aspect-ratio="cover.width && cover.height ? `${cover.width} / ${cover.height}` : undefined"
           :hover-play="false"
           class="swiper-img"
           data-fancybox="gallery"

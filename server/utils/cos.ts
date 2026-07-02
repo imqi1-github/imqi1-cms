@@ -307,6 +307,43 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
   }
 }
 
+function normalizeUploadPath(pathname: string): string | null {
+  const withoutHash = pathname.split("#")[0] ?? pathname;
+  const withoutQuery = withoutHash.split("?")[0] ?? withoutHash;
+  let normalized = withoutQuery.replace(/^\/+/, "").replace(/\\/g, "/");
+
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // 解码失败时继续使用原路径
+  }
+
+  if (!normalized.startsWith("uploads/")) return null;
+  if (normalized.split("/").some(segment => segment === "..")) return null;
+
+  return `/${normalized}`;
+}
+
+function getCosUploadPath(fileUrl: string, domains: { source: string; cdn: string }): string | null {
+  const cleanUrl = fileUrl.trim().split("#")[0]?.split("?")[0] ?? fileUrl.trim();
+  const normalizedSource = domains.source.replace(/\/$/, "");
+  const normalizedCdn = domains.cdn.replace(/\/$/, "");
+
+  if (normalizedSource && cleanUrl.startsWith(normalizedSource)) {
+    return normalizeUploadPath(cleanUrl.slice(normalizedSource.length));
+  }
+
+  if (normalizedCdn && cleanUrl.startsWith(normalizedCdn)) {
+    return normalizeUploadPath(cleanUrl.slice(normalizedCdn.length));
+  }
+
+  try {
+    return normalizeUploadPath(new URL(cleanUrl).pathname);
+  } catch {
+    return normalizeUploadPath(cleanUrl);
+  }
+}
+
 // 从COS删除文件
 export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
   try {
@@ -327,37 +364,16 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
       };
     }
 
-    // 从URL中提取文件路径
-    // URL格式可能是: https://domain/uploads/file.ext 或 https://bucket.cos.region.myqcloud.com/uploads/file.ext
-
-    // 先尝试从源站域名提取路径
-    let filePath = fileUrl.replace(domains.source, "");
-
-    // 如果filePath包含完整URL（说明用的是CDN域名），需要从CDN域名提取
-    if (filePath.startsWith("http")) {
-      // 尝试从CDN域名提取
-      if (domains.cdn) {
-        filePath = fileUrl.replace(domains.cdn, "");
-      } else {
-        // 如果没有配置CDN域名，尝试从URL对象中提取路径
-        try {
-          const urlObj = new URL(fileUrl);
-          filePath = urlObj.pathname;
-        } catch (error) {
-          console.error(error);
-          // 如果解析失败，使用默认逻辑
-          filePath = "/" + fileUrl.split("/").slice(3).join("/");
-        }
-      }
-    }
-
-    // 确保路径以 / 开头
-    if (!filePath.startsWith("/")) {
-      filePath = "/" + filePath;
+    const filePath = getCosUploadPath(fileUrl, domains);
+    if (!filePath) {
+      return {
+        success: false,
+        error: "只允许删除 /uploads/ 下的 COS 文件",
+      };
     }
 
     // 构建删除URL（必须使用源站域名）
-    const deleteUrl = `${domains.source}${filePath}`;
+    const deleteUrl = `${domains.source.replace(/\/$/, "")}${filePath}`;
 
     console.log("[COS删除] URL转换:", {
       originalUrl: fileUrl,

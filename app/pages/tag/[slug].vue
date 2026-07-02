@@ -36,6 +36,7 @@ const isNotFound = computed(() => !pending.value && (!tag.value || error.value))
 // 骨架屏显示状态
 const showSkeleton = ref(false);
 const isPaginating = ref(false);
+const hasPlayedEntryFade = ref(false);
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 骨架屏数量 - 根据每页文章数量和当前页码动态调整
@@ -109,17 +110,39 @@ function goToPage(newPage: number) {
   page.value = newPage;
 }
 
+const hideFadeElements = (includeEntryFade = false) => {
+  const selector = includeEntryFade ? ".fade-in-element, .entry-fade-element" : ".fade-in-element";
+
+  document.querySelectorAll<HTMLElement>(selector).forEach(el => {
+    el.classList.remove("opacity-100", "translate-y-0", "translate-y-8");
+    el.classList.add("opacity-0", "translate-y-8");
+  });
+};
+
 // 触发渐入动画
-function triggerFadeIn() {
+function triggerFadeIn(includeEntryFade = false) {
   nextTick(() => {
     requestAnimationFrame(() => {
-      document.querySelectorAll(".fade-in-element").forEach(el => {
+      const selector = includeEntryFade ? ".fade-in-element, .entry-fade-element" : ".fade-in-element";
+
+      document.querySelectorAll<HTMLElement>(selector).forEach(el => {
         el.classList.remove("opacity-0", "translate-y-8");
         el.classList.add("opacity-100", "translate-y-0");
       });
     });
   });
 }
+
+const triggerEntryFadeIn = () => {
+  if (hasPlayedEntryFade.value) return;
+
+  const entryElements = document.querySelectorAll<HTMLElement>(".entry-fade-element");
+  if (!entryElements.length) return;
+
+  hasPlayedEntryFade.value = true;
+  hideFadeElements(true);
+  triggerFadeIn(true);
+};
 
 // 监听数据加载状态，触发渐入渐出动画
 watch(pending, (newVal, oldVal) => {
@@ -133,25 +156,19 @@ watch(pending, (newVal, oldVal) => {
 
     // 强制触发渐入动画 - 给足够时间让DOM渲染完成
     setTimeout(() => {
-      nextTick(() => {
-        document.querySelectorAll(".fade-in-element").forEach(el => {
-          el.classList.remove("opacity-100", "translate-y-0");
-          el.classList.add("opacity-0", "translate-y-8");
-        });
-        // 需要下一帧再触发动画，否则浏览器会合并DOM更新导致动画不播放
-        requestAnimationFrame(() => {
-          triggerFadeIn();
-        });
+      const includeEntryFade = !hasPlayedEntryFade.value;
+      hideFadeElements(includeEntryFade);
+      // 需要下一帧再触发动画，否则浏览器会合并DOM更新导致动画不播放
+      requestAnimationFrame(() => {
+        triggerFadeIn(includeEntryFade);
+        hasPlayedEntryFade.value = true;
       });
     }, 150);
   }
 
-  // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
+  // 开始加载新数据时，确保正文列表隐藏，标题和分页只在首次进入时渐入
   if (!oldVal && newVal && tag.value) {
-    document.querySelectorAll(".fade-in-element").forEach(el => {
-      el.classList.remove("opacity-100");
-      el.classList.add("opacity-0");
-    });
+    hideFadeElements();
   }
 });
 
@@ -166,15 +183,13 @@ watch(
 
     const pageNum = newPage ? parseInt(newPage as string) : 1;
     if (pageNum > 0 && pageNum !== page.value) {
+      isPaginating.value = true;
       page.value = pageNum;
 
-      // 重置所有元素状态（只改变透明度）
-      document.querySelectorAll(".fade-in-element").forEach(el => {
-        el.classList.remove("opacity-100");
-        el.classList.add("opacity-0");
-      });
+      // 重置正文列表状态，标题和分页不参与翻页渐入
+      hideFadeElements();
 
-      // 等待数据加载完成后触发动画
+      // 等待数据加载完成后触发正文列表动画
       setTimeout(() => {
         triggerFadeIn();
       }, 300);
@@ -197,13 +212,11 @@ watch(
     // 等待浏览器渲染帧
     requestAnimationFrame(() => {
       // 先重置所有元素状态为初始状态
-      document.querySelectorAll(".fade-in-element").forEach(el => {
-        el.classList.remove("opacity-100", "translate-y-0");
-        el.classList.add("opacity-0", "translate-y-8");
-      });
+      hideFadeElements(true);
 
       // 触发动画
-      triggerFadeIn();
+      triggerFadeIn(true);
+      hasPlayedEntryFade.value = true;
     });
   },
 );
@@ -235,7 +248,7 @@ usePageSeo({
 onMounted(() => {
   // 延迟触发，确保 DOM 完全渲染
   setTimeout(() => {
-    triggerFadeIn();
+    triggerEntryFadeIn();
   }, 100);
 });
 </script>
@@ -255,7 +268,7 @@ onMounted(() => {
       <!-- 标签文章页 -->
       <template v-else>
         <!-- 标题 -->
-        <header class="my-12 mx-auto w-fit fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+        <header class="my-12 mx-auto w-fit entry-fade-element opacity-0 translate-y-8 duration-600 ease-out">
           <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-slate-100 flex items-center">
             <Icon name="ri:hashtag" class="inline-block size-8.5 mr-2" />
             {{ tag?.name }}
@@ -385,7 +398,7 @@ onMounted(() => {
       </template>
 
       <!-- 分页 -->
-      <div v-if="pagination && pagination.totalPages > 1" class="flex justify-center gap-2 mt-10">
+      <div v-if="pagination && pagination.totalPages > 1" class="entry-fade-element flex justify-center gap-2 mt-10 opacity-0 translate-y-8 duration-600 ease-out">
         <button
           v-if="pagination.page > 1"
           class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
@@ -408,7 +421,8 @@ onMounted(() => {
 
 <style scoped>
 /* 渐入动画 */
-.fade-in-element {
+.fade-in-element,
+.entry-fade-element {
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);

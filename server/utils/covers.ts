@@ -7,13 +7,19 @@
  *
  * 兼容历史数据中元素为纯字符串的情况：["/uploads/a.jpg", "/uploads/b.jpg"]
  *
- * 返回值统一归一化为 { url, desc } 形状（把 title 映射为 desc），
+ * 返回值统一归一化为 { url, desc, width, height } 形状（把 title 映射为 desc），
  * desc 永远为字符串（无则为空字符串）。
  * 解析失败或非数组时返回 []。
  */
+import type { ParsedCover } from "#server/types/utils/covers";
+
+const toNullableNumber = (value: unknown) => {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+};
+
 export function parseCovers(
   raw: string | null | undefined,
-): Array<{ url: string; desc: string }> {
+): ParsedCover[] {
   if (!raw) return [];
 
   let parsed: unknown;
@@ -28,11 +34,21 @@ export function parseCovers(
 
   return parsed
     .map((item: unknown) => {
-      if (typeof item === "string") return { url: item, desc: "" };
+      if (typeof item === "string") {
+        return {
+          url: item,
+          desc: "",
+          width: null,
+          height: null,
+        };
+      }
+
       const obj = (item ?? {}) as Record<string, unknown>;
       return {
         url: (obj.url as string) ?? (obj.cover as string) ?? "",
         desc: (obj.title as string) ?? (obj.desc as string) ?? "",
+        width: toNullableNumber(obj.width),
+        height: toNullableNumber(obj.height),
       };
     })
     .filter(item => item.url);

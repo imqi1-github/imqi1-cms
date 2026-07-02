@@ -20,6 +20,11 @@ const getAltText = (item: WaterfallItem) => {
     ? `${item.desc} - ${item.title}`
     : item.title;
 };
+
+const getAspectRatio = (item: WaterfallItem) => {
+  if (!item.width || !item.height) return undefined;
+  return `${item.width} / ${item.height}`;
+};
 </script>
 
 <template>
@@ -33,16 +38,19 @@ const getAltText = (item: WaterfallItem) => {
         v-if="asLink"
         :to="getLinkUrl(item)"
         :aria-label="`查看图片：${getAltText(item)}`"
-        class="block mb-1.5 break-inside-avoid group"
+        class="block mb-1.5 break-inside-avoid group waterfall-item"
       >
         <div
           class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm transition-all duration-300"
+          :style="{ aspectRatio: getAspectRatio(item) }"
         >
           <LivePhoto
             :src="item.url"
             :alt="getAltText(item)"
-            class="w-full h-auto object-cover"
-            :lazy="true"
+            :aspect-ratio="getAspectRatio(item)"
+            :show-placeholder="false"
+            class="w-full h-full object-cover"
+            :lazy="false"
           />
 
           <div
@@ -58,15 +66,18 @@ const getAltText = (item: WaterfallItem) => {
       </NuxtLink>
 
       <!-- 非链接模式 -->
-      <div v-else class="block mb-1.5 break-inside-avoid group">
+      <div v-else class="block mb-1.5 break-inside-avoid group waterfall-item">
         <div
           class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm transition-all duration-300"
+          :style="{ aspectRatio: getAspectRatio(item) }"
         >
           <LivePhoto
             :src="item.url"
             :alt="getAltText(item)"
-            class="w-full h-auto object-cover"
-            :lazy="true"
+            :aspect-ratio="getAspectRatio(item)"
+            :show-placeholder="false"
+            class="w-full h-full object-cover"
+            :lazy="false"
           />
 
           <div
@@ -83,3 +94,11 @@ const getAltText = (item: WaterfallItem) => {
     </template>
   </div>
 </template>
+
+<style scoped>
+/* 隔离每个瀑布流项的布局与绘制：
+   淡入期间单张图片的解码/回流不会连带重绘相邻项，降低主线程逐帧开销 */
+.waterfall-item {
+  contain: layout paint;
+}
+</style>

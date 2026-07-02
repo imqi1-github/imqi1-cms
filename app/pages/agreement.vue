@@ -373,7 +373,6 @@ onUnmounted(() => {
   border-radius: 8px;
   margin: 20px 0;
   cursor: zoom-in;
-  max-height: 600px;
   margin: auto;
 }
 
