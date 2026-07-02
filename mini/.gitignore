@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Uni-app build outputs
+dist
+unpackage
+.vite
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.idea

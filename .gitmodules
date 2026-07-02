@@ -1,0 +1,3 @@
+[submodule "mini"]
+	path = mini
+	url = https://gitee.com/imqi1-gitee/imqi1-mini.git

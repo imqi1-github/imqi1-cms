@@ -1,4 +1,4 @@
-# Glass - 基于 Nuxt 4 的现代化博客系统
+# ImQi1 - 基于 Nuxt 4 的现代化博客系统
 
 > 做技术的分享者、生活的摄影师、时事的评论员。
 
@@ -54,8 +54,8 @@
 
 ```bash
 # 克隆项目
-git clone https://gitee.com/imqi1-gitee/glass.git
-cd glass
+git clone https://gitee.com/imqi1-gitee/imqi1-cms.git
+cd imqi1-cms
 
 # 安装依赖
 bun install

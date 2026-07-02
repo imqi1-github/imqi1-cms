@@ -9,7 +9,7 @@ const FILE_SERVER = 'http://localhost:3030'
 export const articles: ArticleCard[] = [
   {
     id: 1,
-    title: '用 Nuxt 重构博客主题 Glass',
+    title: '用 Nuxt 重构博客主题 ImQi1',
     cover: `${FILE_SERVER}/2024/02/113065190.webp`,
     publishedAt: '3 天前',
   },
