@@ -6,9 +6,7 @@ import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta,} from "~~/shared/chan
 import type {ChangelogEntry, ChangelogGroup} from "~/types/apis/changelogs";
 
 const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 
 // 使用全局站点设置

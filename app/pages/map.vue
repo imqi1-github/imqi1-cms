@@ -36,7 +36,7 @@ const FOOTPRINT_MAX_ZOOM = 9;
 // （absolute，无 opacity:0 初始态）在 mainOpacity 过渡期间提前露脸闪烁。详见 useFadeOutOnNavigate。
 await useFadeOutOnNavigate();
 
-const fetchOptions = { headers: { "x-ssr-internal-request": "true" } };
+const fetchOptions = { headers: getInternalRequestHeaders() };
 const {
   data: travelsData,
   pending: travelsPending,

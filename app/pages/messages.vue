@@ -13,9 +13,7 @@ const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true
 
 // 获取留言板配置
 const { data: messageConfig } = await useFetch("/api/messages/config", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 const messagePostId = computed(() => messageConfig.value?.data?.postId);
 const route = useRoute();

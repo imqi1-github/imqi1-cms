@@ -13,9 +13,7 @@ const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteN
 
 // 获取协议页面数据
 const { data, pending, error } = await useFetch("/api/page/agreement", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 
 const page = computed(() => data.value?.data);

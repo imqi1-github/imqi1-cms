@@ -21,9 +21,7 @@ const slug = route.params.slug as string;
 
 // 从 URL 获取分类信息
 const { data: categoryData } = await useFetch(`/api/category/${categorySlug}`, {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 const categoryFromUrl = computed(() => categoryData.value?.data || null);
 
@@ -65,9 +63,7 @@ function formatDate(date: string | Date): string {
 
 // 获取文章数据 - 使用新的 API 格式
 const { data, pending, error } = await useFetch(`/api/posts/${categorySlug}/${slug}`, {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 
 const post = computed(() => data.value?.data);
@@ -191,9 +187,7 @@ watch(
       relatedPostsPending.value = true;
       try {
         relatedPostsData.value = await $fetch<{ success: boolean; data: RelatedPost[] }>(`/api/related-posts/${postId}?limit=3`, {
-          headers: {
-            "x-ssr-internal-request": "true",
-          },
+          headers: getInternalRequestHeaders(),
         });
       } catch (error) {
         console.error("获取相关文章失败:", error);

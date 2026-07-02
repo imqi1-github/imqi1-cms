@@ -28,9 +28,13 @@ export default defineEventHandler(async event => {
       include: {
         posts: {
           select: {
-            cid: true,
-            title: true,
-            slug: true,
+            post: {
+              select: {
+                cid: true,
+                title: true,
+                slug: true,
+              },
+            },
           },
         },
       },
@@ -61,7 +65,7 @@ export default defineEventHandler(async event => {
         height: metadata.height,
         format,
         createdAt: attachment.create_time,
-        post: attachment.posts,
+        posts: attachment.posts.map(relation => relation.post),
       },
     };
   } catch (error) {

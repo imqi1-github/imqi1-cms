@@ -22,9 +22,7 @@ const isMobileMenuOpen = ref(false);
 
 // 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
 const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch<{ data: Array<{ name: string; slug: string | null }> }>("/api/categories", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 }), {
   server: true,
 });

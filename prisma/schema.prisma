@@ -7,17 +7,14 @@ datasource db {
 }
 
 model attachments {
-  aid         Int      @id @default(autoincrement())
-  cid         Int
+  aid         Int               @id @default(autoincrement())
   type        String
   title       String
   url         String
-  storage     String   @default("local")
+  storage     String            @default("local")
   metadata    Json?
-  create_time DateTime @default(now())
-  posts       posts    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Attachment_cid_fkey")
-
-  @@index([cid], map: "Attachment_cid_fkey")
+  create_time DateTime          @default(now())
+  posts       postattachments[]
 }
 
 model metas {
@@ -96,7 +93,7 @@ model posts {
   tags          String?         @db.VarChar(500)
   type          Int             @default(0)
   uid           Int             @default(1)
-  attachments   attachments[]
+  attachments   postattachments[]
   comments      comments[]
   travels       posttravels[]
   user          users           @relation(fields: [uid], references: [uid], map: "Posts_uid_fkey")
@@ -116,6 +113,17 @@ model postrelations {
   @@id([mid, cid])
   @@index([mid, cid], map: "PostRelation_mid_cid_idx")
   @@index([cid], map: "PostRelation_cid_fkey")
+}
+
+model postattachments {
+  aid        Int
+  cid        Int
+  attachment attachments @relation(fields: [aid], references: [aid], onDelete: Cascade, map: "PostAttachments_aid_fkey")
+  post       posts       @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostAttachments_cid_fkey")
+
+  @@id([aid, cid])
+  @@index([aid], map: "PostAttachments_aid_fkey")
+  @@index([cid], map: "PostAttachments_cid_fkey")
 }
 
 model sessions {

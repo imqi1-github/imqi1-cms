@@ -41,12 +41,32 @@ export default defineEventHandler(async event => {
       url: existing.url,
     })
 
+    const cidList: number[] | null = body.cids !== undefined
+      ? (Array.isArray(body.cids)
+          ? Array.from(new Set(body.cids.map((cid: unknown) => Number(cid)).filter(Number.isInteger)))
+          : [])
+      : null
+
     // 更新附件
-    const attachment = await prisma.attachments.update({
-      where: { aid: id },
-      data: {
-        title: body.name,
-      },
+    const attachment = await prisma.$transaction(async tx => {
+      const updated = await tx.attachments.update({
+        where: { aid: id },
+        data: {
+          title: body.name,
+        },
+      })
+
+      if (cidList !== null) {
+        await tx.postattachments.deleteMany({ where: { aid: id } })
+        if (cidList.length > 0) {
+          await tx.postattachments.createMany({
+            data: cidList.map(cid => ({ aid: id, cid })),
+            skipDuplicates: true,
+          })
+        }
+      }
+
+      return updated
     })
 
     return {

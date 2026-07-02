@@ -20,9 +20,7 @@ const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取分类文章数据
 const { data, pending, error } = await useFetch(`/api/category/${slug}/posts`, {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
   query: { page, pageSize: postPageSize },
   watch: [page],
 });
@@ -33,9 +31,7 @@ const pagination = computed(() => data.value?.data?.pagination);
 
 // 获取所有标签用于构建 slug 映射
 const { data: tagsData } = await useFetch("/api/tags", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 const tagSlugMap = computed(() => {
   const map = new Map<string, string>();

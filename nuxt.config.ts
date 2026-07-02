@@ -72,6 +72,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     amapKey: process.env.AMAP_KEY || "",
     amapSecurityCode: process.env.AMAP_SECURITY_CODE || "",
+    ssrInternalRequestSecret: process.env.SSR_INTERNAL_REQUEST_SECRET || "",
     public: {
       cdnURL: cdnURL,
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源

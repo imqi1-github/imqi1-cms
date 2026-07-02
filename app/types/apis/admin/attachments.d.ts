@@ -25,7 +25,7 @@ export interface AttachmentItem {
 	format?: string | null;
 	/** Prisma Date 经序列化为 string */
 	createTime: string;
-	post: AttachmentItemPost | null;
+	posts: AttachmentItemPost[];
 }
 
 /** 附件关联文章 */
@@ -47,7 +47,7 @@ export interface AttachmentDetail {
 	height: number | null;
 	format: string | null;
 	createdAt: string;
-	post: AttachmentDetailPost | null;
+	posts: AttachmentDetailPost[];
 }
 
 /** 附件详情接口响应 */

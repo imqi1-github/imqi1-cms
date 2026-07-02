@@ -2,8 +2,8 @@
 import { siteConfig } from "~~/site.config";
 
 // 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，
-// 渐入时直接带数据。x-ssr-internal-request 头供 referer-check 中间件放行 SSR 内部请求（与其它页面一致）。
-const ssrHeaders = { headers: { "x-ssr-internal-request": "true" } };
+// 渐入时直接带数据。服务端渲染时通过内部请求 header 放行 referer-check（与其它页面一致）。
+const ssrHeaders = { headers: getInternalRequestHeaders() };
 const { data: sitemapRes, pending: sitemapPending } = await useFetch("/api/sitemap", ssrHeaders);
 const { data: commentsRes } = await useFetch("/api/recent-comments?limit=10", ssrHeaders);
 const { data: tagsRes } = await useFetch("/api/tags", ssrHeaders);

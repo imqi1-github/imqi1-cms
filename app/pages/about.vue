@@ -745,9 +745,7 @@ await useFadeOutOnNavigate();
 
 // 获取统计数据
 const { data: statsData } = await useFetch("/api/stats", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 const stats = computed(() => ({
   publishedPostsNum: statsData.value?.data?.publishedPostsNum || 0,

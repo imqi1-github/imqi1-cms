@@ -23,9 +23,7 @@ if (!initialQ) {
 
 // 搜索结果
 const { data, pending, error, refresh } = await useFetch("/api/search", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
   query: {
     q: searchKeyword,
   },

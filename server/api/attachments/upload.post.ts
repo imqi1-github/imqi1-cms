@@ -230,15 +230,25 @@ export default defineEventHandler(async event => {
     });
 
     // 保存到数据库
-    const attachment = await prisma.attachments.create({
-      data: {
-        cid,
-        type: category,
-        title: file.name,
-        url: fileUrl,
-        storage: uploadLocation,
-        metadata,
-      },
+    const attachment = await prisma.$transaction(async tx => {
+      const created = await tx.attachments.create({
+        data: {
+          type: category,
+          title: file.name,
+          url: fileUrl,
+          storage: uploadLocation,
+          metadata,
+        },
+      });
+
+      await tx.postattachments.create({
+        data: {
+          aid: created.aid,
+          cid,
+        },
+      });
+
+      return created;
     });
 
     return {

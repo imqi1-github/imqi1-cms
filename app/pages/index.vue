@@ -749,9 +749,7 @@ const computeToc = (scrollY: number, windowHeight: number) => {
 
 // 优化：使用聚合API一次性获取所有首页数据
 const { data: homeData } = await useFetch("/api/home-data", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 
 // 站点信息
@@ -766,9 +764,7 @@ const categories = computed(() => homeData.value?.data?.categories || []);
 const { data: randomPostData } = useFetch("/api/random-post", {
   server: false,
   lazy: true,
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 const randomPost = computed(() => randomPostData.value?.data);
 

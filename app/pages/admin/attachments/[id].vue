@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse} from "~/types/apis/admin/attachments";
+import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
+import type { AdminPost, AdminPostListResponse } from "~/types/apis/admin/posts";
 import type {ApiError} from "~/types/error";
 
 const route = useRoute()
@@ -8,6 +10,37 @@ const loading = ref(true)
 const saving = ref(false)
 
 const attachment = ref<AttachmentDetail | null>(null)
+const uploadPosts = ref<AdminPost[]>([])
+const uploadPages = ref<PageItem[]>([])
+const selectedPostId = ref("")
+
+const relationTargets = computed(() => [
+  ...uploadPosts.value.map(post => ({
+    value: String(post.cid),
+    cid: post.cid,
+    label: post.title || `文章 #${post.cid}`,
+    type: "文章",
+  })),
+  ...uploadPages.value.map(pageItem => ({
+    value: String(pageItem.cid),
+    cid: pageItem.cid,
+    label: pageItem.title || `页面 #${pageItem.cid}`,
+    type: "页面",
+  })),
+])
+
+const pageCidSet = computed(() => new Set(uploadPages.value.map(pageItem => pageItem.cid)))
+
+const getRelationTypeLabel = (cid: number) => pageCidSet.value.has(cid) ? "页面" : "文章"
+
+const getRelationEditPath = (cid: number) => pageCidSet.value.has(cid)
+  ? `/admin/pages/edit?cid=${cid}`
+  : `/admin/posts/edit?cid=${cid}`
+
+const availableRelationTargets = computed(() => {
+  const linked = new Set(attachment.value?.posts.map(post => post.cid) ?? [])
+  return relationTargets.value.filter(target => !linked.has(target.cid))
+})
 
 // 动态 id 拼出的 URL 会同时命中 `/api/admin/attachments/:id` 与字面路由 `/all`，
 // 导致响应类型变成两者并集、可用方法被取交集只剩 get。这里用显式返回类型泛型绕过路由推断，
@@ -66,6 +99,60 @@ async function fetchAttachment() {
     })
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchRelationTargets() {
+  try {
+    const [postsRes, pagesRes] = await Promise.all([
+      $fetch<AdminPostListResponse>("/api/admin/posts?pageSize=999"),
+      $fetch<PageListResponse>("/api/admin/pages?pageSize=999"),
+    ])
+    uploadPosts.value = postsRes.data || []
+    uploadPages.value = pagesRes.data || []
+  } catch (error) {
+    console.error('获取关联目标失败:', error)
+  }
+}
+
+async function syncRelations(cids: number[]) {
+  const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl, {
+    method: 'PATCH',
+    body: {
+      name: form.value.name,
+      cids,
+    },
+  })
+
+  if (res?.success) {
+    await fetchAttachment()
+  }
+}
+
+async function addRelation() {
+  if (!attachment.value || !selectedPostId.value) return
+  const cid = Number(selectedPostId.value)
+  if (!Number.isInteger(cid)) return
+
+  try {
+    await syncRelations([...attachment.value.posts.map(post => post.cid), cid])
+    selectedPostId.value = ""
+    toast.success({ message: '关联成功' })
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: error.message || '关联失败' })
+  }
+}
+
+async function removeRelation(cid: number) {
+  if (!attachment.value) return
+
+  try {
+    await syncRelations(attachment.value.posts.map(post => post.cid).filter(postCid => postCid !== cid))
+    toast.success({ message: '已取消关联' })
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: error.message || '取消关联失败' })
   }
 }
 
@@ -146,6 +233,7 @@ const copyLink = async () => {
 
 onMounted(() => {
   fetchAttachment()
+  fetchRelationTargets()
 })
 </script>
 
@@ -276,30 +364,67 @@ onMounted(() => {
           </CardContent>
         </Card>
 
-        <!-- 关联文章卡片 -->
+        <!-- 关联文章/页面卡片 -->
         <Card>
           <CardHeader>
-            <CardTitle>关联文章</CardTitle>
+            <CardTitle>关联内容</CardTitle>
+            <CardDescription>管理当前附件关联的文章或页面</CardDescription>
           </CardHeader>
           <CardContent>
             <div v-if="loading" class="space-y-4">
               <div class="h-4 bg-muted rounded w-full animate-pulse" />
             </div>
-            <div v-else-if="attachment?.post" class="text-sm">
-              <NuxtLink
-                :to="`/admin/posts/edit?cid=${attachment.post.cid}`"
-                class="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
-              >
-                <Icon name="lucide:file-text" class="size-4 text-muted-foreground" />
-                <div class="flex-1 min-w-0">
-                  <p class="font-medium truncate">{{ attachment.post.title }}</p>
-                  <p class="text-xs text-muted-foreground"> Slug: {{ attachment.post.slug }}</p>
+            <div v-else-if="attachment" class="space-y-4">
+              <div v-if="attachment.posts.length > 0" class="space-y-2">
+                <div
+                  v-for="post in attachment.posts"
+                  :key="post.cid"
+                  class="flex items-center gap-2 rounded-lg border p-3"
+                >
+                  <NuxtLink
+                    :to="getRelationEditPath(post.cid)"
+                    class="flex min-w-0 flex-1 items-center gap-2 hover:text-primary"
+                  >
+                    <Icon name="lucide:file-text" class="size-4 shrink-0 text-muted-foreground" />
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <Badge variant="outline" class="shrink-0 text-xs">
+                          {{ getRelationTypeLabel(post.cid) }}
+                        </Badge>
+                        <p class="truncate text-sm font-medium">{{ post.title }}</p>
+                      </div>
+                      <p class="mt-1 truncate text-xs text-muted-foreground">Slug: {{ post.slug || '-' }}</p>
+                    </div>
+                  </NuxtLink>
+                  <Button variant="ghost" size="icon" title="取消关联" @click="removeRelation(post.cid)">
+                    <Icon name="lucide:x" class="size-4" />
+                  </Button>
                 </div>
-                <Icon name="lucide:chevron-right" class="size-4 text-muted-foreground" />
-              </NuxtLink>
-            </div>
-            <div v-else class="text-sm text-muted-foreground text-center py-4">
-              未关联文章
+              </div>
+              <div v-else class="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
+                未关联内容
+              </div>
+
+              <div class="flex gap-2">
+                <ClientOnly>
+                  <Select v-model="selectedPostId" :disabled="availableRelationTargets.length === 0">
+                    <SelectTrigger class="min-w-0 flex-1">
+                      <SelectValue placeholder="选择要关联的文章或页面" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="target in availableRelationTargets" :key="target.value" :value="target.value">
+                        {{ target.type }}：{{ target.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <template #fallback>
+                    <div class="h-9 min-w-0 flex-1 rounded-md border bg-muted/50" />
+                  </template>
+                </ClientOnly>
+                <Button :disabled="!selectedPostId" @click="addRelation">
+                  添加
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

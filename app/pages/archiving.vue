@@ -2,9 +2,7 @@
 import { siteConfig } from "~~/site.config";
 
 const { data, pending, error } = await useFetch("/api/archiving", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 
 // 使用全局站点设置

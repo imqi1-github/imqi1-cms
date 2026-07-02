@@ -20,9 +20,9 @@ usePageSeo({
 
 // 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，渐入时直接带数据。
 // 订阅源列表含随机洗牌，故用 ref 并在 onMounted（仅客户端）计算，避免 SSR/客户端各洗一次导致 hydration 不一致。
-// x-ssr-internal-request 头供 referer-check 中间件放行 SSR 内部请求（与其它页面一致）。
+// 服务端渲染时通过内部请求 header 放行 referer-check（与其它页面一致）。
 const { data: postsRes, pending, error: fetchError, refresh } = await useFetch("/api/subscribes", {
-  headers: { "x-ssr-internal-request": "true" },
+  headers: getInternalRequestHeaders(),
 });
 const posts = computed(() => postsRes.value?.data || []);
 const error = computed<string | null>(() =>

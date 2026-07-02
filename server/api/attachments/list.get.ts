@@ -36,7 +36,11 @@ export default defineEventHandler(async event => {
 
     // 获取附件列表
     const attachments = await prisma.attachments.findMany({
-      where: { cid },
+      where: {
+        posts: {
+          some: { cid },
+        },
+      },
       orderBy: { create_time: "desc" },
     });
 

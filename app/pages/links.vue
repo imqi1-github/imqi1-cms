@@ -19,9 +19,7 @@ const showLinkUrlInput = computed(() => siteSettings.value?.linkAutoApprove === 
 
 // 获取友链数据
 const { data: linksData, pending, error } = await useFetch("/api/links", {
-  headers: {
-    "x-ssr-internal-request": "true",
-  },
+  headers: getInternalRequestHeaders(),
 });
 const links = computed(() => linksData.value?.data || []);
 

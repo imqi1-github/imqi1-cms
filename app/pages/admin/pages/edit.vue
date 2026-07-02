@@ -182,10 +182,11 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
   }
 };
 
-// 删除附件
+// 取消关联附件
 const deleteAttachment = async (attachment: PublicAttachment) => {
-  const confirmed = confirm(`确定要删除附件 "${attachment.name}" 吗？`);
+  const confirmed = confirm(`确定要取消关联附件 "${attachment.name}" 吗？`);
   if (!confirmed) return;
+  if (!pageId.value) return;
 
   try {
     // 获取 CSRF token
@@ -194,17 +195,22 @@ const deleteAttachment = async (attachment: PublicAttachment) => {
       .find(row => row.startsWith('csrf_token='))
       ?.split('=')[1];
 
-    await $fetch(`/api/attachments/${attachment.id}${csrfToken ? `?csrfToken=${csrfToken}` : ''}`, {
+    const params = new URLSearchParams({ cid: String(pageId.value) });
+    if (csrfToken) {
+      params.set("csrfToken", csrfToken);
+    }
+
+    await $fetch(`/api/attachments/${attachment.id}?${params}`, {
       method: "DELETE",
     });
 
     attachments.value = attachments.value.filter(a => a.id !== attachment.id);
     toast.success({
-      message: "删除成功",
+      message: "已取消关联",
     });
   } catch {
     toast.error({
-      message: "删除失败",
+      message: "取消关联失败",
     });
   }
 };
@@ -630,8 +636,8 @@ onUnmounted(() => {
                         <Button variant="secondary" size="sm" class="h-7 text-xs px-2" title="复制链接" @click.stop="copyLink(item.url)">
                           <Icon name="lucide:copy" class="size-3" />
                         </Button>
-                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" title="删除" @click.stop="deleteAttachment(item)">
-                          <Icon name="lucide:trash-2" class="size-3" />
+                        <Button variant="destructive" size="sm" class="h-7 text-xs px-2" title="取消关联" @click.stop="deleteAttachment(item)">
+                          <Icon name="lucide:unlink" class="size-3" />
                         </Button>
                       </div>
 

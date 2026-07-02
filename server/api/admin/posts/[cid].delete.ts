@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -22,10 +23,26 @@ export default defineEventHandler(async event => {
     });
   }
 
-  try {
-    await prisma.posts.delete({
-      where: { cid: Number(cid) },
+  const postId = Number(cid);
+  if (!Number.isInteger(postId)) {
+    throw createError({
+      statusCode: 400,
+      message: "文章 ID 无效",
     });
+  }
+
+  try {
+    const affectedAttachments = await prisma.postattachments.findMany({
+      where: { cid: postId },
+      select: { aid: true },
+    });
+
+    await prisma.posts.delete({
+      where: { cid: postId },
+    });
+
+    await deleteOrphanAttachments(affectedAttachments.map(attachment => attachment.aid));
+
     return { success: true };
   } catch (error) {
     console.error(error);

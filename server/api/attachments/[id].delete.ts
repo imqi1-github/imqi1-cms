@@ -1,35 +1,9 @@
-import * as fs from "fs";
-import * as path from "path";
-
 import { createError, getQuery, getRouterParam } from "h3";
 
 import { getUser } from "#server/lib/auth";
-import { deleteFromCOS } from "#server/utils/cos";
+import { deleteAttachmentFile } from "#server/utils/attachment-file";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
-
-const getLocalUploadPath = (url: string) => {
-  const cleanUrl = url.trim().split("#")[0]?.split("?")[0] ?? url.trim();
-  let pathname = cleanUrl;
-
-  try {
-    pathname = new URL(cleanUrl).pathname;
-  } catch {
-    // 本地相对路径直接使用
-  }
-
-  try {
-    pathname = decodeURIComponent(pathname);
-  } catch {
-    // 解码失败时继续使用原路径
-  }
-
-  const normalized = pathname.replace(/\\/g, "/");
-  if (!normalized.startsWith("/uploads/")) return null;
-  if (normalized.split("/").some(segment => segment === "..")) return null;
-
-  return path.join(process.cwd(), "public", normalized.replace(/^\/+/, ""));
-};
 
 export default defineEventHandler(async event => {
   try {
@@ -51,7 +25,8 @@ export default defineEventHandler(async event => {
     }
 
     // CSRF 验证 - 从查询参数获取
-    const csrfToken = getQuery(event).csrfToken as string;
+    const query = getQuery(event);
+    const csrfToken = query.csrfToken as string;
     if (!validateCsrfToken(event, csrfToken)) {
       throw createError({
         statusCode: 403,
@@ -65,7 +40,12 @@ export default defineEventHandler(async event => {
       include: {
         posts: {
           select: {
-            uid: true,
+            cid: true,
+            post: {
+              select: {
+                uid: true,
+              },
+            },
           },
         },
       },
@@ -78,34 +58,50 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 验证附件所有权：只有文章作者才能删除附件
-    if (attachment.posts.uid !== user.uid) {
+    const unlinkCid = Number(query.cid);
+    if (unlinkCid) {
+      const post = await prisma.posts.findUnique({
+        where: { cid: unlinkCid },
+        select: { uid: true },
+      });
+
+      if (!post) {
+        throw createError({
+          statusCode: 404,
+          message: "文章不存在",
+        });
+      }
+
+      if (post.uid !== user.uid) {
+        throw createError({
+          statusCode: 403,
+          message: "无权取消关联此附件",
+        });
+      }
+
+      await prisma.postattachments.deleteMany({
+        where: {
+          aid: id,
+          cid: unlinkCid,
+        },
+      });
+
+      return {
+        success: true,
+        message: "取消关联成功",
+        detached: true,
+      };
+    } else if (attachment.posts.length > 0 && !attachment.posts.some(relation => relation.post.uid === user.uid)) {
+      // 验证附件所有权：只有关联文章作者才能全局删除附件；无关联附件允许已登录管理员删除
       throw createError({
         statusCode: 403,
         message: "无权删除此附件",
       });
     }
 
-    // 根据存储位置删除文件
-    if (attachment.storage === "cos") {
-      // 删除腾讯云COS文件
-      const result = await deleteFromCOS(attachment.url);
-      if (!result.success) {
-        console.error(result.error);
-      }
-    } else {
-      // 删除本地 /uploads 文件
-      const filePath = getLocalUploadPath(attachment.url);
-      if (filePath && fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    }
+    await deleteAttachmentFile(attachment);
 
-    // 删除数据库记录
+    // 删除数据库记录；关联表记录通过级联删除
     await prisma.attachments.delete({
       where: { aid: id },
     });

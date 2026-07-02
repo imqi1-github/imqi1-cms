@@ -45,8 +45,12 @@ export default defineEventHandler(async event => {
       include: {
         posts: {
           select: {
-            cid: true,
-            title: true,
+            post: {
+              select: {
+                cid: true,
+                title: true,
+              },
+            },
           },
         },
       },
@@ -68,7 +72,7 @@ export default defineEventHandler(async event => {
             height: metadata.height,
             format: metadata.format,
             createTime: a.create_time,
-            post: a.posts,
+            posts: a.posts.map(relation => relation.post),
           }
         }),
         total,

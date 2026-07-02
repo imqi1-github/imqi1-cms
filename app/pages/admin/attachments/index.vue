@@ -106,6 +106,9 @@ watch(searchQuery, () => {
   }, 500);
 });
 
+const displayedPosts = (item: AttachmentItem) => item.posts.slice(0, 2);
+const hiddenPostCount = (item: AttachmentItem) => Math.max(0, item.posts.length - 2);
+
 const getTypeLabel = (type: string) => {
   const map: Record<string, string> = {
     image: "图片",
@@ -417,10 +420,18 @@ onMounted(() => {
                   <span>{{ formatFileSize(item.size) }}</span>
                   <span v-if="item.type === 'image'">{{ formatImageDimensions(item) }}</span>
                 </div>
-                <div v-if="item.post" class="mt-1">
-                  <NuxtLink :to="`/admin/posts/edit?cid=${item.post.cid}`" class="text-xs text-muted-foreground hover:text-foreground">
-                    {{ item.post.title }}
+                <div v-if="item.posts.length > 0" class="mt-1 flex flex-wrap items-center gap-1">
+                  <NuxtLink
+                    v-for="post in displayedPosts(item)"
+                    :key="post.cid"
+                    :to="`/admin/posts/edit?cid=${post.cid}`"
+                    class="max-w-full truncate text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {{ post.title }}
                   </NuxtLink>
+                  <span v-if="hiddenPostCount(item)" class="text-xs text-muted-foreground">
+                    +{{ hiddenPostCount(item) }}
+                  </span>
                 </div>
               </div>
             </div>
