@@ -316,11 +316,17 @@ export default defineEventHandler(async event => {
             },
             attachments: {
               where: {
-                type: "image",
+                attachment: {
+                  type: "image",
+                },
               },
               select: {
-                url: true,
-                metadata: true,
+                attachment: {
+                  select: {
+                    url: true,
+                    metadata: true,
+                  },
+                },
               },
             },
           },
@@ -332,9 +338,9 @@ export default defineEventHandler(async event => {
             slug: r.metas.slug,
           }));
 
-          const attachmentMetadata = post.attachments.map(attachment => ({
-            keys: buildUrlKeys(attachment.url),
-            metadata: normalizeAttachmentMetadata(attachment.metadata),
+          const attachmentMetadata = post.attachments.map(relation => ({
+            keys: buildUrlKeys(relation.attachment.url),
+            metadata: normalizeAttachmentMetadata(relation.attachment.metadata),
           }));
           const covers = parseCovers(post.covers).map(cover => {
             if (cover.width && cover.height) return cover;

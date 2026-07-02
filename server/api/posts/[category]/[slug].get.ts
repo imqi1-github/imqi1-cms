@@ -135,11 +135,17 @@ export default defineEventHandler(async event => {
       },
       attachments: {
         where: {
-          type: "image",
+          attachment: {
+            type: "image",
+          },
         },
         select: {
-          url: true,
-          metadata: true,
+          attachment: {
+            select: {
+              url: true,
+              metadata: true,
+            },
+          },
         },
       },
     },
@@ -172,10 +178,10 @@ export default defineEventHandler(async event => {
   }));
 
   const { attachments, ...postData } = post;
-  const attachmentMetadata = attachments.map(attachment => ({
-    keys: buildUrlKeys(attachment.url),
-    url: attachment.url,
-    metadata: normalizeAttachmentMetadata(attachment.metadata),
+  const attachmentMetadata = attachments.map(relation => ({
+    keys: buildUrlKeys(relation.attachment.url),
+    url: relation.attachment.url,
+    metadata: normalizeAttachmentMetadata(relation.attachment.metadata),
   }));
   const markdownImages = attachmentMetadata.map(attachment => ({
     url: attachment.url,

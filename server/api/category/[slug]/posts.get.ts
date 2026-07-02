@@ -140,11 +140,17 @@ export default defineEventHandler(async event => {
           },
           attachments: {
             where: {
-              type: "image",
+              attachment: {
+                type: "image",
+              },
             },
             select: {
-              url: true,
-              metadata: true,
+              attachment: {
+                select: {
+                  url: true,
+                  metadata: true,
+                },
+              },
             },
           },
           // 关联的启用地点数（封面角标用）
@@ -172,9 +178,9 @@ export default defineEventHandler(async event => {
     const commentsNum = post.comment_num || 0;
 
     // 解析封面，并用附件 metadata 补齐封面宽高，图片分类瀑布流可提前占位避免布局偏移
-    const attachmentMetadata = post.attachments.map(attachment => ({
-      keys: buildUrlKeys(attachment.url),
-      metadata: normalizeAttachmentMetadata(attachment.metadata),
+    const attachmentMetadata = post.attachments.map(relation => ({
+      keys: buildUrlKeys(relation.attachment.url),
+      metadata: normalizeAttachmentMetadata(relation.attachment.metadata),
     }));
     const covers = parseCovers(post.covers).map(cover => {
       if (cover.width && cover.height) return cover;
