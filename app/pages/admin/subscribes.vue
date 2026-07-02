@@ -3,7 +3,8 @@ import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/apis/admin/s
 
 const toast = useToast();
 const subscribes = ref<SubscribeItem[]>([]);
-const loading = ref(false);
+const loading = ref(true);
+const hasLoadedSubscribes = ref(false);
 const showAddForm = ref(false);
 const showEditForm = ref(false);
 const updating = ref(false);
@@ -39,6 +40,7 @@ async function loadSubscribes() {
     console.error("获取订阅失败:", error);
     subscribes.value = [];
   } finally {
+    hasLoadedSubscribes.value = true;
     loading.value = false;
   }
 }
@@ -283,7 +285,7 @@ onMounted(() => {
         </div>
 
         <!-- 数据列表 - 桌面端表格 -->
-        <Table v-else-if="subscribes.length > 0" class="hidden lg:table">
+        <Table v-else-if="hasLoadedSubscribes && subscribes.length > 0" class="hidden lg:table">
           <TableHeader>
             <TableRow>
               <TableHead>名称</TableHead>
@@ -297,7 +299,7 @@ onMounted(() => {
               <TableCell>
                 <div class="flex items-center gap-3">
                   <Avatar class="size-8">
-                    <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
+                    <AvatarImage v-if="sub.avatar" :src="sub.avatar" class="no-img-loading" />
                     <AvatarFallback>{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
                   </Avatar>
                   <span class="font-medium">{{ sub.name }}</span>
@@ -339,7 +341,7 @@ onMounted(() => {
         </div>
 
         <!-- 数据列表 - 移动端卡片 -->
-        <div v-else-if="subscribes.length > 0" class="lg:hidden space-y-4">
+        <div v-else-if="hasLoadedSubscribes && subscribes.length > 0" class="lg:hidden space-y-4">
           <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <Avatar class="size-12">
               <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
@@ -366,7 +368,7 @@ onMounted(() => {
         </div>
 
         <!-- 空状态 -->
-        <div v-else class="text-center py-16">
+        <div v-else-if="hasLoadedSubscribes" class="text-center py-16">
           <Icon name="lucide:rss" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
           <p class="text-muted-foreground">暂无订阅源</p>
           <Button variant="outline" class="mt-4" @click="showAddForm = true">

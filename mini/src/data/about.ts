@@ -23,4 +23,4 @@ export const techStack: string[] = [
   'Sass',
 ]
 
-export const copyright = '2026 ©️ 棋'
+export const copyright = '2026 \u00A9 棋'

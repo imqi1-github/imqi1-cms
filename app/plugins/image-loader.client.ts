@@ -38,7 +38,8 @@ export default defineNuxtPlugin(() => {
     wrapper.className = [WRAPPER_CLASS, ...preservedClasses].join(" ");
 
     const imgStyle = window.getComputedStyle(img);
-    wrapper.style.display = imgStyle.display === "inline" ? "inline-block" : imgStyle.display;
+    const display = imgStyle.display;
+    wrapper.style.display = display === "none" ? "inline-block" : display === "inline" ? "inline-block" : display;
     wrapper.style.verticalAlign = imgStyle.verticalAlign;
 
     // 将图片包裹进容器，保持原有布局

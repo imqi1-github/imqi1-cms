@@ -1,0 +1,42 @@
+{
+  "folders": [
+    {
+      "name": "web",
+      "path": "."
+    },
+    {
+      "name": "mini",
+      "path": "mini"
+    }
+  ],
+  "settings": {
+    "eslint.workingDirectories": [
+      {
+        "directory": ".",
+        "changeProcessCWD": true
+      },
+      {
+        "directory": "mini",
+        "changeProcessCWD": true
+      }
+    ],
+    "unocss.root": [
+      ".",
+      "mini"
+    ],
+    "files.associations": {
+      "*.uvue": "vue",
+      "pages.json": "jsonc",
+      "manifest.json": "jsonc"
+    },
+    "vue.server.hybridMode": true
+  },
+  "extensions": {
+    "recommendations": [
+      "Vue.volar",
+      "dcloudio.uni-helper-vscode",
+      "uni-helper.uni-app-schemas-vscode",
+      "antfu.unocss"
+    ]
+  }
+}

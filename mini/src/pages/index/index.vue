@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { articles } from '@/data/home'
+import { siteConfig } from '@/site.config'
 import type { ArticleCard } from '@/types/post'
 import TheTabBar from '@/components/TheTabBar.vue'
 
@@ -21,37 +22,42 @@ const todo = (label: string) => {
         <view class="brand">
           <view class="brand__dot" />
           <text class="brand__name">
-            imqi1
+            {{ siteConfig.siteName }}
           </text>
         </view>
       </view>
 
       <text class="hero__eyebrow">
-        BLOG
+        {{ siteConfig.home.eyebrow }}
       </text>
       <view class="hero__title">
-        记录代码，<br>也记录生活。
+        <block
+          v-for="(line, i) in siteConfig.home.titleLines"
+          :key="line"
+        >
+          {{ line }}<br v-if="i < siteConfig.home.titleLines.length - 1">
+        </block>
       </view>
       <text class="hero__sub">
-        技术笔记、城市漫步、随手拍，偶尔写点没用的东西。
+        {{ siteConfig.home.description }}
       </text>
 
       <view class="hero__actions">
         <wd-button
           type="primary"
           size="medium"
-          custom-style="background-color:#ffffff;color:#2563eb;border:none"
-          @click="todo('浏览文章')"
+          custom-style="height:72rpx;padding:0 32rpx;background-color:#ffffff;color:#2563eb;border:none;border-radius:999rpx;font-size:26rpx"
+          @click="todo(siteConfig.home.primaryButton.label)"
         >
-          浏览文章
+          {{ siteConfig.home.primaryButton.label }}
         </wd-button>
         <wd-button
           type="primary"
           size="medium"
-          custom-style="background-color:rgba(255,255,255,0.14);color:#ffffff;border:1px solid rgba(255,255,255,0.55)"
-          @click="todo('关于')"
+          custom-style="height:72rpx;padding:0 32rpx;background-color:rgba(255,255,255,0.14);color:#ffffff;border:1px solid rgba(255,255,255,0.55);border-radius:999rpx;font-size:26rpx"
+          @click="todo(siteConfig.home.secondaryButton.label)"
         >
-          关于
+          {{ siteConfig.home.secondaryButton.label }}
         </wd-button>
       </view>
     </view>
@@ -265,7 +271,10 @@ const todo = (label: string) => {
 }
 
 .card__cover {
+  height: 200rpx;
+  overflow: hidden;
   background: var(--line);
+  line-height: 0;
 }
 
 .card__body {
