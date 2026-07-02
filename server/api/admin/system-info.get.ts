@@ -1,4 +1,5 @@
 import { getUser } from "#server/lib/auth";
+import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
@@ -17,7 +18,13 @@ export default defineEventHandler(async event => {
     const dbVersion = await prisma.$queryRaw`SELECT VERSION() as version`;
 
     // 获取附件统计
-    const attachmentCount = await prisma.attachments.count();
+    const attachments = await prisma.attachments.findMany({
+      select: { metadata: true },
+    });
+    const attachmentCount = attachments.length;
+    const attachmentTotalSize = attachments.reduce((total, attachment) => {
+      return total + normalizeAttachmentMetadata(attachment.metadata).size;
+    }, 0);
 
     // 获取系统运行时间（进程启动时间）
     const uptime = process.uptime();
@@ -40,7 +47,7 @@ export default defineEventHandler(async event => {
       },
       attachments: {
         count: attachmentCount,
-        totalSize: 0, // 附件表没有 size 字段，暂不统计
+        totalSize: attachmentTotalSize,
       },
     };
   } catch (error) {
