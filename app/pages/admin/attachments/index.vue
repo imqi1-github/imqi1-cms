@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { AttachmentItem, AttachmentListResponse } from "~/types/apis/admin/attachments";
-import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
-import type { AdminPost, AdminPostListResponse } from "~/types/apis/admin/posts";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
@@ -15,28 +13,12 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const livePhotoInputRef = ref<HTMLInputElement | null>(null);
 const uploading = ref(false);
 const uploadProgress = ref(0);
-const uploadPosts = ref<AdminPost[]>([]);
-const uploadPages = ref<PageItem[]>([]);
-const selectedUploadTarget = ref("");
 
 const attachmentTypes = [
   { value: "all", label: "全部" },
   { value: "image", label: "图片" },
   { value: "video", label: "视频" },
 ];
-
-const uploadTargets = computed(() => [
-  ...uploadPosts.value.map(post => ({
-    value: String(post.cid),
-    label: post.title || `文章 #${post.cid}`,
-    type: "文章",
-  })),
-  ...uploadPages.value.map(pageItem => ({
-    value: String(pageItem.cid),
-    label: pageItem.title || `页面 #${pageItem.cid}`,
-    type: "页面",
-  })),
-]);
 
 
 // 分页
@@ -80,19 +62,6 @@ const fetchAttachments = async () => {
   }
 };
 
-const fetchUploadTargets = async () => {
-  try {
-    const [postsRes, pagesRes] = await Promise.all([
-      $fetch<AdminPostListResponse>("/api/admin/posts?pageSize=999"),
-      $fetch<PageListResponse>("/api/admin/pages?pageSize=999"),
-    ]);
-    uploadPosts.value = postsRes.data || [];
-    uploadPages.value = pagesRes.data || [];
-  } catch (error) {
-    console.error("获取上传目标失败:", error);
-  }
-};
-
 watch([selectedType, searchQuery, page], () => {
   fetchAttachments();
 });
@@ -125,22 +94,11 @@ const getTypeIcon = (type: string) => {
   return map[type] || "lucide:file";
 };
 
-const ensureUploadTarget = () => {
-  if (selectedUploadTarget.value) return true;
-  toast.error({
-    message: "请选择上传归属",
-    description: "附件需要关联到文章或页面",
-  });
-  return false;
-};
-
 const handleFileSelect = () => {
-  if (!ensureUploadTarget()) return;
   fileInputRef.value?.click();
 };
 
 const handleLivePhotoSelect = () => {
-  if (!ensureUploadTarget()) return;
   livePhotoInputRef.value?.click();
 };
 
@@ -163,8 +121,6 @@ const handleLivePhotoFileChange = async (event: Event) => {
 };
 
 const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {}) => {
-  if (!ensureUploadTarget()) return;
-
   uploading.value = true;
   uploadProgress.value = 0;
 
@@ -203,7 +159,7 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
       }
 
       try {
-        const res = await $fetch<PublicAttachmentUploadResponse>(`/api/attachments/upload?cid=${selectedUploadTarget.value}`, {
+        const res = await $fetch<PublicAttachmentUploadResponse>("/api/attachments/upload", {
           method: "POST",
           body: formData,
         });
@@ -284,7 +240,6 @@ const copyLink = async (url: string) => {
 
 onMounted(() => {
   fetchAttachments();
-  fetchUploadTargets();
 });
 </script>
 
@@ -299,26 +254,11 @@ onMounted(() => {
         <p class="text-sm text-muted-foreground mt-1">管理图片和视频附件</p>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <ClientOnly>
-          <Select v-model="selectedUploadTarget" :disabled="uploading || uploadTargets.length === 0">
-            <SelectTrigger class="w-full sm:w-56">
-              <SelectValue placeholder="选择上传归属" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="target in uploadTargets" :key="target.value" :value="target.value">
-                {{ target.type }}：{{ target.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <template #fallback>
-            <div class="h-9 w-full rounded-md border bg-muted/50 sm:w-56" />
-          </template>
-        </ClientOnly>
-        <Button :disabled="uploading || uploadTargets.length === 0" @click="handleLivePhotoSelect">
+        <Button :disabled="uploading" @click="handleLivePhotoSelect">
           <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:aperture'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
           上传实况照片
         </Button>
-        <Button :disabled="uploading || uploadTargets.length === 0" @click="handleFileSelect">
+        <Button :disabled="uploading" @click="handleFileSelect">
           <Icon :name="uploading ? 'lucide:loader-2' : 'lucide:upload'" :class="{ 'animate-spin': uploading }" class="mr-2 size-4" />
           {{ uploading ? `上传中 ${uploadProgress}%` : "上传附件" }}
         </Button>
@@ -368,8 +308,8 @@ onMounted(() => {
         <div v-else-if="attachments.length === 0" class="text-center py-16">
           <Icon name="lucide:paperclip" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
           <p class="text-muted-foreground text-lg mb-2">暂无附件</p>
-          <p class="text-sm text-muted-foreground mb-4">请选择上传归属后，可直接在本页上传附件</p>
-          <Button :disabled="uploadTargets.length === 0" @click="handleFileSelect">
+          <p class="text-sm text-muted-foreground mb-4">可直接在本页上传附件，之后可在附件详情页关联文章或页面</p>
+          <Button @click="handleFileSelect">
             <Icon name="lucide:upload" class="mr-2 size-4" />
             上传附件
           </Button>
@@ -482,7 +422,7 @@ onMounted(() => {
           <div class="text-sm text-muted-foreground">
             <p class="font-medium text-foreground mb-1">附件使用说明</p>
             <ul class="space-y-1 list-disc list-inside">
-              <li>先选择上传归属，可在本页直接上传普通附件或实况照片</li>
+              <li>可在本页直接上传普通附件或实况照片，上传后默认不关联文章/页面</li>
               <li>普通附件支持 JPG、PNG、GIF、WebP、MP4、WebM，最大 10MB</li>
               <li>实况照片请使用专用入口上传 JPEG，最大 50MB，上传时保留原文件不转格式</li>
             </ul>

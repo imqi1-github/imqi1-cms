@@ -100,26 +100,29 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 获取文章 ID
-    const cid = Number(getQuery(event).cid);
+    // 编辑器上传会传文章/页面 ID；后台附件管理上传允许不关联内容
+    const rawCid = getQuery(event).cid;
+    const cid = rawCid == null || rawCid === "" ? null : Number(rawCid);
 
-    if (!cid) {
+    if (cid !== null && !Number.isInteger(cid)) {
       throw createError({
         statusCode: 400,
-        message: "缺少文章 ID",
+        message: "文章 ID 无效",
       });
     }
 
-    // 检查文章是否存在
-    const post = await prisma.posts.findUnique({
-      where: { cid },
-    });
-
-    if (!post) {
-      throw createError({
-        statusCode: 404,
-        message: "文章不存在",
+    if (cid !== null) {
+      // 检查文章/页面是否存在
+      const post = await prisma.posts.findUnique({
+        where: { cid },
       });
+
+      if (!post) {
+        throw createError({
+          statusCode: 404,
+          message: "文章不存在",
+        });
+      }
     }
 
     // 读取表单数据
@@ -241,12 +244,14 @@ export default defineEventHandler(async event => {
         },
       });
 
-      await tx.postattachments.create({
-        data: {
-          aid: created.aid,
-          cid,
-        },
-      });
+      if (cid !== null) {
+        await tx.postattachments.create({
+          data: {
+            aid: created.aid,
+            cid,
+          },
+        });
+      }
 
       return created;
     });

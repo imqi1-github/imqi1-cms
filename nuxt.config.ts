@@ -16,6 +16,7 @@ const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig
 // CSP 中使用的 CDN 源：未配置时回退为空字符串，避免拼接出字面量 "undefined" 导致该指令失效
 const cspCdn = hasCdn ? siteConfig.cdnUrl : "";
 const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${cspCdn} https://*.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${cspCdn}; img-src 'self' data: https: blob: ${cspCdn}; font-src 'self' data: ${cspCdn}; manifest-src 'self' ${cspCdn}; media-src 'self' https: data: blob:; connect-src 'self' ${cspCdn} https://api.github.com https://gitee.com https://*.amap.com blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
+const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 
 // 获取当前环境的 Redis 配置
 function getRedisConfig() {
@@ -95,6 +96,18 @@ export default defineNuxtConfig({
     // （此前约 122KB），改为纯按需——SSR 图标走 payload，仅客户端动态
     // 出现、SSR 未覆盖到的图标才回退到 /api/_nuxt_icon 拉取（有缓存）。
     serverBundle: "local",
+    clientBundle: {
+      // 首页社交图标在客户端路由切换进入首页时没有 SSR payload，逐个回退请求会导致闪烁；
+      // 仅手动内联这几个首屏图标，保持它们一起随 v-scroll-reveal 渐入。
+      icons: [
+        "ri:mail-fill",
+        "ri:github-fill",
+        "ri:twitter-x-fill",
+        "ri:home-fill",
+        "ri:subway-fill",
+        "ri:earth-fill",
+      ],
+    },
   },
 
   colorMode: {
@@ -449,6 +462,9 @@ export default defineNuxtConfig({
 
     // 禁用 Server-Timing 响应头，减少开销
     timing: false,
+
+    // 按 site.config.ts 功能开关控制小程序 API 是否参与 Nitro 扫描/打包
+    ignore: nitroIgnore,
 
     // 实验性功能优化
     experimental: {

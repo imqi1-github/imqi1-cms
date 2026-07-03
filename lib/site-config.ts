@@ -72,6 +72,11 @@ export interface SiteConfig {
     /** 是否在构建时预压缩静态资源为 brotli（生成 .br 文件，需 Nginx brotli_static on 配合） */
     brotliCompression: boolean;
   };
+  /** 功能开关 */
+  features: {
+    /** 是否启用小程序服务端 API（server/api/mini）；关闭后开发/生产都不注册这些路由 */
+    miniApi: boolean;
+  };
   /** 高德地图接入配置 */
   amap: {
     /** 是否通过同源 Nginx/Nitro 代理获取地图密钥；开发和生产环境可分开配置 */

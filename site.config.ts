@@ -25,7 +25,7 @@ const _ownerName = "Qi1";
 const _avatarPath = "/imgs/avatar.webp";
 const _url = "https://imqi1.com";
 const _cdnUrl = "https://cdn.imqi1.com";
-const _host = new URL(_url).host;
+const _host = new URL(_url).hostname;
 const _isProduction = process.env.NODE_ENV === "production";
 
 // 静态资源 CDN 前缀：生产环境带 CDN 根（不带构建 hash），开发环境为空走本地 public
@@ -109,6 +109,11 @@ export const siteConfig = defineSiteConfig({
     // 是否在构建时预压缩静态资源为 brotli（生成 .br 文件）
     // 需 Nginx 配合 brotli_static on，或 CDN 直接发送预压缩文件
     brotliCompression: true,
+  },
+
+  features: {
+    // 是否启用小程序 API。关闭后 server/api/mini 不会在开发/生产环境注册，也不会打入生产包。
+    miniApi: false,
   },
 
   amap: {

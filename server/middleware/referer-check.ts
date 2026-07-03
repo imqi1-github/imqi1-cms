@@ -38,9 +38,9 @@ export default defineEventHandler(event => {
   if (!referer) {
     setResponseStatus(event, 403);
 
-    return {
-      message: "Forbidden"
-    };
+    console.warn("referer 缺失:", referer);
+
+    return "";
   }
 
   try {
@@ -57,9 +57,9 @@ export default defineEventHandler(event => {
     if (!allowed) {
       setResponseStatus(event, 403);
 
-      return {
-        message: "Invalid referer domain"
-      };
+      console.warn("referer 域名无效:", refererDomain);
+
+      return "";
     }
   } catch (error) {
     console.error(error);
@@ -71,8 +71,8 @@ export default defineEventHandler(event => {
 
     setResponseStatus(event, 403);
 
-    return {
-      message: "Invalid referer format"
-    };
+    console.warn("referer 解析失败:", referer, error);
+
+    return "";
   }
 });
