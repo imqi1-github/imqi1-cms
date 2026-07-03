@@ -24,14 +24,21 @@ function formatRelativeTime(value: Date) {
   return `${Math.floor(diff / year)} 年前`;
 }
 
-// 头像走本站代理接口（/api/mini/avatar），端上只需请求已白名单的 API 域名，
-// 由服务端转发到 gravatar/cravatar 等上游镜像，无需为第三方域名配置小程序合法域名。
-function avatarUrl(mail: string | null, origin: string): string {
+// 头像直接返回镜像站地址（与主站 footprint 一致），端上 <image> 直连；
+// 需在小程序合法域名白名单里加入所用镜像站域名（gravatar/cravatar/weavatar）。
+const avatarServiceUrls: Record<string, string> = {
+  gravatar: "https://www.gravatar.com/avatar",
+  cravatar: "https://cn.cravatar.com/avatar",
+  weavatar: "https://weavatar.com/avatar",
+};
+
+function avatarUrl(mail: string | null, service: string): string {
   if (!mail) return "";
 
   const hash = createHash("md5").update(mail.toLowerCase().trim()).digest("hex");
+  const baseUrl = avatarServiceUrls[service] || avatarServiceUrls.gravatar;
 
-  return new URL(`/api/mini/avatar?hash=${hash}`, origin).href;
+  return `${baseUrl}/${hash}?d=identicon&s=80`;
 }
 
 export default defineEventHandler(async event => {
@@ -53,15 +60,16 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const origin = getRequestURL(event).origin;
-
-    // 表单必填项跟随主站设置：commentRequireMail 默认 true、commentRequireLink 默认 false。
-    const [mailMeta, linkMeta] = await Promise.all([
+    // 表单必填项跟随主站设置：commentRequireMail 默认 true、commentRequireLink 默认 false；
+    // 头像服务与主站共用一份后台设置（commentAvatarService）。
+    const [mailMeta, linkMeta, avatarMeta] = await Promise.all([
       prisma.informations.findUnique({ where: { key: "commentRequireMail" } }),
       prisma.informations.findUnique({ where: { key: "commentRequireLink" } }),
+      prisma.informations.findUnique({ where: { key: "commentAvatarService" } }),
     ]);
     const requireMail = mailMeta ? mailMeta.value === "true" : true;
     const requireLink = linkMeta ? linkMeta.value === "true" : false;
+    const avatarService = avatarMeta?.value || "gravatar";
 
     // 仅取审核通过（status: 1）的评论，按时间正序，端上再自行构建树。
     const rows = await prisma.comments.findMany({
@@ -86,7 +94,7 @@ export default defineEventHandler(async event => {
         id: row.coid,
         name: row.name,
         content: row.content,
-        avatar: avatarUrl(row.mail, origin),
+        avatar: avatarUrl(row.mail, avatarService),
         publishedAt: formatRelativeTime(row.create_time),
         created: row.create_time.toISOString(),
         parentName: null,
