@@ -27,21 +27,21 @@ const siteIcp = computed(() => siteSettings.value?.siteIcp || "");
 const blogStackIcons: FooterIcon[] = [
   {
     name: "Nuxt",
-    icon: "material-icon-theme:nuxt",
+    icon: "app:nuxt",
     href: "https://nuxt.com/",
     title: "Nuxt",
     target: "_blank",
   },
   {
     name: "Prisma",
-    icon: "file-icons:prisma",
+    icon: "app:prisma",
     href: "https://prisma.io/",
     title: "Prisma",
     target: "_blank",
   },
   {
     name: "MySQL",
-    icon: "vscode-icons:file-type-mysql",
+    icon: "app:mysql",
     href: "https://www.mysql.com/",
     title: "MySQL",
     target: "_blank",

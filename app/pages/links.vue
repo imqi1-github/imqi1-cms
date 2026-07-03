@@ -304,26 +304,19 @@ const handleSubmit = async (forceSubmit = false) => {
   showForceSubmit.value = false;
 
   try {
-    let response;
-    let data;
-
     if (formMode.value === "apply") {
       // 申请友链
-      response = await fetch("/api/links", {
+      const data = await $fetch("/api/links", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           name: formData.value.name,
           link: formData.value.link,
           sort: formData.value.sort,
           avatar: formData.value.avatar,
           blogLinkUrl: formData.value.blogLinkUrl,
           forceSubmit: forceSubmit, // 是否强制提交（跳过检测）
-        }),
+        },
       });
-      data = await response.json();
 
       if (data.code === 200) {
         submitSuccess.value = true;
@@ -332,7 +325,7 @@ const handleSubmit = async (forceSubmit = false) => {
         cancelSelection();
       } else {
         // 如果检测失败且返回了 needRetry 标识，显示"仍然提交"按钮
-        if (data.needRetry) {
+        if ("needRetry" in data && data.needRetry) {
           showForceSubmit.value = true;
           submitError.value = data.message || "链接检测失败，请检查是否正确添加本站友链";
           showError(data.message || "链接检测失败，请检查是否正确添加本站友链");
@@ -349,20 +342,16 @@ const handleSubmit = async (forceSubmit = false) => {
         return;
       }
 
-      response = await fetch("/api/links/patch", {
+      const data = await $fetch("/api/links/patch", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           originalLinkId: selectedLink.value.id,
           name: formData.value.name,
           link: formData.value.link,
           desc: formData.value.sort,
           avatar: formData.value.avatar,
-        }),
+        },
       });
-      data = await response.json();
 
       if (data.code === 200) {
         submitSuccess.value = true;
@@ -670,7 +659,7 @@ onUnmounted(() => {
             v-model="formMode"
             type="radio"
             value="edit"
-            class="w-4 h-4 text-blue-600" >
+            class="w-4 h-4 text-blue-600 cursor-pointer" >
           <span class="text-sm font-medium text-gray-900 dark:text-gray-100">修改友链</span>
         </label>
       </div>

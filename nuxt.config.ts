@@ -96,6 +96,15 @@ export default defineNuxtConfig({
     // （此前约 122KB），改为纯按需——SSR 图标走 payload，仅客户端动态
     // 出现、SSR 未覆盖到的图标才回退到 /api/_nuxt_icon 拉取（有缓存）。
     serverBundle: "local",
+    // 本地自定义图标集合：app/assets/icons/*.svg → <Icon name="app:文件名" />
+    // 用于承接品牌 logo（Nuxt/Prisma/MySQL/Google 等），SSR 本地渲染，
+    // 不再回退 api.iconify.design（生产环境 CSP 已拦截该域名）。
+    customCollections: [
+      {
+        prefix: "app",
+        dir: "./app/assets/icons",
+      },
+    ],
     clientBundle: {
       // 首页社交图标在客户端路由切换进入首页时没有 SSR payload，逐个回退请求会导致闪烁；
       // 仅手动内联这几个首屏图标，保持它们一起随 v-scroll-reveal 渐入。
@@ -106,6 +115,18 @@ export default defineNuxtConfig({
         "ri:home-fill",
         "ri:subway-fill",
         "ri:earth-fill",
+        // 页脚技术栈图标在 <ClientOnly> 内渲染，无 SSR payload；
+        // 内联进 client bundle 避免逐个回退 /api/_nuxt_icon 请求与闪烁。
+        "app:nuxt",
+        "app:prisma",
+        "app:mysql",
+        // 首页技术栈大字标（客户端路由切换进入首页时无 SSR payload）。
+        "app:nuxt-wordmark",
+        "app:prisma-wordmark",
+        "app:mysql-wordmark",
+        // 评论列表设备信息图标为动态 :name 绑定，scan 扫不到，
+        // 且评论多为客户端异步加载，内联避免运行时请求。
+        "app:linux",
       ],
     },
   },
@@ -552,6 +573,13 @@ export default defineNuxtConfig({
   },
   // 安全头配置（仅生产环境）
   routeRules: {
+    ...(siteConfig.features.miniApi
+      ? {
+          "/api/mini/**": {
+            cors: true,
+          },
+        }
+      : {}),
     // ========== ISR（增量静态再生成）配置 ==========
     // 注意：ISR在开发环境可能不稳定，建议生产环境启用
     ...(isProduction

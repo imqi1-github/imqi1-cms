@@ -27,7 +27,7 @@ const osMap: Record<string, { name: string; icon: string }> = {
   'iPhone': { name: 'iOS', icon: 'ri-apple-fill' },
   'iPad': { name: 'iOS', icon: 'ri-apple-fill' },
   'iOS': { name: 'iOS', icon: 'ri-apple-fill' },
-  'Linux': { name: 'Linux', icon: 'ant-design:linux-outlined' },
+  'Linux': { name: 'Linux', icon: 'app-linux' },
   'Android': { name: 'Android', icon: 'ri-android-fill' },
   'Ubuntu': { name: 'Ubuntu', icon: 'ri-ubuntu-fill' },
   'Debian': { name: 'Debian', icon: 'ri-coreos-fill' },

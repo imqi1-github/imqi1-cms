@@ -73,19 +73,19 @@
           </div>
           <div class="flex items-center justify-center gap-8 flex-wrap max-md:flex-col">
             <div class="flex flex-col relative">
-              <Icon name="devicon:nuxtjs-wordmark" mode="svg" class="size-25" />
+              <Icon name="app:nuxt-wordmark" mode="svg" class="size-25" />
             </div>
             <div class="max-md:mt-7">
               <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
             <div class="flex flex-col relative">
-              <Icon name="devicon:prisma-wordmark" mode="svg" class="size-25" />
+              <Icon name="app:prisma-wordmark" mode="svg" class="size-25" />
             </div>
             <div class="max-md:mt-7">
               <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
             </div>
             <div class="flex flex-col relative">
-              <Icon name="logos:mysql" mode="svg" class="size-25" />
+              <Icon name="app:mysql-wordmark" mode="svg" class="size-25" />
             </div>
           </div>
           <div class="mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
@@ -323,10 +323,10 @@
               </div>
               <!-- 文章信息（底部毛玻璃带） -->
               <div
-                class="relative mt-auto w-full p-3"
+                class="relative mt-auto w-full px-3 py-2"
                 :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                 <h3
-                  class="font-medium text-sm line-clamp-2 mb-2 transition-colors"
+                  class="text-base font-semibold line-clamp-2 mb-0.5 transition-colors"
                   :class="
                     post.covers && post.covers.length > 0
                       ? 'text-white hover:text-blue-100'
@@ -434,10 +434,10 @@
                 </div>
                 <!-- 文章信息（底部毛玻璃带） -->
                 <div
-                  class="relative mt-auto w-full p-3"
+                  class="relative mt-auto w-full px-3 py-2"
                   :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                   <h3
-                    class="font-medium text-sm line-clamp-2 mb-2 transition-colors"
+                    class="text-base font-semibold line-clamp-2 mb-1 transition-colors"
                     :class="
                       post.covers && post.covers.length > 0
                         ? 'text-white hover:text-blue-100'

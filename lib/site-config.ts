@@ -76,6 +76,8 @@ export interface SiteConfig {
   features: {
     /** 是否启用小程序服务端 API（server/api/mini）；关闭后开发/生产都不注册这些路由 */
     miniApi: boolean;
+    /** 是否开启小程序评论功能；关闭后小程序端不展示评论区、服务端评论接口也不受理 */
+    miniComment: boolean;
   };
   /** 高德地图接入配置 */
   amap: {

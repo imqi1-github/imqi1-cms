@@ -853,11 +853,11 @@ onMounted(async () => {
         detailsContainer.innerHTML = `
         <div class="markdown-details my-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
-            class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-            <span class="font-medium text-slate-900 dark:text-slate-100">${summary}</span>
+            class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-start gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
             <span class="transform transition-transform duration-200 text-slate-500 dark:text-slate-400 text-[10px]">
               ▼
             </span>
+            <span class="font-medium text-slate-900 dark:text-slate-100">${summary}</span>
           </button>
           <div class="markdown-details-content px-4 py-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 hidden">
             ${content}
@@ -2329,7 +2329,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(.markdown-image) {
   display: block;
-  width: 100%;
+  width: auto;
   height: 100%;
   max-width: 100%;
   max-height: var(--markdown-image-max-height);
