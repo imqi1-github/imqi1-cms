@@ -1,5 +1,3 @@
-import tailwind from "eslint-plugin-tailwindcss";
-
 import withNuxt from "./.nuxt/eslint.config.mjs";
 
 export default withNuxt({
@@ -8,9 +6,6 @@ export default withNuxt({
     "node_modules",
     "mini"
   ],
-  plugins: {
-    tailwindcss: tailwind,
-  },
 
   rules: {
     // =========================
