@@ -469,3 +469,25 @@ bun run mini:build:h5          # H5 静态站点，可单独部署
 小程序端的打包产物用各平台开发者工具上传、提交审核、发布。提交前建议先跑 `bun run mini:lint` 与 `bun run mini:type-check` 确保代码规范与类型无误。
 
 > 小程序 `<image>` 只能加载平台白名单内的域名且无法携带自定义请求头，因此评论头像使用镜像站（Gravatar / Cravatar / WeAvatar 等）直链而非经主站代理——记得把所用镜像站域名一并加入小程序后台的 **downloadFile 合法域名**。
+
+## Vibe Coding
+
+### 生成更新日志
+
+每次通过 Claude Code 等软件更新代码并提交后，可让它生成符合后台一键导入格式的更新日志。
+
+格式：
+
+```ts
+type Changelogs = Changelog[];
+
+type Changelog = {
+  createTime: string;
+  entries: ChangelogItem[];
+};
+
+type ChangelogItem = {
+  type: "新增" | "修改" | "修复" | "优化" | "重构" | "设计" | "删除" | "其他";
+  value: string;
+};
+```
