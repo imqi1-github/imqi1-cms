@@ -28,7 +28,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 - **Bun** ≥ 1.3（项目使用的包管理器与脚本运行器）
 - **Redis**（可选，用于 ISR 缓存；未配置时自动降级到文件系统）
 
-### 步骤
+### 安装项目
 
 1. **安装 Node.js**
 
@@ -129,5 +129,176 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
    默认访问地址为 [http://localhost:3000](http://localhost:3000)，管理后台位于 `/admin`。
 
-## 使用 - 开发环境
+## 生产环境搭建
 
+生产环境采用「**本地打包 → 上传产物 → 服务器运行 Node 服务**」的部署模式。
+
+### 1. 准备开发环境
+
+先按照上一节「[开发环境搭建](#开发环境搭建)」完成本地环境的搭建（克隆仓库、安装依赖、生成 Prisma Client 等），确保项目已能在本地正常打包。
+
+### 2. 配置生产环境变量
+
+在项目根目录的 `.env` 中补充生产环境相关变量（可参考 `.env.example`）。关键项包括：
+
+```shell
+# 生产环境 Redis（可选，强烈建议启用以提升性能）
+REDIS_HOST_PROD="localhost"
+REDIS_PORT_PROD="6379"
+REDIS_PASSWORD_PROD=""
+REDIS_DB_PROD="0"
+
+# 腾讯云 COS 对象存储（可选，用于上传静态资源到 COS）
+COS_SECRET_ID=""
+COS_SECRET_KEY=""
+COS_BUCKET=""
+COS_REGION=""
+
+# 上传服务端产物到服务器（可选，SFTP）
+SERVER_IP="你的服务器 IP"
+SERVER_PORT="22"
+SERVER_PASSWORD="你的服务器密码"
+SERVER_UPLOAD_DIR="/www/wwwroot/glass"
+
+# 生成 Nginx 配置所需
+PORT_PROD=4000
+PROJECT_ROOT_DIR_PROD=/www/wwwroot/glass
+SITE_DOMAIN_PROD=your-domain.com
+CDN_DOMAIN_PROD=cdn.your-domain.com
+ENABLE_CDN_REDIRECT_PROD=true
+```
+
+### 3. 配置站点信息
+
+在 `site.config.ts` 中修改站点级别的生产配置，例如站点名称、域名、CDN 地址、SEO 文案、社交链接等：
+
+```ts
+const _url = "https://your-domain.com";      // 站点访问地址
+const _cdnUrl = "https://cdn.your-domain.com"; // CDN 根地址（未使用 CDN 可留空或与站点同域）
+```
+
+> 该文件同时被 `nuxt.config.ts`、前端与服务端引用，是 PWA manifest、CSP、SEO 等构建时数据的来源，需在**打包前**配置好。
+
+### 4. 本地打包
+
+```bash
+bun run build
+```
+
+产物位于 `.output/` 目录。`prebuild` / `postbuild` 钩子会自动生成构建 hash、拷贝 `data/` 数据、更新 Service Worker 的 CDN 引用。
+
+### 5. 上传静态资源到 CDN（可选）
+
+如果使用 CDN，将 `public/` 目录下的静态资源上传到 CDN。若对象存储使用腾讯云 COS，在 `.env` 中配置好 `COS_*` 变量后可直接执行：
+
+```bash
+bun run upload:cos
+```
+
+### 6. 上传服务端产物到服务器（可选）
+
+将 `.output/server` 内的文件上传到服务器的项目目录。项目内置了基于 SFTP 的上传脚本，配置好 `.env` 中的 `SERVER_*` 变量后可执行：
+
+```bash
+# 先干跑预览将要上传的文件
+bun run upload:server -- --dry-run
+
+# 正式上传
+bun run upload:server
+```
+
+> 也可以手动将 `.output/server` 目录上传到服务器，或在服务器上直接 `git clone` 后打包，方式不限。
+
+### 7. 在服务器初始化数据库
+
+在服务器的数据库中创建一个空数据库，然后导入初始化脚本，一次性完成建表、写入默认设置并插入示例数据：
+
+```bash
+# 在数据库管理工具（phpMyAdmin / Navicat / mysql cli）中导入
+scripts/init-db.sql
+```
+
+该脚本与开发环境完全一致，会创建全部 15 张数据表，且幂等可重复执行。默认管理员账户为 `admin` / `123456`（登录后请立即修改密码）。
+
+### 8. 指定服务器运行环境变量
+
+在服务器的运行环境（宝塔「Node 项目管理器」的环境变量、系统环境变量或 `.env`）中配置生产运行所需变量。以下为一份完整示例，请将其中的账号、密码、密钥等替换为你自己的值：
+
+```shell
+# 数据库
+DATABASE_URL="mysql://nodejs:your_password@localhost:3306/nodejs"
+DB_HOST="localhost"
+DB_PORT="3306"
+DB_USER="nodejs"
+DB_PASSWORD="your_password"
+DB_NAME="nodejs"
+
+# 运行环境
+PORT=4000
+NODE_PROJECT_NAME="glass"
+NODE_ENV="production"
+UV_THREADPOOL_SIZE=64
+PROD=1
+ROOT_DOMAIN="your-domain.com"
+
+# REDIS配置，用于搜索功能的缓存，可选
+REDIS_HOST_PROD="localhost"
+REDIS_PORT_PROD="6379"
+REDIS_PASSWORD_PROD=""
+REDIS_DB_PROD="0"
+
+# 高德地图，可选
+AMAP_KEY="your_amap_key"
+AMAP_SECURITY_CODE="your_amap_security_code"
+
+# SSR 内部请求密钥 / 小程序 API 密钥（建议填写随机长字符串）
+SSR_INTERNAL_REQUEST_SECRET="your_random_secret"
+MINI_API_SECRET="your_random_secret"
+```
+
+> ⚠️ 上述密钥、密码等敏感信息切勿提交到代码仓库，请仅在服务器运行环境中配置。
+
+### 9. 启动 Node 服务
+
+在服务器上运行打包产物的入口：
+
+```bash
+node .output/server/index.mjs
+```
+
+生产环境建议使用进程守护（如宝塔的「Node 项目管理器」、PM2、systemd 等）常驻运行并配置异常自动重启。
+
+若使用宝塔面板，项目内置了 `restart:server` 脚本，可在**本地开发环境**通过宝塔 API 远程控制服务器上的 Node 项目。使用前需先在本地 `.env` 中配置远程宝塔面板信息：
+
+```shell
+# 宝塔面板地址（含协议与端口）
+BT_PANEL_URL="http://your-server-ip:8888"
+# 宝塔接口密钥（面板 → 设置 → API 接口 → 获取密钥）
+BT_API_KEY="your_bt_api_key"
+# 宝塔「Node 项目管理器」中的项目名称
+BT_PROJECT_NAME="glass"
+```
+
+> 需在宝塔面板「API 接口」中**开启 API**，并将本地公网 IP 加入 **IP 白名单**，否则请求会被拒绝。
+
+配置完成后即可远程控制服务：
+
+```bash
+bun run restart:server          # 重启
+bun run restart:server -- stop  # 停止
+bun run restart:server -- start # 启动
+```
+
+服务启动后，还需配置 Nginx 将其（默认 `127.0.0.1:4000`）反向代理到对外域名，并处理 HTTPS、PWA 脚本缓存与静态资源重定向。可执行 `bun run nginx:generate` 根据 `.env` 中的 `*_PROD` 变量生成参考配置。
+
+### 10. 查看运行日志
+
+服务启动后，通过日志确认运行状态、排查启动或运行时错误：
+
+- 使用宝塔「Node 项目管理器」时，可在项目详情页直接查看实时日志；
+- 使用 PM2 时，通过 `pm2 logs` 查看；
+- 直接运行时，观察终端输出或将 `node .output/server/index.mjs` 的 stdout/stderr 重定向到日志文件。
+
+看到类似 `Listening on http://[::]:4000` 的输出即表示服务已成功启动。
+
+TODO：功能待补充。

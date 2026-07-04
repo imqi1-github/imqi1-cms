@@ -16,11 +16,27 @@ function toAbsoluteUrl(url: string, origin: string) {
   }
 }
 
+async function getPhotoCategoryMid() {
+  const photoCategorySlugInfo = await prisma.informations.findUnique({
+    where: { key: "photoCategorySlug" },
+    select: { value: true },
+  });
+  const photoCategorySlug = photoCategorySlugInfo?.value || "shot";
+
+  const photoCategory = await prisma.metas.findFirst({
+    where: { slug: photoCategorySlug },
+    select: { mid: true },
+  });
+
+  return photoCategory?.mid;
+}
+
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
   try {
     const origin = getRequestURL(event).origin;
+    const photoCategoryMid = await getPhotoCategoryMid();
 
     const travels = await prisma.travels.findMany({
       where: { enabled: true },
@@ -33,7 +49,15 @@ export default defineEventHandler(async event => {
           },
           select: {
             post: {
-              select: { cid: true, title: true },
+              select: {
+                cid: true,
+                title: true,
+                // 关联的分类中是否含图片分类，用于端上判断图片文章
+                postrelations: {
+                  where: photoCategoryMid ? { mid: photoCategoryMid } : { mid: -1 },
+                  select: { mid: true },
+                },
+              },
             },
           },
         },
@@ -50,6 +74,7 @@ export default defineEventHandler(async event => {
         posts: t.posts.map(rel => ({
           id: rel.post.cid,
           title: rel.post.title,
+          photo: rel.post.postrelations.length > 0,
         })),
       })),
     } satisfies MiniTravelsResponse;

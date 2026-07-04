@@ -44,9 +44,9 @@ function avatarUrl(mail: string | null, service: string): string {
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=60, s-maxage=60");
 
-  // 评论功能总开关：关闭时直接返回空列表，端上据此不渲染评论区。
+  // 评论功能总开关：关闭时返回空列表并标记 commentEnabled=false，端上据此整个评论区（含输入框）不渲染。
   if (!siteConfig.features.miniComment) {
-    return { success: true, data: [], total: 0, requireMail: true, requireLink: false } satisfies MiniCommentsResponse;
+    return { success: true, data: [], total: 0, requireMail: true, requireLink: false, commentEnabled: false } satisfies MiniCommentsResponse;
   }
 
   const query = getQuery(event);
@@ -128,6 +128,7 @@ export default defineEventHandler(async event => {
       total: rows.length,
       requireMail,
       requireLink,
+      commentEnabled: true,
     } satisfies MiniCommentsResponse;
   } catch (error) {
     console.error(error);

@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
+import { createRequire } from "module";
 
 import { getCookie, setCookie, type H3Event } from "h3";
 import { initialize, svg2png } from "svg2png-wasm";
@@ -29,7 +30,6 @@ const LENGTH = 4;
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#db2777", "#0891b2"];
 
 const CAPTCHA_FONT_PATHS = ["server/fonts/DejaVuSans.ttf"];
-const WASM_PATHS = ["wasm/svg2png_wasm_bg.wasm", "node_modules/svg2png-wasm/svg2png_wasm_bg.wasm"];
 let wasmReady: Promise<void> | null = null;
 let captchaFont: Uint8Array | null | undefined;
 
@@ -107,13 +107,25 @@ function buildSvg(text: string): string {
 
 /** 读取构建复制后的 WASM 文件；开发环境回退到 node_modules */
 function readWasmFile(): Buffer {
-  for (const path of WASM_PATHS) {
-    try {
-      return readFileSync(path);
-    } catch (error) {
-      console.error(error);
-      // 兼容 .output/server 运行目录与源码开发目录。
-    }
+  // 生产环境优先读构建时复制到 server 根目录的 wasm 文件。
+  try {
+    return readFileSync("wasm/svg2png_wasm_bg.wasm");
+  } catch {
+    // 未找到属预期（开发环境无此产物），静默回退到下方 node_modules。
+  }
+
+  // 开发环境：通过包解析定位 node_modules 内的 wasm，不依赖当前工作目录。
+  try {
+    const require = createRequire(import.meta.url);
+    return readFileSync(require.resolve("svg2png-wasm/svg2png_wasm_bg.wasm"));
+  } catch {
+    // 继续回退到相对路径。
+  }
+
+  try {
+    return readFileSync("node_modules/svg2png-wasm/svg2png_wasm_bg.wasm");
+  } catch {
+    // 全部失败，抛出下方错误。
   }
 
   throw new Error("Cannot find svg2png WASM file. Expected wasm/svg2png_wasm_bg.wasm in server root.");

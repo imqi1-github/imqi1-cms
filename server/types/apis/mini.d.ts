@@ -144,6 +144,8 @@ export interface MiniCommentsResponse {
   requireMail: boolean;
   /** 是否必填链接（跟随主站 commentRequireLink 设置） */
   requireLink: boolean;
+  /** 小程序评论总开关（features.miniComment），false 时端上整个评论区（含输入框）不展示 */
+  commentEnabled: boolean;
 }
 
 /** 提交评论的响应；data.needModeration 为 true 表示进入待审核、暂不展示 */
@@ -206,6 +208,8 @@ export interface MiniTravelPost {
   id: number;
   /** 文章标题 */
   title: string;
+  /** 是否图片文章（属于图片分类），端上据此带 photo=1 进入图片版式 */
+  photo: boolean;
 }
 
 /** 小程序足迹点：一个去过的地方及其关联文章 */
