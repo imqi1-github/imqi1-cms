@@ -158,7 +158,7 @@ export interface MiniCommentCreateResponse {
   message: string;
 }
 
-/** 小程序音乐播放数据：歌单/单曲只取第一首，url/pic 已解析为真实可播放地址 */
+/** 小程序音乐播放数据：url/pic 已解析为真实可播放地址 */
 export interface MiniMusic {
   /** 歌曲名 */
   name: string;
@@ -174,7 +174,10 @@ export interface MiniMusic {
 
 export interface MiniMusicResponse {
   success: true;
+  /** 歌单第一首（向后兼容旧端；等价于 list[0]） */
   data: MiniMusic;
+  /** 完整歌单，每首的 url/pic/lrc 均已解析为真实地址；单曲时仅含一首 */
+  list: MiniMusic[];
 }
 
 /** 小程序仓库卡片数据：由 /api/mini/repo 代理 GitHub/Gitee API 归一化返回 */
