@@ -487,7 +487,21 @@ type Changelog = {
 };
 
 type ChangelogItem = {
-  type: "新增" | "修改" | "修复" | "优化" | "重构" | "设计" | "删除" | "其他";
+  type: "新增" | "修改" | "修复" | "优化" | "设计" | "删除" | "其他";
   value: string;
 };
 ```
+
+## 辅助功能
+
+### 实况照片压缩
+
+本 CMS 支持显示实况照片，目前支持的格式为安卓的 JPEG，它将图片和视频用 `ftyp` 隔开，所以代码库中内置了一个压缩实况照片的脚本，可以同时压缩图片和视频。
+
+使用方式：将 jpg 格式的实况照片放在根目录的 `.live-photos` 目录下，运行 `bun run compress:livephoto` 即可压缩。压缩后的实况照片位于 `.compressed-live-photos` 目录下。
+
+### IP 地址查询
+
+本站 IP 和 ISP 离线库源于社区开源的 qqwry 和 ipv6wry.db 数据库，并拼接到一起，只保留了城市信息（国外则是国家名），为了精简体积和访客地图显示粒度（访客地图只精确到城市名）。
+
+为确保结果准确，可执行 `bun run get:ip` 查询 IP 的归属地和运营商，该命令会同时查询本地数据库和 [ip.zxinc.org](https://ip.zxinc.org)，并返回两者的结果。
