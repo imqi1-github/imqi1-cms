@@ -1974,21 +1974,23 @@ onUnmounted(() => {
               {{ formatDate(post.update_time) }}
             </time>
           </span>
-          <span v-if="categories.length > 0" v-tooltip="'分类'" class="inline-flex items-center gap-0.5">
+          <span v-if="categories.length > 0" class="inline-flex items-center gap-0.5">
             <Icon name="ri:menu-line" class="size-4" />
             <NuxtLink
               v-for="(cat, index) in categories"
               :key="cat.mid"
+              v-tooltip="'分类'"
               :to="`/category/${cat.slug}`"
               class="text-inherit no-underline transition-colors hover:text-blue-600">
               {{ cat.name }}{{ index < categories.length - 1 ? ", " : "" }}
             </NuxtLink>
           </span>
-          <span v-if="tags.length > 0" v-tooltip="'标签'" class="inline-flex items-center gap-0.5">
+          <span v-if="tags.length > 0" class="inline-flex items-center gap-0.5">
             <Icon name="ri:hashtag" class="size-4" />
             <NuxtLink
               v-for="(tag, index) in tags"
               :key="index"
+              v-tooltip="'标签'"
               :to="tag.slug ? `/tag/${tag.slug}` : '#'"
               :class="[
                 'hover:text-blue-600 dark:hover:text-blue-500 transition-colors mr-2',
@@ -2056,7 +2058,7 @@ onUnmounted(() => {
                 class="w-full px-4 py-2"
                 :class="
                   relatedPost.covers && relatedPost.covers.length > 0
-                    ? 'cover-backdrop text-white absolute -bottom-1'
+                    ? 'cover-backdrop text-white absolute bottom-[-0.1px]'
                     : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'
                 ">
                 <h4

@@ -120,7 +120,7 @@ export const siteConfig = defineSiteConfig({
     // 是否启用小程序 API。关闭后 server/api/mini 不会在开发/生产环境注册，也不会打入生产包。
     miniApi: true,
     // 是否开启小程序评论功能。关闭后小程序端不展示评论区、服务端评论接口也不受理。
-    miniComment: false,
+    miniComment: true,
   },
 
   amap: {
