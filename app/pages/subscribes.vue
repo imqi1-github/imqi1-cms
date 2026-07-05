@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref} from "vue";
 
+import {useScrollFadeMask} from "~/composables/useScrollFadeMask";
 import {siteConfig} from "~~/site.config";
 import type {SubscribeSource} from "~/types/apis/subscribes";
 
@@ -42,6 +43,9 @@ const animatinKey = ref(0);
 
 // 左侧边栏引用
 const sidebarRef = ref<HTMLElement | null>(null);
+
+// 侧栏滚动时的上下羽化边缘（仅高度不足需滚动时才出现）
+const { atTop, atBottom } = useScrollFadeMask(sidebarRef);
 
 // 折叠菜单状态
 const isExpanded = ref(false);
@@ -242,7 +246,8 @@ function clearFilter() {
       <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
         <div
           ref="sidebarRef"
-          class="sticky top-22 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-fit max-h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
+          class="sidebar-fade sticky top-22 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-fit max-h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
+          :class="{ 'fade-top': !atTop, 'fade-bottom': !atBottom }"
         >
           <button
             v-tooltip.right="'全部订阅'"
@@ -387,6 +392,47 @@ function clearFilter() {
 </template>
 
 <style scoped>
+/* 注册为 <length> 才能让 CSS 变量参与 transition 过渡 */
+@property --fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* 侧栏上下羽化边缘：默认不羽化，滚动到有隐藏内容时按需开启对应一端 */
+.sidebar-fade {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+  transition: --fade-top 0.25s ease, --fade-bottom 0.25s ease;
+}
+
+.sidebar-fade.fade-top {
+  --fade-top: 1.75rem;
+}
+
+.sidebar-fade.fade-bottom {
+  --fade-bottom: 1.75rem;
+}
+
 /* 隐藏滚动条 */
 .scrollbar-hide {
   -ms-overflow-style: none !important;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, onUnmounted, ref} from "vue";
 
+import {useScrollFadeMask} from "~/composables/useScrollFadeMask";
 import {siteConfig} from "~~/site.config";
 import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta,} from "~~/shared/changelog";
 import type {ChangelogEntry, ChangelogGroup} from "~/types/apis/changelogs";
@@ -28,6 +29,9 @@ const animatinKey = ref(0);
 
 // 左侧边栏引用
 const sidebarRef = ref<HTMLElement | null>(null);
+
+// 侧栏滚动时的上下羽化边缘（仅高度不足需滚动时才出现）
+const { atTop, atBottom } = useScrollFadeMask(sidebarRef);
 
 // 处理左侧边栏的滚轮事件
 function handleSidebarWheel(event: WheelEvent) {
@@ -161,7 +165,8 @@ usePageSeo({
       <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
         <div
           ref="sidebarRef"
-          class="sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-hit pr-1 scrollbar-hide"
+          class="sidebar-fade sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-hit pr-1 scrollbar-hide"
+          :class="{ 'fade-top': !atTop, 'fade-bottom': !atBottom }"
         >
           <button
             v-for="classType in classTypes"
@@ -258,6 +263,48 @@ usePageSeo({
 </template>
 
 <style scoped>
+/* 注册为 <length> 才能让 CSS 变量参与 transition 过渡 */
+@property --fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* 侧栏上下羽化边缘：默认不羽化，滚动到有隐藏内容时按需开启对应一端。
+   --fade-top / --fade-bottom 控制两端渐隐高度，避开需要滚动时才生效。 */
+.sidebar-fade {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+  transition: --fade-top 0.25s ease, --fade-bottom 0.25s ease;
+}
+
+.sidebar-fade.fade-top {
+  --fade-top: 1.75rem;
+}
+
+.sidebar-fade.fade-bottom {
+  --fade-bottom: 1.75rem;
+}
+
 /* 细滚动条样式 */
 aside div::-webkit-scrollbar {
   width: 4px;
