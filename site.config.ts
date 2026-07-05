@@ -84,6 +84,11 @@ export const siteConfig = defineSiteConfig({
       target: true
     },
     {
+      name: "小程序",
+      icon: "ri:mini-program-fill",
+      qrcode: "/imgs/miniprogram.jpg",
+    },
+    {
       name: "开往",
       icon: "ri:subway-fill",
       link: "https://www.travellings.cn/go-by-clouds.html",

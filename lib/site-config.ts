@@ -50,9 +50,11 @@ export interface SiteConfig {
     /** 图标 */
     icon: string,
     /** 社交链接*/
-    link: string,
+    link?: string,
     /** target */
-    target?: boolean
+    target?: boolean,
+    /** 悬浮展示的二维码图片（如小程序码），设置后该项不作为链接 */
+    qrcode?: string
   }>,
   /** PWA manifest 静态配置 */
   manifest: {

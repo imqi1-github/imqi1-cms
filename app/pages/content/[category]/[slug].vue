@@ -1883,7 +1883,7 @@ onUnmounted(() => {
 
     <NotFound v-else-if="isNotFound" />
 
-    <article v-else-if="post" class="flex flex-col w-full animate-fade-in">
+    <article v-else-if="post" class="w-full animate-fade-in">
       <!-- 标题区域 -->
       <header :class="['opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->

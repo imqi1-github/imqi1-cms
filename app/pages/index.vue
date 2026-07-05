@@ -30,7 +30,23 @@
       <!-- 联系链接 -->
       <div v-scroll-reveal class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center">
         <template v-for="(link, index) in contactLinks" :key="index">
+          <!-- 二维码项：悬浮展示二维码图片 -->
+          <div
+            v-if="link.qrcode"
+            class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+            :aria-label="link.name"
+            role="img">
+            <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
+            <div class="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 z-30 w-max opacity-0 scale-95 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0">
+              <div class="rounded-lg bg-white dark:bg-[#1e1e1e] p-2 shadow-[0_6px_30px_#0000001a] border border-slate-200 dark:border-gray-700">
+                <img :src="link.qrcode" :alt="link.name" width="144" height="144" class="block w-36 h-36 max-w-none rounded object-cover" >
+                <p class="mt-1 text-center text-xs text-slate-600 dark:text-gray-400">{{ link.name }}</p>
+              </div>
+            </div>
+          </div>
+          <!-- 普通链接项 -->
           <NuxtLink
+            v-else
             v-tooltip="link.name"
             :href="link.link"
             :target="link.target ? '_blank' : undefined"
