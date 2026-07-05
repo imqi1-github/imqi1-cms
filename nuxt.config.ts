@@ -194,6 +194,9 @@ export default defineNuxtConfig({
     workbox: {
       // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
       navigateFallback: null,
+      // 把 workbox 运行时内联进 sw.js，避免其被 app.cdnURL 改写到 CDN
+      // （CDN 上的 workbox-*.js 跨域 + 403，会导致 SW install 时 importScripts 失败、整个 SW 不生效）
+      inlineWorkboxRuntime: true,
       // 缓存静态资源
       runtimeCaching: [
         {
@@ -201,6 +204,11 @@ export default defineNuxtConfig({
           handler: "CacheFirst",
           options: {
             cacheName: "static-resources",
+            // CDN 跨域资源以 no-cors 方式请求时会返回 status 0 的 opaque 响应，
+            // CacheFirst 默认只缓存 200，需显式允许 0 才能缓存跨域 CSS/JS/字体
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
             expiration: {
               maxEntries: 100,
               maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -212,6 +220,9 @@ export default defineNuxtConfig({
           handler: "CacheFirst",
           options: {
             cacheName: "images",
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
             expiration: {
               maxEntries: 200,
               maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -223,6 +234,9 @@ export default defineNuxtConfig({
           handler: "CacheFirst",
           options: {
             cacheName: "videos",
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
             expiration: {
               maxEntries: 50,
               maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -234,6 +248,9 @@ export default defineNuxtConfig({
           handler: "CacheFirst",
           options: {
             cacheName: "audio",
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
             expiration: {
               maxEntries: 50,
               maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -245,6 +262,9 @@ export default defineNuxtConfig({
           handler: "CacheFirst",
           options: {
             cacheName: "fonts",
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
             expiration: {
               maxEntries: 50,
               maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year

@@ -37,13 +37,14 @@ const args = process.argv.slice(2)
 const subDir = args.find(arg => !arg.startsWith('-'))
 
 // 指定子目录时只上传该子目录；
-// 未指定时默认上传 _nuxt/ 构建产物 + workbox-*.js 运行时文件（均带构建 hash）。
+// 未指定时默认上传 _nuxt/ 构建产物（带构建 hash）。
 // imgs/skills/icons/emojis 等静态资源不走构建 hash，不在此上传。
 const SOURCE_DIR = subDir
   ? path.join(BASE_DIR, subDir)
   : path.join(BASE_DIR, '_nuxt')
 
-// 收集默认上传文件：_nuxt/ 全部 + workbox-*.js + manifest.webmanifest
+// 收集默认上传文件：_nuxt/ 全部 + manifest.webmanifest
+// 注：workbox 运行时已内联进 sw.js（inlineWorkboxRuntime），不再有独立 workbox-*.js 文件
 function collectDefaultFiles() {
   const files = []
   const nuxtDir = path.join(BASE_DIR, '_nuxt')
@@ -52,10 +53,7 @@ function collectDefaultFiles() {
   }
   if (fs.existsSync(BASE_DIR)) {
     const rootFiles = fs.readdirSync(BASE_DIR)
-      .filter(f =>
-        (f.startsWith('workbox-') && f.endsWith('.js'))
-        || f === 'manifest.webmanifest'
-      )
+      .filter(f => f === 'manifest.webmanifest')
       .map(f => path.join(BASE_DIR, f))
     files.push(...rootFiles)
   }
@@ -302,7 +300,7 @@ async function main() {
     }
     files = getAllFiles(SOURCE_DIR)
   } else {
-    // 默认：收集 _nuxt/ + workbox-*.js
+    // 默认：收集 _nuxt/ + manifest.webmanifest
     files = collectDefaultFiles()
   }
 
@@ -313,7 +311,7 @@ async function main() {
   }
 
   console.log(`📦 找到 ${files.length} 个文件`)
-  console.log(`📂 来源: ${subDir ? SOURCE_DIR : '_nuxt/ + workbox-*.js + manifest.webmanifest'}`)
+  console.log(`📂 来源: ${subDir ? SOURCE_DIR : '_nuxt/ + manifest.webmanifest'}`)
   console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 10}）`)
 
   // 清空远程目录
