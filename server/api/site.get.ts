@@ -1,40 +1,7 @@
 import { SiteSettingsResponseSchema } from "./schemas";
 
-import { prisma } from "#server/utils/prisma";
 import { defineTypedApiHandler } from "#server/types/typedApi";
-import { sanitizeHtml } from "~~/lib/html";
-import { siteConfig } from "~~/site.config";
-import type { SiteSettings, SettingKey, MutableSettings, MetaItem } from "#server/types/apis/setting";
-
-
-// 3. 强类型 defaults
-const defaults: SiteSettings = {
-  siteName: siteConfig.siteName,
-  siteUrl: siteConfig.siteUrl,
-  siteDesc: siteConfig.seo.description,
-  siteIcp: "",
-  homeCustomText: siteConfig.homeCustomText,
-  photoCategorySlug: "shot",
-  commentEnabled: true,
-  commentAvatarService: "gravatar",
-  commentPageSize: 10,
-  commentMaxLevel: 4,
-  commentInterval: 60,
-  commentRequireMail: true,
-  commentRequireLink: false,
-  postPageSize: 12,
-  feedCacheInterval: 8,
-  linkAutoApprove: false,
-  musicPlaylistId: "9255074836 || netease",
-};
-
-
-function sanitizePublicSettings(settings: MutableSettings): SiteSettings {
-  return {
-    ...settings,
-    homeCustomText: sanitizeHtml(String(settings.homeCustomText || "")),
-  } as SiteSettings;
-}
+import { getSiteSettings } from "#server/utils/siteSettings";
 
 export default defineTypedApiHandler(
   {
@@ -44,52 +11,9 @@ export default defineTypedApiHandler(
   async event => {
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
-    try {
-      const meta = (await prisma.informations.findMany({
-        where: {
-          key: { in: Object.keys(defaults) as SettingKey[] },
-        },
-      })) as MetaItem[];
-
-      const settings: MutableSettings = {
-        ...defaults,
-      };
-
-      for (const item of meta) {
-        const key = item.key;
-        const defaultValue = defaults[key];
-
-        // boolean
-        if (typeof defaultValue === "boolean") {
-          settings[key] = item.value === "true";
-          continue;
-        }
-
-        // number
-        if (typeof defaultValue === "number") {
-          if (item.value === "" || item.value == null) {
-            settings[key] = defaultValue;
-          } else {
-            const num = Number(item.value);
-            settings[key] = Number.isNaN(num) ? defaultValue : num;
-          }
-          continue;
-        }
-
-        // string
-        settings[key] = item.value;
-      }
-
-      return {
-        success: true,
-        data: sanitizePublicSettings(settings),
-      };
-    } catch (error) {
-      console.error(error);
-      return {
-        success: true,
-        data: sanitizePublicSettings(defaults),
-      };
-    }
+    return {
+      success: true,
+      data: await getSiteSettings(),
+    };
   },
 );

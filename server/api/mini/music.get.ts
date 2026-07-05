@@ -102,12 +102,13 @@ export default defineEventHandler(async event => {
     const resolved = await Promise.all(songs.slice(0, MAX_SONGS).map(song => resolveSong(api, song)));
     const list = resolved.filter((item): item is MiniMusic => item !== null);
 
-    if (list.length === 0) {
+    const [first] = list;
+    if (!first) {
       throw createError({ statusCode: 404, message: "歌单内无可播放的音乐" });
     }
 
     // data 保留第一首以兼容旧端；list 为完整歌单。
-    return { success: true, data: list[0], list } satisfies MiniMusicResponse;
+    return { success: true, data: first, list } satisfies MiniMusicResponse;
   } catch (error) {
     // 已带 statusCode 的错误原样抛出，其余归为 500
     if (typeof error === "object" && error !== null && "statusCode" in error) {
