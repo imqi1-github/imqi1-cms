@@ -7,20 +7,17 @@ FROM oven/bun:1.3.10 AS builder
 
 WORKDIR /app
 
-# 先只复制依赖清单，最大化利用 Docker 层缓存
-COPY package.json bun.lock ./
+COPY . .
 
 # postinstall 会执行 `nuxt prepare`，需要部分源码存在才不报错；
 # 这里用 --ignore-scripts 先装依赖，稍后手动 prepare/generate。
 RUN bun install --frozen-lockfile --ignore-scripts
 
 # 复制其余源码
-COPY . .
 
 # 生成 Prisma Client（mariadb 驱动适配器为纯 JS，无需原生引擎二进制）
 # 并执行 nuxt prepare 生成 .nuxt 类型
-RUN bunx prisma generate \
-    && bunx nuxt prepare
+RUN bunx prisma generate
 
 # 构建 Nuxt（prebuild 生成 build hash，postbuild 拷贝 qqwry.ipdb/字体/wasm 到 .output）
 RUN bun run build
