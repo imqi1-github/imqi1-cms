@@ -87,6 +87,84 @@ const sessionStoreTypes = [
 
 const testingEmail = ref(false);
 
+// ==================== 数据备份与恢复 ====================
+const exporting = ref(false);
+const importing = ref(false);
+const showImportDialog = ref(false);
+const importFileInput = ref<HTMLInputElement | null>(null);
+const pendingImportSource = ref("");
+const pendingImportFileName = ref("");
+
+// 导出：请求 JSON 并触发浏览器下载
+async function exportData() {
+  exporting.value = true;
+  try {
+    const payload = await $fetch("/api/admin/data/export");
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    a.href = url;
+    a.download = `data-backup-${stamp}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success({ message: "数据已导出" });
+  } catch (error) {
+    console.error("导出失败:", error);
+    toast.error({ message: "导出失败" });
+  } finally {
+    exporting.value = false;
+  }
+}
+
+// 选择文件后暂存内容，弹出二次确认（导入为破坏性操作）
+function triggerImport() {
+  importFileInput.value?.click();
+}
+
+async function onImportFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  try {
+    pendingImportSource.value = await file.text();
+    pendingImportFileName.value = file.name;
+    showImportDialog.value = true;
+  } catch (error) {
+    console.error("读取文件失败:", error);
+    toast.error({ message: "读取备份文件失败" });
+  } finally {
+    // 清空 value，便于重复选择同一个文件
+    input.value = "";
+  }
+}
+
+// 确认后执行导入（清空后完整还原）
+async function confirmImport() {
+  importing.value = true;
+  try {
+    const res = await $fetch<{ total?: number }>("/api/admin/data/import", {
+      method: "POST",
+      body: { csrfToken: csrfToken.value, source: pendingImportSource.value },
+    });
+    toast.success({
+      message: res?.total != null ? `导入成功，共还原 ${res.total} 条数据` : "导入成功",
+    });
+    showImportDialog.value = false;
+  } catch (err: unknown) {
+    console.error("导入失败:", err);
+    const data = err && typeof err === "object" && "data" in err ? (err as { data?: unknown }).data : undefined;
+    const msg = data && typeof data === "object" && "message" in data && typeof (data as { message: unknown }).message === "string"
+      ? (data as { message: string }).message
+      : "导入失败，请检查备份文件";
+    toast.error({ message: msg });
+  } finally {
+    importing.value = false;
+    pendingImportSource.value = "";
+    pendingImportFileName.value = "";
+  }
+}
+
 async function testEmail() {
   testingEmail.value = true;
   try {
@@ -945,6 +1023,55 @@ onMounted(() => {
               </div>
             </CardContent>
           </Card>
+
+          <!-- 数据备份与恢复 Card -->
+          <Card>
+            <CardHeader>
+              <CardTitle>数据备份与恢复</CardTitle>
+              <CardDescription>导出全站数据为 JSON 备份，或从备份文件还原</CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+              <div class="flex flex-col sm:flex-row gap-3">
+                <Button variant="outline" :disabled="exporting" @click="exportData">
+                  <Icon
+                    :name="exporting ? 'lucide:loader-2' : 'lucide:download'"
+                    :class="{ 'animate-spin': exporting }"
+                    class="mr-2 size-4"
+                  />
+                  {{ exporting ? "导出中..." : "导出所有数据" }}
+                </Button>
+                <input
+                  ref="importFileInput"
+                  type="file"
+                  accept=".json,application/json"
+                  class="hidden"
+                  @change="onImportFile"
+                >
+                <Button variant="outline" :disabled="importing" @click="triggerImport">
+                  <Icon
+                    :name="importing ? 'lucide:loader-2' : 'lucide:upload'"
+                    :class="{ 'animate-spin': importing }"
+                    class="mr-2 size-4"
+                  />
+                  {{ importing ? "导入中..." : "导入所有数据" }}
+                </Button>
+              </div>
+
+              <div class="p-4 bg-muted/30 rounded-lg space-y-3">
+                <div class="flex items-start gap-3">
+                  <Icon name="lucide:triangle-alert" class="size-5 text-amber-500 mt-0.5" />
+                  <div class="space-y-2 text-sm">
+                    <p class="font-medium">使用说明：</p>
+                    <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>导出内容包含文章、评论、分类标签、友链、旅行地点、订阅、站点设置等全部业务数据</li>
+                      <li>为保证导入后登录状态不丢失，<strong>不含</strong>用户账号与登录会话</li>
+                      <li class="text-amber-600 dark:text-amber-500">⚠️ 导入会<strong>清空并覆盖</strong>上述业务数据，操作不可撤销，请先做好备份</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <!-- 其他设置 Tab -->
@@ -1007,6 +1134,27 @@ onMounted(() => {
         <DialogFooter>
           <Button variant="outline" @click="showResetDialog = false"> 取消 </Button>
           <Button variant="destructive" @click="resetToDefaults"> 确认重置 </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 导入确认弹窗 -->
+    <Dialog v-model:open="showImportDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>导入所有数据</DialogTitle>
+          <DialogDescription>
+            即将从
+            <span class="font-medium text-foreground">{{ pendingImportFileName }}</span>
+            还原数据。此操作会<strong class="text-destructive">清空并覆盖</strong>现有的文章、评论、分类、友链等全部业务数据，且不可撤销。确定继续吗？
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" :disabled="importing" @click="showImportDialog = false"> 取消 </Button>
+          <Button variant="destructive" :disabled="importing" @click="confirmImport">
+            <Icon v-if="importing" name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
+            {{ importing ? "导入中..." : "确认导入" }}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

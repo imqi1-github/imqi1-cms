@@ -1,0 +1,58 @@
+# 构建产物与缓存
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+stats.html
+
+# 依赖（容器内重新安装）
+node_modules
+mini/node_modules
+
+# 版本控制与 IDE
+.git
+.idea
+.fleet
+.vscode
+
+# 环境变量（通过 docker run -e / --env-file 注入，勿打进镜像）
+.env
+.env.*
+!.env.example
+
+# 日志与进程
+logs
+*.log
+.pm2
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 小程序构建输出
+mini/dist
+mini/unpackage
+mini/.vite
+
+# 运行时/本地数据
+.sessions
+.attachments
+.live-photos
+.compressed-live-photos
+public/uploads/*
+.build-hash
+.build-hash-dir
+.system-initialized.lock
+new-theme.sql
+nginx.conf
+
+# Docker 自身
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# 其它
+.DS_Store
+.claude

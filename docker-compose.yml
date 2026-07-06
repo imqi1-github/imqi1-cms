@@ -1,0 +1,78 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: imqi1-nodejs:latest
+    container_name: imqi1-app
+    restart: unless-stopped
+    ports:
+      - "${PORT_PROD:-4000}:3000"
+    environment:
+      # 覆盖 .env 中的连接目标，指向 compose 内的服务名
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      REDIS_HOST_PROD: redis
+      REDIS_PORT_PROD: "6379"
+    env_file:
+      - .env
+    volumes:
+      # 用户上传文件持久化（应用运行时写入）
+      - uploads:/app/.output/public/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  mysql:
+    image: mysql:8.4
+    container_name: imqi1-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-imqi1}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 一次性数据库初始化服务（建表 + 默认设置 + 示例数据）。
+  # 默认不启动；需要初始化时显式启用 init profile：
+  #   docker compose --profile init up db-init
+  # SQL 幂等（CREATE TABLE IF NOT EXISTS + ON DUPLICATE KEY UPDATE），可安全重复执行。
+  db-init:
+    image: mysql:8.4
+    container_name: imqi1-db-init
+    profiles: ["init"]
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-imqi1}
+    volumes:
+      - ./scripts/init-db.sql:/init-db.sql:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - 'mysql -h mysql -u root -p"$$MYSQL_ROOT_PASSWORD" "$$MYSQL_DATABASE" < /init-db.sql'
+
+  redis:
+    image: redis:7-alpine
+    container_name: imqi1-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+volumes:
+  mysql-data:
+  redis-data:
+  uploads:
