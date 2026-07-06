@@ -180,24 +180,14 @@ PORT_PROD=3000                   # 宿主对外端口，按需修改
 docker compose up -d --build
 ```
 
-首次启动 MySQL 会自动创建空库（`DB_NAME`），但此时**尚无数据表**。
-
-### 3. 初始化数据库（仅首次部署需要）
-
-初始化开关以 compose **profile** 实现，复用 `scripts/init-db.sql`（脚本只建表/插数据、不含库名，导入到 `DB_NAME` 指定的库；幂等，可安全重复执行）：
-
-```bash
-docker compose --profile init up db-init
-```
-
-该命令会把 `scripts/init-db.sql` 导入库中：建全部表 + 写入默认设置 + 插入示例数据，并创建默认管理员：
+首次启动时，MySQL 会自动创建空库（`DB_NAME`）并**自动执行数据库初始化**：`scripts/init-db.sql` 已挂载到 MySQL 官方镜像的 `/docker-entrypoint-initdb.d/` 目录，容器首次启动（数据卷为空）时会自动导入——建全部表 + 写入默认设置 + 插入示例数据，并创建默认管理员：
 
 - 用户名：`admin`
 - 密码：`123456`（登录后请立即在后台「账户设置」修改）
 
-`db-init` 是一次性容器，执行完自动退出；默认不随 `docker compose up` 启动。
+> 该自动初始化**仅在 `mysql-data` 数据卷为空时执行一次**（即首次部署）。之后重新 `up`/重建不会再次执行，也**不会覆盖或清空已有数据**。因此无需再手动运行任何初始化命令。
 
-### 4. 验证
+### 3. 验证
 
 ```bash
 docker compose ps                # 查看 app/mysql/redis 状态（healthy/up）
@@ -205,7 +195,7 @@ docker compose logs -f app       # 查看应用日志
 curl http://localhost:3000       # 或浏览器访问 服务器IP:3000
 ```
 
-### 5. 常用运维命令
+### 4. 常用运维命令
 
 ```bash
 # 更新代码后重新部署（不影响数据库数据）
@@ -226,7 +216,19 @@ docker compose exec mysql mysql -uroot -p"$DB_PASSWORD" imqi1-nodejs
 docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" imqi1-nodejs > backup.sql
 ```
 
-### 6. 反向代理与 HTTPS
+> ⚠️ **重新构建/升级前，请先在后台备份数据**
+>
+> 常规的 `docker compose up -d --build` 只重建应用镜像，**不会**动 MySQL 数据卷，数据是安全的。但在以下场景数据可能丢失或不兼容，务必先备份：
+>
+> - 需要执行 `docker compose down -v`（会**删除数据卷、清空所有数据**）；
+> - 迁移服务器、更换数据库；
+> - 版本升级涉及数据表结构变更。
+>
+> **备份方式（推荐）**：登录后台 →「数据备份与恢复」→「导出数据」，下载全站数据 JSON 备份；升级完成后在同一页面「导入数据」即可恢复。（该功能不含 `users`/`sessions` 表，登录态与管理员账户不受影响。）
+>
+> 也可用上面的 `mysqldump` 命令做整库 SQL 级备份。
+
+### 5. 反向代理与 HTTPS
 
 容器仅对外暴露 `${PORT_PROD}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
 

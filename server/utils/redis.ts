@@ -2,7 +2,7 @@ import Redis from "ioredis";
 
 // 获取 Redis 配置
 function getRedisConfig() {
-  const isDev = !import.meta.env?.PROD;
+  const isDev = process.env.NODE_ENV !== "production";
   const host = isDev ? process.env.REDIS_HOST_DEV : process.env.REDIS_HOST_PROD;
 
   if (!host) {
