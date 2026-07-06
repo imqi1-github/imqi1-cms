@@ -38,6 +38,11 @@ ENV NODE_ENV=production \
 # node-server preset 产出的 .output 已是自包含（含 traced node_modules 与运行时数据）
 COPY --from=builder /app/.output ./.output
 
+# 修复：Nitro/nft 对 undici 的 trace 不完整（缺 index.js），导致 jsdom
+# （isomorphic-dompurify 的服务端依赖）运行时 require("undici") 失败。
+# 用 builder 中完整的 undici 覆盖被裁剪的版本。
+COPY --from=builder /app/node_modules/undici ./.output/server/node_modules/undici
+
 # 以非 root 用户运行
 USER node
 

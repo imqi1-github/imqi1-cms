@@ -37,32 +37,17 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql-data:/var/lib/mysql
+      # 数据库自动初始化：MySQL 官方镜像会在「数据目录为空」（即首次创建）时，
+      # 自动按文件名顺序执行 /docker-entrypoint-initdb.d/ 下的 .sql，且默认库为
+      # MYSQL_DATABASE（DB_NAME）。init-db.sql 只建表/插数据、不含库名，正好导入该库。
+      # 因此首次 `docker compose up` 即完成建表 + 默认设置 + 示例数据，无需再手动初始化。
+      # 注意：仅当 mysql-data 卷为空时才会执行；卷已有数据则跳过（不会覆盖已有数据）。
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_PASSWORD:-root}"]
       interval: 10s
       timeout: 5s
       retries: 10
-
-  # 一次性数据库初始化服务（建表 + 默认设置 + 示例数据）。
-  # 默认不启动；需要初始化时显式启用 init profile：
-  #   docker compose --profile init up db-init
-  # SQL 幂等（CREATE TABLE IF NOT EXISTS + ON DUPLICATE KEY UPDATE），可安全重复执行。
-  db-init:
-    image: mysql:8.4
-    container_name: imqi1-db-init
-    profiles: ["init"]
-    restart: "no"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
-      MYSQL_DATABASE: ${DB_NAME:-imqi1}
-    volumes:
-      - ./scripts/init-db.sql:/init-db.sql:ro
-    depends_on:
-      mysql:
-        condition: service_healthy
-    entrypoint: ["sh", "-c"]
-    command:
-      - 'mysql -h mysql -u root -p"$$MYSQL_ROOT_PASSWORD" "$$MYSQL_DATABASE" < /init-db.sql'
 
   redis:
     image: redis:7-alpine
