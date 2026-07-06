@@ -8,6 +8,10 @@ const adapter = new PrismaMariaDb({
   password: process.env.DB_PASSWORD!,
   database: process.env.DB_NAME!,
   connectionLimit: 10,
+  // MySQL 8+ 默认 caching_sha2_password 认证插件：非 TLS 连接下，
+  // 驱动需要向服务端拉取 RSA 公钥完成密码交换，否则报
+  // “RSA public key is not available client side”，连接池取不到连接 → pool timeout。
+  allowPublicKeyRetrieval: true,
 });
 
 const globalForPrisma = globalThis as unknown as {
