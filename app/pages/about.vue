@@ -555,7 +555,7 @@
           <div>
             <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 transition-colors duration-300">框架？主题？</h3>
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
-              你所看到的这一版网站是我制作的第二款主题，第一款框架，整体采用 Nuxt 4 编写，我给这个 CMS 取名为 ImQi1。
+              你所看到的这一版网站是我制作的第二款主题，第一款框架，整体采用 Nuxt 4 编写，我给这个 CMS 取名为 ImQi1-CMS。
             </p>
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300"/>
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
