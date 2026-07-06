@@ -79,7 +79,6 @@ const tags = computed(() => post.value?.tags || []);
 const hasCover = computed(() => covers.value.length > 0);
 const hasManyCovers = computed(() => post.value?.many_covers && covers.value.length > 1);
 
-const contentBody = ref<HTMLElement | null>(null);
 const firstCover = computed(() => covers.value[0]);
 const firstCoverUrl = computed(() => firstCover.value?.url || "");
 
@@ -1955,7 +1954,6 @@ onUnmounted(() => {
 
         <!-- 文章正文 -->
         <div
-          ref="contentBody"
           class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body"
           v-html="post.renderedContent" />
       </div>
