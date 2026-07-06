@@ -143,6 +143,96 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
 开发前记得先执行 `bun prisma generate` 生成 Prisma Client，确保数据库模型与代码保持一致。
 
+## 使用 Docker 部署（推荐）
+
+项目提供开箱即用的 `Dockerfile` 与 `docker-compose.yml`，一条命令即可拉起 **应用（Node）+ MySQL 8 + Redis** 三个容器，无需在服务器上手动安装 Node、MySQL、Redis。
+
+前置要求：服务器已安装 **Docker** 与 **Docker Compose v2**（`docker compose version` 可用）。
+
+### 1. 准备代码与环境变量
+
+```bash
+# 拉代码（含子模块 mini/）
+git clone --recurse-submodules <你的仓库地址> imqi1
+cd imqi1
+
+# 从模板生成 .env
+cp .env.example .env
+```
+
+编辑 `.env`，至少修改以下几项：
+
+```bash
+DB_PASSWORD="改成强密码"          # MySQL root 密码，compose 会用它建库
+DB_NAME="imqi1-nodejs"           # 库名，可自定义；compose 建库与导入 SQL 都用它
+DB_USER="root"
+PORT_PROD=3000                   # 宿主对外端口，按需修改
+```
+
+> `DB_HOST`、`REDIS_HOST_PROD` 会被 compose 自动覆盖为服务名 `mysql` / `redis`，**无需手动填写容器名**。其它 COS、高德地图 Key 等按需填写。
+
+### 2. 构建并启动
+
+```bash
+# 构建镜像 + 后台启动 app / mysql / redis
+docker compose up -d --build
+```
+
+首次启动 MySQL 会自动创建空库（`DB_NAME`），但此时**尚无数据表**。
+
+### 3. 初始化数据库（仅首次部署需要）
+
+初始化开关以 compose **profile** 实现，复用 `scripts/init-db.sql`（脚本只建表/插数据、不含库名，导入到 `DB_NAME` 指定的库；幂等，可安全重复执行）：
+
+```bash
+docker compose --profile init up db-init
+```
+
+该命令会把 `scripts/init-db.sql` 导入库中：建全部表 + 写入默认设置 + 插入示例数据，并创建默认管理员：
+
+- 用户名：`admin`
+- 密码：`123456`（登录后请立即在后台「账户设置」修改）
+
+`db-init` 是一次性容器，执行完自动退出；默认不随 `docker compose up` 启动。
+
+### 4. 验证
+
+```bash
+docker compose ps                # 查看 app/mysql/redis 状态（healthy/up）
+docker compose logs -f app       # 查看应用日志
+curl http://localhost:3000       # 或浏览器访问 服务器IP:3000
+```
+
+### 5. 常用运维命令
+
+```bash
+# 更新代码后重新部署（不影响数据库数据）
+git pull --recurse-submodules
+docker compose up -d --build
+
+# 重启 / 停止
+docker compose restart app
+docker compose down              # 停止并删除容器（数据卷保留）
+
+# 查看日志
+docker compose logs -f mysql
+
+# 进入 MySQL 命令行
+docker compose exec mysql mysql -uroot -p"$DB_PASSWORD" imqi1-nodejs
+
+# 数据备份
+docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" imqi1-nodejs > backup.sql
+```
+
+### 6. 反向代理与 HTTPS
+
+容器仅对外暴露 `${PORT_PROD}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
+
+> ⚠️ **数据持久化与安全**
+> - MySQL 数据存于 `mysql-data` 卷、Redis 存于 `redis-data`、用户上传存于 `uploads` 卷。
+> - `docker compose down` **不会**删除数据卷；仅 `docker compose down -v` 会清空所有数据，请谨慎使用。
+> - 首次 `up -d --build` 会执行 Bun 构建，耗时较长，属正常现象。
+
 ## 生产环境搭建
 
 生产环境采用「**本地打包 → 上传产物 → 服务器运行 Node 服务**」的部署模式。

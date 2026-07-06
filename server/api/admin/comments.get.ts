@@ -4,12 +4,18 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { getIpLocation } from "#server/utils/qqwry";
 
-// 生成 Gravatar 头像 URL
-function getAvatarUrl(email: string | null): string | null {
+// 生成评论头像 URL（根据后台配置的头像服务镜像）
+function getAvatarUrl(email: string | null, service: string): string | null {
   if (!email) return null;
 
+  const serviceUrls: Record<string, string> = {
+    gravatar: "https://www.gravatar.com/avatar",
+    cravatar: "https://cn.cravatar.com/avatar",
+    weavatar: "https://weavatar.com/avatar",
+  };
+  const baseUrl = serviceUrls[service] || serviceUrls.gravatar;
   const hash = createHash("md5").update(email.toLowerCase().trim()).digest("hex");
-  return `https://www.gravatar.com/avatar/${hash}?d=identicon&s=80`;
+  return `${baseUrl}/${hash}?d=identicon&s=80`;
 }
 
 // 处理 location 格式：只显示城市，没有城市则显示省份
@@ -60,6 +66,10 @@ export default defineEventHandler(async event => {
 
     // 构建查询条件
     const where = cid ? { cid } : {};
+
+    // 读取后台配置的头像服务（默认 gravatar）
+    const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
+    const avatarService = avatarSetting?.value || "gravatar";
 
     const [comments, total] = await Promise.all([
       prisma.comments.findMany({
@@ -112,7 +122,7 @@ export default defineEventHandler(async event => {
       const ipInfo = ipLocationCache.get(comment.ip || "");
       return {
         ...comment,
-        avatarUrl: getAvatarUrl(comment.mail),
+        avatarUrl: getAvatarUrl(comment.mail, avatarService),
         location: formatLocation(ipInfo?.location || ""),
         isp: ipInfo?.isp || "",
       };

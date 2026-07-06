@@ -5,10 +5,9 @@ import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-  },
   datasource: {
+    // schema.prisma 的 datasource 未写 url，连接串由此注入。
+    // prisma studio / db execute 等需连库的命令依赖它，勿删。
     url: process.env["DATABASE_URL"],
   },
 });

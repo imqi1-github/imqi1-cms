@@ -7,7 +7,7 @@ services:
     container_name: imqi1-app
     restart: unless-stopped
     ports:
-      - "${PORT_PROD:-4000}:3000"
+      - "${PORT_PROD:-3000}:3000"
     environment:
       # 覆盖 .env 中的连接目标，指向 compose 内的服务名
       DB_HOST: mysql
