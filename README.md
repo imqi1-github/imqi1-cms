@@ -171,6 +171,8 @@ PORT_PROD=3000                   # 宿主对外端口，按需修改
 
 > `DB_HOST`、`REDIS_HOST_PROD` 会被 compose 自动覆盖为服务名 `mysql` / `redis`，**无需手动填写容器名**。其它 COS、高德地图 Key 等按需填写。
 
+改动 site.config.ts 的配置，改成你自己的，比如 CDN 路径。
+
 ### 2. 构建并启动
 
 ```bash
