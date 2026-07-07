@@ -1,44 +1,44 @@
 import { mkdirSync, copyFileSync, existsSync } from "fs";
 import { join } from "path";
 
-const sourceDir = join(process.cwd(), "data");
-const ipdbSource = process.env.QQWRY_IPDB_PATH || join(process.cwd(), "data", "qqwry.ipdb");
+// 运行时资源统一目录：源码在 server/runtime-assets/，打包后复制到 .output/server/runtime-assets/。
+// 三个文件都在同一目录，便于部署时整体拷贝/挂载。
+// - qqwry.ipdb   IP 归属地库（server/utils/qqwry.ts 读取）
+// - DejaVuSans.ttf 验证码字体（server/utils/captcha.ts 读取）
+// - svg2png_wasm_bg.wasm  验证码渲染 WASM（来自 svg2png-wasm 依赖，随构建复制，避免版本漂移）
+console.log("Copying runtime assets to build output...");
 
-console.log("Copying data files to build output...");
+const assetsDir = join(process.cwd(), "server", "runtime-assets");
+const targetDir = join(process.cwd(), ".output", "server", "runtime-assets");
 
-if (!existsSync(sourceDir)) {
-  console.warn("⚠ data/ directory not found");
-}
+const ipdbSource = process.env.QQWRY_IPDB_PATH || join(assetsDir, "qqwry.ipdb");
 
 const runtimeFiles = [
   {
-    source: join(process.cwd(), "server", "fonts", "DejaVuSans.ttf"),
-    target: join(process.cwd(), ".output", "server", "server", "fonts", "DejaVuSans.ttf"),
-    targetDir: join(process.cwd(), ".output", "server", "server", "fonts"),
+    source: ipdbSource,
+    target: join(targetDir, "qqwry.ipdb"),
+    label: "qqwry.ipdb database",
+  },
+  {
+    source: join(assetsDir, "DejaVuSans.ttf"),
+    target: join(targetDir, "DejaVuSans.ttf"),
     label: "captcha font",
   },
   {
     source: join(process.cwd(), "node_modules", "svg2png-wasm", "svg2png_wasm_bg.wasm"),
-    target: join(process.cwd(), ".output", "server", "wasm", "svg2png_wasm_bg.wasm"),
-    targetDir: join(process.cwd(), ".output", "server", "wasm"),
+    target: join(targetDir, "svg2png_wasm_bg.wasm"),
     label: "svg2png WASM",
-  },
-  {
-    source: ipdbSource,
-    target: join(process.cwd(), ".output", "server", "data", "qqwry.ipdb"),
-    targetDir: join(process.cwd(), ".output", "server", "data"),
-    label: "qqwry.ipdb database",
   },
 ];
 
+mkdirSync(targetDir, { recursive: true });
+
 for (const file of runtimeFiles) {
   if (!existsSync(file.source)) {
-    const prefix = file.optional ? "ℹ" : "⚠";
-    console.warn(`${prefix} ${file.label} not found: ${file.source}`);
+    console.warn(`⚠ ${file.label} not found: ${file.source}`);
     continue;
   }
 
-  mkdirSync(file.targetDir, { recursive: true });
   copyFileSync(file.source, file.target);
   console.log(`✓ Copied ${file.label} to ${file.target}`);
 }

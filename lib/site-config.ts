@@ -29,6 +29,12 @@ export interface SiteConfig {
   security: {
     /** 允许访问 API 的 Referer 根域名列表 */
     allowedRefererDomains: string[];
+    /**
+     * 是否启用 CSP（内容安全策略）。仅生产构建注入 `<meta http-equiv="Content-Security-Policy">`。
+     * 本地用 `nuxi preview` 验证打包产物时建议关闭：CSP 会拦截音乐直链、地图第三方等，
+     * 干扰功能验证；正式部署应保持开启。
+     */
+    enableCsp: boolean;
   };
   /** SEO 默认文案及 Open Graph / Twitter Card 元数据 */
   seo: {

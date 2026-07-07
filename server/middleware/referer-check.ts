@@ -18,6 +18,13 @@ export default defineEventHandler(event => {
     return;
   }
 
+  // @nuxt/icon 客户端按需取图端点：返回公开图标 SVG、无敏感数据。
+  // 客户端 fetch 在部分场景（无 document referrer、经代理被剥离 Referer 等）
+  // 不带 Referer 会被下方校验 403，导致图标加载超时/失败，故放行。
+  if (path === "/api/_nuxt_icon" || path.startsWith("/api/_nuxt_icon/")) {
+    return;
+  }
+
   // 优先检查：SSR 内部请求标识；未配置 secret 时兼容旧的 true 值，避免旧部署失效
   const ssrInternalRequest = event.node.req.headers["x-ssr-internal-request"];
   const ssrInternalRequestSecret = process.env.SSR_INTERNAL_REQUEST_SECRET || "";

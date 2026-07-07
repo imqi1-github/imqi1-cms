@@ -1,6 +1,8 @@
 import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
 import { createRequire } from "module";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
 import { getCookie, setCookie, type H3Event } from "h3";
 import { initialize, svg2png } from "svg2png-wasm";
@@ -29,7 +31,36 @@ const LENGTH = 4;
 // 在浅色背景上可见的颜色
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#db2777", "#0891b2"];
 
-const CAPTCHA_FONT_PATHS = ["server/fonts/DejaVuSans.ttf"];
+/**
+ * 计算验证码字体候选路径（惰性调用，勿在模块顶层执行）。
+ *
+ * 打包后本模块被合并进 .output/server/chunks/_/nitro.mjs，Nitro 会把 import.meta.url
+ * 替换为 globalThis._importMeta_.url——该值由入口 index.mjs 在**运行时**赋为真实 URL，
+ * 但模块顶层代码在入口赋值前即执行，此时仍是占位符 "file:///_entry.js"，
+ * fileURLToPath 会抛错。故必须在请求处理阶段（如 getCaptchaFont 内）才计算，
+ * 那时 moduleDir 才是真实的 .output/server。
+ *
+ * 字体经构建复制到 .output/server/runtime-assets/DejaVuSans.ttf（源码 server/runtime-assets/）；
+ * 末尾保留基于 cwd 的相对路径作兼容回退。
+ */
+function getCaptchaFontPaths(): string[] {
+  const paths: string[] = [];
+  try {
+    const moduleDir = dirname(fileURLToPath(import.meta.url));
+    paths.push(
+      join(moduleDir, "runtime-assets", "DejaVuSans.ttf"),
+      join(moduleDir, "..", "..", "runtime-assets", "DejaVuSans.ttf"),
+      join(moduleDir, "..", "runtime-assets", "DejaVuSans.ttf"),
+    );
+  } catch {
+    // import.meta.url 不可用时仅用相对路径
+  }
+  paths.push(
+    join(process.cwd(), "server", "runtime-assets", "DejaVuSans.ttf"),
+    "server/runtime-assets/DejaVuSans.ttf",
+  );
+  return paths;
+}
 let wasmReady: Promise<void> | null = null;
 let captchaFont: Uint8Array | null | undefined;
 
@@ -107,9 +138,32 @@ function buildSvg(text: string): string {
 
 /** 读取构建复制后的 WASM 文件；开发环境回退到 node_modules */
 function readWasmFile(): Buffer {
-  // 生产环境优先读构建时复制到 server 根目录的 wasm 文件。
+  // 生产环境优先按模块自身位置定位，不依赖 process.cwd()。
+  // 构建会把 wasm 复制到 .output/server/runtime-assets/svg2png_wasm_bg.wasm；
+  // 打包后本模块位于 .output/server/chunks/_/*.mjs，故上溯两级即 server 根。
+  // 用 nuxi preview（cwd=.output）或 node .output/server/index.mjs（cwd 任意）
+  // 启动时，基于 cwd 的相对路径都会落空，绝对路径才稳定命中。
   try {
-    return readFileSync("wasm/svg2png_wasm_bg.wasm");
+    const moduleDir = dirname(fileURLToPath(import.meta.url));
+    const candidates = [
+      join(moduleDir, "runtime-assets", "svg2png_wasm_bg.wasm"),
+      join(moduleDir, "..", "..", "runtime-assets", "svg2png_wasm_bg.wasm"),
+      join(moduleDir, "..", "runtime-assets", "svg2png_wasm_bg.wasm"),
+    ];
+    for (const candidate of candidates) {
+      try {
+        return readFileSync(candidate);
+      } catch {
+        // 尝试下一个候选路径
+      }
+    }
+  } catch {
+    // import.meta.url 不可用时继续走下方回退
+  }
+
+  // 兼容：基于 cwd 的相对路径（cwd 恰为 server 根时命中）。
+  try {
+    return readFileSync("runtime-assets/svg2png_wasm_bg.wasm");
   } catch {
     // 未找到属预期（开发环境无此产物），静默回退到下方 node_modules。
   }
@@ -128,7 +182,7 @@ function readWasmFile(): Buffer {
     // 全部失败，抛出下方错误。
   }
 
-  throw new Error("Cannot find svg2png WASM file. Expected wasm/svg2png_wasm_bg.wasm in server root.");
+  throw new Error("Cannot find svg2png WASM file. Expected runtime-assets/svg2png_wasm_bg.wasm in server root.");
 }
 
 /** 初始化 SVG 转 PNG 的 WASM 模块（只初始化一次） */
@@ -141,16 +195,19 @@ function ensureWasmReady(): Promise<void> {
 function getCaptchaFont(): Uint8Array | undefined {
   if (captchaFont !== undefined) return captchaFont ?? undefined;
 
-  for (const path of CAPTCHA_FONT_PATHS) {
+  // 惰性计算路径：此时已在请求处理阶段，import.meta.url 为真实值（见 getCaptchaFontPaths 注释）。
+  const fontPaths = getCaptchaFontPaths();
+  for (const path of fontPaths) {
     try {
       captchaFont = readFileSync(path);
       return captchaFont;
-    } catch (error) {
-      console.error(error);
-      // 兼容开发目录与 .output/server 运行目录，找不到则尝试下一个路径。
+    } catch {
+      // 兼容开发目录与 .output/server 运行目录，找不到则尝试下一个候选路径。
     }
   }
 
+  // 所有候选路径均未命中：降级为不内嵌字体（svg2png 用默认字体族渲染）。
+  console.warn("[captcha] 未找到验证码字体，回退默认字体:", fontPaths);
   captchaFont = null;
   return undefined;
 }

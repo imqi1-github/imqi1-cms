@@ -1,6 +1,7 @@
 import { existsSync } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
 import { isIP } from "node:net";
+import { fileURLToPath } from "url";
 
 import IPDB from "ipdb";
 
@@ -22,10 +23,29 @@ function normalizeIp(ip: string): string {
 }
 
 function getDbPaths(): string[] {
-  return [
-    process.env.QQWRY_IPDB_PATH || "",
-    join(process.cwd(), "data", DB_FILE),
-  ].filter(Boolean);
+  const paths: string[] = [];
+  if (process.env.QQWRY_IPDB_PATH) paths.push(process.env.QQWRY_IPDB_PATH);
+
+  // 运行时资源统一放在 .output/server/runtime-assets/（源码在 server/runtime-assets/）。
+  // `nuxi preview` 的 cwd 是 .output，cwd 相对路径会找不到，故优先用本模块所在目录推绝对路径。
+  // 惰性计算：Nitro 把 import.meta.url 替换为运行时才赋真值的 globalThis._importMeta_.url，
+  // 模块顶层执行时仍是占位符，必须在调用时（请求期）读取。
+  try {
+    const moduleDir = dirname(fileURLToPath(import.meta.url));
+    paths.push(
+      join(moduleDir, "runtime-assets", DB_FILE),
+      join(moduleDir, "..", "runtime-assets", DB_FILE),
+      join(moduleDir, "..", "..", "runtime-assets", DB_FILE),
+    );
+  } catch {
+    // import.meta.url 尚为占位符（模块顶层执行）时忽略，走下方 cwd 回退
+  }
+
+  paths.push(
+    join(process.cwd(), "server", "runtime-assets", DB_FILE),
+    join(process.cwd(), "runtime-assets", DB_FILE),
+  );
+  return paths.filter(Boolean);
 }
 
 function resolveDbPath(): string | null {

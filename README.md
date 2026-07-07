@@ -287,6 +287,15 @@ const _url = "https://your-domain.com";      // 站点访问地址
 const _cdnUrl = "https://cdn.your-domain.com"; // CDN 根地址（未使用 CDN 可留空或与站点同域）
 ```
 
+其中 `security.enableCsp` 控制是否启用 CSP（内容安全策略）：
+
+```ts
+security: {
+  allowedRefererDomains: [_host],
+  enableCsp: true, // 正式部署保持 true；本地用 nuxi preview 验证打包产物时建议改为 false
+},
+```
+
 > 该文件同时被 `nuxt.config.ts`、前端与服务端引用，是 PWA manifest、CSP、SEO 等构建时数据的来源，需在**打包前**配置好。
 
 ### 4. 本地打包
@@ -295,7 +304,9 @@ const _cdnUrl = "https://cdn.your-domain.com"; // CDN 根地址（未使用 CDN 
 bun run build
 ```
 
-产物位于 `.output/` 目录。`prebuild` / `postbuild` 钩子会自动生成构建 hash、拷贝 `data/` 数据、更新 Service Worker 的 CDN 引用。
+产物位于 `.output/` 目录。`prebuild` / `postbuild` 钩子会自动生成构建 hash、把运行时资源（`qqwry.ipdb` IP 库、验证码字体、svg2png WASM）拷贝到 `.output/server/runtime-assets/`、更新 Service Worker 的 CDN 引用。
+
+> **本地用 `nuxi preview` 验证打包产物时，建议先把 `site.config.ts` 的 `security.enableCsp` 改为 `false`**。CSP 仅在生产构建注入，会拦截音乐直链、地图第三方脚本等，干扰本地功能验证；确认功能正常后改回 `true` 再打正式包。
 
 ### 5. 上传静态资源到 CDN（可选）
 

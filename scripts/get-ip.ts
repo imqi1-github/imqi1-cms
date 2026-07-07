@@ -25,7 +25,7 @@ Options:
   --help, -h  Show this help.
 
 Environment:
-  QQWRY_IPDB_PATH  Override qqwry.ipdb path. Default: data/qqwry.ipdb
+  QQWRY_IPDB_PATH  Override qqwry.ipdb path. Default: server/runtime-assets/qqwry.ipdb
 `;
 }
 
@@ -38,7 +38,7 @@ function normalizeIp(ip: string): string {
 function resolveDbPath(): string {
   const candidates = [
     process.env.QQWRY_IPDB_PATH || "",
-    join(process.cwd(), "data", DB_FILE),
+    join(process.cwd(), "server", "runtime-assets", DB_FILE),
   ].filter(Boolean);
 
   const found = candidates.find(path => existsSync(path));

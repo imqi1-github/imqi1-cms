@@ -15,7 +15,7 @@ const cdnURL = isProduction && hasCdn ? (buildHashDir ? `${siteConfig.cdnUrl}${b
 const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path);
 // CSP 中使用的 CDN 源：未配置时回退为空字符串，避免拼接出字面量 "undefined" 导致该指令失效
 const cspCdn = hasCdn ? siteConfig.cdnUrl : "";
-const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${cspCdn} https://*.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${cspCdn}; img-src 'self' data: https: blob: ${cspCdn}; font-src 'self' data: ${cspCdn}; manifest-src 'self' ${cspCdn}; media-src 'self' https: data: blob:; connect-src 'self' ${cspCdn} https://api.github.com https://gitee.com https://*.amap.com blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
+const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${cspCdn} https://*.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${cspCdn}; img-src 'self' data: https: blob: ${cspCdn}; font-src 'self' data: ${cspCdn}; manifest-src 'self' ${cspCdn}; media-src 'self' https: http: data: blob:; connect-src 'self' ${cspCdn} https://api.github.com https://gitee.com https://*.amap.com blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
 const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 
 // 获取当前环境的 Redis 配置
@@ -327,7 +327,7 @@ export default defineNuxtConfig({
         },
       ],
       meta: [
-        ...(isProduction
+        ...(isProduction && siteConfig.security.enableCsp
           ? [
               {
                 "http-equiv": "Content-Security-Policy",
@@ -539,54 +539,43 @@ export default defineNuxtConfig({
       },
     },
 
-    // 复制根目录的 data 文件夹到构建输出（不经过 Vite 处理）
-    publicAssets: [
-      {
-        baseURL: "/data",
-        dir: "./data",
-        maxAge: 60 * 60 * 24 * 365, // 1 year cache
-      },
-    ],
-
-    // Nitro 构建完成后复制 data 目录
+    // Nitro 构建完成后复制运行时资源到统一目录 .output/server/runtime-assets/。
+    // 与 scripts/copy-data.mjs 同源同目标：此 hook 保证裸 `nuxt build` 也能拷贝，
+    // postbuild 脚本覆盖 `bun run build` 流程；两者幂等、结果一致。
     hooks: {
       compiled: async () => {
         const { mkdirSync, copyFileSync, existsSync } = await import("fs");
         const { join } = await import("path");
 
-        const sourceDir = join(process.cwd(), "data");
-        const targetDir = join(process.cwd(), ".output", "server", "data");
-        const ipdbSource = process.env.QQWRY_IPDB_PATH || join(process.cwd(), "data", "qqwry.ipdb");
+        const assetsDir = join(process.cwd(), "server", "runtime-assets");
+        const targetDir = join(process.cwd(), ".output", "server", "runtime-assets");
 
-        if (!existsSync(sourceDir)) {
-          console.warn("⚠ data/ directory not found");
-        }
+        const runtimeFiles = [
+          {
+            source: process.env.QQWRY_IPDB_PATH || join(assetsDir, "qqwry.ipdb"),
+            target: join(targetDir, "qqwry.ipdb"),
+            label: "qqwry.ipdb database",
+          },
+          {
+            source: join(assetsDir, "DejaVuSans.ttf"),
+            target: join(targetDir, "DejaVuSans.ttf"),
+            label: "captcha font",
+          },
+          {
+            source: join(process.cwd(), "node_modules", "svg2png-wasm", "svg2png_wasm_bg.wasm"),
+            target: join(targetDir, "svg2png_wasm_bg.wasm"),
+            label: "svg2png WASM",
+          },
+        ];
 
-        if (existsSync(ipdbSource)) {
-          mkdirSync(targetDir, { recursive: true });
-          copyFileSync(ipdbSource, join(targetDir, "qqwry.ipdb"));
-          console.log("✓ Copied qqwry.ipdb to .output/server/data/");
-        } else {
-          console.warn("⚠ qqwry.ipdb not found in data/ directory");
-        }
-
-        const fontSource = join(process.cwd(), "server", "fonts", "DejaVuSans.ttf");
-        const fontTargetDir = join(process.cwd(), ".output", "server", "server", "fonts");
-        const fontTarget = join(fontTargetDir, "DejaVuSans.ttf");
-
-        if (existsSync(fontSource)) {
-          mkdirSync(fontTargetDir, { recursive: true });
-          copyFileSync(fontSource, fontTarget);
-          console.log("✓ Copied captcha font to .output/server/server/fonts/");
-        }
-
-        const wasmSource = join(process.cwd(), "node_modules", "svg2png-wasm", "svg2png_wasm_bg.wasm");
-        const wasmTarget = join(process.cwd(), ".output", "server", "wasm", "svg2png_wasm_bg.wasm");
-
-        if (existsSync(wasmSource)) {
-          mkdirSync(join(process.cwd(), ".output", "server", "wasm"), { recursive: true });
-          copyFileSync(wasmSource, wasmTarget);
-          console.log("✓ Copied svg2png WASM to .output/server/wasm/");
+        mkdirSync(targetDir, { recursive: true });
+        for (const file of runtimeFiles) {
+          if (!existsSync(file.source)) {
+            console.warn(`⚠ ${file.label} not found: ${file.source}`);
+            continue;
+          }
+          copyFileSync(file.source, file.target);
+          console.log(`✓ Copied ${file.label} to .output/server/runtime-assets/`);
         }
       },
     },
