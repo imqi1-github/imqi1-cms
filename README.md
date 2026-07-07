@@ -234,6 +234,7 @@ docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" imqi1-nodejs > backu
 
 > ⚠️ **数据持久化与安全**
 > - MySQL 数据存于 `mysql-data` 卷、Redis 存于 `redis-data`、用户上传存于 `uploads` 卷。
+> - Docker 部署下用户上传已由 `uploads` 具名卷持久化，重建镜像不会丢失，**无需**额外设置 `UPLOADS_DIR`（非 Docker 的裸机部署才需要，见下文第 8 节）。若确实要改上传路径，`compose` 的卷挂载点会自动跟随 `UPLOADS_DIR`，但指向 `/app/.output/public/uploads` 之外的新路径时需确保容器内 `node` 用户对其有写权限。
 > - `docker compose down` **不会**删除数据卷；仅 `docker compose down -v` 会清空所有数据，请谨慎使用。
 > - 首次 `up -d --build` 会执行 Bun 构建，耗时较长，属正常现象。
 
@@ -306,6 +307,8 @@ bun run build
 
 产物位于 `.output/` 目录。`prebuild` / `postbuild` 钩子会自动生成构建 hash、把运行时资源（`qqwry.ipdb` IP 库、验证码字体、svg2png WASM）拷贝到 `.output/server/runtime-assets/`、更新 Service Worker 的 CDN 引用。
 
+> ⚠️ **本地上传目录建议设置 `UPLOADS_DIR`**。附件若使用「本地上传」（非 COS），默认写入 `.output/public/uploads`；而 `bun run build` 会删除并重建整个 `.output`，**重新打包后已上传的文件会全部丢失**。请在运行环境变量中把 `UPLOADS_DIR` 指向 `.output` 之外的独立绝对路径（如 `/www/wwwroot/glass/uploads`）持久保存，详见下文第 8 节。使用腾讯云 COS 存储的用户不受影响。
+
 > **本地用 `nuxi preview` 验证打包产物时，建议先把 `site.config.ts` 的 `security.enableCsp` 改为 `false`**。CSP 仅在生产构建注入，会拦截音乐直链、地图第三方脚本等，干扰本地功能验证；确认功能正常后改回 `true` 再打正式包。
 
 ### 5. 上传静态资源到 CDN（可选）
@@ -361,6 +364,11 @@ NODE_ENV="production"
 UV_THREADPOOL_SIZE=64
 PROD=1
 ROOT_DOMAIN="your-domain.com"
+
+# 本地上传目录（强烈建议设置为 .output 之外的绝对路径）
+# 不设时默认写入 .output/public/uploads，而每次重新打包 `bun run build` 会
+# 删除并重建整个 .output，导致已上传的用户文件全部丢失。设为独立目录即可持久保留。
+UPLOADS_DIR="/www/wwwroot/glass/uploads"
 
 # REDIS配置，用于搜索功能的缓存，可选
 REDIS_HOST_PROD="localhost"

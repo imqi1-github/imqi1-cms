@@ -35,6 +35,12 @@ ENV NODE_ENV=production \
     NITRO_PORT=3000 \
     PORT=3000
 
+# 本地上传目录，需与 compose 的 UPLOADS_DIR / 卷挂载点保持一致。
+# 通过 build ARG 传入，使下方预建 + chown 的目录随之动态变化；
+# 默认沿用 .output/public/uploads（由 Nitro 静态服务直接提供）。
+ARG UPLOADS_DIR=/app/.output/public/uploads
+ENV UPLOADS_DIR=${UPLOADS_DIR}
+
 # node-server preset 产出的 .output 已是自包含（含 traced node_modules 与运行时数据）
 COPY --from=builder /app/.output ./.output
 
@@ -48,12 +54,13 @@ COPY --from=builder /app/node_modules/undici ./.output/server/node_modules/undic
 # 直接写会报 EACCES/ENOENT。这里预先创建并把所有权交给 node：
 #   .nitro/cache            —— ISR / fs 缓存
 #   .data/storage           —— fs 存储
-#   .output/public/uploads  —— 本地上传目录（同时是 compose 具名卷挂载点，
-#                              首次挂载继承 node 属主，保证能写入用户上传文件）
+#   ${UPLOADS_DIR}          —— 本地上传目录（同时是 compose 具名卷挂载点，
+#                              首次挂载继承 node 属主，保证能写入用户上传文件）；
+#                              路径由 build ARG 决定，改 UPLOADS_DIR 时会一并预建 + chown
 #   .sessions               —— Session 文件存储（sessionStoreType=file 时启用）
 #   logs/mail               —— 邮件发送日志（emailLogEnabled 开启时写入）
-RUN mkdir -p /app/.nitro/cache /app/.data/storage /app/.output/public/uploads /app/.sessions /app/logs/mail \
-    && chown -R node:node /app/.nitro /app/.data /app/.output/public/uploads /app/.sessions /app/logs
+RUN mkdir -p /app/.nitro/cache /app/.data/storage "${UPLOADS_DIR}" /app/.sessions /app/logs/mail \
+    && chown -R node:node /app/.nitro /app/.data "${UPLOADS_DIR}" /app/.sessions /app/logs
 
 # 以非 root 用户运行
 USER node

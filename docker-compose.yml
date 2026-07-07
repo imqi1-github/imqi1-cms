@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # 传给 Dockerfile 用于动态预建 + chown 上传目录，与下方 environment / 卷挂载点同源。
+        UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
     image: imqi1-nodejs:latest
     container_name: imqi1-app
     restart: unless-stopped
@@ -14,11 +17,19 @@ services:
       DB_PORT: "3306"
       REDIS_HOST_PROD: redis
       REDIS_PORT_PROD: "6379"
+      # 本地上传目录：应用运行时（getUploadsDir）与下方卷挂载点共用同一路径，
+      # 保证不设也能对上默认的 .output/public/uploads。若在 .env/shell 中设置了
+      # UPLOADS_DIR，二者会一起跟随，避免写入位置与持久化卷错配。
+      UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
     env_file:
       - .env
     volumes:
-      # 用户上传文件持久化（应用运行时写入）
-      - uploads:/app/.output/public/uploads
+      # 用户上传文件持久化（应用运行时写入）；挂载点跟随 UPLOADS_DIR。
+      # 注意：若把 UPLOADS_DIR 指向 /app/.output/public/uploads 之外的路径，
+      # 该路径在镜像中不存在时，具名卷首次挂载会以 root 属主创建，非 root 的
+      # node 用户可能无法写入（EACCES）。此时需在 Dockerfile 预建该目录并
+      # chown node:node，或改用已 chown 的路径。
+      - uploads:${UPLOADS_DIR:-/app/.output/public/uploads}
     depends_on:
       mysql:
         condition: service_healthy
