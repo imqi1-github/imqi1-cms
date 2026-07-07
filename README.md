@@ -450,6 +450,8 @@ const _cdnUrl = "https://cdn.imqi1.com"; // CDN 根地址（未用 CDN 可与站
 
 项目的常用命令都收敛在根目录 `package.json` 的 `scripts` 中，下面按用途分组说明。带 `pre` / `post` 前缀的钩子（`prebuild`、`postbuild`、`postinstall`）由 Bun 在对应主命令前后自动执行，一般无需手动调用。
 
+> **运维脚本的独立依赖**：部分脚本（`upload:cos`、`upload:server`、`compress:livephoto`、`db:init` 等）依赖较重的包（`ffmpeg-static` 约 80M、`cos-nodejs-sdk-v5`、`ssh2-sftp-client`、`mysql2`、`tsx`）。这些包已从根 `package.json` 移到 `scripts/package.json` 单独管理，**不参与主项目 `bun install` 与 Docker 构建**，以加快日常安装。首次运行这些脚本前，先执行一次 `bun run scripts:install`（即 `bun install --cwd scripts`）安装脚本依赖。脚本中共享的轻量依赖（如 `dotenv`、`bcryptjs`、`ipdb`）仍由根 `node_modules` 提供，无需重复安装。
+
 ### 开发与构建
 
 | 命令               | 说明                                                                                                                        |
@@ -483,6 +485,7 @@ const _cdnUrl = "https://cdn.imqi1.com"; // CDN 根地址（未用 CDN 可与站
 
 | 命令                         | 说明                                                              |
 |------------------------------|-------------------------------------------------------------------|
+| `bun run scripts:install`    | 安装运维脚本的独立依赖（`scripts/package.json`），运行下方需要重依赖的脚本前执行一次即可。 |
 | `bun run check:update`       | 从 npm 检查项目依赖是否有新版本。                                 |
 | `bun run get:ip`             | 查询 IP 的地理归属信息（IP 归属地数据库工具），基于纯真IP数据库。 |
 | `bun run compress:livephoto` | 压缩实况照片（JPEG + 内嵌 MP4 的合并文件）。                      |
