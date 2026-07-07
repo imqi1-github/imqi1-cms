@@ -5,6 +5,7 @@ import * as path from "path";
 import { getUser } from "#server/lib/auth";
 import type { AttachmentUploadLocation, LocalUploadResult } from "#server/types/apis/upload-strategy";
 import { createAttachmentMetadata } from "#server/utils/attachmentMetadata";
+import { getPublicDir } from "#server/utils/attachment-file";
 import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import prisma from "#server/utils/prisma";
@@ -59,7 +60,7 @@ async function uploadToLocal(fileBuffer: Buffer, fileName: string): Promise<Loca
     const now = new Date();
     const year = String(now.getFullYear());
     const month = String(now.getMonth() + 1).padStart(2, "0");
-    const uploadDir = path.join(process.cwd(), "public", "uploads", year, month);
+    const uploadDir = path.join(getPublicDir(), "uploads", year, month);
     await fs.mkdir(uploadDir, { recursive: true });
 
     const filePath = path.join(uploadDir, fileName);

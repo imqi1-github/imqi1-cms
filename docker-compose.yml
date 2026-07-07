@@ -30,8 +30,14 @@ services:
     container_name: imqi1-mysql
     restart: unless-stopped
     environment:
+      # root 密码：MySQL 镜像强制要求设置，且 root 账户无法物理删除。
+      # 但应用连接与下方 healthcheck 全部使用 nodejs，root 仅存在、不被使用。
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: ${DB_NAME:-imqi1}
+      # 首次初始化（数据卷为空）时自动创建 nodejs 用户，并授予 MYSQL_DATABASE 全部权限。
+      # 官方镜像仅在首次初始化时执行这些变量；已存在的卷不会重建用户。
+      MYSQL_USER: ${DB_USER:-nodejs}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -44,7 +50,9 @@ services:
       # 注意：仅当 mysql-data 卷为空时才会执行；卷已有数据则跳过（不会覆盖已有数据）。
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_PASSWORD:-root}"]
+      # 用 nodejs 应用账户探活：只有当 nodejs 用户初始化完成后才判定 healthy，
+      # app 因此会等到用户就绪再启动，避免启动初期的 Access denied。
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-nodejs}", "-p${DB_PASSWORD:-root}"]
       interval: 10s
       timeout: 5s
       retries: 10

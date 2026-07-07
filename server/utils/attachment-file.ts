@@ -8,6 +8,19 @@ interface AttachmentFileTarget {
   url: string;
 }
 
+/**
+ * 本地上传文件的静态资源根目录（uploads 的上级 public）。
+ *
+ * 生产环境 Nitro 从 .output/public 提供静态文件，且 cwd=/app 下不存在裸 public 目录，
+ * 因此写入/读取都必须落在 .output/public，才能与静态服务、compose 具名卷一致；
+ * 开发环境（bun run dev）cwd 为项目根，静态文件从 public 提供。
+ */
+export function getPublicDir(): string {
+  return process.env.NODE_ENV === "production"
+    ? path.join(process.cwd(), ".output", "public")
+    : path.join(process.cwd(), "public");
+}
+
 const getLocalUploadPath = (url: string) => {
   const cleanUrl = url.trim().split("#")[0]?.split("?")[0] ?? url.trim();
   let pathname = cleanUrl;
@@ -28,7 +41,7 @@ const getLocalUploadPath = (url: string) => {
   if (!normalized.startsWith("/uploads/")) return null;
   if (normalized.split("/").some(segment => segment === "..")) return null;
 
-  return path.join(process.cwd(), "public", normalized.replace(/^\/+/, ""));
+  return path.join(getPublicDir(), normalized.replace(/^\/+/, ""));
 };
 
 export async function deleteAttachmentFile(attachment: AttachmentFileTarget) {

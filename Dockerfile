@@ -43,6 +43,18 @@ COPY --from=builder /app/.output ./.output
 # 用 builder 中完整的 undici 覆盖被裁剪的版本。
 COPY --from=builder /app/node_modules/undici ./.output/server/node_modules/undici
 
+# 运行时需要写入的目录（均以 process.cwd()=/app 为根）。
+# /app 及其内容由 root 通过 COPY 写入，非 root 的 node 用户无法在其中新建文件/目录，
+# 直接写会报 EACCES/ENOENT。这里预先创建并把所有权交给 node：
+#   .nitro/cache            —— ISR / fs 缓存
+#   .data/storage           —— fs 存储
+#   .output/public/uploads  —— 本地上传目录（同时是 compose 具名卷挂载点，
+#                              首次挂载继承 node 属主，保证能写入用户上传文件）
+#   .sessions               —— Session 文件存储（sessionStoreType=file 时启用）
+#   logs/mail               —— 邮件发送日志（emailLogEnabled 开启时写入）
+RUN mkdir -p /app/.nitro/cache /app/.data/storage /app/.output/public/uploads /app/.sessions /app/logs/mail \
+    && chown -R node:node /app/.nitro /app/.data /app/.output/public/uploads /app/.sessions /app/logs
+
 # 以非 root 用户运行
 USER node
 

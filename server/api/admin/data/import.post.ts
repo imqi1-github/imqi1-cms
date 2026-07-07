@@ -15,6 +15,8 @@ import type { DataTransferPayload, PrismaModelDelegate } from "#server/types/api
  * 任一步失败则整体回滚，不会留下半还原的脏数据。
  *
  * 数据范围排除 users 与 sessions，因此当前管理员登录态在导入后依然有效。
+ * 此外 informations 表中的 sessionStoreType（Session 存储方式）属于本机部署配置，
+ * 导入时保留原值、不被备份文件覆盖。
  */
 export default defineEventHandler(async event => {
 	const body = await readBody(event);
@@ -60,6 +62,10 @@ export default defineEventHandler(async event => {
 			async tx => {
 				const counts: Record<string, number> = {};
 
+				// 记住当前的 Session 存储方式：该配置属于本机部署环境，不应被外来备份覆盖，
+				// 与 users / sessions 被排除的考量一致（保证导入后登录态与会话存储行为不变）。
+				const sessionStore = await tx.informations.findUnique({ where: { key: "sessionStoreType" } });
+
 				// 关闭外键检查
 				await tx.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 0");
 
@@ -71,7 +77,11 @@ export default defineEventHandler(async event => {
 
 					// 顺序写入
 					for (const spec of DATA_TABLES) {
-						const rows = payload.tables[spec.model];
+						let rows = payload.tables[spec.model];
+						// informations 表：剔除备份中的 sessionStoreType，保留本机原值（见下方补回）
+						if (spec.model === "informations" && Array.isArray(rows)) {
+							rows = rows.filter(row => row?.key !== "sessionStoreType");
+						}
 						if (!Array.isArray(rows) || rows.length === 0) {
 							counts[spec.model] = 0;
 							continue;
@@ -81,6 +91,11 @@ export default defineEventHandler(async event => {
 						const data = reviveRowsForImport(rows, spec.dateFields);
 						const result = await delegate.createMany({ data });
 						counts[spec.model] = result.count;
+					}
+
+					// 补回导入前的 Session 存储方式（不受备份文件影响）
+					if (sessionStore) {
+						await tx.informations.create({ data: { key: "sessionStoreType", value: sessionStore.value } });
 					}
 				} finally {
 					// 无论成功与否都恢复外键检查（同一连接上的会话变量）

@@ -17,14 +17,14 @@
 import { defineSiteConfig } from "./lib/site-config";
 
 // 原始字面量值（修改这些即可，下方派生字段自动更新）
-const _name = "ImQi1";
-const _desc = "做技术的分享者、生活的摄影师、时事的评论员。";
-const _displayName = "做技术的分享者 · 生活的摄影师 · 时事的评论员";
-const _nickname = "棋";
-const _ownerName = "Qi1";
+const _name = "ImQi2";
+const _desc = "12312313213213";
+const _displayName = "1131231231231";
+const _nickname = "棋2";
+const _ownerName = "Qi2";
 const _avatarPath = "/imgs/avatar.webp";
-const _url = "https://imqi1.com";
-const _cdnUrl = "https://cdn.imqi1.com";
+const _url = "http://localhost:3000";
+const _cdnUrl = "";
 const _host = new URL(_url).hostname;
 const _isProduction = process.env.NODE_ENV === "production";
 
