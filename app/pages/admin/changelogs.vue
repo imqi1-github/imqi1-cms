@@ -205,16 +205,21 @@ onMounted(() => {
               <div class="flex items-start gap-2">
                 <div class="w-28 shrink-0">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
-                  <Select v-model="entry.type">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="option in CHANGELOG_TYPES" :key="option" :value="option">
-                        {{ option }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <ClientOnly>
+                    <Select v-model="entry.type">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="option in CHANGELOG_TYPES" :key="option" :value="option">
+                          {{ option }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <template #fallback>
+                      <div class="h-9 bg-muted rounded-md animate-pulse" />
+                    </template>
+                  </ClientOnly>
                 </div>
                 <div class="flex-1 min-w-0">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>

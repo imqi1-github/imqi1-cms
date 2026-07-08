@@ -301,42 +301,57 @@ onMounted(() => {
         <div class="flex flex-wrap gap-4">
           <div class="flex items-center gap-2">
             <Label for="category-filter">分类:</Label>
-            <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: AcceptableValue) => filterByCategory(v == null ? null : Number(v))">
-              <SelectTrigger class="w-45">
-                <SelectValue placeholder="全部分类" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem :value="null">全部分类</SelectItem>
-                <SelectItem v-for="category in categories" :key="category.mid ?? category.name" :value="category.mid">
-                  {{ category.name }} ({{ category.postCount }})
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <ClientOnly>
+              <Select id="category-filter" v-model="selectedCategory" @update:model-value="(v: AcceptableValue) => filterByCategory(v == null ? null : Number(v))">
+                <SelectTrigger class="w-45">
+                  <SelectValue placeholder="全部分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">全部分类</SelectItem>
+                  <SelectItem v-for="category in categories" :key="category.mid ?? category.name" :value="category.mid">
+                    {{ category.name }} ({{ category.postCount }})
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <template #fallback>
+                <div class="w-45 h-9 bg-muted rounded-md animate-pulse" />
+              </template>
+            </ClientOnly>
           </div>
           <div class="flex items-center gap-2">
             <Label for="tag-filter">标签:</Label>
-            <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: AcceptableValue) => filterByTag(v == null ? null : Number(v))">
-              <SelectTrigger class="w-45">
-                <SelectValue placeholder="全部标签" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem :value="null">全部标签</SelectItem>
-                <SelectItem v-for="tag in tags" :key="tag.mid ?? tag.name" :value="tag.mid"> {{ tag.name }} ({{ tag.postCount }}) </SelectItem>
-              </SelectContent>
-            </Select>
+            <ClientOnly>
+              <Select id="tag-filter" v-model="selectedTag" @update:model-value="(v: AcceptableValue) => filterByTag(v == null ? null : Number(v))">
+                <SelectTrigger class="w-45">
+                  <SelectValue placeholder="全部标签" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">全部标签</SelectItem>
+                  <SelectItem v-for="tag in tags" :key="tag.mid ?? tag.name" :value="tag.mid"> {{ tag.name }} ({{ tag.postCount }}) </SelectItem>
+                </SelectContent>
+              </Select>
+              <template #fallback>
+                <div class="w-45 h-9 bg-muted rounded-md animate-pulse" />
+              </template>
+            </ClientOnly>
           </div>
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
-            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: AcceptableValue) => filterByStatus(v == null ? null : Number(v))">
-              <SelectTrigger class="w-35">
-                <SelectValue placeholder="全部状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="option in statusOptions" :key="option.value ?? option.label" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <ClientOnly>
+              <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: AcceptableValue) => filterByStatus(v == null ? null : Number(v))">
+                <SelectTrigger class="w-35">
+                  <SelectValue placeholder="全部状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in statusOptions" :key="option.value ?? option.label" :value="option.value">
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <template #fallback>
+                <div class="w-35 h-9 bg-muted rounded-md animate-pulse" />
+              </template>
+            </ClientOnly>
           </div>
           <Button variant="outline" @click="clearFilters">
             <Icon name="lucide:x" class="mr-2 size-4" />

@@ -217,16 +217,21 @@ onMounted(() => {
         <div class="flex flex-wrap gap-4">
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
-            <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: any) => filterByStatus(v ?? null)">
-              <SelectTrigger class="w-35">
-                <SelectValue placeholder="全部状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="option in statusOptions" :key="option.value ?? option.label" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <ClientOnly>
+              <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: any) => filterByStatus(v ?? null)">
+                <SelectTrigger class="w-35">
+                  <SelectValue placeholder="全部状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in statusOptions" :key="option.value ?? option.label" :value="option.value">
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <template #fallback>
+                <div class="w-35 h-9 bg-muted rounded-md animate-pulse" />
+              </template>
+            </ClientOnly>
           </div>
         </div>
       </CardContent>
