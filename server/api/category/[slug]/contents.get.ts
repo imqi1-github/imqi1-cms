@@ -196,10 +196,10 @@ export default defineEventHandler(async event => {
       };
     });
 
-    // 从 contentrelations 中获取标签（只取 type="tag" 的）
-    const tagNames = content.contentrelations
+    // 从 contentrelations 中获取标签（只取 type="tag" 的，保留 name + slug）
+    const tags = content.contentrelations
       ?.filter(r => r.metas.type === "tag")
-      .map(r => r.metas.name) || [];
+      .map(r => ({ name: r.metas.name, slug: r.metas.slug ?? "" })) || [];
 
     return {
       cid: content.cid,
@@ -212,7 +212,7 @@ export default defineEventHandler(async event => {
       many_covers: content.many_covers,
       covers,
       travelCount: content.travels.length,
-      tags: tagNames, // 保持为字符串数组，前端会处理
+      tags, // [{ name, slug }]，前端直接用 slug 生成链接
       user: content.user,
     };
   });

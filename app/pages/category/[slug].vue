@@ -29,20 +29,6 @@ const category = computed(() => data.value?.data?.category);
 const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
-// 获取所有标签用于构建 slug 映射
-const { data: tagsData } = await useFetch("/api/tags", {
-  headers: getInternalRequestHeaders(),
-});
-const tagSlugMap = computed(() => {
-  const map = new Map<string, string>();
-  if (tagsData.value?.data) {
-    tagsData.value.data.forEach(tag => {
-      map.set(tag.name, tag.slug ?? "");
-    });
-  }
-  return map;
-});
-
 // 判断是否为图片分类
 const isPhotoCategory = computed(() => slug === photoCategorySlug.value);
 
@@ -469,13 +455,13 @@ onMounted(() => {
                 <span v-if="content.tags.length > 0" class="flex items-center flex-wrap">
                   <Icon name="ri-hashtag" class="size-4" />
                   <NuxtLink
-                    v-for="(tagName, index) in content.tags"
+                    v-for="(tag, index) in content.tags"
                     :key="index"
                     v-tooltip="`标签`"
-                    :to="`/tag/${tagSlugMap.get(tagName) || tagName}`"
+                    :to="`/tag/${tag.slug || tag.name}`"
                     class="mr-1 transition-colors"
                     :class="content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
-                    {{ tagName }}
+                    {{ tag.name }}
                   </NuxtLink>
                 </span>
                 <span v-tooltip="`评论数量`" class="flex items-center">
