@@ -2221,7 +2221,7 @@ onUnmounted(() => {
 }
 
 .markdown-body > * ~ * {
-  margin-top: 1.5em;
+  margin-top: 1em;
 }
 
 /* 图片容器 */
@@ -2361,7 +2361,6 @@ onUnmounted(() => {
 
 .markdown-body
   :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
-  margin: 1.5rem 0;
   text-indent: 2em;
 }
 
