@@ -14,7 +14,7 @@ import type { H3Event } from "h3";
  *   signature    = HMAC-SHA256(MINI_API_SECRET, stringToSign) 的小写 hex
  * 其中：
  *   - METHOD    请求方法大写，如 GET / POST
- *   - PATH      请求的完整路径含查询串，与服务端收到的 `req.url` 完全一致，如 `/api/mini/post/123`
+ *   - PATH      请求的完整路径含查询串，与服务端收到的 `req.url` 完全一致，如 `/api/mini/content/123`
  *   - timestamp Unix 秒级时间戳（字符串），服务端校验与当前时间偏差不超过 ±MAX_SKEW_SECONDS
  *   - nonce     客户端生成的随机串（1~128 字符），仅参与签名，用于让相同请求的签名不重复
  *

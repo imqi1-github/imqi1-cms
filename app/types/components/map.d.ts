@@ -45,7 +45,7 @@ export interface AMapClusterEvent {
 }
 
 /** 旅行帖子 */
-export interface TravelPost {
+export interface TravelContent {
   url: string;
   title: string;
   coverCount: number;
@@ -70,7 +70,7 @@ export interface Place {
   cover: string | null;
   longitude: number;
   latitude: number;
-  posts: TravelPost[];
+  contents: TravelContent[];
   /** 访客分布视图：该城市内的每位访客（昵称 / 网址 / 评论文章）。我的足迹视图留空 */
   readers?: Reader[];
   /** 博客网络视图：站点头像（标记用）+ 来源（订阅/友链）+ 跳转信息。其它视图留空 */
@@ -94,7 +94,7 @@ export type Capsule = { key: string; label: string; icon: string; to: string };
 export type TravelItem = {
   name: string;
   create_time: string;
-  posts: {
+  contents: {
       cid: number;
       title: string;
   }[];
@@ -108,7 +108,7 @@ export type TravelItem = {
   cids: number[];
 }
 
-export type PostListItem = {
+export type ContentListItem = {
   create_time: string;
   desc: string | null;
   cid: number;
@@ -129,7 +129,7 @@ export type PostListItem = {
       uid: number;
       avatar: string | null;
   };
-  postrelations: {
+  contentrelations: {
       cid: number;
       mid: number;
       metas: {

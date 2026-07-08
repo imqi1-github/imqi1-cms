@@ -133,14 +133,14 @@ usePageSeo({
               </div>
 
               <!-- 文章列表 -->
-              <ul v-if="category.posts.length > 0" class="space-y-1.5 ml-4">
-                <li v-for="post in category.posts" :key="post.cid">
+              <ul v-if="category.contents.length > 0" class="space-y-1.5 ml-4">
+                <li v-for="content in category.contents" :key="content.cid">
                   <NuxtLink
-                    :to="`/content/${category.slug}/${post.slug || post.cid}`"
+                    :to="`/content/${category.slug}/${content.slug || content.cid}`"
                     class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm inline-block">
-                    {{ post.title }}
+                    {{ content.title }}
                   </NuxtLink>
-                  <span class="text-xs text-slate-400 dark:text-gray-500 ml-2">{{ formatDate(post.create_time) }}</span>
+                  <span class="text-xs text-slate-400 dark:text-gray-500 ml-2">{{ formatDate(content.create_time) }}</span>
                 </li>
               </ul>
 
@@ -157,9 +157,9 @@ usePageSeo({
             <NuxtLink
               v-for="comment in recentComments"
               :key="comment.coid"
-              :to="comment.posts ? `${comment.posts.url}#comment-${comment.coid}` : '#'"
+              :to="comment.contents ? `${comment.contents.url}#comment-${comment.coid}` : '#'"
               class="block pl-4 border-l-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
-              :class="{ 'pointer-events-none opacity-50': !comment.posts }">
+              :class="{ 'pointer-events-none opacity-50': !comment.contents }">
               <div class="mb-2">
                 <span class="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {{ comment.author }}
@@ -169,9 +169,9 @@ usePageSeo({
 
               <div class="ml-4 space-y-2">
                 <p class="text-slate-700 dark:text-gray-300 text-sm mb-1">{{ comment.text }}</p>
-                <div v-if="comment.posts" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div v-if="comment.contents" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   <Icon name="ri-article-line" class="size-4" />
-                  <span>{{ comment.posts.title }}</span>
+                  <span>{{ comment.contents.title }}</span>
                   <Icon name="ri-external-link-line" class="size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>

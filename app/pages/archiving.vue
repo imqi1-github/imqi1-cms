@@ -100,7 +100,7 @@ function isMonthExpanded(year: number, month: number): boolean {
               :class="{ 'rotate-0': isMonthExpanded(group.year, group.month), '-rotate-90': !isMonthExpanded(group.year, group.month) }" />
             <Icon name="lucide:calendar" class="size-5 text-primary" />
             <span class="text-xl font-bold">{{ group.year }}年{{ group.month }}月</span>
-            <span class="text-sm font-normal text-muted-foreground">({{ group.posts.length }} 篇)</span>
+            <span class="text-sm font-normal text-muted-foreground">({{ group.contents.length }} 篇)</span>
           </div>
           <Icon
             :name="isMonthExpanded(group.year, group.month) ? 'lucide:chevron-up' : 'lucide:chevron-down'"
@@ -112,19 +112,19 @@ function isMonthExpanded(year: number, month: number): boolean {
           v-show="isMonthExpanded(group.year, group.month)"
           class="px-4 pb-3 space-y-2">
           <div
-            v-for="post in group.posts"
-            :key="post.cid"
+            v-for="content in group.contents"
+            :key="content.cid"
             class="group flex items-center gap-3 py-2.5 px-4 rounded-lg hover:bg-muted/50 transition-colors">
             <!-- 日期 -->
             <div class="text-sm text-muted-foreground w-16 shrink-0">
-              {{ formatDate(post.createTime) }}
+              {{ formatDate(content.createTime) }}
             </div>
 
             <!-- 文章标题 -->
             <NuxtLink
-              :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug || post.cid}`"
+              :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug || content.cid}`"
               class="flex-1 font-medium hover:text-primary transition-colors line-clamp-1">
-              {{ post.title }}
+              {{ content.title }}
             </NuxtLink>
 
             <!-- 箭头图标 -->

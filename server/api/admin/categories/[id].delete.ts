@@ -58,13 +58,13 @@ export default defineEventHandler(async event => {
     }
 
     // 获取该分类下的所有文章关联
-    const postrelations = await prisma.postrelations.findMany({
+    const contentrelations = await prisma.contentrelations.findMany({
       where: { mid: categoryId },
       select: { cid: true },
     });
 
     // 如果有关联文章，需要转移到其他分类
-    if (postrelations.length > 0) {
+    if (contentrelations.length > 0) {
       // 获取第一个可用的目标分类（不是要删除的分类）
       const targetCategory = await prisma.metas.findFirst({
         where: {
@@ -82,9 +82,9 @@ export default defineEventHandler(async event => {
       }
 
       // 获取每个文章当前的所有分类
-      for (const relation of postrelations) {
+      for (const relation of contentrelations) {
         // 检查该文章是否还有其他分类
-        const otherRelations = await prisma.postrelations.findMany({
+        const otherRelations = await prisma.contentrelations.findMany({
           where: {
             cid: relation.cid,
             mid: { not: categoryId },
@@ -93,7 +93,7 @@ export default defineEventHandler(async event => {
 
         // 如果文章没有其他分类了，创建新的关联到目标分类
         if (otherRelations.length === 0) {
-          await prisma.postrelations.create({
+          await prisma.contentrelations.create({
             data: {
               cid: relation.cid,
               mid: targetCategory.mid,
@@ -103,7 +103,7 @@ export default defineEventHandler(async event => {
       }
 
       // 删除原分类的所有关联关系
-      await prisma.postrelations.deleteMany({
+      await prisma.contentrelations.deleteMany({
         where: { mid: categoryId },
       });
     }

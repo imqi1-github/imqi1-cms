@@ -89,12 +89,12 @@ export default defineEventHandler(async event => {
           parent_id: true,
           agent: true,
           ip: true,
-          posts: {
+          content_ref: {
             select: {
               cid: true,
               title: true,
               slug: true,
-              postrelations: {
+              contentrelations: {
                 where: { metas: { type: "category" } },
                 select: { metas: { select: { slug: true } } },
                 take: 1,
@@ -120,8 +120,10 @@ export default defineEventHandler(async event => {
     // 在服务端生成头像 URL 和添加归属地信息
     const commentsWithAvatar = comments.map(comment => {
       const ipInfo = ipLocationCache.get(comment.ip || "");
+      const { content_ref, ...rest } = comment;
       return {
-        ...comment,
+        ...rest,
+        contents: content_ref, // 保持前端契约：关联文章仍以 contents 返回
         avatarUrl: getAvatarUrl(comment.mail, avatarService),
         location: formatLocation(ipInfo?.location || ""),
         isp: ipInfo?.isp || "",

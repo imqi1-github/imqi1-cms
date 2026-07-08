@@ -31,7 +31,7 @@ const pageTitle = computed(() => {
   // 路径到标题的映射
   const pathToTitle: Record<string, string> = {
     '/admin': '仪表盘',
-    '/admin/posts': '文章管理',
+    '/admin/contents': '文章管理',
     '/admin/pages': '页面管理',
     '/admin/comments': '评论管理',
     '/admin/categories': '分类管理',
@@ -50,7 +50,7 @@ const pageTitle = computed(() => {
     return pathToTitle[route.path]
   }
 
-  // 对于子路由（如 /admin/posts/edit），匹配父路径
+  // 对于子路由（如 /admin/contents/edit），匹配父路径
   const parentPath = Object.keys(pathToTitle)
     .sort((a, b) => b.length - a.length) // 按长度降序，优先匹配更长的路径
     .find(path => route.path.startsWith(path + '/'))
@@ -78,7 +78,7 @@ const navItems = [
   },
   {
     title: '文章管理',
-    href: '/admin/posts',
+    href: '/admin/contents',
     icon: 'lucide:file-text',
   },
   {

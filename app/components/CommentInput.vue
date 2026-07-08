@@ -10,7 +10,7 @@ import type { CommentSubmitResponse } from "~/types/apis/comments";
 const { success, error: showError } = useFrontNotification();
 
 const props = defineProps<{
-  postId: number;
+  contentId: number;
   isReply?: boolean;
   replyTo?: {
     id: number;
@@ -267,7 +267,7 @@ async function submitComment() {
       credentials: "include",
       body: {
         csrfToken: csrfToken.value,
-        cid: props.postId,
+        cid: props.contentId,
         content: formData.value.content,
         name: formData.value.name,
         mail: formData.value.mail,

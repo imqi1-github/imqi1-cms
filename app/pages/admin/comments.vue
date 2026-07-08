@@ -133,7 +133,7 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
 }
 
 // 按文章筛选评论
-function filterByPost(cid: number) {
+function filterByContent(cid: number) {
   filterCid.value = cid;
   fetchComments(1);
 }
@@ -246,18 +246,18 @@ function goToPage(page: number) {
   }
 }
 
-function getPostTitle(comment: CommentItem) {
-  return comment.posts?.title || "未知";
+function getContentTitle(comment: CommentItem) {
+  return comment.contents?.title || "未知";
 }
 
 function getCommentFrontendUrl(comment: CommentItem) {
-  const post = comment.posts;
-  if (!post?.slug) return null;
-  if (post.slug === "messages") return `/messages#comment-${comment.coid}`;
+  const content = comment.contents;
+  if (!content?.slug) return null;
+  if (content.slug === "messages") return `/messages#comment-${comment.coid}`;
 
-  const categorySlug = post.postrelations?.[0]?.metas?.slug;
+  const categorySlug = content.contentrelations?.[0]?.metas?.slug;
   if (!categorySlug) return null;
-  return `/content/${categorySlug}/${post.slug}#comment-${comment.coid}`;
+  return `/content/${categorySlug}/${content.slug}#comment-${comment.coid}`;
 }
 
 function openFrontendComment(comment: CommentItem) {
@@ -311,7 +311,7 @@ onMounted(() => {
       <div>
         <h2 class="text-2xl font-bold">评论管理</h2>
         <p class="text-sm text-muted-foreground mt-1">
-          {{ filterCid ? `筛选文章: ${comments[0]?.posts?.title || ''}` : '审核和管理用户评论' }}
+          {{ filterCid ? `筛选文章: ${comments[0]?.contents?.title || ''}` : '审核和管理用户评论' }}
         </p>
       </div>
       <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -421,9 +421,9 @@ onMounted(() => {
                   variant="ghost"
                   size="sm"
                   class="h-auto p-1 justify-start text-left font-normal hover:bg-muted"
-                  @click="filterByPost(comment.cid)">
+                  @click="filterByContent(comment.cid)">
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
-                  <span class="text-sm truncate">{{ getPostTitle(comment) }}</span>
+                  <span class="text-sm truncate">{{ getContentTitle(comment) }}</span>
                 </Button>
               </TableCell>
               <TableCell>
@@ -538,9 +538,9 @@ onMounted(() => {
                   variant="ghost"
                   size="sm"
                   class="h-auto p-0.5 justify-start text-left font-normal hover:bg-muted"
-                  @click="filterByPost(comment.cid)">
+                  @click="filterByContent(comment.cid)">
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
-                  <span class="truncate">{{ getPostTitle(comment) }}</span>
+                  <span class="truncate">{{ getContentTitle(comment) }}</span>
                 </Button>
                 <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</span>
                 <span>{{ comment.ip }}</span>
@@ -644,9 +644,9 @@ onMounted(() => {
                   variant="ghost"
                   size="sm"
                   class="h-auto p-0.5 justify-start text-left font-normal hover:bg-muted"
-                  @click="filterByPost(comment.cid)">
+                  @click="filterByContent(comment.cid)">
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
-                  <span class="truncate">{{ getPostTitle(comment) }}</span>
+                  <span class="truncate">{{ getContentTitle(comment) }}</span>
                 </Button>
                 <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</span>
                 <span>{{ comment.ip }}</span>

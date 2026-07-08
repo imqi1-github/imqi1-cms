@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `subscribes` (
   PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `posts` (
+CREATE TABLE IF NOT EXISTS `contents` (
   `cid` INTEGER NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(255) NOT NULL,
   `slug` VARCHAR(255) NULL,
@@ -139,11 +139,11 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `tags` VARCHAR(500) NULL,
   `type` INTEGER NOT NULL DEFAULT 0,
   `uid` INTEGER NOT NULL DEFAULT 1,
-  INDEX `Posts_status_type_create_time_idx`(`status`, `type`, `create_time`),
-  INDEX `Posts_uid_fkey`(`uid`),
-  UNIQUE INDEX `Posts_slug_type_key`(`slug`, `type`),
+  INDEX `Contents_status_type_create_time_idx`(`status`, `type`, `create_time`),
+  INDEX `Contents_uid_fkey`(`uid`),
+  UNIQUE INDEX `Contents_slug_type_key`(`slug`, `type`),
   PRIMARY KEY (`cid`),
-  CONSTRAINT `Posts_uid_fkey` FOREIGN KEY (`uid`) REFERENCES `users`(`uid`) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT `Contents_uid_fkey` FOREIGN KEY (`uid`) REFERENCES `users`(`uid`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `comments` (
@@ -160,27 +160,27 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `ip` VARCHAR(45) NULL,
   INDEX `Comments_cid_fkey`(`cid`),
   PRIMARY KEY (`coid`),
-  CONSTRAINT `Comments_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `posts`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `Comments_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `postrelations` (
+CREATE TABLE IF NOT EXISTS `contentrelations` (
   `cid` INTEGER NOT NULL,
   `mid` INTEGER NOT NULL,
-  INDEX `PostRelation_mid_cid_idx`(`mid`, `cid`),
-  INDEX `PostRelation_cid_fkey`(`cid`),
+  INDEX `ContentRelation_mid_cid_idx`(`mid`, `cid`),
+  INDEX `ContentRelation_cid_fkey`(`cid`),
   PRIMARY KEY (`mid`, `cid`),
-  CONSTRAINT `PostRelation_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `posts`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `PostRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `metas`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `ContentRelation_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `ContentRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `metas`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `postattachments` (
+CREATE TABLE IF NOT EXISTS `contentattachments` (
   `aid` INTEGER NOT NULL,
   `cid` INTEGER NOT NULL,
-  INDEX `PostAttachments_aid_fkey`(`aid`),
-  INDEX `PostAttachments_cid_fkey`(`cid`),
+  INDEX `ContentAttachments_aid_fkey`(`aid`),
+  INDEX `ContentAttachments_cid_fkey`(`cid`),
   PRIMARY KEY (`aid`, `cid`),
-  CONSTRAINT `PostAttachments_aid_fkey` FOREIGN KEY (`aid`) REFERENCES `attachments`(`aid`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `PostAttachments_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `posts`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `ContentAttachments_aid_fkey` FOREIGN KEY (`aid`) REFERENCES `attachments`(`aid`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `ContentAttachments_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `subscribeposts` (
@@ -211,14 +211,14 @@ CREATE TABLE IF NOT EXISTS `sessions` (
   PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `posttravels` (
+CREATE TABLE IF NOT EXISTS `contenttravels` (
   `travel_id` INTEGER NOT NULL,
   `cid` INTEGER NOT NULL,
-  INDEX `PostTravels_travel_id_fkey`(`travel_id`),
-  INDEX `PostTravels_cid_fkey`(`cid`),
+  INDEX `ContentTravels_travel_id_fkey`(`travel_id`),
+  INDEX `ContentTravels_cid_fkey`(`cid`),
   PRIMARY KEY (`travel_id`, `cid`),
-  CONSTRAINT `PostTravels_travel_id_fkey` FOREIGN KEY (`travel_id`) REFERENCES `travels`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `PostTravels_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `posts`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `ContentTravels_travel_id_fkey` FOREIGN KEY (`travel_id`) REFERENCES `travels`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `ContentTravels_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -295,14 +295,14 @@ INSERT INTO `metas` (`mid`, `name`, `slug`, `desc`, `type`) VALUES
 ON DUPLICATE KEY UPDATE `mid` = `mid`;
 
 -- 3.3 示例文章（type=0 文章，status=1 已发布）
-INSERT INTO `posts` (`cid`, `title`, `slug`, `desc`, `content`, `create_time`, `update_time`, `status`, `comment_num`, `type`, `uid`) VALUES
+INSERT INTO `contents` (`cid`, `title`, `slug`, `desc`, `content`, `create_time`, `update_time`, `status`, `comment_num`, `type`, `uid`) VALUES
   (1, '你好，世界', 'hello-world', '这是一篇示例文章，用于演示站点的文章展示效果。',
    '# 你好，世界\n\n欢迎使用 **ImQi1 CMS**！这是一篇自动生成的示例文章。\n\n你可以在后台「文章管理」中编辑或删除它，然后开始创作属于你自己的内容。\n\n## Markdown 支持\n\n- 标题、段落、列表\n- **加粗**、*斜体*、`行内代码`\n- 代码块（基于 Shiki 高亮）\n- 图片、链接、引用等\n\n```js\nconsole.log("Hello, ImQi1 CMS!");\n```\n',
    NOW(3), NOW(3), 1, 1, 0, 1)
 ON DUPLICATE KEY UPDATE `cid` = `cid`;
 
 -- 3.4 文章 ↔ 分类 关联
-INSERT INTO `postrelations` (`cid`, `mid`) VALUES
+INSERT INTO `contentrelations` (`cid`, `mid`) VALUES
   (1, 1)
 ON DUPLICATE KEY UPDATE `cid` = `cid`;
 

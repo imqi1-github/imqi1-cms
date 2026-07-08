@@ -7,23 +7,23 @@ datasource db {
 }
 
 model attachments {
-  aid         Int               @id @default(autoincrement())
-  type        String
-  title       String
-  url         String
-  storage     String            @default("local")
-  metadata    Json?
-  create_time DateTime          @default(now())
-  posts       postattachments[]
+  aid                Int                  @id @default(autoincrement())
+  type               String
+  title              String
+  url                String
+  storage            String               @default("local")
+  metadata           Json?
+  create_time        DateTime             @default(now())
+  contentattachments contentattachments[]
 }
 
 model metas {
-  mid           Int             @id @default(autoincrement())
-  name          String          @unique(map: "Metas_name_key")
-  slug          String?         @unique(map: "Metas_slug_key")
-  desc          String?
-  type          String          @default("category")
-  postrelations postrelations[]
+  mid              Int                @id @default(autoincrement())
+  name             String             @unique(map: "Metas_name_key")
+  slug             String?            @unique(map: "Metas_slug_key")
+  desc             String?
+  type             String             @default("category")
+  contentrelations contentrelations[]
 
   @@index([mid, type], map: "Metas_mid_type_idx")
 }
@@ -48,7 +48,7 @@ model comments {
   parent_id   Int?
   agent       String?  @db.VarChar(500)
   ip          String?  @db.VarChar(45)
-  posts       posts    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comments_cid_fkey")
+  content_ref contents @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comments_cid_fkey")
 
   @@index([cid], map: "Comments_cid_fkey")
 }
@@ -77,53 +77,53 @@ model informations {
   value String
 }
 
-model posts {
-  cid           Int             @id @default(autoincrement())
-  title         String          @db.VarChar(255)
-  slug          String?         @db.VarChar(255)
-  desc          String?         @db.Text
-  content       String?         @db.LongText
-  create_time   DateTime        @default(now())
-  update_time   DateTime
-  status        Int             @default(1)
-  comment_num   Int             @default(0)
-  many_covers   Boolean         @default(false)
-  covers        String?         @db.Text
-  show_toc      Boolean         @default(false)
-  tags          String?         @db.VarChar(500)
-  type          Int             @default(0)
-  uid           Int             @default(1)
-  attachments   postattachments[]
-  comments      comments[]
-  travels       posttravels[]
-  user          users           @relation(fields: [uid], references: [uid], map: "Posts_uid_fkey")
-  postrelations postrelations[]
+model contents {
+  cid              Int                  @id @default(autoincrement())
+  title            String               @db.VarChar(255)
+  slug             String?              @db.VarChar(255)
+  desc             String?              @db.Text
+  content          String?              @db.LongText
+  create_time      DateTime             @default(now())
+  update_time      DateTime
+  status           Int                  @default(1)
+  comment_num      Int                  @default(0)
+  many_covers      Boolean              @default(false)
+  covers           String?              @db.Text
+  show_toc         Boolean              @default(false)
+  tags             String?              @db.VarChar(500)
+  type             Int                  @default(0)
+  uid              Int                  @default(1)
+  attachments      contentattachments[]
+  comments         comments[]
+  travels          contenttravels[]
+  user             users                @relation(fields: [uid], references: [uid], map: "Contents_uid_fkey")
+  contentrelations contentrelations[]
 
-  @@unique([slug, type], map: "Posts_slug_type_key")
-  @@index([status, type, create_time], map: "Posts_status_type_create_time_idx")
-  @@index([uid], map: "Posts_uid_fkey")
+  @@unique([slug, type], map: "Contents_slug_type_key")
+  @@index([status, type, create_time], map: "Contents_status_type_create_time_idx")
+  @@index([uid], map: "Contents_uid_fkey")
 }
 
-model postrelations {
-  cid   Int
-  mid   Int
-  posts posts @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostRelation_cid_fkey")
-  metas metas @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "PostRelation_mid_fkey")
+model contentrelations {
+  cid     Int
+  mid     Int
+  content contents @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "ContentRelation_cid_fkey")
+  metas   metas    @relation(fields: [mid], references: [mid], onDelete: Cascade, map: "ContentRelation_mid_fkey")
 
   @@id([mid, cid])
-  @@index([mid, cid], map: "PostRelation_mid_cid_idx")
-  @@index([cid], map: "PostRelation_cid_fkey")
+  @@index([mid, cid], map: "ContentRelation_mid_cid_idx")
+  @@index([cid], map: "ContentRelation_cid_fkey")
 }
 
-model postattachments {
+model contentattachments {
   aid        Int
   cid        Int
-  attachment attachments @relation(fields: [aid], references: [aid], onDelete: Cascade, map: "PostAttachments_aid_fkey")
-  post       posts       @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostAttachments_cid_fkey")
+  attachment attachments @relation(fields: [aid], references: [aid], onDelete: Cascade, map: "ContentAttachments_aid_fkey")
+  content    contents    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "ContentAttachments_cid_fkey")
 
   @@id([aid, cid])
-  @@index([aid], map: "PostAttachments_aid_fkey")
-  @@index([cid], map: "PostAttachments_cid_fkey")
+  @@index([aid], map: "ContentAttachments_aid_fkey")
+  @@index([cid], map: "ContentAttachments_cid_fkey")
 }
 
 model sessions {
@@ -171,7 +171,7 @@ model users {
   password    String
   create_time DateTime @default(now())
   auth_code   String?
-  posts       posts[]
+  contents    contents[]
 }
 
 model travels {
@@ -185,19 +185,19 @@ model travels {
   enabled     Boolean  @default(true)
   create_time DateTime @default(now())
 
-  posts       posttravels[]
+  contenttravels contenttravels[]
 
   @@index([sort], map: "Travels_sort_idx")
 }
 
 // 文章 ↔ 旅行地点 多对多关联表
-model posttravels {
+model contenttravels {
   travel_id Int
   cid       Int
-  travel    travels @relation(fields: [travel_id], references: [id], onDelete: Cascade, map: "PostTravels_travel_id_fkey")
-  post      posts   @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "PostTravels_cid_fkey")
+  travel    travels  @relation(fields: [travel_id], references: [id], onDelete: Cascade, map: "ContentTravels_travel_id_fkey")
+  content   contents @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "ContentTravels_cid_fkey")
 
   @@id([travel_id, cid])
-  @@index([travel_id], map: "PostTravels_travel_id_fkey")
-  @@index([cid], map: "PostTravels_cid_fkey")
+  @@index([travel_id], map: "ContentTravels_travel_id_fkey")
+  @@index([cid], map: "ContentTravels_cid_fkey")
 }

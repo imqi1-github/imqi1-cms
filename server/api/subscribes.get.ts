@@ -8,14 +8,14 @@ export default defineEventHandler(async event => {
     // 设置缓存头：CDN和浏览器缓存5分钟
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
-    const posts = await getSubscribePosts();
+    const contents = await getSubscribePosts();
 
     // 如果指定了limit，只返回前N条
-    const limitedPosts = limit ? posts.slice(0, limit) : posts;
+    const limitedContents = limit ? contents.slice(0, limit) : contents;
 
     return {
       success: true,
-      data: limitedPosts,
+      data: limitedContents,
     };
   } catch (error) {
     console.error(error);

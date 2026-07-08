@@ -232,36 +232,36 @@
                   <!-- 文章预览 - 客户端渲染以确保随机性 -->
                   <ClientOnly>
                     <div v-if="rightItem.type === 'article'" class="relative h-75 w-75 flex items-center justify-center">
-                      <div v-if="randomPost" class="flex flex-col w-full h-full justify-center">
+                      <div v-if="randomContent" class="flex flex-col w-full h-full justify-center">
                         <!-- 封面 -->
                         <div
-                          v-if="randomPost.covers && randomPost.covers.length > 0"
+                          v-if="randomContent.covers && randomContent.covers.length > 0"
                           class="relative mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
                           <img
-                            :src="(typeof randomPost.covers[0] === 'string' ? randomPost.covers[0] : randomPost.covers[0]?.url) || ''"
-                            :alt="randomPost.title"
+                            :src="(typeof randomContent.covers[0] === 'string' ? randomContent.covers[0] : randomContent.covers[0]?.url) || ''"
+                            :alt="randomContent.title"
                             class="w-full h-full object-cover"
                             loading="lazy" >
                           <!-- 关联地点角标 -->
                           <div
-                            v-if="randomPost.travelCount > 0"
+                            v-if="randomContent.travelCount > 0"
                             class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                             <Icon name="ri:map-pin-line" class="size-3.5" />
-                            <span>{{ randomPost.travelCount }}</span>
+                            <span>{{ randomContent.travelCount }}</span>
                           </div>
                         </div>
                         <!-- 标题 -->
                         <h3 class="text-slate-900 dark:text-white font-bold text-base line-clamp-2 mb-2">
-                          {{ randomPost.title }}
+                          {{ randomContent.title }}
                         </h3>
                         <!-- 描述 -->
-                        <p v-if="randomPost.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-3">
-                          {{ randomPost.desc }}
+                        <p v-if="randomContent.desc" class="text-slate-500 dark:text-gray-400 text-sm line-clamp-3">
+                          {{ randomContent.desc }}
                         </p>
                         <p v-else class="text-slate-400 dark:text-gray-500 text-sm italic">暂无描述</p>
                         <!-- 链接 -->
                         <NuxtLink
-                          :to="`/content/${randomPost.category?.slug || 'post'}/${randomPost.slug || randomPost.cid}`"
+                          :to="`/content/${randomContent.category?.slug || 'content'}/${randomContent.slug || randomContent.cid}`"
                           class="pt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline">
                           阅读全文 →
                         </NuxtLink>
@@ -287,16 +287,16 @@
       <div class="h-62.5" />
 
       <!-- 最新文章 -->
-      <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-recent-posts-title">
+      <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-recent-contents-title">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 id="index-recent-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
+            <h2 id="index-recent-contents-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
             <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
             <div class="text-slate-500 dark:text-gray-400 text-sm">生活中的小事、照片，感兴趣的技术等</div>
           </div>
 
           <!-- 查看更多 -->
-          <template v-if="recentPosts.length > 0">
+          <template v-if="recentContents.length > 0">
             <NuxtLink to="/archiving" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm">
               查看全部文章
               <Icon name="ri:arrow-right-line" aria-hidden="true" class="size-4" />
@@ -305,86 +305,86 @@
         </div>
 
         <!-- 文章列表 -->
-        <div v-if="recentPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+        <div v-if="recentContents.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
           <NuxtLink
-            v-for="post in recentPosts"
-            :key="post.cid"
-            :to="`/content/${post.categories?.[0]?.slug || 'post'}/${post.slug || post.cid}`"
-            :aria-label="`阅读文章：${post.title}`"
+            v-for="content in recentContents"
+            :key="content.cid"
+            :to="`/content/${content.categories?.[0]?.slug || 'content'}/${content.slug || content.cid}`"
+            :aria-label="`阅读文章：${content.title}`"
             class="block no-underline group">
             <div
               class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
               <!-- 封面占满整卡 -->
-              <div v-if="post.covers && post.covers.length > 0" class="absolute inset-0">
+              <div v-if="content.covers && content.covers.length > 0" class="absolute inset-0">
                 <img
-                  :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
-                  :alt="post.title"
+                  :src="(typeof content.covers[0] === 'string' ? content.covers[0] : content.covers[0]?.url) || ''"
+                  :alt="content.title"
                   class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                   loading="lazy" >
                 <!-- 多封面角标 -->
                 <div
-                  v-if="post.many_covers && post.covers.length > 1"
+                  v-if="content.many_covers && content.covers.length > 1"
                   class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                   <Icon name="ri-gallery-line" class="size-3.5" />
-                  <span>+{{ post.covers.length - 1 }}</span>
+                  <span>+{{ content.covers.length - 1 }}</span>
                 </div>
                 <!-- 关联地点角标 -->
                 <div
-                  v-if="post.travelCount > 0"
-                  :class="post.many_covers && post.covers.length > 1 ? 'top-10' : 'top-2'"
+                  v-if="content.travelCount > 0"
+                  :class="content.many_covers && content.covers.length > 1 ? 'top-10' : 'top-2'"
                   class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                   <Icon name="ri:map-pin-line" class="size-3.5" />
-                  <span>{{ post.travelCount }}</span>
+                  <span>{{ content.travelCount }}</span>
                 </div>
               </div>
               <!-- 无封面占位 -->
               <div v-else class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
-                <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
+                <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ content.title[0] }}</span>
               </div>
               <!-- 文章信息（底部毛玻璃带） -->
               <div
                 class="relative mt-auto w-full px-3 py-2"
-                :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
+                :class="content.covers && content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                 <h3
                   class="text-base font-semibold line-clamp-2 mb-0.5 transition-colors"
                   :class="
-                    post.covers && post.covers.length > 0
+                    content.covers && content.covers.length > 0
                       ? 'text-white hover:text-blue-100'
                       : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
                   ">
-                  {{ post.title }}
+                  {{ content.title }}
                 </h3>
                 <div
                   class="flex items-center gap-2 text-xs flex-wrap"
-                  :class="post.covers && post.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
-                  <div v-if="post.categories && post.categories.length > 0" class="flex items-center gap-0.5">
+                  :class="content.covers && content.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
+                  <div v-if="content.categories && content.categories.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
                     <span
-                      v-for="(cat, idx) in post.categories"
+                      v-for="(cat, idx) in content.categories"
                       :key="cat.slug ?? cat.name"
                       v-tooltip="'分类'"
-                      :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
-                      {{ cat.name }}<span v-if="idx < post.categories.length - 1">,</span>
+                      :class="content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                      {{ cat.name }}<span v-if="idx < content.categories.length - 1">,</span>
                     </span>
                   </div>
-                  <div v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
+                  <div v-if="content.tags && content.tags.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
                     <span
-                      v-for="(tag, idx) in post.tags.slice(0, 2)"
+                      v-for="(tag, idx) in content.tags.slice(0, 2)"
                       :key="tag.slug ?? tag.name"
                       v-tooltip="'标签'"
-                      :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
-                      {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
+                      :class="content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                      {{ tag.name }}<span v-if="idx < Math.min(content.tags.length, 2) - 1">,</span>
                     </span>
-                    <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
+                    <span v-if="content.tags.length > 2">+{{ content.tags.length - 2 }}</span>
                   </div>
                   <span v-tooltip="'发布时间'" class="flex items-center gap-0.5">
                     <Icon name="ri:time-line" aria-hidden="true" class="size-3" />
-                    {{ formatDate(post.created) }}
+                    {{ formatDate(content.created) }}
                   </span>
                   <span v-tooltip="'评论数量'" class="flex items-center gap-0.5">
                     <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
-                    {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
+                    {{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}
                   </span>
                 </div>
               </div>
@@ -399,8 +399,8 @@
       </section>
 
       <!-- 分类文章 -->
-      <section v-if="categoryRecentPosts.length > 0" v-scroll-reveal class="mx-auto max-w-275">
-        <template v-for="(categoryData, index) in categoryRecentPosts" :key="categoryData.category.slug">
+      <section v-if="categoryRecentContents.length > 0" v-scroll-reveal class="mx-auto max-w-275">
+        <template v-for="(categoryData, index) in categoryRecentContents" :key="categoryData.category.slug">
           <!-- 分类标题 -->
           <div class="flex items-center justify-between mb-6">
             <div>
@@ -416,76 +416,76 @@
           </div>
 
           <!-- 文章网格 -->
-          <div class="flex flex-wrap gap-4" :class="{ 'mb-12': index < categoryRecentPosts.length - 1 }">
+          <div class="flex flex-wrap gap-4" :class="{ 'mb-12': index < categoryRecentContents.length - 1 }">
             <NuxtLink
-              v-for="post in categoryData.posts"
-              :key="post.cid"
-              :to="`/content/${categoryData.category.slug}/${post.slug || post.cid}`"
-              :aria-label="`阅读文章：${post.title}`"
+              v-for="content in categoryData.contents"
+              :key="content.cid"
+              :to="`/content/${categoryData.category.slug}/${content.slug || content.cid}`"
+              :aria-label="`阅读文章：${content.title}`"
               class="block no-underline flex-[1_0_200px]">
               <div
                 class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
                 <!-- 封面占满整卡 -->
-                <div v-if="post.covers && post.covers.length > 0" class="absolute inset-0">
+                <div v-if="content.covers && content.covers.length > 0" class="absolute inset-0">
                   <img
-                    :src="(typeof post.covers[0] === 'string' ? post.covers[0] : post.covers[0]?.url) || ''"
-                    :alt="post.title"
+                    :src="(typeof content.covers[0] === 'string' ? content.covers[0] : content.covers[0]?.url) || ''"
+                    :alt="content.title"
                     class="absolute inset-0 w-full h-full object-cover hover:scale-[1.03] transition-transform duration-300"
                     loading="lazy" >
                   <!-- 多封面角标 -->
                   <div
-                    v-if="post.many_covers && post.covers.length > 1"
+                    v-if="content.many_covers && content.covers.length > 1"
                     class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                     <Icon name="ri-gallery-line" class="size-3.5" />
-                    <span>+{{ post.covers.length - 1 }}</span>
+                    <span>+{{ content.covers.length - 1 }}</span>
                   </div>
                   <!-- 关联地点角标 -->
                   <div
-                    v-if="post.travelCount > 0"
-                    :class="post.many_covers && post.covers.length > 1 ? 'top-10' : 'top-2'"
+                    v-if="content.travelCount > 0"
+                    :class="content.many_covers && content.covers.length > 1 ? 'top-10' : 'top-2'"
                     class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                     <Icon name="ri:map-pin-line" class="size-3.5" />
-                    <span>{{ post.travelCount }}</span>
+                    <span>{{ content.travelCount }}</span>
                   </div>
                 </div>
                 <!-- 无封面占位 -->
                 <div v-else class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
-                  <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ post.title[0] }}</span>
+                  <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ content.title[0] }}</span>
                 </div>
                 <!-- 文章信息（底部毛玻璃带） -->
                 <div
                   class="relative mt-auto w-full px-3 py-2"
-                  :class="post.covers && post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
+                  :class="content.covers && content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
                   <h3
                     class="text-base font-semibold line-clamp-2 mb-1 transition-colors"
                     :class="
-                      post.covers && post.covers.length > 0
+                      content.covers && content.covers.length > 0
                         ? 'text-white hover:text-blue-100'
                         : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
                     ">
-                    {{ post.title }}
+                    {{ content.title }}
                   </h3>
                   <div
                     class="flex items-center gap-2 text-xs flex-wrap"
-                    :class="post.covers && post.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
-                    <span v-if="post.tags && post.tags.length > 0" class="flex items-center gap-0.5">
+                    :class="content.covers && content.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
+                    <span v-if="content.tags && content.tags.length > 0" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
                       <span
-                        v-for="(tag, idx) in post.tags.slice(0, 2)"
+                        v-for="(tag, idx) in content.tags.slice(0, 2)"
                         :key="tag.slug ?? tag.name"
                         v-tooltip="'标签'"
-                        :class="post.covers && post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
-                        {{ tag.name }}<span v-if="idx < Math.min(post.tags.length, 2) - 1">,</span>
+                        :class="content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                        {{ tag.name }}<span v-if="idx < Math.min(content.tags.length, 2) - 1">,</span>
                       </span>
-                      <span v-if="post.tags.length > 2">+{{ post.tags.length - 2 }}</span>
+                      <span v-if="content.tags.length > 2">+{{ content.tags.length - 2 }}</span>
                     </span>
                     <span v-tooltip="'发布时间'" class="flex items-center gap-0.5">
                       <Icon name="ri:time-line" aria-hidden="true" class="size-3" />
-                      <span>{{ formatDate(post.created) }}</span>
+                      <span>{{ formatDate(content.created) }}</span>
                     </span>
                     <span v-tooltip="'评论数量'" class="flex items-center gap-0.5">
                       <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
-                      <span>{{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}</span>
+                      <span>{{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}</span>
                     </span>
                   </div>
                 </div>
@@ -501,8 +501,8 @@
         ref="sectionPhotos"
         v-scroll-reveal
         class="mt-12 mx-auto max-w-275"
-        aria-labelledby="index-photo-posts-title">
-        <h2 id="index-photo-posts-title" class="text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
+        aria-labelledby="index-photo-contents-title">
+        <h2 id="index-photo-contents-title" class="text-blue-700 dark:text-blue-500 text-sm text-center">最新图片</h2>
         <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1 text-center">最近发布的图片</div>
         <div class="text-slate-500 dark:text-gray-400 text-sm mb-8 text-center">小物件，风景，合照，值得记录的瞬间</div>
 
@@ -592,11 +592,11 @@
     <div class="h-37.5" />
 
     <!-- 订阅文章 -->
-    <section v-if="subscribePosts.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-subscribe-posts-title">
+    <section v-if="subscribePosts.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-subscribe-contents-title">
       <div class="flex items-center justify-between mb-6">
         <div class="flex gap-6 max-sm:flex-col max-sm:gap-1">
           <div>
-            <h2 id="index-subscribe-posts-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
+            <h2 id="index-subscribe-contents-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
             <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">来自订阅源的最新内容</div>
           </div>
           <MapEntryLinks :views="['blogs']" title="查看这些站点位于哪里" class="self-end" />
@@ -610,32 +610,32 @@
       <!-- 文章列表 -->
       <div class="space-y-4">
         <a
-          v-for="post in subscribePosts"
-          :key="post.id"
-          :href="post.link"
+          v-for="content in subscribePosts"
+          :key="content.id"
+          :href="content.link"
           target="_blank"
           rel="noopener noreferrer"
           class="block border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all no-underline group">
           <div class="flex items-start gap-3">
             <!-- 订阅源头像 -->
             <Avatar class="size-10 shrink-0">
-              <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" :alt="post.subscribeName" />
-              <AvatarFallback>{{ post.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
+              <AvatarImage v-if="content.subscribeAvatar" :src="content.subscribeAvatar" :alt="content.subscribeName" />
+              <AvatarFallback>{{ content.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
 
             <!-- 文章内容 -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-sm text-muted-foreground">{{ post.subscribeName }}</span>
-                <span v-if="post.pubDate" class="text-xs text-muted-foreground">
-                  {{ formatDate(post.pubDate) }}
+                <span class="text-sm text-muted-foreground">{{ content.subscribeName }}</span>
+                <span v-if="content.pubDate" class="text-xs text-muted-foreground">
+                  {{ formatDate(content.pubDate) }}
                 </span>
               </div>
               <h3 class="text-base font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                {{ post.title }}
+                {{ content.title }}
               </h3>
-              <p v-if="post.description" class="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {{ post.description }}
+              <p v-if="content.description" class="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {{ content.description }}
               </p>
             </div>
 
@@ -781,21 +781,21 @@ const categories = computed(() => homeData.value?.data?.categories || []);
 
 // 随机文章 - 仅客户端非阻塞加载：模板在 ClientOnly 内，SSR 拿到也不显示，
 // 去掉顶层 await 解除首屏阻塞；server:false 不在 SSR 发请求，lazy:true 在 hydration 后异步发起
-const { data: randomPostData } = useFetch("/api/random-post", {
+const { data: randomContentData } = useFetch("/api/random-content", {
   server: false,
   lazy: true,
   headers: getInternalRequestHeaders(),
 });
-const randomPost = computed(() => randomPostData.value?.data);
+const randomContent = computed(() => randomContentData.value?.data);
 
 // 最新文章
-const recentPosts = computed(() => homeData.value?.data?.recentPosts || []);
+const recentContents = computed(() => homeData.value?.data?.recentContents || []);
 
 // 图片文章
-const photoPosts = computed(() => homeData.value?.data?.photoPosts || []);
+const photoContents = computed(() => homeData.value?.data?.photoContents || []);
 
 // 分类文章
-const categoryRecentPosts = computed(() => homeData.value?.data?.categoryRecentPosts || []);
+const categoryRecentContents = computed(() => homeData.value?.data?.categoryRecentContents || []);
 
 // 订阅文章
 const subscribePosts = computed(() => homeData.value?.data?.subscribePosts || []);
@@ -806,18 +806,18 @@ const recentChangelogs = computed(() => homeData.value?.data?.changelogs || []);
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
   const images: { url: string; desc?: string; width?: number | null; height?: number | null; title: string; slug: string; cid: number; categorySlug?: string }[] = [];
-  photoPosts.value.forEach(post => {
-    if (post.covers && post.covers.length > 0) {
-      post.covers.forEach(cover => {
+  photoContents.value.forEach(content => {
+    if (content.covers && content.covers.length > 0) {
+      content.covers.forEach(cover => {
         images.push({
           url: cover.url || (typeof cover === "string" ? cover : ""),
           desc: cover.desc,
           width: cover.width,
           height: cover.height,
-          title: post.title,
-          slug: post.slug ?? "",
-          cid: post.cid,
-          categorySlug: post.categories?.[0]?.slug ?? undefined,
+          title: content.title,
+          slug: content.slug ?? "",
+          cid: content.cid,
+          categorySlug: content.categories?.[0]?.slug ?? undefined,
         });
       });
     }

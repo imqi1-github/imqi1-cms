@@ -11,7 +11,7 @@ export default defineEventHandler(async () => {
     let messagePostId = messagePostIdMeta?.value ? parseInt(messagePostIdMeta.value) : null;
 
     if (!messagePostId) {
-      const messagePost = await prisma.posts.findFirst({
+      const messagePost = await prisma.contents.findFirst({
         where: { slug: "messages" },
         select: { cid: true },
       });
@@ -29,7 +29,7 @@ export default defineEventHandler(async () => {
     return {
       code: 200,
       message: "获取成功",
-      data: { postId: messagePostId },
+      data: { contentId: messagePostId },
     };
   } catch (error) {
     console.error(error);

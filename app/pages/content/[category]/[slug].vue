@@ -7,7 +7,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { computed, createVNode, onMounted, onUnmounted, ref, render, useTemplateRef, watch, type App, type Component } from "vue";
 
-import type { RelatedPost } from "~/types/apis/content/related-posts";
+import type { RelatedContent } from "~/types/apis/content/related-contents";
 import type { NuxtVueApp } from "~/types/nuxt";
 import LivePhoto from "~/components/LivePhoto.vue";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
@@ -62,22 +62,22 @@ function formatDate(date: string | Date): string {
 }
 
 // 获取文章数据 - 使用新的 API 格式
-const { data, pending, error } = await useFetch(`/api/posts/${categorySlug}/${slug}`, {
+const { data, pending, error } = await useFetch(`/api/contents/${categorySlug}/${slug}`, {
   headers: getInternalRequestHeaders(),
 });
 
-const post = computed(() => data.value?.data);
+const content = computed(() => data.value?.data);
 
 // 判断文章是否存在
-const isNotFound = computed(() => !pending.value && (!post.value || error.value));
+const isNotFound = computed(() => !pending.value && (!content.value || error.value));
 
-const categories = computed(() => post.value?.postrelations?.map(r => r.metas) || []);
-const covers = computed(() => post.value?.parsedCovers || []);
-const tags = computed(() => post.value?.tags || []);
+const categories = computed(() => content.value?.contentrelations?.map(r => r.metas) || []);
+const covers = computed(() => content.value?.parsedCovers || []);
+const tags = computed(() => content.value?.tags || []);
 
 // 判断封面类型
 const hasCover = computed(() => covers.value.length > 0);
-const hasManyCovers = computed(() => post.value?.many_covers && covers.value.length > 1);
+const hasManyCovers = computed(() => content.value?.many_covers && covers.value.length > 1);
 
 const firstCover = computed(() => covers.value[0]);
 const firstCoverUrl = computed(() => firstCover.value?.url || "");
@@ -144,7 +144,7 @@ const hasSharedImageKey = (a: Set<string>, b: Set<string>) => {
 };
 
 const markdownImageAttachments = computed(() => {
-  const images = (post.value?.markdownImages || []) as MarkdownAttachmentImage[];
+  const images = (content.value?.markdownImages || []) as MarkdownAttachmentImage[];
   return images.map(image => ({
     keys: buildImageKeys(image.url),
     width: image.width,
@@ -175,40 +175,40 @@ const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug |
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
 // 获取相关文章（根据标签筛选）
-const relatedPostsData = ref<{ success: boolean; data: RelatedPost[] } | null>(null);
-const relatedPostsPending = ref(false);
+const relatedContentsData = ref<{ success: boolean; data: RelatedContent[] } | null>(null);
+const relatedContentsPending = ref(false);
 
 // 监听文章数据，加载后再获取相关文章
 watch(
-  () => post.value?.cid,
-  async postId => {
-    if (postId) {
-      relatedPostsPending.value = true;
+  () => content.value?.cid,
+  async contentId => {
+    if (contentId) {
+      relatedContentsPending.value = true;
       try {
-        relatedPostsData.value = await $fetch<{ success: boolean; data: RelatedPost[] }>(`/api/related-posts/${postId}?limit=3`, {
+        relatedContentsData.value = await $fetch<{ success: boolean; data: RelatedContent[] }>(`/api/related-contents/${contentId}?limit=3`, {
           headers: getInternalRequestHeaders(),
         });
       } catch (error) {
         console.error("获取相关文章失败:", error);
-        relatedPostsData.value = { success: false, data: [] };
+        relatedContentsData.value = { success: false, data: [] };
       } finally {
-        relatedPostsPending.value = false;
+        relatedContentsPending.value = false;
       }
     }
   },
   { immediate: true },
 );
 
-const relatedPosts = computed(() => {
-  if (!relatedPostsData.value?.success || !post.value) return [];
-  return relatedPostsData.value.data.slice(0, 3);
+const relatedContents = computed(() => {
+  if (!relatedContentsData.value?.success || !content.value) return [];
+  return relatedContentsData.value.data.slice(0, 3);
 });
 
 const tocItems = ref<TocItem[]>([]);
 const activeTocId = ref("");
 
 // 根据文章的 show_toc 字段预留目录区域，避免客户端提取目录后产生布局偏移
-const shouldReserveToc = computed(() => Boolean(post.value?.show_toc));
+const shouldReserveToc = computed(() => Boolean(content.value?.show_toc));
 
 // 根据文章的 show_toc 字段和实际标题数量决定是否显示目录内容
 const showToc = computed(() => {
@@ -316,12 +316,12 @@ const pageTitle = ref(`文章加载中... - ${siteName.value}`);
 
 // 在数据加载完成后更新标题
 watch(
-  [post, isNotFound],
-  ([newPost, notFound]) => {
+  [content, isNotFound],
+  ([newContent, notFound]) => {
     if (notFound) {
       pageTitle.value = `页面未找到 - ${siteName.value}`;
-    } else if (newPost?.title) {
-      pageTitle.value = `${newPost.title} - ${siteName.value}`;
+    } else if (newContent?.title) {
+      pageTitle.value = `${newContent.title} - ${siteName.value}`;
     }
   },
   { immediate: true },
@@ -329,16 +329,16 @@ watch(
 
 // SEO 元数据
 const seoMeta = computed(() => {
-  if (!post.value) return {};
+  if (!content.value) return {};
 
   const fullUrl = import.meta.client ? window.location.href : `${siteConfig.siteUrl}${route.path}`;
 
   const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
-  const description = post.value.desc || "";
+  const description = content.value.desc || "";
   const coverImage = firstCoverUrl.value;
-  const authorName = post.value.user?.nickname || post.value.user?.name || siteConfig.siteName;
-  const publishDate = post.value.create_time || post.value.update_time;
-  const modifyDate = post.value.update_time;
+  const authorName = content.value.user?.nickname || content.value.user?.name || siteConfig.siteName;
+  const publishDate = content.value.create_time || content.value.update_time;
+  const modifyDate = content.value.update_time;
 
   return {
     title: pageTitle.value,
@@ -350,7 +350,7 @@ const seoMeta = computed(() => {
 
       // Open Graph
       { property: "og:type", content: "article" },
-      { property: "og:title", content: post.value.title },
+      { property: "og:title", content: content.value.title },
       { property: "og:description", content: description },
       { property: "og:image", content: coverImage },
       { property: "og:url", content: fullUrl },
@@ -369,7 +369,7 @@ const seoMeta = computed(() => {
 
       // Twitter Card
       { name: "twitter:card", content: coverImage ? "summary_large_image" : "summary" },
-      { name: "twitter:title", content: post.value.title },
+      { name: "twitter:title", content: content.value.title },
       { name: "twitter:description", content: description },
       { name: "twitter:image", content: coverImage },
       { name: "twitter:site", content: siteConfig.seo.twitterSite },
@@ -391,12 +391,12 @@ useHead(() => seoMeta.value);
 
 // 监听文章数据变化，触发渐入动画
 watch(
-  () => post.value,
-  newPost => {
+  () => content.value,
+  newContent => {
     // 设置页面标题供导航栏使用
-    if (newPost?.title) {
+    if (newContent?.title) {
       const { setPageTitle, setPageCategory } = usePageTitle();
-      setPageTitle(newPost.title, "ri:file-edit-line");
+      setPageTitle(newContent.title, "ri:file-edit-line");
 
       // 设置分类信息（从 URL 查询的分类信息中获取）
       if (categoryFromUrl.value) {
@@ -408,7 +408,7 @@ watch(
     }
 
     // 只在客户端执行
-    if (import.meta.client && newPost) {
+    if (import.meta.client && newContent) {
       // 使用 setTimeout 确保 DOM 完全渲染
       setTimeout(() => {
         const article = document.querySelector("article.animate-fade-in");
@@ -433,14 +433,14 @@ watch(
 
 // 监听相关文章数据，触发渐入动画
 watch(
-  () => relatedPosts.value,
-  posts => {
+  () => relatedContents.value,
+  contents => {
     if (import.meta.client) {
       nextTick(() => {
         setTimeout(() => {
           // 只有当相关文章有数据时才触发相关文章区域的动画
-          if (posts && posts.length > 0) {
-            const relatedSection = document.querySelector(".related-posts-section");
+          if (contents && contents.length > 0) {
+            const relatedSection = document.querySelector(".related-contents-section");
             if (relatedSection && relatedSection.classList.contains("opacity-0")) {
               relatedSection.classList.remove("opacity-0", "translate-y-8");
               relatedSection.classList.add("opacity-100", "translate-y-0");
@@ -461,9 +461,9 @@ watch(
 
 // 独立监听评论区，确保即使没有相关文章也能渐入
 watch(
-  () => [post.value?.cid, commentEnabled.value],
-  ([postId, enabled]) => {
-    if (import.meta.client && postId && enabled) {
+  () => [content.value?.cid, commentEnabled.value],
+  ([contentId, enabled]) => {
+    if (import.meta.client && contentId && enabled) {
       nextTick(() => {
         setTimeout(() => {
           const commentSection = document.querySelector(".comment-section");
@@ -844,7 +844,7 @@ onMounted(async () => {
       const wrappers = document.querySelectorAll(".markdown-details-wrapper");
       wrappers.forEach(wrapper => {
         const summary = wrapper.getAttribute("data-summary") || "展开";
-        const content = wrapper.innerHTML;
+        const innerHtml = wrapper.innerHTML;
 
         // 创建新的容器元素
         const detailsContainer = document.createElement("div");
@@ -859,7 +859,7 @@ onMounted(async () => {
             <span class="font-medium text-slate-900 dark:text-slate-100">${summary}</span>
           </button>
           <div class="markdown-details-content px-4 py-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 hidden">
-            ${content}
+            ${innerHtml}
           </div>
         </div>
       `;
@@ -910,7 +910,7 @@ onMounted(async () => {
       const calloutWrappers = document.querySelectorAll(".markdown-callout-wrapper");
       calloutWrappers.forEach(wrapper => {
         const type = wrapper.getAttribute("data-type") || "info";
-        const content = wrapper.innerHTML;
+        const innerHtml = wrapper.innerHTML;
 
         // 根据类型定义样式和图标
         const typeConfig = {
@@ -955,7 +955,7 @@ onMounted(async () => {
             ${config.icon}
           </div>
           <div class="flex-1 ${config.textColor}">
-            ${content}
+            ${innerHtml}
           </div>
         </div>
       `;
@@ -1882,7 +1882,7 @@ onUnmounted(() => {
 
     <NotFound v-else-if="isNotFound" />
 
-    <article v-else-if="post" class="w-full animate-fade-in">
+    <article v-else-if="content" class="w-full animate-fade-in">
       <!-- 标题区域 -->
       <header :class="['opacity-0 translate-y-8 duration-300 ease-out', !hasCover ? 'flex flex-col items-center' : '']" class="article-cover">
         <!-- 多封面轮播 -->
@@ -1906,19 +1906,19 @@ onUnmounted(() => {
 
         <!-- 标题 -->
         <h1 id="article-title" class="text-[3em] font-extrabold leading-tight mb-2.5 text-slate-900 dark:text-slate-100 wrap-break-word">
-          {{ post.title }}
+          {{ content.title }}
         </h1>
 
         <!-- 描述/摘要 -->
         <div class="mb-5">
-          <div v-if="post.desc" class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            {{ post.desc }}
+          <div v-if="content.desc" class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            {{ content.desc }}
           </div>
           <!-- 编辑按钮（仅登录时显示） -->
           <ClientOnly>
             <a
               v-if="isLoggedIn && !isLoadingAuth"
-              :href="`/admin/posts/edit?cid=${post.cid}`"
+              :href="`/admin/contents/edit?cid=${content.cid}`"
               target="_blank"
               class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2">
               <Icon name="lucide:edit" class="size-3" />
@@ -1955,7 +1955,7 @@ onUnmounted(() => {
         <!-- 文章正文 -->
         <div
           class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body"
-          v-html="post.renderedContent" />
+          v-html="content.renderedContent" />
       </div>
 
       <!-- 元信息盒子和 CC 授权 -->
@@ -1964,12 +1964,12 @@ onUnmounted(() => {
         <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
           <span v-tooltip="'作者'" class="inline-flex items-center gap-0.5">
             <Icon name="ri:user-line" class="size-4" />
-            <span>{{ post.user?.nickname || post.user?.name || "匿名" }}</span>
+            <span>{{ content.user?.nickname || content.user?.name || "匿名" }}</span>
           </span>
           <span v-tooltip="'发布时间'" class="inline-flex items-center gap-0.5">
             <Icon name="ri:edit-2-line" class="size-4" />
-            <time :datetime="post.update_time">
-              {{ formatDate(post.update_time) }}
+            <time :datetime="content.update_time">
+              {{ formatDate(content.update_time) }}
             </time>
           </span>
           <span v-if="categories.length > 0" class="inline-flex items-center gap-0.5">
@@ -2019,60 +2019,60 @@ onUnmounted(() => {
 
         <!-- 相关地点：逐地点渲染胶囊，点击跳转到地图足迹视图并聚焦该地点 -->
         <MapEntryLinks
-          v-if="post.travels?.length"
-          :places="(post.travels ?? []).map(t => ({ id: t.id, name: t.name }))"
+          v-if="content.travels?.length"
+          :places="(content.travels ?? []).map(t => ({ id: t.id, name: t.name }))"
           place-icon="ri:map-pin-line"
           title="作者在撰写此篇文章前，曾去过"
           class="mt-4" />
       </div>
 
       <!-- 相关文章 -->
-      <div v-if="relatedPostsPending" class="article-constrained flex items-center justify-center gap-2 py-4 text-muted-foreground">
+      <div v-if="relatedContentsPending" class="article-constrained flex items-center justify-center gap-2 py-4 text-muted-foreground">
         <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
         <span class="text-sm">加载相关文章...</span>
       </div>
-      <section v-if="relatedPosts.length > 0" class="related-posts-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
+      <section v-if="relatedContents.length > 0" class="related-contents-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
           <div
-            v-for="relatedPost in relatedPosts"
-            :key="relatedPost.cid"
+            v-for="relatedContent in relatedContents"
+            :key="relatedContent.cid"
             class="flex-1 min-w-50 min-h-50 relative flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-600 dark:hover:border-blue-500 hover:shadow-sm transition-all duration-300">
             <NuxtLink
-              :to="`/content/${relatedPost.categories[0]?.slug || 'uncategorized'}/${relatedPost.slug}`"
+              :to="`/content/${relatedContent.categories[0]?.slug || 'uncategorized'}/${relatedContent.slug}`"
               class="group flex flex-col size-full">
-              <div v-if="relatedPost.covers && relatedPost.covers.length > 0" class="absolute inset-0">
+              <div v-if="relatedContent.covers && relatedContent.covers.length > 0" class="absolute inset-0">
                 <img
-                  :src="relatedPost.covers[0]?.url"
-                  :alt="relatedPost.title"
+                  :src="relatedContent.covers[0]?.url"
+                  :alt="relatedContent.title"
                   class="object-cover group-hover:scale-[1.03] transition-transform duration-300 size-full"
                   loading="lazy"
                   decoding="async">
               </div>
               <div v-else class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
-                <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedPost.title ? relatedPost.title.charAt(0) : "?" }}</span>
+                <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedContent.title ? relatedContent.title.charAt(0) : "?" }}</span>
               </div>
               <div
                 class="w-full px-4 py-2"
                 :class="
-                  relatedPost.covers && relatedPost.covers.length > 0
+                  relatedContent.covers && relatedContent.covers.length > 0
                     ? 'cover-backdrop text-white absolute bottom-[-0.1px]'
                     : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'
                 ">
                 <h4
                   class="font-semibold line-clamp-1"
-                  :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white' : 'text-slate-900 dark:text-slate-100'">
-                  {{ relatedPost.title }}
+                  :class="relatedContent.covers && relatedContent.covers.length > 0 ? 'text-white' : 'text-slate-900 dark:text-slate-100'">
+                  {{ relatedContent.title }}
                 </h4>
                 <p
                   class="text-xs line-clamp-1"
-                  :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
-                  {{ relatedPost.desc || "暂无描述" }}
+                  :class="relatedContent.covers && relatedContent.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
+                  {{ relatedContent.desc || "暂无描述" }}
                 </p>
                 <div
                   class="mt-0.5 text-xs"
-                  :class="relatedPost.covers && relatedPost.covers.length > 0 ? 'text-white/70' : 'text-slate-500 dark:text-slate-500'">
-                  {{ formatDate(relatedPost.created) }}
+                  :class="relatedContent.covers && relatedContent.covers.length > 0 ? 'text-white/70' : 'text-slate-500 dark:text-slate-500'">
+                  {{ formatDate(relatedContent.created) }}
                 </div>
               </div>
             </NuxtLink>
@@ -2082,7 +2082,7 @@ onUnmounted(() => {
 
       <!-- 评论区 -->
       <section v-if="commentEnabled" class="w-full opacity-0 translate-y-8 duration-300 ease-out animate-fade-in article-constrained comment-section">
-        <CommentList :post-id="post.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
+        <CommentList :content-id="content.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
     </article>
   </div>

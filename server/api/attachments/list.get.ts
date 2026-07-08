@@ -23,11 +23,11 @@ export default defineEventHandler(async event => {
     }
 
     // 检查文章是否存在
-    const post = await prisma.posts.findUnique({
+    const content = await prisma.contents.findUnique({
       where: { cid },
     });
 
-    if (!post) {
+    if (!content) {
       throw createError({
         statusCode: 404,
         message: "文章不存在",
@@ -37,7 +37,7 @@ export default defineEventHandler(async event => {
     // 获取附件列表
     const attachments = await prisma.attachments.findMany({
       where: {
-        posts: {
+        contentattachments: {
           some: { cid },
         },
       },

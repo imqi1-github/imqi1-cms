@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type {PostListItem, TravelItem} from "~/types/components/map";
+import type {ContentListItem, TravelItem} from "~/types/components/map";
 
 const toast = useToast();
 const loading = ref(true);
 const travels = ref<TravelItem[]>([]);
-const posts = ref<PostListItem[]>([]);
+const contents = ref<ContentListItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 
@@ -20,21 +20,21 @@ const defaultForm = () => ({
 const newTravel = ref(defaultForm());
 const editingTravel = ref<TravelItem | null>(null);
 const editTravelForm = ref(defaultForm());
-const addPostKeyword = ref("");
-const editPostKeyword = ref("");
+const addContentKeyword = ref("");
+const editContentKeyword = ref("");
 
-function filterPosts(keyword: string) {
+function filterContents(keyword: string) {
   const q = keyword.trim().toLowerCase();
-  if (!q) return posts.value;
-  return posts.value.filter(post => {
-    const title = String(post.title || "").toLowerCase();
-    const cid = String(post.cid || "");
+  if (!q) return contents.value;
+  return contents.value.filter(content => {
+    const title = String(content.title || "").toLowerCase();
+    const cid = String(content.cid || "");
     return title.includes(q) || cid.includes(q);
   });
 }
 
-const filteredAddPosts = computed(() => filterPosts(addPostKeyword.value));
-const filteredEditPosts = computed(() => filterPosts(editPostKeyword.value));
+const filteredAddContents = computed(() => filterContents(addContentKeyword.value));
+const filteredEditContents = computed(() => filterContents(editContentKeyword.value));
 
 function toggleCid(cids: string[], cid: string, checked: boolean) {
   const idx = cids.indexOf(cid);
@@ -42,8 +42,8 @@ function toggleCid(cids: string[], cid: string, checked: boolean) {
   else if (!checked && idx !== -1) cids.splice(idx, 1);
 }
 
-function postTitles(travel: TravelItem) {
-  const list = travel.posts ?? [];
+function contentTitles(travel: TravelItem) {
+  const list = travel.contents ?? [];
   if (!list.length) return "";
   const shown = list
     .slice(0, 2)
@@ -64,13 +64,13 @@ async function fetchTravels() {
   }
 }
 
-async function fetchPosts() {
+async function fetchContents() {
   try {
-    const res = await $fetch<{ data: PostListItem[] }>("/api/admin/posts?pageSize=999");
-    posts.value = res?.data ?? [];
+    const res = await $fetch<{ data: ContentListItem[] }>("/api/admin/contents?pageSize=999");
+    contents.value = res?.data ?? [];
   } catch (error) {
     console.error("获取文章列表失败:", error);
-    posts.value = [];
+    contents.value = [];
   }
 }
 
@@ -126,7 +126,7 @@ async function addTravel() {
       body: buildPayload(newTravel.value),
     });
     newTravel.value = defaultForm();
-    addPostKeyword.value = "";
+    addContentKeyword.value = "";
     showAddModal.value = false;
     toast.success({ message: "添加成功" });
     await fetchTravels();
@@ -137,7 +137,7 @@ async function addTravel() {
 }
 
 function openEditModal(travel: TravelItem) {
-  editPostKeyword.value = "";
+  editContentKeyword.value = "";
   editingTravel.value = travel;
   editTravelForm.value = {
     name: travel.name || "",
@@ -219,7 +219,7 @@ function formatCoord(travel: TravelItem) {
 
 onMounted(() => {
   fetchTravels();
-  fetchPosts();
+  fetchContents();
 });
 </script>
 
@@ -296,8 +296,8 @@ onMounted(() => {
             </TableCell>
             <TableCell class="text-muted-foreground font-mono text-xs">{{ formatCoord(travel) }}</TableCell>
             <TableCell>
-              <span v-if="(travel.posts ?? []).length" class="text-primary truncate block max-w-50" :title="postTitles(travel)">{{
-                postTitles(travel)
+              <span v-if="(travel.contents ?? []).length" class="text-primary truncate block max-w-50" :title="contentTitles(travel)">{{
+                contentTitles(travel)
               }}</span>
               <span v-else class="text-muted-foreground">-</span>
             </TableCell>
@@ -353,7 +353,7 @@ onMounted(() => {
             </Badge>
           </div>
 
-          <p v-if="(travel.posts ?? []).length" class="text-sm text-primary truncate">📄 {{ postTitles(travel) }}</p>
+          <p v-if="(travel.contents ?? []).length" class="text-sm text-primary truncate">📄 {{ contentTitles(travel) }}</p>
           <p v-if="travel.desc" class="text-sm text-muted-foreground line-clamp-2">{{ travel.desc }}</p>
 
           <div class="flex items-center justify-end pt-2 border-t gap-1">
@@ -418,16 +418,16 @@ onMounted(() => {
                 <Label>关联文章</Label>
                 <div class="rounded-md border">
                   <div class="border-b p-2">
-                    <Input v-model="addPostKeyword" placeholder="搜索文章标题或 ID" class="h-8" />
+                    <Input v-model="addContentKeyword" placeholder="搜索文章标题或 ID" class="h-8" />
                   </div>
                   <div class="max-h-44 overflow-y-auto p-2 space-y-1 sm:max-h-64">
-                    <div v-if="filteredAddPosts.length === 0" class="text-sm text-muted-foreground text-center py-3">未找到相关文章</div>
-                    <div v-for="p in filteredAddPosts" :key="p.cid" class="flex items-center space-x-2">
+                    <div v-if="filteredAddContents.length === 0" class="text-sm text-muted-foreground text-center py-3">未找到相关文章</div>
+                    <div v-for="p in filteredAddContents" :key="p.cid" class="flex items-center space-x-2">
                       <Checkbox
-                        :id="`add-travel-post-${p.cid}`"
+                        :id="`add-travel-content-${p.cid}`"
                         :model-value="newTravel.cids.includes(String(p.cid))"
                         @update:model-value="(checked: any) => toggleCid(newTravel.cids, String(p.cid), !!checked)" />
-                      <Label :for="`add-travel-post-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
+                      <Label :for="`add-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
                         {{ p.title }}
                       </Label>
                     </div>
@@ -497,16 +497,16 @@ onMounted(() => {
                 <Label>关联文章</Label>
                 <div class="rounded-md border">
                   <div class="border-b p-2">
-                    <Input v-model="editPostKeyword" placeholder="搜索文章标题或 ID" class="h-8" />
+                    <Input v-model="editContentKeyword" placeholder="搜索文章标题或 ID" class="h-8" />
                   </div>
                   <div class="max-h-44 overflow-y-auto p-2 space-y-1 sm:max-h-64">
-                    <div v-if="filteredEditPosts.length === 0" class="text-sm text-muted-foreground text-center py-3">未找到相关文章</div>
-                    <div v-for="p in filteredEditPosts" :key="p.cid" class="flex items-center space-x-2">
+                    <div v-if="filteredEditContents.length === 0" class="text-sm text-muted-foreground text-center py-3">未找到相关文章</div>
+                    <div v-for="p in filteredEditContents" :key="p.cid" class="flex items-center space-x-2">
                       <Checkbox
-                        :id="`edit-travel-post-${p.cid}`"
+                        :id="`edit-travel-content-${p.cid}`"
                         :model-value="editTravelForm.cids.includes(String(p.cid))"
                         @update:model-value="(checked: any) => toggleCid(editTravelForm.cids, String(p.cid), !!checked)" />
-                      <Label :for="`edit-travel-post-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
+                      <Label :for="`edit-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
                         {{ p.title }}
                       </Label>
                     </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   modelValue: string
-  postId?: number
+  contentId?: number
 }>()
 
 const emit = defineEmits<{
@@ -66,8 +66,8 @@ const handlePaste = async (event: ClipboardEvent) => {
   // 阻止默认粘贴行为
   event.preventDefault()
 
-  // 检查是否有 postId
-  if (!props.postId) {
+  // 检查是否有 contentId
+  if (!props.contentId) {
     toast.error({
       message: '请先保存文章',
       description: '需要先保存文章后才能粘贴上传图片',
@@ -123,7 +123,7 @@ const handlePaste = async (event: ClipboardEvent) => {
       }
 
       try {
-        const res = await $fetch(`/api/attachments/upload?cid=${props.postId}`, {
+        const res = await $fetch(`/api/attachments/upload?cid=${props.contentId}`, {
           method: 'POST',
           body: formData,
         })

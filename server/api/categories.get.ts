@@ -15,7 +15,7 @@ export default defineEventHandler(async event => {
       take: limit,
       include: {
         _count: {
-          select: { postrelations: true },
+          select: { contentrelations: true },
         },
       },
       orderBy: {
@@ -30,7 +30,7 @@ export default defineEventHandler(async event => {
         name: cat.name,
         slug: cat.slug,
         desc: cat.desc,
-        postCount: cat._count.postrelations,
+        contentCount: cat._count.contentrelations,
       })),
     };
   } catch (error) {

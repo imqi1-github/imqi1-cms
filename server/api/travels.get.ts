@@ -7,10 +7,10 @@ export default defineEventHandler(async () => {
       where: { enabled: true },
       orderBy: [{ sort: "asc" }, { create_time: "desc" }],
       include: {
-        // posts 现在是 posttravels[] 关联表，需通过 .post 取到文章
-        posts: {
+        // contenttravels 关联表，需通过 .content 取到文章
+        contenttravels: {
           select: {
-            post: {
+            content: {
               select: {
                 cid: true,
                 title: true,
@@ -18,7 +18,7 @@ export default defineEventHandler(async () => {
                 type: true,
                 covers: true,
                 many_covers: true,
-                postrelations: {
+                contentrelations: {
                   select: {
                     metas: { select: { slug: true, type: true } },
                   },
@@ -32,16 +32,16 @@ export default defineEventHandler(async () => {
 
     // 展平为前台结构：每个地点附带其全部关联文章（url/标题/封面数）
     const data = travels.map(t => {
-      const posts = t.posts.flatMap(rel => {
-        const post = rel.post;
-        const categorySlug = post.postrelations.find(r => r.metas.type === "category")?.metas.slug;
-        if (!categorySlug || !post.slug) return [];
-        const covers = parseCovers(post.covers);
+      const contents = t.contenttravels.flatMap(rel => {
+        const content = rel.content;
+        const categorySlug = content.contentrelations.find(r => r.metas.type === "category")?.metas.slug;
+        if (!categorySlug || !content.slug) return [];
+        const covers = parseCovers(content.covers);
         const coverCount = covers.length;
-        const manyCovers = Boolean(post.many_covers) && covers.length > 1;
+        const manyCovers = Boolean(content.many_covers) && covers.length > 1;
         return [{
-          url: `/content/${categorySlug}/${post.slug}`,
-          title: post.title,
+          url: `/content/${categorySlug}/${content.slug}`,
+          title: content.title,
           coverCount,
           manyCovers,
         }];
@@ -54,7 +54,7 @@ export default defineEventHandler(async () => {
         longitude: t.longitude,
         latitude: t.latitude,
         sort: t.sort,
-        posts,
+        contents,
       };
     });
 

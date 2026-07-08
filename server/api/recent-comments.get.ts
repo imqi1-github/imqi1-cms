@@ -15,12 +15,12 @@ export default defineEventHandler(async event => {
         content: true,
         name: true,
         create_time: true,
-        posts: {
+        content_ref: {
           select: {
             cid: true,
             title: true,
             slug: true,
-            postrelations: {
+            contentrelations: {
               select: {
                 metas: {
                   select: {
@@ -43,26 +43,26 @@ export default defineEventHandler(async event => {
     const formattedComments = comments
       .filter(comment => {
         // 确保评论有关联的文章且文章信息完整
-        return comment.posts &&
-               comment.posts.cid &&
-               comment.posts.slug &&
-               comment.posts.postrelations &&
-               comment.posts.postrelations.length > 0 &&
-               comment.posts.postrelations[0]?.metas;
+        return comment.content_ref &&
+               comment.content_ref.cid &&
+               comment.content_ref.slug &&
+               comment.content_ref.contentrelations &&
+               comment.content_ref.contentrelations.length > 0 &&
+               comment.content_ref.contentrelations[0]?.metas;
       })
       .map(comment => {
-        const categorySlug = comment.posts.postrelations[0]?.metas?.slug ?? "";
-        const postSlug = comment.posts.slug;
-        const postUrl = `/content/${categorySlug}/${postSlug}`;
+        const categorySlug = comment.content_ref.contentrelations[0]?.metas?.slug ?? "";
+        const contentSlug = comment.content_ref.slug;
+        const contentUrl = `/content/${categorySlug}/${contentSlug}`;
 
         return {
           coid: comment.coid,
           text: comment.content,
           author: comment.name,
           created: comment.create_time,
-          posts: {
-            title: comment.posts.title,
-            url: postUrl,
+          contents: {
+            title: comment.content_ref.title,
+            url: contentUrl,
           },
         };
       })

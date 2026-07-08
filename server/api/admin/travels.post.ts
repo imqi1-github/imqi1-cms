@@ -69,7 +69,7 @@ export default defineEventHandler(async event => {
 
   // 写入多对多关联（地点创建后，用关联表 createMany 批量插入）
   if (cidList.length) {
-    await prisma.posttravels.createMany({
+    await prisma.contenttravels.createMany({
       data: cidList.map(cid => ({ travel_id: travel.id, cid })),
       skipDuplicates: true,
     });

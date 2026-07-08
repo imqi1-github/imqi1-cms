@@ -18,14 +18,14 @@ const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
 const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取标签文章数据
-const { data, pending, error } = await useFetch(`/api/tag/${slug}/posts`, {
+const { data, pending, error } = await useFetch(`/api/tag/${slug}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: postPageSize },
   watch: [page],
 });
 
 const tag = computed(() => data.value?.data?.tag);
-const posts = computed(() => data.value?.data?.posts || []);
+const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
 // 判断是否为404
@@ -40,8 +40,8 @@ let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 // 骨架屏数量 - 根据每页文章数量和当前页码动态调整
 const skeletonCount = computed(() => {
   // 如果已经有数据，使用当前文章数量
-  if (posts.value.length > 0) {
-    return posts.value.length;
+  if (contents.value.length > 0) {
+    return contents.value.length;
   }
   // 否则使用每页显示数量
   return postPageSize.value || 12;
@@ -276,36 +276,36 @@ onMounted(() => {
 
         <!-- 文章列表 -->
         <div
-          v-if="posts.length > 0 && !showSkeleton"
+          v-if="contents.length > 0 && !showSkeleton"
           class="grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           <div
-            v-for="post in posts"
-            :key="post.cid"
+            v-for="content in contents"
+            :key="content.cid"
             class="relative flex flex-col h-70 max-md:h-65 overflow-hidden rounded-[15px] shadow-sm hover:shadow-md border border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-600 group transition-all duration-300">
             <!-- 封面占满整卡 -->
             <NuxtLink
-              v-if="post.covers.length > 0"
-              :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
+              v-if="content.covers.length > 0"
+              :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug}`"
               class="absolute inset-0">
               <img
-                :src="post.covers[0]?.url"
-                :alt="post.title"
+                :src="content.covers[0]?.url"
+                :alt="content.title"
                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                 loading="lazy" >
               <!-- 多封面角标 -->
               <div
-                v-if="post.many_covers && post.covers.length > 1"
+                v-if="content.many_covers && content.covers.length > 1"
                 class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                 <Icon name="ri-gallery-line" class="size-3.5" />
-                <span>+{{ post.covers.length - 1 }}</span>
+                <span>+{{ content.covers.length - 1 }}</span>
               </div>
               <!-- 关联地点角标 -->
               <div
-                v-if="post.travelCount > 0"
-                :class="post.many_covers && post.covers.length > 1 ? 'top-10' : 'top-2'"
+                v-if="content.travelCount > 0"
+                :class="content.many_covers && content.covers.length > 1 ? 'top-10' : 'top-2'"
                 class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                 <Icon name="ri:map-pin-line" class="size-3.5" />
-                <span>{{ post.travelCount }}</span>
+                <span>{{ content.travelCount }}</span>
               </div>
             </NuxtLink>
 
@@ -313,48 +313,48 @@ onMounted(() => {
             <div
               v-else
               class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
-              <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ post.title[0] }}</span>
+              <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ content.title[0] }}</span>
             </div>
 
             <!-- 文章信息（底部毛玻璃带） -->
             <div
               class="relative mt-auto w-full px-5 pb-2 pt-1.5"
-              :class="post.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
+              :class="content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
               <NuxtLink
-                :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug}`"
+                :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug}`"
                 class="text-[1.5em] font-extrabold my-1 block transition-colors"
-                :class="post.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-500'">
-                {{ post.title }}
+                :class="content.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-500'">
+                {{ content.title }}
               </NuxtLink>
 
               <div
                 class="text-xs my-1 flex flex-wrap gap-2"
-                :class="post.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
+                :class="content.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
                 <span v-tooltip="`最后更新时间`" class="flex items-center">
                   <Icon name="ri-time-line" class="size-4" />
-                  {{ formatDate(post.updated) }}
+                  {{ formatDate(content.updated) }}
                 </span>
-                <span v-if="post.categoryName" class="flex items-center">
+                <span v-if="content.categoryName" class="flex items-center">
                   <Icon name="ri:menu-line" class="size-4" />
                   <NuxtLink
                     v-tooltip="`分类`"
-                    :to="`/category/${post.categorySlug}`"
+                    :to="`/category/${content.categorySlug}`"
                     class="mr-1 transition-colors"
-                    :class="post.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
-                    {{ post.categoryName }}
+                    :class="content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                    {{ content.categoryName }}
                   </NuxtLink>
                 </span>
                 <span v-tooltip="`评论数量`" class="flex items-center">
                   <Icon name="ri-chat-2-line" class="size-4" />
-                  {{ post.commentsNum > 0 ? post.commentsNum : "暂无评论" }}
+                  {{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}
                 </span>
               </div>
 
               <p
-                v-if="post.desc"
+                v-if="content.desc"
                 class="text-[0.9em] overflow-wrap break-word"
-                :class="post.covers.length > 0 ? 'text-white/70' : 'text-slate-600 dark:text-slate-400'">
-                {{ post.desc }}
+                :class="content.covers.length > 0 ? 'text-white/70' : 'text-slate-600 dark:text-slate-400'">
+                {{ content.desc }}
               </p>
             </div>
           </div>
@@ -389,7 +389,7 @@ onMounted(() => {
 
         <!-- 空状态 -->
         <div
-          v-else-if="posts.length === 0 && !pending"
+          v-else-if="contents.length === 0 && !pending"
           class="text-center py-20 text-slate-500 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
           暂无文章
         </div>

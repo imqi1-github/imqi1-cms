@@ -13,11 +13,11 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    return await prisma.comments.findMany({
+    const comments = await prisma.comments.findMany({
       take: 5,
       orderBy: {create_time: "desc"},
       include: {
-        posts: {
+        content_ref: {
           select: {
             title: true,
             cid: true,
@@ -25,6 +25,11 @@ export default defineEventHandler(async event => {
         },
       },
     });
+    // 保持前端契约：关联文章仍以 contents 返回
+    return comments.map(({ content_ref, ...rest }) => ({
+      ...rest,
+      contents: content_ref,
+    }));
   } catch (error) {
     console.error(error);
     throw createError({

@@ -6,7 +6,7 @@ export interface AttachmentMetadata {
 }
 
 /** 附件列表项关联文章 */
-export interface AttachmentItemPost {
+export interface AttachmentItemContent {
 	cid: number;
 	title: string;
 }
@@ -25,11 +25,11 @@ export interface AttachmentItem {
 	format?: string | null;
 	/** Prisma Date 经序列化为 string */
 	createTime: string;
-	posts: AttachmentItemPost[];
+	contents: AttachmentItemContent[];
 }
 
 /** 附件关联文章 */
-export interface AttachmentDetailPost {
+export interface AttachmentDetailContent {
 	cid: number;
 	title: string;
 	slug: string | null;
@@ -47,7 +47,7 @@ export interface AttachmentDetail {
 	height: number | null;
 	format: string | null;
 	createdAt: string;
-	posts: AttachmentDetailPost[];
+	contents: AttachmentDetailContent[];
 }
 
 /** 附件详情接口响应 */

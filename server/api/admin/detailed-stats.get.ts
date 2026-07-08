@@ -20,12 +20,12 @@ export default defineEventHandler(async event => {
 
     // 并行查询所有统计数据
     const [
-      postsCount,
+      contentsCount,
       pagesCount,
-      publishedPostsCount,
-      draftPostsCount,
-      thisMonthPostsCount,
-      thisWeekPostsCount,
+      publishedContentsCount,
+      draftContentsCount,
+      thisMonthContentsCount,
+      thisWeekContentsCount,
       commentsCount,
       pendingCommentsCount,
       thisMonthCommentsCount,
@@ -34,17 +34,17 @@ export default defineEventHandler(async event => {
       usersCount,
     ] = await Promise.all([
       // 文章统计
-      prisma.posts.count({ where: { type: 0 } }),
-      prisma.posts.count({ where: { type: 1 } }),
-      prisma.posts.count({ where: { type: 0, status: 1 } }), // status: 1 表示已发布
-      prisma.posts.count({ where: { type: 0, status: 0 } }), // status: 0 表示草稿
-      prisma.posts.count({
+      prisma.contents.count({ where: { type: 0 } }),
+      prisma.contents.count({ where: { type: 1 } }),
+      prisma.contents.count({ where: { type: 0, status: 1 } }), // status: 1 表示已发布
+      prisma.contents.count({ where: { type: 0, status: 0 } }), // status: 0 表示草稿
+      prisma.contents.count({
         where: {
           type: 0,
           create_time: { gte: startOfMonth },
         },
       }),
-      prisma.posts.count({
+      prisma.contents.count({
         where: {
           type: 0,
           create_time: { gte: startOfWeek },
@@ -69,12 +69,12 @@ export default defineEventHandler(async event => {
     ]);
 
     return {
-      posts: {
-        total: postsCount,
-        published: publishedPostsCount,
-        draft: draftPostsCount,
-        thisMonth: thisMonthPostsCount,
-        thisWeek: thisWeekPostsCount,
+      contents: {
+        total: contentsCount,
+        published: publishedContentsCount,
+        draft: draftContentsCount,
+        thisMonth: thisMonthContentsCount,
+        thisWeek: thisWeekContentsCount,
       },
       pages: {
         total: pagesCount,

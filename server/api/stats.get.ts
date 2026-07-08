@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async () => {
   try {
     // 获取已发布的文章数
-    const publishedPostsNum = await prisma.posts.count({
+    const publishedContentsNum = await prisma.contents.count({
       where: {
         type: 0, // 文章
         status: 1, // 已发布
@@ -34,7 +34,7 @@ export default defineEventHandler(async () => {
     return {
       success: true,
       data: {
-        publishedPostsNum,
+        publishedContentsNum,
         publishedCommentsNum,
         categoriesNum,
         tagsNum,

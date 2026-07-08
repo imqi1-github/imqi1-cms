@@ -12,16 +12,16 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    const [postsCount, pagesCount, commentsCount, categoriesCount, usersCount] = await Promise.all([
-      prisma.posts.count({ where: { type: 0 } }), // 文章数
-      prisma.posts.count({ where: { type: 1 } }), // 页面数
+    const [contentsCount, pagesCount, commentsCount, categoriesCount, usersCount] = await Promise.all([
+      prisma.contents.count({ where: { type: 0 } }), // 文章数
+      prisma.contents.count({ where: { type: 1 } }), // 页面数
       prisma.comments.count(),
       prisma.metas.count(),
       prisma.users.count(),
     ]);
 
     return {
-      posts: postsCount,
+      contents: contentsCount,
       pages: pagesCount,
       comments: commentsCount,
       categories: categoriesCount,

@@ -1,5 +1,5 @@
 // 标签与文章关联关系
-export interface TagPostRelation {
+export interface TagContentRelation {
 	cid: number;
 	mid: number;
 	weight: number;
@@ -12,6 +12,6 @@ export interface TagItem {
 	slug: string | null;
 	desc: string | null;
 	type: string;
-	postrelations: TagPostRelation[];
-	postCount: number;
+	contentrelations: TagContentRelation[];
+	contentCount: number;
 }

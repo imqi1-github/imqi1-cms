@@ -19,7 +19,7 @@ export default defineEventHandler(async event => {
     let messagePostId = messagePostIdMeta?.value ? parseInt(messagePostIdMeta.value) : null;
 
     if (!messagePostId) {
-      const messagePost = await prisma.posts.findFirst({
+      const messagePost = await prisma.contents.findFirst({
         where: { slug: "messages" },
         select: { cid: true },
       });
@@ -28,7 +28,7 @@ export default defineEventHandler(async event => {
 
     return {
       success: true,
-      data: { postId: messagePostId, commentEnabled },
+      data: { contentId: messagePostId, commentEnabled },
     } satisfies MiniMessagesConfigResponse;
   } catch (error) {
     console.error(error);

@@ -324,19 +324,19 @@ function buildInfoContent(place: Place) {
   const descHtml = place.desc
     ? `<p class="travel-info-desc" style="margin:4px 0 0;font-size:13px;line-height:1.45;">${escapeHtml(place.desc)}</p>`
     : "";
-  // 关联文章列表（多对多）：每条一个带图标的链接（place.posts 缺失时容错为空），最多显示5篇
-  const posts = Array.isArray(place?.posts) ? place.posts : [];
-  const MAX_POSTS = 5;
-  const shownPosts = posts.slice(0, MAX_POSTS);
-  const restPosts = posts.length - shownPosts.length;
-  const postsHtml = shownPosts.length
-    ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">${shownPosts
+  // 关联文章列表（多对多）：每条一个带图标的链接（place.contents 缺失时容错为空），最多显示5篇
+  const contents = Array.isArray(place?.contents) ? place.contents : [];
+  const MAX_CONTENTS = 5;
+  const shownContents = contents.slice(0, MAX_CONTENTS);
+  const restContents = contents.length - shownContents.length;
+  const contentsHtml = shownContents.length
+    ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">${shownContents
         .map(
           p =>
             `<a href="${escapeHtml(p.url)}" class="travel-info-link" style="display:flex;align-items:center;gap:6px;font-size:13px;text-decoration:none;font-weight:500;">${ARTICLE_ICON}<span>${escapeHtml(p.title)}</span></a>`,
         )
         .join("")}${
-        restPosts > 0 ? `<div class="travel-info-desc" style="font-size:12px;padding-top:2px;">共 ${posts.length} 篇文章</div>` : ""
+        restContents > 0 ? `<div class="travel-info-desc" style="font-size:12px;padding-top:2px;">共 ${contents.length} 篇文章</div>` : ""
       }</div>`
     : "";
 
@@ -376,7 +376,7 @@ function buildInfoContent(place: Place) {
     ${coverHtml}
     <div style="padding:${bodyPadding};">
       <h3 class="travel-info-title" style="margin:0;font-size:14px;font-weight:700;">${escapeHtml(place.name)}</h3>
-      ${descHtml}${postsHtml}${readersHtml}
+      ${descHtml}${contentsHtml}${readersHtml}
     </div>
     <!-- 关闭按钮（左上角）：深色半透圆盘 + 白字，封面图与卡片底色上都醒目 -->
     <div onclick="window.__closeTravelInfo&amp;&amp;window.__closeTravelInfo()" class="travel-info-close" style="position:absolute;top:8px;left:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:9999px;cursor:pointer;">${CLOSE_ICON}</div>
@@ -625,7 +625,7 @@ function createCluster(points: MapPoint[]) {
       }
 
       const allReaders = places.flatMap(p => p.readers ?? []);
-      const allPosts = places.flatMap(p => p.posts ?? []);
+      const allContents = places.flatMap(p => p.contents ?? []);
       const sameName = places.every(p => p.name === places[0]!.name);
       const merged: Place = {
         id: -1,
@@ -634,7 +634,7 @@ function createCluster(points: MapPoint[]) {
         cover: null,
         longitude: center[0],
         latitude: center[1],
-        posts: allPosts,
+        contents: allContents,
         readers: hasReaders ? allReaders : undefined,
       };
       openInfo(buildInfoContent(merged), center, INFO_OFFSET_VISITOR_Y);

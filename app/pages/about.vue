@@ -374,7 +374,7 @@
         <div class="stats-grid grid grid-cols-1 md:grid-cols-4 gap-4 max-md:grid-cols-2">
           <div class="text-center">
             <div class="text-blue-600 dark:text-blue-400 text-3xl font-black leading-none mb-2 transition-colors duration-300">
-              {{ animatedStats.publishedPostsNum }}
+              {{ animatedStats.publishedContentsNum }}
             </div>
             <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">文章</div>
           </div>
@@ -748,7 +748,7 @@ const { data: statsData } = await useFetch("/api/stats", {
   headers: getInternalRequestHeaders(),
 });
 const stats = computed(() => ({
-  publishedPostsNum: statsData.value?.data?.publishedPostsNum || 0,
+  publishedContentsNum: statsData.value?.data?.publishedContentsNum || 0,
   publishedCommentsNum: statsData.value?.data?.publishedCommentsNum || 0,
   categoriesNum: statsData.value?.data?.categoriesNum || 0,
   tagsNum: statsData.value?.data?.tagsNum || 0,
@@ -763,7 +763,7 @@ usePageSeo({
 
 // 动画用的统计数据
 const animatedStats = ref({
-  publishedPostsNum: 0,
+  publishedContentsNum: 0,
   publishedCommentsNum: 0,
   categoriesNum: 0,
   tagsNum: 0,
@@ -852,8 +852,8 @@ onMounted(() => {
 
         // 站点统计数字动画
         if (el.querySelector(".stats-grid")) {
-          animateNumber(0, stats.value.publishedPostsNum, 2000, value => {
-            animatedStats.value.publishedPostsNum = value;
+          animateNumber(0, stats.value.publishedContentsNum, 2000, value => {
+            animatedStats.value.publishedContentsNum = value;
           });
           animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
             animatedStats.value.publishedCommentsNum = value;
@@ -917,8 +917,8 @@ onMounted(() => {
 
               // 站点统计数字动画
               if (entry.target.querySelector(".stats-grid")) {
-                animateNumber(0, stats.value.publishedPostsNum, 2000, value => {
-                  animatedStats.value.publishedPostsNum = value;
+                animateNumber(0, stats.value.publishedContentsNum, 2000, value => {
+                  animatedStats.value.publishedContentsNum = value;
                 });
                 animateNumber(0, stats.value.publishedCommentsNum, 2000, value => {
                   animatedStats.value.publishedCommentsNum = value;

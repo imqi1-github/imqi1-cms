@@ -15,7 +15,7 @@ const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true
 const { data: messageConfig } = await useFetch("/api/messages/config", {
   headers: getInternalRequestHeaders(),
 });
-const messagePostId = computed(() => messageConfig.value?.data?.postId);
+const messagePostId = computed(() => messageConfig.value?.data?.contentId);
 const route = useRoute();
 
 function scrollToComment(hash: string) {
@@ -153,7 +153,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 评论区 -->
-      <CommentList v-else-if="commentEnabled" :post-id="messagePostId" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
+      <CommentList v-else-if="commentEnabled" :content-id="messagePostId" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
     </section>
   </div>
 </template>

@@ -64,11 +64,11 @@ export default defineEventHandler(async () => {
       mail: true,
       coid: true,
       content: true,
-      posts: {
+      content_ref: {
         select: {
           title: true,
           slug: true,
-          postrelations: { select: { metas: { select: { slug: true } } }, take: 1 },
+          contentrelations: { select: { metas: { select: { slug: true } } }, take: 1 },
         },
       },
     },
@@ -130,15 +130,15 @@ export default defineEventHandler(async () => {
       } else {
         next = "placed";
         // 文章链接：普通文章走 /content/<分类slug>/<文章slug>#comment-<coid>；留言板文章走 /messages#comment-<coid>。
-        const categorySlug = row.posts?.postrelations?.[0]?.metas?.slug ?? null;
-        const postSlug = row.posts?.slug ?? null;
-        const isMessagePost = postSlug === "messages";
-        const articleUrl = isMessagePost
+        const categorySlug = row.content_ref?.contentrelations?.[0]?.metas?.slug ?? null;
+        const contentSlug = row.content_ref?.slug ?? null;
+        const isMessageContent = contentSlug === "messages";
+        const articleUrl = isMessageContent
           ? `/messages#comment-${row.coid}`
-          : categorySlug && postSlug
-            ? `/content/${categorySlug}/${postSlug}#comment-${row.coid}`
+          : categorySlug && contentSlug
+            ? `/content/${categorySlug}/${contentSlug}#comment-${row.coid}`
             : null;
-        const articleTitle = isMessagePost ? "留言板" : (row.posts?.title ?? null);
+        const articleTitle = isMessageContent ? "留言板" : (row.content_ref?.title ?? null);
 
         const reader: Reader = {
           name: row.name?.trim() || "匿名读者",

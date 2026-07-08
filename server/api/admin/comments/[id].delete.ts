@@ -42,7 +42,7 @@ export default defineEventHandler(async event => {
 
     // 如果删除的是已发布的评论，减少文章评论计数
     if (comment.status === 1) {
-      await prisma.posts.update({
+      await prisma.contents.update({
         where: { cid: comment.cid },
         data: { comment_num: { decrement: 1 } },
       });

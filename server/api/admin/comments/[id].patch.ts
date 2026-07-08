@@ -59,14 +59,14 @@ export default defineEventHandler(async event => {
     if (status !== undefined && status !== oldComment.status) {
       // 从非已发布变为已发布：增加计数
       if (status === 1 && oldComment.status !== 1) {
-        await prisma.posts.update({
+        await prisma.contents.update({
           where: { cid: oldComment.cid },
           data: { comment_num: { increment: 1 } },
         });
       }
       // 从已发布变为非已发布：减少计数
       else if (status !== 1 && oldComment.status === 1) {
-        await prisma.posts.update({
+        await prisma.contents.update({
           where: { cid: oldComment.cid },
           data: { comment_num: { decrement: 1 } },
         });

@@ -15,14 +15,14 @@ export default defineEventHandler(async event => {
     const travels = await prisma.travels.findMany({
       orderBy: [{ sort: "asc" }, { create_time: "desc" }],
       include: {
-        // posts 为 posttravels[] 关联表，通过 .post 取文章
-        posts: { select: { post: { select: { cid: true, title: true } } } },
+        // contenttravels 为关联表，通过 .content 取文章
+        contenttravels: { select: { content: { select: { cid: true, title: true } } } },
       },
     });
 
-    // 展平：每条地点附带 cids（数字数组）与 posts（{cid,title}[]）
+    // 展平：每条地点附带 cids（数字数组）与 contents（{cid,title}[]）
     return travels.map(t => {
-      const posts = t.posts.map(r => r.post);
+      const contents = t.contenttravels.map(r => r.content);
       return {
         id: t.id,
         name: t.name,
@@ -33,8 +33,8 @@ export default defineEventHandler(async event => {
         sort: t.sort,
         enabled: t.enabled,
         create_time: t.create_time,
-        posts,
-        cids: posts.map(p => p.cid),
+        contents,
+        cids: contents.map(p => p.cid),
       };
     });
   } catch (error) {

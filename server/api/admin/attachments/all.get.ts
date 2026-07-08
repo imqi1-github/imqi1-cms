@@ -43,9 +43,9 @@ export default defineEventHandler(async event => {
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
-        posts: {
+        contentattachments: {
           select: {
-            post: {
+            content: {
               select: {
                 cid: true,
                 title: true,
@@ -72,7 +72,7 @@ export default defineEventHandler(async event => {
             height: metadata.height,
             format: metadata.format,
             createTime: a.create_time,
-            posts: a.posts.map(relation => relation.post),
+            contents: a.contentattachments.map(relation => relation.content),
           }
         }),
         total,

@@ -132,7 +132,7 @@ const footprintPlaces = computed(() =>
     cover: null,
     longitude: p.longitude,
     latitude: p.latitude,
-    posts: [],
+    contents: [],
     readers: p.readers ?? [],
   })),
 );
@@ -145,7 +145,7 @@ const blogPlaces = computed(() =>
     cover: null,
     longitude: p.longitude,
     latitude: p.latitude,
-    posts: [],
+    contents: [],
     avatar: p.avatar,
     source: p.source,
     sourceId: p.sourceId,

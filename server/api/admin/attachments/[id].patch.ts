@@ -57,9 +57,9 @@ export default defineEventHandler(async event => {
       })
 
       if (cidList !== null) {
-        await tx.postattachments.deleteMany({ where: { aid: id } })
+        await tx.contentattachments.deleteMany({ where: { aid: id } })
         if (cidList.length > 0) {
-          await tx.postattachments.createMany({
+          await tx.contentattachments.createMany({
             data: cidList.map(cid => ({ aid: id, cid })),
             skipDuplicates: true,
           })

@@ -13,7 +13,7 @@ export default defineEventHandler(async event => {
   }
 
   // 查询页面 (type: 1 = 页面)
-  const page = await prisma.posts.findFirst({
+  const page = await prisma.contents.findFirst({
     where: {
       slug,
       type: 1, // 1: 页面

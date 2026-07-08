@@ -20,7 +20,7 @@ export default defineEventHandler(async event => {
     const pageSize = parseInt(query.pageSize as string) || 10;
     const status = query.status !== undefined ? parseInt(query.status as string) : undefined;
 
-    const where: Prisma.postsWhereInput = {
+    const where: Prisma.contentsWhereInput = {
       type: 1, // 1: 页面
     };
 
@@ -28,8 +28,8 @@ export default defineEventHandler(async event => {
       where.status = status;
     }
 
-    const [posts, total] = await Promise.all([
-      prisma.posts.findMany({
+    const [contents, total] = await Promise.all([
+      prisma.contents.findMany({
         where,
         orderBy: { create_time: "desc" },
         skip: (page - 1) * pageSize,
@@ -44,14 +44,14 @@ export default defineEventHandler(async event => {
           },
         },
       }),
-      prisma.posts.count({ where }),
+      prisma.contents.count({ where }),
     ]);
 
     // 获取每个页面的分类
     const pagesWithRelations = await Promise.all(
-      posts.map(async post => {
-        const relations = await prisma.postrelations.findMany({
-          where: { cid: post.cid },
+      contents.map(async content => {
+        const relations = await prisma.contentrelations.findMany({
+          where: { cid: content.cid },
           select: {
             cid: true,
             mid: true,
@@ -66,7 +66,7 @@ export default defineEventHandler(async event => {
         });
 
         return {
-          ...post,
+          ...content,
           relations,
         };
       })

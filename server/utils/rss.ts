@@ -142,10 +142,10 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
     }
 
     // 每个订阅源最多保存10篇文章
-    const postsToSave = items.slice(0, 10);
-    console.log(`[订阅更新] 订阅 ${subscribeId} 解析到 ${items.length} 篇文章，将保存前 ${postsToSave.length} 篇`);
+    const contentsToSave = items.slice(0, 10);
+    console.log(`[订阅更新] 订阅 ${subscribeId} 解析到 ${items.length} 篇文章，将保存前 ${contentsToSave.length} 篇`);
 
-    for (const item of postsToSave) {
+    for (const item of contentsToSave) {
       if (!item.link) continue;
 
       try {
@@ -176,8 +176,8 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       data: { lastUpdated: new Date() },
     });
 
-    console.log(`[订阅更新] 订阅 ${subscribeId} 更新成功，获取了 ${postsToSave.length} 篇文章`);
-    return { success: true, count: postsToSave.length };
+    console.log(`[订阅更新] 订阅 ${subscribeId} 更新成功，获取了 ${contentsToSave.length} 篇文章`);
+    return { success: true, count: contentsToSave.length };
   } catch (error) {
     console.error(error);
     return { success: false, error: (error as Error).message };
@@ -238,7 +238,7 @@ export async function getSubscribePosts() {
   });
 
   // 收集所有文章并按发布日期排序
-  const allPosts: Array<{
+  const allContents: Array<{
     id: number;
     subscribeId: number;
     subscribeName: string;
@@ -250,26 +250,26 @@ export async function getSubscribePosts() {
   }> = [];
 
   for (const subscribe of subscribesWithPosts) {
-    for (const post of subscribe.subscribeposts) {
-      allPosts.push({
-        id: post.id,
+    for (const item of subscribe.subscribeposts) {
+      allContents.push({
+        id: item.id,
         subscribeId: subscribe.id,
         subscribeName: subscribe.name,
         subscribeAvatar: subscribe.avatar,
-        title: post.title,
-        link: post.link,
-        description: post.description,
-        pubDate: post.pubDate,
+        title: item.title,
+        link: item.link,
+        description: item.description,
+        pubDate: item.pubDate,
       });
     }
   }
 
   // 按发布日期降序排序，取前30篇
-  allPosts.sort((a, b) => {
+  allContents.sort((a, b) => {
     if (!a.pubDate) return 1;
     if (!b.pubDate) return -1;
     return b.pubDate.getTime() - a.pubDate.getTime();
   });
 
-  return allPosts.slice(0, 30);
+  return allContents.slice(0, 30);
 }

@@ -22,10 +22,10 @@ usePageSeo({
 // 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，渐入时直接带数据。
 // 订阅源列表含随机洗牌，故用 ref 并在 onMounted（仅客户端）计算，避免 SSR/客户端各洗一次导致 hydration 不一致。
 // 服务端渲染时通过内部请求 header 放行 referer-check（与其它页面一致）。
-const { data: postsRes, pending, error: fetchError, refresh } = await useFetch("/api/subscribes", {
+const { data: contentsRes, pending, error: fetchError, refresh } = await useFetch("/api/subscribes", {
   headers: getInternalRequestHeaders(),
 });
-const posts = computed(() => postsRes.value?.data || []);
+const contents = computed(() => contentsRes.value?.data || []);
 const error = computed<string | null>(() =>
   fetchError.value ? fetchError.value.message || "获取订阅文章失败" : null,
 );
@@ -111,16 +111,16 @@ const subscribes = ref<SubscribeSource[]>([]);
 
 function computeSubscribes() {
   const subscribeMap = new Map();
-  posts.value.forEach(post => {
-    if (!subscribeMap.has(post.subscribeId)) {
-      subscribeMap.set(post.subscribeId, {
-        id: post.subscribeId,
-        name: post.subscribeName,
-        avatar: post.subscribeAvatar,
-        postCount: 0
+  contents.value.forEach(content => {
+    if (!subscribeMap.has(content.subscribeId)) {
+      subscribeMap.set(content.subscribeId, {
+        id: content.subscribeId,
+        name: content.subscribeName,
+        avatar: content.subscribeAvatar,
+        contentCount: 0
       });
     }
-    subscribeMap.get(post.subscribeId).postCount++;
+    subscribeMap.get(content.subscribeId).contentCount++;
   });
   const arr = Array.from(subscribeMap.values());
   // 随机排序（Fisher-Yates 洗牌算法）
@@ -132,9 +132,9 @@ function computeSubscribes() {
 }
 
 // 筛选后的文章列表
-const filteredPosts = computed(() => {
-  if (!selectedSourceId.value) return posts.value;
-  return posts.value.filter(post => post.subscribeId === selectedSourceId.value);
+const filteredContents = computed(() => {
+  if (!selectedSourceId.value) return contents.value;
+  return contents.value.filter(content => content.subscribeId === selectedSourceId.value);
 });
 
 // 重新加载订阅文章（错误重试用）
@@ -234,14 +234,14 @@ function clearFilter() {
     </div>
 
     <!-- 空状态 -->
-    <div v-if="isLoaded && posts.length === 0 && !error" v-scroll-reveal class="text-center py-16">
+    <div v-if="isLoaded && contents.length === 0 && !error" v-scroll-reveal class="text-center py-16">
       <Icon name="lucide:rss" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
       <p class="text-muted-foreground">暂无订阅文章</p>
       <p class="text-sm text-muted-foreground mt-2">请先在后台添加订阅源并更新</p>
     </div>
 
     <!-- 主内容区 -->
-    <div v-if="isLoaded && posts.length > 0" class="flex gap-6">
+    <div v-if="isLoaded && contents.length > 0" class="flex gap-6">
       <!-- 左侧订阅源列表 -->
       <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
         <div
@@ -323,8 +323,8 @@ function clearFilter() {
         <!-- 文章列表 -->
         <div :key="animatinKey" class="space-y-6">
           <article
-            v-for="post in filteredPosts"
-            :key="post.id"
+            v-for="content in filteredContents"
+            :key="content.id"
             v-scroll-reveal
             class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition-all bg-white dark:bg-slate-800/50"
           >
@@ -332,48 +332,48 @@ function clearFilter() {
               <!-- 订阅源头像 -->
               <button
                 class="shrink-0"
-                :title="post.subscribeName"
-                @click="selectSubscribe(post.subscribeId)"
+                :title="content.subscribeName"
+                @click="selectSubscribe(content.subscribeId)"
               >
                 <Avatar class="size-10">
-                  <AvatarImage v-if="post.subscribeAvatar" :src="post.subscribeAvatar" />
-                  <AvatarFallback>{{ post.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
+                  <AvatarImage v-if="content.subscribeAvatar" :src="content.subscribeAvatar" />
+                  <AvatarFallback>{{ content.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
                 </Avatar>
               </button>
 
               <!-- 文章内容 -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-                  <span class="text-sm text-slate-600 dark:text-slate-400">{{ post.subscribeName }}</span>
-                  <span v-if="post.pubDate" class="text-xs text-slate-500 dark:text-slate-500">
-                    {{ formatDate(post.pubDate) }}
+                  <span class="text-sm text-slate-600 dark:text-slate-400">{{ content.subscribeName }}</span>
+                  <span v-if="content.pubDate" class="text-xs text-slate-500 dark:text-slate-500">
+                    {{ formatDate(content.pubDate) }}
                   </span>
                 </div>
                 <a
-                  :href="post.link"
+                  :href="content.link"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="block group"
                 >
                   <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                    {{ post.title }}
+                    {{ content.title }}
                   </h2>
                 </a>
                 <p
-                  v-if="post.description"
+                  v-if="content.description"
                   class="text-sm text-slate-600 dark:text-slate-400 mt-2 line-clamp-2"
                 >
-                  {{ truncateDescription(post.description) }}
+                  {{ truncateDescription(content.description) }}
                 </p>
               </div>
 
               <!-- 外部链接图标 -->
               <a
-                :href="post.link"
+                :href="content.link"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
-                :title="post.title"
+                :title="content.title"
               >
                 <Icon name="lucide:external-link" class="size-5" />
               </a>
@@ -381,7 +381,7 @@ function clearFilter() {
           </article>
 
           <!-- 筛选后无结果 -->
-          <div v-if="filteredPosts.length === 0 && selectedSourceId" v-scroll-reveal class="text-center py-12">
+          <div v-if="filteredContents.length === 0 && selectedSourceId" v-scroll-reveal class="text-center py-12">
             <Icon name="lucide:file-question" class="size-12 text-muted-foreground/30 mx-auto mb-3" />
             <p class="text-muted-foreground">该订阅源暂无文章</p>
           </div>

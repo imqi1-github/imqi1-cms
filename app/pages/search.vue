@@ -198,37 +198,37 @@ function highlightKeyword(text: string, keyword: string) {
         </p>
 
         <div class="space-y-4">
-          <article v-for="post in results" :key="post.cid" class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all">
+          <article v-for="content in results" :key="content.cid" class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all">
             <!-- 标题 -->
             <NuxtLink
-              :to="`/content/${post.categorySlug || 'uncategorized'}/${post.slug || post.cid}`"
+              :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug || content.cid}`"
               class="block">
               <h3
                 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2 line-clamp-2"
-                v-html="highlightKeyword(post.title, searchKeyword)" />
+                v-html="highlightKeyword(content.title, searchKeyword)" />
             </NuxtLink>
 
             <!-- 摘要 -->
             <div class="mb-3 space-y-2">
               <!-- 描述高亮 -->
-              <p v-if="post.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(post.desc, searchKeyword)" />
+              <p v-if="content.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(content.desc, searchKeyword)" />
 
               <!-- 正文高亮摘要（使用后端返回的 highlight 字段） -->
               <p
-                v-if="post.highlight"
+                v-if="content.highlight"
                 class="text-sm text-muted-foreground italic line-clamp-3"
-                v-html="post.highlight" />
+                v-html="content.highlight" />
             </div>
 
             <!-- 元信息 -->
             <div class="flex items-center gap-3 text-xs text-muted-foreground">
-              <span v-if="post.categoryName" class="inline-flex items-center gap-1">
+              <span v-if="content.categoryName" class="inline-flex items-center gap-1">
                 <Icon name="ri:folder-line" class="size-3" />
-                {{ post.categoryName }}
+                {{ content.categoryName }}
               </span>
               <span class="inline-flex items-center gap-1">
                 <Icon name="ri:calendar-line" class="size-3" />
-                {{ formatDate(post.createTime) }}
+                {{ formatDate(content.createTime) }}
               </span>
             </div>
           </article>

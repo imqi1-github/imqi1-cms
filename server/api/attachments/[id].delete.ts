@@ -38,10 +38,10 @@ export default defineEventHandler(async event => {
     const attachment = await prisma.attachments.findUnique({
       where: { aid: id },
       include: {
-        posts: {
+        contentattachments: {
           select: {
             cid: true,
-            post: {
+            content: {
               select: {
                 uid: true,
               },
@@ -60,26 +60,26 @@ export default defineEventHandler(async event => {
 
     const unlinkCid = Number(query.cid);
     if (unlinkCid) {
-      const post = await prisma.posts.findUnique({
+      const content = await prisma.contents.findUnique({
         where: { cid: unlinkCid },
         select: { uid: true },
       });
 
-      if (!post) {
+      if (!content) {
         throw createError({
           statusCode: 404,
           message: "文章不存在",
         });
       }
 
-      if (post.uid !== user.uid) {
+      if (content.uid !== user.uid) {
         throw createError({
           statusCode: 403,
           message: "无权取消关联此附件",
         });
       }
 
-      await prisma.postattachments.deleteMany({
+      await prisma.contentattachments.deleteMany({
         where: {
           aid: id,
           cid: unlinkCid,
@@ -91,7 +91,7 @@ export default defineEventHandler(async event => {
         message: "取消关联成功",
         detached: true,
       };
-    } else if (attachment.posts.length > 0 && !attachment.posts.some(relation => relation.post.uid === user.uid)) {
+    } else if (attachment.contentattachments.length > 0 && !attachment.contentattachments.some(relation => relation.content.uid === user.uid)) {
       // 验证附件所有权：只有关联文章作者才能全局删除附件；无关联附件允许已登录管理员删除
       throw createError({
         statusCode: 403,

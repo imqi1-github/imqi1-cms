@@ -90,9 +90,9 @@ export default defineEventHandler(async event => {
       ? Array.from(new Set(cids.map(c => Number(c)).filter((c: number) => Number.isInteger(c))))
       : [];
 
-    await prisma.posttravels.deleteMany({ where: { travel_id: id } });
+    await prisma.contenttravels.deleteMany({ where: { travel_id: id } });
     if (cidList.length) {
-      await prisma.posttravels.createMany({
+      await prisma.contenttravels.createMany({
         data: cidList.map(cid => ({ travel_id: id, cid })),
         skipDuplicates: true,
       });

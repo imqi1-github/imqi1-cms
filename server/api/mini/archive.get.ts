@@ -1,4 +1,4 @@
-import type { MiniArchiveMonthGroup, MiniArchivePost, MiniArchiveResponse } from "#server/types/apis/mini";
+import type { MiniArchiveMonthGroup, MiniArchiveContent, MiniArchiveResponse } from "#server/types/apis/mini";
 import { prisma } from "#server/utils/prisma";
 
 function formatMonthTitle(value: Date) {
@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
   try {
-    const posts = await prisma.posts.findMany({
+    const contents = await prisma.contents.findMany({
       where: {
         type: 0,
         status: 1,
@@ -31,13 +31,13 @@ export default defineEventHandler(async event => {
       },
     });
 
-    const groups = posts.reduce((acc, post) => {
-      const title = formatMonthTitle(post.create_time);
-      const item: MiniArchivePost = {
-        id: post.cid,
-        day: formatDay(post.create_time),
-        title: post.title,
-        created: post.create_time.toISOString(),
+    const groups = contents.reduce((acc, content) => {
+      const title = formatMonthTitle(content.create_time);
+      const item: MiniArchiveContent = {
+        id: content.cid,
+        day: formatDay(content.create_time),
+        title: content.title,
+        created: content.create_time.toISOString(),
       };
 
       const group = acc[acc.length - 1]?.title === title

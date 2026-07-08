@@ -120,7 +120,7 @@ async function deletePage(cid: number) {
   const confirmed = confirm("确定要删除这个页面吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/posts/${cid}`, { method: "DELETE" });
+      await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE" });
       await fetchPages(pagination.value.page);
       toast.success({ message: "页面已删除" });
     } catch (error) {
@@ -140,7 +140,7 @@ async function batchDelete() {
   if (confirmed) {
     deleting.value = true;
     try {
-      const res = await $fetch("/api/admin/posts/batch-delete", {
+      const res = await $fetch("/api/admin/contents/batch-delete", {
         method: "POST",
         body: { ids: selectedIds.value },
       });

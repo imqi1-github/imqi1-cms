@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse} from "~/types/apis/admin/attachments";
 import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
-import type { AdminPost, AdminPostListResponse } from "~/types/apis/admin/posts";
+import type { AdminContent, AdminContentListResponse } from "~/types/apis/admin/contents";
 import type {ApiError} from "~/types/error";
 
 const route = useRoute()
@@ -10,15 +10,15 @@ const loading = ref(true)
 const saving = ref(false)
 
 const attachment = ref<AttachmentDetail | null>(null)
-const uploadPosts = ref<AdminPost[]>([])
+const uploadContents = ref<AdminContent[]>([])
 const uploadPages = ref<PageItem[]>([])
-const selectedPostId = ref("")
+const selectedContentId = ref("")
 
 const relationTargets = computed(() => [
-  ...uploadPosts.value.map(post => ({
-    value: String(post.cid),
-    cid: post.cid,
-    label: post.title || `文章 #${post.cid}`,
+  ...uploadContents.value.map(content => ({
+    value: String(content.cid),
+    cid: content.cid,
+    label: content.title || `文章 #${content.cid}`,
     type: "文章",
   })),
   ...uploadPages.value.map(pageItem => ({
@@ -35,10 +35,10 @@ const getRelationTypeLabel = (cid: number) => pageCidSet.value.has(cid) ? "页�
 
 const getRelationEditPath = (cid: number) => pageCidSet.value.has(cid)
   ? `/admin/pages/edit?cid=${cid}`
-  : `/admin/posts/edit?cid=${cid}`
+  : `/admin/contents/edit?cid=${cid}`
 
 const availableRelationTargets = computed(() => {
-  const linked = new Set(attachment.value?.posts.map(post => post.cid) ?? [])
+  const linked = new Set(attachment.value?.contents.map(content => content.cid) ?? [])
   return relationTargets.value.filter(target => !linked.has(target.cid))
 })
 
@@ -104,11 +104,11 @@ async function fetchAttachment() {
 
 async function fetchRelationTargets() {
   try {
-    const [postsRes, pagesRes] = await Promise.all([
-      $fetch<AdminPostListResponse>("/api/admin/posts?pageSize=999"),
+    const [contentsRes, pagesRes] = await Promise.all([
+      $fetch<AdminContentListResponse>("/api/admin/contents?pageSize=999"),
       $fetch<PageListResponse>("/api/admin/pages?pageSize=999"),
     ])
-    uploadPosts.value = postsRes.data || []
+    uploadContents.value = contentsRes.data || []
     uploadPages.value = pagesRes.data || []
   } catch (error) {
     console.error('获取关联目标失败:', error)
@@ -130,13 +130,13 @@ async function syncRelations(cids: number[]) {
 }
 
 async function addRelation() {
-  if (!attachment.value || !selectedPostId.value) return
-  const cid = Number(selectedPostId.value)
+  if (!attachment.value || !selectedContentId.value) return
+  const cid = Number(selectedContentId.value)
   if (!Number.isInteger(cid)) return
 
   try {
-    await syncRelations([...attachment.value.posts.map(post => post.cid), cid])
-    selectedPostId.value = ""
+    await syncRelations([...attachment.value.contents.map(content => content.cid), cid])
+    selectedContentId.value = ""
     toast.success({ message: '关联成功' })
   } catch (rawError: unknown) {
     const error = rawError as ApiError
@@ -148,7 +148,7 @@ async function removeRelation(cid: number) {
   if (!attachment.value) return
 
   try {
-    await syncRelations(attachment.value.posts.map(post => post.cid).filter(postCid => postCid !== cid))
+    await syncRelations(attachment.value.contents.map(content => content.cid).filter(contentCid => contentCid !== cid))
     toast.success({ message: '已取消关联' })
   } catch (rawError: unknown) {
     const error = rawError as ApiError
@@ -375,28 +375,28 @@ onMounted(() => {
               <div class="h-4 bg-muted rounded w-full animate-pulse" />
             </div>
             <div v-else-if="attachment" class="space-y-4">
-              <div v-if="attachment.posts.length > 0" class="space-y-2">
+              <div v-if="attachment.contents.length > 0" class="space-y-2">
                 <div
-                  v-for="post in attachment.posts"
-                  :key="post.cid"
+                  v-for="content in attachment.contents"
+                  :key="content.cid"
                   class="flex items-center gap-2 rounded-lg border p-3"
                 >
                   <NuxtLink
-                    :to="getRelationEditPath(post.cid)"
+                    :to="getRelationEditPath(content.cid)"
                     class="flex min-w-0 flex-1 items-center gap-2 hover:text-primary"
                   >
                     <Icon name="lucide:file-text" class="size-4 shrink-0 text-muted-foreground" />
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2">
                         <Badge variant="outline" class="shrink-0 text-xs">
-                          {{ getRelationTypeLabel(post.cid) }}
+                          {{ getRelationTypeLabel(content.cid) }}
                         </Badge>
-                        <p class="truncate text-sm font-medium">{{ post.title }}</p>
+                        <p class="truncate text-sm font-medium">{{ content.title }}</p>
                       </div>
-                      <p class="mt-1 truncate text-xs text-muted-foreground">Slug: {{ post.slug || '-' }}</p>
+                      <p class="mt-1 truncate text-xs text-muted-foreground">Slug: {{ content.slug || '-' }}</p>
                     </div>
                   </NuxtLink>
-                  <Button variant="ghost" size="icon" title="取消关联" @click="removeRelation(post.cid)">
+                  <Button variant="ghost" size="icon" title="取消关联" @click="removeRelation(content.cid)">
                     <Icon name="lucide:x" class="size-4" />
                   </Button>
                 </div>
@@ -407,7 +407,7 @@ onMounted(() => {
 
               <div class="flex gap-2">
                 <ClientOnly>
-                  <Select v-model="selectedPostId" :disabled="availableRelationTargets.length === 0">
+                  <Select v-model="selectedContentId" :disabled="availableRelationTargets.length === 0">
                     <SelectTrigger class="min-w-0 flex-1">
                       <SelectValue placeholder="选择要关联的文章或页面" />
                     </SelectTrigger>
@@ -421,7 +421,7 @@ onMounted(() => {
                     <div class="h-9 min-w-0 flex-1 rounded-md border bg-muted/50" />
                   </template>
                 </ClientOnly>
-                <Button :disabled="!selectedPostId" @click="addRelation">
+                <Button :disabled="!selectedContentId" @click="addRelation">
                   添加
                 </Button>
               </div>

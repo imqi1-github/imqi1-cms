@@ -160,8 +160,8 @@ async function deleteCategory(mid: number) {
   }
 }
 
-function viewCategoryPosts(category: CategoryItem) {
-  router.push(`/admin/posts?category=${category.mid}`);
+function viewCategoryContents(category: CategoryItem) {
+  router.push(`/admin/contents?category=${category.mid}`);
 }
 
 onMounted(() => {
@@ -240,11 +240,11 @@ onMounted(() => {
             <TableCell>
               <button
                 class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
-                :class="{ 'text-muted-foreground': category.postCount === 0 }"
-                :disabled="category.postCount === 0"
-                @click="viewCategoryPosts(category)">
+                :class="{ 'text-muted-foreground': category.contentCount === 0 }"
+                :disabled="category.contentCount === 0"
+                @click="viewCategoryContents(category)">
                 <Icon name="lucide:file-text" class="size-4" />
-                <span>{{ category.postCount }}</span>
+                <span>{{ category.contentCount }}</span>
               </button>
             </TableCell>
             <TableCell class="text-right">
@@ -254,8 +254,8 @@ onMounted(() => {
                   size="icon"
                   class="size-8"
                   title="查看文章"
-                  :disabled="category.postCount === 0"
-                  @click="viewCategoryPosts(category)">
+                  :disabled="category.contentCount === 0"
+                  @click="viewCategoryContents(category)">
                   <Icon name="lucide:list" class="size-4" />
                 </Button>
                 <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="openEditModal(category)">
@@ -302,11 +302,11 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <button
               class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
-              :class="{ 'text-muted-foreground': category.postCount === 0 }"
-              :disabled="category.postCount === 0"
-              @click="viewCategoryPosts(category)">
+              :class="{ 'text-muted-foreground': category.contentCount === 0 }"
+              :disabled="category.contentCount === 0"
+              @click="viewCategoryContents(category)">
               <Icon name="lucide:file-text" class="size-3" />
-              <span>{{ category.postCount }} 篇</span>
+              <span>{{ category.contentCount }} 篇</span>
             </button>
           </div>
 
@@ -316,8 +316,8 @@ onMounted(() => {
               size="icon"
               class="size-8"
               title="查看文章"
-              :disabled="category.postCount === 0"
-              @click="viewCategoryPosts(category)">
+              :disabled="category.contentCount === 0"
+              @click="viewCategoryContents(category)">
               <Icon name="lucide:list" class="size-4" />
             </Button>
             <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="openEditModal(category)">

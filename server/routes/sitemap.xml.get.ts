@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
     console.log("[sitemap] 最终 baseUrl:", baseUrl);
 
     // 获取所有已发布的文章
-    const posts = await prisma.posts.findMany({
+    const contents = await prisma.contents.findMany({
       where: {
         status: 1, // 1: 已发布
         type: 0, // 0: 文章
@@ -33,7 +33,7 @@ export default defineEventHandler(async event => {
         slug: true,
         type: true,
         update_time: true,
-        postrelations: {
+        contentrelations: {
           select: {
             metas: {
               select: {
@@ -46,14 +46,14 @@ export default defineEventHandler(async event => {
       },
     });
 
-    console.log("[sitemap] 查询到的文章数量:", posts.length);
+    console.log("[sitemap] 查询到的文章数量:", contents.length);
     console.log(
       "[sitemap] 文章列表:",
-      posts.map(p => ({ cid: p.cid, slug: p.slug, type: p.type })),
+      contents.map(p => ({ cid: p.cid, slug: p.slug, type: p.type })),
     );
 
     // 获取所有独立页面
-    const pages = await prisma.posts.findMany({
+    const pages = await prisma.contents.findMany({
       where: {
         type: 1, // 1: 页面
         status: 1, // 1: 已发布
@@ -204,13 +204,13 @@ export default defineEventHandler(async event => {
     );
 
     // 所有文章
-    posts.forEach(post => {
-      const lastmod = post.update_time ? new Date(post.update_time).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+    contents.forEach(content => {
+      const lastmod = content.update_time ? new Date(content.update_time).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
       // 获取第一个关联分类的slug，如果没有则使用 'default'
-      const categorySlug = post.postrelations?.[0]?.metas?.slug || "default";
+      const categorySlug = content.contentrelations?.[0]?.metas?.slug || "default";
       urls.push(
         `  <url>
-    <loc>${baseUrl}/content/${categorySlug}/${post.slug}</loc>
+    <loc>${baseUrl}/content/${categorySlug}/${content.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

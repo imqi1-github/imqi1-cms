@@ -1,4 +1,4 @@
-export interface MiniLatestPost {
+export interface MiniLatestContent {
   id: number;
   title: string;
   cover: string;
@@ -6,12 +6,12 @@ export interface MiniLatestPost {
   created: string;
 }
 
-export interface MiniLatestPostsResponse {
+export interface MiniLatestContentsResponse {
   success: true;
-  data: MiniLatestPost[];
+  data: MiniLatestContent[];
 }
 
-export interface MiniArchivePost {
+export interface MiniArchiveContent {
   id: number;
   day: string;
   title: string;
@@ -20,7 +20,7 @@ export interface MiniArchivePost {
 
 export interface MiniArchiveMonthGroup {
   title: string;
-  items: MiniArchivePost[];
+  items: MiniArchiveContent[];
 }
 
 export interface MiniArchiveResponse {
@@ -33,7 +33,7 @@ export interface MiniCategory {
   name: string;
   slug: string;
   desc: string | null;
-  postCount: number;
+  contentCount: number;
   /** 最新一篇文章的封面（已转绝对地址），无封面时为空串 */
   cover: string;
   /** 最新一篇文章的标题，封面缺失时用作图标文字兜底 */
@@ -45,7 +45,7 @@ export interface MiniCategoriesResponse {
   data: MiniCategory[];
 }
 
-export interface MiniCategoryPost {
+export interface MiniCategoryContent {
   id: number;
   title: string;
   cover: string;
@@ -63,23 +63,23 @@ export interface MiniCategoryPagination {
   totalPages: number;
 }
 
-export interface MiniCategoryPostsData {
+export interface MiniCategoryContentsData {
   category: {
     mid: number;
     name: string;
     slug: string;
     desc: string | null;
   };
-  posts: MiniCategoryPost[];
+  contents: MiniCategoryContent[];
   pagination: MiniCategoryPagination;
 }
 
-export interface MiniCategoryPostsResponse {
+export interface MiniCategoryContentsResponse {
   success: true;
-  data: MiniCategoryPostsData;
+  data: MiniCategoryContentsData;
 }
 
-export interface MiniPostCategory {
+export interface MiniContentCategory {
   mid: number;
   name: string;
   /** 分类 slug，用于跳转分类详情页 */
@@ -87,12 +87,12 @@ export interface MiniPostCategory {
 }
 
 /** 文章封面项：图片地址 + 标题（desc），标题无则为空字符串 */
-export interface MiniPostCover {
+export interface MiniContentCover {
   url: string;
   title: string;
 }
 
-export interface MiniPostDetail {
+export interface MiniContentDetail {
   id: number;
   title: string;
   /** 文章描述 / 摘要，无则为空字符串 */
@@ -102,16 +102,16 @@ export interface MiniPostDetail {
   /** 首张封面绝对地址，无封面时为空字符串（兼容单封面场景） */
   cover: string;
   /** 全部封面（含标题），可能为空数组 */
-  covers: MiniPostCover[];
+  covers: MiniContentCover[];
   /** 文章所属分类，可能为空数组 */
-  categories: MiniPostCategory[];
+  categories: MiniContentCategory[];
   publishedAt: string;
   created: string;
 }
 
-export interface MiniPostDetailResponse {
+export interface MiniContentDetailResponse {
   success: true;
-  data: MiniPostDetail;
+  data: MiniContentDetail;
 }
 
 /** 小程序评论树节点（children 递归嵌套子评论） */
@@ -206,8 +206,8 @@ export interface MiniRepoResponse {
 }
 
 /** 足迹关联的文章（点击可跳转文章详情） */
-export interface MiniTravelPost {
-  /** 文章 id（跳转 /pages/post/detail?id= 用） */
+export interface MiniTravelContent {
+  /** 文章 id（跳转 /pages/content/detail?id= 用） */
   id: number;
   /** 文章标题 */
   title: string;
@@ -226,7 +226,7 @@ export interface MiniTravel {
   /** 封面图绝对地址，无则为空串 */
   cover: string;
   /** 该地点关联的文章（仅已发布），可能为空数组 */
-  posts: MiniTravelPost[];
+  contents: MiniTravelContent[];
 }
 
 export interface MiniTravelsResponse {
@@ -258,7 +258,7 @@ export interface MiniMessagesConfigResponse {
   success: true;
   data: {
     /** 留言板关联的文章 id，未配置时为 null */
-    postId: number | null;
+    contentId: number | null;
     /** 小程序评论总开关（features.miniComment），关闭时留言页与入口都不展示 */
     commentEnabled: boolean;
   };

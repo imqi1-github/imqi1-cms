@@ -1,4 +1,4 @@
-export interface RecentPost {
+export interface RecentContent {
 	cid: number;
 	title: string;
 	slug: string | null;
@@ -28,13 +28,13 @@ export interface RecentComment {
 	parent_id: number | null;
 	agent: string | null;
 	ip: string | null;
-	posts: {
+	contents: {
 		title: string;
 		cid: number;
 	};
 }
 
-export interface PopularPost {
+export interface PopularContent {
 	cid: number;
 	title: string;
 	views: number;

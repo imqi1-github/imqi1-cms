@@ -4,7 +4,7 @@ import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
-import type { SearchPostItem } from "#server/types/apis/serach";
+import type { SearchContentItem } from "#server/types/apis/serach";
 
 // 搜索关键词净化
 function sanitizeSearchKeyword(keyword: string): string {
@@ -93,23 +93,23 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "");
 }
 
-// 格式化搜索结果（分类信息已通过 postrelations 关联查询获取）
-function formatSearchResults(posts: SearchPostItem[], query: string) {
-  return posts.map(post => {
-    const category = post.postrelations?.[0]?.metas;
+// 格式化搜索结果（分类信息已通过 contentrelations 关联查询获取）
+function formatSearchResults(contents: SearchContentItem[], query: string) {
+  return contents.map(content => {
+    const category = content.contentrelations?.[0]?.metas;
 
     // 提取正文纯文本
-    const plainContent = stripHtml(post.content || "");
+    const plainContent = stripHtml(content.content || "");
 
     // 生成高亮摘要（优先显示包含关键词的部分）
     const highlightedSnippet = highlightKeyword(plainContent, query, 200);
 
     return {
-      cid: post.cid,
-      title: post.title,
-      slug: post.slug,
-      desc: post.desc,
-      createTime: post.create_time,
+      cid: content.cid,
+      title: content.title,
+      slug: content.slug,
+      desc: content.desc,
+      createTime: content.create_time,
       categoryName: category?.name || null,
       categorySlug: category?.slug || null,
       // 添加高亮摘要
@@ -165,7 +165,7 @@ export default defineTypedApiHandler(
       }
 
       // ========== 数据库搜索（LIKE 搜索，获取所有结果）==========
-      const posts = await prisma.posts.findMany({
+      const contents = await prisma.contents.findMany({
         where: {
           AND: [
             { status: 1 },
@@ -182,7 +182,7 @@ export default defineTypedApiHandler(
           desc: true,
           content: true,
           create_time: true,
-          postrelations: {
+          contentrelations: {
             where: {
               metas: { type: "category" },
             },
@@ -200,11 +200,11 @@ export default defineTypedApiHandler(
         orderBy: { create_time: "desc" },
       });
 
-      const total = posts.length;
+      const total = contents.length;
       console.log(`[LIKE 搜索] 关键词: "${q}", 找到 ${total} 条结果`);
 
       // 格式化结果（传入搜索关键词用于高亮）
-      const results = formatSearchResults(posts, q);
+      const results = formatSearchResults(contents, q);
 
       const responseData = {
         results,

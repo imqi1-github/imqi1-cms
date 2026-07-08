@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
     const siteDesc = infoMap["siteDesc"] || siteConfig.seo.description;
 
     // 获取最新文章（只获取已发布的，type=0 表示文章）
-    const posts = await prisma.posts.findMany({
+    const contents = await prisma.contents.findMany({
       where: {
         status: 1,
         type: 0,
@@ -35,7 +35,7 @@ export default defineEventHandler(async event => {
             name: true,
           },
         },
-        postrelations: {
+        contentrelations: {
           select: {
             metas: {
               select: {
@@ -61,17 +61,17 @@ export default defineEventHandler(async event => {
     const baseUrl = siteUrl || `${protocol}://${host}`;
 
     // 生成 RSS XML
-    const rssItems = posts
-      .map(post => {
+    const rssItems = contents
+      .map(content => {
         // 获取第一个关联分类的 slug，如果没有则使用 'default'
-        const categorySlug = post.postrelations?.[0]?.metas?.slug || "default";
-        const postUrl = `${baseUrl}/content/${categorySlug}/${post.slug || post.cid}`;
-        const author = post.user?.nickname || post.user?.name || "Admin";
-        const pubDate = new Date(post.create_time).toUTCString();
+        const categorySlug = content.contentrelations?.[0]?.metas?.slug || "default";
+        const contentUrl = `${baseUrl}/content/${categorySlug}/${content.slug || content.cid}`;
+        const author = content.user?.nickname || content.user?.name || "Admin";
+        const pubDate = new Date(content.create_time).toUTCString();
 
         // 清理描述，移除 HTML 标签，并截断添加省略号
         let description: string;
-        const rawDesc = post.desc || post.content || "";
+        const rawDesc = content.desc || content.content || "";
         const cleanDesc = rawDesc.replace(/<[^>]*>/g, "");
 
         if (cleanDesc.length > 200) {
@@ -85,14 +85,14 @@ export default defineEventHandler(async event => {
         let mediaContent = "";
         let enclosure = "";
 
-        const covers = parseCovers(post.covers);
+        const covers = parseCovers(content.covers);
         const firstCover = covers[0];
         if (firstCover) {
           coverImage = firstCover.url;
 
           // Media RSS 内容标签
           mediaContent = `    <media:content url="${coverImage}" medium="image" type="image/jpeg">
-      <media:title><![CDATA[${post.title}]]></media:title>
+      <media:title><![CDATA[${content.title}]]></media:title>
     </media:content>`;
 
           // 标准 enclosure 标签（用于兼容性）
@@ -101,11 +101,11 @@ export default defineEventHandler(async event => {
 
         return `
     <item>
-      <title><![CDATA[${post.title}]]></title>
-      <link>${postUrl}</link>
+      <title><![CDATA[${content.title}]]></title>
+      <link>${contentUrl}</link>
       <description><![CDATA[${description}]]></description>
       <author><![CDATA[${author}]]></author>
-      <guid isPermaLink="true">${postUrl}</guid>
+      <guid isPermaLink="true">${contentUrl}</guid>
       <pubDate>${pubDate}</pubDate>
 ${enclosure}
 ${mediaContent}
@@ -113,7 +113,7 @@ ${mediaContent}
       })
       .join("\n");
 
-    const lastBuildDate = posts.length > 0 ? new Date(posts[0]?.create_time ?? Date.now()).toUTCString() : new Date().toUTCString();
+    const lastBuildDate = contents.length > 0 ? new Date(contents[0]?.create_time ?? Date.now()).toUTCString() : new Date().toUTCString();
 
     const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"

@@ -4,13 +4,13 @@ import type { ArchiveGroup } from "#server/types/apis/archiving";
 export default defineEventHandler(async () => {
   try {
     // 获取所有已发布的文章（type=0），包含分类信息
-    const posts = await prisma.posts.findMany({
+    const contents = await prisma.contents.findMany({
       where: {
         status: 1,
         type: 0,
       },
       include: {
-        postrelations: {
+        contentrelations: {
           where: {
             metas: { type: "category" },
           },
@@ -32,8 +32,8 @@ export default defineEventHandler(async () => {
     });
 
     // 按年月分组
-    const grouped = posts.reduce((acc, post) => {
-      const date = new Date(post.create_time);
+    const grouped = contents.reduce((acc, content) => {
+      const date = new Date(content.create_time);
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       const key = `${year}-${String(month).padStart(2, "0")}`;
@@ -42,21 +42,21 @@ export default defineEventHandler(async () => {
         acc[key] = {
           year,
           month,
-          posts: [],
+          contents: [],
         };
       }
 
       // 获取第一个分类的 slug
-      const categorySlug = post.postrelations && post.postrelations.length > 0
-        ? post.postrelations[0]?.metas?.slug ?? null
+      const categorySlug = content.contentrelations && content.contentrelations.length > 0
+        ? content.contentrelations[0]?.metas?.slug ?? null
         : null;
 
-      acc[key].posts.push({
-        cid: post.cid,
-        title: post.title,
-        slug: post.slug,
+      acc[key].contents.push({
+        cid: content.cid,
+        title: content.title,
+        slug: content.slug,
         categorySlug,
-        createTime: post.create_time,
+        createTime: content.create_time,
       });
 
       return acc;
@@ -70,9 +70,9 @@ export default defineEventHandler(async () => {
 
     // 统计信息
     const stats = {
-      total: posts.length,
-      firstDate: posts.length > 0 ? posts[posts.length - 1]?.create_time ?? null : null,
-      lastDate: posts.length > 0 ? posts[0]?.create_time ?? null : null,
+      total: contents.length,
+      firstDate: contents.length > 0 ? contents[contents.length - 1]?.create_time ?? null : null,
+      lastDate: contents.length > 0 ? contents[0]?.create_time ?? null : null,
     };
 
     return {

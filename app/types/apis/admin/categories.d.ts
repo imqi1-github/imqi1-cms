@@ -3,7 +3,7 @@ export interface CategoryItem {
 	name: string;
 	slug: string | null;
 	desc: string | null;
-	postCount: number;
+	contentCount: number;
 }
 
 export interface CsrfResponse {

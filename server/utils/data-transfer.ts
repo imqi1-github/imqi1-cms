@@ -11,8 +11,12 @@ export const DATA_TRANSFER_VERSION = 1;
  *   - users：含密码哈希与 auth_code，导入不覆盖以保留当前登录管理员
  *   - sessions：临时登录会话，无需备份
  *
- * 注意：posts.uid 外键指向 users，因导入不还原 users，
+ * 注意：contents.uid 外键指向 users，因导入不还原 users，
  * 导入时会临时关闭 FOREIGN_KEY_CHECKS，允许 uid 指向现有用户表。
+ *
+ * 兼容性：model 同时作为 Prisma 委托名与原始 SQL 表名使用。contents→contents
+ * 重命名后，旧版备份（键名为 contents/contentrelations/...）导入时会匹配不到新表
+ * 而静默写入 0 行，需先迁移备份键名或重新导出。
  */
 export const DATA_TABLES: DataTableSpec[] = [
 	{ model: "attachments", dateFields: ["create_time"] },
@@ -21,11 +25,11 @@ export const DATA_TABLES: DataTableSpec[] = [
 	{ model: "informations", dateFields: [] },
 	{ model: "links", dateFields: [] },
 	{ model: "travels", dateFields: ["create_time"] },
-	{ model: "posts", dateFields: ["create_time", "update_time"] },
+	{ model: "contents", dateFields: ["create_time", "update_time"] },
 	{ model: "comments", dateFields: ["create_time"] },
-	{ model: "postrelations", dateFields: [] },
-	{ model: "postattachments", dateFields: [] },
-	{ model: "posttravels", dateFields: [] },
+	{ model: "contentrelations", dateFields: [] },
+	{ model: "contentattachments", dateFields: [] },
+	{ model: "contenttravels", dateFields: [] },
 	{ model: "subscribes", dateFields: ["lastUpdated"] },
 	{ model: "subscribeposts", dateFields: ["pubDate", "create_time"] },
 ];

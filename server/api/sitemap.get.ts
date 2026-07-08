@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async () => {
   try {
     // 获取所有已发布的页面
-    const pages = await prisma.posts.findMany({
+    const pages = await prisma.contents.findMany({
       where: {
         type: 1, // 1: 页面
         status: 1, // 已发布
@@ -30,13 +30,13 @@ export default defineEventHandler(async () => {
     });
 
     // 获取每个分类最近5篇文章
-    const categoriesWithPosts = await Promise.all(
+    const categoriesWithContents = await Promise.all(
       categories.map(async category => {
-        const posts = await prisma.posts.findMany({
+        const contents = await prisma.contents.findMany({
           where: {
             type: 0, // 文章
             status: 1, // 已发布
-            postrelations: {
+            contentrelations: {
               some: {
                 mid: category.mid,
               },
@@ -54,7 +54,7 @@ export default defineEventHandler(async () => {
 
         return {
           ...category,
-          posts,
+          contents,
         };
       })
     );
@@ -63,7 +63,7 @@ export default defineEventHandler(async () => {
       success: true,
       data: {
         pages,
-        categories: categoriesWithPosts,
+        categories: categoriesWithContents,
       },
     };
   } catch (error) {

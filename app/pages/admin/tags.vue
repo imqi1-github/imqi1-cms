@@ -131,8 +131,8 @@ async function deleteTag(mid: number) {
   }
 }
 
-function viewTagPosts(tag: TagItem) {
-  router.push(`/admin/posts?tag=${tag.mid}`);
+function viewTagContents(tag: TagItem) {
+  router.push(`/admin/contents?tag=${tag.mid}`);
 }
 
 onMounted(() => {
@@ -211,16 +211,16 @@ onMounted(() => {
             <TableCell>
               <button
                 class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
-                :class="{ 'text-muted-foreground': tag.postCount === 0 }"
-                :disabled="tag.postCount === 0"
-                @click="viewTagPosts(tag)">
+                :class="{ 'text-muted-foreground': tag.contentCount === 0 }"
+                :disabled="tag.contentCount === 0"
+                @click="viewTagContents(tag)">
                 <Icon name="lucide:file-text" class="size-4" />
-                <span>{{ tag.postCount }}</span>
+                <span>{{ tag.contentCount }}</span>
               </button>
             </TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="icon" class="size-8" title="查看文章" :disabled="tag.postCount === 0" @click="viewTagPosts(tag)">
+                <Button variant="ghost" size="icon" class="size-8" title="查看文章" :disabled="tag.contentCount === 0" @click="viewTagContents(tag)">
                   <Icon name="lucide:list" class="size-4" />
                 </Button>
                 <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="openEditModal(tag)">
@@ -262,16 +262,16 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <button
               class="flex items-center gap-1 text-sm hover:text-primary transition-colors"
-              :class="{ 'text-muted-foreground': tag.postCount === 0 }"
-              :disabled="tag.postCount === 0"
-              @click="viewTagPosts(tag)">
+              :class="{ 'text-muted-foreground': tag.contentCount === 0 }"
+              :disabled="tag.contentCount === 0"
+              @click="viewTagContents(tag)">
               <Icon name="lucide:file-text" class="size-3" />
-              <span>{{ tag.postCount }} 篇</span>
+              <span>{{ tag.contentCount }} 篇</span>
             </button>
           </div>
 
           <div class="flex items-center justify-end pt-2 border-t gap-1">
-            <Button variant="ghost" size="icon" class="size-8" title="查看文章" :disabled="tag.postCount === 0" @click="viewTagPosts(tag)">
+            <Button variant="ghost" size="icon" class="size-8" title="查看文章" :disabled="tag.contentCount === 0" @click="viewTagContents(tag)">
               <Icon name="lucide:list" class="size-4" />
             </Button>
             <Button variant="ghost" size="icon" class="size-8" title="编辑" @click="openEditModal(tag)">

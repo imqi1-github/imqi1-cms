@@ -126,7 +126,7 @@ export const SiteSettingsResponseSchema = z.object({
 
 // ============= 文章 Schema =============
 
-export const PostItemSchema = z.object({
+export const ContentItemSchema = z.object({
   cid: z.number(),
   title: z.string(),
   slug: z.string(),
@@ -139,7 +139,7 @@ export const PostItemSchema = z.object({
   comment_num: z.number().optional(),
 });
 
-export const PostDetailSchema = PostItemSchema.extend({
+export const ContentDetailSchema = ContentItemSchema.extend({
   content: z.string(),
   category: z
     .object({
@@ -207,7 +207,7 @@ export const ArchiveYearSchema = z.object({
     z.object({
       month: z.number(),
       count: z.number(),
-      posts: z.array(
+      contents: z.array(
         z.object({
           cid: z.number(),
           title: z.string(),
@@ -227,11 +227,11 @@ export const ArchivingResponseSchema = z.object({
 // ============= 首页数据 Schema =============
 
 export const HomeDataSchema = z.object({
-  featuredPosts: z.array(PostItemSchema).optional(),
-  recentPosts: z.array(PostItemSchema),
+  featuredContents: z.array(ContentItemSchema).optional(),
+  recentContents: z.array(ContentItemSchema),
   categories: z.array(CategorySchema),
   stats: z.object({
-    postsCount: z.number(),
+    contentsCount: z.number(),
     commentsCount: z.number(),
     tagsCount: z.number(),
     categoriesCount: z.number(),
@@ -240,17 +240,17 @@ export const HomeDataSchema = z.object({
 
 // ============= 随机文章 Schema =============
 
-export const RandomPostSchema = z.object({
+export const RandomContentSchema = z.object({
   cid: z.number(),
   title: z.string(),
   slug: z.string(),
 });
 
-export const RandomPostsResponseSchema = z.array(RandomPostSchema);
+export const RandomContentsResponseSchema = z.array(RandomContentSchema);
 
 // ============= 相关文章 Schema =============
 
-export const RelatedPostsResponseSchema = z.array(
+export const RelatedContentsResponseSchema = z.array(
   z.object({
     cid: z.number(),
     title: z.string(),
@@ -276,7 +276,7 @@ export const SubscribePostsResponseSchema = z.array(SubscribePostSchema);
 // ============= 统计数据 Schema =============
 
 export const StatsResponseSchema = z.object({
-  postsCount: z.number(),
+  contentsCount: z.number(),
   commentsCount: z.number(),
   tagsCount: z.number(),
   categoriesCount: z.number(),

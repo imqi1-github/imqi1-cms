@@ -5,7 +5,7 @@ import type { Comment, CommentFormData, ReplyState } from "~/types/components/co
 
 const props = defineProps<{
   comment: Comment;
-  postId: number;
+  contentId: number;
   replyState: ReplyState;
   avatarService: string;
   maxLevel: number;
@@ -312,7 +312,7 @@ function handleCommentSubmitted() {
     <div v-if="replyState.isReplying && replyState.targetCommentId === comment.coid" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
       <CommentInput
         :form-data="formData"
-        :post-id="postId"
+        :content-id="contentId"
         :is-reply="true"
         :reply-to="replyState.replyTo ?? undefined"
         :comment-interval="commentInterval"
@@ -329,7 +329,7 @@ function handleCommentSubmitted() {
           v-for="child in comment.children"
           :key="child.coid"
           :comment="child"
-          :post-id="postId"
+          :content-id="contentId"
           :reply-state="replyState"
           :avatar-service="avatarService"
           :max-level="maxLevel"

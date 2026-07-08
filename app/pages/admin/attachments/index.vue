@@ -75,8 +75,8 @@ watch(searchQuery, () => {
   }, 500);
 });
 
-const displayedPosts = (item: AttachmentItem) => item.posts.slice(0, 2);
-const hiddenPostCount = (item: AttachmentItem) => Math.max(0, item.posts.length - 2);
+const displayedContents = (item: AttachmentItem) => item.contents.slice(0, 2);
+const hiddenContentCount = (item: AttachmentItem) => Math.max(0, item.contents.length - 2);
 
 const getTypeLabel = (type: string) => {
   const map: Record<string, string> = {
@@ -360,17 +360,17 @@ onMounted(() => {
                   <span>{{ formatFileSize(item.size) }}</span>
                   <span v-if="item.type === 'image'">{{ formatImageDimensions(item) }}</span>
                 </div>
-                <div v-if="item.posts.length > 0" class="mt-1 flex flex-wrap items-center gap-1">
+                <div v-if="item.contents.length > 0" class="mt-1 flex flex-wrap items-center gap-1">
                   <NuxtLink
-                    v-for="post in displayedPosts(item)"
-                    :key="post.cid"
-                    :to="`/admin/posts/edit?cid=${post.cid}`"
+                    v-for="content in displayedContents(item)"
+                    :key="content.cid"
+                    :to="`/admin/contents/edit?cid=${content.cid}`"
                     class="max-w-full truncate text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {{ post.title }}
+                    {{ content.title }}
                   </NuxtLink>
-                  <span v-if="hiddenPostCount(item)" class="text-xs text-muted-foreground">
-                    +{{ hiddenPostCount(item) }}
+                  <span v-if="hiddenContentCount(item)" class="text-xs text-muted-foreground">
+                    +{{ hiddenContentCount(item) }}
                   </span>
                 </div>
               </div>

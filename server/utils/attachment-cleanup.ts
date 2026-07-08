@@ -8,7 +8,7 @@ export async function deleteOrphanAttachments(aids: number[]) {
   const orphans = await prisma.attachments.findMany({
     where: {
       aid: { in: uniqueAids },
-      posts: { none: {} },
+      contentattachments: { none: {} },
     },
     select: {
       aid: true,
@@ -26,7 +26,7 @@ export async function deleteOrphanAttachments(aids: number[]) {
   const result = await prisma.attachments.deleteMany({
     where: {
       aid: { in: orphans.map(attachment => attachment.aid) },
-      posts: { none: {} },
+      contentattachments: { none: {} },
     },
   });
 

@@ -82,9 +82,9 @@ export default defineEventHandler(async event => {
     // ========== 并行获取所有数据（复用上面的查询结果）==========
     const [
       categoriesData,
-      recentPostsData,
-      categoryRecentPostsData,
-      photoPostsData,
+      recentContentsData,
+      categoryRecentContentsData,
+      photoContentsData,
       subscribePostsData,
       changelogsData,
     ] = await Promise.all([
@@ -94,7 +94,7 @@ export default defineEventHandler(async event => {
         take: 4,
         include: {
           _count: {
-            select: { postrelations: true },
+            select: { contentrelations: true },
           },
         },
         orderBy: { mid: "asc" },
@@ -104,17 +104,17 @@ export default defineEventHandler(async event => {
           name: cat.name,
           slug: cat.slug,
           desc: cat.desc,
-          postCount: cat._count.postrelations,
+          contentCount: cat._count.contentrelations,
         }))
       ),
 
       // 2. 获取最新6篇文章（排除图片分类）
-      prisma.posts.findMany({
+      prisma.contents.findMany({
         where: {
           type: 0,
           status: 1,
           ...(photoCategoryMid && {
-            postrelations: {
+            contentrelations: {
               none: { mid: photoCategoryMid },
             },
           }),
@@ -130,7 +130,7 @@ export default defineEventHandler(async event => {
           many_covers: true,
           create_time: true,
           comment_num: true,
-          postrelations: {
+          contentrelations: {
             select: {
               metas: {
                 select: {
@@ -148,27 +148,27 @@ export default defineEventHandler(async event => {
             select: { travel_id: true },
           },
         },
-      }).then(posts => posts.map(post => {
-        const categories = post.postrelations
+      }).then(contents => contents.map(content => {
+        const categories = content.contentrelations
           .filter(r => r.metas.type === "category")
           .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
-        const tags = post.postrelations
+        const tags = content.contentrelations
           .filter(r => r.metas.type === "tag")
           .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
-        const covers = parseCovers(post.covers);
+        const covers = parseCovers(content.covers);
 
         return {
-          cid: post.cid,
-          title: post.title,
-          slug: post.slug,
-          desc: post.desc,
+          cid: content.cid,
+          title: content.title,
+          slug: content.slug,
+          desc: content.desc,
           covers,
-          many_covers: post.many_covers,
-          travelCount: post.travels.length,
-          created: post.create_time,
-          commentsNum: post.comment_num || 0,
+          many_covers: content.many_covers,
+          travelCount: content.travels.length,
+          created: content.create_time,
+          commentsNum: content.comment_num || 0,
           categories,
           tags,
         };
@@ -177,12 +177,12 @@ export default defineEventHandler(async event => {
       // 3. 获取分类文章（3个分类，每个4篇，排除最新6篇中已展示的）
       (async () => {
         // 先获取最新6篇文章的cid（用于排除）
-        const recentPosts = await prisma.posts.findMany({
+        const recentContents = await prisma.contents.findMany({
           where: {
             type: 0,
             status: 1,
             ...(photoCategoryMid && {
-              postrelations: {
+              contentrelations: {
                 none: { mid: photoCategoryMid },
               },
             }),
@@ -191,7 +191,7 @@ export default defineEventHandler(async event => {
           orderBy: { create_time: "desc" },
           select: { cid: true },
         });
-        const excludeCids = recentPosts.map(p => p.cid);
+        const excludeCids = recentContents.map(p => p.cid);
 
         const categories = await prisma.metas.findMany({
           where: {
@@ -206,12 +206,12 @@ export default defineEventHandler(async event => {
         // 为每个分类独立获取最新的4篇文章（排除最新6篇）
         const result = await Promise.all(
           categories.map(async category => {
-            const posts = await prisma.posts.findMany({
+            const contents = await prisma.contents.findMany({
               where: {
                 type: 0,
                 status: 1,
                 cid: { notIn: excludeCids }, // 排除最新6篇
-                postrelations: {
+                contentrelations: {
                   some: { mid: category.mid },
                 },
               },
@@ -226,7 +226,7 @@ export default defineEventHandler(async event => {
                 many_covers: true,
                 create_time: true,
                 comment_num: true,
-                postrelations: {
+                contentrelations: {
                   select: {
                     mid: true,
                     metas: {
@@ -247,25 +247,25 @@ export default defineEventHandler(async event => {
               },
             });
 
-            if (posts.length === 0) return null;
+            if (contents.length === 0) return null;
 
-            const mappedPosts = posts.map(post => {
-              const tags = post.postrelations
+            const mappedContents = contents.map(content => {
+              const tags = content.contentrelations
                 .filter(r => r.metas.type === "tag")
                 .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
 
-              const covers = parseCovers(post.covers);
+              const covers = parseCovers(content.covers);
 
               return {
-                cid: post.cid,
-                title: post.title,
-                slug: post.slug,
-                desc: post.desc,
+                cid: content.cid,
+                title: content.title,
+                slug: content.slug,
+                desc: content.desc,
                 covers,
-                many_covers: post.many_covers,
-                travelCount: post.travels.length,
-                created: post.create_time,
-                commentsNum: post.comment_num || 0,
+                many_covers: content.many_covers,
+                travelCount: content.travels.length,
+                created: content.create_time,
+                commentsNum: content.comment_num || 0,
                 tags,
               };
             });
@@ -277,7 +277,7 @@ export default defineEventHandler(async event => {
                 desc: category.desc,
                 slug: category.slug,
               },
-              posts: mappedPosts,
+              contents: mappedContents,
             };
           })
         );
@@ -289,11 +289,11 @@ export default defineEventHandler(async event => {
       (async () => {
         if (!photoCategory) return [];
 
-        const posts = await prisma.posts.findMany({
+        const contents = await prisma.contents.findMany({
           where: {
             type: 0,
             status: 1,
-            postrelations: {
+            contentrelations: {
               some: { mid: photoCategory.mid },
             },
           },
@@ -304,7 +304,7 @@ export default defineEventHandler(async event => {
             title: true,
             slug: true,
             covers: true,
-            postrelations: {
+            contentrelations: {
               select: {
                 metas: {
                   select: {
@@ -332,17 +332,17 @@ export default defineEventHandler(async event => {
           },
         });
 
-        return posts.map(post => {
-          const categories = post.postrelations.map(r => ({
+        return contents.map(content => {
+          const categories = content.contentrelations.map(r => ({
             name: r.metas.name,
             slug: r.metas.slug,
           }));
 
-          const attachmentMetadata = post.attachments.map(relation => ({
+          const attachmentMetadata = content.attachments.map(relation => ({
             keys: buildUrlKeys(relation.attachment.url),
             metadata: normalizeAttachmentMetadata(relation.attachment.metadata),
           }));
-          const covers = parseCovers(post.covers).map(cover => {
+          const covers = parseCovers(content.covers).map(cover => {
             if (cover.width && cover.height) return cover;
 
             const coverKeys = buildUrlKeys(cover.url);
@@ -357,9 +357,9 @@ export default defineEventHandler(async event => {
           });
 
           return {
-            cid: post.cid,
-            title: post.title,
-            slug: post.slug,
+            cid: content.cid,
+            title: content.title,
+            slug: content.slug,
             covers,
             categories,
           };
@@ -367,7 +367,7 @@ export default defineEventHandler(async event => {
       })(),
 
       // 5. 获取订阅文章（3篇）
-      getSubscribePosts().then(posts => posts.slice(0, 3)),
+      getSubscribePosts().then(contents => contents.slice(0, 3)),
 
       // 6. 获取更新日志（1条）
       prisma.changelogs
@@ -394,12 +394,12 @@ export default defineEventHandler(async event => {
           photoCategorySlug: photoCategorySlug,
         },
         categories: categoriesData,
-        recentPosts: recentPostsData,
-        categoryRecentPosts: categoryRecentPostsData,
-        photoPosts: photoPostsData,
+        recentContents: recentContentsData,
+        categoryRecentContents: categoryRecentContentsData,
+        photoContents: photoContentsData,
         subscribePosts: subscribePostsData,
         changelogs: changelogsData,
-        // randomPost 已移除，改为客户端单独请求
+        // randomContent 已移除，改为客户端单独请求
       },
     };
   } catch (error) {

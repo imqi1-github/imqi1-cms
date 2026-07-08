@@ -29,18 +29,18 @@ export default defineEventHandler(async event => {
       },
       include: {
         _count: {
-          select: { postrelations: true },
+          select: { contentrelations: true },
         },
-        postrelations: {
+        contentrelations: {
           where: {
-            posts: { type: 0, status: 1 },
+            content: { type: 0, status: 1 },
           },
           orderBy: {
-            posts: { create_time: "desc" },
+            content: { create_time: "desc" },
           },
           take: 1,
           select: {
-            posts: {
+            content: {
               select: { title: true, covers: true },
             },
           },
@@ -54,7 +54,7 @@ export default defineEventHandler(async event => {
     return {
       success: true,
       data: categories.map(cat => {
-        const latest = cat.postrelations[0]?.posts;
+        const latest = cat.contentrelations[0]?.content;
         const firstCover = latest ? parseCovers(latest.covers)[0] : undefined;
 
         return {
@@ -62,7 +62,7 @@ export default defineEventHandler(async event => {
           name: cat.name,
           slug: cat.slug ?? "",
           desc: cat.desc,
-          postCount: cat._count.postrelations,
+          contentCount: cat._count.contentrelations,
           cover: toAbsoluteUrl(firstCover?.url ?? "", requestUrl.origin),
           latestTitle: latest?.title ?? "",
         };

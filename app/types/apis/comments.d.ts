@@ -58,11 +58,11 @@ export interface CommentItem {
 	avatarUrl: string | null;
 	location: string;
 	isp: string;
-	posts: {
+	contents: {
 		cid: number;
 		title: string;
 		slug: string | null;
-		postrelations: Array<{
+		contentrelations: Array<{
 			metas: {
 				slug: string | null;
 			};

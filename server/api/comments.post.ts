@@ -174,7 +174,7 @@ export default defineTypedApiHandler(
 
     // 更新文章的评论计数（仅统计已发布的评论）
     if (commentStatus === 1) {
-      await prisma.posts.update({
+      await prisma.contents.update({
         where: { cid },
         data: {
           comment_num: {

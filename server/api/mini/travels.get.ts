@@ -42,18 +42,18 @@ export default defineEventHandler(async event => {
       where: { enabled: true },
       orderBy: [{ sort: "asc" }, { create_time: "desc" }],
       include: {
-        // posts 为 posttravels[] 关联表，需通过 .post 取到文章；只保留已发布普通文章。
-        posts: {
+        // contenttravels 关联表，需通过 .content 取到文章；只保留已发布普通文章。
+        contenttravels: {
           where: {
-            post: { type: 0, status: 1 },
+            content: { type: 0, status: 1 },
           },
           select: {
-            post: {
+            content: {
               select: {
                 cid: true,
                 title: true,
                 // 关联的分类中是否含图片分类，用于端上判断图片文章
-                postrelations: {
+                contentrelations: {
                   where: photoCategoryMid ? { mid: photoCategoryMid } : { mid: -1 },
                   select: { mid: true },
                 },
@@ -71,10 +71,10 @@ export default defineEventHandler(async event => {
         name: t.name,
         desc: t.desc ?? "",
         cover: toAbsoluteUrl(t.cover ?? "", origin),
-        posts: t.posts.map(rel => ({
-          id: rel.post.cid,
-          title: rel.post.title,
-          photo: rel.post.postrelations.length > 0,
+        contents: t.contenttravels.map(rel => ({
+          id: rel.content.cid,
+          title: rel.content.title,
+          photo: rel.content.contentrelations.length > 0,
         })),
       })),
     } satisfies MiniTravelsResponse;

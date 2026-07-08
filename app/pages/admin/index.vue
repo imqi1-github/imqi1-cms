@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type {PopularPost, RecentComment, RecentPost} from "~/types/apis/admin";
+import type {PopularContent, RecentComment, RecentContent} from "~/types/apis/admin";
 
 const router = useRouter()
 const loading = ref(true)
 const stats = ref({
-  posts: 0,
+  contents: 0,
   comments: 0,
   categories: 0,
   users: 0,
 })
 
 const detailedStats = ref({
-  posts: {
+  contents: {
     total: 0,
     published: 0,
     draft: 0,
@@ -48,18 +48,18 @@ const systemInfo = ref({
   attachments: { count: 0, totalSize: 0 },
 })
 
-const recentPosts = ref<RecentPost[]>([])
+const recentContents = ref<RecentContent[]>([])
 const recentComments = ref<RecentComment[]>([])
-const popularPosts = ref<PopularPost[]>([])
+const popularContents = ref<PopularContent[]>([])
 
 const statCards = [
   {
     title: '文章总数',
-    value: stats.value.posts,
+    value: stats.value.contents,
     icon: 'lucide:file-text',
     color: 'text-blue-500',
     description: '已发布文章',
-    badge: detailedStats.value.posts.thisMonth > 0 ? `本月 +${detailedStats.value.posts.thisMonth}` : '',
+    badge: detailedStats.value.contents.thisMonth > 0 ? `本月 +${detailedStats.value.contents.thisMonth}` : '',
   },
   {
     title: '评论总数',
@@ -87,8 +87,8 @@ const statCards = [
 
 // 获取统计卡片的徽章
 const getStatCardBadge = (title: string) => {
-  if (title === '文章总数' && detailedStats.value.posts.thisMonth > 0) {
-    return `本月 +${detailedStats.value.posts.thisMonth}`
+  if (title === '文章总数' && detailedStats.value.contents.thisMonth > 0) {
+    return `本月 +${detailedStats.value.contents.thisMonth}`
   }
   if (title === '评论总数' && detailedStats.value.comments.pending > 0) {
     return `${detailedStats.value.comments.pending} 待审核`
@@ -119,7 +119,7 @@ const additionalStatCards = [
   },
   {
     title: '草稿数量',
-    value: detailedStats.value.posts.draft,
+    value: detailedStats.value.contents.draft,
     icon: 'lucide:file-edit',
     color: 'text-orange-500',
     description: '未发布文章',
@@ -129,20 +129,20 @@ const additionalStatCards = [
 async function fetchData() {
   loading.value = true
   try {
-    const [statsRes, detailedRes, systemRes, postsRes, commentsRes, popularRes] = await Promise.all([
+    const [statsRes, detailedRes, systemRes, contentsRes, commentsRes, popularRes] = await Promise.all([
       $fetch('/api/admin/stats'),
       $fetch('/api/admin/detailed-stats'),
       $fetch('/api/admin/system-info'),
-      $fetch('/api/admin/recent-posts'),
+      $fetch('/api/admin/recent-contents'),
       $fetch('/api/admin/recent-comments'),
-      $fetch('/api/admin/popular-posts'),
+      $fetch('/api/admin/popular-contents'),
     ])
     stats.value = statsRes
     detailedStats.value = detailedRes
     systemInfo.value = systemRes
-    recentPosts.value = postsRes
+    recentContents.value = contentsRes
     recentComments.value = commentsRes
-    popularPosts.value = popularRes
+    popularContents.value = popularRes
   } catch (error) {
     console.error('获取数据失败:', error)
   } finally {
@@ -150,10 +150,10 @@ async function fetchData() {
   }
 }
 
-async function deletePost(cid: number) {
+async function deleteContent(cid: number) {
   const confirmed = confirm('确定要删除这篇文章吗？')
   if (confirmed) {
-    await $fetch(`/api/admin/posts/${cid}`, { method: 'DELETE' })
+    await $fetch(`/api/admin/contents/${cid}`, { method: 'DELETE' })
     await fetchData()
   }
 }
@@ -166,12 +166,12 @@ async function deleteComment(coid: number) {
   }
 }
 
-function editPost(cid: number) {
-  router.push(`/admin/posts/edit?cid=${cid}`)
+function editContent(cid: number) {
+  router.push(`/admin/contents/edit?cid=${cid}`)
 }
 
-function createPost() {
-  router.push('/admin/posts/edit')
+function createContent() {
+  router.push('/admin/contents/edit')
 }
 
 function formatDate(date: string) {
@@ -200,7 +200,7 @@ onMounted(() => {
     <!-- 页面标题 -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
       <h2 class="text-xl sm:text-2xl font-bold">仪表盘</h2>
-      <Button class="w-full sm:w-auto" @click="createPost">
+      <Button class="w-full sm:w-auto" @click="createContent">
         <Icon name="lucide:plus" class="mr-2 size-4" />
         新建文章
       </Button>
@@ -231,7 +231,7 @@ onMounted(() => {
                 <p class="text-sm text-muted-foreground truncate">{{ card.title }}</p>
                 <Badge v-if="getStatCardBadge(card.title)" variant="secondary" class="text-xs shrink-0">{{ getStatCardBadge(card.title) }}</Badge>
               </div>
-              <p class="text-2xl sm:text-3xl font-bold mt-1 truncate">{{ stats[card.title === '文章总数' ? 'posts' : card.title === '评论总数' ? 'comments' : card.title === '分类标签' ? 'categories' : 'users'] }}</p>
+              <p class="text-2xl sm:text-3xl font-bold mt-1 truncate">{{ stats[card.title === '文章总数' ? 'contents' : card.title === '评论总数' ? 'comments' : card.title === '分类标签' ? 'categories' : 'users'] }}</p>
               <p class="text-xs text-muted-foreground mt-1 truncate">{{ getStatCardDescription(card.title) }}</p>
             </div>
             <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 shrink-0" />
@@ -296,27 +296,27 @@ onMounted(() => {
         </div>
 
         <!-- 文章列表 -->
-        <div v-else-if="recentPosts.length > 0">
+        <div v-else-if="recentContents.length > 0">
           <div class="space-y-4">
             <div
-              v-for="post in recentPosts"
-              :key="post.cid"
+              v-for="content in recentContents"
+              :key="content.cid"
               class="flex items-center justify-between gap-3 py-3 border-b last:border-0"
             >
               <div class="flex-1 min-w-0">
-                <p class="font-medium truncate text-sm">{{ post.title }}</p>
-                <p class="text-sm text-muted-foreground">{{ formatDate(post.create_time) }}</p>
+                <p class="font-medium truncate text-sm">{{ content.title }}</p>
+                <p class="text-sm text-muted-foreground">{{ formatDate(content.create_time) }}</p>
               </div>
               <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-                <Badge variant="outline" class="text-xs">{{ post.status || '已发布' }}</Badge>
-                <Button variant="ghost" size="icon" class="size-8" @click="editPost(post.cid)">
+                <Badge variant="outline" class="text-xs">{{ content.status || '已发布' }}</Badge>
+                <Button variant="ghost" size="icon" class="size-8" @click="editContent(content.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   class="size-8 text-destructive hover:text-destructive"
-                  @click="deletePost(post.cid)"
+                  @click="deleteContent(content.cid)"
                 >
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
@@ -329,7 +329,7 @@ onMounted(() => {
         <div v-else class="text-center py-8 sm:py-12">
           <Icon name="lucide:file-text" class="size-10 sm:size-12 text-muted-foreground/30 mx-auto mb-4" />
           <p class="text-muted-foreground text-sm">暂无文章</p>
-          <Button variant="outline" class="mt-4" @click="createPost">
+          <Button variant="outline" class="mt-4" @click="createContent">
             <Icon name="lucide:plus" class="mr-2 size-4" />
             创建第一篇文章
           </Button>
@@ -376,9 +376,9 @@ onMounted(() => {
                 </Button>
               </div>
               <p class="text-sm text-muted-foreground line-clamp-2 mb-2">{{ comment.content }}</p>
-              <div v-if="comment.posts" class="flex items-center gap-1 text-xs text-muted-foreground">
+              <div v-if="comment.contents" class="flex items-center gap-1 text-xs text-muted-foreground">
                 <Icon name="lucide:file-text" class="size-3 shrink-0" />
-                <span class="truncate">{{ comment.posts.title }}</span>
+                <span class="truncate">{{ comment.contents.title }}</span>
               </div>
             </div>
           </div>
@@ -407,21 +407,21 @@ onMounted(() => {
           </div>
 
           <!-- 热门文章列表 -->
-          <div v-else-if="popularPosts.length > 0" class="space-y-4">
+          <div v-else-if="popularContents.length > 0" class="space-y-4">
             <div
-              v-for="(post, index) in popularPosts"
-              :key="post.cid"
+              v-for="(content, index) in popularContents"
+              :key="content.cid"
               class="flex items-start gap-3 py-3 border-b last:border-0"
             >
               <div class="shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                 {{ index + 1 }}
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-medium truncate cursor-pointer hover:text-primary text-sm" @click="editPost(post.cid)">{{ post.title }}</p>
+                <p class="font-medium truncate cursor-pointer hover:text-primary text-sm" @click="editContent(content.cid)">{{ content.title }}</p>
                 <div class="flex items-center flex-wrap gap-2 sm:gap-3 mt-1 text-xs text-muted-foreground">
                   <span class="flex items-center gap-1">
                     <Icon name="lucide:message-circle" class="size-3" />
-                    {{ post.commentsCount }} 条评论
+                    {{ content.commentsCount }} 条评论
                   </span>
                   <span class="flex items-center gap-1">
                     <Icon name="lucide:star" class="size-3" />

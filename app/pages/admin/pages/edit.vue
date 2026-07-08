@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PublicAttachment, PublicAttachmentListResponse, PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
-import type { PostDetailResponse } from "~/types/apis/admin/pages";
+import type { ContentDetailResponse } from "~/types/apis/admin/pages";
 import type { ApiError } from "~/types/error";
 
 const route = useRoute();
@@ -240,7 +240,7 @@ const fetchPage = async () => {
 
   loading.value = true;
   try {
-    const res = await $fetch<PostDetailResponse>(`/api/admin/posts/${pageId.value}`);
+    const res = await $fetch<ContentDetailResponse>(`/api/admin/contents/${pageId.value}`);
     if (res?.data) {
       const page = res.data;
       title.value = page.title || "";
@@ -323,16 +323,16 @@ const savePage = async (publish = false) => {
       covers: coversValue,
     };
 
-    let res: PostDetailResponse | undefined;
+    let res: ContentDetailResponse | undefined;
     if (isEdit.value && pageId.value) {
       // 更新
-      res = await $fetch<PostDetailResponse>(`/api/admin/posts/${pageId.value}`, {
+      res = await $fetch<ContentDetailResponse>(`/api/admin/contents/${pageId.value}`, {
         method: "PUT",
         body,
       });
     } else {
       // 新建
-      res = await $fetch<PostDetailResponse>("/api/admin/posts", {
+      res = await $fetch<ContentDetailResponse>("/api/admin/contents", {
         method: "POST",
         body,
       });
@@ -480,7 +480,7 @@ onUnmounted(() => {
           <TabsContent value="content" class="mt-6">
             <Card class="overflow-hidden px-0 pt-0">
               <CardContent class="p-0">
-                <MarkdownEditor v-model="content" :post-id="pageId ?? undefined" @attachment-updated="fetchAttachments" />
+                <MarkdownEditor v-model="content" :content-id="pageId ?? undefined" @attachment-updated="fetchAttachments" />
               </CardContent>
             </Card>
           </TabsContent>

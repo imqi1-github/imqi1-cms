@@ -8,7 +8,7 @@ import type { DataTransferPayload, PrismaModelDelegate } from "#server/types/api
  * 导入全站数据（后台「数据备份与恢复」）。
  *
  * 策略：清空后完整还原。整个过程包裹在事务中：
- *   1. 关闭外键检查（允许乱序清空/插入，且允许 posts.uid 指向未被还原的 users）
+ *   1. 关闭外键检查（允许乱序清空/插入，且允许 contents.uid 指向未被还原的 users）
  *   2. 逆序 DELETE 清空各表（用 DELETE 而非 TRUNCATE —— TRUNCATE 在 MySQL 会隐式提交，破坏事务）
  *   3. 顺序 createMany 写入备份数据
  *   4. finally 恢复外键检查
@@ -88,6 +88,9 @@ export default defineEventHandler(async event => {
 						}
 
 						const delegate = (tx as unknown as Record<string, PrismaModelDelegate>)[spec.model];
+						if (!delegate || typeof delegate.createMany !== "function") {
+							throw createError({ statusCode: 500, message: `未知的数据表：${spec.model}` });
+						}
 						const data = reviveRowsForImport(rows, spec.dateFields);
 						const result = await delegate.createMany({ data });
 						counts[spec.model] = result.count;

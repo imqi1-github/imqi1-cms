@@ -5,7 +5,7 @@ export interface User {
 	nickname: string | null;
 }
 
-export interface PostRelation {
+export interface ContentRelation {
 	cid: number;
 	mid: number;
 	metas: {
@@ -32,7 +32,7 @@ export interface PageItem {
 	type: number;
 	uid: number;
 	user: User;
-	relations: PostRelation[];
+	relations: ContentRelation[];
 }
 
 /** 页面列表分页信息（/api/admin/pages） */
@@ -50,8 +50,8 @@ export interface PageListResponse {
 	pagination: PagePagination;
 }
 
-/** 页面/文章详情（/api/admin/posts/:cid GET 返回的 data，原始 posts 字段 + user） */
-export interface PostDetail {
+/** 页面/文章详情（/api/admin/contents/:cid GET 返回的 data，原始 contents 字段 + user） */
+export interface ContentDetail {
 	cid: number;
 	title: string;
 	slug: string | null;
@@ -75,7 +75,7 @@ export interface PostDetail {
 }
 
 /** 页面/文章详情接口响应 */
-export interface PostDetailResponse {
+export interface ContentDetailResponse {
 	success: boolean;
-	data: PostDetail;
+	data: ContentDetail;
 }

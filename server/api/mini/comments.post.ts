@@ -66,11 +66,11 @@ export default defineEventHandler(async event => {
     }
 
     // 目标文章必须存在且已发布，避免对任意 cid 灌评论。
-    const post = await prisma.posts.findFirst({
+    const targetContent = await prisma.contents.findFirst({
       where: { cid, type: 0, status: 1 },
       select: { cid: true },
     });
-    if (!post) {
+    if (!targetContent) {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
 
@@ -185,7 +185,7 @@ export default defineEventHandler(async event => {
 
     // 仅已发布评论计入文章评论数
     if (commentStatus === 1) {
-      await prisma.posts.update({
+      await prisma.contents.update({
         where: { cid },
         data: { comment_num: { increment: 1 } },
       });

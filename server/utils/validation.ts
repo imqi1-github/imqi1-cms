@@ -43,7 +43,7 @@ export function validateCommentData(data: {
 /**
  * 验证文章数据
  */
-export function validatePostData(data: {
+export function validateContentData(data: {
   title?: string;
   slug?: string | null;
   tags?: string | null;

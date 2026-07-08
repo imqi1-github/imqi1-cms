@@ -5,7 +5,7 @@ import type { CommentsApiResponse } from "~/types/apis/comments";
 import type { Comment, CommentFormData, ReplyState } from "~/types/components/comment";
 
 const props = defineProps<{
-  postId: number;
+  contentId: number;
   loadAllComments?: boolean;
 }>();
 
@@ -78,7 +78,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
   error.value = "";
 
   try {
-    const response = await fetch(`/api/comments?cid=${props.postId}&page=${page}&pageSize=${pageSize.value}`);
+    const response = await fetch(`/api/comments?cid=${props.contentId}&page=${page}&pageSize=${pageSize.value}`);
     const data: CommentsApiResponse = await response.json();
 
     if (data.code === 200) {
@@ -166,7 +166,7 @@ onMounted(async () => {
   // 如果需要加载所有评论，使用大 pageSize
   if (props.loadAllComments) {
     const actualPageSize = 10000;
-    const response = await fetch(`/api/comments?cid=${props.postId}&page=1&pageSize=${actualPageSize}`);
+    const response = await fetch(`/api/comments?cid=${props.contentId}&page=1&pageSize=${actualPageSize}`);
     const data: CommentsApiResponse = await response.json();
     if (data.code === 200) {
       comments.value = data.data;
@@ -213,7 +213,7 @@ function handleCommentSubmitted() {
       <div v-if="!replyState.isReplying" class="mb-8">
         <CommentInput
           :form-data="formData"
-          :post-id="props.postId"
+          :content-id="props.contentId"
           :comment-interval="commentInterval"
           :require-mail="requireMail"
           :require-link="requireLink"
@@ -227,7 +227,7 @@ function handleCommentSubmitted() {
         <ClientOnly>
           <a
             v-if="isLoggedIn && !isLoadingAuth"
-            :href="`/admin/comments?cid=${props.postId}`"
+            :href="`/admin/comments?cid=${props.contentId}`"
             target="_blank"
             rel="noopener noreferrer"
             class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
@@ -252,7 +252,7 @@ function handleCommentSubmitted() {
               v-for="comment in comments"
               :key="comment.coid"
               :comment="comment"
-              :post-id="props.postId"
+              :content-id="props.contentId"
               :reply-state="replyState"
               :avatar-service="avatarService"
               :max-level="maxLevel"

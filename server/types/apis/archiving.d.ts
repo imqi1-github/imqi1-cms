@@ -1,5 +1,5 @@
 /** 归档列表中的单篇文章 */
-export interface ArchivePost {
+export interface ArchiveContent {
 	cid: number;
 	title: string;
 	slug: string | null;
@@ -11,5 +11,5 @@ export interface ArchivePost {
 export interface ArchiveGroup {
 	year: number;
 	month: number;
-	posts: ArchivePost[];
+	contents: ArchiveContent[];
 }

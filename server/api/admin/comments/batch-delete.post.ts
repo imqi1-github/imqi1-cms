@@ -32,15 +32,15 @@ export default defineEventHandler(async event => {
 
     if (publishedCommentsToDelete.length > 0) {
       // 按文章分组统计需要减少的评论数
-      const postCommentCounts = new Map<number, number>();
+      const contentCommentCounts = new Map<number, number>();
       publishedCommentsToDelete.forEach(comment => {
-        postCommentCounts.set(comment.cid, (postCommentCounts.get(comment.cid) ?? 0) + 1);
+        contentCommentCounts.set(comment.cid, (contentCommentCounts.get(comment.cid) ?? 0) + 1);
       });
 
       // 批量更新文章评论计数
       await Promise.all(
-        [...postCommentCounts.entries()].map(([cid, count]) =>
-          prisma.posts.update({
+        [...contentCommentCounts.entries()].map(([cid, count]) =>
+          prisma.contents.update({
             where: { cid },
             data: { comment_num: { decrement: count } },
           })
