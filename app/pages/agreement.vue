@@ -369,7 +369,6 @@ onUnmounted(() => {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  margin: 20px 0;
   cursor: zoom-in;
   margin: auto;
 }
@@ -384,7 +383,6 @@ onUnmounted(() => {
 .markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4):not(.markdown-repo h4),
 .markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5):not(.markdown-repo h5),
 .markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6):not(.markdown-repo h6) {
-  margin-block: 0.5em;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -432,7 +430,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul):not(.aplayer-list ul),
 .markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol):not(.aplayer-list ol) {
-  margin: 1em 0;
   padding-left: 2em;
 }
 
@@ -450,7 +447,6 @@ onUnmounted(() => {
 }
 
 .markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote):not(.markdown-repo blockquote) {
-  margin: 1em 0;
   padding: 0.5em 1em;
   border-left: 4px solid rgb(37 99 235);
   background: rgb(249 250 251);
@@ -477,7 +473,6 @@ onUnmounted(() => {
 
 /* Shiki 代码块样式 */
 .markdown-body :deep(pre.shiki) {
-  margin: 1em 0;
   padding: 16px;
   overflow: auto;
   font-size: 0.875em;
@@ -639,7 +634,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(table) {
   width: 100%;
-  margin: 1em 0;
   border-collapse: collapse;
 }
 

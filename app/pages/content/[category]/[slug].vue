@@ -850,7 +850,7 @@ onMounted(async () => {
         const detailsContainer = document.createElement("div");
         detailsContainer.className = "markdown-details-container";
         detailsContainer.innerHTML = `
-        <div class="markdown-details my-6 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <div class="markdown-details border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
             class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-start gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
             <span class="transform transition-transform duration-200 text-slate-500 dark:text-slate-400 text-[10px]">
@@ -891,7 +891,7 @@ onMounted(async () => {
 
         // 创建 video 元素
         const videoContainer = document.createElement("div");
-        videoContainer.className = "markdown-video-container my-6 w-full max-w-full m-auto";
+        videoContainer.className = "markdown-video-container w-full max-w-full m-auto";
         videoContainer.innerHTML = `
         <video
           class="w-full aspect-video rounded-lg shadow-lg max-h-150 bg-slate-100 dark:bg-slate-800"
@@ -948,7 +948,7 @@ onMounted(async () => {
 
         // 创建提示框元素
         const calloutContainer = document.createElement("div");
-        calloutContainer.className = `markdown-callout my-6 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
+        calloutContainer.className = `markdown-callout p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
         calloutContainer.innerHTML = `
         <div class="flex items-start gap-3">
           <div class="${config.iconColor} shrink-0 mt-1">
@@ -978,7 +978,7 @@ onMounted(async () => {
 
         // 创建卡片元素
         const cardContainer = document.createElement("div");
-        cardContainer.className = "markdown-card my-6";
+        cardContainer.className = "markdown-card";
 
         cardContainer.innerHTML = `
         <a
@@ -1043,7 +1043,7 @@ onMounted(async () => {
 
         // 创建简单卡片元素
         const simpleCardContainer = document.createElement("div");
-        simpleCardContainer.className = "markdown-simple-card my-6";
+        simpleCardContainer.className = "markdown-simple-card";
 
         simpleCardContainer.innerHTML = `
         <a
@@ -1200,7 +1200,7 @@ onMounted(async () => {
 
         if (!platform || !owner || !repo) {
           const errorContainer = document.createElement("div");
-          errorContainer.className = "markdown-repo my-6";
+          errorContainer.className = "markdown-repo";
           errorContainer.innerHTML = `
           <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             无效的仓库 URL
@@ -1243,7 +1243,7 @@ onMounted(async () => {
 
           // 创建仓库卡片
           const cardContainer = document.createElement("div");
-          cardContainer.className = "markdown-repo my-6";
+          cardContainer.className = "markdown-repo";
 
           const platformIcon =
             platform === "github"
@@ -1356,7 +1356,7 @@ onMounted(async () => {
         } catch (error) {
           console.error("Failed to load repo info:", error);
           const errorContainer = document.createElement("div");
-          errorContainer.className = "markdown-repo my-6";
+          errorContainer.className = "markdown-repo";
           errorContainer.innerHTML = `
           <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             加载仓库信息失败
@@ -1398,7 +1398,7 @@ onMounted(async () => {
 
         // 创建瀑布流容器
         const waterfallContainer = document.createElement("div");
-        waterfallContainer.className = "markdown-waterfall my-6";
+        waterfallContainer.className = "markdown-waterfall";
 
         // 创建图片网格
         const imagesGrid = document.createElement("div");
@@ -1506,7 +1506,7 @@ onMounted(async () => {
 
         // 创建音乐播放器容器
         const musicContainer = document.createElement("div");
-        musicContainer.className = "markdown-music my-6";
+        musicContainer.className = "markdown-music";
 
         // 创建一个唯一的 ID 用于挂载
         const mountId = `meting-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -2221,7 +2221,7 @@ onUnmounted(() => {
 }
 
 .markdown-body > * ~ * {
-  margin-top: 1rem;
+  margin-top: 1em;
 }
 
 /* 图片容器 */
@@ -2370,7 +2370,6 @@ onUnmounted(() => {
 .markdown-body :deep(h4):not(.markdown-callout h4):not(.markdown-card h4):not(.swiper-slide-title h4):not(.markdown-repo h4),
 .markdown-body :deep(h5):not(.markdown-callout h5):not(.markdown-card h5):not(.swiper-slide-title h5):not(.markdown-repo h5),
 .markdown-body :deep(h6):not(.markdown-callout h6):not(.markdown-card h6):not(.swiper-slide-title h6):not(.markdown-repo h6) {
-  margin-block: 0.5em;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -2418,7 +2417,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul):not(.aplayer-list ul),
 .markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol):not(.aplayer-list ol) {
-  margin: 1.5rem 0;
   padding-left: 2em;
 }
 
@@ -2436,7 +2434,6 @@ onUnmounted(() => {
 }
 
 .markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote):not(.markdown-repo blockquote) {
-  margin: 1.5rem 0;
   padding: 0.5em 1em;
   border-left: 4px solid rgb(37 99 235);
   background: rgb(249 250 251);
@@ -2462,7 +2459,6 @@ onUnmounted(() => {
 
 /* Shiki 代码块样式 */
 .markdown-body :deep(pre.shiki) {
-  margin: 1.5rem 0;
   padding: 16px;
   overflow: visible;
   font-size: 0.875em;
@@ -2769,7 +2765,6 @@ onUnmounted(() => {
 
 .markdown-body :deep(table) {
   width: 100%;
-  margin: 1.5rem 0;
   border-collapse: collapse;
 }
 
