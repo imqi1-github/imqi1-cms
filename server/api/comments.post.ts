@@ -232,7 +232,7 @@ export default defineTypedApiHandler(
     return {
       code: 200,
       message,
-      data: comment,
+      data: { coid: comment.coid },
       needModeration: commentStatus === 0,
       auditResult: auditConfig.enabled ? auditResult : null,
     };

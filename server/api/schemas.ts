@@ -78,18 +78,9 @@ export const CommentCreateSchema = z.object({
   captcha: z.string().optional(), // 图形验证码（未登录用户必填，登录用户可不带）
 });
 
+// 提交评论后仅回传新评论的 coid，不下发 mail/ip/agent 等隐私字段
 export const CommentItemSchema = z.object({
   coid: z.number(),
-  cid: z.number(),
-  content: z.string(),
-  name: z.string(),
-  mail: z.string().nullable(),
-  link: z.string().nullable(),
-  parent_id: z.number().nullable(),
-  status: z.number(),
-  create_time: z.date().or(z.string()),
-  agent: z.string().nullable(),
-  ip: z.string().nullable(),
 });
 
 export const CommentListQuerySchema = z.object({

@@ -13,7 +13,6 @@ const comments = ref<Comment[]>([]);
 const loading = ref(true);
 const refreshing = ref(false);
 const error = ref("");
-const avatarService = ref("gravatar");
 const pageSize = ref(10);
 const currentPage = ref(1);
 const totalComments = ref(0);
@@ -114,9 +113,6 @@ watch(
   () => siteSettings.value,
   (settings) => {
     if (settings) {
-      if (settings.commentAvatarService) {
-        avatarService.value = settings.commentAvatarService;
-      }
       if (settings.commentPageSize) {
         pageSize.value = Number(settings.commentPageSize);
       }
@@ -145,9 +141,6 @@ onMounted(async () => {
   if (settings) {
     if (settings.commentPageSize) {
       pageSize.value = Number(settings.commentPageSize);
-    }
-    if (settings.commentAvatarService) {
-      avatarService.value = settings.commentAvatarService;
     }
     if (settings.commentMaxLevel !== undefined) {
       maxLevel.value = Number(settings.commentMaxLevel);
@@ -254,7 +247,6 @@ function handleCommentSubmitted() {
               :comment="comment"
               :content-id="props.contentId"
               :reply-state="replyState"
-              :avatar-service="avatarService"
               :max-level="maxLevel"
               :current-level="1"
               :comment-interval="commentInterval"

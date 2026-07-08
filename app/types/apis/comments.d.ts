@@ -1,18 +1,24 @@
 // Comments API response
-import type {Comment} from "~/types/components/comment";
+
+/** parseUserAgent 返回结构（服务端已预解析下发） */
+export interface CommentDevice {
+	browser: string | null;
+	os: string | null;
+	browserIcon: string;
+	osIcon: string;
+}
 
 export interface CommentNode {
 	coid: number;
 	cid: number;
 	name: string;
-	mail: string | null;
 	link: string | null;
 	content: string;
 	create_time: string;
 	status: number;
 	parent_id: number | null;
-	agent: string | null;
-	ip: string | null;
+	avatar: string;
+	device: CommentDevice;
 	children: CommentNode[];
 	parent_name: string | null;
 	location: string;
@@ -37,7 +43,7 @@ export interface CommentsApiResponse {
 export interface CommentSubmitResponse {
 	code: number;
 	message: string;
-	data: Comment | null;
+	data: { coid: number } | null;
 	needModeration: boolean;
 	auditResult: unknown | null;
 }
