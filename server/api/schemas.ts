@@ -186,7 +186,6 @@ export const LinkItemSchema = z.object({
   link: z.string(),
   desc: z.string().nullable(),
   avatar: z.string().nullable(),
-  enabled: z.boolean(),
 });
 
 // ============= 归档 Schema =============

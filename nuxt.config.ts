@@ -96,6 +96,11 @@ export default defineNuxtConfig({
     // （此前约 122KB），改为纯按需——SSR 图标走 payload，仅客户端动态
     // 出现、SSR 未覆盖到的图标才回退到 /api/_nuxt_icon 拉取（有缓存）。
     serverBundle: "local",
+    // 客户端回退只走本地 /api/_nuxt_icon（由本地 @iconify-json/* 包解析），
+    // 关闭对 api.iconify.design 的回退：默认 fallbackToApi=true 会把公网 API
+    // 一并塞进 @iconify/vue 的 resources 负载均衡池，客户端可能直接命中公网域名，
+    // 被生产 CSP connect-src 拦截。ri/lucide 集合本地已安装，公网回退纯多余。
+    fallbackToApi: false,
     // 本地自定义图标集合：app/assets/icons/*.svg → <Icon name="app:文件名" />
     // 用于承接品牌 logo（Nuxt/Prisma/MySQL/Google 等），SSR 本地渲染，
     // 不再回退 api.iconify.design（生产环境 CSP 已拦截该域名）。

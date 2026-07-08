@@ -10,7 +10,16 @@ export default defineEventHandler(async () => {
           { isModification: false },
           { isModification: true, modificationStatus: "approved" }
         ]
-      }
+      },
+      // 只下发前台展示所需字段，enabled/isModification/modificationStatus/originalLinkId 等
+      // 内部审核字段不对外暴露。
+      select: {
+        id: true,
+        name: true,
+        desc: true,
+        link: true,
+        avatar: true,
+      },
     });
 
     // 随机打乱数组顺序 (Fisher-Yates 洗牌算法)
