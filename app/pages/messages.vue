@@ -15,7 +15,7 @@ const commentEnabled = computed(() => siteSettings.value?.commentEnabled ?? true
 const { data: messageConfig } = await useFetch("/api/messages/config", {
   headers: getInternalRequestHeaders(),
 });
-const messagePostId = computed(() => messageConfig.value?.data?.contentId);
+const messageContentId = computed(() => messageConfig.value?.data?.contentId);
 const route = useRoute();
 
 function scrollToComment(hash: string) {
@@ -146,14 +146,14 @@ onUnmounted(() => {
     <!-- 留言内容区域 -->
     <section v-scroll-reveal class="my-8">
       <!-- 未配置提示 -->
-      <div v-if="!messagePostId" class="py-10 text-center">
+      <div v-if="!messageContentId" class="py-10 text-center">
         <Icon name="lucide:alert-circle" class="size-8 text-amber-500 mx-auto mb-2" />
         <p class="text-amber-600 dark:text-amber-400 mb-4">留言板尚未初始化</p>
         <p class="text-sm text-slate-500">请联系管理员在后台设置留言板关联文章</p>
       </div>
 
       <!-- 评论区 -->
-      <CommentList v-else-if="commentEnabled" :content-id="messagePostId" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
+      <CommentList v-else-if="commentEnabled" :content-id="messageContentId" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
     </section>
   </div>
 </template>

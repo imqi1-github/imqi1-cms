@@ -16,7 +16,7 @@ const defaults: Record<string, string | number | boolean> = {
   commentInterval: 60,
   commentRequireMail: true,
   commentRequireLink: false,
-  postPageSize: 12,
+  contentPageSize: 12,
   feedCacheInterval: 8,
   uploadLocation: "local",
 };

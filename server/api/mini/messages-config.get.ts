@@ -3,7 +3,7 @@ import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
 // 留言板即绑定到某篇文章的评论区，与主站 /api/messages/config 逻辑一致：
-// 优先取 informations.messagePostId，否则回退到 slug 为 "messages" 的文章。
+// 优先取 informations.messageContentId，否则回退到 slug 为 "messages" 的文章。
 // 同时返回小程序评论总开关 features.miniComment，关闭时留言页与入口都不展示。
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
@@ -12,23 +12,23 @@ export default defineEventHandler(async event => {
   const commentEnabled = siteConfig.features.miniComment;
 
   try {
-    const messagePostIdMeta = await prisma.informations.findUnique({
-      where: { key: "messagePostId" },
+    const messageContentIdMeta = await prisma.informations.findUnique({
+      where: { key: "messageContentId" },
     });
 
-    let messagePostId = messagePostIdMeta?.value ? parseInt(messagePostIdMeta.value) : null;
+    let messageContentId = messageContentIdMeta?.value ? parseInt(messageContentIdMeta.value) : null;
 
-    if (!messagePostId) {
-      const messagePost = await prisma.contents.findFirst({
+    if (!messageContentId) {
+      const messageContent = await prisma.contents.findFirst({
         where: { slug: "messages" },
         select: { cid: true },
       });
-      messagePostId = messagePost?.cid ?? null;
+      messageContentId = messageContent?.cid ?? null;
     }
 
     return {
       success: true,
-      data: { contentId: messagePostId, commentEnabled },
+      data: { contentId: messageContentId, commentEnabled },
     } satisfies MiniMessagesConfigResponse;
   } catch (error) {
     console.error(error);

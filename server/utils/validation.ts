@@ -246,8 +246,8 @@ export function validateSettingsData(data: Record<string, string | null | undefi
   if (data.photoCategorySlug) {
     validateMaxLength(data.photoCategorySlug, 100, "相册分类标识");
   }
-  if (data.messagePostId) {
-    validateMaxLength(data.messagePostId, 50, "留言板文章ID");
+  if (data.messageContentId) {
+    validateMaxLength(data.messageContentId, 50, "留言板文章ID");
   }
 }
 

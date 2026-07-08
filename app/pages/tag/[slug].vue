@@ -11,7 +11,7 @@ const slug = route.params.slug as string;
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
-const postPageSize = computed(() => siteSettings.value?.postPageSize || 12);
+const contentPageSize = computed(() => siteSettings.value?.contentPageSize || 12);
 
 // 从 URL query 参数中获取页码
 const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
@@ -20,7 +20,7 @@ const page = ref(initialPage > 0 ? initialPage : 1);
 // 获取标签文章数据
 const { data, pending, error } = await useFetch(`/api/tag/${slug}/contents`, {
   headers: getInternalRequestHeaders(),
-  query: { page, pageSize: postPageSize },
+  query: { page, pageSize: contentPageSize },
   watch: [page],
 });
 
@@ -44,7 +44,7 @@ const skeletonCount = computed(() => {
     return contents.value.length;
   }
   // 否则使用每页显示数量
-  return postPageSize.value || 12;
+  return contentPageSize.value || 12;
 });
 
 // 监听 pending，控制骨架屏显示

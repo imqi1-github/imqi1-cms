@@ -113,7 +113,7 @@ export const SiteSettingsSchema = z.object({
   commentInterval: z.number(),
   commentRequireMail: z.boolean(),
   commentRequireLink: z.boolean(),
-  postPageSize: z.number(),
+  contentPageSize: z.number(),
   feedCacheInterval: z.number(),
   linkAutoApprove: z.boolean(),
   musicPlaylistId: z.string(),

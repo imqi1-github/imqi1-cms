@@ -22,7 +22,7 @@ const settings = ref<AdminSettings>({
   commentRequireMail: true,
   commentRequireLink: false,
   commentInterval: 60,
-  postPageSize: 12,
+  contentPageSize: 12,
   feedCacheInterval: 8,
   homeCustomText: siteConfig.homeCustomText,
   musicPlaylistId: "9255074836 || netease",
@@ -206,7 +206,7 @@ const defaultSettings: AdminSettings = {
   commentRequireMail: true,
   commentRequireLink: false,
   commentInterval: 60,
-  postPageSize: 12,
+  contentPageSize: 12,
   feedCacheInterval: 8,
   homeCustomText: siteConfig.homeCustomText,
   musicPlaylistId: "9255074836 || netease",
@@ -1086,8 +1086,8 @@ onMounted(() => {
               <div class="space-y-4">
                 <h4 class="text-sm font-medium">内容设置</h4>
                 <div class="space-y-2">
-                  <Label for="postPageSize">每页显示文章数</Label>
-                  <Input id="postPageSize" v-model.number="settings.postPageSize" type="number" min="1" max="100" />
+                  <Label for="contentPageSize">每页显示文章数</Label>
+                  <Input id="contentPageSize" v-model.number="settings.contentPageSize" type="number" min="1" max="100" />
                   <p class="text-xs text-muted-foreground">文章列表每页显示的文章数量，默认为 12 篇</p>
                 </div>
                 <div class="space-y-2">

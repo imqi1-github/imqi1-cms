@@ -95,7 +95,7 @@ export default defineEventHandler(async event => {
         slug: categorySlug,
         type: "category",
       },
-      contents: {
+      content: {
         type: 0, // 0: 文章
         status: 1, // 只统计已发布的文章
       },

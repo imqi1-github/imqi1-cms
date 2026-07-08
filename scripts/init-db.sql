@@ -243,7 +243,7 @@ INSERT INTO `informations` (`key`, `value`) VALUES
   ('commentRequireMail', 'true'),
   ('commentRequireLink', 'false'),
   ('commentInterval', '60'),
-  ('postPageSize', '12'),
+  ('contentPageSize', '12'),
   ('feedCacheInterval', '8'),
   ('musicPlaylistId', '9255074836 || netease'),
   ('moderationApiType', '1'),
@@ -271,7 +271,7 @@ INSERT INTO `informations` (`key`, `value`) VALUES
   ('cosCdnDomain', ''),
   ('cosImageSuffix', 'webp'),
   ('sessionStoreType', 'memory'),
-  ('messagePostId', ''),
+  ('messageContentId', ''),
   ('linkAutoApprove', 'false'),
   ('searchCacheEnabled', 'false'),
   ('searchCacheExpire', '300')

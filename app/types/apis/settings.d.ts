@@ -12,7 +12,7 @@ export type SettingKey =
   | "commentInterval"
   | "commentRequireMail"
   | "commentRequireLink"
-  | "postPageSize"
+  | "contentPageSize"
   | "feedCacheInterval"
   | "linkAutoApprove"
   | "musicPlaylistId";
@@ -31,7 +31,7 @@ export interface SiteSettings {
   commentInterval: number;
   commentRequireMail: boolean;
   commentRequireLink: boolean;
-  postPageSize: number;
+  contentPageSize: number;
   feedCacheInterval: number;
   linkAutoApprove: boolean;
   musicPlaylistId: string;

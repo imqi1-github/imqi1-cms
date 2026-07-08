@@ -17,7 +17,7 @@ export interface AdminSettings {
 	commentRequireMail: boolean;
 	commentRequireLink: boolean;
 	commentInterval: number;
-	postPageSize: number;
+	contentPageSize: number;
 	feedCacheInterval: number;
 	homeCustomText: string;
 	musicPlaylistId: string;

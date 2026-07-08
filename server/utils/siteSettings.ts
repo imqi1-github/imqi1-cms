@@ -18,7 +18,7 @@ const defaults: SiteSettings = {
   commentInterval: 60,
   commentRequireMail: true,
   commentRequireLink: false,
-  postPageSize: 12,
+  contentPageSize: 12,
   feedCacheInterval: 8,
   linkAutoApprove: false,
   musicPlaylistId: "9255074836 || netease",

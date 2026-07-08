@@ -39,7 +39,7 @@ export default defineEventHandler(async event => {
     const totalCount = await prisma.contentrelations.count({
       where: {
         mid: tag.mid,
-        contents: {
+        content: {
           status: 1,
           type: 0,
         },
