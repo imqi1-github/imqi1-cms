@@ -340,7 +340,7 @@ onUnmounted(() => {
 }
 
 .markdown-body > * ~ * {
-  margin-top: 1em;
+  margin-top: 1rem;
 }
 
 /* 图片容器 */
