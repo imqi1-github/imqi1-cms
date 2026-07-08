@@ -850,7 +850,7 @@ onMounted(async () => {
         const detailsContainer = document.createElement("div");
         detailsContainer.className = "markdown-details-container";
         detailsContainer.innerHTML = `
-        <div class="markdown-details my-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <div class="markdown-details my-6 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
             class="markdown-details-summary w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 text-left flex items-center justify-start gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
             <span class="transform transition-transform duration-200 text-slate-500 dark:text-slate-400 text-[10px]">
@@ -948,7 +948,7 @@ onMounted(async () => {
 
         // 创建提示框元素
         const calloutContainer = document.createElement("div");
-        calloutContainer.className = `markdown-callout my-4 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
+        calloutContainer.className = `markdown-callout my-6 p-4 rounded-lg border ${config.bgColor} ${config.borderColor}`;
         calloutContainer.innerHTML = `
         <div class="flex items-start gap-3">
           <div class="${config.iconColor} shrink-0 mt-1">
@@ -1043,7 +1043,7 @@ onMounted(async () => {
 
         // 创建简单卡片元素
         const simpleCardContainer = document.createElement("div");
-        simpleCardContainer.className = "markdown-simple-card my-4";
+        simpleCardContainer.className = "markdown-simple-card my-6";
 
         simpleCardContainer.innerHTML = `
         <a
@@ -1199,11 +1199,14 @@ onMounted(async () => {
         }
 
         if (!platform || !owner || !repo) {
-          wrapper.innerHTML = `
+          const errorContainer = document.createElement("div");
+          errorContainer.className = "markdown-repo my-6";
+          errorContainer.innerHTML = `
           <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             无效的仓库 URL
           </div>
         `;
+          wrapper.replaceWith(errorContainer);
           return;
         }
 
@@ -1352,11 +1355,14 @@ onMounted(async () => {
           wrapper.replaceWith(cardContainer);
         } catch (error) {
           console.error("Failed to load repo info:", error);
-          wrapper.innerHTML = `
+          const errorContainer = document.createElement("div");
+          errorContainer.className = "markdown-repo my-6";
+          errorContainer.innerHTML = `
           <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             加载仓库信息失败
           </div>
         `;
+          wrapper.replaceWith(errorContainer);
         }
       });
 
@@ -2296,12 +2302,20 @@ onUnmounted(() => {
   color: rgb(156 163 175);
 }
 
-.markdown-body :deep(img:not(.swiper-container img)) {
+.markdown-body :deep(img:not(.swiper-container img):not(.markdown-card img):not(.markdown-simple-card img):not(.markdown-repo img)) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
   cursor: zoom-in;
   margin: auto;
+  transition: transform 0.3s ease;
+}
+
+/* 卡片类容器内的缩略图由模板尺寸类（size-full object-cover）控制，不套用通用图片规则 */
+.markdown-body :deep(.markdown-card img),
+.markdown-body :deep(.markdown-simple-card img),
+.markdown-body :deep(.markdown-repo img) {
+  height: 100%;
   transition: transform 0.3s ease;
 }
 
@@ -2347,7 +2361,7 @@ onUnmounted(() => {
 
 .markdown-body
   :deep(p:not(.markdown-callout p):not(.markdown-card p):not(.swiper-slide-title p):not(.markdown-repo p):not(blockquote p):not(.aplayer-lrc p)) {
-  margin: 1em 0;
+  margin: 1.5rem 0;
   text-indent: 2em;
 }
 
@@ -2405,7 +2419,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul):not(.aplayer-list ul),
 .markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol):not(.aplayer-list ol) {
-  margin: 1em 0;
+  margin: 1.5rem 0;
   padding-left: 2em;
 }
 
@@ -2423,7 +2437,7 @@ onUnmounted(() => {
 }
 
 .markdown-body :deep(blockquote):not(.markdown-callout blockquote):not(.markdown-card blockquote):not(.markdown-repo blockquote) {
-  margin: 1em 0;
+  margin: 1.5rem 0;
   padding: 0.5em 1em;
   border-left: 4px solid rgb(37 99 235);
   background: rgb(249 250 251);
@@ -2449,7 +2463,7 @@ onUnmounted(() => {
 
 /* Shiki 代码块样式 */
 .markdown-body :deep(pre.shiki) {
-  margin: 1em 0;
+  margin: 1.5rem 0;
   padding: 16px;
   overflow: visible;
   font-size: 0.875em;
@@ -2756,7 +2770,7 @@ onUnmounted(() => {
 
 .markdown-body :deep(table) {
   width: 100%;
-  margin: 1em 0;
+  margin: 1.5rem 0;
   border-collapse: collapse;
 }
 

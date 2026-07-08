@@ -54,6 +54,13 @@ export const useMarkdownImages = () => {
 
     const images = root.querySelectorAll<HTMLImageElement>(".markdown-body img");
     images.forEach(imgEl => {
+      // 卡片类容器（大链接卡片、简单外链卡片、仓库卡片）内的图片是装饰性图片，
+      // 已由各自的模板控制尺寸（如大链接卡片左侧的 size-full object-cover），
+      // 不应再套用通用图片增强逻辑，否则会丢失 size-full 导致高度塌陷到图片原始尺寸
+      if (imgEl.closest(".markdown-card, .markdown-simple-card, .markdown-repo")) {
+        return;
+      }
+
       const src = imgEl.src;
       const alt = imgEl.alt || "";
       const className = imgEl.className || "";
