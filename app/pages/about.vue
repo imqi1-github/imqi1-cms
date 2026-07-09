@@ -273,11 +273,11 @@
         <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-8 transition-colors duration-300">
           <div class="flex items-center gap-8 mb-8">
             <div class="shrink-0 max-sm:hidden">
-              <img :src="publicAsset('/imgs/enfj.svg')" alt="ENTJ" class="w-32 h-32 object-contain" >
+              <img :src="publicAsset('/imgs/enfj.svg')" alt="ENFJ" class="w-32 h-32 object-contain" >
             </div>
             <div class="flex-1">
-              <div class="text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">主人公 · ENTJ-A</div>
-              <div class="text-slate-600 dark:text-slate-400 mb-4 transition-colors duration-300">外向 · 思维 · 展望</div>
+              <div class="text-slate-900 dark:text-slate-100 text-xl font-bold mb-2 transition-colors duration-300">主人公 · ENFJ-A</div>
+              <div class="text-slate-600 dark:text-slate-400 mb-4 transition-colors duration-300">外向 · 直觉 · 情感 · 判断</div>
               <div class="flex flex-wrap gap-2">
                 <span
                   class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm px-3 py-1 transition-colors duration-300"
@@ -356,7 +356,7 @@
             </div>
           </div>
           <a
-            href="https://www.16personalities.com/ch/entp-%E4%BA%BA%E6%A0%BC"
+            href="https://www.16personalities.com/ch/enfj-%E4%BA%BA%E6%A0%BC"
             target="_blank"
             class="flex items-center bg-blue-600 dark:bg-blue-500 rounded-full text-white font-semibold gap-2 mt-6 px-6 py-3 transition-all duration-200 w-fit hover:bg-blue-500 dark:hover:bg-blue-400">
             了解更多 <Icon name="ri:arrow-right-line" class="size-4" />
