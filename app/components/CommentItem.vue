@@ -77,7 +77,7 @@ function handleCommentSubmitted() {
         <button
           v-if="canReply"
           v-tooltip="'回复'"
-          class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110"
+          class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110 z-2"
           @click="startReply(comment)">
           <Icon name="ri-reply-fill" class="size-4" />
         </button>
@@ -125,8 +125,8 @@ function handleCommentSubmitted() {
             {{ formatDate(comment.create_time) }}
           </span>
           <span v-if="parsedAgent.browser || parsedAgent.os" class="flex items-center gap-1">
-            <Icon v-tooltip="parsedAgent.browser" :name="parsedAgent.browserIcon" class="size-4" />
-            <Icon v-tooltip="parsedAgent.os" :name="parsedAgent.osIcon" class="size-4" />
+            <Icon v-tooltip="parsedAgent.browser || '未知浏览器'" :name="parsedAgent.browserIcon" class="size-4" />
+            <Icon v-tooltip="parsedAgent.os || '未知系统'" :name="parsedAgent.osIcon" class="size-4" />
           </span>
           <span v-else v-tooltip="'未知设备'" class="flex items-center gap-1">
             <Icon name="ri-computer-line" class="size-4" />

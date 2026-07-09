@@ -48,6 +48,17 @@ export function parseUserAgent(userAgent: string): ParsedAgent {
     return { browser, os, browserIcon, osIcon };
   }
 
+  // 小程序评论：提交时 agent 统一记为 "Mini"（见 server/api/mini/comments.post.ts）。
+  // 此处特判为「小程序 + 微信」双图标，与其它端的「浏览器 + 系统」语义对齐。
+  if (userAgent === "Mini") {
+    return {
+      browser: "小程序",
+      os: "微信",
+      browserIcon: "ri-mini-program-fill",
+      osIcon: "ri-wechat-fill",
+    };
+  }
+
   // 解析浏览器
   for (const [key, value] of Object.entries(browsers)) {
     if (userAgent.includes(key)) {
