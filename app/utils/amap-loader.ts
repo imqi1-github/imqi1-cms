@@ -125,7 +125,3 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
   const AMap = await amapLoadPromise;
   return loadMissingPlugins(AMap, plugins);
 }
-
-export function __resetAmapLoaderForTests() {
-  resetLoaderState();
-}

@@ -1,6 +1,5 @@
-import { SiteSettingsResponseSchema } from "./schemas";
-
 import { defineTypedApiHandler } from "#server/types/typedApi";
+import { SiteSettingsResponseSchema } from "#server/utils/schemas";
 import { getSiteSettings } from "#server/utils/siteSettings";
 
 export default defineTypedApiHandler(

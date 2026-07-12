@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { MENU_ITEMS_KEY, type MenuElement } from "~/directives/contextMenu";
-import type { MenuItems } from "~/types/context-menu";
-
 const router = useRouter();
 const { notify } = useFrontNotification();
 
@@ -16,12 +13,10 @@ const inputTarget = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
 const imageTarget = ref<HTMLImageElement | null>(null);
 const menuRef = ref<HTMLElement | null>(null);
 const isCommentArea = ref(false); // 是否在评论区
-const customMenuItems = ref<MenuItems | null>(null); // 自定义菜单项
 
 // 关闭菜单
 const closeMenu = () => {
   visible.value = false;
-  customMenuItems.value = null;
 };
 
 // 判断是否为链接
@@ -57,20 +52,7 @@ const handleContextMenu = (e: MouseEvent) => {
 
   // 判断菜单类型
   const selection = window.getSelection()?.toString().trim();
-  const target = e.target as MenuElement;
-
-  // 检查是否有自定义菜单项（从目标元素或其父元素中查找）
-  let currentElement: MenuElement | null = target;
-  customMenuItems.value = null;
-
-  while (currentElement) {
-    const items = currentElement[MENU_ITEMS_KEY];
-    if (items) {
-      customMenuItems.value = items;
-      break;
-    }
-    currentElement = currentElement.parentElement;
-  }
+  const target = e.target as HTMLElement;
 
   // 检测是否在评论区
   const closestComment = target.closest('.comment-item, .comment-list, [class*="comment"]');
@@ -497,28 +479,6 @@ onUnmounted(() => {
         <Icon name="ri:arrow-up-line" class="size-4" />
         <span>回到顶部</span>
       </li>
-
-      <!-- 自定义菜单项（如果有） -->
-      <template v-if="customMenuItems && customMenuItems.length > 0">
-        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
-        <template v-for="(item, index) in customMenuItems" :key="index">
-          <li v-if="item.divider" class="border-t border-gray-200 dark:border-gray-700 my-1"/>
-          <li
-            v-else
-            :class="[
-              'px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2',
-              { 'opacity-50 pointer-events-none': item.disabled },
-              { 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20': item.danger },
-            ]"
-            @click="
-              item.action($event);
-              closeMenu();
-            ">
-            <Icon v-if="item.icon" :name="item.icon" class="size-4" />
-            <span>{{ item.label }}</span>
-          </li>
-        </template>
-      </template>
 
       <!-- 默认菜单的其他选项 -->
       <template v-if="menuType === 'default'">

@@ -1,13 +1,12 @@
 import DOMPurify from "isomorphic-dompurify";
 
-import { CommentCreateSchema, CommentItemSchema } from "./schemas";
-
 import { getUser } from "#server/lib/auth";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { verifyCaptcha } from "#server/utils/captcha";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
+import { CommentCreateSchema, CommentItemSchema } from "#server/utils/schemas";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { validateCommentData } from "#server/utils/validation";
 

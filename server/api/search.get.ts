@@ -1,7 +1,6 @@
-import { SearchQuerySchema, SearchResponseSchema } from "./schemas";
-
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
+import { SearchQuerySchema, SearchResponseSchema } from "#server/utils/schemas";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
 import type { SearchContentItem } from "#server/types/apis/serach";
