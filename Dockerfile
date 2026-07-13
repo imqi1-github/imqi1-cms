@@ -13,8 +13,6 @@ COPY . .
 # 这里用 --ignore-scripts 先装依赖，稍后手动 prepare/generate。
 RUN bun install --frozen-lockfile --ignore-scripts
 
-# 复制其余源码
-
 # 生成 Prisma Client（mariadb 驱动适配器为纯 JS，无需原生引擎二进制）
 # 并执行 nuxt prepare 生成 .nuxt 类型
 RUN bunx prisma generate
