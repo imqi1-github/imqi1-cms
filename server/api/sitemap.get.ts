@@ -29,35 +29,48 @@ export default defineEventHandler(async () => {
       },
     });
 
-    // 获取每个分类最近5篇文章
-    const categoriesWithContents = await Promise.all(
-      categories.map(async category => {
-        const contents = await prisma.contents.findMany({
+    // 单次查询取所有分类下的已发布文章关系（避免按分类逐个 findMany 的 N+1），
+    // 按 cid 降序拉取后在内存按分类分组，每类截断最近 5 篇
+    const categoryMids = categories.map(c => c.mid);
+    const relations = categoryMids.length > 0
+      ? await prisma.contentrelations.findMany({
           where: {
-            type: 0, // 文章
-            status: 1, // 已发布
-            contentrelations: {
-              some: {
-                mid: category.mid,
-              },
+            mid: { in: categoryMids },
+            content: {
+              type: 0, // 文章
+              status: 1, // 已发布
             },
           },
           orderBy: { cid: "desc" },
-          take: 5,
           select: {
-            cid: true,
-            title: true,
-            slug: true,
-            create_time: true,
+            mid: true,
+            content: {
+              select: {
+                cid: true,
+                title: true,
+                slug: true,
+                create_time: true,
+              },
+            },
           },
-        });
+        })
+      : [];
 
-        return {
-          ...category,
-          contents,
-        };
-      })
-    );
+    const CONTENTS_PER_CATEGORY = 5;
+    const contentsByMid = new Map<number, typeof relations[number]["content"][]>();
+    for (const relation of relations) {
+      const bucket = contentsByMid.get(relation.mid);
+      if (bucket) {
+        if (bucket.length < CONTENTS_PER_CATEGORY) bucket.push(relation.content);
+      } else {
+        contentsByMid.set(relation.mid, [relation.content]);
+      }
+    }
+
+    const categoriesWithContents = categories.map(category => ({
+      ...category,
+      contents: contentsByMid.get(category.mid) ?? [],
+    }));
 
     return {
       success: true,

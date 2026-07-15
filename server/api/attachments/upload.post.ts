@@ -17,13 +17,15 @@ const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
 const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 
 // 文件魔数（Magic Number）映射
-const FILE_MAGIC_NUMBERS: Record<string, Buffer> = {
-  "image/jpeg": Buffer.from([0xff, 0xd8, 0xff]),
-  "image/png": Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-  "image/gif": Buffer.from([0x47, 0x49, 0x46, 0x38]),
-  "image/webp": Buffer.from([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
-  "video/mp4": Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
-  "video/webm": Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+// null 表示该字节为可变字段（如 WebP 头部的文件大小），校验时跳过
+const FILE_MAGIC_NUMBERS: Record<string, (number | null)[]> = {
+  "image/jpeg": [0xff, 0xd8, 0xff],
+  "image/png": [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  "image/gif": [0x47, 0x49, 0x46, 0x38],
+  // WebP: "RIFF"(0-3) + 文件大小(4-7,可变) + "WEBP"(8-11)
+  "image/webp": [0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50],
+  "video/mp4": [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70],
+  "video/webm": [0x1a, 0x45, 0xdf, 0xa3],
 };
 
 // 验证文件魔数
@@ -31,8 +33,9 @@ function validateFileMagicNumber(buffer: Buffer, mimeType: string): boolean {
   const magicNumber = FILE_MAGIC_NUMBERS[mimeType];
   if (!magicNumber) return true; // 如果没有定义魔数，跳过检查
 
-  // 检查文件开头是否匹配魔数
+  // 检查文件开头是否匹配魔数（null 为可变字节，跳过比对）
   for (let i = 0; i < magicNumber.length; i++) {
+    if (magicNumber[i] === null) continue;
     if (buffer[i] !== magicNumber[i]) {
       return false;
     }

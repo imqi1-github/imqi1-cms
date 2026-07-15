@@ -20,10 +20,10 @@
             class="w-48 h-48 rounded-full border-6 border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden mb-8 transition-colors duration-300">
             <img :src="siteConfig.siteAvatarPath" :alt="siteConfig.ownerName" class="w-full h-full object-cover" >
           </div>
-          <h1
+          <div
             class="text-slate-900 dark:text-slate-100 text-[clamp(3rem,8vw,6rem)] font-black tracking-tight leading-[.9] mb-4 transition-colors duration-300">
             {{ siteConfig.ownerName }}
-          </h1>
+          </div>
           <p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xs transition-colors duration-300">
             {{ siteConfig.links.profile.siteDescription }}
           </p>
@@ -787,8 +787,10 @@ const animatedMbtiData = ref({
   assertive: 0,
 });
 
-// 十年之约履约进度
-const pledgeStartDate = new Date("2024-07-21");
+// 十年之约履约进度（加入十年之约的日期：2024-07-21）
+// 用本地时间构造，与下方 pledgeEndDate / pledgeFormattedDate 的本地 getFullYear/Month/Date 口径一致；
+// 若用 new Date("2024-07-21") 会按 UTC 解析，负时区下格式化会偏移一天
+const pledgeStartDate = new Date(2024, 6, 21);
 const pledgeEndDate = new Date(pledgeStartDate.getFullYear() + 10, pledgeStartDate.getMonth(), pledgeStartDate.getDate());
 const pledgeTotalDays = Math.max(1, Math.round((pledgeEndDate.getTime() - pledgeStartDate.getTime()) / 86400000));
 const pledgeElapsedDays = computed(() => Math.max(0, Math.min(pledgeTotalDays, Math.floor((Date.now() - pledgeStartDate.getTime()) / 86400000))));

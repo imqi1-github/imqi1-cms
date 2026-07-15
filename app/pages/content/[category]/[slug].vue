@@ -245,7 +245,7 @@ const scrollToHeading = (id: string) => {
   if (element) {
     const headerOffset = 100;
     const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+    const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
     window.scrollTo({
       top: offsetPosition,
@@ -271,7 +271,7 @@ const scrollToComment = (hash: string) => {
   if (element) {
     const headerOffset = 130;
     const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+    const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
     window.scrollTo({
       top: offsetPosition,
@@ -517,6 +517,15 @@ const escapeHtmlAttr = (value: string) => value
   .replace(/</g, "&lt;")
   .replace(/>/g, "&gt;");
 
+// decodeURIComponent 遇到非法转义序列（如裸 %）会抛错，中断整个容器初始化；这里兜底为原串
+const safeDecodeURIComponent = (value: string) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
 // 动态挂载的 MetingPlayer 子应用实例 —— 必须在 onUnmounted 中逐个 unmount，否则每篇带音乐块的文章导航都会累积一个完整 Vue 子应用 + APlayer 实例（事件监听/定时器/Web Audio 节点泄露）
 const metingApps: App[] = [];
 
@@ -577,7 +586,7 @@ const mountMarkdownLivePhotos = () => {
   const wrappers = document.querySelectorAll<HTMLElement>(".markdown-live-photo-wrapper");
 
   wrappers.forEach(wrapper => {
-    const { src, caption } = parseImageLine(decodeURIComponent(wrapper.getAttribute("data-params") || ""));
+    const { src, caption } = parseImageLine(safeDecodeURIComponent(wrapper.getAttribute("data-params") || ""));
 
     if (!src) {
       wrapper.remove();
@@ -967,7 +976,7 @@ onMounted(async () => {
       // 初始化卡片容器
       const cardWrappers = document.querySelectorAll(".markdown-card-wrapper");
       cardWrappers.forEach(wrapper => {
-        const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+        const paramsStr = safeDecodeURIComponent(wrapper.getAttribute("data-params") || "");
         // 解析参数：url | title | description | image
         const parts = paramsStr.split("|").map(p => p.trim());
 
@@ -1034,7 +1043,7 @@ onMounted(async () => {
       // 初始化简单外链卡片容器
       const simpleCardWrappers = document.querySelectorAll(".markdown-simple-card-wrapper");
       simpleCardWrappers.forEach(wrapper => {
-        const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+        const paramsStr = safeDecodeURIComponent(wrapper.getAttribute("data-params") || "");
         // 解析参数：url | title
         const parts = paramsStr.split("|").map(p => p.trim());
 
@@ -1435,7 +1444,7 @@ onMounted(async () => {
       // 初始化音乐播放器容器
       const musicWrappers = document.querySelectorAll(".markdown-music-wrapper");
       musicWrappers.forEach(async wrapper => {
-        const paramsStr = decodeURIComponent(wrapper.getAttribute("data-params") || "");
+        const paramsStr = safeDecodeURIComponent(wrapper.getAttribute("data-params") || "");
         let server = "netease";
         let type = "playlist";
         let id = "";
@@ -1509,7 +1518,7 @@ onMounted(async () => {
         musicContainer.className = "markdown-music";
 
         // 创建一个唯一的 ID 用于挂载
-        const mountId = `meting-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const mountId = `meting-player-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
         musicContainer.innerHTML = `
         <div id="${mountId}" class="meting-player-wrapper min-h-24">
@@ -1973,9 +1982,9 @@ onUnmounted(() => {
             <span>{{ content.user?.nickname || content.user?.name || "匿名" }}</span>
           </span>
           <span v-tooltip="'发布时间'" class="inline-flex items-center gap-0.5">
-            <Icon name="ri:edit-2-line" class="size-4" />
-            <time :datetime="content.update_time">
-              {{ formatDate(content.update_time) }}
+            <Icon name="ri:calendar-line" class="size-4" />
+            <time :datetime="content.create_time">
+              {{ formatDate(content.create_time) }}
             </time>
           </span>
           <span v-if="categories.length > 0" class="inline-flex items-center gap-0.5">

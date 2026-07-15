@@ -71,8 +71,10 @@ export default defineEventHandler(async event => {
   const skip = (page - 1) * pageSize;
 
   // 获取分类信息
-  const category = await prisma.metas.findUnique({
-    where: { slug: categorySlug },
+  // metas.slug 全局唯一、分类与标签共用同一张表，必须按 type 过滤，
+  // 否则传入某标签的 slug 也会命中它，渲染出「标题=标签名、内容为空」的空壳页而非 404
+  const category = await prisma.metas.findFirst({
+    where: { slug: categorySlug, type: "category" },
     select: {
       mid: true,
       name: true,
@@ -117,14 +119,6 @@ export default defineEventHandler(async event => {
     include: {
       content: {
         include: {
-          user: {
-            select: {
-              uid: true,
-              name: true,
-              nickname: true,
-              avatar: true,
-            },
-          },
           contentrelations: {
             select: {
               cid: true,
@@ -213,7 +207,6 @@ export default defineEventHandler(async event => {
       covers,
       travelCount: content.travels.length,
       tags, // [{ name, slug }]，前端直接用 slug 生成链接
-      user: content.user,
     };
   });
 

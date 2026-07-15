@@ -34,16 +34,28 @@ const systemPages = [
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
+// 水合完成前，相对时间（基于 now）在服务端与客户端会算出不同文本，导致 hydration mismatch；
+// 用 isHydrated 门控：水合前一律输出稳定的绝对日期，水合后再切换为「x分钟前」
+const isHydrated = ref(false);
+onMounted(() => {
+  isHydrated.value = true;
+});
+
+// 绝对日期用 UTC 口径，保证 SSR 与客户端首屏一致（与归档/详情页对齐）
 function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
 function formatDateTime(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  // 水合前返回绝对日期，避免服务端/客户端相对时间不一致
+  if (!isHydrated.value) {
+    return formatDate(d);
+  }
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const seconds = Math.floor(diff / 1000);
@@ -109,8 +121,9 @@ usePageSeo({
             <NuxtLink
               v-for="tag in tags"
               :key="tag.slug ?? tag.name"
-              :to="`/tag/${tag.slug}`"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              :to="tag.slug ? `/tag/${tag.slug}` : '#'"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              :class="{ 'pointer-events-none opacity-50': !tag.slug }">
               <Icon name="ri:price-tag-3-line" class="size-3.5 align-sub" />
               {{ tag.name }}
             </NuxtLink>
@@ -126,20 +139,28 @@ usePageSeo({
               <!-- 分类标题 -->
               <div class="mb-3">
                 <NuxtLink
+                  v-if="category.slug"
                   :to="`/category/${category.slug}`"
                   class="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
                   {{ category.name }}
                 </NuxtLink>
+                <span v-else class="text-lg font-semibold text-slate-900 dark:text-white inline-block">
+                  {{ category.name }}
+                </span>
               </div>
 
               <!-- 文章列表 -->
               <ul v-if="category.contents.length > 0" class="space-y-1.5 ml-4">
                 <li v-for="content in category.contents" :key="content.cid">
                   <NuxtLink
-                    :to="`/content/${category.slug}/${content.slug || content.cid}`"
+                    v-if="content.slug && category.slug"
+                    :to="`/content/${category.slug}/${content.slug}`"
                     class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm inline-block">
                     {{ content.title }}
                   </NuxtLink>
+                  <span v-else class="text-slate-700 dark:text-gray-300 text-sm inline-block">
+                    {{ content.title }}
+                  </span>
                   <span class="text-xs text-slate-400 dark:text-gray-500 ml-2">{{ formatDate(content.create_time) }}</span>
                 </li>
               </ul>

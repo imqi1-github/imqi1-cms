@@ -1,12 +1,15 @@
 import * as readline from "readline";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
 import * as dotenv from "dotenv";
 
-// 加载环境变量
-dotenv.config();
+// 固定加载项目根的 .env（脚本可能从任意 cwd 运行，勿依赖 dotenv 默认的 cwd 查找）
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, "..", ".env") });
 
 // 创建 Prisma 客户端（使用与项目相同的配置）
 const adapter = new PrismaMariaDb({

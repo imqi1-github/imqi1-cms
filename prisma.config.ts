@@ -3,11 +3,26 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// 运行时用拆分的 DB_* 变量（见 server/utils/prisma.ts 的 MariaDB Adapter）。
+// Prisma CLI（studio / db execute 等）只接受连接串，故这里从同一套 DB_* 拼接，
+// 避免再单独维护 DATABASE_URL。仍兼容显式设置的 DATABASE_URL（优先）。
+const buildDatabaseUrl = () => {
+  if (process.env["DATABASE_URL"]) return process.env["DATABASE_URL"];
+
+  const host = process.env["DB_HOST"] || "localhost";
+  const port = process.env["DB_PORT"] || "3306";
+  const user = process.env["DB_USER"] || "root";
+  const password = process.env["DB_PASSWORD"] ?? "";
+  const database = process.env["DB_NAME"] ?? "";
+
+  return `mysql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
+};
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
     // schema.prisma 的 datasource 未写 url，连接串由此注入。
     // prisma studio / db execute 等需连库的命令依赖它，勿删。
-    url: process.env["DATABASE_URL"],
+    url: buildDatabaseUrl(),
   },
 });

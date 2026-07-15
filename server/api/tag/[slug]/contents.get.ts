@@ -24,15 +24,10 @@ export default defineEventHandler(async event => {
     });
 
     if (!tag) {
-      return {
-        code: 404,
+      throw createError({
+        statusCode: 404,
         message: "标签不存在",
-        data: {
-          tag: null,
-          contents: [],
-          pagination: null,
-        },
-      };
+      });
     }
 
     // 查询该标签的文章总数（通过 contentrelation 表）
@@ -60,14 +55,6 @@ export default defineEventHandler(async event => {
       include: {
         content: {
           include: {
-            user: {
-              select: {
-                uid: true,
-                name: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
             contentrelations: {
               select: {
                 cid: true,
@@ -103,9 +90,6 @@ export default defineEventHandler(async event => {
 
     // 格式化文章数据
     const formattedContents = contents.map(content => {
-      // 解析标签
-      const contentTags = content.tags ? content.tags.split(",").map(t => t.trim()).filter(t => t) : [];
-
       // 查找评论数量
       const commentsNum = content.comment_num || 0;
 
@@ -126,14 +110,12 @@ export default defineEventHandler(async event => {
         desc: content.desc,
         updated: content.update_time,
         created: content.create_time,
-        tags: contentTags,
         commentsNum,
         many_covers: content.many_covers,
         covers,
         travelCount: content.travels.length,
         categoryName,
         categorySlug,
-        user: content.user,
       };
     });
 
@@ -157,6 +139,10 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
+    // 已知的 H3 错误（如上面的 404）直接透传，不吞成 500
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

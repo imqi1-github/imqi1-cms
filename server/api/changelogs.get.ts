@@ -20,9 +20,13 @@ export default defineEventHandler(async event => {
     });
 
     // 解析 content（JSON 条目数组）并渲染每条 value 的 markdown
+    // 公开接口只下发前台渲染所需的 type + html，不回传 value（markdown 源码，前台不用，属冗余传输）
     const changelogsParsed = changelogs.map(log => ({
       id: log.id,
-      content: renderChangelogContent(log.content),
+      content: renderChangelogContent(log.content).map(entry => ({
+        type: entry.type,
+        html: entry.html,
+      })),
       createTime: log.create_time,
     }));
 

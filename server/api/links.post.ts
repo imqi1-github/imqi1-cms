@@ -1,15 +1,19 @@
 import { prisma } from "#server/utils/prisma";
 import { notifyFriendLinkApplication } from "#server/utils/mail";
 import { validateLinkData } from "#server/utils/validation";
+import { assertPublicHttpUrl, ensureUrlProtocol } from "#server/utils/urlGuard";
 import { siteConfig } from "~~/site.config";
 
 // 检测页面是否包含指定链接
 async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promise<boolean> {
   try {
+    // 校验目标页面：仅 http/https 且不得指向内网（SSRF 防护）
+    const safeUrl = await assertPublicHttpUrl(pageUrl);
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
 
-    const response = await fetch(pageUrl, {
+    const response = await fetch(safeUrl.href, {
       method: "GET",
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -130,7 +134,8 @@ export default defineEventHandler(async event => {
     const link = await prisma.links.create({
       data: {
         name: body.name.trim(),
-        link: body.link.trim(),
+        // 补全协议，避免无 http(s):// 前缀的链接在前台被当相对路径 → 死链
+        link: ensureUrlProtocol(body.link),
         desc: body.sort?.trim() || null,
         avatar: body.avatar?.trim() || null,
         enabled: autoApproved, // 如果检测到友链则自动启用
@@ -144,7 +149,7 @@ export default defineEventHandler(async event => {
     return {
       code: 200,
       message: autoApproved ? "系统已检测到贵站已添加本站友链，申请已自动通过" : "申请友链成功，等待管理员审核",
-      data: link,
+      // 不回传整行：enabled/isModification/modificationStatus/originalLinkId 等为内部审核字段
     };
   } catch (error) {
     console.error(error);

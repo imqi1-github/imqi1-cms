@@ -6,9 +6,9 @@
       <div v-scroll-reveal class="flex items-center justify-between w-full opacity-0 max-md:flex-col max-md:text-center max-md:gap-8">
         <!-- 标题区域 -->
         <div class="p-1.5">
-          <h1 class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
+          <div class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
             IM<span class="text-red-600 dark:text-red-500">QI1</span>.COM
-          </h1>
+          </div>
           <div class="mt-4 text-slate-600 dark:text-gray-400 text-base" v-html="homeAnnounce" />
         </div>
 
@@ -287,7 +287,7 @@
       <div class="h-62.5" />
 
       <!-- 最新文章 -->
-      <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-recent-contents-title">
+      <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275 pb-20" aria-labelledby="index-recent-contents-title">
         <div class="flex items-center justify-between mb-6">
           <div>
             <h2 id="index-recent-contents-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
@@ -399,7 +399,7 @@
       </section>
 
       <!-- 分类文章 -->
-      <section v-if="categoryRecentContents.length > 0" v-scroll-reveal class="mx-auto max-w-275">
+      <section v-if="categoryRecentContents.length > 0" v-scroll-reveal class="mx-auto max-w-275 pb-20">
         <template v-for="(categoryData, index) in categoryRecentContents" :key="categoryData.category.slug">
           <!-- 分类标题 -->
           <div class="flex items-center justify-between mb-6">
@@ -522,15 +522,15 @@
 
       <!-- 目录 -->
       <div
-        class="max-sm:hidden flex -mt-16 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
+        class="max-sm:hidden flex -mt-20 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
         <!-- 滑动指示框：跟随激活节点在 4 个目录项之间移动（节点等宽，故按槽位 25% 等分用 calc 定位 + 滑动） -->
         <!-- 四周内缩 + 微投影，呈内嵌药丸质感：上下 top-1/bottom-1，左右用 calc(left/width) 留出 4px 真实间隙；
              不用「透明 border + bg-clip-padding」方案，避免边框渲染出深色伪影 -->
         <div
           class="absolute top-1 bottom-1 rounded-full bg-blue-700 shadow-sm pointer-events-none"
           :style="{
-            left: `calc(${activeTocIndex * 25}% + 4px)`,
-            width: 'calc(25% - 8px)',
+            left: `calc(${activeTocIndex * tocSlotPercent}% + 4px)`,
+            width: `calc(${tocSlotPercent}% - 8px)`,
             transition: 'left 300ms cubic-bezier(0, 0, 0.2, 1)',
           }" />
         <div
@@ -707,12 +707,22 @@ import { getChangelogMeta } from "~~/shared/changelog";
 import { siteConfig } from "~~/site.config";
 
 // 目录导航数据
-const tocItems = [
-  { id: "framework", title: "网站架构" },
-  { id: "style", title: "样式选择" },
-  { id: "content", title: "最新内容" },
-  { id: "photos", title: "最新图片" },
-];
+// 「最新图片」区块 v-if 依赖 photoImages，无图片时该 section 不渲染，
+// 对应目录项也需同步隐藏（否则高亮/点击会指向不存在的 section）
+const tocItems = computed(() => {
+  const items = [
+    { id: "framework", title: "网站架构" },
+    { id: "style", title: "样式选择" },
+    { id: "content", title: "最新内容" },
+  ];
+  if (photoImages.value.length > 0) {
+    items.push({ id: "photos", title: "最新图片" });
+  }
+  return items;
+});
+
+// 滑动指示框按目录项数量等分槽宽（3 项时 33.33%，4 项时 25%）
+const tocSlotPercent = computed(() => 100 / tocItems.value.length);
 
 // 当前激活的目录项索引
 const activeTocIndex = ref(0);
@@ -720,7 +730,7 @@ const activeTocIndex = ref(0);
 // 4 个 section 的文档相对 offsetTop 缓存（rect.top + scrollY，而非每帧随滚动变的 rect.top）
 // 样式选项 item 的文档相对 top + height 缓存（同理），供 computeStyleItems 复用
 // null 表示需重算；在 resize / 字体加载 / 兜底定时器时统一失效
-let tocOffsets: number[] | null = null;
+let tocOffsets: (number | null)[] | null = null;
 let styleItemMetrics: { top: number; height: number }[] | null = null;
 const invalidateOffsets = () => {
   tocOffsets = null;
@@ -756,11 +766,14 @@ const scrollToSection = (index: number) => {
 const computeToc = (scrollY: number, windowHeight: number) => {
   if (tocOffsets === null) {
     const sections = [sectionFramework.value, sectionStyle.value, sectionContent.value, sectionPhotos.value];
-    tocOffsets = sections.map(el => (el ? el.getBoundingClientRect().top + window.scrollY : 0));
+    // 未渲染的 section（如无图片时的 sectionPhotos）用 null 占位，而非 0，
+    // 否则 offsetTop=0 会让判定条件恒成立，把 activeTocIndex 强制钉在末位
+    tocOffsets = sections.map(el => (el ? el.getBoundingClientRect().top + window.scrollY : null));
   }
   const offsets = tocOffsets;
   // 当 section 顶部在视口上方 1/3 处时激活
   offsets.forEach((offsetTop, index) => {
+    if (offsetTop === null) return;
     if (scrollY >= offsetTop - windowHeight / 3 - NAV_HEIGHT) {
       activeTocIndex.value = index;
     }

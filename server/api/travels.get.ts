@@ -1,7 +1,8 @@
 import { prisma } from "#server/utils/prisma";
 import { parseCovers } from "#server/utils/covers";
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async event => {
+  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
   try {
     const travels = await prisma.travels.findMany({
       where: { enabled: true },

@@ -7,7 +7,10 @@ import { siteConfig } from "~~/site.config";
 const { siteSettings } = useSiteSettings();
 const { isLoggedIn } = useAuth();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
-const currentYear = new Date().getFullYear();
+const isHydrated = ref(false);
+// 年份依赖本地时区：SSR 与首帧水合都用 UTC 年份（一致、避免 hydration 警告），水合后再切访客本地年份。
+// 仅在服务器与访客跨时区且临近跨年时才有差异，与其它页（订阅/更新日志/搜索）同口径。
+const currentYear = computed(() => (isHydrated.value ? new Date().getFullYear() : new Date().getUTCFullYear()));
 
 const route = useRoute();
 const router = useRouter();
@@ -224,6 +227,7 @@ let resizeObserver: ResizeObserver | null = null;
 let resizeHandler: (() => void) | null = null;
 
 onMounted(() => {
+  isHydrated.value = true;
   const mainEl = document.getElementById("main");
   const footerEl = mainEl?.nextElementSibling as HTMLElement | null;
 

@@ -1,5 +1,7 @@
 import { createError, getQuery } from "h3";
 
+import { assertPublicHttpUrl } from "#server/utils/urlGuard";
+
 export default defineEventHandler(async event => {
   const { url } = getQuery(event);
 
@@ -10,17 +12,8 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 验证 URL
-  let validatedUrl: URL;
-  try {
-    validatedUrl = new URL(url);
-  } catch (error) {
-    console.error(error);
-    throw createError({
-      statusCode: 400,
-      statusMessage: "无效的URL格式",
-    });
-  }
+  // 校验 URL：仅 http/https，且不得解析到内网/环回地址（SSRF 防护）
+  const validatedUrl = await assertPublicHttpUrl(url);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);

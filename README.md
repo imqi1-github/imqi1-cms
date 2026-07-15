@@ -93,7 +93,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
    cp .env.example .env
    ```
 
-   至少需要配置数据库相关变量（`DATABASE_URL` 供 Prisma 使用，`DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` 供应用运行时的 MariaDB 适配器使用）。
+   至少需要配置数据库相关变量（`DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`）：应用运行时的 MariaDB 适配器直接使用它们，需连库的 Prisma 命令（`prisma studio`、`prisma db execute` 等）也会由 `prisma.config.ts` 用这套变量自动拼接连接串，无需单独配置 `DATABASE_URL`。
 
 7. **生成 Prisma Client**
 
@@ -255,7 +255,6 @@ scripts/init-db.sql
 
 ```shell
 # 数据库
-DATABASE_URL="mysql://nodejs:your_password@localhost:3306/nodejs"
 DB_HOST="localhost"
 DB_PORT="3306"
 DB_USER="nodejs"

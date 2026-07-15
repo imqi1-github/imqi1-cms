@@ -168,7 +168,9 @@ async function resolveDomain(domain: string): Promise<{ points: ResolvedPoint[];
   return { points, bucket: "ok" };
 }
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async event => {
+  // 站点解析（DNS + qqwry 地理定位）开销大且结果近似稳定，缓存 30 分钟摊薄成本、防滥用。
+  setHeader(event, "Cache-Control", "public, max-age=1800, s-maxage=1800");
   const [subscribes, links] = await Promise.all([
     prisma.subscribes.findMany({ select: { id: true, url: true, name: true, avatar: true } }),
     prisma.links.findMany({ where: { enabled: true }, select: { id: true, link: true, name: true, avatar: true } }),

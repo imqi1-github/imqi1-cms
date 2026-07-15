@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { validateLinkData } from "#server/utils/validation";
 import { notifyFriendLinkModification } from "#server/utils/mail";
+import { ensureUrlProtocol } from "#server/utils/urlGuard";
 
 export default defineEventHandler(async event => {
   try {
@@ -55,7 +56,8 @@ export default defineEventHandler(async event => {
     const modificationLink = await prisma.links.create({
       data: {
         name: body.name.trim(),
-        link: body.link.trim(),
+        // 补全协议，避免无 http(s):// 前缀的链接在前台被当相对路径 → 死链
+        link: ensureUrlProtocol(body.link),
         desc: body.desc?.trim() || null,
         avatar: body.avatar?.trim() || null,
         enabled: false,  // 默认禁用，等待审核
@@ -74,7 +76,7 @@ export default defineEventHandler(async event => {
     return {
       code: 200,
       message: "友链修改请求已提交，等待管理员审核",
-      data: modificationLink,
+      // 不回传整行：enabled/isModification/modificationStatus/originalLinkId 等为内部审核字段
     };
   } catch (error) {
     console.error(error);

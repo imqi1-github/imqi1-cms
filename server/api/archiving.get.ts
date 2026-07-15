@@ -3,13 +3,18 @@ import type { ArchiveGroup } from "#server/types/apis/archiving";
 
 export default defineEventHandler(async () => {
   try {
-    // 获取所有已发布的文章（type=0），包含分类信息
+    // 获取所有已发布的文章（type=0），只取归档列表所需字段
+    // 显式 select：避免默认拉出 content(LongText 正文)/covers/desc 等大字段，归档只需年月+标题
     const contents = await prisma.contents.findMany({
       where: {
         status: 1,
         type: 0,
       },
-      include: {
+      select: {
+        cid: true,
+        title: true,
+        slug: true,
+        create_time: true,
         contentrelations: {
           where: {
             metas: { type: "category" },
@@ -32,10 +37,12 @@ export default defineEventHandler(async () => {
     });
 
     // 按年月分组
+    // 用 UTC 口径（getUTCFullYear/getUTCMonth），与前端 formatDate 的 getUTC* 对齐，
+    // 避免服务端(UTC)分组与客户端(本地时区)显示跨月/跨日错位
     const grouped = contents.reduce((acc, content) => {
       const date = new Date(content.create_time);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth() + 1;
       const key = `${year}-${String(month).padStart(2, "0")}`;
 
       if (!acc[key]) {
@@ -68,11 +75,9 @@ export default defineEventHandler(async () => {
       return b.month - a.month;
     });
 
-    // 统计信息
+    // 统计信息（前端仅使用 total）
     const stats = {
       total: contents.length,
-      firstDate: contents.length > 0 ? contents[contents.length - 1]?.create_time ?? null : null,
-      lastDate: contents.length > 0 ? contents[0]?.create_time ?? null : null,
     };
 
     return {

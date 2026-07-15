@@ -48,6 +48,26 @@ const total = computed(() => {
   return d && "data" in d ? d.data.total || 0 : 0;
 });
 
+// 详情页链接：详情 API 按 slug 精确查，故 slug 缺失一律不可点。
+// 分类段：有 slug 用之；无 categoryName 说明文章本就无分类，走 uncategorized 分支（API 支持）；
+// 有 categoryName 却无 slug（分类 slug 缺失）则无有效 URL，不可点。
+function resolveLink(content: { slug: string | null; categorySlug: string | null; categoryName: string | null }) {
+  if (!content.slug) return null;
+  if (content.categorySlug) return `/content/${content.categorySlug}/${content.slug}`;
+  if (!content.categoryName) return `/content/uncategorized/${content.slug}`;
+  return null;
+}
+
+// 取 API 返回的已净化关键词（后端去掉了 html 特殊字符等），用于客户端高亮，
+// 避免用户输入含被剥字符时标题/描述高亮与正文摘要高亮不一致。
+const sanitizedKeyword = computed(() => {
+  const d = data.value;
+  return (d && "data" in d && d.data.query) || searchKeyword.value;
+});
+
+// 相对时间（formatDate）依赖 now，SSR 与客户端各算一次虽极少跨天，但统一加 isHydrated 门控保持一致性
+const isHydrated = ref(false);
+
 // 页面元数据
 usePageSeo({
   title: computed(() => `${searchKeyword.value ? `"${searchKeyword.value}" 的搜索结果` : "搜索"} - ${siteName.value}`),
@@ -88,6 +108,7 @@ watch(
 const searchInputRef = useTemplateRef<HTMLInputElement>("searchInputRef");
 
 onMounted(() => {
+  isHydrated.value = true;
   searchInputRef.value?.focus();
 });
 
@@ -108,6 +129,10 @@ function handleKeydown(event: KeyboardEvent) {
 // 格式化日期
 function formatDate(date: string | Date) {
   const d = typeof date === "string" ? new Date(date) : date;
+  // 水合前用 UTC 绝对日期，避免 SSR 与客户端相对时间在边界处不一致
+  if (!isHydrated.value) {
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  }
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -199,19 +224,24 @@ function highlightKeyword(text: string, keyword: string) {
 
         <div class="space-y-4">
           <article v-for="content in results" :key="content.cid" class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all">
-            <!-- 标题 -->
+            <!-- 标题：详情页按 slug 精确查，无有效链接（slug 缺失或分类 slug 缺失）时不可点 -->
             <NuxtLink
-              :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug || content.cid}`"
+              v-if="resolveLink(content)"
+              :to="resolveLink(content)!"
               class="block">
               <h3
                 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2 line-clamp-2"
-                v-html="highlightKeyword(content.title, searchKeyword)" />
+                v-html="highlightKeyword(content.title, sanitizedKeyword)" />
             </NuxtLink>
+            <h3
+              v-else
+              class="text-lg font-semibold text-foreground mb-2 line-clamp-2"
+              v-html="highlightKeyword(content.title, sanitizedKeyword)" />
 
             <!-- 摘要 -->
             <div class="mb-3 space-y-2">
               <!-- 描述高亮 -->
-              <p v-if="content.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(content.desc, searchKeyword)" />
+              <p v-if="content.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(content.desc, sanitizedKeyword)" />
 
               <!-- 正文高亮摘要（使用后端返回的 highlight 字段） -->
               <p

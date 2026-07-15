@@ -20,7 +20,13 @@ export default defineEventHandler(async event => {
             cid: true,
             title: true,
             slug: true,
+            status: true, // 仅保留已发布文章（status:1），避免评论链接到下架/草稿文章而 404
+            // 只取分类关系：一篇文章同时有分类和标签关系，不加 type 过滤时 take:1 可能抓到标签，
+            // 导致拼出 /content/<标签slug>/<文章slug> 而 404
             contentrelations: {
+              where: {
+                metas: { type: "category" },
+              },
               select: {
                 metas: {
                   select: {
@@ -44,6 +50,8 @@ export default defineEventHandler(async event => {
       .filter(comment => {
         // 确保评论有关联的文章且文章信息完整
         return comment.content_ref &&
+               // 仅保留指向已发布文章的评论，避免链接到已下架/草稿文章而 404
+               comment.content_ref.status === 1 &&
                comment.content_ref.cid &&
                comment.content_ref.slug &&
                comment.content_ref.contentrelations &&

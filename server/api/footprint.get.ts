@@ -49,7 +49,8 @@ function isMeaningfulName(name: string): boolean {
   return !/^(匿名|匿名读者|游客|访客|路人|佚名)$/i.test(name.trim());
 }
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async event => {
+  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
   const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
   const avatarService = avatarSetting?.value || "gravatar";
 
@@ -68,7 +69,14 @@ export default defineEventHandler(async () => {
         select: {
           title: true,
           slug: true,
-          contentrelations: { select: { metas: { select: { slug: true } } }, take: 1 },
+          status: true,
+          // 只取分类关系：一篇文章同时有分类和标签关系，不加 type 过滤时 take:1 可能抓到标签，
+          // 拼出 /content/<标签slug>/<文章slug> 而 404
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            select: { metas: { select: { slug: true } } },
+            take: 1,
+          },
         },
       },
     },
@@ -133,12 +141,17 @@ export default defineEventHandler(async () => {
         const categorySlug = row.content_ref?.contentrelations?.[0]?.metas?.slug ?? null;
         const contentSlug = row.content_ref?.slug ?? null;
         const isMessageContent = contentSlug === "messages";
-        const articleUrl = isMessageContent
+        // 仅当文章仍为已发布（status:1）时才生成链接，避免指向已下架/草稿文章而 404；
+        // 读者落点（按 IP 城市）不受影响，仅隐藏失效链接。
+        const contentPublished = row.content_ref?.status === 1;
+        const articleUrl = contentPublished && isMessageContent
           ? `/messages#comment-${row.coid}`
-          : categorySlug && contentSlug
+          : contentPublished && categorySlug && contentSlug
             ? `/content/${categorySlug}/${contentSlug}#comment-${row.coid}`
             : null;
-        const articleTitle = isMessageContent ? "留言板" : (row.content_ref?.title ?? null);
+        const articleTitle = contentPublished
+          ? (isMessageContent ? "留言板" : (row.content_ref?.title ?? null))
+          : null;
 
         const reader: Reader = {
           name: row.name?.trim() || "匿名读者",

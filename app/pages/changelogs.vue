@@ -3,7 +3,7 @@ import {computed, onMounted, onUnmounted, ref} from "vue";
 
 import {useScrollFadeMask} from "~/composables/useScrollFadeMask";
 import {siteConfig} from "~~/site.config";
-import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta,} from "~~/shared/changelog";
+import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta, isChangelogType,} from "~~/shared/changelog";
 import type {ChangelogEntry, ChangelogGroup} from "~/types/apis/changelogs";
 
 const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {
@@ -21,11 +21,16 @@ const { isLoggedIn, isLoadingAuth } = useAuth();
 const route = useRoute();
 const selectedType = computed(() => {
   const t = route.query.type;
-  return t || null;
+  // 数组（?type=a&type=b）或非法类型都回退 null，避免筛选恒空
+  return isChangelogType(t) ? t : null;
 });
 
 // 用于强制重新渲染动画的key
-const animatinKey = ref(0);
+const animationKey = ref(0);
+
+// 相对/绝对时间（formatDate）依赖时区，SSR 按服务器时区、客户端按访客时区各算一次会文本 mismatch；
+// 水合前统一给 UTC，水合后再切访客本地时间。
+const isHydrated = ref(false);
 
 // 左侧边栏引用
 const sidebarRef = ref<HTMLElement | null>(null);
@@ -87,7 +92,7 @@ function selectType(type: string | null) {
   }
 
   // 更新动画key以触发重新渲染
-  animatinKey.value++;
+  animationKey.value++;
 
   navigateTo({ query });
 }
@@ -97,9 +102,16 @@ function clearFilter() {
   selectType(null);
 }
 
-// 格式化日期
+// 格式化日期。水合前用 UTC（两端一致，避免 hydration mismatch），水合后切访客本地时间。
 function formatDate(dateStr: string | Date) {
   const date = new Date(dateStr);
+  if (!isHydrated.value) {
+    const month = date.getUTCMonth() + 1;
+    const day = date.getUTCDate();
+    const hour = String(date.getUTCHours()).padStart(2, "0");
+    const minute = String(date.getUTCMinutes()).padStart(2, "0");
+    return `${month}月${day}日 ${hour}:${minute}`;
+  }
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const hour = String(date.getHours()).padStart(2, "0");
@@ -109,6 +121,8 @@ function formatDate(dateStr: string | Date) {
 }
 
 onMounted(() => {
+  isHydrated.value = true;
+
   // 添加滚轮事件监听
   if (import.meta.client) {
     window.addEventListener('wheel', handleSidebarWheel, { passive: false });
@@ -165,7 +179,7 @@ usePageSeo({
       <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
         <div
           ref="sidebarRef"
-          class="sidebar-fade sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-hit pr-1 scrollbar-hide"
+          class="sidebar-fade sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-fit pr-1 scrollbar-hide"
           :class="{ 'fade-top': !atTop, 'fade-bottom': !atBottom }"
         >
           <button
@@ -187,7 +201,7 @@ usePageSeo({
 
       <!-- 右侧日志列表 -->
       <main class="flex-1 min-w-0">
-        <div :key="animatinKey" class="space-y-8">
+        <div :key="animationKey" class="space-y-8">
           <section
             v-for="group in filteredData"
             :key="`${group.year}-${group.month}`"

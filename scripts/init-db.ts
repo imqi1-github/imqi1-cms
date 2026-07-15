@@ -5,11 +5,11 @@ import { dirname, join } from "path";
 import mysql from "mysql2/promise";
 import * as dotenv from "dotenv";
 
-// 加载环境变量
-dotenv.config();
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SQL_FILE = join(__dirname, "init-db.sql");
+
+// 固定加载项目根的 .env（脚本可能从任意 cwd 运行，勿依赖 dotenv 默认的 cwd 查找）
+dotenv.config({ path: join(__dirname, "..", ".env") });
 
 /**
  * 执行 scripts/init-db.sql，完成建表 + 写入默认设置 + 插入示例数据。

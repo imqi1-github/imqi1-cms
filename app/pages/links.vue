@@ -23,6 +23,12 @@ const { data: linksData, pending, error } = await useFetch("/api/links", {
 });
 const links = computed(() => linksData.value?.data || []);
 
+// 头像加载失败的友链 id 集合。不直接改 link.avatar（那是 useFetch 回来的不可变数据），改用本地状态触发字母回退。
+const failedAvatarIds = ref<Set<number>>(new Set());
+const markAvatarFailed = (id: number) => {
+  failedAvatarIds.value = new Set(failedAvatarIds.value).add(id);
+};
+
 // 使用全局认证状态
 const { isLoggedIn, isLoadingAuth } = useAuth();
 
@@ -363,9 +369,11 @@ const handleSubmit = async (forceSubmit = false) => {
         showError(data.message || "提交失败，请重试");
       }
     }
-  } catch {
-    submitError.value = "网络错误，请稍后重试";
-    showError("网络错误，请稍后重试");
+  } catch (err) {
+    // H3 抛出的 createError 会把 { statusCode, message } 放到 err.data，优先展示服务端的具体原因（如"链接格式不正确"）
+    const message = (err as { data?: { message?: string } })?.data?.message || "网络错误，请稍后重试";
+    submitError.value = message;
+    showError(message);
   } finally {
     submitting.value = false;
   }
@@ -547,13 +555,13 @@ onUnmounted(() => {
           <div class="flex items-center gap-4 p-5 pb-3">
             <!-- 头像 -->
             <div class="size-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-xl text-slate-500 dark:text-slate-300 shrink-0 overflow-hidden">
-              <template v-if="link.avatar">
+              <template v-if="link.avatar && !failedAvatarIds.has(link.id)">
                 <img
                   :src="link.avatar"
                   :alt="link.name"
                   class="no-img-loading w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                   loading="lazy"
-                  @error="link.avatar = ''" >
+                  @error="markAvatarFailed(link.id)" >
               </template>
               <template v-else>
                 {{ link.name.charAt(0).toUpperCase() }}

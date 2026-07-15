@@ -35,11 +35,17 @@ const isLoaded = computed(() => !pending.value);
 const route = useRoute();
 const selectedSourceId = computed(() => {
   const sourceId = route.query.source;
-  return sourceId ? parseInt(sourceId as string) : null;
+  if (!sourceId) return null;
+  // 非法 query（如 ?source=abc）parseInt 得 NaN，会把列表全过滤空又让"全部"高亮，状态自相矛盾；回退为 null
+  const parsed = parseInt(sourceId as string);
+  return Number.isNaN(parsed) ? null : parsed;
 });
 
 // 用于强制重新渲染动画的key
-const animatinKey = ref(0);
+const animationKey = ref(0);
+
+// 相对时间（formatDate）依赖 now，SSR 与客户端各算一次会文本 mismatch；水合前先给绝对日期，水合后再切相对时间
+const isHydrated = ref(false);
 
 // 左侧边栏引用
 const sidebarRef = ref<HTMLElement | null>(null);
@@ -92,6 +98,8 @@ const collapseTooltip = {
 onMounted(() => {
   // 计算订阅源列表（含随机洗牌，仅客户端）
   computeSubscribes();
+
+  isHydrated.value = true;
 
   // 添加滚轮事件监听
   if (import.meta.client) {
@@ -146,6 +154,10 @@ async function reload() {
 function formatDate(dateStr: string | Date | null) {
   if (!dateStr) return '';
   const date = new Date(dateStr);
+  // 水合前（含 SSR）不能算相对时间：now 在两端不同会导致文本 mismatch。用 UTC 绝对日期，两端一致。
+  if (!isHydrated.value) {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  }
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -190,7 +202,7 @@ function selectSubscribe(sourceId: number | null) {
   }
 
   // 更新动画key以触发重新渲染
-  animatinKey.value++;
+  animationKey.value++;
 
   navigateTo({ query });
 }
@@ -321,7 +333,7 @@ function clearFilter() {
       <!-- 右侧文章列表 -->
       <main class="flex-1 min-w-0">
         <!-- 文章列表 -->
-        <div :key="animatinKey" class="space-y-6">
+        <div :key="animationKey" class="space-y-6">
           <article
             v-for="content in filteredContents"
             :key="content.id"

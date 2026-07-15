@@ -17,10 +17,11 @@ usePageSeo({
 });
 
 // 格式化日期
+// 用 UTC 口径，与 SSR 服务端渲染及 API 分组（getUTC*）对齐，避免水合时「M月D日」跨时区差一天
 function formatDate(dateStr: string | Date) {
   const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
   return `${month}月${day}日`;
 }
 
@@ -122,13 +123,20 @@ function isMonthExpanded(year: number, month: number): boolean {
 
             <!-- 文章标题 -->
             <NuxtLink
-              :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug || content.cid}`"
+              v-if="content.slug"
+              :to="`/content/${content.categorySlug || 'uncategorized'}/${content.slug}`"
               class="flex-1 font-medium hover:text-primary transition-colors line-clamp-1">
               {{ content.title }}
             </NuxtLink>
+            <span
+              v-else
+              class="flex-1 font-medium line-clamp-1 text-muted-foreground cursor-default">
+              {{ content.title }}
+            </span>
 
             <!-- 箭头图标 -->
             <Icon
+              v-if="content.slug"
               name="lucide:chevron-right"
               class="size-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
           </div>

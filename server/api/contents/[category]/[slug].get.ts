@@ -177,7 +177,7 @@ export default defineEventHandler(async event => {
     slug: relation.metas.slug,
   }));
 
-  const { attachments, ...contentData } = content;
+  const attachments = content.attachments;
   const attachmentMetadata = attachments.map(relation => ({
     keys: buildUrlKeys(relation.attachment.url),
     url: relation.attachment.url,
@@ -207,8 +207,17 @@ export default defineEventHandler(async event => {
 
   return {
     success: true,
+    // 公开接口：逐字段白名单构造，禁止 ...content 整行摊开
+    // （避免泄露 uid/status/type 等内部字段，也避免把仅服务端渲染用的 Markdown 源码 content 发到前端）
     data: {
-      ...contentData,
+      cid: content.cid,
+      title: content.title,
+      desc: content.desc,
+      create_time: content.create_time,
+      update_time: content.update_time,
+      many_covers: content.many_covers,
+      show_toc: content.show_toc,
+      user: content.user,
       travels: content.travels.map(t => t.travel), // 展平为 [{id,name}]
       contentrelations: categoryRelations, // 只返回分类关系
       covers: coversWithDimensions,

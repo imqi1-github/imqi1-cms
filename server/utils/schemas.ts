@@ -50,7 +50,8 @@ export const SearchQuerySchema = z.object({
 export const SearchResultItemSchema = z.object({
   cid: z.number(),
   title: z.string(),
-  slug: z.string(),
+  // 实际 formatSearchResults 返回的 slug 可能为 null，与现实对齐（防未来启用响应校验时误 500）
+  slug: z.string().nullable(),
   desc: z.string().nullable(),
   createTime: z.date().or(z.string()),
   categoryName: z.string().nullable(),

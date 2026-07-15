@@ -458,9 +458,12 @@ onMounted(() => {
                     v-for="(tag, index) in content.tags"
                     :key="index"
                     v-tooltip="`标签`"
-                    :to="`/tag/${tag.slug || tag.name}`"
+                    :to="tag.slug ? `/tag/${tag.slug}` : '#'"
                     class="mr-1 transition-colors"
-                    :class="content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                    :class="[
+                      content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400',
+                      tag.slug ? 'cursor-pointer' : 'cursor-default opacity-60',
+                    ]">
                     {{ tag.name }}
                   </NuxtLink>
                 </span>
