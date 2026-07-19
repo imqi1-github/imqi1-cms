@@ -1,5 +1,6 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
+import { validateCsrfToken } from '#server/utils/csrf'
 import { validateAttachmentData } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
@@ -14,6 +15,15 @@ export default defineEventHandler(async event => {
 
     const id = Number(getRouterParam(event, 'id'))
     const body = await readBody(event)
+    const { csrfToken } = body
+
+    // CSRF 验证
+    if (!validateCsrfToken(event, csrfToken)) {
+      throw createError({
+        statusCode: 403,
+        message: 'CSRF token 验证失败，请刷新页面重试',
+      })
+    }
 
     if (!id) {
       throw createError({

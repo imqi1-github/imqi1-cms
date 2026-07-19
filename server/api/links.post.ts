@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { notifyFriendLinkApplication } from "#server/utils/mail";
 import { validateLinkData } from "#server/utils/validation";
 import { assertPublicHttpUrl, ensureUrlProtocol } from "#server/utils/urlGuard";
+import { validateCsrfToken } from "#server/utils/csrf";
 import { siteConfig } from "~~/site.config";
 
 // 检测页面是否包含指定链接
@@ -44,6 +45,12 @@ export default defineEventHandler(async event => {
   try {
     const body = await readBody(event);
 
+    // CSRF 双提交校验（游客写接口同样需要，防跨站伪造提交）
+    const { csrfToken } = body as { csrfToken?: string };
+    if (!validateCsrfToken(event, csrfToken ?? "")) {
+      throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
+    }
+
     // 验证参数
     if (!body.name || !body.link) {
       throw createError({
@@ -60,9 +67,13 @@ export default defineEventHandler(async event => {
       avatar: body.avatar,
     });
 
-    // 验证链接格式
-    const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
-    if (!urlRegex.test(body.link)) {
+    // 严格校验链接协议：仅允许 http/https，杜绝 javascript:/data: 等存储型 XSS
+    try {
+      const parsed = new URL(ensureUrlProtocol(body.link));
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new Error("invalid protocol");
+      }
+    } catch {
       throw createError({
         statusCode: 400,
         message: "链接格式不正确",
@@ -152,13 +163,12 @@ export default defineEventHandler(async event => {
       // 不回传整行：enabled/isModification/modificationStatus/originalLinkId 等为内部审核字段
     };
   } catch (error) {
-    console.error(error);
-    if (error instanceof Error) {
-      throw createError({
-        statusCode: 400,
-        message: error.message,
-      });
+    // createError 抛出的业务错误（400 参数校验 / 403 CSRF 等）带 statusCode，原样抛出，
+    // 避免被统一改写为 500 或把内部 error.message 泄露给游客
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
     }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "申请友链失败",

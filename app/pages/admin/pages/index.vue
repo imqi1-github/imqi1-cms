@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter();
 const toast = useToast();
@@ -8,6 +9,7 @@ const pages = ref<PageItem[]>([]);
 const selectedStatus = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
+const csrfToken = ref("");
 const pagination = ref({
   page: 1,
   pageSize: 10,
@@ -91,6 +93,10 @@ async function fetchPages(page: number = 1) {
   loading.value = true;
   selectedIds.value = [];
   try {
+    // 获取 CSRF token（删除/批量删除页面通过 x-csrf-token 头或 body 携带）
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
+
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: "10",
@@ -120,7 +126,10 @@ async function deletePage(cid: number) {
   const confirmed = confirm("确定要删除这个页面吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE" });
+      await $fetch(`/api/admin/contents/${cid}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken.value },
+      });
       await fetchPages(pagination.value.page);
       toast.success({ message: "页面已删除" });
     } catch (error) {
@@ -142,7 +151,7 @@ async function batchDelete() {
     try {
       const res = await $fetch("/api/admin/contents/batch-delete", {
         method: "POST",
-        body: { ids: selectedIds.value },
+        body: { ids: selectedIds.value, csrfToken: csrfToken.value },
       });
       toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];

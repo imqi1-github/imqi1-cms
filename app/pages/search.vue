@@ -75,6 +75,16 @@ usePageSeo({
   keywords: siteConfig.pageSeo.search.keywords,
 });
 
+// 搜索防抖：输入框每次按键都触发 watch，直接 refresh 会逐字符打 DB LIKE，造成布局抖动；
+// 这里 300ms 防抖合并连续输入。回车走 handleSearch 的即时 refresh。
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedRefresh() {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    refresh();
+  }, 300);
+}
+
 // 监听搜索关键词变化
 watch(
   () => searchKeyword.value,
@@ -86,9 +96,9 @@ watch(
       router.replace({ path: "/search", query: q ? { q } : {} });
     }
 
-    // 输入即搜（useFetch 的 watch:false 已禁用自动响应，由这里手动触发）
+    // 输入即搜（useFetch 的 watch:false 已禁用自动响应，由这里手动触发；防抖合并连续输入）
     if (q) {
-      refresh();
+      debouncedRefresh();
     }
   },
 );

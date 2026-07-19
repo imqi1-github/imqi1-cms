@@ -63,14 +63,11 @@ export default defineEventHandler(async event => {
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
     // ========== 优化：先查询一次图片分类信息，后续复用 ==========
-    // 1. 获取站点信息和图片分类slug（一次查询）
-    const siteInfoList = await prisma.informations.findMany();
-    const infoMap = siteInfoList.reduce((acc, item) => {
-      acc[item.key] = item.value;
-      return acc;
-    }, {} as Record<string, string>);
-
-    const photoCategorySlug = infoMap["photoCategorySlug"] || "shot";
+    // 1. 获取图片分类 slug（只读需要的单个 key，避免拉取整张 informations 表）
+    const photoCategoryInfo = await prisma.informations.findUnique({
+      where: { key: "photoCategorySlug" },
+    });
+    const photoCategorySlug = (photoCategoryInfo?.value as string) || "shot";
 
     // 2. 获取图片分类的 mid（一次查询）
     const photoCategory = await prisma.metas.findFirst({

@@ -3,6 +3,10 @@ import { siteConfig } from "~~/site.config";
 
 const { data, pending, error } = await useFetch("/api/archiving", {
   headers: getInternalRequestHeaders(),
+  // 标记错误已处理，避免全局 toast 重复提示（页面内已有 v-else-if="error" 分支渲染）
+  onResponseError({ error: fetchError }) {
+    (fetchError as Error & { __handled__?: boolean }).__handled__ = true;
+  },
 });
 
 // 使用全局站点设置

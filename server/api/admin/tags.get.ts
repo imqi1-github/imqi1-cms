@@ -26,7 +26,11 @@ export default defineEventHandler(async event => {
     });
 
     return tags.map(tag => ({
-      ...tag,
+      mid: tag.mid,
+      name: tag.name,
+      slug: tag.slug,
+      desc: tag.desc,
+      type: tag.type,
       contentCount: tag._count.contentrelations,
     }));
   } catch (error) {

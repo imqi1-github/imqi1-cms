@@ -40,10 +40,7 @@ async function fetchCategories() {
 
 async function addCategory() {
   try {
-    console.log("准备创建分类，CSRF token:", csrfToken.value);
-    console.log("分类数据:", newCategory.value);
-
-    const result = await $fetch<CategoryCreateResponse>("/api/admin/categories/create", {
+    await $fetch<CategoryCreateResponse>("/api/admin/categories/create", {
       method: "POST",
       body: {
         csrfToken: csrfToken.value,
@@ -51,16 +48,12 @@ async function addCategory() {
       },
     });
 
-    console.log("创建分类成功，返回结果:", result);
     closeAddModal();
     toast.success({ message: "分类创建成功" });
     await fetchCategories();
   } catch (rawError: unknown) {
     const error = rawError as ApiError;
-    console.error("添加失败 - 完整错误对象:", error);
-    console.error("错误状态码:", error?.statusCode);
-    console.error("错误消息:", error?.message);
-    console.error("错误数据:", error?.data);
+    console.error("添加失败:", error);
 
     let errorMessage = "添加失败";
     if (error?.data?.message) {
@@ -140,7 +133,10 @@ async function deleteCategory(mid: number) {
   const confirmed = confirm("确定要删除这个分类吗？删除后文章将不再关联此分类。");
   if (confirmed) {
     try {
-      await $fetch<CategoryDeleteResponse>(`/api/admin/categories/${mid}?csrfToken=${encodeURIComponent(csrfToken.value)}`, { method: "DELETE" });
+      await $fetch<CategoryDeleteResponse>(`/api/admin/categories/${mid}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken.value },
+      });
       toast.success({ message: "分类删除成功" });
       await fetchCategories();
     } catch (rawError: unknown) {

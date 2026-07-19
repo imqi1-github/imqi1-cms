@@ -29,7 +29,12 @@ export default defineEventHandler(async event => {
       },
       skip,
       take: 1,
-      include: {
+      select: {
+        cid: true,
+        title: true,
+        slug: true,
+        desc: true,
+        covers: true,
         contentrelations: {
           select: {
             cid: true,

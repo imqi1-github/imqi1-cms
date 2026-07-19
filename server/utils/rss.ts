@@ -218,6 +218,18 @@ export async function updateAllSubscribes() {
 }
 
 // 获取订阅文章列表（每人最多10篇，总共最多30篇）
+// 仅允许 http/https 外链：防止 RSS 投毒的 javascript:/data: 等协议在点击时执行（存储型 XSS）
+function sanitizeExternalUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return url;
+  } catch {
+    // 非合法 URL，忽略
+  }
+  return "";
+}
+
 export async function getSubscribePosts() {
   // 获取所有有文章的订阅源
   const subscribesWithPosts = await prisma.subscribes.findMany({
@@ -257,7 +269,7 @@ export async function getSubscribePosts() {
         subscribeName: subscribe.name,
         subscribeAvatar: subscribe.avatar,
         title: item.title,
-        link: item.link,
+        link: sanitizeExternalUrl(item.link),
         description: item.description,
         pubDate: item.pubDate,
       });

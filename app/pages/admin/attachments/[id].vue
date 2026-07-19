@@ -2,12 +2,14 @@
 import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse} from "~/types/apis/admin/attachments";
 import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 import type { AdminContent, AdminContentListResponse } from "~/types/apis/admin/contents";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type {ApiError} from "~/types/error";
 
 const route = useRoute()
 const toast = useToast()
 const loading = ref(true)
 const saving = ref(false)
+const csrfToken = ref("")
 
 const attachment = ref<AttachmentDetail | null>(null)
 const uploadContents = ref<AdminContent[]>([])
@@ -86,6 +88,10 @@ const formatImageDimensions = (item: { width?: number | null; height?: number | 
 async function fetchAttachment() {
   loading.value = true
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" })
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token
+
     const res = await $fetch<AttachmentDetailResponse>(attachmentDetailUrl)
     if (res?.success) {
       attachment.value = res.data
@@ -121,6 +127,7 @@ async function syncRelations(cids: number[]) {
     body: {
       name: form.value.name,
       cids,
+      csrfToken: csrfToken.value,
     },
   })
 
@@ -163,6 +170,7 @@ async function saveAttachment() {
       method: 'PATCH',
       body: {
         name: form.value.name,
+        csrfToken: csrfToken.value,
       },
     })
 
@@ -188,14 +196,9 @@ async function deleteAttachment() {
   if (!confirmed) return
 
   try {
-    // 获取 CSRF token
-    const csrfToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('csrf_token='))
-      ?.split('=')[1];
-
-    await $fetch(`/api/attachments/${route.params.id}${csrfToken ? `?csrfToken=${csrfToken}` : ''}`, {
+    await $fetch(`/api/attachments/${route.params.id}`, {
       method: 'DELETE',
+      headers: { 'x-csrf-token': csrfToken.value },
     })
     toast.success({
       message: '删除成功',

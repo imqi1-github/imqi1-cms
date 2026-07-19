@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { LinkItem } from "~/types/apis/admin/links";
 
 const toast = useToast();
@@ -9,10 +10,13 @@ const showEditModal = ref(false);
 const newLink = ref({ name: "", link: "", desc: "", avatar: "" });
 const editingLink = ref<LinkItem | null>(null);
 const editLinkForm = ref({ name: "", link: "", desc: "", avatar: "" });
+const csrfToken = ref("");
 
 async function fetchLinks() {
   loading.value = true;
   try {
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     links.value = await $fetch<LinkItem[]>("/api/admin/links");
   } catch (error) {
     console.error("获取友情链接失败:", error);
@@ -26,7 +30,7 @@ async function addLink() {
   try {
     await $fetch("/api/admin/links", {
       method: "POST",
-      body: newLink.value,
+      body: { ...newLink.value, csrfToken: csrfToken.value },
     });
     newLink.value = { name: "", link: "", desc: "", avatar: "" };
     showAddModal.value = false;
@@ -44,7 +48,10 @@ async function addLink() {
 
 async function toggleEnabled(link: LinkItem) {
   try {
-    await $fetch(`/api/admin/links/${link.id}/toggle`, { method: "PATCH" });
+    await $fetch(`/api/admin/links/${link.id}/toggle`, {
+      method: "PATCH",
+      body: { csrfToken: csrfToken.value },
+    });
     toast.success({
       message: link.enabled ? "已禁用" : "已启用",
     });
@@ -73,7 +80,7 @@ async function saveEdit() {
   try {
     await $fetch(`/api/admin/links/${editingLink.value.id}`, {
       method: "PATCH",
-      body: editLinkForm.value,
+      body: { ...editLinkForm.value, csrfToken: csrfToken.value },
     });
     showEditModal.value = false;
     toast.success({
@@ -92,7 +99,10 @@ async function deleteLink(id: number) {
   const confirmed = confirm("确定要删除这个链接吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/links/${id}`, { method: "DELETE" });
+      await $fetch(`/api/admin/links/${id}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken.value },
+      });
       toast.success({
         message: "删除成功",
       });
@@ -114,7 +124,7 @@ async function approveModification(link: LinkItem, approve: boolean) {
     try {
       await $fetch(`/api/admin/links/${link.id}/approve-modification`, {
         method: "PATCH",
-        body: { action: approve ? "approve" : "reject" },
+        body: { action: approve ? "approve" : "reject", csrfToken: csrfToken.value },
       });
       toast.success({
         message: approve ? "已批准修改" : "已拒绝修改",

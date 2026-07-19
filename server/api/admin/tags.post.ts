@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
@@ -13,8 +14,17 @@ export default defineEventHandler(async event => {
   }
 
   const body = await readBody(event);
+  const { name, slug, desc, csrfToken } = body;
 
-  if (!body.name || !body.name.trim()) {
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
+
+  if (!name || !name.trim()) {
     throw createError({
       statusCode: 400,
       message: "标签名称不能为空",
@@ -22,18 +32,14 @@ export default defineEventHandler(async event => {
   }
 
   // 验证字段长度
-  validateMetaData({
-    name: body.name,
-    slug: body.slug,
-    desc: body.desc,
-  });
+  validateMetaData({ name, slug, desc });
 
   try {
     const tag = await prisma.metas.create({
       data: {
-        name: body.name.trim(),
-        slug: body.slug || null,
-        desc: body.desc || null,
+        name: name.trim(),
+        slug: slug || null,
+        desc: desc || null,
         type: "tag",
       },
     });

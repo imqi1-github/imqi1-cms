@@ -1,5 +1,6 @@
 import {prisma} from "#server/utils/prisma";
 import {getUser} from "#server/lib/auth";
+import {validateCsrfToken} from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -17,6 +18,15 @@ export default defineEventHandler(async event => {
     throw createError({
       statusCode: 400,
       message: "缺少链接 ID",
+    });
+  }
+
+  const body = await readBody(event);
+  const {csrfToken} = body;
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
     });
   }
 

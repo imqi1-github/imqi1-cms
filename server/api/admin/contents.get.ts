@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
     const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 5;
+    const pageSize = Number(query.pageSize) || 10;
     const categoryId = query.category ? Number(query.category) : undefined;
     const tagId = query.tag ? Number(query.tag) : undefined;
     const status = query.status ? Number(query.status) : undefined;

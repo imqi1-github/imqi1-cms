@@ -61,6 +61,9 @@ export default defineEventHandler(async event => {
         },
         type: 0,
         status: 1,
+        // 仅返回有 slug 的文章：无 slug 的文章无法走 /content/[category]/[slug] 详情路由，
+        // 若作为相关文章会出现 /content/<cat>/null 死链
+        slug: { not: null },
         contentrelations: {
           some: {
             mid: {

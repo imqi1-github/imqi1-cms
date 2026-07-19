@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type {PopularContent, RecentComment, RecentContent} from "~/types/apis/admin";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter()
+const toast = useToast()
 const loading = ref(true)
+const csrfToken = ref("")
 const stats = ref({
   contents: 0,
   comments: 0,
@@ -16,7 +19,6 @@ const detailedStats = ref({
     published: 0,
     draft: 0,
     thisMonth: 0,
-    thisWeek: 0,
   },
   pages: {
     total: 0,
@@ -52,12 +54,13 @@ const recentContents = ref<RecentContent[]>([])
 const recentComments = ref<RecentComment[]>([])
 const popularContents = ref<PopularContent[]>([])
 
-const statCards = [
+// 统计卡片用 computed：值/徽章/描述随 stats、detailedStats 实时刷新。
+// 此前是 setup 顶层常量数组，value 在初始 0 时就被快照冻结，导致附加卡片（页面/草稿数量）永远显示 0。
+const statCards = computed(() => [
   {
     title: '文章总数',
     value: stats.value.contents,
     icon: 'lucide:file-text',
-    color: 'text-blue-500',
     description: '已发布文章',
     badge: detailedStats.value.contents.thisMonth > 0 ? `本月 +${detailedStats.value.contents.thisMonth}` : '',
   },
@@ -65,7 +68,6 @@ const statCards = [
     title: '评论总数',
     value: stats.value.comments,
     icon: 'lucide:message-square',
-    color: 'text-green-500',
     description: '所有评论',
     badge: detailedStats.value.comments.pending > 0 ? `${detailedStats.value.comments.pending} 待审核` : '',
   },
@@ -73,62 +75,40 @@ const statCards = [
     title: '分类标签',
     value: stats.value.categories,
     icon: 'lucide:folder',
-    color: 'text-yellow-500',
     description: `${detailedStats.value.categories.total} 分类 / ${detailedStats.value.tags.total} 标签`,
+    badge: '',
   },
   {
     title: '用户数量',
     value: stats.value.users,
     icon: 'lucide:users',
-    color: 'text-purple-500',
     description: '注册用户',
+    badge: '',
   },
-]
+])
 
-// 获取统计卡片的徽章
-const getStatCardBadge = (title: string) => {
-  if (title === '文章总数' && detailedStats.value.contents.thisMonth > 0) {
-    return `本月 +${detailedStats.value.contents.thisMonth}`
-  }
-  if (title === '评论总数' && detailedStats.value.comments.pending > 0) {
-    return `${detailedStats.value.comments.pending} 待审核`
-  }
-  return ''
-}
-
-// 获取统计卡片的描述
-const getStatCardDescription = (title: string) => {
-  if (title === '分类标签') {
-    return `${detailedStats.value.categories.total} 分类 / ${detailedStats.value.tags.total} 标签`
-  }
-  const descriptions: Record<string, string> = {
-    '文章总数': '已发布文章',
-    '评论总数': '所有评论',
-    '用户数量': '注册用户',
-  }
-  return descriptions[title] || ''
-}
-
-const additionalStatCards = [
+const additionalStatCards = computed(() => [
   {
     title: '页面数量',
     value: detailedStats.value.pages.total,
     icon: 'lucide:file',
-    color: 'text-cyan-500',
     description: '独立页面',
   },
   {
     title: '草稿数量',
     value: detailedStats.value.contents.draft,
     icon: 'lucide:file-edit',
-    color: 'text-orange-500',
     description: '未发布文章',
   },
-]
+])
 
 async function fetchData() {
   loading.value = true
   try {
+    // 获取 CSRF token（删除文章/评论的 DELETE 请求通过 x-csrf-token 头携带）
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" })
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token
+
     const [statsRes, detailedRes, systemRes, contentsRes, commentsRes, popularRes] = await Promise.all([
       $fetch('/api/admin/stats'),
       $fetch('/api/admin/detailed-stats'),
@@ -153,16 +133,32 @@ async function fetchData() {
 async function deleteContent(cid: number) {
   const confirmed = confirm('确定要删除这篇文章吗？')
   if (confirmed) {
-    await $fetch(`/api/admin/contents/${cid}`, { method: 'DELETE' })
-    await fetchData()
+    try {
+      await $fetch(`/api/admin/contents/${cid}`, {
+        method: 'DELETE',
+        headers: { 'x-csrf-token': csrfToken.value },
+      })
+      await fetchData()
+      toast.success({ message: '文章已删除' })
+    } catch {
+      toast.error({ message: '删除失败' })
+    }
   }
 }
 
 async function deleteComment(coid: number) {
   const confirmed = confirm('确定要删除这条评论吗？')
   if (confirmed) {
-    await $fetch(`/api/admin/comments/${coid}`, { method: 'DELETE' })
-    await fetchData()
+    try {
+      await $fetch(`/api/admin/comments/${coid}`, {
+        method: 'DELETE',
+        headers: { 'x-csrf-token': csrfToken.value },
+      })
+      await fetchData()
+      toast.success({ message: '评论已删除' })
+    } catch {
+      toast.error({ message: '删除失败' })
+    }
   }
 }
 
@@ -229,10 +225,10 @@ onMounted(() => {
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between mb-1 gap-2">
                 <p class="text-sm text-muted-foreground truncate">{{ card.title }}</p>
-                <Badge v-if="getStatCardBadge(card.title)" variant="secondary" class="text-xs shrink-0">{{ getStatCardBadge(card.title) }}</Badge>
+                <Badge v-if="card.badge" variant="secondary" class="text-xs shrink-0">{{ card.badge }}</Badge>
               </div>
-              <p class="text-2xl sm:text-3xl font-bold mt-1 truncate">{{ stats[card.title === '文章总数' ? 'contents' : card.title === '评论总数' ? 'comments' : card.title === '分类标签' ? 'categories' : 'users'] }}</p>
-              <p class="text-xs text-muted-foreground mt-1 truncate">{{ getStatCardDescription(card.title) }}</p>
+              <p class="text-2xl sm:text-3xl font-bold mt-1 truncate">{{ card.value }}</p>
+              <p class="text-xs text-muted-foreground mt-1 truncate">{{ card.description }}</p>
             </div>
             <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 shrink-0" />
           </div>

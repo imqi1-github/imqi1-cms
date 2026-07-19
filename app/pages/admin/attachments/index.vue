@@ -204,8 +204,9 @@ async function deleteAttachment(item: AttachmentItem) {
   if (!confirmed) return;
 
   try {
-    await $fetch(`/api/attachments/${item.id}?csrfToken=${csrfToken.value}`, {
+    await $fetch(`/api/attachments/${item.id}`, {
       method: "DELETE",
+      headers: { "x-csrf-token": csrfToken.value },
     });
     toast.success({
       message: "删除成功",

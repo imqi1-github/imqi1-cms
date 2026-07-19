@@ -6,7 +6,9 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 const router = useRouter();
-const slug = route.params.slug as string;
+// slug 必须是 computed：SPA 下 /tag/A → /tag/B 会复用本组件（setup 不重跑），
+// 若在 setup 顶层一次性解构，slug 会停留在旧值，useFetch 不重新请求、路由守卫也判断错误。
+const slug = computed(() => route.params.slug as string);
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -18,10 +20,11 @@ const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
 const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取标签文章数据
-const { data, pending, error } = await useFetch(`/api/tag/${slug}/contents`, {
+// URL 用函数形式 + watch:[page, slug]：切标签时（slug 变）也会重新请求，而非复用旧数据
+const { data, pending, error } = await useFetch(() => `/api/tag/${slug.value}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: contentPageSize },
-  watch: [page],
+  watch: [page, slug],
 });
 
 const tag = computed(() => data.value?.data?.tag);
@@ -30,6 +33,12 @@ const pagination = computed(() => data.value?.data?.pagination);
 
 // 判断是否为404
 const isNotFound = computed(() => !pending.value && (!tag.value || error.value));
+
+// 标签不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
+if (import.meta.server) {
+  const event = useRequestEvent();
+  if (isNotFound.value) setResponseStatus(event, 404);
+}
 
 // 骨架屏显示状态
 const showSkeleton = ref(false);
@@ -102,7 +111,7 @@ function goToPage(newPage: number) {
 
   // 直接更新页码，不进行渐出动画
   router.push({
-    path: `/tag/${slug}`,
+    path: `/tag/${slug.value}`,
     query: { page: newPage.toString() },
   });
   page.value = newPage;
@@ -175,7 +184,7 @@ watch(
   () => route.query.page,
   newPage => {
     // 确保用户仍然在标签页面
-    if (!route.path.startsWith(`/tag/${slug}`)) {
+    if (!route.path.startsWith(`/tag/${slug.value}`)) {
       return;
     }
 
@@ -200,9 +209,12 @@ watch(
   () => route.params.slug,
   async () => {
     // 确保用户仍然在标签页面
-    if (!route.path.startsWith(`/tag/${slug}`)) {
+    if (!route.path.startsWith(`/tag/${slug.value}`)) {
       return;
     }
+
+    // 切换标签时回到第 1 页（避免沿用前一标签的页码导致空页或错位）
+    page.value = 1;
 
     // 等待 DOM 更新
     await nextTick();

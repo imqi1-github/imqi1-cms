@@ -6,6 +6,7 @@ import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
 import type {LinkItem} from "~/types/apis/links";
+import type {CsrfTokenResponse} from "~/types/apis/csrf";
 
 // 导入前台通知 composable
 const { success, error: showError, } = useFrontNotification();
@@ -31,6 +32,9 @@ const markAvatarFailed = (id: number) => {
 
 // 使用全局认证状态
 const { isLoggedIn, isLoadingAuth } = useAuth();
+
+// 友链申请/修改为游客写接口，需 CSRF 双提交 token（POST body 内带上）
+const csrfToken = ref("");
 
 // 友链检测状态
 const isCheckingLinks = ref(false);
@@ -321,6 +325,7 @@ const handleSubmit = async (forceSubmit = false) => {
           avatar: formData.value.avatar,
           blogLinkUrl: formData.value.blogLinkUrl,
           forceSubmit: forceSubmit, // 是否强制提交（跳过检测）
+          csrfToken: csrfToken.value,
         },
       });
 
@@ -356,6 +361,7 @@ const handleSubmit = async (forceSubmit = false) => {
           link: formData.value.link,
           desc: formData.value.sort,
           avatar: formData.value.avatar,
+          csrfToken: csrfToken.value,
         },
       });
 
@@ -384,6 +390,10 @@ let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
 // 初始化 Fancybox 与友链检测
 onMounted(async () => {
+  // 预取 CSRF token（写接口 /api/links、/api/links/patch 需在 body 带上）
+  $fetch<CsrfTokenResponse>("/api/csrf/token", { credentials: "include" }).then(csrfRes => {
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
+  });
   // 动态导入 Fancybox（仅客户端）
   FancyboxModule = await import("@fancyapps/ui");
   // 加载友链状态

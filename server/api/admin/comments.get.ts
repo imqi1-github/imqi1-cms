@@ -106,15 +106,14 @@ export default defineEventHandler(async event => {
       prisma.comments.count({ where }),
     ]);
 
-    // IP 归属地缓存
+    // IP 归属地缓存：先收集不重复的 IP，再并行查询（避免逐条串行 await）
     const ipLocationCache = new Map<string, { location: string; isp: string }>();
-
-    // 批量查询 IP 归属地
-    for (const comment of comments) {
-      if (comment.ip && !ipLocationCache.has(comment.ip)) {
-        const location = await getIpLocation(comment.ip);
-        ipLocationCache.set(comment.ip, location || { location: "", isp: "" });
-      }
+    const uniqueIps = [...new Set(comments.map(c => c.ip).filter((ip): ip is string => Boolean(ip)))];
+    const ipResults = await Promise.all(
+      uniqueIps.map(async ip => [ip, (await getIpLocation(ip)) || { location: "", isp: "" }] as const)
+    );
+    for (const [ip, location] of ipResults) {
+      ipLocationCache.set(ip, location);
     }
 
     // 在服务端生成头像 URL 和添加归属地信息

@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -21,17 +22,25 @@ export default defineEventHandler(async event => {
     });
   }
 
+  const body = await readBody(event);
+  const { categoryIds, csrfToken } = body;
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
+
+  if (!Array.isArray(categoryIds)) {
+    throw createError({
+      statusCode: 400,
+      message: "categoryIds 必须是数组",
+    });
+  }
+
   try {
-    const body = await readBody(event);
-    const { categoryIds } = body;
-
-    if (!Array.isArray(categoryIds)) {
-      throw createError({
-        statusCode: 400,
-        message: "categoryIds 必须是数组",
-      });
-    }
-
     // 删除现有的分类关系
     await prisma.contentrelations.deleteMany({
       where: { cid: Number(id) },

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/apis/admin/subscribe";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
 const subscribes = ref<SubscribeItem[]>([]);
@@ -10,6 +11,7 @@ const showEditForm = ref(false);
 const updating = ref(false);
 const updateResult = ref<{ success: number; failed: number; total: number } | null>(null);
 const feedCacheInterval = ref(8); // 默认8小时
+const csrfToken = ref("");
 
 const newSubscribe = ref({ name: "", url: "", avatar: "" });
 const editingSubscribe = ref<{ id: number | null; name: string; url: string; avatar: string }>({
@@ -35,6 +37,8 @@ async function loadSettings() {
 async function loadSubscribes() {
   loading.value = true;
   try {
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     subscribes.value = await $fetch<SubscribeItem[]>("/api/admin/subscribes");
   } catch (error) {
     console.error("获取订阅失败:", error);
@@ -49,7 +53,10 @@ async function addSubscribe() {
   try {
     await $fetch("/api/admin/subscribes", {
       method: "POST",
-      body: newSubscribe.value,
+      body: {
+        ...newSubscribe.value,
+        csrfToken: csrfToken.value,
+      },
     });
     newSubscribe.value = { name: "", url: "", avatar: "" };
     showAddForm.value = false;
@@ -67,7 +74,10 @@ async function addSubscribe() {
 
 async function deleteSubscribe(id: number) {
   try {
-    await $fetch(`/api/admin/subscribes/${id}`, { method: "DELETE" });
+    await $fetch(`/api/admin/subscribes/${id}`, {
+      method: "DELETE",
+      headers: { "x-csrf-token": csrfToken.value },
+    });
     toast.success({
       message: "删除成功",
     });
@@ -86,6 +96,7 @@ async function updateSubscribes() {
   try {
     const response = await $fetch<SubscribesUpdateResponse>("/api/admin/subscribes/update", {
       method: "POST",
+      body: { csrfToken: csrfToken.value },
     });
     updateResult.value = response.data;
     toast.success({
@@ -131,6 +142,7 @@ async function updateSubscribe() {
         name: editingSubscribe.value.name,
         url: editingSubscribe.value.url,
         avatar: editingSubscribe.value.avatar,
+        csrfToken: csrfToken.value,
       },
     });
     showEditForm.value = false;

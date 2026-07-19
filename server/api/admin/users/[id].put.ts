@@ -94,6 +94,12 @@ export default defineEventHandler(async event => {
 
     // 如果提供了新密码，则更新密码
     if (password && password.trim() !== "") {
+      if (password.length < 6) {
+        throw createError({
+          statusCode: 400,
+          message: "密码长度不能少于 6 位",
+        });
+      }
       const { default: bcrypt } = await import("bcryptjs");
       updateData.password = await bcrypt.hash(password, 10);
     }

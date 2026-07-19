@@ -35,7 +35,6 @@ export default defineEventHandler(async event => {
     return popularContents.map(content => ({
       cid: content.cid,
       title: content.title,
-      views: content.comment_num, // 使用评论数作为热度指标
       commentsCount: content.comment_num,
       create_time: content.create_time,
     }));

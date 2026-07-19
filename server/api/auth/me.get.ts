@@ -10,5 +10,12 @@ export default defineEventHandler(async event => {
     });
   }
 
-  return user;
+  // 仅返回前端需要的字段；authCode 是单端登录内部标记，不应暴露给浏览器
+  return {
+    uid: user.uid,
+    name: user.name,
+    nickname: user.nickname,
+    mail: user.mail,
+    avatar: user.avatar,
+  };
 });

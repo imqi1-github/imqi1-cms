@@ -71,6 +71,12 @@ const content = computed(() => data.value?.data);
 // 判断文章是否存在
 const isNotFound = computed(() => !pending.value && (!content.value || error.value));
 
+// 文章不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
+if (import.meta.server) {
+  const event = useRequestEvent();
+  if (isNotFound.value) setResponseStatus(event, 404);
+}
+
 const categories = computed(() => content.value?.contentrelations?.map(r => r.metas) || []);
 const covers = computed(() => content.value?.parsedCovers || []);
 const tags = computed(() => content.value?.tags || []);
@@ -329,11 +335,13 @@ watch(
 
 // SEO 元数据
 const seoMeta = computed(() => {
-  if (!content.value) return {};
+  // 文章不存在或加载中时仍需设置标题（pageTitle 已由 watch 维护），否则文档 <title> 会缺失
+  if (!content.value) return { title: pageTitle.value };
 
-  const fullUrl = import.meta.client ? window.location.href : `${siteConfig.siteUrl}${route.path}`;
+  // 统一用站点 URL + 路由路径：og:url / canonical 必须稳定，不应随客户端 query/hash 变化
+  const fullUrl = `${siteConfig.siteUrl}${route.path}`;
 
-  const keywords = tags.value.map(tag => (typeof tag === "string" ? tag : tag.name)).join(", ");
+  const keywords = tags.value.map(tag => tag.name).join(", ");
   const description = content.value.desc || "";
   const coverImage = firstCoverUrl.value;
   const authorName = content.value.user?.nickname || content.value.user?.name || siteConfig.siteName;
@@ -364,7 +372,7 @@ const seoMeta = computed(() => {
       })),
       ...tags.value.map(tag => ({
         property: "article:tag",
-        content: typeof tag === "string" ? tag : tag.name,
+        content: tag.name,
       })),
 
       // Twitter Card
@@ -2009,7 +2017,7 @@ onUnmounted(() => {
                 'hover:text-blue-600 dark:hover:text-blue-500 transition-colors mr-2',
                 tag.slug ? 'cursor-pointer' : 'cursor-default opacity-50',
               ]">
-              {{ typeof tag === "string" ? tag : tag.name }}
+              {{ tag.name }}
             </NuxtLink>
           </span>
         </div>

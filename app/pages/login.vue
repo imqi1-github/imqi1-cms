@@ -47,7 +47,14 @@ import type {ApiError} from "~/types/apis/login";
 import type {AuthStatus} from "~/types/apis/auth";
 
 const route = useRoute()
-const redirectTo = computed(() => route.query.to as string || '/admin')
+const redirectTo = computed(() => {
+  const to = route.query.to
+  // 仅允许站内绝对路径，避免开放重定向（拒绝 //evil.com、/\evil.com、外链等）
+  if (typeof to === 'string' && to.startsWith('/') && !to.startsWith('//') && !to.startsWith('/\\')) {
+    return to
+  }
+  return '/admin'
+})
 
 const toast = useToast()
 
@@ -107,7 +114,6 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    console.log('开始登录，发送请求到 /api/auth/login')
     const res = await $fetch('/api/auth/login', {
       method: 'POST',
       body: {
@@ -116,22 +122,15 @@ const handleLogin = async () => {
       },
     })
 
-    console.log('登录响应:', res)
-
     // 登录成功，显示欢迎消息
     toast.success({
       message: `欢迎回来，${res.user?.nickname || res.user?.name || '管理员'}！`,
       description: '登录成功，正在跳转...',
     })
 
-    console.log('准备跳转到:', redirectTo.value)
-
     // 延迟跳转，让用户看到 toast
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    console.log('开始跳转')
-    // 使用 window.location.href 而不是 navigateTo，确保服务器端渲染时能读取到 cookie
-    // window.location.href = redirectTo.value
     await navigateTo(redirectTo.value)
 
   } catch (rawError: unknown) {

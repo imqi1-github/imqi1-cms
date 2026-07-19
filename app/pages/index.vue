@@ -238,7 +238,7 @@
                           v-if="randomContent.covers && randomContent.covers.length > 0"
                           class="relative mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
                           <img
-                            :src="(typeof randomContent.covers[0] === 'string' ? randomContent.covers[0] : randomContent.covers[0]?.url) || ''"
+                            :src="randomContent.covers[0]?.url || ''"
                             :alt="randomContent.title"
                             class="w-full h-full object-cover"
                             loading="lazy" >
@@ -317,7 +317,7 @@
               <!-- 封面占满整卡 -->
               <div v-if="content.covers && content.covers.length > 0" class="absolute inset-0">
                 <img
-                  :src="(typeof content.covers[0] === 'string' ? content.covers[0] : content.covers[0]?.url) || ''"
+                  :src="content.covers[0]?.url || ''"
                   :alt="content.title"
                   class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                   loading="lazy" >
@@ -428,7 +428,7 @@
                 <!-- 封面占满整卡 -->
                 <div v-if="content.covers && content.covers.length > 0" class="absolute inset-0">
                   <img
-                    :src="(typeof content.covers[0] === 'string' ? content.covers[0] : content.covers[0]?.url) || ''"
+                    :src="content.covers[0]?.url || ''"
                     :alt="content.title"
                     class="absolute inset-0 w-full h-full object-cover hover:scale-[1.03] transition-transform duration-300"
                     loading="lazy" >
@@ -612,7 +612,7 @@
         <a
           v-for="content in subscribePosts"
           :key="content.id"
-          :href="content.link"
+          :href="content.link || undefined"
           target="_blank"
           rel="noopener noreferrer"
           class="block border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all no-underline group">
@@ -823,7 +823,7 @@ const photoImages = computed(() => {
     if (content.covers && content.covers.length > 0) {
       content.covers.forEach(cover => {
         images.push({
-          url: cover.url || (typeof cover === "string" ? cover : ""),
+          url: cover.url,
           desc: cover.desc,
           width: cover.width,
           height: cover.height,

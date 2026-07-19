@@ -1,4 +1,6 @@
 import { prisma } from "#server/utils/prisma";
+import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 import { siteConfig } from "~~/site.config";
 
 // 默认值配置
@@ -26,6 +28,24 @@ export default defineEventHandler(async event => {
     throw createError({
       statusCode: 405,
       message: "方法不允许",
+    });
+  }
+
+  // 鉴权 + CSRF 校验（位于下方 try/catch 之外，避免 401/403 被吞成 500）
+  const user = await getUser(event);
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: "请先登录",
+    });
+  }
+
+  const body = await readBody(event);
+  const { csrfToken } = body;
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
     });
   }
 

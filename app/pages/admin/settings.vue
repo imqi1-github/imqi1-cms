@@ -52,6 +52,7 @@ const settings = ref<AdminSettings>({
   cosCdnDomain: "",
   cosImageSuffix: "webp",
   sessionStoreType: "memory",
+  messageContentId: "",
   linkAutoApprove: false,
   searchCacheEnabled: false,
   searchCacheExpire: 300,
@@ -171,6 +172,7 @@ async function testEmail() {
     const result = await $fetch("/api/admin/mail/test", {
       method: "POST",
       body: {
+        csrfToken: csrfToken.value,
         to: settings.value.adminEmail || settings.value.smtpAddress || settings.value.smtpUser,
       },
     });
@@ -236,6 +238,7 @@ const defaultSettings: AdminSettings = {
   cosCdnDomain: "",
   cosImageSuffix: "webp",
   sessionStoreType: "memory",
+  messageContentId: "",
   linkAutoApprove: false,
   searchCacheEnabled: false,
   searchCacheExpire: 300,
@@ -282,7 +285,10 @@ async function saveSettings() {
 
 // 重置为默认值
 async function resetToDefaults() {
-  settings.value = { ...defaultSettings };
+  // messageContentId 在本页无 UI、是"指向留言板文章"的内容引用而非可重置的默认值，
+  // 重置时保留原值，避免静默清空留言板配置。
+  const preservedMessageContentId = settings.value.messageContentId;
+  settings.value = { ...defaultSettings, messageContentId: preservedMessageContentId };
   showResetDialog.value = false;
   try {
     await $fetch("/api/admin/settings", {
@@ -290,6 +296,7 @@ async function resetToDefaults() {
       body: {
         csrfToken: csrfToken.value,
         ...defaultSettings,
+        messageContentId: preservedMessageContentId,
       },
     });
     toast.success({
@@ -309,6 +316,9 @@ async function initializeMissingSettings() {
   try {
     const result = await $fetch("/api/admin/settings/init", {
       method: "POST",
+      body: {
+        csrfToken: csrfToken.value,
+      },
     });
 
     if (result.success) {

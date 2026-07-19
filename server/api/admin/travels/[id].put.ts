@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 import { validateTravelData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
@@ -23,7 +24,15 @@ export default defineEventHandler(async event => {
   }
 
   const body = await readBody(event);
-  const { name, desc, cover, cids, longitude, latitude, sort, enabled } = body;
+  const { name, desc, cover, cids, longitude, latitude, sort, enabled, csrfToken } = body;
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
 
   if (!name || !name.trim()) {
     throw createError({
@@ -71,7 +80,7 @@ export default defineEventHandler(async event => {
   }
 
   // 更新地点基础字段
-  const travel = await prisma.travels.update({
+  await prisma.travels.update({
     where: { id },
     data: {
       name: name.trim(),
@@ -99,8 +108,5 @@ export default defineEventHandler(async event => {
     }
   }
 
-  return {
-    success: true,
-    data: travel,
-  };
+  return { success: true };
 });

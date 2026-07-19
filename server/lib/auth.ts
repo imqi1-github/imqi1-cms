@@ -1,3 +1,5 @@
+import { randomBytes } from "crypto";
+
 import type { H3Event } from "h3";
 import { setCookie, getCookie, deleteCookie } from "h3";
 
@@ -8,14 +10,16 @@ import type { SessionUser } from "#server/types/auth";
 const SESSION_COOKIE_NAME = "session";
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-// 生成随机 session ID
+// 生成密码学安全的随机 session ID
+// 必须使用 crypto.randomBytes，不能用 Math.random()（可预测，会导致会话预测/劫持）。
+// 用 base64url 还能保证字符集 [A-Za-z0-9_-] 对文件名/cookie/DB 主键都安全。
 function generateSessionId(): string {
-  return Buffer.from(`${Date.now()}-${Math.random()}`).toString("base64");
+  return randomBytes(32).toString("base64url");
 }
 
-// 生成 authCode（用于单端登录验证）
+// 生成 authCode（用于单端登录验证），同样必须使用密码学安全随机源
 function generateAuthCode(): string {
-  return Buffer.from(`${Date.now()}-${Math.random()}-${Math.random()}`).toString("base64url");
+  return randomBytes(32).toString("base64url");
 }
 
 // 设置 session cookie

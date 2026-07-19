@@ -21,8 +21,8 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // CSRF 验证 - 从查询参数获取
-  const csrfToken = getQuery(event).csrfToken as string;
+  // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
+  const csrfToken = getHeader(event, "x-csrf-token") as string;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -88,6 +88,7 @@ export default defineEventHandler(async event => {
           where: {
             cid: relation.cid,
             mid: { not: categoryId },
+            metas: { type: "category" },
           },
         });
 

@@ -6,7 +6,9 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 const router = useRouter();
-const slug = route.params.slug as string;
+// slug 必须是 computed：SPA 下 /category/A → /category/B 会复用本组件（setup 不重跑），
+// 若在 setup 顶层一次性解构，slug 会停留在旧值，useFetch 不重新请求、路由守卫也判断错误。
+const slug = computed(() => route.params.slug as string);
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -19,10 +21,11 @@ const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
 const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取分类文章数据
-const { data, pending, error } = await useFetch(`/api/category/${slug}/contents`, {
+// URL 用函数形式 + watch:[page, slug]：切分类时（slug 变）也会重新请求，而非复用旧数据
+const { data, pending, error } = await useFetch(() => `/api/category/${slug.value}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: contentPageSize },
-  watch: [page],
+  watch: [page, slug],
 });
 
 const category = computed(() => data.value?.data?.category);
@@ -30,7 +33,7 @@ const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
 // 判断是否为图片分类
-const isPhotoCategory = computed(() => slug === photoCategorySlug.value);
+const isPhotoCategory = computed(() => slug.value === photoCategorySlug.value);
 
 // 将 contents 转换为瀑布流组件需要的格式（平铺所有封面）
 const waterfallItems = computed(() => {
@@ -47,7 +50,7 @@ const waterfallItems = computed(() => {
           height: cover.height,
           cid: content.cid,
           slug: contentSlug,
-          categorySlug: slug,
+          categorySlug: slug.value,
         });
       });
     }
@@ -57,6 +60,12 @@ const waterfallItems = computed(() => {
 
 // 判断是否为404
 const isNotFound = computed(() => !pending.value && (!category.value || error.value));
+
+// 分类不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
+if (import.meta.server) {
+  const event = useRequestEvent();
+  if (isNotFound.value) setResponseStatus(event, 404);
+}
 
 // 骨架屏显示状态
 const showSkeleton = ref(false);
@@ -147,7 +156,7 @@ function goToPage(newPage: number) {
 
   // 直接更新页码，不进行渐出动画
   router.push({
-    path: `/category/${slug}`,
+    path: `/category/${slug.value}`,
     query: { page: newPage.toString() },
   });
   page.value = newPage;
@@ -237,7 +246,7 @@ watch(
   () => route.query.page,
   newPage => {
     // 确保用户仍然在分类页面
-    if (!route.path.startsWith(`/category/${slug}`)) {
+    if (!route.path.startsWith(`/category/${slug.value}`)) {
       return;
     }
 
@@ -262,9 +271,12 @@ watch(
   () => route.params.slug,
   async () => {
     // 确保用户仍然在分类页面
-    if (!route.path.startsWith(`/category/${slug}`)) {
+    if (!route.path.startsWith(`/category/${slug.value}`)) {
       return;
     }
+
+    // 切换分类时回到第 1 页（避免沿用前一分类的页码导致空页或错位）
+    page.value = 1;
 
     // 图片分类切换时不再显示整页骨架屏，避免瀑布流首屏额外渲染占位导致卡顿
 

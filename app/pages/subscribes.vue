@@ -362,7 +362,7 @@ function clearFilter() {
                   </span>
                 </div>
                 <a
-                  :href="content.link"
+                  :href="content.link || undefined"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="block group"
@@ -381,7 +381,7 @@ function clearFilter() {
 
               <!-- 外部链接图标 -->
               <a
-                :href="content.link"
+                :href="content.link || undefined"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"

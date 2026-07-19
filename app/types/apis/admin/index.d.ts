@@ -1,19 +1,8 @@
 export interface RecentContent {
 	cid: number;
 	title: string;
-	slug: string | null;
-	desc: string | null;
-	content: string | null;
 	create_time: string;
-	update_time: string;
 	status: number;
-	comment_num: number;
-	many_covers: boolean;
-	covers: string | null;
-	show_toc: boolean;
-	tags: string | null;
-	type: number;
-	uid: number;
 }
 
 export interface RecentComment {
@@ -37,7 +26,6 @@ export interface RecentComment {
 export interface PopularContent {
 	cid: number;
 	title: string;
-	views: number;
 	commentsCount: number;
 	create_time: string;
 }

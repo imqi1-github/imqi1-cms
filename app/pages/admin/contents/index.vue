@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type {AcceptableValue} from "reka-ui";
 
-import type {AdminContent, Category, Tag} from "~/types/apis/admin/contents";
+import type {AdminContent, AdminContentListResponse, Category, Tag} from "~/types/apis/admin/contents";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
+const csrfToken = ref("");
 const loading = ref(true);
 const contents = ref<AdminContent[]>([]);
 const categories = ref<Category[]>([]);
@@ -133,9 +135,15 @@ async function fetchContents(page: number = 1, updateUrl: boolean = true) {
       params.append("status", selectedStatus.value.toString());
     }
 
-    const res = await $fetch<{ data: AdminContent[]; pagination: typeof pagination.value }>(`/api/admin/contents?${params.toString()}`);
+    const res = await $fetch<AdminContentListResponse>(`/api/admin/contents?${params.toString()}`);
     contents.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
+
+    // 删除/陈旧 URL 可能让请求页越界而返回空（如删光最后一页后 page 超出新 totalPages）：
+    // 直接跳到最后一页，避免停留在空列表/越界页码（一次性跳转，不逐页回退）。
+    if (contents.value.length === 0 && pagination.value.totalPages > 0 && pagination.value.page > pagination.value.totalPages) {
+      return fetchContents(pagination.value.totalPages, updateUrl);
+    }
 
     // 更新 URL（如果需要）
     if (updateUrl) {
@@ -180,7 +188,7 @@ async function deleteContent(cid: number) {
   const confirmed = confirm("确定要删除这篇文章吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE" });
+      await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE", headers: { "x-csrf-token": csrfToken.value } });
       await fetchContents(pagination.value.page, false);
       toast.success({ message: "文章已删除" });
     } catch (error) {
@@ -202,7 +210,7 @@ async function batchDelete() {
     try {
       const res = await $fetch("/api/admin/contents/batch-delete", {
         method: "POST",
-        body: { ids: selectedIds.value },
+        body: { ids: selectedIds.value, csrfToken: csrfToken.value },
       });
       toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];
@@ -224,25 +232,29 @@ function getStatusBadge(status: number) {
   return status === 1 ? { label: "已发布", variant: "default" as const } : { label: "草稿", variant: "secondary" as const };
 }
 
+// 文章的分类关系：contentrelations 同时含分类与标签，这里只取分类用于「分类」列展示与预览链接。
+function contentCategories(content: AdminContent) {
+  return content.contentrelations?.filter(rel => rel.metas.type === "category") ?? [];
+}
+
 function editContent(cid: number) {
   router.push(`/admin/contents/edit?cid=${cid}`);
 }
 
-async function previewContent(content: AdminContent) {
-  // 获取文章的第一个分类
-  let categorySlug = 'uncategorized';
-  if (content.contentrelations && content.contentrelations.length > 0) {
-    categorySlug = content.contentrelations[0]?.metas.slug ?? 'uncategorized';
+function previewContent(content: AdminContent) {
+  // 草稿未发布到前台，直接预览会 404。
+  if (content.status !== 1) {
+    toast.warning({ message: "草稿文章暂不可在前台预览" });
+    return;
   }
-
-  // 使用 slug 或 cid 构建 URL
+  // 只取分类 slug（过滤掉标签，避免拼出 /content/<标签slug>/<文章slug> 而 404）。
+  const categorySlug = contentCategories(content)[0]?.metas.slug;
+  if (!categorySlug) {
+    toast.error({ message: "该文章未关联分类，无法生成预览链接" });
+    return;
+  }
   const contentSlug = content.slug || content.cid;
-
-  // 构建文章 URL
-  const url = `/content/${categorySlug}/${contentSlug}`;
-
-  // 在新窗口打开
-  window.open(url, '_blank');
+  window.open(`/content/${categorySlug}/${contentSlug}`, "_blank", "noopener");
 }
 
 function createContent() {
@@ -256,6 +268,16 @@ function goToPage(page: number) {
 }
 
 onMounted(() => {
+  // 获取 CSRF token
+  (async () => {
+    try {
+      const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+      if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
+    } catch (error) {
+      console.error("获取 CSRF token 失败:", error);
+    }
+  })();
+
   fetchCategories();
   fetchTags();
 
@@ -267,6 +289,14 @@ onMounted(() => {
   const tagId = route.query.tag ? Number(route.query.tag) : null;
   if (tagId) {
     selectedTag.value = tagId;
+  }
+
+  // 从 URL 恢复状态筛选（status=0 是有效值「草稿」，需用存在性判断而非真值）
+  if (route.query.status !== undefined) {
+    const statusFromUrl = Number(route.query.status);
+    if (!Number.isNaN(statusFromUrl)) {
+      selectedStatus.value = statusFromUrl;
+    }
   }
 
   // 从 URL 读取页码，默认第1页
@@ -436,8 +466,8 @@ onMounted(() => {
             <TableCell class="font-medium">{{ content.title }}</TableCell>
             <TableCell class="text-muted-foreground font-mono text-sm">{{ content.slug || "-" }}</TableCell>
             <TableCell>
-              <div v-if="content.contentrelations && content.contentrelations.length > 0" class="flex flex-wrap gap-1">
-                <Badge v-for="rel in content.contentrelations" :key="rel.metas.mid" variant="outline" class="text-xs">
+              <div v-if="contentCategories(content).length > 0" class="flex flex-wrap gap-1">
+                <Badge v-for="rel in contentCategories(content)" :key="rel.metas.mid" variant="outline" class="text-xs">
                   {{ rel.metas.name }}
                 </Badge>
               </div>
@@ -490,8 +520,8 @@ onMounted(() => {
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <div v-if="content.contentrelations && content.contentrelations.length > 0" class="flex flex-wrap gap-1">
-              <Badge v-for="rel in content.contentrelations" :key="rel.metas.mid" variant="outline" class="text-xs">
+            <div v-if="contentCategories(content).length > 0" class="flex flex-wrap gap-1">
+              <Badge v-for="rel in contentCategories(content)" :key="rel.metas.mid" variant="outline" class="text-xs">
                 {{ rel.metas.name }}
               </Badge>
             </div>
@@ -541,8 +571,8 @@ onMounted(() => {
           </Button>
           <div class="flex items-center gap-1">
             <Button
-              v-for="page in pageRange"
-              :key="page"
+              v-for="(page, pageIndex) in pageRange"
+              :key="typeof page === 'number' ? `page-${page}` : `gap-${pageIndex}`"
               :variant="page === pagination.page ? 'default' : 'outline'"
               size="sm"
               :disabled="page === '...'"

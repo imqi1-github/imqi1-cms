@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 import { validateChangelogData } from "#server/utils/validation";
 import { normalizeChangelogEntries, stringifyChangelogContent } from "#server/utils/changelog";
 import type { ChangelogInputJson, ChangelogInputRecord, ParsedRecord } from "#server/types/apis/changelog-import";
@@ -30,6 +31,10 @@ export default defineEventHandler(async event => {
   }
 
   const body = await readBody(event);
+  const { csrfToken } = body as { csrfToken?: string };
+  if (!validateCsrfToken(event, csrfToken ?? "")) {
+    throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
+  }
   const source = body?.source;
 
   if (typeof source !== "string" || !source.trim()) {

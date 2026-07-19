@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {CHANGELOG_TYPES, type ChangelogEntry, getChangelogMeta} from "~~/shared/changelog";
 import type {ChangelogItem} from "~/types/apis/admin/changelogs/logs";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
 const logs = ref<ChangelogItem[]>([]);
@@ -8,11 +9,22 @@ const loading = ref(true);
 const submitting = ref(false);
 const importing = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
+const csrfToken = ref("");
 
 // 编辑状态：一条记录可含多个条目（type + value）
 const editingId = ref<number | null>(null);
-const editForm = reactive<{ entries: ChangelogEntry[] }>({
-  entries: [{ type: "新增", value: "" }],
+
+// 编辑表单的条目：带稳定 _key，供 v-for 使用（用 index 作 key 会在增删时串行错位）
+interface FormEntry {
+  _key: number;
+  type: string;
+  value: string;
+}
+let entryKeySeed = 0;
+const makeEntry = (type = "新增", value = ""): FormEntry => ({ _key: ++entryKeySeed, type, value });
+
+const editForm = reactive<{ entries: FormEntry[] }>({
+  entries: [makeEntry()],
 });
 
 // 是否存在可保存的条目（至少一条 value 非空）
@@ -22,6 +34,9 @@ const canSave = computed(() => editForm.entries.some(e => e.value.trim().length 
 async function loadLogs() {
   loading.value = true;
   try {
+    // 取 CSRF token（写入接口需要）
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     // 调用管理员专用 API，无缓存，返回原始数据
     logs.value = await $fetch<ChangelogItem[]>("/api/admin/changelogs");
   } catch (err) {
@@ -45,7 +60,7 @@ function formatDate(dateStr: string | Date) {
 
 // 添加一条空白条目
 function addEntry() {
-  editForm.entries.push({ type: "新增", value: "" });
+  editForm.entries.push(makeEntry());
 }
 
 // 删除某条条目（至少保留 1 行，避免空表单）
@@ -56,7 +71,7 @@ function removeEntry(index: number) {
 
 // 重置为单条空白
 function resetForm() {
-  editForm.entries = [{ type: "新增", value: "" }];
+  editForm.entries = [makeEntry()];
 }
 
 // 开始编辑
@@ -65,11 +80,8 @@ function startEdit(log: ChangelogItem) {
   const src = Array.isArray(log?.content) ? log.content : [];
   editForm.entries =
     src.length > 0
-      ? src.map(c => ({
-          type: c.type ?? "新增",
-          value: c.value ?? "",
-        }))
-      : [{ type: "新增", value: "" }];
+      ? src.map(c => makeEntry(c.type ?? "新增", c.value ?? ""))
+      : [makeEntry()];
 }
 
 // 取消编辑
@@ -93,13 +105,13 @@ async function save() {
     if (editingId.value) {
       await $fetch(`/api/admin/changelogs/${editingId.value}`, {
         method: "PUT",
-        body: { content: entries },
+        body: { content: entries, csrfToken: csrfToken.value },
       });
       toast.success({ message: "更新成功" });
     } else {
       await $fetch("/api/admin/changelogs", {
         method: "POST",
-        body: { content: entries },
+        body: { content: entries, csrfToken: csrfToken.value },
       });
       toast.success({ message: "添加成功" });
     }
@@ -122,6 +134,7 @@ async function deleteLog(id: number) {
   try {
     await $fetch(`/api/admin/changelogs/${id}`, {
       method: "DELETE",
+      headers: { "x-csrf-token": csrfToken.value },
     });
     toast.success({ message: "删除成功" });
     await loadLogs();
@@ -147,7 +160,7 @@ async function onImportFile(event: Event) {
     const source = await file.text();
     const res = await $fetch<{ imported?: number }>("/api/admin/changelogs/import", {
       method: "POST",
-      body: { source },
+      body: { source, csrfToken: csrfToken.value },
     });
 
     toast.success({
@@ -201,7 +214,7 @@ onMounted(() => {
         <form class="space-y-3" @submit.prevent="save">
           <!-- 条目编辑器：可重复行 -->
           <div class="space-y-2">
-            <div v-for="(entry, index) in editForm.entries" :key="index" class="rounded-lg border p-3">
+            <div v-for="(entry, index) in editForm.entries" :key="entry._key" class="rounded-lg border p-3">
               <div class="flex items-start gap-2">
                 <div class="w-28 shrink-0">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
@@ -261,7 +274,7 @@ onMounted(() => {
           <!-- 编辑模式 -->
           <form v-if="editingId === log.id" class="space-y-3" @submit.prevent="save">
             <div class="space-y-2">
-              <div v-for="(entry, index) in editForm.entries" :key="index" class="rounded-lg border p-3">
+              <div v-for="(entry, index) in editForm.entries" :key="entry._key" class="rounded-lg border p-3">
                 <div class="flex items-start gap-2">
                   <div class="w-28 shrink-0">
                     <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>

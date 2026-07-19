@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -21,7 +22,14 @@ export default defineEventHandler(async event => {
   }
 
   const body = await readBody(event);
-  const { action } = body; // "approve" 或 "reject"
+  const { action, csrfToken } = body; // "approve" 或 "reject"
+
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
 
   if (action !== "approve" && action !== "reject") {
     throw createError({

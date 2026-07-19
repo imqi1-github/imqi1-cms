@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {parseUserAgent} from "~/utils/parseUserAgent";
 import type {CommentItem} from "~/types/apis/admin/comments";
+import type {CsrfResponse} from "~/types/apis/admin/categories";
 
 const route = useRoute();
 const router = useRouter();
@@ -9,6 +10,7 @@ const loading = ref(true);
 const comments = ref<CommentItem[]>([]);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
+const csrfToken = ref("");
 const filterCid = ref<number | null>(null); // 筛选的文章ID
 const pagination = ref({
   page: 1,
@@ -105,6 +107,12 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
   loading.value = true;
   selectedIds.value = [];
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
+    }
+
     // 构建查询参数
     let url = `/api/admin/comments?page=${page}&pageSize=20`;
     if (filterCid.value) {
@@ -164,7 +172,10 @@ async function saveEdit() {
   try {
     await $fetch(`/api/admin/comments/${editingComment.value.coid}`, {
       method: "PATCH",
-      body: editForm.value,
+      body: {
+        csrfToken: csrfToken.value,
+        ...editForm.value,
+      },
     });
 
     toast.success({
@@ -184,7 +195,10 @@ async function setStatus(coid: number, status: number) {
   try {
     await $fetch(`/api/admin/comments/${coid}`, {
       method: "PATCH",
-      body: { status },
+      body: {
+        csrfToken: csrfToken.value,
+        status,
+      },
     });
     await fetchComments(pagination.value.page, false);
     toast.success({
@@ -201,7 +215,10 @@ async function deleteComment(coid: number) {
   const confirmed = confirm("确定要删除这条评论吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/comments/${coid}`, { method: "DELETE" });
+      await $fetch(`/api/admin/comments/${coid}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken.value },
+      });
       await fetchComments(pagination.value.page, false);
       toast.success({
         message: "评论已删除",
@@ -226,7 +243,10 @@ async function batchDelete() {
     try {
       const res = await $fetch<{ message?: string }>("/api/admin/comments/batch-delete", {
         method: "POST",
-        body: { ids: selectedIds.value },
+        body: {
+          csrfToken: csrfToken.value,
+          ids: selectedIds.value,
+        },
       });
       toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];
@@ -292,6 +312,12 @@ function formatDate(date: string) {
 
 function getStatusInfo(status: number) {
   return statusOptions.find(s => s.value === status) || statusOptions[0]!;
+}
+
+// 评论元信息（IP 归属地 + UA 的 os/browser），parseUserAgent 只调一次
+function formatCommentMeta(comment: CommentItem) {
+  const ua = parseUserAgent(comment.agent ?? "");
+  return [comment.location, comment.isp, ua.os, ua.browser].filter(Boolean).join(" · ");
 }
 
 onMounted(() => {
@@ -432,7 +458,7 @@ onMounted(() => {
                 </Badge>
               </TableCell>
               <TableCell>
-                <div class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</div>
+                <div class="text-xs text-muted-foreground">{{ formatDate(comment.create_time) }} · {{ formatCommentMeta(comment) }}</div>
                 <div class="text-xs text-muted-foreground">{{ comment.ip }}</div>
               </TableCell>
               <TableCell class="text-right">
@@ -542,7 +568,7 @@ onMounted(() => {
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="truncate">{{ getContentTitle(comment) }}</span>
                 </Button>
-                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</span>
+                <span>{{ formatDate(comment.create_time) }} · {{ formatCommentMeta(comment) }}</span>
                 <span>{{ comment.ip }}</span>
               </div>
             </div>
@@ -648,7 +674,7 @@ onMounted(() => {
                   <Icon name="lucide:filter" class="size-3 mr-1 shrink-0" />
                   <span class="truncate">{{ getContentTitle(comment) }}</span>
                 </Button>
-                <span>{{ formatDate(comment.create_time) }} · {{ [comment.location, comment.isp, parseUserAgent(comment.agent ?? "").os, parseUserAgent(comment.agent ?? "").browser].filter(Boolean).join(' · ') }}</span>
+                <span>{{ formatDate(comment.create_time) }} · {{ formatCommentMeta(comment) }}</span>
                 <span>{{ comment.ip }}</span>
               </div>
             </div>

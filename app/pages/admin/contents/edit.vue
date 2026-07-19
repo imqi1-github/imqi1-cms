@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type {AcceptableValue} from "reka-ui";
 
-import type {Attachment, Category, ContentMeta, Tag, Travel, ContentApiResponse} from "~/types/apis/admin/contents";
+import type {Attachment, Category, ContentMeta, ContentSaveResponse, Tag, Travel, ContentApiResponse} from "~/types/apis/admin/contents";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+
+const csrfToken = ref("");
 
 // 判断是新建还是编辑
 const isEdit = computed(() => !!route.query.cid);
@@ -43,7 +46,6 @@ const publishDate = ref("");
 const showToc = ref(false);
 const manyCovers = ref(false);
 const status = ref("published"); // draft | published
-const tags = ref(""); // 标签
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 
 // 分类相关
@@ -109,7 +111,7 @@ const saveContentCategories = async () => {
   try {
     await $fetch(`/api/admin/content-categories/${contentId.value}`, {
       method: "PUT",
-      body: { categoryIds: selectedCategoryIds.value },
+      body: { categoryIds: selectedCategoryIds.value, csrfToken: csrfToken.value },
     });
   } catch (error) {
     console.error("保存分类失败:", error);
@@ -123,7 +125,7 @@ const saveContentTags = async () => {
   try {
     await $fetch(`/api/admin/content-tags/${contentId.value}`, {
       method: "PUT",
-      body: { tagIds: selectedTagIds.value },
+      body: { tagIds: selectedTagIds.value, csrfToken: csrfToken.value },
     });
   } catch (error) {
     console.error("保存标签失败:", error);
@@ -211,6 +213,7 @@ async function setTravelContent(travel: Travel, add: boolean) {
         latitude: travel.latitude,
         sort: travel.sort ?? 0,
         enabled: travel.enabled !== false,
+        csrfToken: csrfToken.value,
       },
     });
     await fetchTravels();
@@ -407,19 +410,11 @@ const deleteAttachment = async (attachment: Attachment) => {
   if (!contentId.value) return;
 
   try {
-    // 获取 CSRF token
-    const csrfToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('csrf_token='))
-      ?.split('=')[1];
-
     const params = new URLSearchParams({ cid: String(contentId.value) });
-    if (csrfToken) {
-      params.set("csrfToken", csrfToken);
-    }
 
     await $fetch(`/api/attachments/${attachment.id}?${params}`, {
       method: "DELETE",
+      headers: { "x-csrf-token": csrfToken.value },
     });
 
     attachments.value = attachments.value.filter(a => a.id !== attachment.id);
@@ -467,7 +462,6 @@ const fetchContent = async () => {
       content.value = contentData.content || "";
       manyCovers.value = contentData.many_covers || false;
       showToc.value = contentData.show_toc !== false;
-      tags.value = contentData.tags || "";
       status.value = contentData.status === 1 ? "published" : "draft";
 
       // 解析封面数据：从 JSON 格式转为输入框格式
@@ -540,8 +534,8 @@ const checkUnsavedChanges = () => {
     publishDate.value !== initialPublishDate.value ||
     showToc.value !== initialShowToc.value ||
     manyCovers.value !== initialManyCovers.value ||
-    JSON.stringify(selectedCategoryIds.value.sort()) !== JSON.stringify(initialCategoryIds.value.sort()) ||
-    JSON.stringify(selectedTagIds.value.sort()) !== JSON.stringify(initialTagIds.value.sort())
+    JSON.stringify([...selectedCategoryIds.value].sort()) !== JSON.stringify([...initialCategoryIds.value].sort()) ||
+    JSON.stringify([...selectedTagIds.value].sort()) !== JSON.stringify([...initialTagIds.value].sort())
   );
 };
 
@@ -599,13 +593,11 @@ const saveContent = async () => {
         .map(line => line.trim())
         .filter(line => line.length > 0)
         .map(line => {
-          const parts = line.split("||");
-          if (parts.length === 2) {
-            return { url: parts[0]!.trim(), title: parts[1]!.trim() };
-          } else if (parts.length === 1 && parts[0]!.trim()) {
-            return { url: parts[0]!.trim(), title: "" };
-          }
-          return null;
+          // 首段为 url，其余用 || 重新拼接为 title（容忍标题中含 ||）；空 url 丢弃。
+          const [urlPart, ...titleParts] = line.split("||");
+          const url = (urlPart || "").trim();
+          if (!url) return null;
+          return { url, title: titleParts.join("||").trim() };
         })
         .filter(c => c !== null);
       if (coversArray.length > 0) {
@@ -623,19 +615,19 @@ const saveContent = async () => {
       covers: coversValue,
       showToc: showToc.value,
       publishDate: publishDate.value,
-      tags: tags.value,
+      csrfToken: csrfToken.value,
     };
 
-    let res: ContentApiResponse;
+    let res: ContentSaveResponse;
     if (isEdit.value && contentId.value) {
       // 更新文章
-      res = await $fetch<ContentApiResponse>(`/api/admin/contents/${contentId.value}`, {
+      res = await $fetch<ContentSaveResponse>(`/api/admin/contents/${contentId.value}`, {
         method: "PUT",
         body,
       });
     } else {
       // 创建文章
-      res = await $fetch<ContentApiResponse>("/api/admin/contents", {
+      res = await $fetch<ContentSaveResponse>("/api/admin/contents", {
         method: "POST",
         body,
       });
@@ -686,39 +678,47 @@ const openContent = () => {
     return;
   }
 
-  if (selectedCategoryIds.value.length === 0) {
-    toast.error({
-      message: "请先为文章选择分类",
+  // 草稿未发布到前台，直接预览会 404。
+  if (status.value !== "published") {
+    toast.warning({
+      message: "草稿文章暂不可在前台预览",
     });
     return;
   }
 
-  // 获取第一个分类
-  const categoryId = selectedCategoryIds.value[0];
+  // 使用已保存的分类/slug 生成预览链接，避免用未保存的本地编辑值导致前台 404
+  if (initialCategoryIds.value.length === 0) {
+    toast.error({
+      message: "请先保存文章并选择分类",
+    });
+    return;
+  }
+
+  // 取已保存的第一个分类
+  const categoryId = initialCategoryIds.value[0];
   const category = categories.value.find(c => c.mid === categoryId);
 
-  if (!category) {
+  // 分类缺失或分类未设 slug 时无法生成有效前台链接。
+  if (!category || !category.slug) {
     toast.error({
-      message: "分类信息错误",
+      message: "分类信息错误或分类缺少 slug",
     });
     return;
   }
 
-  // 使用 slug 或 cid 构建 URL
-  const contentSlug = slug.value || contentId.value;
+  // 使用已保存的 slug（或 cid）构建 URL
+  const contentSlug = initialSlug.value || contentId.value;
 
-  // 构建文章 URL
-  const url = `/content/${category.slug}/${contentSlug}`;
-
-  // 在新窗口打开
-  window.open(url, '_blank');
+  // 在新窗口打开（noopener 防止反向标签劫持）
+  window.open(`/content/${category.slug}/${contentSlug}`, "_blank", "noopener");
 };
 
 // 页面加载时获取文章数据
 onMounted(async () => {
   // 获取 CSRF token
   try {
-    await $fetch('/api/csrf/token');
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
   } catch (error) {
     console.error('获取 CSRF token 失败:', error);
   }

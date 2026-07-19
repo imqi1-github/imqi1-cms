@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {ContentListItem, TravelItem} from "~/types/components/map";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
 const loading = ref(true);
@@ -7,6 +8,7 @@ const travels = ref<TravelItem[]>([]);
 const contents = ref<ContentListItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
+const csrfToken = ref("");
 
 const defaultForm = () => ({
   name: "",
@@ -55,6 +57,12 @@ function contentTitles(travel: TravelItem) {
 async function fetchTravels() {
   loading.value = true;
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
+    }
+
     travels.value = await $fetch<TravelItem[]>("/api/admin/travels");
   } catch (error) {
     console.error("获取旅行地点失败:", error);
@@ -100,6 +108,8 @@ function validateCoordinates(form: ReturnType<typeof defaultForm>) {
 }
 
 function buildPayload(form: ReturnType<typeof defaultForm>) {
+  // enabled 不在此设定：新建默认启用（addTravel 传 true），编辑保留当前状态（saveEdit 传 editingTravel.enabled），
+  // 避免编辑保存时把已禁用的地点静默重新启用
   return {
     name: form.name,
     desc: form.desc,
@@ -108,7 +118,6 @@ function buildPayload(form: ReturnType<typeof defaultForm>) {
     longitude: Number(form.longitude),
     latitude: Number(form.latitude),
     sort: Number(form.sort) || 0,
-    enabled: true,
   };
 }
 
@@ -123,7 +132,11 @@ async function addTravel() {
   try {
     await $fetch("/api/admin/travels", {
       method: "POST",
-      body: buildPayload(newTravel.value),
+      body: {
+        csrfToken: csrfToken.value,
+        ...buildPayload(newTravel.value),
+        enabled: true,
+      },
     });
     newTravel.value = defaultForm();
     addContentKeyword.value = "";
@@ -163,7 +176,11 @@ async function saveEdit() {
   try {
     await $fetch(`/api/admin/travels/${editingTravel.value.id}`, {
       method: "PUT",
-      body: buildPayload(editTravelForm.value),
+      body: {
+        csrfToken: csrfToken.value,
+        ...buildPayload(editTravelForm.value),
+        enabled: editingTravel.value.enabled,
+      },
     });
     showEditModal.value = false;
     toast.success({ message: "更新成功" });
@@ -179,6 +196,7 @@ async function toggleEnabled(travel: TravelItem) {
     await $fetch(`/api/admin/travels/${travel.id}`, {
       method: "PUT",
       body: {
+        csrfToken: csrfToken.value,
         name: travel.name,
         desc: travel.desc,
         cover: travel.cover,
@@ -200,7 +218,10 @@ async function deleteTravel(id: number) {
   const confirmed = confirm("确定要删除这个旅行地点吗？");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/travels/${id}`, { method: "DELETE" });
+      await $fetch(`/api/admin/travels/${id}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken.value },
+      });
       toast.success({ message: "删除成功" });
       await fetchTravels();
     } catch (error) {

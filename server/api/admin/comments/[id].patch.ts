@@ -1,5 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
+import { validateCsrfToken } from "#server/utils/csrf";
 import { validateCommentData } from "#server/utils/validation";
 
 export default defineEventHandler(async event => {
@@ -23,11 +24,19 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const { name, mail, link, content, status } = body;
+  const { csrfToken, name, mail, link, content, status } = body;
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
 
   // 验证字段长度
-  if (name !== undefined || mail !== undefined) {
-    validateCommentData({ name, mail });
+  if (name !== undefined || mail !== undefined || link !== undefined) {
+    validateCommentData({ name, mail, link });
   }
 
   try {
@@ -79,6 +88,7 @@ export default defineEventHandler(async event => {
     };
   } catch (error) {
     console.error(error);
+    if (error && typeof error === "object" && "statusCode" in error) throw error;
     throw createError({
       statusCode: 500,
       message: "更新评论失败",

@@ -46,16 +46,12 @@ export function validateCommentData(data: {
 export function validateContentData(data: {
   title?: string;
   slug?: string | null;
-  tags?: string | null;
 }): void {
   if (data.title) {
     validateMaxLength(data.title, 255, "标题");
   }
   if (data.slug) {
     validateMaxLength(data.slug, 255, "标识");
-  }
-  if (data.tags) {
-    validateMaxLength(data.tags, 500, "标签");
   }
 }
 

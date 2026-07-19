@@ -2,6 +2,8 @@
 import type { PublicAttachment, PublicAttachmentListResponse, PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 import type { ContentDetailResponse } from "~/types/apis/admin/pages";
+import type { ContentSaveResponse } from "~/types/apis/admin/contents";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
 
 const route = useRoute();
@@ -17,6 +19,7 @@ watch(() => route.query.cid, (newCid) => {
 
 const activeTab = ref("content");
 const loading = ref(false);
+const csrfToken = ref("");
 
 // 表单数据
 const title = ref("");
@@ -189,19 +192,11 @@ const deleteAttachment = async (attachment: PublicAttachment) => {
   if (!pageId.value) return;
 
   try {
-    // 获取 CSRF token
-    const csrfToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('csrf_token='))
-      ?.split('=')[1];
-
     const params = new URLSearchParams({ cid: String(pageId.value) });
-    if (csrfToken) {
-      params.set("csrfToken", csrfToken);
-    }
 
     await $fetch(`/api/attachments/${attachment.id}?${params}`, {
       method: "DELETE",
+      headers: { "x-csrf-token": csrfToken.value },
     });
 
     attachments.value = attachments.value.filter(a => a.id !== attachment.id);
@@ -279,7 +274,7 @@ const fetchPage = async () => {
 };
 
 // 保存页面
-const savePage = async (publish = false) => {
+const savePage = async () => {
   if (!title.value.trim()) {
     toast.error({
       message: "请输入页面标题",
@@ -297,13 +292,10 @@ const savePage = async (publish = false) => {
         .map(line => line.trim())
         .filter(line => line.length > 0)
         .map(line => {
-          const parts = line.split('||');
-          if (parts.length === 2) {
-            return { url: parts[0]!.trim(), title: parts[1]!.trim() };
-          } else if (parts.length === 1 && parts[0]!.trim()) {
-            return { url: parts[0]!.trim(), title: '' };
-          }
-          return null;
+          const [urlPart, ...titleParts] = line.split('||');
+          const url = (urlPart || '').trim();
+          if (!url) return null;
+          return { url, title: titleParts.join('||').trim() };
         })
         .filter(c => c !== null);
       if (coversArray.length > 0) {
@@ -317,22 +309,23 @@ const savePage = async (publish = false) => {
       content: content.value,
       desc: desc.value,
       show_toc: showToc.value,
-      status: publish ? 1 : status.value,
+      status: status.value,
       type: 1, // 1: 页面
       manyCovers: manyCovers.value,
       covers: coversValue,
+      csrfToken: csrfToken.value,
     };
 
-    let res: ContentDetailResponse | undefined;
+    let res: ContentSaveResponse | undefined;
     if (isEdit.value && pageId.value) {
       // 更新
-      res = await $fetch<ContentDetailResponse>(`/api/admin/contents/${pageId.value}`, {
+      res = await $fetch<ContentSaveResponse>(`/api/admin/contents/${pageId.value}`, {
         method: "PUT",
         body,
       });
     } else {
       // 新建
-      res = await $fetch<ContentDetailResponse>("/api/admin/contents", {
+      res = await $fetch<ContentSaveResponse>("/api/admin/contents", {
         method: "POST",
         body,
       });
@@ -377,9 +370,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 onMounted(async () => {
-  // 获取 CSRF token
+  // 获取 CSRF token（保存/删除附件写入接口需要）
   try {
-    await $fetch('/api/csrf/token');
+    const csrfRes = await $fetch<CsrfResponse>('/api/csrf/token', { credentials: "include" });
+    if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
   } catch (error) {
     console.error('获取 CSRF token 失败:', error);
   }

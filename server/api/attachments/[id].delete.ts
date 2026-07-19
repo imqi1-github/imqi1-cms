@@ -1,4 +1,4 @@
-import { createError, getQuery, getRouterParam } from "h3";
+import { createError, getHeader, getQuery, getRouterParam } from "h3";
 
 import { getUser } from "#server/lib/auth";
 import { deleteAttachmentFile } from "#server/utils/attachment-file";
@@ -24,9 +24,9 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // CSRF 验证 - 从查询参数获取
+    // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
+    const csrfToken = getHeader(event, "x-csrf-token") as string;
     const query = getQuery(event);
-    const csrfToken = query.csrfToken as string;
     if (!validateCsrfToken(event, csrfToken)) {
       throw createError({
         statusCode: 403,

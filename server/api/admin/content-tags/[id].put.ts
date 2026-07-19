@@ -1,5 +1,6 @@
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
+import { validateCsrfToken } from "#server/utils/csrf";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -20,17 +21,25 @@ export default defineEventHandler(async event => {
     });
   }
 
+  const body = await readBody(event);
+  const { tagIds, csrfToken } = body;
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: "CSRF token 验证失败，请刷新页面重试",
+    });
+  }
+
+  if (!Array.isArray(tagIds)) {
+    throw createError({
+      statusCode: 400,
+      message: "tagIds 必须是数组",
+    });
+  }
+
   try {
-    const body = await readBody(event);
-    const { tagIds } = body;
-
-    if (!Array.isArray(tagIds)) {
-      throw createError({
-        statusCode: 400,
-        message: "tagIds 必须是数组",
-      });
-    }
-
     await prisma.contentrelations.deleteMany({
       where: {
         cid: Number(id),

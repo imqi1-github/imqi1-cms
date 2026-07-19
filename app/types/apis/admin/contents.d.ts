@@ -100,3 +100,9 @@ export interface ContentResponse {
 
 // Union type for both create and update responses
 export type ContentApiResponse = ContentResponse;
+
+/** 创建/更新文章接口返回：前端保存后只需 cid（不再回传正文等全字段） */
+export interface ContentSaveResponse {
+	success: boolean;
+	data: { cid: number };
+}

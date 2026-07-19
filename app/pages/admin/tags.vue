@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TagItem } from "~/types/apis/admin/tags";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
 
 const router = useRouter();
@@ -12,10 +13,17 @@ const showEditModal = ref(false);
 const newTag = ref({ name: "", slug: "", desc: "" });
 const editingTag = ref<TagItem | null>(null);
 const editTagForm = ref({ name: "", slug: "", desc: "" });
+const csrfToken = ref("");
 
 async function fetchTags() {
   loading.value = true;
   try {
+    // 获取 CSRF token
+    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
+    }
+
     tags.value = await $fetch<TagItem[]>("/api/admin/tags");
   } catch (error) {
     console.error("获取标签失败:", error);
@@ -29,7 +37,10 @@ async function addTag() {
   try {
     await $fetch("/api/admin/tags", {
       method: "POST",
-      body: newTag.value,
+      body: {
+        csrfToken: csrfToken.value,
+        ...newTag.value,
+      },
     });
     newTag.value = { name: "", slug: "", desc: "" };
     showAddModal.value = false;
@@ -95,7 +106,10 @@ async function updateTag() {
   try {
     await $fetch(`/api/admin/tags/${editingTag.value.mid}`, {
       method: "PUT",
-      body: editTagForm.value,
+      body: {
+        csrfToken: csrfToken.value,
+        ...editTagForm.value,
+      },
     });
     showEditModal.value = false;
     toast.success({ message: "标签更新成功" });
@@ -118,7 +132,10 @@ async function deleteTag(mid: number) {
   const confirmed = confirm("确定要删除这个标签吗？删除后文章将不再关联此标签。");
   if (confirmed) {
     try {
-      await $fetch(`/api/admin/tags/${mid}`, { method: "DELETE" });
+      await $fetch(`/api/admin/tags/${mid}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken.value },
+      });
       toast.success({ message: "标签删除成功" });
       await fetchTags();
     } catch (rawError: unknown) {
