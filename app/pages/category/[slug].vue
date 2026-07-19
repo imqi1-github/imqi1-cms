@@ -64,7 +64,7 @@ const isNotFound = computed(() => !pending.value && (!category.value || error.va
 // 分类不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
 if (import.meta.server) {
   const event = useRequestEvent();
-  if (isNotFound.value) setResponseStatus(event, 404);
+  if (event && isNotFound.value) setResponseStatus(event, 404);
 }
 
 // 骨架屏显示状态

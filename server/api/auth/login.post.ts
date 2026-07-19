@@ -28,7 +28,7 @@ async function getDummyHash(): Promise<string> {
 function getClientIp(event: H3Event): string {
   const xff = getHeader(event, "x-forwarded-for");
   if (typeof xff === "string" && xff.length > 0) {
-    return xff.split(",")[0].trim();
+    return (xff.split(",")[0] ?? "").trim();
   }
   return "unknown";
 }

@@ -44,7 +44,7 @@
 <script setup lang="ts">
 // 获取目标跳转地址
 import type {ApiError} from "~/types/apis/login";
-import type {AuthStatus} from "~/types/apis/auth";
+import type {AuthVerifyResponse} from "~/types/apis/auth";
 
 const route = useRoute()
 const redirectTo = computed(() => {
@@ -70,14 +70,16 @@ const hasUser = ref(true)
 onMounted(async () => {
   // 检查是否已经登录
   try {
-    const verifyRes = await $fetch('/api/auth/verify')
+    const verifyRes = await $fetch<AuthVerifyResponse>('/api/auth/verify')
     if (verifyRes.valid) {
       // 已经登录，跳转到后台
       await navigateTo(redirectTo.value)
       return
     }
+    // 未登录：从 verify 响应取系统初始化状态（原 /api/auth/status 已并入此处）
+    hasUser.value = verifyRes.hasUser
   } catch {
-    // 未登录，继续获取 CSRF token
+    // verify 异常时保持默认 hasUser=true（不显示初始化提示），继续获取 CSRF token
   }
 
   // 获取 CSRF token
@@ -88,15 +90,6 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('获取 CSRF token 失败:', error)
-  }
-
-  // 检查是否已存在可登录用户（单用户初始化提示）
-  try {
-    const statusRes = await $fetch<AuthStatus>('/api/auth/status')
-    hasUser.value = statusRes.hasUser
-  } catch {
-    // 接口异常时默认不显示提示，避免阻断登录
-    hasUser.value = true
   }
 })
 

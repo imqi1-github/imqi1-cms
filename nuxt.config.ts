@@ -13,9 +13,8 @@ const isProduction = process.env.NODE_ENV === "production";
 const hasCdn = siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http");
 const cdnURL = isProduction && hasCdn ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl) : "";
 const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path);
-// CSP 中使用的 CDN 源：未配置时回退为空字符串，避免拼接出字面量 "undefined" 导致该指令失效
-const cspCdn = hasCdn ? siteConfig.cdnUrl : "";
-const cspContent = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${cspCdn} https://*.amap.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' ${cspCdn}; img-src 'self' data: https: blob: ${cspCdn}; font-src 'self' data: ${cspCdn}; manifest-src 'self' ${cspCdn}; media-src 'self' https: http: data: blob:; connect-src 'self' ${cspCdn} https://api.github.com https://gitee.com https://*.amap.com blob:; object-src 'none'; base-uri 'self'; form-action 'self';`;
+// CSP 已改为运行时按每请求 nonce 生成、通过 HTTP 响应头投递（不再用静态 <meta>），
+// 见 server/utils/csp.ts（策略拼装）+ server/plugins/csp.ts（render:response 注入 nonce 与设头）
 const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 
 // 获取当前环境的 Redis 配置
@@ -332,14 +331,6 @@ export default defineNuxtConfig({
         },
       ],
       meta: [
-        ...(isProduction && siteConfig.security.enableCsp
-          ? [
-              {
-                "http-equiv": "Content-Security-Policy",
-                content: cspContent,
-              },
-            ]
-          : []),
         // 基础元信息
         {
           name: "author",

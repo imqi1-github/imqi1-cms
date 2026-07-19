@@ -17,7 +17,10 @@ function isPrivateIp(ip: string): boolean {
   const v = isIP(ip);
   if (v === 4) {
     const parts = ip.split(".").map(Number);
-    const [a, b] = parts;
+    const a = parts[0];
+    const b = parts[1];
+    // isIP===4 保证 4 段，严格模式下仍需收窄掉 undefined
+    if (a === undefined || b === undefined) return false;
     if (a === 0) return true; // 0.0.0.0/8
     if (a === 10) return true; // 10.0.0.0/8
     if (a === 127) return true; // 环回 127.0.0.0/8

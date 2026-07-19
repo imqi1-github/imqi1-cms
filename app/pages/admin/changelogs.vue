@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {CHANGELOG_TYPES, type ChangelogEntry, getChangelogMeta} from "~~/shared/changelog";
+import {CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta} from "~~/shared/changelog";
 import type {ChangelogItem} from "~/types/apis/admin/changelogs/logs";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
@@ -17,11 +17,11 @@ const editingId = ref<number | null>(null);
 // 编辑表单的条目：带稳定 _key，供 v-for 使用（用 index 作 key 会在增删时串行错位）
 interface FormEntry {
   _key: number;
-  type: string;
+  type: ChangelogType;
   value: string;
 }
 let entryKeySeed = 0;
-const makeEntry = (type = "新增", value = ""): FormEntry => ({ _key: ++entryKeySeed, type, value });
+const makeEntry = (type: ChangelogType = "新增", value = ""): FormEntry => ({ _key: ++entryKeySeed, type, value });
 
 const editForm = reactive<{ entries: FormEntry[] }>({
   entries: [makeEntry()],
