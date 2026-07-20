@@ -10,6 +10,15 @@ const router = useRouter();
 // 若在 setup 顶层一次性解构，slug 会停留在旧值，useFetch 不重新请求、路由守卫也判断错误。
 const slug = computed(() => route.params.slug as string);
 
+// useFetch 不能直接追踪 route.params.slug：SPA 导航到文章页 /content/{cat}/{文章slug} 时，
+// route.params.slug 会变成文章 slug（Typecho 迁移文章常为纯数字 cid），分类页组件在页面过渡
+// 卸载前仍存活，useFetch 会自动用文章 slug 重新请求 /api/category/{文章slug}/contents → 404 噪音。
+// 用本地 ref 锁定，仅在路由仍在分类页时同步 slug。
+const apiSlug = ref(slug.value);
+watch(slug, value => {
+  if (route.path.startsWith("/category/")) apiSlug.value = value;
+});
+
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
@@ -21,11 +30,11 @@ const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
 const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取分类文章数据
-// URL 用函数形式 + watch:[page, slug]：切分类时（slug 变）也会重新请求，而非复用旧数据
-const { data, pending, error } = await useFetch(() => `/api/category/${slug.value}/contents`, {
+// URL/watch 基于 apiSlug（仅分类页内同步）：切分类时重新请求，SPA 导航离开文章页时不再误请求
+const { data, pending, error } = await useFetch(() => `/api/category/${apiSlug.value}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: contentPageSize },
-  watch: [page, slug],
+  watch: [page, apiSlug],
 });
 
 const category = computed(() => data.value?.data?.category);
