@@ -1,9 +1,14 @@
 #!/usr/bin/env tsx
 import { existsSync } from "node:fs";
 import { isIP } from "node:net";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import IPDBDefault from "ipdb";
+
+// 脚本可能从任意 cwd 运行（npm 脚本 `cd scripts && bunx tsx ...` 会把 cwd 切到 scripts/），
+// 用 __dirname 锚定项目根，避免去 scripts/server/runtime-assets 找库。
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const IPDB = typeof IPDBDefault === "function" ? IPDBDefault : (IPDBDefault as { default: typeof IPDBDefault }).default;
 const DB_FILE = "qqwry.ipdb";
@@ -38,7 +43,7 @@ function normalizeIp(ip: string): string {
 function resolveDbPath(): string {
   const candidates = [
     process.env.QQWRY_IPDB_PATH || "",
-    join(process.cwd(), "server", "runtime-assets", DB_FILE),
+    join(__dirname, "..", "server", "runtime-assets", DB_FILE),
   ].filter(Boolean);
 
   const found = candidates.find(path => existsSync(path));
