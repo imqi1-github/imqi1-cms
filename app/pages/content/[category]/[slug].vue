@@ -1011,7 +1011,7 @@ onMounted(async () => {
                 <img
                   src="${image}"
                   alt="${title}"
-                  class="size-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  class="size-full object-cover markdown-card__thumb"
                   loading="lazy"
                   decoding="async"
                 />
@@ -2333,7 +2333,17 @@ onUnmounted(() => {
 .markdown-body :deep(.markdown-simple-card img),
 .markdown-body :deep(.markdown-repo img) {
   height: 100%;
-  transition: transform 0.3s ease;
+}
+
+/* 大链接卡片左侧缩略图：hover 时平滑放大，过渡由 CSS 显式驱动，
+   不依赖工具类（卡片 HTML 是 innerHTML 注入，group-hover/transition 工具类扫描不可靠） */
+.markdown-body :deep(.markdown-card .markdown-card__thumb) {
+  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: transform;
+}
+
+.markdown-body :deep(.markdown-card a:hover) .markdown-card__thumb {
+  transform: scale(1.06);
 }
 
 .markdown-body :deep(.markdown-image-container),
