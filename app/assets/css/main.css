@@ -144,6 +144,13 @@ html.theme-color-instant body * {
     box-shadow 0s !important;
 }
 
+/* 主题切换期间及切换后短时内隐藏 floating-vue tooltip：
+   view-transition 快照/恢复会打乱 tooltip 状态机，造成切换后 tooltip 闪现一下又消失。
+   theme-tooltip-suppress 由 handleClick 在切换开始时挂上、切换完成后再延迟 300ms 移除。 */
+html.theme-tooltip-suppress .v-popper__popper {
+  visibility: hidden !important;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
