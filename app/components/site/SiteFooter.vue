@@ -54,21 +54,21 @@ const colorMode = useColorMode();
 // 移动端按钮组展开状态
 const isMobileButtonsOpen = ref(false);
 
-const travelBtnShell =
-  "border-transparent bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] text-slate-900 dark:text-slate-100";
+// 地图页毛玻璃基底：三处 shell 共用，避免重复内联同一串 class
+const travelBg = "bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] text-slate-900 dark:text-slate-100";
+const travelBtnShell = `border-transparent ${travelBg}`;
 const footerBtnShell = computed(() =>
   isTravelPage.value ? travelBtnShell : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800",
 );
 const footerBtnShadow = computed(() => (isTravelPage.value ? "" : "shadow-lg"));
-const toggleBtnShell = computed(() =>
-  isTravelPage.value
-    ? isMobileButtonsOpen.value
-      ? "border-red-500 bg-linear-to-b from-white/60 to-white/85 dark:from-black/60 dark:to-black/85 backdrop-blur-[20px] text-slate-900 dark:text-slate-100"
-      : travelBtnShell
-    : isMobileButtonsOpen.value
-      ? "border-red-500 bg-white dark:bg-slate-800"
-      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800",
-);
+const toggleBtnShell = computed(() => {
+  if (isTravelPage.value) {
+    return `${isMobileButtonsOpen.value ? "border-red-500" : "border-transparent"} ${travelBg}`;
+  }
+  return isMobileButtonsOpen.value
+    ? "border border-red-500 bg-white dark:bg-slate-800"
+    : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800";
+});
 
 // 使用 computed 替代 ref + watch，减少响应式开销
 const isDarkMode = computed(() => colorMode.value === "dark");
@@ -83,7 +83,7 @@ const handleClick = async (event: MouseEvent) => {
 
   const x = event.clientX;
   const y = event.clientY;
-  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
 
   // 判断当前是否为暗色模式
   const isCurrentDark = colorMode.preference === "dark";
@@ -130,18 +130,16 @@ const handleClick = async (event: MouseEvent) => {
   try {
     await transition.ready;
 
-    // 判断切换方向
+    // 进暗色由 old root 收缩（从大到小），进亮色由 new root 扩散（从小到大）
     const isToDark = newMode === "dark";
-
-    // 使用 clip-path 实现圆形扩散
-    const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`];
+    const collapsed = `circle(0px at ${x}px ${y}px)`;
+    const expanded = `circle(${radius}px at ${x}px ${y}px)`;
+    const clipPath = isToDark ? [expanded, collapsed] : [collapsed, expanded];
 
     // 纯 clip-path 动画，不使用缩放
-    document.documentElement
+    await document.documentElement
       .animate(
-        {
-          clipPath: isToDark ? clipPath.reverse() : clipPath,
-        },
+        { clipPath },
         {
           duration: 350,
           easing: "cubic-bezier(0.4, 0.0, 0.2, 1)",
@@ -149,49 +147,30 @@ const handleClick = async (event: MouseEvent) => {
           pseudoElement: isToDark ? "::view-transition-old(root)" : "::view-transition-new(root)",
         },
       )
-      .finished.then(() => {
-        isTransitioning = false;
-        html.classList.remove("theme-color-instant");
-        releaseTooltipSuppress();
-      });
+      .finished;
   } catch (error) {
-    // 如果 transition 失败，确保释放锁
+    // transition.ready/finished 被打断（如导航中途切走）会 reject，记录但不致命
+    console.error("View transition failed:", error);
+  } finally {
+    // 无论成功/失败/被打断都释放防抖锁与临时 class，避免主题按钮被永久锁死
     isTransitioning = false;
     html.classList.remove("theme-color-instant");
     releaseTooltipSuppress();
-    console.error("View transition failed:", error);
   }
 };
 
-// 滚动进度
+// 进度圆环周长 2πr (r=12)，供 stroke-dasharray/dashoffset 使用
+const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * 12;
+
+// 滚动进度：连续值由 rAF 写入，三段显示状态由 computed 派生，减少每帧响应式写入
 const scrollProgress = ref(0);
-const showBackToTop = ref(false);
-const showProgress = ref(false);
+const roundedProgress = computed(() => Math.round(scrollProgress.value));
+const showProgress = computed(() => scrollProgress.value >= 10 && scrollProgress.value < 90);
+const showBackToTop = computed(() => scrollProgress.value >= 90);
 
 const updateScrollProgress = (scrollY: number, innerHeight: number) => {
   const docHeight = document.documentElement.scrollHeight - innerHeight;
-
-  if (docHeight > 0) {
-    scrollProgress.value = (scrollY / docHeight) * 100;
-  } else {
-    scrollProgress.value = 0;
-  }
-
-  // 10%以下不显示
-  if (scrollProgress.value < 10) {
-    showBackToTop.value = false;
-    showProgress.value = false;
-  }
-  // 10%-90% 显示进度圆环
-  else if (scrollProgress.value < 90) {
-    showBackToTop.value = false;
-    showProgress.value = true;
-  }
-  // 90%以上显示返回顶部箭头
-  else {
-    showBackToTop.value = true;
-    showProgress.value = false;
-  }
+  scrollProgress.value = docHeight > 0 ? (scrollY / docHeight) * 100 : 0;
 };
 
 // 滚动进度合流到全局单一 rAF tick（见 useScrollRaf）
@@ -285,7 +264,7 @@ onMounted(() => {
             v-if="showProgress || showBackToTop"
             v-tooltip="'返回顶部'"
             type="button"
-            :aria-label="showProgress ? `返回顶部，当前阅读进度 ${Math.round(scrollProgress)}%` : '返回顶部'"
+            :aria-label="showProgress ? `返回顶部，当前阅读进度 ${roundedProgress}%` : '返回顶部'"
             class="cursor-pointer relative rounded-full p-1.5 flex items-center justify-center transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
             :class="footerBtnShell"
             @click="scrollToTop">
@@ -301,8 +280,8 @@ onMounted(() => {
                   stroke-width="1.5"
                   stroke-linecap="round"
                   class="text-gray-900 dark:text-gray-100"
-                  :stroke-dasharray="75.4"
-                  :stroke-dashoffset="75.4 - (75.4 * scrollProgress) / 100" />
+                  :stroke-dasharray="PROGRESS_CIRCUMFERENCE"
+                  :stroke-dashoffset="PROGRESS_CIRCUMFERENCE - (PROGRESS_CIRCUMFERENCE * scrollProgress) / 100" />
               </svg>
               <div v-else-if="showBackToTop" key="arrow" aria-hidden="true" class="absolute inset-0 flex items-center justify-center">
                 <Icon name="ri:arrow-up-line" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
@@ -311,7 +290,7 @@ onMounted(() => {
             <!-- 进度数字 -->
             <Transition name="icon-fade" mode="out-in">
               <span v-if="showProgress" key="number" aria-hidden="true" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
-                {{ Math.round(scrollProgress) }}
+                {{ roundedProgress }}
               </span>
             </Transition>
           </button>
@@ -320,13 +299,7 @@ onMounted(() => {
 
       <!-- 移动端：页面加载图标 -->
       <ClientOnly>
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 translate-y-4 scale-75"
-          enter-to-class="opacity-100 translate-y-0 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 translate-y-0 scale-100"
-          leave-to-class="opacity-0 translate-y-4 scale-75">
+        <Transition name="btn-pop">
           <button
             v-if="pageLoading"
             v-tooltip="'页面加载中'"
@@ -341,13 +314,7 @@ onMounted(() => {
 
       <!-- 移动端：返回顶部按钮 -->
       <ClientOnly>
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 translate-y-4 scale-75"
-          enter-to-class="opacity-100 translate-y-0 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 translate-y-0 scale-100"
-          leave-to-class="opacity-0 translate-y-4 scale-75">
+        <Transition name="btn-pop">
           <button
             v-show="isMobileButtonsOpen"
             v-tooltip="'返回顶部'"
@@ -363,13 +330,7 @@ onMounted(() => {
 
       <!-- 移动端：主题切换按钮 -->
       <ClientOnly>
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 translate-y-4 scale-75"
-          enter-to-class="opacity-100 translate-y-0 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 translate-y-0 scale-100"
-          leave-to-class="opacity-0 translate-y-4 scale-75">
+        <Transition name="btn-pop">
           <button
             v-show="isMobileButtonsOpen"
             v-tooltip="isDarkMode ? '亮色模式' : '暗色模式'"
@@ -387,13 +348,7 @@ onMounted(() => {
 
       <!-- 移动端：后台管理按钮（仅登录时显示） -->
       <ClientOnly>
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 translate-y-4 scale-75"
-          enter-to-class="opacity-100 translate-y-0 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 translate-y-0 scale-100"
-          leave-to-class="opacity-0 translate-y-4 scale-75">
+        <Transition name="btn-pop">
           <button
             v-show="isMobileButtonsOpen && isLoggedIn && !isLoadingAuth"
             v-tooltip="'后台管理'"
@@ -474,6 +429,19 @@ onMounted(() => {
 <style scoped>
 .no-underline {
   text-decoration: none;
+}
+
+/* 移动端按钮弹出/收起（5 处 Transition name="btn-pop" 共用） */
+.btn-pop-enter-active {
+  transition: all 0.3s ease;
+}
+.btn-pop-leave-active {
+  transition: all 0.2s ease;
+}
+.btn-pop-enter-from,
+.btn-pop-leave-to {
+  opacity: 0;
+  transform: translateY(1rem) scale(0.75);
 }
 
 /* 按钮整体出现/消失（进度 < 10% 时隐藏 ↔ 显示） */

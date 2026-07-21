@@ -116,27 +116,20 @@ export function useAudioPlayer() {
     playNext();
   };
 
-  const handleSongError = () => {
-    console.warn("歌曲加载失败，切换下一首");
+  // error 与 stalled 处理逻辑一致，仅文案不同，合并为单一实现避免重复维护
+  function handleSongProblem(reason: string, disableReason: string) {
+    console.warn(reason);
     const newCount = incrementFailureCount();
     if (newCount >= MAX_FAILURE_COUNT) {
-      disablePlayer(`歌曲连续加载失败 ${newCount} 次`);
+      disablePlayer(`${disableReason} ${newCount} 次`);
       return;
     }
     shouldAutoPlay.value = isPlaying.value;
     playNext();
-  };
+  }
 
-  const handleSongStalled = () => {
-    console.warn("网络卡顿，切换下一首");
-    const newCount = incrementFailureCount();
-    if (newCount >= MAX_FAILURE_COUNT) {
-      disablePlayer(`网络连续卡顿 ${newCount} 次`);
-      return;
-    }
-    shouldAutoPlay.value = isPlaying.value;
-    playNext();
-  };
+  const handleSongError = () => handleSongProblem("歌曲加载失败，切换下一首", "歌曲连续加载失败");
+  const handleSongStalled = () => handleSongProblem("网络卡顿，切换下一首", "网络连续卡顿");
 
   const handleCanPlayThrough = () => {
     if (shouldAutoPlay.value && audio) {
@@ -175,18 +168,33 @@ export function useAudioPlayer() {
     audio?.removeEventListener("canplay", playWhenReady);
   };
 
+  // 统一挂载/卸载 audio 事件，避免 createAudio 与 cleanup 各维护一份相同的监听列表
+  function attachAudioListeners(el: HTMLAudioElement) {
+    el.addEventListener("timeupdate", updateProgress);
+    el.addEventListener("ended", handleSongEnd);
+    el.addEventListener("error", handleSongError);
+    el.addEventListener("stalled", handleSongStalled);
+    el.addEventListener("canplaythrough", handleCanPlayThrough);
+    el.addEventListener("playing", handlePlaying);
+    el.addEventListener("pause", handlePause);
+  }
+
+  function detachAudioListeners(el: HTMLAudioElement) {
+    el.removeEventListener("timeupdate", updateProgress);
+    el.removeEventListener("ended", handleSongEnd);
+    el.removeEventListener("error", handleSongError);
+    el.removeEventListener("stalled", handleSongStalled);
+    el.removeEventListener("canplaythrough", handleCanPlayThrough);
+    el.removeEventListener("playing", handlePlaying);
+    el.removeEventListener("pause", handlePause);
+  }
+
   // 创建 Audio 实例
   function createAudio(song: Song) {
     // 销毁旧的实例
     if (audio) {
       audio.pause();
-      audio.removeEventListener("timeupdate", updateProgress);
-      audio.removeEventListener("ended", handleSongEnd);
-      audio.removeEventListener("error", handleSongError);
-      audio.removeEventListener("stalled", handleSongStalled);
-      audio.removeEventListener("canplaythrough", handleCanPlayThrough);
-      audio.removeEventListener("playing", handlePlaying);
-      audio.removeEventListener("pause", handlePause);
+      detachAudioListeners(audio);
     }
 
     // 创建新实例
@@ -194,13 +202,7 @@ export function useAudioPlayer() {
     audio.preload = "auto";
 
     // 绑定事件
-    audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("ended", handleSongEnd);
-    audio.addEventListener("error", handleSongError);
-    audio.addEventListener("stalled", handleSongStalled);
-    audio.addEventListener("canplaythrough", handleCanPlayThrough);
-    audio.addEventListener("playing", handlePlaying);
-    audio.addEventListener("pause", handlePause);
+    attachAudioListeners(audio);
   }
 
   // 初始化播放器
@@ -263,18 +265,18 @@ export function useAudioPlayer() {
     if (isPlaying.value) {
       audio.pause();
       shouldAutoPlay.value = false;
-    } else {
-      shouldAutoPlay.value = true;
-      // 如果音频已准备好，直接播放
-      if (audio.readyState >= 3) {
-        audio.play().catch(err => {
-          console.error("播放失败:", err);
-        });
-      } else {
-        // 否则等待加载完成
-        isPlaying.value = true;
-      }
+      return;
     }
+
+    // 直接 play()：未就绪时浏览器自行排队、就绪即播，避免旧实现「只设乐观状态
+    // 不 play、干等 canplaythrough」造成的 UI 显示播放却迟迟无声。
+    shouldAutoPlay.value = true;
+    isPlaying.value = true;
+    audio.play().catch(err => {
+      console.error("播放失败:", err);
+      isPlaying.value = false;
+      shouldAutoPlay.value = false;
+    });
   }
 
   // 播放下一首
@@ -311,13 +313,7 @@ export function useAudioPlayer() {
 
     if (audio) {
       audio.pause();
-      audio.removeEventListener("timeupdate", updateProgress);
-      audio.removeEventListener("ended", handleSongEnd);
-      audio.removeEventListener("error", handleSongError);
-      audio.removeEventListener("stalled", handleSongStalled);
-      audio.removeEventListener("canplaythrough", handleCanPlayThrough);
-      audio.removeEventListener("playing", handlePlaying);
-      audio.removeEventListener("pause", handlePause);
+      detachAudioListeners(audio);
       audio.removeEventListener("canplay", playWhenReady);
     }
   }

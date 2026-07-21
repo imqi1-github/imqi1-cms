@@ -31,16 +31,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <TransitionGroup name="fade">
+  <Transition name="fade">
     <button
       v-if="isLoaded && currentSong"
-      class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5 group"
+      class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5"
       :class="btnShell"
-      v-bind="$attrs"
       @click="togglePlay">
       <!-- 进度条背景 -->
       <span
-        class="absolute left-0 right-0 top-0 bottom-0 bg-linear-to-r from-blue-500 to-purple-500 transition-all duration-300"
+        class="absolute inset-y-0 left-0 bg-linear-to-r from-blue-500 to-purple-500 transition-all duration-300"
         :class="isPlaying ? 'opacity-15' : 'opacity-0'"
         :style="{ width: `${progress}%` }"/>
 
@@ -54,7 +53,7 @@ onMounted(() => {
       <!-- 封面图（播放时旋转） -->
       <img
         :src="currentSong.pic"
-        :alt="currentSong.name"
+        alt=""
         class="spin-slow relative z-1 h-full shrink-0 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
         :style="{ 'animation-play-state': isPlaying ? 'running' : 'paused' }"
         loading="lazy" >
@@ -63,7 +62,7 @@ onMounted(() => {
           {{ isPlaying ? '暂停播放' : '开始播放' }}
         </span>
     </button>
-  </TransitionGroup>
+  </Transition>
 </template>
 
 <style scoped>
