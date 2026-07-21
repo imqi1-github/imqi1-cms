@@ -1953,14 +1953,14 @@ onUnmounted(() => {
       <!-- 文章内容区域 - 带目录 -->
       <div class="flex gap-8 relative w-full">
         <!-- 目录侧边栏 - 左侧 -->
-        <aside v-if="shouldReserveToc" class="toc-sidebar hidden lg:block w-48 shrink-0 order-first mt-6">
+        <aside v-if="shouldReserveToc" class="toc-sidebar hidden lg:block w-48 shrink-0 order-first">
           <nav v-if="showToc" class="toc-nav sticky top-24 w-fit">
             <h3 class="px-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-3 w-fit max-w-full">目录</h3>
             <ul class="space-y-1 w-fit max-w-48">
               <li v-for="item in tocItems" :key="item.id" class="max-w-48 wrap-anywhere overflow-hidden text-ellipsis">
                 <button
                   :class="[
-                    'block text-sm py-1 px-2 rounded transition-colors no-underline text-left',
+                    'block text-sm py-1 px-2 rounded transition-colors no-underline text-left cursor-pointer',
                     item.level === 3 ? 'pl-4' : '',
                     activeTocId === item.id
                       ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
