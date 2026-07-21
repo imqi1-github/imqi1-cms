@@ -1582,7 +1582,6 @@ onMounted(async () => {
 
       /* Markdown Swiper 样式 - 使用更具体的选择器避免影响其他轮播图 */
       .swiper-container[class*="markdown-swiper-instance"] {
-        margin: 0 0 20px;
         overflow: hidden;
         position: relative;
         width: 100%;

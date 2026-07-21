@@ -185,7 +185,6 @@ watch(
 <style scoped>
 /* Swiper 容器 */
 .swiper-container {
-  margin: 0 0 20px;
   overflow: hidden;
   position: relative;
   width: 100%;
