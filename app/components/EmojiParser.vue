@@ -1,44 +1,13 @@
 <script setup lang="ts">
-import emojisData from "~/assets/emojis.json";
-import {escapeAttribute, escapeHtml} from "~~/lib/html";
+import { parseEmojiContent } from "~/utils/emoji";
 
 const props = defineProps<{
   content: string;
 }>();
 
-// 表情分类配置（通过前缀映射）
-const prefixConfig: Record<string, { dataKey: string; filePrefix: string }> = {
-  "heo": { dataKey: "Heo-Sticker", filePrefix: "heo-" },
-  "猫猫虫": { dataKey: "capoo", filePrefix: "猫猫虫-" },
-  "cat": { dataKey: "Cat", filePrefix: "cat-" },
-};
-
-// 解析表情占位符
-const parsedContent = computed(() => {
-  const text = props.content;
-  if (!text) return "";
-
-  // 先转义原始文本，再插入受控的表情 img，避免未命中内容通过 v-html 执行
-  const escapedText = escapeHtml(text);
-
-  // 匹配 :[prefix-name] 格式
-  const emojiRegex = /:\[([^\]]+)-([^\]]+)\]/g;
-
-  return escapedText.replace(emojiRegex, (match, prefix, name) => {
-    const config = prefixConfig[prefix];
-    if (!config) return match;
-
-    const key = config.filePrefix + name;
-    const emojis = emojisData[config.dataKey as keyof typeof emojisData] as Record<string, string> | undefined;
-    if (!emojis || !emojis[key]) return match;
-
-    // 获取表情图片URL（生产环境且配置了 CDN 时自动加前缀）
-    const emojiUrl = publicAsset(emojis[key]!);
-
-    // 返回受控图片标签
-    return `<img src="${escapeAttribute(emojiUrl)}" alt="${escapeAttribute(name)}" class="inline-emoji" loading="lazy" />`;
-  });
-});
+// 解析在 ~/utils/emoji 内完成：先转义原文，再把 :[key] 占位符替换为受控 img，
+// 避免 v-html 注入；命中失败时保留原占位符文本。
+const parsedContent = computed(() => parseEmojiContent(props.content));
 </script>
 
 <template>
@@ -53,5 +22,7 @@ const parsedContent = computed(() => {
   height: 48px;
   object-fit: contain;
   margin: 0 2px;
+  /* 加载前的占位底色，明暗模式通用 */
+  background-color: rgb(148 163 184 / 0.15);
 }
 </style>

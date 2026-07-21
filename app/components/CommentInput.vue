@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
+import { onClickOutside, onKeyStroke } from "@vueuse/core";
 
-import emojisData from "~/assets/emojis.json";
+import { EMOJI_CATEGORIES, buildEmojiPlaceholder, getEmojiList, loadedEmojiCategories } from "~/utils/emoji";
 import type { CommentFormData } from "~/types/components/comment";
 import type { CsrfTokenResponse } from "~/types/apis/csrf";
 import type { CommentSubmitResponse } from "~/types/apis/comments";
@@ -79,38 +80,46 @@ const formData = computed({
 
 const loggedInDisplayName = computed(() => currentUser.value?.nickname || currentUser.value?.name || formData.value.name || "已登录用户");
 
-// 表情相关
-const activeCategory = ref("Heo-Sticker");
+// 表情相关（配置与解析统一走 ~/utils/emoji）
+const activeCategory = ref(EMOJI_CATEGORIES[0]?.dataKey ?? "Heo-Sticker");
+const emojiPanelRef = ref<HTMLElement>();
 
-// 表情分类配置
-const categoryConfig: Record<string, { name: string; prefix: string }> = {
-  "Heo-Sticker": { name: "Heo表情", prefix: "heo-" },
-  capoo: { name: "猫猫虫", prefix: "猫猫虫-" },
-  Cat: { name: "猫咪", prefix: "cat-" },
-};
+// 当前分类的表情列表（~/utils/emoji 内按分类缓存，url 已过 publicAsset）
+const currentEmojis = computed(() => getEmojiList(activeCategory.value));
 
-// 当前分类的表情列表
-const currentEmojis = computed(() => {
-  const category = activeCategory.value;
-  const config = categoryConfig[category];
-  if (!config) return [];
-
-  const emojis = emojisData[category as keyof typeof emojisData];
-  if (!emojis) return [];
-
-  return Object.entries(emojis).map(([key, path]) => ({
-    key,
-    path: publicAsset(path), // 生产环境且配置了 CDN 时自动加前缀
-    name: key.replace(config.prefix, ""),
-  }));
+// 面板图片加载状态：当前分类已加载完成的图片数
+const emojiLoadedCount = ref(0);
+watch(activeCategory, () => {
+  emojiLoadedCount.value = 0;
 });
 
-// 所有分类
-const categories = computed(() => {
-  return Object.keys(emojisData).map(key => ({
-    key,
-    name: categoryConfig[key]?.name || key,
-  }));
+// 是否显示 loading：面板打开、本会话未加载过该分类、且尚未全部 load 完
+const panelLoading = computed(
+  () =>
+    showEmoji.value &&
+    !loadedEmojiCategories.has(activeCategory.value) &&
+    emojiLoadedCount.value < currentEmojis.value.length,
+);
+
+// 当前分类全部加载完后记入会话缓存，SPA 切回时跳过 loading（信任浏览器缓存）
+watch([emojiLoadedCount, currentEmojis], () => {
+  if (currentEmojis.value.length > 0 && emojiLoadedCount.value >= currentEmojis.value.length) {
+    loadedEmojiCategories.add(activeCategory.value);
+  }
+});
+
+function onEmojiImgLoad() {
+  emojiLoadedCount.value++;
+}
+
+// 点击面板外关闭
+onClickOutside(emojiPanelRef, () => {
+  showEmoji.value = false;
+});
+
+// Esc 关闭（仅面板打开时响应）
+onKeyStroke("Escape", () => {
+  if (showEmoji.value) showEmoji.value = false;
 });
 
 // Textarea 引用
@@ -345,12 +354,9 @@ async function submitComment() {
   }
 }
 
-// 在光标位置插入表情
+// 在光标位置插入表情（占位符 :[key]，key 恒等于 emoji 完整 key）
 function insertEmoji(key: string) {
-  const config = categoryConfig[activeCategory.value];
-  const name = key.replace(config?.prefix || "", "");
-  // 使用 prefix 生成占位符，例如 :[heo-3d眼镜]、:[猫猫虫-加油]、:[cat-ablobcatattentionreverse]
-  const placeholder = `:[${config?.prefix ?? ""}${name}]`;
+  const placeholder = buildEmojiPlaceholder(key);
 
   const textarea = textareaRef.value;
   if (!textarea) {
@@ -479,7 +485,7 @@ function insertEmoji(key: string) {
       </div>
 
       <div class="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:justify-end">
-        <div class="relative">
+        <div ref="emojiPanelRef" class="relative">
           <button
             v-tooltip="'表情'"
             type="button"
@@ -497,25 +503,39 @@ function insertEmoji(key: string) {
               <!-- 分类标签 -->
               <div class="mb-2 flex gap-1">
                 <button
-                  v-for="cat in categories"
-                  :key="cat.key"
+                  v-for="cat in EMOJI_CATEGORIES"
+                  :key="cat.dataKey"
                   type="button"
                   class="cursor-pointer rounded border-0 px-2.5 py-1 text-[0.75em] text-slate-500 transition-all duration-150 dark:text-slate-400"
-                  :class="{ 'bg-blue-500 text-white dark:text-white': activeCategory === cat.key }"
-                  @click="activeCategory = cat.key">
-                  {{ cat.name }}
+                  :class="{ 'bg-blue-500 text-white dark:text-white': activeCategory === cat.dataKey }"
+                  @click="activeCategory = cat.dataKey">
+                  {{ cat.label }}
                 </button>
               </div>
               <!-- 表情列表 -->
-              <div class="flex max-h-45 flex-wrap gap-1 overflow-y-auto [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar]:w-1">
-                <img
+              <div class="relative flex max-h-45 flex-wrap gap-1 overflow-y-auto [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar]:w-1">
+                <button
                   v-for="emoji in currentEmojis"
                   :key="emoji.key"
-                  :src="emoji.path"
-                  :alt="emoji.name"
-                  :title="emoji.name"
-                  class="size-8 cursor-pointer rounded p-0.5 object-contain transition-colors duration-150 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  @click="insertEmoji(emoji.key)" >
+                  v-tooltip="emoji.name"
+                  type="button"
+                  :aria-label="emoji.name"
+                  class="flex size-8 cursor-pointer items-center justify-center rounded p-0.5 transition-colors duration-150 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  @click="insertEmoji(emoji.key)">
+                  <img
+                    :src="emoji.url"
+                    alt=""
+                    class="size-full rounded bg-slate-100 object-contain dark:bg-slate-800"
+                    loading="lazy"
+                    @load="onEmojiImgLoad"
+                    @error="onEmojiImgLoad" >
+                </button>
+                <!-- 加载指示：仅在该分类图片尚未全部加载完时显示 -->
+                <div
+                  v-if="panelLoading"
+                  class="pointer-events-none absolute inset-0 flex items-center justify-center rounded bg-white/60 dark:bg-slate-900/60">
+                  <span class="size-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-500 dark:border-slate-600 dark:border-t-blue-400" />
+                </div>
               </div>
             </div>
           </Transition>
