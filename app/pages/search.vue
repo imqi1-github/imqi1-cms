@@ -77,10 +77,15 @@ usePageSeo({
 
 // 搜索防抖：输入框每次按键都触发 watch，直接 refresh 会逐字符打 DB LIKE，造成布局抖动；
 // 这里 300ms 防抖合并连续输入。回车走 handleSearch 的即时 refresh。
+// isDebouncing 标记「防抖待发」窗口：关键词已变但 refresh 尚未触发，期间 useFetch 的 pending 仍为 false、
+// data 仍存上次结果。若不标记，模板会先用新关键词渲染旧结果（或「没找到」），300ms 后才切到「搜索中」。
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const isDebouncing = ref(false);
 function debouncedRefresh() {
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  isDebouncing.value = true;
   searchDebounceTimer = setTimeout(() => {
+    isDebouncing.value = false;
     refresh();
   }, 300);
 }
@@ -125,6 +130,13 @@ onMounted(() => {
 // 执行搜索（与 watch 同步，仅在回车时手动触发刷新，避免 push 新增历史）
 function handleSearch() {
   if (searchKeyword.value.trim()) {
+    // 取消可能排队中的防抖刷新：回车走即时 refresh，不应再被延迟定时器二次触发，
+    // 否则既重复请求，也会让 isDebouncing 状态与实际请求错乱。
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = null;
+    }
+    isDebouncing.value = false;
     refresh();
   }
 }
@@ -204,8 +216,8 @@ function highlightKeyword(text: string, keyword: string) {
 
     <!-- 搜索结果 -->
     <div v-if="searchKeyword" v-scroll-reveal role="status" aria-live="polite" aria-atomic="true">
-      <!-- 加载状态 -->
-      <div v-if="pending" class="relative py-20">
+      <!-- 加载状态（含防抖待发窗口：关键词已变但 refresh 尚未触发） -->
+      <div v-if="pending || isDebouncing" class="relative py-20">
         <div aria-hidden="true" class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
         <p class="text-center text-muted-foreground mt-4">搜索中...</p>
       </div>
