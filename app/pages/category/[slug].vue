@@ -461,13 +461,13 @@ onMounted(() => {
               :class="content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
               <NuxtLink
                 :to="`/content/${slug}/${content.slug}`"
-                class="text-[1.5em] font-extrabold my-1 block transition-colors"
+                class="text-[1.5em] font-extrabold block transition-colors"
                 :class="content.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-500'">
                 {{ content.title }}
               </NuxtLink>
 
               <div
-                class="text-xs my-1 flex flex-wrap gap-2"
+                class="text-[0.8em] flex flex-wrap gap-2"
                 :class="content.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
                 <span v-tooltip="`最后更新时间`" class="flex items-center">
                   <Icon name="ri-time-line" class="size-4" />
