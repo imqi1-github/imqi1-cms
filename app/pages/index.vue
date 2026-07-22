@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen relative w-full bg-white dark:bg-[#0a0a0a]">
+  <div class="min-h-screen relative w-full">
     <!-- 英雄区 - fixed定位，独立于section -->
     <h1 id="index-hero-title" class="sr-only">欢迎来到 {{ siteName }}</h1>
     <div ref="heroRef" class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0" :style="heroStyle">
