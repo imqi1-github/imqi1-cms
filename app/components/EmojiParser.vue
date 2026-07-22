@@ -22,7 +22,5 @@ const parsedContent = computed(() => parseEmojiContent(props.content));
   height: 48px;
   object-fit: contain;
   margin: 0 2px;
-  /* 加载前的占位底色，明暗模式通用 */
-  background-color: rgb(148 163 184 / 0.15);
 }
 </style>
