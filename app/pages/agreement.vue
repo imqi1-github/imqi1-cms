@@ -246,7 +246,7 @@ onUnmounted(() => {
               <li v-for="item in tocItems" :key="item.id" class="wrap-anywhere overflow-hidden text-ellipsis">
                 <button
                   :class="[
-                    'w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200',
+                    'w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200 cursor-pointer',
                     'hover:bg-slate-100 dark:hover:bg-slate-800',
                     activeTocId === item.id
                       ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium'
