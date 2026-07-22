@@ -562,7 +562,7 @@ onUnmounted(() => {
       :src="imageBlobUrl"
       :alt="alt"
       v-bind="liveImageAttrs"
-      loading="lazy"
+      :loading="lazy ? 'lazy' : 'eager'"
       decoding="async"
       class="live-photo-image w-full h-full max-h-[inherit] transition-opacity duration-300 ease-in-out object-cover"
       :style="{
@@ -631,7 +631,7 @@ onUnmounted(() => {
       :src="actualSrc"
       :alt="alt"
       v-bind="imageAttrs"
-      loading="lazy"
+      :loading="lazy ? 'lazy' : 'eager'"
       decoding="async"
       class="block w-full h-full object-cover transition-opacity duration-300 opacity-0"      @load="onImageLoaded" >
     <!-- 占位骨架屏（图片未解码完成前持续显示，避免空白占位） -->
