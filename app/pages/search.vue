@@ -120,7 +120,8 @@ watch(
   },
 );
 
-const searchInputRef = useTemplateRef<HTMLInputElement>("searchInputRef");
+// FloatingInput 通过 defineExpose 暴露 focus()，onMounted 时自动聚焦
+const searchInputRef = useTemplateRef<{ focus: () => void }>("searchInputRef");
 
 onMounted(() => {
   isHydrated.value = true;
@@ -187,31 +188,29 @@ function highlightKeyword(text: string, keyword: string) {
       <h1 class="text-[3em] font-extrabold mb-4">搜索</h1>
 
       <!-- 搜索框 -->
-      <div class="relative">
-        <label class="sr-only" for="search-input">搜索文章标题、内容</label>
-        <Icon name="ri:search-line" aria-hidden="true" class="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" mode="svg" />
-        <input
-          id="search-input"
-          ref="searchInputRef"
-          v-model="searchKeyword"
-          type="text"
-          aria-label="搜索文章标题、内容"
-          placeholder="搜索文章标题、内容..."
-          class="w-full pl-12 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-300"
-          @keydown="handleKeydown" >
-        <Button
-          v-if="searchKeyword"
-          variant="ghost"
-          size="icon"
-          aria-label="清除搜索内容"
-          class="absolute right-2 top-1/2 -translate-y-1/2"
-          @click="
-            searchKeyword = '';
-            handleSearch();
-          ">
-          <Icon name="ri:close-line" aria-hidden="true" class="size-4" />
-        </Button>
-      </div>
+      <FloatingInput
+        id="search-input"
+        ref="searchInputRef"
+        v-model="searchKeyword"
+        leading-icon="ri:search-line"
+        label="搜索文章标题、内容..."
+        aria-label="搜索文章标题、内容"
+        class="rounded-lg pr-12 hover:shadow-sm"
+        @keydown="handleKeydown">
+        <template #trailing>
+          <Button
+            v-if="searchKeyword"
+            variant="ghost"
+            size="icon"
+            aria-label="清除搜索内容"
+            @click="
+              searchKeyword = '';
+              handleSearch();
+            ">
+            <Icon name="ri:close-line" aria-hidden="true" class="size-4" />
+          </Button>
+        </template>
+      </FloatingInput>
     </header>
 
     <!-- 搜索结果 -->

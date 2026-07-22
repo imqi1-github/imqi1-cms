@@ -760,11 +760,11 @@ onUnmounted(() => {
           <div v-else>
             <!-- 搜索框 -->
             <div class="mb-3">
-              <input
+              <FloatingInput
+                id="link-search"
                 v-model="linkSearchQuery"
-                type="text"
-                placeholder="搜索友链名称或链接..."
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
+                icon="lucide:search"
+                label="搜索友链名称或链接..." />
             </div>
 
             <!-- 首字母筛选 -->
@@ -826,60 +826,42 @@ onUnmounted(() => {
         </div>
 
         <!-- 输入框（申请模式或已选择友链时显示） -->
-        <template v-if="formMode === 'apply' || selectedLink">
+        <!-- :key="formMode"：申请/修改切换时整组重建，避免内容被清空后浮动标签出现"落回中央"的过渡动画 -->
+        <div v-if="formMode === 'apply' || selectedLink" :key="formMode" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="link-name" class="sr-only">名称</label>
-              <input
-                id="link-name"
-                v-model="formData.name"
-                type="text"
-                :placeholder="formMode === 'edit' ? '新名称 *' : '名称 *'"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
-            </div>
-            <div>
-              <label for="link-url" class="sr-only">链接</label>
-              <input
-                id="link-url"
-                v-model="formData.link"
-                type="text"
-                :placeholder="formMode === 'edit' ? '新链接 *' : '链接 *'"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
-            </div>
+            <FloatingInput
+              id="link-name"
+              v-model="formData.name"
+              icon="lucide:user"
+              :label="formMode === 'edit' ? '新名称 *' : '名称 *'" />
+            <FloatingInput
+              id="link-url"
+              v-model="formData.link"
+              icon="lucide:link"
+              :label="formMode === 'edit' ? '新链接 *' : '链接 *'" />
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="link-sort" class="sr-only">分类</label>
-              <input
-                id="link-sort"
-                v-model="formData.sort"
-                type="text"
-                placeholder="分类"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
-            </div>
-            <div>
-              <label for="link-avatar" class="sr-only">头像</label>
-              <input
-                id="link-avatar"
-                v-model="formData.avatar"
-                type="text"
-                placeholder="头像"
-                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
-            </div>
+            <FloatingInput
+              id="link-sort"
+              v-model="formData.sort"
+              icon="lucide:tag"
+              label="分类" />
+            <FloatingInput
+              id="link-avatar"
+              v-model="formData.avatar"
+              icon="lucide:image"
+              label="头像" />
           </div>
 
           <!-- 友链地址输入框（仅当后台开启时显示，且仅在申请模式下） -->
-          <div v-if="showLinkUrlInput && formMode === 'apply'">
-            <label for="blog-link-url" class="sr-only">能看到友情链接的地址</label>
-            <input
-              id="blog-link-url"
-              v-model="formData.blogLinkUrl"
-              type="text"
-              placeholder="能看到友情链接的地址 *"
-              class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded outline-none hover:border-blue-600 focus:border-blue-600 transition-colors" >
-          </div>
-        </template>
+          <FloatingInput
+            v-if="showLinkUrlInput && formMode === 'apply'"
+            id="blog-link-url"
+            v-model="formData.blogLinkUrl"
+            icon="lucide:external-link"
+            label="能看到友情链接的地址 *" />
+        </div>
 
         <button
           type="submit"

@@ -122,8 +122,11 @@ onKeyStroke("Escape", () => {
   if (showEmoji.value) showEmoji.value = false;
 });
 
-// Textarea 引用
-const textareaRef = ref<HTMLTextAreaElement>();
+// 评论内容 FloatingInput(内部 textarea)引用：取底层元素做光标 selection
+const textareaRef = ref<{
+  focus: () => void;
+  getInputElement: () => HTMLInputElement | HTMLTextAreaElement | null;
+}>();
 
 function fillCommentUserInfo() {
   const user = currentUser.value;
@@ -358,7 +361,7 @@ async function submitComment() {
 function insertEmoji(key: string) {
   const placeholder = buildEmojiPlaceholder(key);
 
-  const textarea = textareaRef.value;
+  const textarea = textareaRef.value?.getInputElement();
   if (!textarea) {
     formData.value.content += placeholder;
     return;
@@ -397,14 +400,13 @@ function insertEmoji(key: string) {
       评论即代表你已阅读并同意<a href="/agreement#评论相关" class="text-blue-600 underline underline-offset-2 hover:text-blue-700" target="_blank">评论协议</a>。
     </div>
 
-    <div class="mb-2.5 flex w-full flex-wrap gap-2.5">
-      <label for="comment-content-input" class="sr-only">评论内容</label>
-      <textarea
+    <div class="mb-2.5 w-full">
+      <FloatingInput
         id="comment-content-input"
         ref="textareaRef"
         v-model="formData.content"
-        placeholder="评论内容 *"
-        class="min-h-[10em] w-full resize-y rounded border border-slate-200 bg-white px-3 py-2 leading-normal text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 focus:border-blue-600 hover:border-blue-600 focus:outline-none dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300"
+        multiline
+        label="评论内容 *"
         required />
     </div>
 
@@ -434,46 +436,42 @@ function insertEmoji(key: string) {
       </template>
       <template v-else-if="showGuestFields">
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
-          <label for="comment-input-name" class="sr-only">昵称</label>
-          <input
+          <FloatingInput
             id="comment-input-name"
             v-model="formData.name"
-            type="text"
-            placeholder="昵称 *"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
-            required >
+            size="sm"
+            label="昵称 *"
+            required />
         </div>
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
-          <label for="comment-input-mail" class="sr-only">邮箱</label>
-          <input
+          <FloatingInput
             id="comment-input-mail"
             v-model="formData.mail"
             type="email"
-            :placeholder="requireMail ? '邮箱 *' : '邮箱'"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" >
+            size="sm"
+            :label="requireMail ? '邮箱 *' : '邮箱'" />
         </div>
         <div class="min-w-37.5 flex-1 max-sm:min-w-full">
-          <label for="comment-input-link" class="sr-only">链接</label>
-          <input
+          <FloatingInput
             id="comment-input-link"
             v-model="formData.link"
             type="url"
-            :placeholder="requireLink ? '链接 *' : '链接'"
-            class="h-8 w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500" >
+            size="sm"
+            :label="requireLink ? '链接 *' : '链接'" />
         </div>
       </template>
       <!-- 图形验证码（仅未登录用户显示，与昵称/邮箱/链接同行） -->
       <div v-if="showGuestFields" class="flex min-w-37.5 flex-1 items-center gap-1.5 max-sm:min-w-full">
-        <label for="comment-input-captcha" class="sr-only">验证码</label>
-        <input
-          id="comment-input-captcha"
-          v-model="captchaInput"
-          type="text"
-          placeholder="验证码 *"
-          class="h-8 min-w-0 flex-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-[0.875em] text-[rgb(23,20,20)] transition-[border-color,box-shadow] duration-150 hover:border-blue-600 focus:border-blue-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-[rgb(24,35,49)] dark:bg-[rgb(8,14,30)] dark:text-slate-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-500"
-          maxlength="6"
-          autocomplete="off"
-          required >
+        <div class="min-w-0 flex-1">
+          <FloatingInput
+            id="comment-input-captcha"
+            v-model="captchaInput"
+            label="验证码 *"
+            size="sm"
+            maxlength="6"
+            autocomplete="off"
+            required />
+        </div>
         <img
           v-if="captchaUrl"
           :src="captchaUrl"
