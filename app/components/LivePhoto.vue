@@ -557,9 +557,8 @@ onUnmounted(() => {
     @mouseleave="handleMouseLeave">
     <!-- 原始图片：Blob URL 准备好后再挂载，避免空 src 短暂显示碎图图标 -->
     <img
-      v-if="imageBlobUrl"
       ref="imgRef"
-      :src="imageBlobUrl"
+      :src="cleanSrc"
       :alt="alt"
       v-bind="liveImageAttrs"
       :loading="lazy ? 'lazy' : 'eager'"
@@ -570,9 +569,6 @@ onUnmounted(() => {
         ...mediaStyle,
       }"
       @load="onLiveImageLoaded" >
-    <div
-      v-else-if="showPlaceholder"
-      class="absolute inset-0 bg-slate-100 dark:bg-slate-800 animate-pulse"/>
 
     <div
       v-if="showLiveLoadingTip"
