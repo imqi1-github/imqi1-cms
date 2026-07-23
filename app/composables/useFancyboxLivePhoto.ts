@@ -27,6 +27,7 @@ export const useFancyboxLivePhoto = () => {
   let currentVideoUrl: string | null = null;
   let currentVideoEl: HTMLVideoElement | null = null;
   let currentVideoEndedHandler: (() => void) | null = null;
+  let currentVideoErrorHandler: (() => void) | null = null;
   let stopVideoResetTimer: ReturnType<typeof setTimeout> | null = null;
   let currentTipEl: HTMLElement | null = null;
   let currentPlayBtnEl: HTMLElement | null = null;
@@ -61,6 +62,9 @@ export const useFancyboxLivePhoto = () => {
     if (currentVideoEl && currentVideoEndedHandler) {
       currentVideoEl.removeEventListener("ended", currentVideoEndedHandler);
     }
+    if (currentVideoEl && currentVideoErrorHandler) {
+      currentVideoEl.removeEventListener("error", currentVideoErrorHandler);
+    }
     if (currentPlayBtnEl && currentPlayBtnClickHandler) {
       currentPlayBtnEl.removeEventListener("click", currentPlayBtnClickHandler);
     }
@@ -69,6 +73,7 @@ export const useFancyboxLivePhoto = () => {
       stopVideoResetTimer = null;
     }
     currentVideoEndedHandler = null;
+    currentVideoErrorHandler = null;
     currentPlayBtnClickHandler = null;
   }
 
@@ -140,6 +145,21 @@ export const useFancyboxLivePhoto = () => {
     currentPlayBtnEl?.classList.remove("is-playing");
   }
 
+  /** 视频加载/解码失败兜底：HEVC 等浏览器不支持的编码下退化为静态图，移除视频/tip/按钮 */
+  function handleVideoError() {
+    console.warn("[LivePhoto] 灯箱视频解码失败，退化为静态图（浏览器可能不支持该编码，如 HEVC）");
+    if (currentVideoEl) {
+      currentVideoEl.remove();
+      currentVideoEl = null;
+    }
+    revokeVideo();
+    currentTipEl?.remove();
+    currentTipEl = null;
+    currentPlayBtnEl?.remove();
+    currentPlayBtnEl = null;
+    setPlaying(false);
+  }
+
   /** 点击播放按钮：切换视频播放/停止 */
   async function toggleVideo() {
     // 正在播放 → 停止
@@ -188,6 +208,8 @@ export const useFancyboxLivePhoto = () => {
       video.preload = "auto";
       currentVideoEndedHandler = () => stopVideo();
       video.addEventListener("ended", currentVideoEndedHandler);
+      currentVideoErrorHandler = handleVideoError;
+      video.addEventListener("error", currentVideoErrorHandler);
       mountEl.appendChild(video);
       currentVideoEl = video;
 

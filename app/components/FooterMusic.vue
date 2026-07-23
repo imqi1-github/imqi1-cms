@@ -37,10 +37,9 @@ onMounted(() => {
       class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5"
       :class="btnShell"
       @click="togglePlay">
-      <!-- 进度条背景 -->
+      <!-- 进度条背景（暂停时也保留，仅停在当前进度） -->
       <span
-        class="absolute inset-y-0 left-0 bg-linear-to-r from-blue-500 to-purple-500 transition-all duration-300"
-        :class="isPlaying ? 'opacity-15' : 'opacity-0'"
+        class="absolute inset-y-0 left-0 bg-linear-to-r from-blue-500 to-purple-500 opacity-15 transition-all duration-300"
         :style="{ width: `${progress}%` }"/>
 
       <!-- 歌曲名称 -->

@@ -498,6 +498,21 @@ const onVideoEnded = () => {
   }
 };
 
+// 视频加载/解码失败兜底：原始 iPhone 实况照片视频段多为 HEVC，上传未转码时
+// Firefox（默认不解 HEVC）会在 metadata 阶段派发 error（NS_ERROR_DOM_MEDIA_METADATA_ERR）。
+// 此时静默退化为静态图——清掉 videoBlobUrl 让 video/实况标识/播放按钮一并 v-if 隐藏，
+// 避免“点了没反应”与浏览器 media error 的连锁报错。Chrome 等支持 HEVC 的环境不触发。
+const onVideoError = () => {
+  if (isUnmounted) return;
+  console.warn("[LivePhoto] 视频解码失败，已退化为静态图（浏览器可能不支持该编码，如 HEVC）");
+  if (videoBlobUrl.value) {
+    URL.revokeObjectURL(videoBlobUrl.value);
+    videoBlobUrl.value = null;
+  }
+  videoOpacity.value = 0;
+  isPlaying.value = false;
+};
+
 // 播放按钮可见性：
 // - 移动端：播放中隐藏，其余时间常驻显示（hover 不可靠）
 // - 桌面端：保持原有 hover 显示行为（鼠标进入显示，离开隐藏）
@@ -590,7 +605,8 @@ onUnmounted(() => {
         opacity: videoOpacity / 100,
         ...mediaStyle,
       }"
-      @ended="onVideoEnded" />
+      @ended="onVideoEnded"
+      @error="onVideoError" />
 
     <!-- 实况照片标识 -->
     <div

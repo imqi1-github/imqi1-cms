@@ -31,6 +31,13 @@ function validateCallback(callback: string): boolean {
   return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(callback);
 }
 
+// 网易云等音乐 CDN 直链常返回 http://，在 https 站点下会被 CSP media-src/img-src
+// （仅允许 https）与浏览器混合内容策略双重拦截（Firefox 不会像 Chrome 那样静默升级 http
+// 媒体，故直接报错）。126.net 等节点同时支持 https，统一升级后再重定向。
+function toHttps(url: string): string {
+  return url.replace(/^http:\/\//i, "https://");
+}
+
 export default defineEventHandler(async event => {
   const query = getQuery(event);
 
@@ -141,7 +148,7 @@ export default defineEventHandler(async event => {
           });
         }
 
-        return sendRedirect(event, urlData.url);
+        return sendRedirect(event, toHttps(urlData.url));
       }
 
       case "pic": {
@@ -165,7 +172,8 @@ export default defineEventHandler(async event => {
           });
         }
 
-        return sendRedirect(event, picData.url);
+        // 封面图同 url：升级 https，避免 img-src 混合内容/CSP 拦截
+        return sendRedirect(event, toHttps(picData.url));
       }
 
       case "lrc": {
