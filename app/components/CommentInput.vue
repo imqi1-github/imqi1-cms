@@ -367,8 +367,10 @@ function insertEmoji(key: string) {
     return;
   }
 
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
+  // selectionStart/End 类型签名为 number | null（接口涵盖所有 input 类型），
+  // textarea 实际恒为 number；null 时按 0（开头）兜底
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
   const text = formData.value.content;
 
   formData.value.content = text.substring(0, start) + placeholder + text.substring(end);

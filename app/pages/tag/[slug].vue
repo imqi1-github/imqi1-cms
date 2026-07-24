@@ -6,18 +6,16 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 const router = useRouter();
-// slug 必须是 computed：SPA 下 /tag/A → /tag/B 会复用本组件（setup 不重跑），
-// 若在 setup 顶层一次性解构，slug 会停留在旧值，useFetch 不重新请求、路由守卫也判断错误。
+// slug 取自 route.params：标签页每次导航重挂载（顶层 await useFetch → 异步 setup → Suspense 重新挂载），
+// 保留 computed 供多处响应式读取。
 const slug = computed(() => route.params.slug as string);
 
-// useFetch 不能直接追踪 route.params.slug：SPA 导航到文章页 /content/{cat}/{文章slug} 时，
-// route.params.slug 会变成文章 slug（Typecho 迁移文章常为纯数字 cid），标签页组件在页面过渡
-// 卸载前仍存活，useFetch 会自动用文章 slug 重新请求 /api/tag/{文章slug}/contents → 404 噪音。
-// 用本地 ref 锁定，仅在路由仍在标签页时同步 slug。
+// apiSlug 仅在 setup 初始化（=当前标签），刻意【不】watch slug 变化：
+// 旧实例在页面过渡期仍存活，若 apiSlug 跟随 route 变化，useFetch 会立即用新 slug 重新请求、data 被清空
+// → 文章列表(v-if contents>0) 与分页被移除 → 根容器(flex justify-center) 把孤立的标题(含 # 图标)
+// 瞬间居中到屏幕中央。重挂载下新实例 setup 自会用新 slug 初始化并请求；同时 apiSlug 固定也从根源
+// 避免「导航到文章页时旧页用文章 slug 误请求 → 404」。
 const apiSlug = ref(slug.value);
-watch(slug, value => {
-  if (route.path.startsWith("/tag/")) apiSlug.value = value;
-});
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -213,32 +211,9 @@ watch(
   },
 );
 
-// 监听路由变化，重新触发动画（切换到不同标签时）
-watch(
-  () => route.params.slug,
-  async () => {
-    // 确保用户仍然在标签页面
-    if (!route.path.startsWith(`/tag/${slug.value}`)) {
-      return;
-    }
-
-    // 切换标签时回到第 1 页（避免沿用前一标签的页码导致空页或错位）
-    page.value = 1;
-
-    // 等待 DOM 更新
-    await nextTick();
-
-    // 等待浏览器渲染帧
-    requestAnimationFrame(() => {
-      // 先重置所有元素状态为初始状态
-      hideFadeElements(true);
-
-      // 触发动画
-      triggerFadeIn(true);
-      hasPlayedEntryFade.value = true;
-    });
-  },
-);
+// 切换到不同标签由「重挂载 + 新实例 onMounted→triggerEntryFadeIn」处理；
+// 这里不再 watch route.params.slug：旧实例响应它会把 page 重置为 1 触发 useFetch 重请求，
+// data 被清空致文章列表被移除，根容器(flex justify-center) 把孤立标题(# 图标)居中到屏幕中央。
 
 // 监听标签数据变化，设置标题
 watch(
@@ -275,14 +250,8 @@ onMounted(() => {
 <template>
   <ClientOnly>
     <div class="max-w-225 mx-auto flex flex-col justify-center items-center">
-      <!-- 加载中 - 仅首次加载时显示 -->
-      <div v-if="pending && !tag" class="py-20 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
-        <p class="mt-2 text-slate-500">加载中...</p>
-      </div>
-
-      <!-- 404 -->
-      <NotFound v-else-if="isNotFound" title="标签不存在" />
+      <!-- 404（加载由全局页面过渡兜底） -->
+      <NotFound v-if="isNotFound" title="标签不存在" />
 
       <!-- 标签文章页 -->
       <template v-else>

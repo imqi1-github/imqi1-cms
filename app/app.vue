@@ -23,12 +23,27 @@ let loadingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 // 页面过渡状态
 const isPageTransitioning = ref(false);
 const mainOpacity = ref(1);
+// 渐出/渐入的位移量：非「全屏固定页」间导航叠加（首页 hero fixed 视差 / 地图全屏 section，由 navSkipsTranslate 控制跳过）
+const mainTranslateY = ref(0);
+const TRANSLATE_Y = siteConfig.pageTransition.translateY;
 let transitionStartTime = 0;
 let fadeOutTimer: ReturnType<typeof setTimeout> | null = null;
 const FADE_OUT_DURATION = siteConfig.pageTransition.fadeDuration; // 淡出动画时长
 
 // 监听页面开始加载
 const nuxtApp = useNuxtApp();
+
+// 在导航最早期预算「是否跳过位移」—— page:start 触发时 route.path 已是新页，
+// 直接用 route.path 判定会在离开这些页面瞬间把 transform 挂到仍渲染旧页的 <main> 上致闪烁。
+// 全屏固定页（首页 hero fixed 视差 / 地图 h-svh 全屏 section）：任何祖先 transform 都会为后代
+// fixed/absolute 创建包含块破坏视口定位，或让全屏内容整体上下错位，故涉及这些页面的导航全程不位移。
+const NO_TRANSLATE_PATHS = new Set(["/", "/map"]);
+const router = useRouter();
+let navSkipsTranslate = false;
+router.beforeEach((to, from) => {
+  navSkipsTranslate = NO_TRANSLATE_PATHS.has(from.path) || NO_TRANSLATE_PATHS.has(to.path);
+});
+
 nuxtApp.hook("page:start", () => {
   // 清除之前的定时器
   if (loadingTimeoutTimer) {
@@ -46,13 +61,14 @@ nuxtApp.hook("page:start", () => {
   isPageTransitioning.value = true;
   transitionStartTime = Date.now();
 
-  // 立即开始淡出
+  // 立即开始淡出（涉及首页/地图等全屏固定页则不位移，保护 hero 与全屏布局）
   mainOpacity.value = 0;
+  mainTranslateY.value = navSkipsTranslate ? 0 : TRANSLATE_Y;
 
-  // 设置定时器，1秒后显示加载提示
+  // 设置定时器，500ms 后显示加载提示（超过 fadeDuration，渐出期不会误显）
   loadingTimeoutTimer = setTimeout(() => {
     showLoadingTimeout.value = true;
-  }, 1000);
+  }, 500);
 });
 
 // 监听页面加载完成
@@ -80,11 +96,12 @@ nuxtApp.hook("page:finish", () => {
   function finishPageTransition() {
     // 等待 Vue 更新 DOM 后再淡入，避免样式冲突
     nextTick(() => {
-      // 重置状态，触发淡入动画
+      // 重置状态，触发淡入动画（渐出若设了位移，此处 14→0 即「向上移动」渐入）
       showLoadingTimeout.value = false;
       showPageLoading.value = false;
       isPageTransitioning.value = false;
       mainOpacity.value = 1;
+      mainTranslateY.value = 0;
     });
   }
 });
@@ -195,8 +212,10 @@ onMounted(() => {
         tabindex="-1"
         class="bg-white dark:bg-slate-950 flex pt-20 px-5 pb-10 grow z-1"
         :style="{
-          transition: `opacity ${siteConfig.pageTransition.fadeDuration}ms ease`,
+          transition: `opacity ${siteConfig.pageTransition.fadeDuration}ms ease, transform ${siteConfig.pageTransition.fadeDuration}ms ease`,
           opacity: mainOpacity,
+          // 位移为 0 时不渲染 transform（避免稳态 translateY(0) 创建包含块破坏后代 fixed 定位）
+          transform: mainTranslateY ? `translateY(${mainTranslateY}px)` : undefined,
         }">
         <NuxtPage class="font-serif font-[450] grow" />
       </main>
@@ -210,7 +229,7 @@ onMounted(() => {
   </template>
 
   <!-- 页面加载超时提示 -->
-  <div v-if="showLoadingTimeout" class="fixed inset-0 flex items-center justify-center">
+  <div v-if="showLoadingTimeout" class="fixed inset-0 z-40 pointer-events-none flex items-center justify-center">
     <div class="flex items-center gap-4">
       <div class="animate-spin">
         <Icon name="lucide:loader-2" class="size-5 text-blue-600 dark:text-blue-400" mode="svg" />

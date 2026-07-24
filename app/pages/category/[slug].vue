@@ -6,18 +6,16 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 const router = useRouter();
-// slug 必须是 computed：SPA 下 /category/A → /category/B 会复用本组件（setup 不重跑），
-// 若在 setup 顶层一次性解构，slug 会停留在旧值，useFetch 不重新请求、路由守卫也判断错误。
+// slug 取自 route.params：分类页每次导航重挂载（顶层 await useFetch → 异步 setup → Suspense 重新挂载），
+// 保留 computed 供多处响应式读取（isPhotoCategory / waterfallItems / 翻页守卫等）。
 const slug = computed(() => route.params.slug as string);
 
-// useFetch 不能直接追踪 route.params.slug：SPA 导航到文章页 /content/{cat}/{文章slug} 时，
-// route.params.slug 会变成文章 slug（Typecho 迁移文章常为纯数字 cid），分类页组件在页面过渡
-// 卸载前仍存活，useFetch 会自动用文章 slug 重新请求 /api/category/{文章slug}/contents → 404 噪音。
-// 用本地 ref 锁定，仅在路由仍在分类页时同步 slug。
+// apiSlug 仅在 setup 初始化（=当前分类），刻意【不】watch slug 变化：
+// 旧实例在页面过渡期仍存活，若 apiSlug 跟随 route 变化，useFetch 会立即用新 slug 重新请求、data 被清空
+// → articles-grid(v-if contents>0) 与分页被移除 → 根容器(flex justify-center) 把孤立的标题(含 menu 图标)
+// 瞬间居中到屏幕中央。重挂载下新实例 setup 自会用新 slug 初始化并请求，旧实例无需重请求；
+// 同时 apiSlug 固定也从根源避免「导航到文章页时旧页用文章 slug 误请求 → 404」(原 watch+守卫方案的更彻底版本)。
 const apiSlug = ref(slug.value);
-watch(slug, value => {
-  if (route.path.startsWith("/category/")) apiSlug.value = value;
-});
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -275,34 +273,9 @@ watch(
   },
 );
 
-// 监听路由变化，重新触发动画（切换到不同分类时）
-watch(
-  () => route.params.slug,
-  async () => {
-    // 确保用户仍然在分类页面
-    if (!route.path.startsWith(`/category/${slug.value}`)) {
-      return;
-    }
-
-    // 切换分类时回到第 1 页（避免沿用前一分类的页码导致空页或错位）
-    page.value = 1;
-
-    // 图片分类切换时不再显示整页骨架屏，避免瀑布流首屏额外渲染占位导致卡顿
-
-    // 等待 DOM 更新
-    await nextTick();
-
-    // 等待浏览器渲染帧
-    requestAnimationFrame(() => {
-      // 先重置所有元素状态为初始状态
-      hideFadeElements();
-
-      if (!isPhotoCategory.value) {
-        triggerFadeIn();
-      }
-    });
-  },
-);
+// 切换到不同分类由「重挂载 + 新实例 onMounted→triggerEntryFadeIn」处理；
+// 这里不再 watch route.params.slug：旧实例响应它会把 page 重置为 1 触发 useFetch 重请求，
+// data 被清空致 articles-grid 被移除，根容器(flex justify-center) 把孤立标题(menu 图标)居中到屏幕中央。
 
 // 监听分类数据变化，设置标题
 watch(
@@ -339,14 +312,8 @@ onMounted(() => {
 <template>
   <ClientOnly>
     <div :class="['mx-auto', isPhotoCategory ? 'photo-category-shell max-w-[1800px] -mt-6' : 'max-w-225 flex flex-col justify-center items-center']">
-      <!-- 加载中 - 仅首次加载时显示 -->
-      <div v-if="pending && !category" class="py-20 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
-        <p class="mt-2 text-slate-500">加载中...</p>
-      </div>
-
-      <!-- 404 -->
-      <NotFound v-else-if="isNotFound" title="分类不存在" />
+      <!-- 404（加载由全局页面过渡兜底，pending 期间普通分类显示骨架屏） -->
+      <NotFound v-if="isNotFound" title="分类不存在" />
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">

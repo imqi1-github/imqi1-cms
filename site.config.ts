@@ -139,9 +139,11 @@ export const siteConfig = defineSiteConfig({
     },
   },
 
-  // 页面过渡动画时长（ms）：app.vue 全局淡出/淡入真实时长，也是各页面等待过渡完成再启动元素动画的统一延迟
+  // 页面过渡动画：app.vue 全局淡出/淡入真实时长（JS 与 CSS 共用），也是各页面等待过渡完成再启动元素动画的统一延迟；
+  // translateY 为渐出「向下移动」/ 渐入「向上移动」的位移幅度（px），首页因 hero fixed 视差不参与位移。
   pageTransition: {
     fadeDuration: 150,
+    translateY: 14,
   },
 
   homeCustomText: `<p>${_displayName}</p>`,

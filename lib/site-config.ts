@@ -104,11 +104,13 @@ export interface SiteConfig {
       production: boolean;
     };
   };
-  /** 页面过渡动画时长（ms），供 app.vue 全局淡出/淡入及部分页面的「等待过渡完成」延迟引用 */
+  /** 页面过渡动画，供 app.vue 全局淡出/淡入及部分页面的「等待过渡完成」延迟引用 */
   pageTransition: {
     /** 单次淡出/淡入动画时长（ms）—— app.vue <main> 全局页面过渡的真实时长（JS 与 CSS 共用），
      *  同时作为各页面「onMounted 后等待过渡完成、再启动页面内元素滚动渐入」的统一延迟 */
     fadeDuration: number;
+    /** 渐出「向下移动」/ 渐入「向上移动」的位移幅度（px）。首页因 hero fixed 视差不参与位移，其余页面叠加 */
+    translateY: number;
   };
   /** 首页自定义公告文案（HTML），作为数据库默认种子值 */
   homeCustomText: string;
