@@ -1,6 +1,17 @@
 # ImQi1 CMS
 
-> 本 README 最后更新于 2026 年 7 月 4 日，对应的提交为 `91b792617d89fec0b903d53ae9df13ff5582690a`。
+## 目录
+
+- [项目介绍](#项目介绍)
+- [开发环境搭建](#开发环境搭建)
+- [生产环境搭建](#生产环境搭建)
+- [使用 Docker 部署](#使用-docker-部署)
+- [site.config.ts 说明](#siteconfigts-说明)
+- [package.json 内脚本](#packagejson-内脚本)
+- [小程序](#小程序)
+- [更新日志格式](#更新日志格式)
+- [辅助功能](#辅助功能)
+- [故障排查](#故障排查)
 
 ## 项目介绍
 
@@ -133,7 +144,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
 ### 开发
 
-本站采用 eslint 作为代码规范工具，使用 Nuxt 自动生成的类型和 TypeScript 做类型校验，涵盖了 95% 的代码。
+本站采用 eslint 作为代码规范工具，使用 Nuxt 自动生成的类型和 TypeScript 做类型校验，覆盖绝大部分代码。
 
 开发环境，运行 `bun run dev` 启动开发服务器，然后在浏览器访问 [http://localhost:3000](http://localhost:3000) 即可查看站点效果。
 
@@ -146,6 +157,8 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 ## 生产环境搭建
 
 生产环境采用「**本地打包 → 上传产物 → 服务器运行 Node 服务**」的部署模式。
+
+> 📌 **关于端口号**：下文出现的端口均为各路径的默认示例，均可任意修改——开发服务器默认 `3000`、裸机生产示例用 `PORT_PROD=4000`、Docker 示例用 `PORT_PROD=3000`，只需保持 `PORT_PROD`、Nginx 反代目标与容器端口映射三者一致即可。
 
 ### 1. 准备开发环境
 
@@ -210,7 +223,7 @@ security: {
 bun run build
 ```
 
-产物位于 `.output/` 目录。`prebuild` / `postbuild` 钩子会自动生成构建 hash、把运行时资源（`qqwry.ipdb` IP 库、验证码字体、svg2png WASM）拷贝到 `.output/server/runtime-assets/`、更新 Service Worker 的 CDN 引用。
+产物位于 `.output/` 目录。`prebuild` 钩子生成构建 hash，`postbuild` 钩子拷贝 `data/` 数据并更新 Service Worker 的 CDN 引用；此外 Nitro 会在构建收尾时通过钩子把运行时资源（`qqwry.ipdb` IP 库、验证码字体、svg2png WASM）拷贝到 `.output/server/runtime-assets/`。
 
 > ⚠️ **本地上传目录建议设置 `UPLOADS_DIR`**。附件若使用「本地上传」（非 COS），默认写入 `.output/public/uploads`；而 `bun run build` 会删除并重建整个 `.output`，**重新打包后已上传的文件会全部丢失**。请在运行环境变量中把 `UPLOADS_DIR` 指向 `.output` 之外的独立绝对路径（如 `/www/wwwroot/glass/uploads`）持久保存，详见下文第 8 节。使用腾讯云 COS 存储的用户不受影响。
 
@@ -342,6 +355,8 @@ bun run restart:server -- start # 启动
 
 ### 1. 准备代码与环境变量
 
+> 完整的站点 / CDN / CSP 配置说明见 [「site.config.ts 说明」](#siteconfigts-说明) 与 [「生产环境搭建」](#生产环境搭建)，本节只列 Docker 路径必需项。
+
 ```bash
 # 拉代码（含子模块 mini/）
 git clone --recurse-submodules <你的仓库地址> imqi1
@@ -400,11 +415,11 @@ docker compose down              # 停止并删除容器（数据卷保留）
 # 查看日志
 docker compose logs -f mysql
 
-# 进入 MySQL 命令行
-docker compose exec mysql mysql -uroot -p"$DB_PASSWORD" imqi1-nodejs
+# 进入 MySQL 命令行（库名以 .env 中的 $DB_NAME 为准）
+docker compose exec mysql mysql -uroot -p"$DB_PASSWORD" "$DB_NAME"
 
 # 数据备份
-docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" imqi1-nodejs > backup.sql
+docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" "$DB_NAME" > backup.sql
 ```
 
 > ⚠️ **重新构建/升级前，请先在后台备份数据**
@@ -585,9 +600,7 @@ bun run mini:build:h5          # H5 静态站点，可单独部署
 
 > 小程序 `<image>` 只能加载平台白名单内的域名且无法携带自定义请求头，因此评论头像使用镜像站（Gravatar / Cravatar / WeAvatar 等）直链而非经主站代理——记得把所用镜像站域名一并加入小程序后台的 **downloadFile 合法域名**。
 
-## Vibe Coding
-
-### 生成更新日志
+## 更新日志格式
 
 每次通过 Claude Code 等软件更新代码并提交后，可让它生成符合后台一键导入格式的更新日志。
 
@@ -620,3 +633,17 @@ type ChangelogItem = {
 本站 IP 和 ISP 离线库源于社区开源的 qqwry 和 ipv6wry.db 数据库，并拼接到一起，只保留了城市信息（国外则是国家名），为了精简体积和访客地图显示粒度（访客地图只精确到城市名）。
 
 为确保结果准确，可执行 `bun run get:ip` 查询 IP 的归属地和运营商，该命令会同时查询本地数据库和 [ip.zxinc.org](https://ip.zxinc.org)，并返回两者的结果。
+
+## 故障排查
+
+部署或运行中遇到问题时，先对照下表常见原因排查：
+
+| 现象 | 排查方向 |
+| --- | --- |
+| 启动报 Prisma 相关错误、查询报模型 / 字段不存在 | 忘记执行 `bun prisma generate`，或修改 `schema.prisma` 后未重新生成 Client。 |
+| 重新打包后 `uploads/` 下之前上传的文件全部消失 | 裸机部署未设置 `UPLOADS_DIR`，`bun run build` 会重建 `.output/`。把 `UPLOADS_DIR` 指向 `.output` 之外的独立目录；Docker 部署已用 `uploads` 具名卷持久化，无此问题。 |
+| 本地 `bun run preview` 时页脚音乐、高德地图等被拦截 | CSP 仅在生产构建注入，会拦第三方直链 / 脚本。把 `site.config.ts` 的 `security.enableCsp` 临时改 `false`，验证完改回 `true`。 |
+| Bun 相关命令异常 | 项目要求 Bun ≥ 1.3（`packageManager` 锁定 `bun@1.3.10`），版本过低请升级。 |
+| 小程序请求 `/api/mini/*` 返回 401 / 签名校验失败 | 主站 `MINI_API_SECRET` 与小程序 `VITE_MINI_API_SECRET` 必须完全一致；其中一端留空时另一端也必须留空。 |
+| 改了 `DB_NAME` 后 Docker 节里的 `mysql` / `mysqldump` 命令连不上 | 这些命令请用 `"$DB_NAME"` 而非硬编码库名，详见 [「使用 Docker 部署」](#使用-docker-部署)。 |
+| Firefox 下实况照片无法播放 | 多为 HEVC 编码，Firefox 暂不支持，会自动降级为静态图；如需播放需服务端转码。 |
