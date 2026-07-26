@@ -306,16 +306,15 @@
 
         <!-- 文章列表 -->
         <div v-if="recentContents.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
-          <NuxtLink
-            v-for="content in recentContents"
-            :key="content.cid"
-            :to="`/content/${content.categories?.[0]?.slug || 'content'}/${content.slug || content.cid}`"
-            :aria-label="`阅读文章：${content.title}`"
-            class="block no-underline group">
+          <div v-for="content in recentContents" :key="content.cid" class="group">
             <div
               class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
               <!-- 封面占满整卡 -->
-              <div v-if="content.covers && content.covers.length > 0" class="absolute inset-0">
+              <NuxtLink
+                v-if="content.covers && content.covers.length > 0"
+                :to="`/content/${content.categories?.[0]?.slug || 'content'}/${content.slug || content.cid}`"
+                :aria-label="`阅读文章：${content.title}`"
+                class="absolute inset-0">
                 <img
                   :src="content.covers[0]?.url || ''"
                   :alt="content.title"
@@ -336,7 +335,7 @@
                   <Icon name="ri:map-pin-line" class="size-3.5" />
                   <span>{{ content.travelCount }}</span>
                 </div>
-              </div>
+              </NuxtLink>
               <!-- 无封面占位 -->
               <div v-else class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
                 <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ content.title[0] }}</span>
@@ -345,37 +344,47 @@
               <div
                 class="relative mt-auto w-full px-3 py-2"
                 :class="content.covers && content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
-                <h3
-                  class="text-base font-semibold line-clamp-2 mb-0.5 transition-colors"
-                  :class="
-                    content.covers && content.covers.length > 0
-                      ? 'text-white hover:text-blue-100'
-                      : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
-                  ">
-                  {{ content.title }}
+                <h3 class="text-base font-semibold line-clamp-2 mb-0.5">
+                  <NuxtLink
+                    :to="`/content/${content.categories?.[0]?.slug || 'content'}/${content.slug || content.cid}`"
+                    class="transition-colors"
+                    :class="
+                      content.covers && content.covers.length > 0
+                        ? 'text-white hover:text-blue-100'
+                        : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
+                    ">
+                    {{ content.title }}
+                  </NuxtLink>
                 </h3>
                 <div
                   class="flex items-center gap-2 text-xs flex-wrap"
                   :class="content.covers && content.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
                   <div v-if="content.categories && content.categories.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
-                    <span
+                    <NuxtLink
                       v-for="(cat, idx) in content.categories"
                       :key="cat.slug ?? cat.name"
                       v-tooltip="'分类'"
+                      :to="`/category/${cat.slug}`"
+                      class="transition-colors"
                       :class="content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
                       {{ cat.name }}<span v-if="idx < content.categories.length - 1">,</span>
-                    </span>
+                    </NuxtLink>
                   </div>
                   <div v-if="content.tags && content.tags.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                    <span
+                    <NuxtLink
                       v-for="(tag, idx) in content.tags.slice(0, 2)"
                       :key="tag.slug ?? tag.name"
                       v-tooltip="'标签'"
-                      :class="content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                      :to="tag.slug ? `/tag/${tag.slug}` : '#'"
+                      class="transition-colors"
+                      :class="[
+                        content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400',
+                        tag.slug ? 'cursor-pointer' : 'cursor-default opacity-60',
+                      ]">
                       {{ tag.name }}<span v-if="idx < Math.min(content.tags.length, 2) - 1">,</span>
-                    </span>
+                    </NuxtLink>
                     <span v-if="content.tags.length > 2">+{{ content.tags.length - 2 }}</span>
                   </div>
                   <span v-tooltip="'发布时间'" class="flex items-center gap-0.5">
@@ -389,7 +398,7 @@
                 </div>
               </div>
             </div>
-          </NuxtLink>
+          </div>
         </div>
 
         <!-- 无文章状态 -->
@@ -417,20 +426,22 @@
 
           <!-- 文章网格 -->
           <div class="flex flex-wrap gap-4" :class="{ 'mb-12': index < categoryRecentContents.length - 1 }">
-            <NuxtLink
+            <div
               v-for="content in categoryData.contents"
               :key="content.cid"
-              :to="`/content/${categoryData.category.slug}/${content.slug || content.cid}`"
-              :aria-label="`阅读文章：${content.title}`"
-              class="block no-underline flex-[1_0_200px]">
+              class="group flex-[1_0_200px]">
               <div
                 class="relative rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all duration-300 h-55 flex flex-col">
                 <!-- 封面占满整卡 -->
-                <div v-if="content.covers && content.covers.length > 0" class="absolute inset-0">
+                <NuxtLink
+                  v-if="content.covers && content.covers.length > 0"
+                  :to="`/content/${categoryData.category.slug}/${content.slug || content.cid}`"
+                  :aria-label="`阅读文章：${content.title}`"
+                  class="absolute inset-0">
                   <img
                     :src="content.covers[0]?.url || ''"
                     :alt="content.title"
-                    class="absolute inset-0 w-full h-full object-cover hover:scale-[1.03] transition-transform duration-300"
+                    class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                     loading="lazy" >
                   <!-- 多封面角标 -->
                   <div
@@ -447,7 +458,7 @@
                     <Icon name="ri:map-pin-line" class="size-3.5" />
                     <span>{{ content.travelCount }}</span>
                   </div>
-                </div>
+                </NuxtLink>
                 <!-- 无封面占位 -->
                 <div v-else class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
                   <span class="text-slate-400 dark:text-gray-500 text-4xl">{{ content.title[0] }}</span>
@@ -456,27 +467,35 @@
                 <div
                   class="relative mt-auto w-full px-3 py-2"
                   :class="content.covers && content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
-                  <h3
-                    class="text-base font-semibold line-clamp-2 mb-1 transition-colors"
-                    :class="
-                      content.covers && content.covers.length > 0
-                        ? 'text-white hover:text-blue-100'
-                        : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
-                    ">
-                    {{ content.title }}
+                  <h3 class="text-base font-semibold line-clamp-2 mb-1">
+                    <NuxtLink
+                      :to="`/content/${categoryData.category.slug}/${content.slug || content.cid}`"
+                      class="transition-colors"
+                      :class="
+                        content.covers && content.covers.length > 0
+                          ? 'text-white hover:text-blue-100'
+                          : 'text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400'
+                      ">
+                      {{ content.title }}
+                    </NuxtLink>
                   </h3>
                   <div
                     class="flex items-center gap-2 text-xs flex-wrap"
                     :class="content.covers && content.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
                     <span v-if="content.tags && content.tags.length > 0" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
-                      <span
+                      <NuxtLink
                         v-for="(tag, idx) in content.tags.slice(0, 2)"
                         :key="tag.slug ?? tag.name"
                         v-tooltip="'标签'"
-                        :class="content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400'">
+                        :to="tag.slug ? `/tag/${tag.slug}` : '#'"
+                        class="transition-colors"
+                        :class="[
+                          content.covers && content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400',
+                          tag.slug ? 'cursor-pointer' : 'cursor-default opacity-60',
+                        ]">
                         {{ tag.name }}<span v-if="idx < Math.min(content.tags.length, 2) - 1">,</span>
-                      </span>
+                      </NuxtLink>
                       <span v-if="content.tags.length > 2">+{{ content.tags.length - 2 }}</span>
                     </span>
                     <span v-tooltip="'发布时间'" class="flex items-center gap-0.5">
@@ -490,7 +509,7 @@
                   </div>
                 </div>
               </div>
-            </NuxtLink>
+            </div>
           </div>
         </template>
       </section>
