@@ -4,7 +4,6 @@ import { Menu } from "lucide-vue-next";
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
-const router = useRouter();
 defineProps({
   siteName: {
     type: String,
@@ -41,24 +40,14 @@ useScrollRaf(scrollY => {
   isScrolled.value = scrollY > 20;
 });
 
-// 导航函数
-function navigate(href: string, event?: MouseEvent) {
-  // 点击后立即失焦，避免 :focus-within 让下拉菜单保持展开
-  if (event?.currentTarget instanceof HTMLElement) {
-    event.currentTarget.blur();
-  }
-  router.push(href);
+// 点击导航项后立即失焦，避免 :focus-within 让分类下拉菜单保持展开
+function onNavClick(event: MouseEvent) {
+  (event.currentTarget as HTMLElement)?.blur();
 }
 
 // 关闭移动端菜单
 function closeMobileMenu() {
   isMobileMenuOpen.value = false;
-}
-
-// 跳转并关闭菜单
-function navigateAndClose(href: string) {
-  navigate(href);
-  closeMobileMenu();
 }
 
 </script>
@@ -71,21 +60,18 @@ function navigateAndClose(href: string) {
     <!-- PC端菜单项 -->
     <div key="pc-nav-items" class="hidden md:flex items-center gap-2.5">
       <!-- 搜索按钮 -->
-      <div
+      <NuxtLink
         key="search-button"
         v-tooltip="`搜索`"
-        role="button"
-        tabindex="0"
+        to="/search"
         aria-label="搜索"
         class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative hover:text-white"
-        @click="navigate('/search')"
-        @keydown.enter="navigate('/search')"
-        @keydown.space.prevent="navigate('/search')">
+        @click="onNavClick">
         <Icon name="ri:search-line" aria-hidden="true" class="text-[1.2em] relative z-1" />
         <span
-aria-hidden="true"
+          aria-hidden="true"
           class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
-      </div>
+      </NuxtLink>
 
       <!-- 分类下拉 -->
       <div key="category-dropdown" class="group/dropdown relative">
@@ -106,34 +92,32 @@ aria-hidden="true"
           role="menu"
           aria-label="分类"
           class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible group-focus-within/dropdown:opacity-100 group-focus-within/dropdown:visible transition-all duration-200 before:left-0 before:right-0 before:-top-5 before:h-5 before:absolute">
-          <button
+          <NuxtLink
             v-for="cat in categories"
             :key="cat.slug ?? cat.name"
+            :to="`/category/${cat.slug}`"
             role="menuitem"
             class="block w-full text-left px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 text-sm font-medium cursor-pointer font-serif"
-            @click="navigate(`/category/${cat.slug}`, $event)">
+            @click="onNavClick">
             {{ cat.name }}
-          </button>
+          </NuxtLink>
         </div>
       </div>
 
       <!-- 其他导航项 -->
-      <div
+      <NuxtLink
         v-for="item in navItems"
         :key="item.href"
         v-tooltip="item.name"
-        role="button"
-        tabindex="0"
+        :to="item.href"
         :aria-label="item.name"
         class="group flex items-center justify-center w-6.25 h-6.25 rounded-full cursor-pointer relative text-inherit hover:text-white"
-        @click="navigate(item.href)"
-        @keydown.enter="navigate(item.href)"
-        @keydown.space.prevent="navigate(item.href)">
+        @click="onNavClick">
         <Icon :name="item.icon" aria-hidden="true" class="text-[1.2em] relative z-1" />
         <span
-aria-hidden="true"
+          aria-hidden="true"
           class="absolute -inset-0.5 bg-blue-600 rounded-full opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 z-0" />
-      </div>
+      </NuxtLink>
     </div>
 
     <!-- 移动端汉堡菜单按钮 -->
@@ -163,37 +147,40 @@ aria-hidden="true"
 
       <nav class="flex flex-col gap-2 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] pr-2" aria-label="移动端导航">
         <!-- 搜索 -->
-        <button
+        <NuxtLink
+          to="/search"
           class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left"
-          @click="navigateAndClose('/search')">
+          @click="closeMobileMenu">
           <Icon name="ri:search-line" aria-hidden="true" class="size-5" />
           <span class="font-medium">搜索</span>
-        </button>
+        </NuxtLink>
 
         <!-- 分类列表 -->
         <div v-if="categories.length > 0" class="space-y-1">
           <div class="px-4 py-2 text-sm font-medium text-muted-foreground">分类</div>
-          <button
+          <NuxtLink
             v-for="cat in categories"
             :key="cat.slug ?? cat.name"
+            :to="`/category/${cat.slug}`"
             class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left"
-            @click="navigateAndClose(`/category/${cat.slug}`)">
+            @click="closeMobileMenu">
             <Icon name="ri:book-shelf-line" aria-hidden="true" class="size-5" />
             <span class="font-medium">{{ cat.name }}</span>
-          </button>
+          </NuxtLink>
         </div>
 
         <Separator class="my-2" />
 
         <!-- 其他导航项 -->
-        <button
+        <NuxtLink
           v-for="item in navItems"
           :key="item.href"
+          :to="item.href"
           class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left"
-          @click="navigateAndClose(item.href)">
+          @click="closeMobileMenu">
           <Icon :name="item.icon" aria-hidden="true" class="size-5" />
           <span class="font-medium">{{ item.name }}</span>
-        </button>
+        </NuxtLink>
       </nav>
     </SheetContent>
   </Sheet>

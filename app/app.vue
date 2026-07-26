@@ -33,18 +33,24 @@ const FADE_OUT_DURATION = siteConfig.pageTransition.fadeDuration; // 淡出动�
 // 监听页面开始加载
 const nuxtApp = useNuxtApp();
 
-// 在导航最早期预算「是否跳过位移」—— page:start 触发时 route.path 已是新页，
-// 直接用 route.path 判定会在离开这些页面瞬间把 transform 挂到仍渲染旧页的 <main> 上致闪烁。
+// 在导航最早期（beforeEach）预算「是否跳过位移」——这里同时启动渐出，
+// 必须用 from/to 显式判定；若改用响应式 route.path，渐出启动那一刻它可能已是新页，
+// 会在离开这些页面瞬间把 transform 挂到仍渲染旧页的 <main> 上致闪烁。
 // 全屏固定页（首页 hero fixed 视差 / 地图 h-svh 全屏 section）：任何祖先 transform 都会为后代
 // fixed/absolute 创建包含块破坏视口定位，或让全屏内容整体上下错位，故涉及这些页面的导航全程不位移。
 const NO_TRANSLATE_PATHS = new Set(["/", "/map"]);
 const router = useRouter();
 let navSkipsTranslate = false;
-router.beforeEach((to, from) => {
-  navSkipsTranslate = NO_TRANSLATE_PATHS.has(from.path) || NO_TRANSLATE_PATHS.has(to.path);
-});
+// 最近一次触发渐出的目标 path。afterEach 失败回滚时比对它：只有当失败的导航仍是
+// 最近一次渐出目标、且没有更新的导航接手时才回滚，避免「旧导航失败」误伤「新导航过渡」。
+let pendingFadePath: string | null = null;
 
-nuxtApp.hook("page:start", () => {
+// 启动渐出：#main 透明度置 0、（非全屏固定页）下移。由 router.beforeEach 调用，
+// 让点击瞬间就渐出——不必等 Vue Router 下载新页 chunk、跑 setup 挂起 Suspense。
+// （原实现挂在 page:start，而 page:start 绑在 Suspense onPending，要等 chunk 下完才触发，
+//  生产环境首访每页都要现下 JS/CSS chunk，且导航按钮用 router.push 无 NuxtLink 预取，
+//  导致「点击后肉眼可见等一下才渐出」。）
+function startFadeOut() {
   // 清除之前的定时器
   if (loadingTimeoutTimer) {
     clearTimeout(loadingTimeoutTimer);
@@ -69,6 +75,49 @@ nuxtApp.hook("page:start", () => {
   loadingTimeoutTimer = setTimeout(() => {
     showLoadingTimeout.value = true;
   }, 500);
+}
+
+// 取消渐出（导航被中止/重复且无新导航接手）：还原透明度，避免页面卡在渐出态。
+function cancelFadeOut() {
+  if (loadingTimeoutTimer) {
+    clearTimeout(loadingTimeoutTimer);
+    loadingTimeoutTimer = null;
+  }
+  if (fadeOutTimer) {
+    clearTimeout(fadeOutTimer);
+    fadeOutTimer = null;
+  }
+  pendingFadePath = null;
+  showPageLoading.value = false;
+  showLoadingTimeout.value = false;
+  isPageTransitioning.value = false;
+  mainOpacity.value = 1;
+  mainTranslateY.value = 0;
+}
+
+router.beforeEach((to, from) => {
+  navSkipsTranslate = NO_TRANSLATE_PATHS.has(from.path) || NO_TRANSLATE_PATHS.has(to.path);
+  // 仅客户端 SPA 导航触发（首屏 hydration 走 first-loading 遮罩，无旧页可渐出），
+  // 且路径真正变化时才渐出（hash/query-only 不触发，与原 page:start 行为一致）。
+  if (import.meta.client && !nuxtApp.isHydrating && to.path !== from.path) {
+    pendingFadePath = to.path;
+    startFadeOut();
+  }
+});
+
+router.afterEach((to, _from, failure) => {
+  // 导航失败（中止/取消/重复）且仍是最近一次渐出目标 → 回滚；
+  // 若已有更新的导航接手（pendingFadePath 已指向新目标），则忽略，避免误回滚新过渡。
+  if (failure && pendingFadePath === to.path) {
+    cancelFadeOut();
+  }
+});
+
+// page:start（新页 Suspense 挂起）不再承担渐出触发——渐出已在 beforeEach 提前启动，
+// transitionStartTime 记录的是点击时刻。这里保留空钩子：若在此重置 transitionStartTime，
+// 会把「点击→新页挂起」之间的 chunk 下载耗时抹掉，破坏 page:finish 的剩余时长计算。
+nuxtApp.hook("page:start", () => {
+  // no-op：渐出已在 router.beforeEach 启动
 });
 
 // 监听页面加载完成
@@ -78,8 +127,9 @@ nuxtApp.hook("page:finish", () => {
     clearTimeout(loadingTimeoutTimer);
     loadingTimeoutTimer = null;
   }
+  pendingFadePath = null;
 
-  // 计算已过时间
+  // 计算已过时间（自点击时刻起，含 chunk 下载/数据请求，故首次访问慢页也能正确判定渐出已耗尽）
   const elapsedTime = Date.now() - transitionStartTime;
   const remainingFadeOutTime = Math.max(0, FADE_OUT_DURATION - elapsedTime);
 
