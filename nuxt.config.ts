@@ -128,6 +128,10 @@ export default defineNuxtConfig({
         "app:nuxt-wordmark",
         "app:prisma-wordmark",
         "app:mysql-wordmark",
+        // 首页架构图中心 hub 图标 + 新增节点品牌图标（节点 app:nuxt/prisma/mysql 已在上方内联）。
+        "ri:stack-line",
+        "app:tailwind",
+        "app:typescript",
         // 评论列表设备信息图标为动态 :name 绑定，scan 扫不到，
         // 且评论多为客户端异步加载，内联避免运行时请求。
         "app:linux",

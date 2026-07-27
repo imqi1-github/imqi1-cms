@@ -91,21 +91,53 @@
               <p>Prisma 提供了类型安全的数据库操作，确保数据的一致性和完整性</p>
             </div>
           </div>
-          <div class="flex items-center justify-center gap-8 flex-wrap max-md:flex-col">
-            <div class="flex flex-col relative">
-              <Icon name="app:nuxt-wordmark" mode="svg" class="size-25" />
+          <!-- 架构图：ImQi1-CMS 为中心，左右各两节点（Nuxt / Prisma | TypeScript / Tailwind），由动画光束（AnimatedBeam）连接 -->
+          <div ref="beamContainerRef" class="relative mx-auto h-[22rem] w-full max-w-2xl sm:h-[24rem]">
+            <ClientOnly>
+              <AnimatedBeam :container-ref="beamContainerRef" :from-ref="hubRef" :to-ref="nuxtNodeRef" :duration="3.5" />
+              <AnimatedBeam :container-ref="beamContainerRef" :from-ref="hubRef" :to-ref="prismaNodeRef" :duration="4" />
+              <AnimatedBeam :container-ref="beamContainerRef" :from-ref="hubRef" :to-ref="typescriptNodeRef" :duration="4.5" />
+              <AnimatedBeam :container-ref="beamContainerRef" :from-ref="hubRef" :to-ref="tailwindNodeRef" :duration="5" />
+            </ClientOnly>
+
+            <!-- 中心：ImQi1-CMS -->
+            <div class="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
+              <div ref="hubRef" class="flex size-24 items-center justify-center rounded-3xl border border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-md dark:border-blue-800 dark:from-blue-950 dark:to-gray-900 md:size-28">
+                <Icon name="ri:stack-line" class="size-11 text-blue-600 dark:text-blue-400 md:size-12" mode="svg" />
+              </div>
+              <span class="text-sm font-semibold text-slate-700 dark:text-gray-300">ImQi1-CMS</span>
             </div>
-            <div class="max-md:mt-7">
-              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
+
+            <!-- Nuxt：左上 -->
+            <div class="absolute left-[14%] top-1/4 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
+              <div ref="nuxtNodeRef" class="flex size-16 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 md:size-20">
+                <Icon name="app:nuxt" class="size-9 md:size-11" mode="svg" />
+              </div>
+              <span class="text-xs font-medium text-slate-600 dark:text-gray-400">Nuxt 4</span>
             </div>
-            <div class="flex flex-col relative">
-              <Icon name="app:prisma-wordmark" mode="svg" class="size-25" />
+
+            <!-- Prisma：左下 -->
+            <div class="absolute left-[14%] top-3/4 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
+              <div ref="prismaNodeRef" class="flex size-16 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 md:size-20">
+                <Icon name="app:prisma" class="size-9 md:size-11" mode="svg" />
+              </div>
+              <span class="text-xs font-medium text-slate-600 dark:text-gray-400">Prisma</span>
             </div>
-            <div class="max-md:mt-7">
-              <Icon name="ri:add-large-line" class="text-2xl text-slate-400 dark:text-gray-500" />
+
+            <!-- TypeScript：右上 -->
+            <div class="absolute left-[86%] top-1/4 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
+              <div ref="typescriptNodeRef" class="flex size-16 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 md:size-20">
+                <Icon name="app:typescript" class="size-9 md:size-11" mode="svg" />
+              </div>
+              <span class="text-xs font-medium text-slate-600 dark:text-gray-400">TypeScript</span>
             </div>
-            <div class="flex flex-col relative">
-              <Icon name="app:mysql-wordmark" mode="svg" class="size-25" />
+
+            <!-- Tailwind CSS：右下 -->
+            <div class="absolute left-[86%] top-3/4 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
+              <div ref="tailwindNodeRef" class="flex size-16 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 md:size-20">
+                <Icon name="app:tailwind" class="size-9 md:size-11" mode="svg" />
+              </div>
+              <span class="text-xs font-medium text-slate-600 dark:text-gray-400">Tailwind</span>
             </div>
           </div>
           <div class="mt-20 font-medium max-w-200 mx-auto text-center text-slate-600 dark:text-gray-300 leading-relaxed">
@@ -761,6 +793,14 @@ const sectionFramework = ref<HTMLElement | null>(null);
 const sectionStyle = ref<HTMLElement | null>(null);
 const sectionContent = ref<HTMLElement | null>(null);
 const sectionPhotos = ref<HTMLElement | null>(null);
+
+// 网站架构 AnimatedBeam 节点 refs（ClientOnly 内的 AnimatedBeam 读取这些 ref 计算光束路径）
+const beamContainerRef = ref<HTMLElement | null>(null);
+const hubRef = ref<HTMLElement | null>(null);
+const nuxtNodeRef = ref<HTMLElement | null>(null);
+const typescriptNodeRef = ref<HTMLElement | null>(null);
+const tailwindNodeRef = ref<HTMLElement | null>(null);
+const prismaNodeRef = ref<HTMLElement | null>(null);
 
 // 导航栏高度
 const NAV_HEIGHT = 80;

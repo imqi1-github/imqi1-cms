@@ -5,9 +5,6 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 
-// 加载页品牌文字（站点域名大写形式）
-const brandDomain = new URL(siteConfig.siteUrl).host.toUpperCase();
-
 // 应用滚动条主题
 useScrollbarTheme();
 
@@ -175,6 +172,36 @@ useHead({
       content: computed(() => siteUrl + route.path),
     },
   ],
+  // 首屏遮罩兜底脚本：在 Vue 挂载之前就以原生 <script> 执行，独立于水合。
+  // 1) 按 Esc 关闭；2) 页面 load 后若遮罩仍在（Vue 水合失败 / onMounted 未触发），
+  //    10s 后自动关闭并显现所有滚动渐入元素——保证遮罩永不卡死、内容永不可见。
+  //    生产 CSP 允许 'unsafe-inline'（server/utils/csp.ts），dev 不投递 CSP，均可执行。
+  script: [
+    {
+      tagPosition: "head",
+      innerHTML: `(function(){
+        function hide(){
+          var el=document.getElementById('first-loading');
+          if(!el)return;
+          var els=document.querySelectorAll('[data-scroll-reveal]:not([data-revealed])');
+          for(var i=0;i<els.length;i++){els[i].setAttribute('data-revealed','');}
+          el.style.display='none';
+        }
+        document.addEventListener('keydown',function(e){
+          if((e.key==='Escape'||e.key==='Esc')&&document.getElementById('first-loading')){hide();}
+        });
+        window.addEventListener('load',function(){setTimeout(hide,10000);});
+      })();`,
+    },
+  ],
+  // 无 JS 环境：onclick 与兜底脚本都依赖 JS，遮罩将永久停留、滚动渐入元素永不可见。
+  // 这里直接显现内容，避免 no-JS 用户面对空白页。
+  noscript: [
+    {
+      innerHTML:
+        "<style>#first-loading{display:none !important}[data-scroll-reveal]{opacity:1 !important;transform:none !important}</style>",
+    },
+  ],
 });
 
 // 滚动到 Hash 对应的元素
@@ -228,7 +255,7 @@ onMounted(() => {
     <div
       v-if="showFirstLoading && isFrontend"
       id="first-loading"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-white dark:bg-slate-950"
+      class="fixed inset-0 z-9999 flex cursor-pointer select-none items-center justify-center bg-white dark:bg-slate-950"
       onclick="
         const fadeElements = document.querySelectorAll('[data-scroll-reveal]:not([data-revealed])');
         fadeElements.forEach(el => {
@@ -236,15 +263,33 @@ onMounted(() => {
         });
         this.style.display = 'none';
       ">
-      <div class="flex flex-col items-center gap-6">
-        <div class="animate-spin">
-          <Icon name="lucide:loader-2" class="size-12 text-blue-600 dark:text-blue-400" mode="svg" />
+      <div class="flex flex-col items-center gap-7">
+        <!-- 品牌 wordmark：字母依次呼吸上跳，QI1 保持红色 -->
+        <div class="flex items-end gap-0.5 font-serif text-5xl font-black tracking-tight max-md:text-4xl">
+          <span class="loading-letter text-slate-900 dark:text-white">I</span>
+          <span class="loading-letter text-slate-900 dark:text-white">M</span>
+          <span class="loading-letter text-red-600 dark:text-red-500">Q</span>
+          <span class="loading-letter text-red-600 dark:text-red-500">I</span>
+          <span class="loading-letter text-red-600 dark:text-red-500">1</span>
+          <span class="ml-1 text-xl font-bold text-slate-400 dark:text-slate-600">.COM</span>
         </div>
-        <div class="text-center">
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 font-serif mb-2">正在加载中...</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 font-serif">{{ brandDomain }}</p>
+
+        <!-- 自定义扫描进度条：彗星拖尾从左掠过 -->
+        <div class="relative h-1 w-52 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800/80 max-md:w-44">
+          <div class="loading-comet absolute inset-y-0 left-0 w-2/5 rounded-full bg-gradient-to-r from-transparent via-blue-500 to-violet-500 shadow-[0_0_10px_rgba(59,130,246,0.65)]" />
         </div>
+
+        <!-- 文字提示（省略号循环） -->
+        <p class="text-sm text-slate-500 dark:text-slate-400 font-serif">
+          正在加载中<span class="loading-ellipsis" />
+        </p>
       </div>
+
+      <!-- 兜底提示：加载耗时较长时淡入，告知可点击 / Esc 跳过（点击事件冒泡至遮罩 onclick） -->
+      <p
+        class="loading-skip-hint absolute bottom-8 left-1/2 -translate-x-1/2 text-center font-serif text-xs text-slate-400 dark:text-slate-600">
+        加载未完成？点击任意处或按 Esc 跳过
+      </p>
     </div>
   </Transition>
 
@@ -315,5 +360,110 @@ onMounted(() => {
 /* 首次加载遮罩的淡出效果 */
 .first-loading-leave-active {
   transition: opacity 0.3s ease;
+}
+
+/* 品牌 wordmark：字母依次呼吸上跳 */
+.loading-letter {
+  display: inline-block;
+  animation: loading-letter-pulse 1.4s ease-in-out infinite;
+}
+
+.loading-letter:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-letter:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.loading-letter:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.loading-letter:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.loading-letter:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loading-letter-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+/* 扫描进度条：彗星拖尾从左掠到右 */
+.loading-comet {
+  animation: loading-comet-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes loading-comet-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(330%);
+  }
+}
+
+/* 省略号循环：. → .. → ... */
+.loading-ellipsis::after {
+  content: "...";
+  animation: loading-ellipsis 1.4s steps(1, end) infinite;
+}
+
+@keyframes loading-ellipsis {
+  0% {
+    content: "";
+  }
+
+  33% {
+    content: ".";
+  }
+
+  66% {
+    content: "..";
+  }
+
+  100% {
+    content: "...";
+  }
+}
+
+/* 兜底提示：加载耗时较长（2.5s）后才淡入，快加载场景用户不会看到 */
+.loading-skip-hint {
+  opacity: 0;
+  animation: loading-hint-fade-in 0.6s ease 2.5s forwards;
+}
+
+@keyframes loading-hint-fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 尊重「减少动态效果」无障碍偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .loading-letter,
+  .loading-comet,
+  .loading-ellipsis::after,
+  .loading-skip-hint {
+    animation: none;
+  }
+
+  .loading-letter,
+  .loading-skip-hint {
+    opacity: 1;
+  }
 }
 </style>
