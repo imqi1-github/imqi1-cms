@@ -2,23 +2,28 @@
 import type { HTMLAttributes } from "vue";
 
 import { cn } from "@/lib/utils";
+import { registerRichInput, type RichInputHandle, unregisterRichInput } from "~/composables/useRichInputRegistry";
 
 // 评论内容富文本输入：contenteditable 渲染 :[key] 占位符为内联 <img>，
 // 退格删整张图、绝不露占位符。引擎见 composables/useEmojiRichInput。
 // 前台/后台共用：floating（默认 true）自带浮动标签，恢复原 FloatingInput 的上浮观感；
 // 后台传 :floating="false" 走静态占位符，配合外部 shadcn <Label>（admin 表单全是静态标签，保持一致）。
+// enhanced（默认 false，前台传 true）启用编辑增强：自实现撤销/重做、Ctrl+A·C·V·Z·X·Y、剪切、框内拖拽移动。
+// 右键菜单**不在此组件自建**——enhanced 时把编辑句柄注册到全局表，由全局 ContextMenu.vue 统一接管右键
+// （评论框右键继承全站那个返回/前进/刷新菜单，在其内追加编辑项，而非另起独立浮层）。
 const props = withDefaults(
   defineProps<{
     modelValue: string;
     id?: string;
     placeholder?: string;
-    /** true=自带浮动标签（前台）；false=静态占位符（后台，已有外部 Label） */
     floating?: boolean;
+    /** true=启用前台编辑增强：撤销/重做、Ctrl 快捷键、剪切、拖拽移动，并把句柄注册给全局右键菜单；false=后台保持原生 */
+    enhanced?: boolean;
     class?: HTMLAttributes["class"];
   }>(),
-  // 必须显式默认 true：Vue 对缺省的 Boolean prop 解析为 false（非 undefined），
-  // 不给默认值的话前台不传 floating 会被当作 false → 错误进入静态模式。
-  { floating: true },
+  // floating/enhanced 必须显式默认：Vue 对缺省的 Boolean prop 解析为 false（非 undefined），
+  // 不给默认值的话前台不传 floating 会被当作 false → 错误进入静态模式。enhanced 默认 false 让后台零改动。
+  { floating: true, enhanced: false },
 );
 
 const model = defineModel<string>({ default: "" });
@@ -26,7 +31,7 @@ const model = defineModel<string>({ default: "" });
 const editorRef = useTemplateRef<HTMLElement>("editorRef");
 
 // 引擎由 useTemplateRef 持有元素引用；isEmpty 走模型派生（onInput 即时同步）
-const handle = useEmojiRichInput({ model, editorRef });
+const handle = useEmojiRichInput({ model, editorRef, enhanced: props.enhanced });
 const isEmpty = computed(() => model.value.length === 0);
 
 defineExpose({
@@ -47,6 +52,33 @@ const inputClass = computed(() =>
     props.class,
   ),
 );
+
+// enhanced 时把编辑句柄注册到全局表，让全局 ContextMenu.vue 的右键菜单能调用本实例的
+// undo/redo/selectAll/copy/cut/paste（撤销栈是每实例私有，全局菜单只能经注册表桥接拿到）。
+// 引擎 canUndo/canRedo 是 ComputedRef，这里包成 () => boolean 供菜单读 disabled 态。
+const richHandle: RichInputHandle = {
+  undo: handle.undo,
+  redo: handle.redo,
+  selectAll: handle.selectAll,
+  copySelection: handle.copySelection,
+  cutSelection: handle.cutSelection,
+  pasteFromClipboard: handle.pasteFromClipboard,
+  canUndo: () => handle.canUndo.value,
+  canRedo: () => handle.canRedo.value,
+  hasSelection: handle.hasSelection,
+};
+
+// CommentInput 走 v-if（回复框展开/取消会频繁 mount/unmount），必须成对注册/注销，否则留幽灵句柄。
+onMounted(() => {
+  if (props.enhanced && editorRef.value) {
+    registerRichInput(editorRef.value, richHandle);
+  }
+});
+onUnmounted(() => {
+  if (editorRef.value) {
+    unregisterRichInput(editorRef.value);
+  }
+});
 </script>
 
 <template>
@@ -68,8 +100,11 @@ const inputClass = computed(() =>
       @paste="handle.onPaste"
       @keydown="handle.onKeyDown"
       @copy="handle.onCopy"
-      @drop="handle.onDrop"
+      @cut="handle.onCut"
+      @dragstart="handle.onDragStart"
       @dragover="handle.onDragOver"
+      @drop="handle.onDrop"
+      @dragend="handle.onDragEnd"
     />
     <label v-if="placeholder && floating !== false" :for="id" class="floating-input-label">{{ placeholder }}</label>
   </div>

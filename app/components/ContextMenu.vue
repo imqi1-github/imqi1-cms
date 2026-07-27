@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { cn } from "@/lib/utils";
+import { findRichInputHandle, type RichInputHandle } from "~/composables/useRichInputRegistry";
+
 const router = useRouter();
 const { notify } = useFrontNotification();
 
@@ -6,13 +9,18 @@ const { notify } = useFrontNotification();
 const visible = ref(false);
 const x = ref(0);
 const y = ref(0);
-const menuType = ref<"default" | "text" | "link" | "input" | "image">("default");
+const menuType = ref<"default" | "text" | "link" | "input" | "image" | "editable">("default");
 const selectedText = ref("");
 const linkTarget = ref<HTMLAnchorElement | null>(null);
 const inputTarget = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
 const imageTarget = ref<HTMLImageElement | null>(null);
 const menuRef = ref<HTMLElement | null>(null);
 const isCommentArea = ref(false); // 是否在评论区
+// editable（contenteditable EmojiRichInput）分支：实例句柄 + 打开菜单时读一次的 disabled 态
+const editableHandle = ref<RichInputHandle | null>(null);
+const editableCanUndo = ref(false);
+const editableCanRedo = ref(false);
+const editableHasSelection = ref(false);
 
 // 关闭菜单
 const closeMenu = () => {
@@ -63,7 +71,17 @@ const handleContextMenu = (e: MouseEvent) => {
   const closestInput = target.closest("input, textarea");
   const closestImage = target.closest("img");
 
-  if (closestImage) {
+  // contenteditable 富文本编辑器（enhanced 注册过的）：优先级最高，抢在 text/image/input 之前。
+  // 右键编辑器时浏览器保持选区 → selection 非空，不加这道前置会被下面 selection 分支抢成 "text"。
+  const richInput = findRichInputHandle(target);
+  if (richInput) {
+    menuType.value = "editable";
+    editableHandle.value = richInput.handle;
+    editableCanUndo.value = richInput.handle.canUndo();
+    editableCanRedo.value = richInput.handle.canRedo();
+    editableHasSelection.value = richInput.handle.hasSelection();
+    if (selection) selectedText.value = selection; // 选中时附搜索块复用 selectedText
+  } else if (closestImage) {
     menuType.value = "image";
     imageTarget.value = closestImage as HTMLImageElement;
   } else if (selection && isBrowsableLink(selection)) {
@@ -287,6 +305,42 @@ const handleClearInput = () => {
     closeMenu();
   }
 };
+
+// —— editable（contenteditable EmojiRichInput）右键菜单操作：转发到注册表里的实例句柄 ——
+// copy/cut/paste 返回 Promise（走 clipboard API），用 void 标记不阻塞，closeMenu 同步关闭即可。
+const handleEditableUndo = () => {
+  editableHandle.value?.undo();
+  closeMenu();
+};
+const handleEditableRedo = () => {
+  editableHandle.value?.redo();
+  closeMenu();
+};
+const handleEditableSelectAll = () => {
+  editableHandle.value?.selectAll();
+  closeMenu();
+};
+const handleEditableCopy = () => {
+  void editableHandle.value?.copySelection();
+  closeMenu();
+};
+const handleEditableCut = () => {
+  void editableHandle.value?.cutSelection();
+  closeMenu();
+};
+const handleEditablePaste = () => {
+  void editableHandle.value?.pasteFromClipboard();
+  closeMenu();
+};
+
+// editable 菜单项 class：disabled 时灰且不响应（pointer-events-none 让 hover/click 失效）
+const editableItemClass = (disabled = false) =>
+  cn(
+    "px-4 py-2 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2",
+    disabled
+      ? "opacity-40 pointer-events-none cursor-default"
+      : "hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer",
+  );
 
 // 转换为大写
 const handleToUpperCase = () => {
@@ -715,6 +769,65 @@ onUnmounted(() => {
           <Icon name="ri:delete-bin-line" class="size-4" />
           <span>清空</span>
         </li>
+      </template>
+
+      <!-- 富文本编辑器（contenteditable）菜单：编辑项 + 选中时搜索。
+           @mousedown.prevent 防止点菜单项时焦点抢夺清空 contenteditable 选区（剪切/复制依赖选区保持）。 -->
+      <template v-if="menuType === 'editable'">
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
+        <li :class="editableItemClass(!editableCanUndo)" @mousedown.prevent @click="handleEditableUndo">
+          <Icon name="ri:arrow-go-back-line" class="size-4" />
+          <span>撤销</span>
+        </li>
+        <li :class="editableItemClass(!editableCanRedo)" @mousedown.prevent @click="handleEditableRedo">
+          <Icon name="ri:arrow-go-forward-line" class="size-4" />
+          <span>重做</span>
+        </li>
+        <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
+        <li :class="editableItemClass(!editableHasSelection)" @mousedown.prevent @click="handleEditableCut">
+          <Icon name="ri:scissors-cut-line" class="size-4" />
+          <span>剪切</span>
+        </li>
+        <li :class="editableItemClass(!editableHasSelection)" @mousedown.prevent @click="handleEditableCopy">
+          <Icon name="ri:file-copy-line" class="size-4" />
+          <span>复制</span>
+        </li>
+        <li :class="editableItemClass()" @mousedown.prevent @click="handleEditablePaste">
+          <Icon name="ri:clipboard-line" class="size-4" />
+          <span>粘贴</span>
+        </li>
+        <li :class="editableItemClass()" @mousedown.prevent @click="handleEditableSelectAll">
+          <Icon name="ri:checkbox-multiple-blank-line" class="size-4" />
+          <span>全选</span>
+        </li>
+        <!-- 选中文字时附搜索（沿用 input 菜单范式，复用 handleSiteSearch/handleBaiduSearch 等） -->
+        <template v-if="editableHasSelection">
+          <li class="border-t border-gray-200 dark:border-gray-700 my-1"/>
+          <li
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @mousedown.prevent @click="handleSiteSearch">
+            <Icon name="ri:search-line" class="size-4" />
+            <span>站内搜索</span>
+          </li>
+          <li
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @mousedown.prevent @click="handleBaiduSearch">
+            <Icon name="ri:baidu-fill" class="size-4" />
+            <span>百度搜索</span>
+          </li>
+          <li
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @mousedown.prevent @click="handleBingSearch">
+            <span class="uil--bing size-4" />
+            <span>Bing搜索</span>
+          </li>
+          <li
+            class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"
+            @mousedown.prevent @click="handleGoogleSearch">
+            <Icon name="ri:google-fill" class="size-4" />
+            <span>Google搜索</span>
+          </li>
+        </template>
       </template>
 
       <!-- 常驻显示的提示信息 -->

@@ -334,7 +334,8 @@ async function submitComment() {
         id="comment-content-input"
         ref="richContentRef"
         v-model="formData.content"
-        placeholder="评论内容 *" />
+        placeholder="评论内容 *"
+        :enhanced="true" />
     </div>
 
     <!-- 蜜罐字段：仅未登录用户渲染。
