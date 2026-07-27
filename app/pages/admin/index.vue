@@ -371,7 +371,7 @@ onMounted(() => {
                   <Icon name="lucide:trash-2" class="size-4" />
                 </Button>
               </div>
-              <p class="text-sm text-muted-foreground line-clamp-2 mb-2">{{ comment.content }}</p>
+              <p class="text-sm text-muted-foreground line-clamp-2 mb-2"><EmojiParser :content="comment.content" size="sm" /></p>
               <div v-if="comment.contents" class="flex items-center gap-1 text-xs text-muted-foreground">
                 <Icon name="lucide:file-text" class="size-3 shrink-0" />
                 <span class="truncate">{{ comment.contents.title }}</span>

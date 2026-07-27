@@ -2830,12 +2830,4 @@ onUnmounted(() => {
     font-size: 2em;
   }
 }
-
-/* 评论高亮效果 */
-:deep(li[id^="comment-"]) {
-  transition: all 0.3s ease-in-out;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  margin: -0.5rem;
-}
 </style>

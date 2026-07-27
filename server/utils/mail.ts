@@ -2,7 +2,9 @@ import * as fs from "fs";
 import * as path from "path";
 
 import prisma from "#server/utils/prisma";
+import { MailEmojiRenderer } from "#server/utils/emoji-mail";
 import { siteConfig } from "~~/site.config";
+import { escapeHtml } from "~~/lib/html";
 import type { MailOptions } from "#server/types/utils/mail";
 
 // 邮件日志目录
@@ -133,6 +135,7 @@ export async function sendMail(options: MailOptions): Promise<boolean> {
       subject: options.subject,
       text: options.text,
       html: options.html,
+      attachments: options.attachments,
     });
 
     if (config.logEnabled) {
@@ -356,12 +359,14 @@ export async function notifyAdminNewComment(contentId: number, commenterName: st
   const contentUrl = await getContentUrl(contentId, commentId);
   const subject = `[${siteInfo.name}] 文章新评论：${commenterName}`;
 
+  const renderer = new MailEmojiRenderer();
+  const commentHtml = renderer.renderContent(commentContent);
   const content = `
     <h2>文章新评论通知</h2>
-    <p>您的文章 <strong>${contentTitle}</strong> 收到了一条新评论：</p>
+    <p>您的文章 <strong>${escapeHtml(contentTitle)}</strong> 收到了一条新评论：</p>
     <div class="info-box">
-      <p><strong>${commenterName}</strong> 评论道：</p>
-      <p>${commentContent}</p>
+      <p><strong>${escapeHtml(commenterName)}</strong> 评论道：</p>
+      <p>${commentHtml}</p>
     </div>
     <p><a href="${contentUrl}" class="link">查看评论</a></p>
   `;
@@ -370,6 +375,7 @@ export async function notifyAdminNewComment(contentId: number, commenterName: st
     to: config.adminEmail,
     subject,
     html: createEmailTemplate("文章新评论通知", content),
+    attachments: renderer.getAttachments(),
   });
 }
 
@@ -410,17 +416,21 @@ export async function notifyCommentReply(
   const contentUrl = await getContentUrl(contentId, commentId);
   const subject = `[${siteInfo.name}] 您的评论收到了回复`;
 
+  // 原评论与新回复用同一个 renderer 实例：相同表情只附一份、cid 不冲突。
+  const renderer = new MailEmojiRenderer();
+  const parentHtml = renderer.renderContent(parentCommentContent);
+  const replyHtml = renderer.renderContent(replyContent);
   const content = `
     <h2>评论回复通知</h2>
-    <p>您好 <strong>${parentCommenterName}</strong>，</p>
-    <p>您在文章 <strong>${contentTitle}</strong> 下的评论收到了 <strong>${replierName}</strong> 的回复：</p>
+    <p>您好 <strong>${escapeHtml(parentCommenterName)}</strong>，</p>
+    <p>您在文章 <strong>${escapeHtml(contentTitle)}</strong> 下的评论收到了 <strong>${escapeHtml(replierName)}</strong> 的回复：</p>
     <div class="info-box">
       <p><strong>您的原评论：</strong></p>
-      <p>${parentCommentContent}</p>
+      <p>${parentHtml}</p>
     </div>
     <div class="info-box">
-      <p><strong>${replierName}</strong> 回复道：</p>
-      <p>${replyContent}</p>
+      <p><strong>${escapeHtml(replierName)}</strong> 回复道：</p>
+      <p>${replyHtml}</p>
     </div>
     <p><a href="${contentUrl}" class="link">查看回复</a></p>
   `;
@@ -429,6 +439,7 @@ export async function notifyCommentReply(
     to: parentCommenterEmail,
     subject,
     html: createEmailTemplate("评论回复通知", content),
+    attachments: renderer.getAttachments(),
   });
 }
 
@@ -457,12 +468,14 @@ export async function notifyAdminPendingComment(
   const typeLabel = isSpam ? "垃圾评论" : "待审核评论";
   const subject = `[${siteInfo.name}] 新的${typeLabel}：${commenterName}`;
 
+  const renderer = new MailEmojiRenderer();
+  const commentHtml = renderer.renderContent(commentContent);
   const content = `
     <h2>${typeLabel}通知</h2>
-    <p>文章 <strong>${contentTitle}</strong> 收到了一条${typeLabel}：</p>
+    <p>文章 <strong>${escapeHtml(contentTitle)}</strong> 收到了一条${typeLabel}：</p>
     <div class="info-box">
-      <p><strong>${commenterName}</strong> 评论道：</p>
-      <p>${commentContent}</p>
+      <p><strong>${escapeHtml(commenterName)}</strong> 评论道：</p>
+      <p>${commentHtml}</p>
       <p class="info-meta">状态：${isSpam ? "垃圾评论" : "等待审核"}</p>
     </div>
     <p><a href="${contentUrl}" class="link">查看评论</a></p>
@@ -473,6 +486,7 @@ export async function notifyAdminPendingComment(
     to: config.adminEmail,
     subject,
     html: createEmailTemplate(`${typeLabel}通知`, content),
+    attachments: renderer.getAttachments(),
   });
 }
 

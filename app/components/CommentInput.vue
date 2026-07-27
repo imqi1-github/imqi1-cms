@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
-import { onClickOutside, onKeyStroke } from "@vueuse/core";
 
-import { EMOJI_CATEGORIES, buildEmojiPlaceholder, getEmojiList, loadedEmojiCategories } from "~/utils/emoji";
 import type { CommentFormData } from "~/types/components/comment";
 import type { CsrfTokenResponse } from "~/types/apis/csrf";
 import type { CommentSubmitResponse } from "~/types/apis/comments";
@@ -29,7 +27,6 @@ const emit = defineEmits<{
 }>();
 
 const submitting = ref(false);
-const showEmoji = ref(false);
 const submitError = ref("");
 
 // 反垃圾：蜜罐字段（人类不可见，机器人会自动填充）
@@ -80,53 +77,8 @@ const formData = computed({
 
 const loggedInDisplayName = computed(() => currentUser.value?.nickname || currentUser.value?.name || formData.value.name || "已登录用户");
 
-// 表情相关（配置与解析统一走 ~/utils/emoji）
-const activeCategory = ref(EMOJI_CATEGORIES[0]?.dataKey ?? "Heo-Sticker");
-const emojiPanelRef = ref<HTMLElement>();
-
-// 当前分类的表情列表（~/utils/emoji 内按分类缓存，url 已过 publicAsset）
-const currentEmojis = computed(() => getEmojiList(activeCategory.value));
-
-// 面板图片加载状态：当前分类已加载完成的图片数
-const emojiLoadedCount = ref(0);
-watch(activeCategory, () => {
-  emojiLoadedCount.value = 0;
-});
-
-// 是否显示 loading：面板打开、本会话未加载过该分类、且尚未全部 load 完
-const panelLoading = computed(
-  () =>
-    showEmoji.value &&
-    !loadedEmojiCategories.has(activeCategory.value) &&
-    emojiLoadedCount.value < currentEmojis.value.length,
-);
-
-// 当前分类全部加载完后记入会话缓存，SPA 切回时跳过 loading（信任浏览器缓存）
-watch([emojiLoadedCount, currentEmojis], () => {
-  if (currentEmojis.value.length > 0 && emojiLoadedCount.value >= currentEmojis.value.length) {
-    loadedEmojiCategories.add(activeCategory.value);
-  }
-});
-
-function onEmojiImgLoad() {
-  emojiLoadedCount.value++;
-}
-
-// 点击面板外关闭
-onClickOutside(emojiPanelRef, () => {
-  showEmoji.value = false;
-});
-
-// Esc 关闭（仅面板打开时响应）
-onKeyStroke("Escape", () => {
-  if (showEmoji.value) showEmoji.value = false;
-});
-
-// 评论内容 FloatingInput(内部 textarea)引用：取底层元素做光标 selection
-const textareaRef = ref<{
-  focus: () => void;
-  getInputElement: () => HTMLInputElement | HTMLTextAreaElement | null;
-}>();
+// 评论内容富文本输入引用：<EmojiPicker> 的 insert 事件触发 EmojiRichInput.insertEmoji(key)
+const richContentRef = ref<{ insertEmoji: (key: string) => void; focus: () => void }>();
 
 function fillCommentUserInfo() {
   const user = currentUser.value;
@@ -357,31 +309,6 @@ async function submitComment() {
   }
 }
 
-// 在光标位置插入表情（占位符 :[key]，key 恒等于 emoji 完整 key）
-function insertEmoji(key: string) {
-  const placeholder = buildEmojiPlaceholder(key);
-
-  const textarea = textareaRef.value?.getInputElement();
-  if (!textarea) {
-    formData.value.content += placeholder;
-    return;
-  }
-
-  // selectionStart/End 类型签名为 number | null（接口涵盖所有 input 类型），
-  // textarea 实际恒为 number；null 时按 0（开头）兜底
-  const start = textarea.selectionStart ?? 0;
-  const end = textarea.selectionEnd ?? 0;
-  const text = formData.value.content;
-
-  formData.value.content = text.substring(0, start) + placeholder + text.substring(end);
-
-  // 重新聚焦并设置光标位置
-  nextTick(() => {
-    const newPosition = start + placeholder.length;
-    textarea.setSelectionRange(newPosition, newPosition);
-    textarea.focus();
-  });
-}
 </script>
 
 <template>
@@ -403,13 +330,11 @@ function insertEmoji(key: string) {
     </div>
 
     <div class="mb-2.5 w-full">
-      <FloatingInput
+      <EmojiRichInput
         id="comment-content-input"
-        ref="textareaRef"
+        ref="richContentRef"
         v-model="formData.content"
-        multiline
-        label="评论内容 *"
-        required />
+        placeholder="评论内容 *" />
     </div>
 
     <!-- 蜜罐字段：仅未登录用户渲染。
@@ -485,61 +410,7 @@ function insertEmoji(key: string) {
       </div>
 
       <div class="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:justify-end">
-        <div ref="emojiPanelRef" class="relative">
-          <button
-            v-tooltip="'表情'"
-            type="button"
-            class="flex h-7 cursor-pointer items-center justify-center rounded-md border-0 bg-slate-100 px-3 text-[0.875em] font-semibold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-            @click="showEmoji = !showEmoji">
-            <Icon name="ri:emoji-sticker-line" class="size-4" />
-          </button>
-          <!-- 表情面板 - 悬浮 -->
-          <Transition
-            enter-active-class="transition-all duration-150"
-            leave-active-class="transition-all duration-150"
-            enter-from-class="opacity-0 -translate-y-2"
-            leave-to-class="opacity-0 -translate-y-2">
-            <div v-if="showEmoji" class="absolute right-0 bottom-[calc(100%+8px)] z-100 w-80 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-              <!-- 分类标签 -->
-              <div class="mb-2 flex gap-1">
-                <button
-                  v-for="cat in EMOJI_CATEGORIES"
-                  :key="cat.dataKey"
-                  type="button"
-                  class="cursor-pointer rounded border-0 px-2.5 py-1 text-[0.75em] text-slate-500 transition-all duration-150 dark:text-slate-400"
-                  :class="{ 'bg-blue-500 text-white dark:text-white': activeCategory === cat.dataKey }"
-                  @click="activeCategory = cat.dataKey">
-                  {{ cat.label }}
-                </button>
-              </div>
-              <!-- 表情列表 -->
-              <div class="relative flex max-h-45 flex-wrap gap-1 overflow-y-auto [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar]:w-1">
-                <button
-                  v-for="emoji in currentEmojis"
-                  :key="emoji.key"
-                  v-tooltip="emoji.name"
-                  type="button"
-                  :aria-label="emoji.name"
-                  class="flex size-8 cursor-pointer items-center justify-center rounded p-0.5 transition-colors duration-150 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  @click="insertEmoji(emoji.key)">
-                  <img
-                    :src="emoji.url"
-                    alt=""
-                    class="size-full rounded bg-slate-100 object-contain dark:bg-slate-800"
-                    loading="lazy"
-                    @load="onEmojiImgLoad"
-                    @error="onEmojiImgLoad" >
-                </button>
-                <!-- 加载指示：仅在该分类图片尚未全部加载完时显示 -->
-                <div
-                  v-if="panelLoading"
-                  class="pointer-events-none absolute inset-0 flex items-center justify-center rounded bg-white/60 dark:bg-slate-900/60">
-                  <span class="size-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-500 dark:border-slate-600 dark:border-t-blue-400" />
-                </div>
-              </div>
-            </div>
-          </Transition>
-        </div>
+        <EmojiPicker @insert="key => richContentRef?.insertEmoji(key)" />
         <button
           type="button"
           class="flex h-7 cursor-pointer items-center justify-center rounded-md border-0 bg-blue-600 px-3 text-[0.875em] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"

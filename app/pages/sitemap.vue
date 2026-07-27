@@ -189,7 +189,7 @@ usePageSeo({
               </div>
 
               <div class="ml-4 space-y-2">
-                <p class="text-slate-700 dark:text-gray-300 text-sm mb-1">{{ comment.text }}</p>
+                <p class="text-slate-700 dark:text-gray-300 text-sm mb-1"><EmojiParser :content="comment.text" size="sm" /></p>
                 <div v-if="comment.contents" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   <Icon name="ri-article-line" class="size-4" />
                   <span>{{ comment.contents.title }}</span>

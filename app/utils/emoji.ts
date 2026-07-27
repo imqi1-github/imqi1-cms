@@ -7,25 +7,19 @@
 import { publicAsset } from "./asset";
 
 import emojisData from "~/assets/emojis.json";
-import type { EmojiCategoryMeta, EmojiItem } from "~/types/emoji";
+import type { EmojiItem } from "~/types/emoji";
 import { escapeAttribute, escapeHtml } from "~~/lib/html";
+// 表情分类配置与 stripEmojiPrefix 的源头在 ~~shared/emoji-categories（前端/服务端共用）：
+// Nitro 不打包 app/，服务端无法 import ~/utils 或 ~/types，故跨边界常量必须放 shared/。
+import { EMOJI_CATEGORIES, stripEmojiPrefix } from "~~/shared/emoji-categories";
 
-// 表情分类配置（单一事实源）
-export const EMOJI_CATEGORIES: EmojiCategoryMeta[] = [
-  { dataKey: "Heo-Sticker", label: "Heo表情", prefix: "heo-" },
-  { dataKey: "capoo", label: "猫猫虫", prefix: "猫猫虫-" },
-  { dataKey: "Cat", label: "猫咪", prefix: "cat-" },
-];
+// 保持 ~/utils/emoji 既有导入入口兼容（CommentInput 等仍从此 import EMOJI_CATEGORIES）。
+export { EMOJI_CATEGORIES, stripEmojiPrefix };
 
 type EmojiDict = Record<string, string>;
 
 function getEmojiDict(dataKey: string): EmojiDict | undefined {
   return (emojisData as Record<string, EmojiDict>)[dataKey];
-}
-
-// 去掉 emoji key 的分类前缀，得到显示名（替代脆弱的 String.replace）。
-export function stripEmojiPrefix(key: string, prefix: string): string {
-  return key.startsWith(prefix) ? key.slice(prefix.length) : key;
 }
 
 // 扁平查找表：emoji key -> {原始 path, 显示名}。启动时一次性构建，解析时 O(1) 查找。
@@ -74,6 +68,26 @@ export function parseEmojiContent(text: string): string {
     }
     return `<img src="${escapeAttribute(publicAsset(found.path))}" alt="${escapeAttribute(found.name)}" class="inline-emoji" />`;
   });
+}
+
+// 把评论文本转成「可编辑容器」的 innerHTML：与 parseEmojiContent 同源（先转义再正则替换），
+// 但 img 额外带 data-emoji-key（供 readDom 反查 key 还原 :[key]）与 contenteditable="false"
+// （让浏览器把表情当作原子插入点：点击只在图前/图后落点、退格一次删整张，绝不露出占位符）。
+// 未知 key 仍走 `return match`（保留转义后原文，绝不为攻击者可控 key 生成 img）。
+export function textToEditableHtml(text: string): string {
+  if (!text) return "";
+  const escaped = escapeHtml(text);
+  if (!text.includes(":[")) return escaped;
+  return escaped.replace(EMOJI_PLACEHOLDER_RE, (match, key: string) => {
+    const found = EMOJI_KEY_MAP.get(key);
+    if (!found) return match;
+    return `<img src="${escapeAttribute(publicAsset(found.path))}" alt="${escapeAttribute(found.name)}" data-emoji-key="${escapeAttribute(key)}" class="inline-emoji" contenteditable="false" />`;
+  });
+}
+
+// 供 useEmojiRichInput.insertEmoji 构造 <img> 时反查 path/name（key 来自面板，恒为合法 key）。
+export function getEmojiByKey(key: string): { path: string; name: string } | undefined {
+  return EMOJI_KEY_MAP.get(key);
 }
 
 // 生成写入评论的占位符，格式与既有评论一致：:[heo-3d眼镜]

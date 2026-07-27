@@ -5,6 +5,20 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
     const limit = parseInt(query.limit as string) || 20;
 
+    // 解析留言板关联文章 cid：留言板是独立 /messages 路由（page 型，无分类关系），
+    // 其评论在下面的过滤里要单独放行、并改走 /messages 链接（解析逻辑同 /api/messages/config）。
+    const messageContentIdMeta = await prisma.informations.findUnique({
+      where: { key: "messageContentId" },
+    });
+    let guestbookCid = messageContentIdMeta?.value ? parseInt(messageContentIdMeta.value) : null;
+    if (!guestbookCid) {
+      const messageContent = await prisma.contents.findFirst({
+        where: { slug: "messages" },
+        select: { cid: true },
+      });
+      guestbookCid = messageContent?.cid ?? null;
+    }
+
     // 获取最近的评论（获取比需要更多的评论，因为后续会过滤）
     const comments = await prisma.comments.findMany({
       where: {
@@ -48,17 +62,34 @@ export default defineEventHandler(async event => {
     // 格式化评论数据，过滤掉没有有效文章链接的评论
     const formattedComments = comments
       .filter(comment => {
-        // 确保评论有关联的文章且文章信息完整
-        return comment.content_ref &&
-               // 仅保留指向已发布文章的评论，避免链接到已下架/草稿文章而 404
-               comment.content_ref.status === 1 &&
-               comment.content_ref.cid &&
-               comment.content_ref.slug &&
-               comment.content_ref.contentrelations &&
-               comment.content_ref.contentrelations.length > 0 &&
-               comment.content_ref.contentrelations[0]?.metas;
+        if (!comment.content_ref) return false;
+        // 留言板评论：cid 命中留言板文章即放行——/messages 是系统路由始终可访问，
+        // 不要求分类关系（page 型无分类）也不卡文章 status。
+        if (guestbookCid && comment.content_ref.cid === guestbookCid) return true;
+        // 文章评论：需分类关系才能拼 /content/<分类slug>/<文章slug>，且只指向已发布文章避免 404
+        return (
+          comment.content_ref.status === 1 &&
+          comment.content_ref.slug &&
+          comment.content_ref.contentrelations &&
+          comment.content_ref.contentrelations.length > 0 &&
+          comment.content_ref.contentrelations[0]?.metas
+        );
       })
       .map(comment => {
+        // 留言板：链接走 /messages，模板侧会自动追加 #comment-<coid> 锚点滚动定位
+        if (guestbookCid && comment.content_ref.cid === guestbookCid) {
+          return {
+            coid: comment.coid,
+            text: comment.content,
+            author: comment.name,
+            created: comment.create_time,
+            contents: {
+              title: comment.content_ref.title || "留言",
+              url: "/messages",
+            },
+          };
+        }
+
         const categorySlug = comment.content_ref.contentrelations[0]?.metas?.slug ?? "";
         const contentSlug = comment.content_ref.slug;
         const contentUrl = `/content/${categorySlug}/${contentSlug}`;

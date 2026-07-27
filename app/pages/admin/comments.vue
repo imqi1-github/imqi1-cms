@@ -30,6 +30,9 @@ const editForm = ref({
   status: 0,
 });
 
+// 评论内容富文本输入引用：<EmojiPicker> 的 insert 事件触发 EmojiRichInput.insertEmoji(key)
+const editContentRef = ref<{ insertEmoji: (key: string) => void; focus: () => void }>();
+
 // 状态选项
 const statusOptions = [
   { value: 0, label: "待审核", variant: "secondary" as const },
@@ -440,7 +443,7 @@ onMounted(() => {
                 </div>
               </TableCell>
               <TableCell>
-                <p class="max-w-md line-clamp-2">{{ comment.content }}</p>
+                <p class="max-w-md line-clamp-2"><EmojiParser :content="comment.content" size="sm" /></p>
               </TableCell>
               <TableCell>
                 <Button
@@ -558,7 +561,7 @@ onMounted(() => {
 
             <!-- 评论内容 -->
             <div class="pl-9 space-y-2">
-              <p class="text-sm line-clamp-3 whitespace-pre-wrap wrap-break-word">{{ comment.content }}</p>
+              <p class="text-sm line-clamp-3 whitespace-pre-wrap wrap-break-word"><EmojiParser :content="comment.content" size="sm" /></p>
               <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground items-center">
                 <Button
                   variant="ghost"
@@ -664,7 +667,7 @@ onMounted(() => {
 
             <!-- 评论内容 -->
             <div class="pl-7 sm:pl-9 space-y-2">
-              <p class="text-sm line-clamp-4 whitespace-pre-wrap wrap-break-word">{{ comment.content }}</p>
+              <p class="text-sm line-clamp-4 whitespace-pre-wrap wrap-break-word"><EmojiParser :content="comment.content" size="sm" /></p>
               <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground items-center">
                 <Button
                   variant="ghost"
@@ -790,7 +793,16 @@ onMounted(() => {
           <!-- 评论内容 -->
           <div class="space-y-2">
             <Label for="edit-content">评论内容</Label>
-            <Textarea id="edit-content" v-model="editForm.content" placeholder="评论内容" :rows="5" />
+            <EmojiRichInput
+              id="edit-content"
+              ref="editContentRef"
+              v-model="editForm.content"
+              :floating="false"
+              placeholder="评论内容"
+              class="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />
+            <div class="flex justify-end">
+              <EmojiPicker @insert="key => editContentRef?.insertEmoji(key)" />
+            </div>
           </div>
         </div>
         <DialogFooter>

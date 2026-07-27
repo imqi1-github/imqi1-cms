@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {loadAmap} from "~/utils/amap-loader";
+import { parseEmojiContent } from "~/utils/emoji";
 import type {
   AMapClusterEvent,
   AMapMapInstance,
@@ -359,7 +360,7 @@ function buildInfoContent(place: Place) {
             : "";
           // 该读者最后一条评论正文（服务端已截断到 80 字），气泡内再限 2 行防溢出
           const commentHtml = r.comment
-            ? `<div class="travel-info-desc" style="font-size:12px;line-height:1.4;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(r.comment)}</div>`
+            ? `<div class="travel-info-desc" style="font-size:12px;line-height:1.4;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${parseEmojiContent(r.comment)}</div>`
             : "";
           return `<div style="display:flex;gap:7px;align-items:flex-start;"><div style="flex:none;">${readerAvatar}</div><div style="min-width:0;display:flex;flex-direction:column;gap:1px;"><div style="display:flex;align-items:center;gap:6px;min-width:0;">${nameHtml}${
             articleHtml ? `<span class="travel-info-desc" style="font-size:12px;">·</span>${articleHtml}` : ""
@@ -895,6 +896,14 @@ onUnmounted(() => {
 }
 .dark .travel-info-desc {
   color: #94a3b8;
+}
+/* 访客窗体评论里的表情：parseEmojiContent 注入的 <img class="inline-emoji">，跟随窗体小字号 */
+.travel-info .inline-emoji {
+  display: inline-block;
+  width: 1.6em;
+  height: 1.6em;
+  vertical-align: middle;
+  margin: 0 1px;
 }
 .travel-info-link {
   color: #2563eb;

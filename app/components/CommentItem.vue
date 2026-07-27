@@ -189,4 +189,18 @@ function handleCommentSubmitted() {
     padding-left: 12px;
   }
 }
+
+/*
+  评论高亮框：scrollToComment 给 li 临时加 ring-2/ring-blue-500/ring-offset-2。
+  这里给 li 预留 padding+圆角，让 ring 框有留白、转角圆滑（而非紧贴内容的方框）；
+  负 margin 抵消 padding 避免布局位移；transition 让 ring 淡入淡出更柔和。
+  li 是本组件根元素，scoped 规则在所有渲染评论的页面（文章/留言板/…）一致生效——
+  原本仅 [slug].vue 有此规则，留言板缺失致两页高亮框不一致，故收敛到此处单一事实源。
+*/
+li[id^="comment-"] {
+  transition: all 0.3s ease-in-out;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  margin: -0.5rem;
+}
 </style>

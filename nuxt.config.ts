@@ -562,6 +562,12 @@ export default defineNuxtConfig({
             target: join(targetDir, "svg2png_wasm_bg.wasm"),
             label: "svg2png WASM",
           },
+          {
+            // 邮件 CID 表情渲染（server/utils/emoji-mail.ts）运行时 fs 读取；Nitro 不打包 app/，须显式复制到 runtime-assets。
+            source: join(process.cwd(), "app", "assets", "emojis.json"),
+            target: join(targetDir, "emojis.json"),
+            label: "emojis.json (mail emoji)",
+          },
         ];
 
         mkdirSync(targetDir, { recursive: true });
