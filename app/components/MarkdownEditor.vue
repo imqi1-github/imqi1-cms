@@ -1,11 +1,11 @@
 <script setup lang="ts">
 const props = defineProps<{
-  modelValue: string
   contentId?: number
 }>()
 
+const model = defineModel<string>({ default: "" })
+
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
   'attachment-updated': []
 }>()
 
@@ -13,14 +13,24 @@ const toast = useToast()
 const textareaRef = ref<HTMLTextAreaElement>()
 const uploading = ref(false)
 
+// 撤销/重做历史栈：工具栏/粘贴走程序化改 model.value 会清掉 textarea 原生撤销栈，
+// 点按钮后 Ctrl+Z 撤不回。这里接管 Ctrl+Z/Y 并把工具栏按钮、打字、粘贴各自入栈。
+// 引擎见 composables/useTextareaHistory（范式同前台 EmojiRichInput 的自实现撤销）。
+// 解构出 canUndo/canRedo 让它们成为顶层 ref——模板对嵌套在对象里的 ref 不自动解包，
+// 不解构的话 hist.canUndo 在模板里是 ref 对象（恒 truthy），disabled 态会失效。
+const { canUndo, canRedo, checkpoint, recordTyping, undo, redo } = useTextareaHistory({ model, textareaRef })
+
 // 插入 Markdown 语法
 const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
   const textarea = textareaRef.value
   if (!textarea) return
 
+  // 每个工具栏按钮自成一条撤销步：离散操作前先把当前态入栈
+  checkpoint()
+
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
-  const text = props.modelValue
+  const text = model.value
 
   // 保存滚动位置
   const scrollTop = textarea.scrollTop
@@ -29,7 +39,7 @@ const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string
   if (start !== end) {
     const selectedText = text.slice(start, end)
     const newText = text.slice(0, start) + prefix + selectedText + suffix + text.slice(end)
-    emit('update:modelValue', newText)
+    model.value = newText
     // 恢复选中状态和滚动位置
     nextTick(() => {
       textarea.focus()
@@ -41,7 +51,7 @@ const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string
   else {
     const insertText = prefix + placeholder + suffix
     const newText = text.slice(0, start) + insertText + text.slice(end)
-    emit('update:modelValue', newText)
+    model.value = newText
     // 光标移动到占位符中间，恢复滚动位置
     nextTick(() => {
       textarea.focus()
@@ -77,10 +87,13 @@ const handlePaste = async (event: ClipboardEvent) => {
 
   uploading.value = true
 
+  // 粘贴图片前入栈一次：上传中/失败的中间态改值不再入栈 → 一次 undo 撤整张图（含占位符）
+  checkpoint()
+
   try {
     // 获取光标位置
     const start = textarea.selectionStart
-    const text = props.modelValue
+    const text = model.value
 
     // 在光标位置插入上传占位符
     const placeholders: string[] = []
@@ -101,7 +114,7 @@ const handlePaste = async (event: ClipboardEvent) => {
       offset += placeholder.length + 1
     })
 
-    emit('update:modelValue', newText)
+    model.value = newText
 
     // 逐个上传图片
     for (let i = 0; i < imageItems.length; i++) {
@@ -134,9 +147,9 @@ const handlePaste = async (event: ClipboardEvent) => {
           const imageMarkdown = `![${res.data.name}](${res.data.url})`
 
           // 更新文本，替换占位符
-          const currentText = props.modelValue
+          const currentText = model.value
           const updatedText = currentText.replace(placeholder, imageMarkdown)
-          emit('update:modelValue', updatedText)
+          model.value = updatedText
 
           // 通知父组件刷新附件列表
           emit('attachment-updated')
@@ -149,9 +162,9 @@ const handlePaste = async (event: ClipboardEvent) => {
       } catch {
         // 上传失败，移除占位符
         const placeholder = placeholders[i]
-        const currentText = props.modelValue
+        const currentText = model.value
         const updatedText = currentText.replace(placeholder + '\n', '')
-        emit('update:modelValue', updatedText)
+        model.value = updatedText
 
         toast.error({
           message: '图片上传失败',
@@ -205,12 +218,71 @@ const actions = {
   musicSong: () => insertMarkdown(':::music song netease 123456\n', '\n:::', ''),
   musicPlaylist: () => insertMarkdown(':::music playlist netease 123456\n', '\n:::', ''),
 }
+
+// 打字输入：去抖入栈"改之前"的快照（连续输入 400ms 内合并为一条撤销），再同步模型
+function onInput(event: Event) {
+  const ta = event.target as HTMLTextAreaElement
+  const prev = model.value
+  recordTyping({ value: prev, selStart: ta.selectionStart, selEnd: ta.selectionEnd })
+  model.value = ta.value
+}
+
+// 快捷键：撤回/重做（接管，避免和 textarea 原生撤销栈打架）+ 常用格式化。
+// IME 组字中不拦（中文输入法）；Ctrl+C/V/X/A 不拦（靠原生 + @paste 图片上传）。
+function onKeyDown(event: KeyboardEvent) {
+  if (event.isComposing) return
+  if (!(event.ctrlKey || event.metaKey)) return
+
+  const k = event.key.toLowerCase()
+  if (k === 'z' && !event.shiftKey) {
+    event.preventDefault()
+    undo()
+  } else if ((k === 'z' && event.shiftKey) || k === 'y') {
+    event.preventDefault()
+    redo()
+  } else if (k === 'b') {
+    event.preventDefault()
+    actions.bold()
+  } else if (k === 'i') {
+    event.preventDefault()
+    actions.italic()
+  } else if (k === 'k') {
+    event.preventDefault()
+    actions.link()
+  }
+}
 </script>
 
 <template>
   <div class="markdown-editor h-full flex flex-col">
     <!-- 工具栏 -->
     <div class="flex items-center gap-1 p-2 border-b bg-muted/30 flex-wrap">
+      <!-- 撤回 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        :disabled="!canUndo"
+        title="撤回 (Ctrl+Z)"
+        @click="undo"
+      >
+        <Icon name="lucide:undo" class="size-4" />
+      </Button>
+
+      <!-- 重做 -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        :disabled="!canRedo"
+        title="重做 (Ctrl+Y)"
+        @click="redo"
+      >
+        <Icon name="lucide:redo" class="size-4" />
+      </Button>
+
+      <Separator orientation="vertical" class="h-6 mx-1" />
+
       <!-- 粗体 -->
       <Button
         variant="ghost"
@@ -621,10 +693,11 @@ const actions = {
     <!-- 文本输入区 -->
     <textarea
       ref="textareaRef"
-      :value="modelValue"
+      :value="model"
       class="flex-1 w-full p-4 resize-none outline-none font-mono text-sm bg-background"
       placeholder="开始编写你的 Markdown 文章...&#10;&#10;提示：可以直接粘贴图片，会自动上传并插入"
-      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+      @input="onInput"
+      @keydown="onKeyDown"
       @paste="handlePaste"
     />
   </div>
