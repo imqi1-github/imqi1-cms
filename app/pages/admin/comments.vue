@@ -12,6 +12,7 @@ const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const csrfToken = ref("");
 const filterCid = ref<number | null>(null); // 筛选的文章ID
+const filterStatus = ref<number | null>(null); // 筛选的评论状态（null = 全部）
 const pagination = ref({
   page: 1,
   pageSize: 20,
@@ -42,6 +43,20 @@ const statusOptions = [
 
 const isAllSelected = computed(() => {
   return comments.value.length > 0 && selectedIds.value.length === comments.value.length;
+});
+
+// 状态筛选 Tab 双向绑定：filterStatus(null=全部) ↔ Tabs 字符串 value
+const activeStatusTab = computed<string>({
+  get: () => (filterStatus.value === null ? "all" : String(filterStatus.value)),
+  set: (value: string) => {
+    filterStatus.value = value === "all" ? null : Number(value);
+    fetchComments(1);
+  },
+});
+
+// 空状态文案：有筛选时给出更贴切的提示
+const emptyText = computed(() => {
+  return filterCid.value !== null || filterStatus.value !== null ? "当前筛选下暂无评论" : "暂无评论";
 });
 
 const isIndeterminate = computed(() => {
@@ -121,6 +136,9 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
     if (filterCid.value) {
       url += `&cid=${filterCid.value}`;
     }
+    if (filterStatus.value !== null) {
+      url += `&status=${filterStatus.value}`;
+    }
     const res = await $fetch<{
       data: CommentItem[];
       pagination: { page: number; pageSize: number; total: number; totalPages: number };
@@ -133,6 +151,7 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
       const query: Record<string, string> = {};
       if (page > 1) query.page = page.toString();
       if (filterCid.value) query.cid = filterCid.value.toString();
+      if (filterStatus.value !== null) query.status = filterStatus.value.toString();
       await router.push({ query });
     }
   } catch (error) {
@@ -330,6 +349,10 @@ onMounted(() => {
   if (cidFromUrl) {
     filterCid.value = cidFromUrl;
   }
+  const statusFromUrl = route.query.status !== undefined ? parseInt(route.query.status as string) : null;
+  if (statusFromUrl !== null && [0, 1, 2].includes(statusFromUrl)) {
+    filterStatus.value = statusFromUrl;
+  }
   fetchComments(pageFromUrl, false); // 不更新 URL，避免重复导航
 });
 </script>
@@ -354,6 +377,18 @@ onMounted(() => {
         </Button>
       </div>
     </div>
+
+    <!-- 状态筛选 -->
+    <Tabs v-model="activeStatusTab" class="mb-4">
+      <TabsList class="overflow-x-auto">
+        <TabsTrigger value="all">
+          全部
+        </TabsTrigger>
+        <TabsTrigger v-for="option in statusOptions" :key="option.value" :value="String(option.value)">
+          {{ option.label }}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
 
     <Card class="overflow-hidden">
       <!-- 超大屏表格视图 (≥1650px) -->
@@ -503,7 +538,7 @@ onMounted(() => {
         <!-- 空状态 -->
         <div v-if="!loading && comments.length === 0" class="text-center py-12">
           <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p class="text-muted-foreground">暂无评论</p>
+          <p class="text-muted-foreground">{{ emptyText }}</p>
         </div>
       </div>
 
@@ -609,7 +644,7 @@ onMounted(() => {
         <!-- 空状态 -->
         <div v-if="!loading && comments.length === 0" class="text-center py-12">
           <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p class="text-muted-foreground">暂无评论</p>
+          <p class="text-muted-foreground">{{ emptyText }}</p>
         </div>
       </div>
 
@@ -715,7 +750,7 @@ onMounted(() => {
         <!-- 移动端空状态 -->
         <div v-if="!loading && comments.length === 0" class="text-center py-12">
           <Icon name="lucide:message-square" class="size-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p class="text-muted-foreground">暂无评论</p>
+          <p class="text-muted-foreground">{{ emptyText }}</p>
         </div>
       </div>
 

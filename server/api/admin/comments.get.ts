@@ -64,8 +64,21 @@ export default defineEventHandler(async event => {
     const pageSize = Number(query.pageSize) || 10;
     const cid = query.cid ? Number(query.cid) : null;
 
-    // 构建查询条件
-    const where = cid ? { cid } : {};
+    // 状态筛选：status 为 0/1/2 时按精确状态过滤，未传或 "all" 表示全部
+    const statusRaw = query.status;
+    let statusValue: number | null = null;
+    if (statusRaw !== undefined && statusRaw !== "all" && statusRaw !== "") {
+      const parsed = Number(statusRaw);
+      if (Number.isInteger(parsed) && [0, 1, 2].includes(parsed)) {
+        statusValue = parsed;
+      }
+    }
+
+    // 构建查询条件（状态筛选与文章筛选叠加）
+    const where = {
+      ...(statusValue !== null ? { status: statusValue } : {}),
+      ...(cid ? { cid } : {}),
+    };
 
     // 读取后台配置的头像服务（默认 gravatar）
     const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
