@@ -572,6 +572,58 @@ onUnmounted(() => {
   color: rgb(107 114 128);
 }
 
+/* [!code highlight] / [!code hl] 高亮行 */
+.markdown-body :deep(pre.shiki .line.highlighted) {
+  background-color: rgb(241 200 80 / 0.16);
+}
+
+/* [!code ++] 新增行 / [!code --] 删除行 */
+.markdown-body :deep(pre.shiki .line.diff.add) {
+  background-color: rgb(46 160 67 / 0.14);
+}
+
+.markdown-body :deep(pre.shiki .line.diff.remove) {
+  background-color: rgb(248 81 73 / 0.14);
+}
+
+/* diff 行号前缀：行号数字左侧空白处显示 + / -，不推动数字、不破坏代码列对齐 */
+.markdown-body :deep(pre.shiki .line.diff.add::after) {
+  content: "+";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: rgb(46 160 67);
+}
+
+.markdown-body :deep(pre.shiki .line.diff.remove::after) {
+  content: "-";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: rgb(248 81 73);
+}
+
+/* 暗色模式：!important 覆盖 .line 的 --shiki-dark-bg !important 背景 */
+.dark .markdown-body :deep(pre.shiki .line.highlighted) {
+  background-color: rgb(237 197 80 / 0.2) !important;
+}
+
+.dark .markdown-body :deep(pre.shiki .line.diff.add) {
+  background-color: rgb(63 185 80 / 0.2) !important;
+}
+
+.dark .markdown-body :deep(pre.shiki .line.diff.remove) {
+  background-color: rgb(248 81 73 / 0.24) !important;
+}
+
+.dark .markdown-body :deep(pre.shiki .line.diff.add::after) {
+  color: rgb(74 222 128);
+}
+
+.dark .markdown-body :deep(pre.shiki .line.diff.remove::after) {
+  color: rgb(248 113 113);
+}
+
 /* 代码复制按钮 */
 .markdown-body :deep(pre.shiki .lang-label) {
   position: absolute;

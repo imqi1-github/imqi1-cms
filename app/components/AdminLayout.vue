@@ -43,6 +43,7 @@ const pageTitle = computed(() => {
     '/admin/subscribes': '订阅列表',
     '/admin/changelogs': '更新日志',
     '/admin/settings': '系统设置',
+    '/admin/cache': '缓存管理',
   }
 
   // 精确匹配
@@ -135,6 +136,11 @@ const navItems = [
     title: '系统设置',
     href: '/admin/settings',
     icon: 'lucide:settings',
+  },
+  {
+    title: '缓存管理',
+    href: '/admin/cache',
+    icon: 'lucide:database-zap',
   },
 ]
 
