@@ -1742,23 +1742,17 @@ onMounted(async () => {
 
       /* 瀑布流图片样式 */
       .markdown-waterfall .waterfall-grid {
-        column-count: 4;
+        column-count: 3;
         column-gap: 16px;
       }
 
-      @media (max-width: 1100px) {
-        .markdown-waterfall .waterfall-grid {
-          column-count: 3;
-        }
-      }
-
-      @media (max-width: 750px) {
+      @media (max-width: 1024px) {
         .markdown-waterfall .waterfall-grid {
           column-count: 2;
         }
       }
 
-      @media (max-width: 500px) {
+      @media (max-width: 640px) {
         .markdown-waterfall .waterfall-grid {
           column-count: 1;
         }
