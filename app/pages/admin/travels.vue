@@ -447,7 +447,7 @@ onMounted(() => {
                       <Checkbox
                         :id="`add-travel-content-${p.cid}`"
                         :model-value="newTravel.cids.includes(String(p.cid))"
-                        @update:model-value="(checked: any) => toggleCid(newTravel.cids, String(p.cid), !!checked)" />
+                        @update:model-value="(checked) => toggleCid(newTravel.cids, String(p.cid), !!checked)" />
                       <Label :for="`add-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
                         {{ p.title }}
                       </Label>
@@ -526,7 +526,7 @@ onMounted(() => {
                       <Checkbox
                         :id="`edit-travel-content-${p.cid}`"
                         :model-value="editTravelForm.cids.includes(String(p.cid))"
-                        @update:model-value="(checked: any) => toggleCid(editTravelForm.cids, String(p.cid), !!checked)" />
+                        @update:model-value="(checked) => toggleCid(editTravelForm.cids, String(p.cid), !!checked)" />
                       <Label :for="`edit-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
                         {{ p.title }}
                       </Label>
