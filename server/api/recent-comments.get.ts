@@ -19,6 +19,9 @@ export default defineEventHandler(async event => {
       guestbookCid = messageContent?.cid ?? null;
     }
 
+    // 头像源与评论区共用同一份设置与服务端拼装逻辑（见 server/utils/comment-avatar）
+    const avatarService = await getCommentAvatarService();
+
     // 获取最近的评论（获取比需要更多的评论，因为后续会过滤）
     const comments = await prisma.comments.findMany({
       where: {
@@ -28,6 +31,7 @@ export default defineEventHandler(async event => {
         coid: true,
         content: true,
         name: true,
+        mail: true,
         create_time: true,
         content_ref: {
           select: {
@@ -82,6 +86,7 @@ export default defineEventHandler(async event => {
             coid: comment.coid,
             text: comment.content,
             author: comment.name,
+            avatar: commentAvatarUrl(comment.mail, avatarService),
             created: comment.create_time,
             contents: {
               title: comment.content_ref.title || "留言",
@@ -98,6 +103,7 @@ export default defineEventHandler(async event => {
           coid: comment.coid,
           text: comment.content,
           author: comment.name,
+          avatar: commentAvatarUrl(comment.mail, avatarService),
           created: comment.create_time,
           contents: {
             title: comment.content_ref.title,

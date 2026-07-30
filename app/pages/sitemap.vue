@@ -7,10 +7,13 @@ const ssrHeaders = { headers: getInternalRequestHeaders() };
 const { data: sitemapRes, pending: sitemapPending } = await useFetch("/api/sitemap", ssrHeaders);
 const { data: commentsRes } = await useFetch("/api/recent-comments?limit=10", ssrHeaders);
 const { data: tagsRes } = await useFetch("/api/tags", ssrHeaders);
+const { data: statsRes } = await useFetch("/api/stats", ssrHeaders);
 
 const sitemapData = computed(() => sitemapRes.value?.data ?? null);
 const recentComments = computed(() => commentsRes.value?.data || []);
 const tags = computed(() => tagsRes.value?.data || []);
+// 文章总数（用于「文章标签」分区概要），与关于页同源
+const articlesCount = computed(() => statsRes.value?.data?.publishedContentsNum ?? 0);
 const loading = computed(() => sitemapPending.value);
 
 // 系统页面配置（包含图标、路径、名称）
@@ -30,6 +33,27 @@ const systemPages = [
   { path: "/search", name: "搜索", icon: "ri:search-line" },
 ];
 
+// 合并「系统页面」与 CMS 独立页面（type=1），按目标路径去重——
+// systemPages 优先，避免 agreement 这类同时存在于静态页与 CMS 的条目重复出现。
+const mergedPages = computed(() => {
+  const seen = new Set<string>();
+  const result: { path: string; name: string; icon: string; external?: boolean }[] = [];
+  for (const page of systemPages) {
+    if (seen.has(page.path)) continue;
+    seen.add(page.path);
+    result.push(page);
+  }
+  const pages = sitemapData.value?.pages ?? [];
+  for (const page of pages) {
+    if (!page.slug) continue;
+    const path = `/${page.slug}`;
+    if (seen.has(path)) continue;
+    seen.add(path);
+    result.push({ path, name: page.title, icon: "ri:article-line" });
+  }
+  return result;
+});
+
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
@@ -40,6 +64,12 @@ const isHydrated = ref(false);
 onMounted(() => {
   isHydrated.value = true;
 });
+
+// 评论头像加载失败时回退为首字母（头像源与评论区一致，参见 recent-comments.get.ts）
+const failedAvatars = ref<Set<number>>(new Set());
+function markAvatarFailed(coid: number) {
+  failedAvatars.value = new Set(failedAvatars.value).add(coid);
+}
 
 // 绝对日期用 UTC 口径，保证 SSR 与客户端首屏一致（与归档/详情页对齐）
 function formatDate(date: string | Date): string {
@@ -77,139 +107,195 @@ usePageSeo({
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-[#0a0a0a]">
-    <div v-scroll-reveal class="mx-auto max-w-4xl">
-      <!-- 标题 -->
-      <header class="mb-12 text-center">
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">站点地图</h1>
-        <p class="text-slate-500 dark:text-gray-400 text-sm">浏览本站所有内容</p>
-      </header>
+  <div class="max-w-5xl mx-auto">
+    <!-- 标题 -->
+    <header v-scroll-reveal class="mb-10">
+      <h1 class="text-[3em] font-extrabold text-slate-900 dark:text-white mb-2.5">站点地图</h1>
+      <p class="text-[0.95em] text-slate-600 dark:text-slate-400">浏览本站的全部内容与结构，快速到达任意角落。</p>
+    </header>
 
-      <!-- 加载状态 -->
-      <div v-if="loading" class="space-y-8">
-        <div v-for="i in 3" :key="i" class="animate-pulse">
-          <div class="h-6 bg-slate-200 dark:bg-gray-800 rounded w-32 mb-4"/>
-          <div class="space-y-2">
-            <div v-for="j in 5" :key="j" class="h-4 bg-slate-100 dark:bg-gray-900 rounded"/>
-          </div>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="space-y-8">
+      <div v-for="i in 3" :key="i" class="animate-pulse">
+        <div class="h-7 bg-slate-200 dark:bg-gray-800 rounded w-40 mb-4" />
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div v-for="j in 6" :key="j" class="h-16 bg-slate-100 dark:bg-gray-900 rounded-2xl" />
         </div>
       </div>
+    </div>
 
-      <!-- 站点地图内容 -->
-      <div v-else-if="sitemapData" class="space-y-12">
-        <!-- 系统页面 -->
-        <section>
-          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">系统页面</h2>
-          <ul class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <li v-for="page in systemPages" :key="page.path">
-              <NuxtLink
-                :to="page.path"
-                :target="page.external ? '_blank' : undefined"
-                class="flex items-center gap-2 text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                <Icon :name="page.icon" class="size-4" />
-                {{ page.name }}
-                <Icon v-if="page.external" name="ri:external-link-line" class="size-3 opacity-60 align-sub" />
-              </NuxtLink>
-            </li>
-          </ul>
-        </section>
-
-        <!-- 所有标签 -->
-        <section v-if="tags.length > 0">
-          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">文章标签</h2>
-          <div class="flex flex-wrap gap-2">
+    <!-- 站点地图内容 -->
+    <div v-else-if="sitemapData" class="space-y-10">
+      <!-- 页面导航（系统页面 + CMS 独立页面，合并去重） -->
+      <section v-if="mergedPages.length > 0" v-scroll-reveal>
+        <div class="mb-5">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">页面导航</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">站点的功能页面与独立页面</p>
+        </div>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <li v-for="page in mergedPages" :key="page.path">
             <NuxtLink
-              v-for="tag in tags"
-              :key="tag.slug ?? tag.name"
-              :to="tag.slug ? `/tag/${tag.slug}` : '#'"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              :class="{ 'pointer-events-none opacity-50': !tag.slug }">
-              <Icon name="ri:price-tag-3-line" class="size-3.5 align-sub" />
-              {{ tag.name }}
+              :to="page.path"
+              :target="page.external ? '_blank' : undefined"
+              class="group flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-4 py-3 transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10">
+              <div class="flex items-center justify-center size-9 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500">
+                <Icon :name="page.icon" class="size-5" />
+              </div>
+              <span class="font-medium text-slate-700 dark:text-slate-200 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">{{ page.name }}</span>
+              <Icon v-if="page.external" name="ri:external-link-line" class="size-3.5 ml-auto text-slate-400 dark:text-slate-500 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
             </NuxtLink>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 所有标签 -->
+      <section v-if="tags.length > 0" v-scroll-reveal>
+        <div class="mb-5 flex items-end justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">文章标签</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">按主题快速检索文章</p>
           </div>
-        </section>
+          <div class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3 py-1 text-xs text-slate-500 dark:text-slate-400 shrink-0">
+            <span class="font-bold text-slate-900 dark:text-white tabular-nums">{{ articlesCount }}</span>
+            <span>篇文章</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <NuxtLink
+            v-for="tag in tags"
+            :key="tag.slug ?? tag.name"
+            :to="tag.slug ? `/tag/${tag.slug}` : '#'"
+            class="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
+            :class="{ 'pointer-events-none opacity-50': !tag.slug }">
+            <Icon name="ri:price-tag-3-line" class="size-3.5" />
+            {{ tag.name }}
+            <span class="ml-0.5 text-xs tabular-nums text-slate-400 dark:text-slate-500 transition-colors duration-300 group-hover:text-blue-500 dark:group-hover:text-blue-300">{{ tag.count }}</span>
+          </NuxtLink>
+        </div>
+      </section>
 
-        <!-- 分类和文章 -->
-        <section v-if="sitemapData.categories && sitemapData.categories.length > 0">
-          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">分类文章</h2>
+      <!-- 分类和文章 -->
+      <section v-if="sitemapData.categories && sitemapData.categories.length > 0" v-scroll-reveal>
+        <div class="mb-5">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">分类文章</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">按分类浏览最新文章</p>
+        </div>
 
-          <div class="space-y-8">
-            <div v-for="category in sitemapData.categories" :key="category.mid" class="pl-4 border-l-2 border-slate-200 dark:border-gray-700">
-              <!-- 分类标题 -->
-              <div class="mb-3">
-                <NuxtLink
-                  v-if="category.slug"
-                  :to="`/category/${category.slug}`"
-                  class="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-block">
-                  {{ category.name }}
-                </NuxtLink>
-                <span v-else class="text-lg font-semibold text-slate-900 dark:text-white inline-block">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div
+            v-for="category in sitemapData.categories"
+            :key="category.mid"
+            class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/40 p-5 transition-colors duration-300">
+            <!-- 分类标题 -->
+            <div class="mb-4">
+              <NuxtLink
+                v-if="category.slug"
+                :to="`/category/${category.slug}`"
+                class="flex items-center gap-2 min-w-0 group">
+                <div class="flex items-center justify-center size-8 rounded-lg bg-blue-600/10 dark:bg-blue-400/15 text-blue-600 dark:text-blue-400 shrink-0">
+                  <Icon name="ri:book-open-line" class="size-4" />
+                </div>
+                <span class="text-lg font-semibold text-slate-900 dark:text-white truncate transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                   {{ category.name }}
                 </span>
-              </div>
+              </NuxtLink>
+              <span v-else class="flex items-center gap-2 min-w-0">
+                <div class="flex items-center justify-center size-8 rounded-lg bg-blue-600/10 dark:bg-blue-400/15 text-blue-600 dark:text-blue-400 shrink-0">
+                  <Icon name="ri:book-open-line" class="size-4" />
+                </div>
+                <span class="text-lg font-semibold text-slate-900 dark:text-white truncate">{{ category.name }}</span>
+              </span>
+            </div>
 
-              <!-- 文章列表 -->
-              <ul v-if="category.contents.length > 0" class="space-y-1.5 ml-4">
-                <li v-for="content in category.contents" :key="content.cid">
-                  <NuxtLink
-                    v-if="content.slug && category.slug"
-                    :to="`/content/${category.slug}/${content.slug}`"
-                    class="text-slate-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm inline-block">
-                    {{ content.title }}
-                  </NuxtLink>
-                  <span v-else class="text-slate-700 dark:text-gray-300 text-sm inline-block">
+            <!-- 文章列表 -->
+            <ul v-if="category.contents.length > 0" class="space-y-0.5">
+              <li v-for="content in category.contents" :key="content.cid">
+                <NuxtLink
+                  v-if="content.slug && category.slug"
+                  :to="`/content/${category.slug}/${content.slug}`"
+                  class="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 -mx-2 transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                  <span class="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0 transition-colors duration-200 group-hover:bg-blue-500 dark:group-hover:bg-blue-400" />
+                  <span class="flex-1 min-w-0 text-sm text-slate-700 dark:text-slate-300 truncate transition-colors duration-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                     {{ content.title }}
                   </span>
-                  <span class="text-xs text-slate-400 dark:text-gray-500 ml-2">{{ formatDate(content.create_time) }}</span>
-                </li>
-              </ul>
-
-              <!-- 无文章提示 -->
-              <div v-else class="text-slate-400 dark:text-gray-500 text-sm ml-4">暂无文章</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 最近评论 -->
-        <section v-if="recentComments && recentComments.length > 0" class="mb-12">
-          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-200 dark:border-gray-700">最近评论</h2>
-          <div class="space-y-4">
-            <NuxtLink
-              v-for="comment in recentComments"
-              :key="comment.coid"
-              :to="comment.contents ? `${comment.contents.url}#comment-${comment.coid}` : '#'"
-              class="block pl-4 border-l-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
-              :class="{ 'pointer-events-none opacity-50': !comment.contents }">
-              <div class="mb-2">
-                <span class="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {{ comment.author }}
-                </span>
-                <span class="text-sm text-slate-500 dark:text-gray-400 ml-2">• {{ formatDateTime(comment.created) }}</span>
-              </div>
-
-              <div class="ml-4 space-y-2">
-                <p class="text-slate-700 dark:text-gray-300 text-sm mb-1"><EmojiParser :content="comment.text" size="sm" /></p>
-                <div v-if="comment.contents" class="flex items-center gap-1 text-sm text-slate-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  <Icon name="ri-article-line" class="size-4" />
-                  <span>{{ comment.contents.title }}</span>
-                  <Icon name="ri-external-link-line" class="size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span class="shrink-0 text-xs text-slate-400 dark:text-slate-500 tabular-nums">{{ formatDate(content.create_time) }}</span>
+                </NuxtLink>
+                <div v-else class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 -mx-2 opacity-70">
+                  <span class="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
+                  <span class="flex-1 min-w-0 text-sm text-slate-700 dark:text-slate-300 truncate">{{ content.title }}</span>
+                  <span class="shrink-0 text-xs text-slate-400 dark:text-slate-500 tabular-nums">{{ formatDate(content.create_time) }}</span>
                 </div>
-              </div>
+              </li>
+            </ul>
+
+            <!-- 无文章提示 -->
+            <div v-else class="text-sm text-slate-400 dark:text-slate-500 pl-0.5">暂无文章</div>
+
+            <!-- 查看更多 -->
+            <NuxtLink
+              v-if="category.slug && category.contents.length > 0"
+              :to="`/category/${category.slug}`"
+              class="mt-3 inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400">
+              查看全部
+              <Icon name="ri:arrow-right-line" class="size-3.5" />
             </NuxtLink>
           </div>
-        </section>
-
-        <!-- 空状态 -->
-        <div v-if="!sitemapData.categories || sitemapData.categories.length === 0" class="text-center py-12">
-          <p class="text-slate-500 dark:text-gray-400">暂无分类</p>
         </div>
-      </div>
+      </section>
 
-      <!-- 错误状态 -->
-      <div v-else class="text-center py-12">
-        <p class="text-slate-500 dark:text-gray-400">加载失败，请稍后重试</p>
+      <!-- 最近评论 -->
+      <section v-if="recentComments && recentComments.length > 0" v-scroll-reveal>
+        <div class="mb-5">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">最近评论</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">站点最新的留言动态</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NuxtLink
+            v-for="comment in recentComments"
+            :key="comment.coid"
+            :to="comment.contents ? `${comment.contents.url}#comment-${comment.coid}` : '#'"
+            class="group block rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/40 p-4 transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10"
+            :class="{ 'pointer-events-none opacity-50': !comment.contents }">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="flex items-center justify-center size-7 rounded-full shrink-0 overflow-hidden bg-blue-600/10 dark:bg-blue-400/15 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                <img
+                  v-if="comment.avatar && !failedAvatars.has(comment.coid)"
+                  :src="comment.avatar"
+                  :alt="comment.author"
+                  loading="lazy"
+                  class="no-img-loading w-full h-full object-cover"
+                  @error="markAvatarFailed(comment.coid)">
+                <template v-else>{{ (comment.author || "?").charAt(0).toUpperCase() }}</template>
+              </div>
+              <span class="font-semibold text-slate-900 dark:text-white truncate transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                {{ comment.author }}
+              </span>
+              <span class="text-xs text-slate-400 dark:text-slate-500 shrink-0">• {{ formatDateTime(comment.created) }}</span>
+            </div>
+
+            <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-2">
+              <EmojiParser :content="comment.text" size="sm" />
+            </p>
+
+            <div v-if="comment.contents" class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+              <Icon name="ri:article-line" class="size-3.5 shrink-0" />
+              <span class="truncate">{{ comment.contents.title }}</span>
+            </div>
+          </NuxtLink>
+        </div>
+      </section>
+
+      <!-- 空状态 -->
+      <div v-if="!sitemapData.categories || sitemapData.categories.length === 0" class="text-center py-16">
+        <Icon name="ri:folder-open-line" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+        <p class="text-slate-500 dark:text-slate-400">暂无分类</p>
       </div>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else class="text-center py-16">
+      <Icon name="ri:cloud-off-line" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+      <p class="text-slate-500 dark:text-slate-400">加载失败，请稍后重试</p>
     </div>
   </div>
 </template>

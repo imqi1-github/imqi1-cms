@@ -1,26 +1,7 @@
-import { createHash } from "node:crypto";
-
 import { prisma } from "#server/utils/prisma";
 import { getIpLocation } from "#server/utils/qqwry";
 import { parseUserAgent } from "#server/utils/parseUserAgent";
 import type { CommentNode } from "#server/types/apis/comment-node";
-
-// 头像镜像站地址：服务端按邮箱 md5 算好完整 URL 下发，
-// 避免把访客邮箱明文暴露给前端。
-const avatarServiceUrls: Record<string, string> = {
-  gravatar: "https://www.gravatar.com/avatar",
-  cravatar: "https://cn.cravatar.com/avatar",
-  weavatar: "https://weavatar.com/avatar",
-};
-
-function avatarUrl(mail: string | null, service: string): string {
-  if (!mail) return "";
-
-  const hash = createHash("md5").update(mail.toLowerCase().trim()).digest("hex");
-  const baseUrl = avatarServiceUrls[service] || avatarServiceUrls.gravatar;
-
-  return `${baseUrl}/${hash}?d=identicon&s=80`;
-}
 
 export default defineEventHandler(async event => {
   try {
@@ -36,9 +17,9 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 头像服务与主站后台共用一份设置（commentAvatarService），默认 gravatar
-    const avatarMeta = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
-    const avatarService = avatarMeta?.value || "gravatar";
+    // 头像服务与主站后台共用一份设置（commentAvatarService），默认 gravatar。
+    // 走共享 util，保证评论区与最近评论等所有展示位使用同一头像源。
+    const avatarService = await getCommentAvatarService();
 
     // IP 归属地缓存
     const ipLocationCache = new Map<string, { location: string; isp: string }>();
@@ -120,7 +101,7 @@ export default defineEventHandler(async event => {
         status: comment.status,
         parent_id: comment.parent_id,
         // 隐私字段（mail/ip/原始 agent）不下发：头像服务端算好，agent 预解析
-        avatar: avatarUrl(comment.mail, avatarService),
+        avatar: commentAvatarUrl(comment.mail, avatarService),
         device: parseUserAgent(comment.agent || ""),
         children: [],
         parent_name: null,
