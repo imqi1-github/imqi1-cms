@@ -4,6 +4,7 @@ import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 const loading = ref(true);
 const pages = ref<PageItem[]>([]);
 const selectedStatus = ref<number | null>(null);
@@ -123,7 +124,13 @@ function filterByStatus(status: number | null) {
 }
 
 async function deletePage(cid: number) {
-  const confirmed = confirm("确定要删除这个页面吗？");
+  const confirmed = await confirm({
+    title: "删除页面",
+    description: "确定要删除这个页面吗？",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch(`/api/admin/contents/${cid}`, {
@@ -145,7 +152,13 @@ async function batchDelete() {
     return;
   }
 
-  const confirmed = confirm(`确定要删除选中的 ${selectedIds.value.length} 个页面吗？`);
+  const confirmed = await confirm({
+    title: "批量删除页面",
+    description: `确定要删除选中的 ${selectedIds.value.length} 个页面吗？`,
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     deleting.value = true;
     try {

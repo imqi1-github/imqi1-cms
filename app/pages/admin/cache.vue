@@ -20,7 +20,7 @@ const categories = [
   { label: "订阅", keyword: "subscribes", icon: "lucide:rss", desc: "/subscribes" },
   { label: "更新日志", keyword: "changelogs", icon: "lucide:scroll-text", desc: "/changelogs" },
   { label: "协议", keyword: "agreement", icon: "lucide:scale", desc: "/agreement" },
-  { label: "站点地图", keyword: "sitemap", icon: "lucide:sitemap", desc: "/sitemap" },
+  { label: "站点地图", keyword: "sitemap", icon: "lucide:network", desc: "/sitemap" },
   { label: "关于", keyword: "about", icon: "lucide:info", desc: "/about" },
   { label: "旅行地图", keyword: "map", icon: "lucide:map", desc: "/map" },
   { label: "友链", keyword: "links", icon: "lucide:link", desc: "/links" },

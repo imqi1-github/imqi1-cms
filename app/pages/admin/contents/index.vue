@@ -7,6 +7,7 @@ import type { CsrfResponse } from "~/types/apis/admin/categories";
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
+const { confirm } = useConfirm();
 const csrfToken = ref("");
 const loading = ref(true);
 const contents = ref<AdminContent[]>([]);
@@ -185,7 +186,13 @@ function clearFilters() {
 }
 
 async function deleteContent(cid: number) {
-  const confirmed = confirm("确定要删除这篇文章吗？");
+  const confirmed = await confirm({
+    title: "删除文章",
+    description: "确定要删除这篇文章吗？",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE", headers: { "x-csrf-token": csrfToken.value } });
@@ -204,7 +211,13 @@ async function batchDelete() {
     return;
   }
 
-  const confirmed = confirm(`确定要删除选中的 ${selectedIds.value.length} 篇文章吗？`);
+  const confirmed = await confirm({
+    title: "批量删除文章",
+    description: `确定要删除选中的 ${selectedIds.value.length} 篇文章吗？`,
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     deleting.value = true;
     try {

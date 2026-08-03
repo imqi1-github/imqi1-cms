@@ -8,6 +8,7 @@ import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 
 const csrfToken = ref("");
 
@@ -405,7 +406,13 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
 
 // 取消关联附件
 const deleteAttachment = async (attachment: Attachment) => {
-  const confirmed = confirm(`确定要取消关联附件 "${attachment.name}" 吗？`);
+  const confirmed = await confirm({
+    title: "取消关联附件",
+    description: `确定要取消关联附件 "${attachment.name}" 吗？`,
+    variant: "destructive",
+    confirmText: "确认取消关联",
+    icon: "lucide:unlink",
+  });
   if (!confirmed) return;
   if (!contentId.value) return;
 

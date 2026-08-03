@@ -270,5 +270,8 @@ const handleLogout = async () => {
         </main>
       </div>
     </div>
+
+    <!-- 全局确认弹窗（useConfirm 驱动，替代原生 confirm） -->
+    <ConfirmDialog />
   </div>
 </template>

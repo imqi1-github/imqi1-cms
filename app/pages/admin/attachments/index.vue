@@ -4,6 +4,7 @@ import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
 const toast = useToast();
+const { confirm } = useConfirm();
 const loading = ref(true);
 const attachments = ref<AttachmentItem[]>([]);
 const selectedType = ref("all");
@@ -200,7 +201,13 @@ const formatImageDimensions = (item: { width?: number | null; height?: number | 
 };
 
 async function deleteAttachment(item: AttachmentItem) {
-  const confirmed = confirm(`确定要删除附件 "${item.name}" 吗？`);
+  const confirmed = await confirm({
+    title: "删除附件",
+    description: `确定要删除附件 "${item.name}" 吗？`,
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (!confirmed) return;
 
   try {

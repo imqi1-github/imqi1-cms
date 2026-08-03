@@ -4,6 +4,7 @@ import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter()
 const toast = useToast()
+const { confirm } = useConfirm()
 const loading = ref(true)
 const csrfToken = ref("")
 const stats = ref({
@@ -131,7 +132,13 @@ async function fetchData() {
 }
 
 async function deleteContent(cid: number) {
-  const confirmed = confirm('确定要删除这篇文章吗？')
+  const confirmed = await confirm({
+    title: '删除文章',
+    description: '确定要删除这篇文章吗？',
+    variant: 'destructive',
+    confirmText: '确认删除',
+    icon: 'lucide:trash-2',
+  })
   if (confirmed) {
     try {
       await $fetch(`/api/admin/contents/${cid}`, {
@@ -147,7 +154,13 @@ async function deleteContent(cid: number) {
 }
 
 async function deleteComment(coid: number) {
-  const confirmed = confirm('确定要删除这条评论吗？')
+  const confirmed = await confirm({
+    title: '删除评论',
+    description: '确定要删除这条评论吗？',
+    variant: 'destructive',
+    confirmText: '确认删除',
+    icon: 'lucide:trash-2',
+  })
   if (confirmed) {
     try {
       await $fetch(`/api/admin/comments/${coid}`, {

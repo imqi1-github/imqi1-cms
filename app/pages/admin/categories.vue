@@ -10,6 +10,7 @@ import type { ApiError } from "~/types/error";
 
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 
 const loading = ref(true);
 const categories = ref<CategoryItem[]>([]);
@@ -130,7 +131,13 @@ async function deleteCategory(mid: number) {
     return;
   }
 
-  const confirmed = confirm("确定要删除这个分类吗？删除后文章将不再关联此分类。");
+  const confirmed = await confirm({
+    title: "删除分类",
+    description: "确定要删除这个分类吗？删除后文章将不再关联此分类。",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch<CategoryDeleteResponse>(`/api/admin/categories/${mid}`, {

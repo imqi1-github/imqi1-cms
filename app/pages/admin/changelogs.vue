@@ -4,6 +4,7 @@ import type {ChangelogItem} from "~/types/apis/admin/changelogs/logs";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
+const { confirm } = useConfirm();
 const logs = ref<ChangelogItem[]>([]);
 const loading = ref(true);
 const submitting = ref(false);
@@ -127,7 +128,13 @@ async function save() {
 
 // 删除
 async function deleteLog(id: number) {
-  if (!confirm("确定要删除这条更新日志吗？")) {
+  if (!await confirm({
+    title: "删除更新日志",
+    description: "确定要删除这条更新日志吗？",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  })) {
     return;
   }
 

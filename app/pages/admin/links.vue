@@ -3,6 +3,7 @@ import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { LinkItem } from "~/types/apis/admin/links";
 
 const toast = useToast();
+const { confirm } = useConfirm();
 const loading = ref(true);
 const links = ref<LinkItem[]>([]);
 const showAddModal = ref(false);
@@ -96,7 +97,13 @@ async function saveEdit() {
 }
 
 async function deleteLink(id: number) {
-  const confirmed = confirm("确定要删除这个链接吗？");
+  const confirmed = await confirm({
+    title: "删除友链",
+    description: "确定要删除这个链接吗？",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch(`/api/admin/links/${id}`, {
@@ -118,7 +125,20 @@ async function deleteLink(id: number) {
 
 async function approveModification(link: LinkItem, approve: boolean) {
   const action = approve ? "批准" : "拒绝";
-  const confirmed = confirm(approve ? `确定要批准此修改吗？\n\n原友链"${link.originalLink?.name}"将被更新为新信息。` : "确定要拒绝此修改申请吗？");
+  const confirmed = approve
+    ? await confirm({
+        title: "批准友链修改",
+        description: `确定要批准此修改吗？\n\n原友链"${link.originalLink?.name}"将被更新为新信息。`,
+        confirmText: "确认批准",
+        icon: "lucide:check",
+      })
+    : await confirm({
+        title: "拒绝友链修改",
+        description: "确定要拒绝此修改申请吗？",
+        variant: "destructive",
+        confirmText: "确认拒绝",
+        icon: "lucide:x",
+      });
 
   if (confirmed) {
     try {

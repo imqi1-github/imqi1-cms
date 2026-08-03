@@ -3,6 +3,7 @@ import type {ContentListItem, TravelItem} from "~/types/components/map";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
+const { confirm } = useConfirm();
 const loading = ref(true);
 const travels = ref<TravelItem[]>([]);
 const contents = ref<ContentListItem[]>([]);
@@ -215,7 +216,13 @@ async function toggleEnabled(travel: TravelItem) {
 }
 
 async function deleteTravel(id: number) {
-  const confirmed = confirm("确定要删除这个旅行地点吗？");
+  const confirmed = await confirm({
+    title: "删除旅行地点",
+    description: "确定要删除这个旅行地点吗？",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch(`/api/admin/travels/${id}`, {

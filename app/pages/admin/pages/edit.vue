@@ -9,6 +9,7 @@ import type { ApiError } from "~/types/error";
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 
 // 判断是新建还是编辑
 const isEdit = computed(() => !!route.query.cid);
@@ -187,7 +188,13 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
 
 // 取消关联附件
 const deleteAttachment = async (attachment: PublicAttachment) => {
-  const confirmed = confirm(`确定要取消关联附件 "${attachment.name}" 吗？`);
+  const confirmed = await confirm({
+    title: "取消关联附件",
+    description: `确定要取消关联附件 "${attachment.name}" 吗？`,
+    variant: "destructive",
+    confirmText: "确认取消关联",
+    icon: "lucide:unlink",
+  });
   if (!confirmed) return;
   if (!pageId.value) return;
 

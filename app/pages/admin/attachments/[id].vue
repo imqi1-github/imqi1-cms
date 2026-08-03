@@ -7,6 +7,7 @@ import type {ApiError} from "~/types/error";
 
 const route = useRoute()
 const toast = useToast()
+const { confirm } = useConfirm()
 const loading = ref(true)
 const saving = ref(false)
 const csrfToken = ref("")
@@ -192,7 +193,13 @@ async function saveAttachment() {
 }
 
 async function deleteAttachment() {
-  const confirmed = confirm('确定要删除这个附件吗？此操作不可恢复！')
+  const confirmed = await confirm({
+    title: '删除附件',
+    description: '确定要删除这个附件吗？此操作不可恢复！',
+    variant: 'destructive',
+    confirmText: '确认删除',
+    icon: 'lucide:trash-2',
+  })
   if (!confirmed) return
 
   try {

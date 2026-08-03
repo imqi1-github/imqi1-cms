@@ -6,6 +6,7 @@ import type {CsrfResponse} from "~/types/apis/admin/categories";
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 const loading = ref(true);
 const comments = ref<CommentItem[]>([]);
 const selectedIds = ref<number[]>([]);
@@ -234,7 +235,13 @@ async function setStatus(coid: number, status: number) {
 }
 
 async function deleteComment(coid: number) {
-  const confirmed = confirm("确定要删除这条评论吗？");
+  const confirmed = await confirm({
+    title: "删除评论",
+    description: "确定要删除这条评论吗？",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch(`/api/admin/comments/${coid}`, {
@@ -259,7 +266,13 @@ async function batchDelete() {
     return;
   }
 
-  const confirmed = confirm(`确定要删除选中的 ${selectedIds.value.length} 条评论吗？`);
+  const confirmed = await confirm({
+    title: "批量删除评论",
+    description: `确定要删除选中的 ${selectedIds.value.length} 条评论吗？`,
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     deleting.value = true;
     try {

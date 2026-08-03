@@ -5,6 +5,7 @@ import type { ApiError } from "~/types/error";
 
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 
 const loading = ref(true);
 const tags = ref<TagItem[]>([]);
@@ -129,7 +130,13 @@ async function updateTag() {
 }
 
 async function deleteTag(mid: number) {
-  const confirmed = confirm("确定要删除这个标签吗？删除后文章将不再关联此标签。");
+  const confirmed = await confirm({
+    title: "删除标签",
+    description: "确定要删除这个标签吗？删除后文章将不再关联此标签。",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
   if (confirmed) {
     try {
       await $fetch(`/api/admin/tags/${mid}`, {
