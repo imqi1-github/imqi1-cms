@@ -50,6 +50,15 @@ const availableRelationTargets = computed(() => {
 // 既收敛响应类型又避免对 InternalApi 全表做 MatchedRoutes 深递归（会触发"堆栈深度过高"）。
 const attachmentDetailUrl = `/api/admin/attachments/${route.params.id}`;
 
+// 返回附件列表：保留来源页码（由列表页 ?page= 带入），退出后仍在那一页
+function backToAttachments() {
+  const pageParam = typeof route.query.page === "string" ? route.query.page : undefined;
+  return navigateTo({
+    path: "/admin/attachments",
+    query: pageParam ? { page: pageParam } : {},
+  });
+}
+
 const form = ref({
   name: '',
 })
@@ -210,7 +219,7 @@ async function deleteAttachment() {
     toast.success({
       message: '删除成功',
     })
-    await navigateTo('/admin/attachments')
+    await backToAttachments()
   } catch (rawError: unknown) {
     const error = rawError as ApiError
     console.error('删除失败:', error)
@@ -251,7 +260,7 @@ onMounted(() => {
   <AdminLayout>
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-4">
-        <Button variant="ghost" size="icon" @click="navigateTo('/admin/attachments')">
+        <Button variant="ghost" size="icon" @click="backToAttachments">
           <Icon name="lucide:arrow-left" class="size-5" />
         </Button>
         <div>

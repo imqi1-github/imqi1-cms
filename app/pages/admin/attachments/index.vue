@@ -5,6 +5,8 @@ import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
 const toast = useToast();
 const { confirm } = useConfirm();
+const route = useRoute();
+const router = useRouter();
 const loading = ref(true);
 const attachments = ref<AttachmentItem[]>([]);
 const selectedType = ref("all");
@@ -22,8 +24,8 @@ const attachmentTypes = [
 ];
 
 
-// 分页
-const page = ref(1);
+// 分页（页码从 URL query 读取，从详情页返回时仍停留在原页）
+const page = ref(Number(route.query.page) || 1);
 const pageSize = ref(20);
 const total = ref(0);
 
@@ -65,6 +67,22 @@ const fetchAttachments = async () => {
 
 watch([selectedType, searchQuery, page], () => {
   fetchAttachments();
+  syncPageQuery();
+});
+
+// 把当前页码写回 URL（page=1 时省略，保持地址栏干净）
+function syncPageQuery() {
+  const want = page.value !== 1 ? String(page.value) : undefined;
+  const current = typeof route.query.page === "string" ? route.query.page : undefined;
+  if (current !== want) {
+    router.replace({ query: { ...route.query, page: want } });
+  }
+}
+
+// 进入详情时携带当前页码，供详情页"返回"按钮回到原页
+const detailRoute = (id: number | string) => ({
+  path: `/admin/attachments/${id}`,
+  query: page.value !== 1 ? { page: String(page.value) } : {},
 });
 
 // 防抖搜索
@@ -328,7 +346,7 @@ onMounted(() => {
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             <div v-for="item in attachments" :key="item.id" class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
               <!-- 预览图 -->
-              <NuxtLink :to="`/admin/attachments/${item.id}`" class="block">
+              <NuxtLink :to="detailRoute(item.id)" class="block">
                 <div class="aspect-square bg-muted flex items-center justify-center overflow-hidden">
                   <img
                     v-if="item.type === 'image'"
@@ -348,7 +366,7 @@ onMounted(() => {
                 <Button variant="secondary" size="sm" class="h-8" title="复制链接" @click.stop="copyLink(item.url)">
                   <Icon name="lucide:copy" class="size-4" />
                 </Button>
-                <Button variant="secondary" size="sm" class="h-8" title="编辑" @click.stop="navigateTo(`/admin/attachments/${item.id}`)">
+                <Button variant="secondary" size="sm" class="h-8" title="编辑" @click.stop="navigateTo(detailRoute(item.id))">
                   <Icon name="lucide:settings" class="size-4" />
                 </Button>
                 <Button variant="destructive" size="sm" class="h-8" title="删除" @click.stop="deleteAttachment(item)">
