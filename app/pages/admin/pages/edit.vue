@@ -19,7 +19,9 @@ watch(() => route.query.cid, (newCid) => {
 }, { immediate: true });
 
 const activeTab = ref("content");
-const loading = ref(false);
+// 编辑页首帧即给骨架屏：isEdit 在 SSR 时即可由 route.query.cid 判定，loading 初始即 true，
+// 避免先渲染空编辑器再切骨架再灌内容的三段式闪烁；新建页 isEdit=false → 直接显示空编辑器
+const loading = ref(isEdit.value);
 const csrfToken = ref("");
 
 // 表单数据

@@ -22,6 +22,7 @@ import { CustomContainer } from "./markdown-editor/extensions/CustomContainer";
 import { CodeBlockWithLang } from "./markdown-editor/extensions/CodeBlockWithLang";
 // 工具栏抽成子组件，顶部与底部各渲染一份（同一组 props），避免 ~340 行 markup 复制两遍
 import EditorToolbar from "./markdown-editor/EditorToolbar.vue";
+import { deriveCalloutVariant } from "./markdown-editor/containerMeta";
 
 import { deriveContainerType, splitMarkdown } from "~/utils/markdownSplit";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
@@ -50,6 +51,53 @@ const PLACEHOLDER_IMG_SRC =
 
 // 防回环：记录最近一次由编辑器回写出的 markdown，watch(model) 据此跳过回灌
 const lastEmitted = ref(model.value);
+
+// —— 纵向可调整大小：底部拖拽手柄调整编辑器高度，持久化到 localStorage ——
+// 初始用默认值（SSR 与客户端首帧一致，避免 :style 水合 mismatch）；onMounted 再读 localStorage 覆盖。
+const EDITOR_HEIGHT_KEY = "markdown-editor:height";
+const EDITOR_HEIGHT_MIN = 320;
+const EDITOR_HEIGHT_MAX = 3000;
+const EDITOR_HEIGHT_DEFAULT = 720;
+// 编辑器高度 ≥ 此值才显示底部工具栏：默认 720 ≥ 600 → 默认即显示第二份；拖到 600 以下（过小）才隐藏
+const EDITOR_HEIGHT_SHOW_BOTTOM = 600;
+const editorHeight = ref(EDITOR_HEIGHT_DEFAULT);
+const showBottomToolbar = computed(() => editorHeight.value >= EDITOR_HEIGHT_SHOW_BOTTOM);
+let resizeStartY = 0;
+let resizeStartHeight = 0;
+
+/** 拖拽中：按指针纵向位移改高度，clamp 到 [MIN, MAX]。 */
+function onResizeMove(e: PointerEvent) {
+  const next = resizeStartHeight + (e.clientY - resizeStartY);
+  editorHeight.value = Math.min(EDITOR_HEIGHT_MAX, Math.max(EDITOR_HEIGHT_MIN, next));
+}
+/** 拖拽结束：解绑监听、恢复全局样式、持久化高度。 */
+function endResize() {
+  window.removeEventListener("pointermove", onResizeMove);
+  window.removeEventListener("pointerup", endResize);
+  document.body.style.userSelect = "";
+  document.body.style.cursor = "";
+  localStorage.setItem(EDITOR_HEIGHT_KEY, String(editorHeight.value));
+}
+/** 手柄 pointerdown：记录起点，绑 window 级 pointermove/up（指针离开手柄也能继续拖）。 */
+function startResize(e: PointerEvent) {
+  e.preventDefault();
+  resizeStartY = e.clientY;
+  resizeStartHeight = editorHeight.value;
+  window.addEventListener("pointermove", onResizeMove);
+  window.addEventListener("pointerup", endResize);
+  document.body.style.userSelect = "none";
+  document.body.style.cursor = "row-resize";
+}
+
+onMounted(() => {
+  const saved = Number(localStorage.getItem(EDITOR_HEIGHT_KEY));
+  if (saved >= EDITOR_HEIGHT_MIN && saved <= EDITOR_HEIGHT_MAX) editorHeight.value = saved;
+});
+onBeforeUnmount(() => {
+  // 拖拽进行中卸载组件时清理监听与全局样式
+  window.removeEventListener("pointermove", onResizeMove);
+  window.removeEventListener("pointerup", endResize);
+});
 
 // 工具栏态：撤销/重做可用性 + 当前激活的格式（用于按钮高亮），随事务刷新
 const canUndo = ref(false);
@@ -132,6 +180,47 @@ const emitMarkdown = useDebounceFn(() => {
   writeMarkdownOut();
 }, 150);
 
+/**
+ * 当前选中的自定义容器对应哪个工具栏按钮 key。atom 容器被 NodeSelection 选中时（点击
+ * 容器卡片即选中），点亮对应按钮；多按钮共用一种 type 的（callout 四变体 / repo 双平台 /
+ * music 三形态）按 raw 内容精确到具体按钮。未选中容器返回 null。
+ */
+function activeContainerButtonKey(ed: Editor): string | null {
+  const { selection } = ed.state;
+  if (!(selection instanceof NodeSelection)) return null;
+  const node = selection.node;
+  if (node.type.name !== "customContainer") return null;
+  const raw = (node.attrs.raw as string) ?? "";
+  const type = (node.attrs.type as string) || deriveContainerType(raw);
+  switch (type) {
+    case "live-photo":
+      return "livePhoto";
+    case "video":
+      return "video";
+    case "details":
+      return "details";
+    case "card":
+      return "card";
+    case "simple-card":
+      return "simpleCard";
+    case "swiper":
+      return "swiper";
+    case "waterfall":
+      return "waterfall";
+    case "callout":
+      // 'success' | 'warning' | 'error' | 'info' | null（未识别变体则不点亮）
+      return deriveCalloutVariant(raw);
+    case "repo":
+      return /gitee\.com/i.test(raw) ? "giteeRepo" : "githubRepo";
+    case "music": {
+      const kind = raw.match(/^:::music\s+(\w+)/)?.[1];
+      return kind === "song" ? "musicSong" : kind === "playlist" ? "musicPlaylist" : "musicAuto";
+    }
+    default:
+      return null;
+  }
+}
+
 /** 刷新工具栏态。 */
 function syncState() {
   const ed = editor.value;
@@ -147,12 +236,14 @@ function syncState() {
   canRedo.value = ed.can().redo();
   canMergeCells.value = ed.can().mergeCells();
   canSplitCell.value = ed.can().splitCell();
+  const containerKey = activeContainerButtonKey(ed);
   activeFlags.value = {
     bold: ed.isActive("bold"),
     italic: ed.isActive("italic"),
     underline: ed.isActive("underline"),
     strike: ed.isActive("strike"),
     code: ed.isActive("code"),
+    codeBlock: ed.isActive("codeBlock"),
     bulletList: ed.isActive("bulletList"),
     orderedList: ed.isActive("orderedList"),
     blockquote: ed.isActive("blockquote"),
@@ -163,6 +254,23 @@ function syncState() {
     h5: ed.isActive("heading", { level: 5 }),
     h6: ed.isActive("heading", { level: 6 }),
     table: ed.isActive("table"),
+    // 光标在代码块内 → 点亮代码块按钮；选中 atom 容器 → 点亮对应容器按钮
+    livePhoto: containerKey === "livePhoto",
+    video: containerKey === "video",
+    details: containerKey === "details",
+    success: containerKey === "success",
+    warning: containerKey === "warning",
+    error: containerKey === "error",
+    info: containerKey === "info",
+    card: containerKey === "card",
+    simpleCard: containerKey === "simpleCard",
+    swiper: containerKey === "swiper",
+    waterfall: containerKey === "waterfall",
+    githubRepo: containerKey === "githubRepo",
+    giteeRepo: containerKey === "giteeRepo",
+    musicAuto: containerKey === "musicAuto",
+    musicSong: containerKey === "musicSong",
+    musicPlaylist: containerKey === "musicPlaylist",
   };
 }
 
@@ -573,7 +681,7 @@ const actions = {
 </script>
 
 <template>
-  <div class="markdown-editor flex h-180 flex-col">
+  <div class="markdown-editor flex flex-col" :style="{ height: editorHeight + 'px' }">
     <ClientOnly>
       <div class="flex min-h-0 flex-1 flex-col">
         <!-- 工具栏（顶部） -->
@@ -592,8 +700,9 @@ const actions = {
         <div class="min-h-0 flex-1 overflow-auto bg-background">
           <EditorContent v-if="editor" :editor="editor" />
         </div>
-        <!-- 工具栏（底部）：与顶部同一份组件/props，光标进表格时两份同步切到表格操作 -->
+        <!-- 工具栏（底部）：仅编辑器足够高（≥800）时显示，默认高度下只有顶部一份 -->
         <EditorToolbar
+          v-if="showBottomToolbar"
           side="bottom"
           :actions="actions"
           :active-flags="activeFlags"
@@ -614,6 +723,16 @@ const actions = {
         />
       </template>
     </ClientOnly>
+
+    <!-- 纵向调整大小手柄：拖动改编辑器高度，记入 localStorage -->
+    <div
+      class="resize-handle"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="拖动调整编辑器高度"
+      title="拖动调整高度"
+      @pointerdown="startResize"
+    />
 
     <!-- 链接 / 图片 URL 输入弹窗 -->
     <Dialog v-model:open="promptState.open">
@@ -914,5 +1033,51 @@ const actions = {
 .markdown-editor :deep(.ProseMirror .not-prose) {
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+/* 底部纵向拖拽手柄：拖动调整编辑器高度（JS 见 startResize） */
+.markdown-editor .resize-handle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12px;
+  cursor: row-resize;
+  user-select: none;
+  touch-action: none;
+  background: rgb(241 245 249);
+  border-top: 1px solid rgb(226 232 240);
+  transition: background 0.15s ease;
+}
+.markdown-editor .resize-handle::before {
+  content: "";
+  width: 36px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(148 163 184);
+  transition: background 0.15s ease;
+}
+.markdown-editor .resize-handle:hover,
+.markdown-editor .resize-handle:active {
+  background: rgb(226 232 240);
+}
+.markdown-editor .resize-handle:hover::before,
+.markdown-editor .resize-handle:active::before {
+  background: rgb(100 116 139);
+}
+.dark .markdown-editor .resize-handle {
+  background: rgb(30 41 59);
+  border-top-color: rgb(51 65 85);
+}
+.dark .markdown-editor .resize-handle::before {
+  background: rgb(100 116 139);
+}
+.dark .markdown-editor .resize-handle:hover,
+.dark .markdown-editor .resize-handle:active {
+  background: rgb(51 65 85);
+}
+.dark .markdown-editor .resize-handle:hover::before,
+.dark .markdown-editor .resize-handle:active::before {
+  background: rgb(148 163 184);
 }
 </style>

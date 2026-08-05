@@ -221,7 +221,7 @@ const rootClass = computed(() => [
     >
       <Icon name="lucide:code" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="代码块 (Ctrl+Alt+C)" @click="actions.codeBlock">
+    <Button :variant="activeFlags.codeBlock ? 'default' : 'ghost'" size="icon-sm" title="代码块 (Ctrl+Alt+C)" @click="actions.codeBlock">
       <Icon name="lucide:file-code" class="size-4" />
     </Button>
 
@@ -233,7 +233,7 @@ const rootClass = computed(() => [
     <Button variant="ghost" size="icon-sm" title="图片" @click="actions.image">
       <Icon name="lucide:image" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="实况照片" @click="actions.livePhoto">
+    <Button :variant="activeFlags.livePhoto ? 'default' : 'ghost'" size="icon-sm" title="实况照片" @click="actions.livePhoto">
       <Icon name="lucide:aperture" class="size-4" />
     </Button>
     <Button
@@ -264,17 +264,17 @@ const rootClass = computed(() => [
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="折叠" @click="actions.details">
+    <Button :variant="activeFlags.details ? 'default' : 'ghost'" size="icon-sm" title="折叠" @click="actions.details">
       <Icon name="lucide:chevrons-up-down" class="size-4" />
     </Button>
     <Separator orientation="vertical" class="mx-1 h-6" />
-    <Button variant="ghost" size="icon-sm" title="视频" @click="actions.video">
+    <Button :variant="activeFlags.video ? 'default' : 'ghost'" size="icon-sm" title="视频" @click="actions.video">
       <Icon name="lucide:video" class="size-4" />
     </Button>
     <Separator orientation="vertical" class="mx-1 h-6" />
 
     <Button
-      variant="ghost"
+      :variant="activeFlags.success ? 'default' : 'ghost'"
       size="icon-sm"
       class="text-green-600 dark:text-green-400"
       title="成功提示框"
@@ -283,7 +283,7 @@ const rootClass = computed(() => [
       <Icon name="lucide:check-circle" class="size-4" />
     </Button>
     <Button
-      variant="ghost"
+      :variant="activeFlags.warning ? 'default' : 'ghost'"
       size="icon-sm"
       class="text-yellow-600 dark:text-yellow-400"
       title="警告提示框"
@@ -292,7 +292,7 @@ const rootClass = computed(() => [
       <Icon name="lucide:alert-triangle" class="size-4" />
     </Button>
     <Button
-      variant="ghost"
+      :variant="activeFlags.error ? 'default' : 'ghost'"
       size="icon-sm"
       class="text-red-600 dark:text-red-400"
       title="错误提示框"
@@ -301,7 +301,7 @@ const rootClass = computed(() => [
       <Icon name="lucide:x-circle" class="size-4" />
     </Button>
     <Button
-      variant="ghost"
+      :variant="activeFlags.info ? 'default' : 'ghost'"
       size="icon-sm"
       class="text-blue-600 dark:text-blue-400"
       title="信息提示框"
@@ -312,25 +312,25 @@ const rootClass = computed(() => [
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="链接卡片" @click="actions.card">
+    <Button :variant="activeFlags.card ? 'default' : 'ghost'" size="icon-sm" title="链接卡片" @click="actions.card">
       <Icon name="lucide:layout-template" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="简单外链卡片" @click="actions.simpleCard">
+    <Button :variant="activeFlags.simpleCard ? 'default' : 'ghost'" size="icon-sm" title="简单外链卡片" @click="actions.simpleCard">
       <Icon name="lucide:link-2" class="size-4" />
     </Button>
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="轮播图" @click="actions.swiper">
+    <Button :variant="activeFlags.swiper ? 'default' : 'ghost'" size="icon-sm" title="轮播图" @click="actions.swiper">
       <Icon name="lucide:images" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="瀑布流图片" @click="actions.waterfall">
+    <Button :variant="activeFlags.waterfall ? 'default' : 'ghost'" size="icon-sm" title="瀑布流图片" @click="actions.waterfall">
       <Icon name="lucide:gallery-vertical" class="size-4" />
     </Button>
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="GitHub 仓库" @click="actions.githubRepo">
+    <Button :variant="activeFlags.githubRepo ? 'default' : 'ghost'" size="icon-sm" title="GitHub 仓库" @click="actions.githubRepo">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="16"
@@ -344,7 +344,7 @@ const rootClass = computed(() => [
         />
       </svg>
     </Button>
-    <Button variant="ghost" size="icon-sm" title="Gitee 仓库" @click="actions.giteeRepo">
+    <Button :variant="activeFlags.giteeRepo ? 'default' : 'ghost'" size="icon-sm" title="Gitee 仓库" @click="actions.giteeRepo">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="16"
@@ -361,13 +361,13 @@ const rootClass = computed(() => [
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="音乐自动识别" @click="actions.musicAuto">
+    <Button :variant="activeFlags.musicAuto ? 'default' : 'ghost'" size="icon-sm" title="音乐自动识别" @click="actions.musicAuto">
       <Icon name="lucide:disc-3" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="音乐单曲" @click="actions.musicSong">
+    <Button :variant="activeFlags.musicSong ? 'default' : 'ghost'" size="icon-sm" title="音乐单曲" @click="actions.musicSong">
       <Icon name="lucide:music-4" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="音乐列表" @click="actions.musicPlaylist">
+    <Button :variant="activeFlags.musicPlaylist ? 'default' : 'ghost'" size="icon-sm" title="音乐列表" @click="actions.musicPlaylist">
       <Icon name="lucide:list-music" class="size-4" />
     </Button>
     </template>
