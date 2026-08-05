@@ -11,7 +11,7 @@ export default defineNuxtRouteMiddleware(async to => {
       const event = useRequestEvent();
 
       if (!event) {
-        return navigateTo("/login?to=" + encodeURIComponent(to.path));
+        return navigateTo({ path: "/login", query: { to: to.fullPath } });
       }
 
       // 调用 getUser 验证 session
@@ -21,14 +21,14 @@ export default defineNuxtRouteMiddleware(async to => {
       if (!user) {
         // session 无效，重定向到登录页
         // 这会在服务器端就拦截，不会渲染 AdminLayout
-        return navigateTo("/login?to=" + encodeURIComponent(to.path));
+        return navigateTo({ path: "/login", query: { to: to.fullPath } });
       }
 
       // session 有效，继续渲染页面
       return;
     } catch {
       // 验证出错，重定向到登录页
-      return navigateTo("/login?to=" + encodeURIComponent(to.path));
+      return navigateTo({ path: "/login", query: { to: to.fullPath } });
     }
   }
 
@@ -37,10 +37,10 @@ export default defineNuxtRouteMiddleware(async to => {
     try {
       const res = await $fetch("/api/auth/verify");
       if (!res.valid) {
-        return navigateTo("/login?to=" + encodeURIComponent(to.path));
+        return navigateTo({ path: "/login", query: { to: to.fullPath } });
       }
     } catch {
-      return navigateTo("/login?to=" + encodeURIComponent(to.path));
+      return navigateTo({ path: "/login", query: { to: to.fullPath } });
     }
   }
 });

@@ -444,6 +444,13 @@ export default defineNuxtConfig({
         "swiper/modules",
         "@fancyapps/ui",
         "isomorphic-dompurify",
+        // 富文本编辑器（ESM，预打包避免 dev 首屏重组）
+        // 注：@tiptap/pm 无根导出（仅子路径如 @tiptap/pm/model），不能放进 include；
+        // 它会被上面的 @tiptap/core / @tiptap/vue-3 间接预打包。
+        "@tiptap/vue-3",
+        "@tiptap/core",
+        "@tiptap/starter-kit",
+        "tiptap-markdown",
       ],
     },
     build: {
@@ -463,6 +470,15 @@ export default defineNuxtConfig({
             utils: ["@vueuse/core", "clsx", "class-variance-authority"],
             // 媒体相关（swiper + fancyapps）
             media: ["swiper", "@fancyapps/ui"],
+            // 富文本编辑器
+            tiptap: [
+              "@tiptap/vue-3",
+              "@tiptap/core",
+              "@tiptap/starter-kit",
+              "tiptap-markdown",
+              // prosemirror-* 由上面几个包间接引入，rollup 会自动并入本 chunk；
+              // @tiptap/pm 无根导出，不能列在这里（会解析失败）。
+            ],
           },
         },
         // 忽略循环依赖警告以减少日志输出

@@ -323,8 +323,9 @@ onMounted(() => {
     <NuxtPage />
   </template>
 
-  <!-- 页面加载超时提示 -->
-  <div v-if="showLoadingTimeout" class="fixed inset-0 z-40 pointer-events-none flex items-center justify-center">
+  <!-- 页面加载超时提示：仅前台显示。前台 <main> 渐出到 opacity:0 后再显（500ms > fadeDuration），
+       提示落在空白背景上；后台 <NuxtPage> 无渐出，旧页仍可见，叠加提示会和页面内容重叠，故后台不显。 -->
+  <div v-if="showLoadingTimeout && isFrontend" class="fixed inset-0 z-40 pointer-events-none flex items-center justify-center">
     <div class="flex items-center gap-4">
       <div class="animate-spin">
         <Icon name="lucide:loader-2" class="size-5 text-blue-600 dark:text-blue-400" mode="svg" />
