@@ -882,8 +882,8 @@ watch(contentId, newCid => {
 
           <!-- 文章内容 Tab -->
           <TabsContent value="content" class="mt-6">
-            <Card class="overflow-hidden p-0">
-              <CardContent class="p-0">
+            <Card class="overflow-hidden p-0!">
+              <CardContent class="p-0!">
                 <MarkdownEditor v-model="content" :content-id="contentId ?? undefined" @attachment-updated="fetchAttachments" />
               </CardContent>
             </Card>
