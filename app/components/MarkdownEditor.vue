@@ -40,6 +40,14 @@ const toast = useToast();
 
 const uploading = ref(false);
 
+// 粘贴上传占位 image 的 src：1×1 透明 SVG。必须是真实可加载的 data URI，否则浏览器会在
+// 盒子上叠一张碎图图标。先前用 "uploading" 哨兵字符串 → 被当相对 URL 请求失败 → 碎图；
+// 这里用透明 SVG data URI 让 <img> 加载成功（渲染为透明），盒子化样式靠 alt 前缀
+// __uploading_ 在 <style> 里识别（见 img[alt^="__uploading_"]），上传完 alt 改为文件名，
+// 样式自动失效。CSP img-src 已放行 data:（见 server/utils/csp.ts）。
+const PLACEHOLDER_IMG_SRC =
+  "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='1'%20height='1'/%3E";
+
 // 防回环：记录最近一次由编辑器回写出的 markdown，watch(model) 据此跳过回灌
 const lastEmitted = ref(model.value);
 
@@ -103,9 +111,9 @@ function loadMarkdown(editor: Editor, md: string) {
 }
 
 /**
- * 上传期间挂起回写：图片粘贴会先插 src=uploading 占位节点，若期间触发防抖回写，
- * 占位 URL 会被中间态写回 model（父组件恰好在窗口内保存就会落库）。上传结束后
- * 由 finally 立即同步一次最终 markdown。
+ * 上传期间挂起回写：图片粘贴会先插 1×1 透明像素占位节点（alt 带 __uploading_ 标记），
+ * 若期间触发防抖回写，占位节点会被中间态写回 model（父组件恰好在窗口内保存就会落库）。
+ * 上传结束后由 finally 立即同步一次最终 markdown。
  */
 const suppressEmit = ref(false);
 
@@ -319,7 +327,7 @@ async function uploadPastedImages(imageItems: DataTransferItem[]) {
       uploadIds.push(uploadId);
       ed.chain()
         .focus()
-        .insertContent({ type: "image", attrs: { src: "uploading", alt: uploadId } })
+        .insertContent({ type: "image", attrs: { src: PLACEHOLDER_IMG_SRC, alt: uploadId } })
         .run();
     }
 
@@ -333,7 +341,7 @@ async function uploadPastedImages(imageItems: DataTransferItem[]) {
       const file = item.getAsFile();
       const uploadId = uploadIds[i]!;
       if (!file) {
-        // 取不到文件对象（罕见）：清掉已插入的占位，避免孤儿 src=uploading 坏图残留
+        // 取不到文件对象（罕见）：清掉已插入的占位，避免孤儿加载盒残留
         removePlaceholder(ed, uploadId);
         continue;
       }
@@ -376,7 +384,7 @@ async function uploadPastedImages(imageItems: DataTransferItem[]) {
     }
   } finally {
     uploading.value = false;
-    // 上传期间挂起了防抖回写；这里立即同步一次最终 markdown，避免占位 src=uploading 被中间态写回 model
+    // 上传期间挂起了防抖回写；这里立即同步一次最终 markdown，避免透明像素占位被中间态写回 model
     suppressEmit.value = false;
     writeMarkdownOut();
   }
@@ -864,6 +872,31 @@ const actions = {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+/* 粘贴图片上传占位：alt 以 __uploading_ 开头识别（上传完 alt 改为文件名，样式自动失效）。
+   src 是 1×1 透明 SVG data URI（非 http URL），盒子化 + 虚线描边 + shimmer 动画提示「上传中」，
+   替代先前 src=uploading 渲染出的碎图。中性半透明色在亮/暗态都可读。
+   注：<img> 是替换元素无法挂伪元素，旋转 spinner 又依赖子元素或不可靠的背景 SVG 动画
+   （Chrome 不跑），故用 shimmer（background-position 动画，全浏览器可靠）。 */
+.markdown-editor :deep(.ProseMirror img[alt^="__uploading_"]) {
+  display: block;
+  width: 100%;
+  height: 180px;
+  border-radius: 0.5rem;
+  border: 1px dashed rgb(148 163 184 / 0.6);
+  background: linear-gradient(
+    100deg,
+    rgb(148 163 184 / 0.12) 30%,
+    rgb(148 163 184 / 0.32) 50%,
+    rgb(148 163 184 / 0.12) 70%
+  );
+  background-size: 200% 100%;
+  animation: markdown-editor-upload-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes markdown-editor-upload-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* 图片段落底部异常大间隙的根因：Tailwind preflight 给 img 设了 display:block，导致同段的
