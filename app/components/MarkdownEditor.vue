@@ -58,10 +58,9 @@ const EDITOR_HEIGHT_KEY = "markdown-editor:height";
 const EDITOR_HEIGHT_MIN = 320;
 const EDITOR_HEIGHT_MAX = 3000;
 const EDITOR_HEIGHT_DEFAULT = 720;
-// 编辑器高度 ≥ 此值才显示底部工具栏：默认 720 ≥ 600 → 默认即显示第二份；拖到 600 以下（过小）才隐藏
-const EDITOR_HEIGHT_SHOW_BOTTOM = 600;
 const editorHeight = ref(EDITOR_HEIGHT_DEFAULT);
-const showBottomToolbar = computed(() => editorHeight.value >= EDITOR_HEIGHT_SHOW_BOTTOM);
+// 底部工具栏仅当编辑器比默认更高时才显示：默认 720 隐藏，>720（即 721+）才出现第二份
+const showBottomToolbar = computed(() => editorHeight.value > EDITOR_HEIGHT_DEFAULT);
 let resizeStartY = 0;
 let resizeStartHeight = 0;
 
