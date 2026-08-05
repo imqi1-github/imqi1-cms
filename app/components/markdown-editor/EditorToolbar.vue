@@ -122,7 +122,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.bold ? 'default' : 'ghost'"
       size="icon-sm"
-      title="粗体"
+      title="粗体 (Ctrl+B)"
       @click="actions.bold"
     >
       <Icon name="lucide:bold" class="size-4" />
@@ -130,15 +130,23 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.italic ? 'default' : 'ghost'"
       size="icon-sm"
-      title="斜体"
+      title="斜体 (Ctrl+I)"
       @click="actions.italic"
     >
       <Icon name="lucide:italic" class="size-4" />
     </Button>
     <Button
+      :variant="activeFlags.underline ? 'default' : 'ghost'"
+      size="icon-sm"
+      title="下划线 (Ctrl+U)"
+      @click="actions.underline"
+    >
+      <Icon name="lucide:underline" class="size-4" />
+    </Button>
+    <Button
       :variant="activeFlags.strike ? 'default' : 'ghost'"
       size="icon-sm"
-      title="删除线"
+      title="删除线 (Ctrl+Shift+S)"
       @click="actions.strikethrough"
     >
       <Icon name="lucide:strikethrough" class="size-4" />
@@ -149,7 +157,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.h1 ? 'default' : 'ghost'"
       size="icon-sm"
-      title="标题 1"
+      title="标题 1 (Ctrl+Alt+1)"
       @click="actions.heading1"
     >
       <span class="text-sm font-bold">H1</span>
@@ -157,7 +165,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.h2 ? 'default' : 'ghost'"
       size="icon-sm"
-      title="标题 2"
+      title="标题 2 (Ctrl+Alt+2)"
       @click="actions.heading2"
     >
       <span class="text-sm font-bold">H2</span>
@@ -165,7 +173,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.h3 ? 'default' : 'ghost'"
       size="icon-sm"
-      title="标题 3"
+      title="标题 3 (Ctrl+Alt+3)"
       @click="actions.heading3"
     >
       <span class="text-sm font-bold">H3</span>
@@ -173,7 +181,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.h4 ? 'default' : 'ghost'"
       size="icon-sm"
-      title="标题 4"
+      title="标题 4 (Ctrl+Alt+4)"
       @click="actions.heading4"
     >
       <span class="text-sm font-bold">H4</span>
@@ -181,7 +189,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.h5 ? 'default' : 'ghost'"
       size="icon-sm"
-      title="标题 5"
+      title="标题 5 (Ctrl+Alt+5)"
       @click="actions.heading5"
     >
       <span class="text-sm font-bold">H5</span>
@@ -189,7 +197,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.h6 ? 'default' : 'ghost'"
       size="icon-sm"
-      title="标题 6"
+      title="标题 6 (Ctrl+Alt+6)"
       @click="actions.heading6"
     >
       <span class="text-sm font-bold">H6</span>
@@ -200,7 +208,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.blockquote ? 'default' : 'ghost'"
       size="icon-sm"
-      title="引用"
+      title="引用 (Ctrl+Shift+B)"
       @click="actions.quote"
     >
       <Icon name="lucide:quote" class="size-4" />
@@ -208,18 +216,18 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.code ? 'default' : 'ghost'"
       size="icon-sm"
-      title="行内代码"
+      title="行内代码 (Ctrl+E)"
       @click="actions.code"
     >
       <Icon name="lucide:code" class="size-4" />
     </Button>
-    <Button variant="ghost" size="icon-sm" title="代码块" @click="actions.codeBlock">
+    <Button variant="ghost" size="icon-sm" title="代码块 (Ctrl+Alt+C)" @click="actions.codeBlock">
       <Icon name="lucide:file-code" class="size-4" />
     </Button>
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="链接" @click="actions.link">
+    <Button variant="ghost" size="icon-sm" title="链接 (Ctrl+K)" @click="actions.link">
       <Icon name="lucide:link" class="size-4" />
     </Button>
     <Button variant="ghost" size="icon-sm" title="图片" @click="actions.image">
@@ -231,7 +239,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.bulletList ? 'default' : 'ghost'"
       size="icon-sm"
-      title="无序列表"
+      title="无序列表 (Ctrl+Shift+8)"
       @click="actions.ul"
     >
       <Icon name="lucide:list" class="size-4" />
@@ -239,7 +247,7 @@ const rootClass = computed(() => [
     <Button
       :variant="activeFlags.orderedList ? 'default' : 'ghost'"
       size="icon-sm"
-      title="有序列表"
+      title="有序列表 (Ctrl+Shift+7)"
       @click="actions.ol"
     >
       <Icon name="lucide:list-ordered" class="size-4" />

@@ -410,7 +410,7 @@ onUnmounted(() => {
         </div>
 
         <!-- 内容骨架屏 -->
-        <Card class="overflow-hidden px-0 pt-0">
+        <Card class="overflow-hidden p-0">
           <CardContent class="p-4 lg:p-6">
             <div class="space-y-3">
               <div v-for="i in 8" :key="i" class="space-y-2">
@@ -479,7 +479,7 @@ onUnmounted(() => {
 
           <!-- 页面内容 Tab -->
           <TabsContent value="content" class="mt-6">
-            <Card class="overflow-hidden px-0 pt-0">
+            <Card class="overflow-hidden p-0">
               <CardContent class="p-0">
                 <MarkdownEditor v-model="content" :content-id="pageId ?? undefined" @attachment-updated="fetchAttachments" />
               </CardContent>

@@ -142,6 +142,7 @@ function syncState() {
   activeFlags.value = {
     bold: ed.isActive("bold"),
     italic: ed.isActive("italic"),
+    underline: ed.isActive("underline"),
     strike: ed.isActive("strike"),
     code: ed.isActive("code"),
     bulletList: ed.isActive("bulletList"),
@@ -506,6 +507,7 @@ const actions = {
   redo: () => editor.value?.commands.redo(),
   bold: () => editor.value?.chain().focus().toggleBold().run(),
   italic: () => editor.value?.chain().focus().toggleItalic().run(),
+  underline: () => editor.value?.chain().focus().toggleUnderline().run(),
   strikethrough: () => editor.value?.chain().focus().toggleStrike().run(),
   heading1: () => editor.value?.chain().focus().toggleHeading({ level: 1 }).run(),
   heading2: () => editor.value?.chain().focus().toggleHeading({ level: 2 }).run(),
