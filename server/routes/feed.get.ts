@@ -1,6 +1,12 @@
+import { markdownToPlainText } from "#server/utils/markdownToPlainText";
 import { parseCovers } from "#server/utils/covers";
 import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
+
+// CDATA 内容若含 ]]> 会提前闭合，用标准拆分技巧规避（markdown 正文极少出现，兜底防御）。
+function cdata(text: string): string {
+  return text.replace(/]]>/g, "]]]]><![CDATA[>");
+}
 
 export default defineEventHandler(async event => {
   try {
@@ -69,16 +75,10 @@ export default defineEventHandler(async event => {
         const author = content.user?.nickname || content.user?.name || "Admin";
         const pubDate = new Date(content.create_time).toUTCString();
 
-        // 清理描述，移除 HTML 标签，并截断添加省略号
-        let description: string;
-        const rawDesc = content.desc || content.content || "";
-        const cleanDesc = rawDesc.replace(/<[^>]*>/g, "");
-
-        if (cleanDesc.length > 200) {
-          description = cleanDesc.substring(0, 200) + "...";
-        } else {
-          description = cleanDesc;
-        }
+        // 正文转纯文本：markdown→纯文本，::: 容器整块替换为 <中文类型> 占位
+        // （见 utils/markdownToPlainText）。需求“只要全文、不重复”：不再做摘要截断，
+        // 只用 description 输出完整正文纯文本——兼容性最好（所有阅读器/聚合器都读它）。
+        const fullText = markdownToPlainText(content.content || content.desc || "");
 
         // 解析封面图片
         let coverImage: string;
@@ -103,7 +103,7 @@ export default defineEventHandler(async event => {
     <item>
       <title><![CDATA[${content.title}]]></title>
       <link>${contentUrl}</link>
-      <description><![CDATA[${description}]]></description>
+      <description><![CDATA[${cdata(fullText)}]]></description>
       <author><![CDATA[${author}]]></author>
       <guid isPermaLink="true">${contentUrl}</guid>
       <pubDate>${pubDate}</pubDate>

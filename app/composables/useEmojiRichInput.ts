@@ -228,12 +228,13 @@ export function useEmojiRichInput(opts: UseEmojiRichInputOptions): EmojiRichInpu
     model.value = next;
   }
 
-  /** 在当前选区处插入多行文本（enhanced 时记一条撤销历史）；供 onPaste/pasteFromClipboard/drop 复用。 */
-  function insertTextAtSelection(text: string, recordHistory = true) {
+  /** 在 range 处插入多行文本（enhanced 时记一条撤销历史）；供 onPaste/pasteFromClipboard/drop 复用。
+   *  range 缺省=当前选区/末尾；onDrop 传鼠标落点，让外部纯文本落在松手位置而非选区。 */
+  function insertTextAtSelection(text: string, recordHistory = true, range?: Range) {
     const editor = editorRef.value;
     if (!editor || !text) return;
     if (recordHistory && enhanced) pushHistory(model.value);
-    insertFragmentAtRange(getEditableRange(editor), text);
+    insertFragmentAtRange(range ?? getEditableRange(editor), text);
     model.value = readDom(editor);
   }
 
@@ -415,19 +416,52 @@ export function useEmojiRichInput(opts: UseEmojiRichInputOptions): EmojiRichInpu
   function onDragStart(e: DragEvent) {
     if (!enhanced) return;
     const editor = editorRef.value;
+    if (!editor) return;
     const sel = window.getSelection();
-    // 仅在编辑器内有选区时才视为"内部拖拽"（外部拖入不触发编辑器的 dragstart）
-    if (!editor || !sel || sel.isCollapsed || sel.rangeCount === 0) return;
-    internalDrag = true;
-    const range = sel.getRangeAt(0);
-    const tmp = document.createElement("div");
-    tmp.appendChild(range.cloneContents());
-    const text = readDom(tmp);
-    pendingDrag = { range: range.cloneRange(), text };
-    // 覆盖浏览器默认塞的 img HTML：拖到编辑器外也放出 :[key] 纯文本
-    if (e.dataTransfer) {
-      e.dataTransfer.setData("text/plain", text);
-      e.dataTransfer.effectAllowed = "move";
+
+    // 情况一：编辑器内有非折叠选区 → 拖动选区内容（文字/多张表情/混合）整体移动。
+    // 外部拖入不会触发编辑器的 dragstart，故只要选区在编辑器内即可认定内部拖拽。
+    if (
+      sel &&
+      !sel.isCollapsed &&
+      sel.rangeCount > 0 &&
+      editor.contains(sel.getRangeAt(0).commonAncestorContainer)
+    ) {
+      internalDrag = true;
+      const range = sel.getRangeAt(0);
+      const tmp = document.createElement("div");
+      tmp.appendChild(range.cloneContents());
+      const text = readDom(tmp);
+      pendingDrag = { range: range.cloneRange(), text };
+      // 覆盖浏览器默认塞的 img HTML：拖到编辑器外也放出 :[key] 纯文本
+      if (e.dataTransfer) {
+        e.dataTransfer.setData("text/plain", text);
+        e.dataTransfer.effectAllowed = "move";
+      }
+      return;
+    }
+
+    // 情况二：用户直接按住单张表情 <img contenteditable="false"> 拖动（未先选中）。
+    // 此时浏览器不会为该 img 建立文字选区（上面的 sel 分支进不去），若不在此拦截，
+    // 浏览器走 img 原生拖拽——dataTransfer.text/plain 被填成图片 src URL，
+    // onDrop 的 else 分支会把该 URL 当文本插入落点（即"拖动表情却复制了一个 URL"的 bug）。
+    // 这里同样按内部移动处理：删源 img + 在鼠标落点重插该表情，并用 :[key] 覆盖 dataTransfer。
+    const target = e.target;
+    if (target instanceof HTMLElement && target.tagName === "IMG") {
+      const key = target.getAttribute("data-emoji-key");
+      // 只信任已知 key（与 readDom 一致，防脏草稿伪造）
+      if (key && getEmojiByKey(key)) {
+        internalDrag = true;
+        const text = buildEmojiPlaceholder(key);
+        // range 只包围这张 img：onDrop 时 deleteContents 即删源，实现"移动"而非"复制"
+        const range = document.createRange();
+        range.selectNode(target);
+        pendingDrag = { range, text };
+        if (e.dataTransfer) {
+          e.dataTransfer.setData("text/plain", text);
+          e.dataTransfer.effectAllowed = "move";
+        }
+      }
     }
   }
 
@@ -465,7 +499,8 @@ export function useEmojiRichInput(opts: UseEmojiRichInputOptions): EmojiRichInpu
     } else {
       internalDrag = false;
       const text = e.dataTransfer?.getData("text/plain") ?? "";
-      if (text) insertTextAtSelection(text); // 内部已 pushHistory
+      // 外部纯文本拖入：落在鼠标松手位置（不传 range 会落到选区/末尾，与"拖到哪放哪"不符）
+      if (text) insertTextAtSelection(text, true, rangeFromPointInEditor(editor, e.clientX, e.clientY));
     }
   }
 
