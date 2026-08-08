@@ -227,7 +227,7 @@ const rootClass = computed(() => [
 
     <Separator orientation="vertical" class="mx-1 h-6" />
 
-    <Button variant="ghost" size="icon-sm" title="链接 (Ctrl+K)" @click="actions.link">
+    <Button :variant="activeFlags.link ? 'default' : 'ghost'" size="icon-sm" title="链接 (Ctrl+K)" @click="actions.link">
       <Icon name="lucide:link" class="size-4" />
     </Button>
     <Button variant="ghost" size="icon-sm" title="图片" @click="actions.image">

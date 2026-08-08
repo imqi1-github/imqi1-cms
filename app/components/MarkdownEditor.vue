@@ -18,8 +18,9 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 
 import { CustomContainer } from "./markdown-editor/extensions/CustomContainer";
-// StarterKit 自带 CodeBlock 保留 language 但无修改入口，这里换成带语言选择 NodeView 的版本
-import { CodeBlockWithLang } from "./markdown-editor/extensions/CodeBlockWithLang";
+// StarterKit 自带 CodeBlock 保留 language 但无修改入口；换成 CodeBlockLowlight 变体：
+// 既叠加语言输入框 NodeView，又用 lowlight 给编辑态代码块上关键字高亮（往返零差异）
+import { CodeBlockLowlightWithLang } from "./markdown-editor/extensions/CodeBlockLowlightWithLang";
 // 工具栏抽成子组件，顶部与底部各渲染一份（同一组 props），避免 ~340 行 markup 复制两遍
 import EditorToolbar from "./markdown-editor/EditorToolbar.vue";
 import { deriveCalloutVariant } from "./markdown-editor/containerMeta";
@@ -242,6 +243,7 @@ function syncState() {
     underline: ed.isActive("underline"),
     strike: ed.isActive("strike"),
     code: ed.isActive("code"),
+    link: ed.isActive("link"),
     codeBlock: ed.isActive("codeBlock"),
     bulletList: ed.isActive("bulletList"),
     orderedList: ed.isActive("orderedList"),
@@ -287,11 +289,12 @@ function insertContainer(template: string) {
 }
 
 // —— 链接 / 图片 URL 输入弹窗（避免原生 prompt）——
-const promptState = ref<{ open: boolean; mode: "link" | "image"; url: string; alt: string }>({
+const promptState = ref<{ open: boolean; mode: "link" | "image"; url: string; alt: string; text: string }>({
   open: false,
   mode: "link",
   url: "",
   alt: "",
+  text: "",
 });
 
 // 弹窗（链接/图片）打开时记下编辑区滚动位置，关闭时还原。
@@ -319,12 +322,22 @@ watch(
 
 function promptLink() {
   const ed = editor.value;
-  let current = "";
-  if (ed && ed.isActive("link")) {
-    const href = ed.getAttributes("link").href;
-    if (typeof href === "string") current = href;
+  let url = "";
+  let text = "";
+  if (ed) {
+    if (ed.isActive("link")) {
+      // 光标在已有链接内：扩展选区包住整个链接，预填其地址与文字，方便两者都改
+      ed.chain().extendMarkRange("link").run();
+      const href = ed.getAttributes("link").href;
+      if (typeof href === "string") url = href;
+      const { from, to } = ed.state.selection;
+      text = ed.state.doc.textBetween(from, to, "\n");
+    } else {
+      const { from, to, empty } = ed.state.selection;
+      if (!empty) text = ed.state.doc.textBetween(from, to, "\n");
+    }
   }
-  promptState.value = { open: true, mode: "link", url: current, alt: "" };
+  promptState.value = { open: true, mode: "link", url, text, alt: "" };
 }
 
 function promptImage(prefill?: { src?: string; alt?: string }) {
@@ -333,6 +346,7 @@ function promptImage(prefill?: { src?: string; alt?: string }) {
     mode: "image",
     url: prefill?.src ?? "",
     alt: prefill?.alt ?? "",
+    text: "",
   };
 }
 
@@ -344,19 +358,19 @@ function confirmPrompt() {
   promptState.value.open = false;
   if (!ed || !url) return;
   if (mode === "link") {
-    const { empty } = ed.state.selection;
-    if (empty) {
-      ed.chain()
-        .focus()
-        .insertContent({
-          type: "text",
-          text: url,
-          marks: [{ type: "link", attrs: { href: url } }],
-        })
-        .run();
-    } else {
-      ed.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-    }
+    // 统一用 insertContent 替换当前选区（已有链接已在 promptLink 里 extendMarkRange
+    // 包住、或用户选中的文字）为「文字 + link mark」；无选区（光标新插）则就地插入。
+    // 文字留空时用 url 兜底。这样「新插 / 选中文字设链 / 改已有链接」三种场景都能
+    // 同时编辑名称与地址。
+    const text = promptState.value.text.trim() || url;
+    ed.chain()
+      .focus()
+      .insertContent({
+        type: "text",
+        text,
+        marks: [{ type: "link", attrs: { href: url } }],
+      })
+      .run();
   } else {
     // 选区是图片节点（点击图片时 handleClickOn 已设 NodeSelection）→ 改其 src/alt；
     // 否则（工具栏图片按钮）在光标处插入新图片。
@@ -554,7 +568,7 @@ const editor = useEditor({
   content: "",
   extensions: [
     // StarterKit v3 已内置 Link + UndoRedo(history)，无需单独引入；
-    // codeBlock 关掉，改用下方 CodeBlockWithLang（带语言选择 NodeView）
+    // codeBlock 关掉，改用下方 CodeBlockLowlightWithLang（语言输入框 + lowlight 高亮）
     StarterKit.configure({
       codeBlock: false,
       link: {
@@ -562,7 +576,7 @@ const editor = useEditor({
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       },
     }),
-    CodeBlockWithLang,
+    CodeBlockLowlightWithLang,
     // inline:true 让图片作为行内节点落在段落里（与服务端 markdown-it 把独立 ![img](url)
     // 渲染成 <p><img></p> 一致）；若用默认 block，独立图片会成为 doc 的直接子节点，
     // tiptap-markdown 序列化时不加空行，会和相邻段落挤到同一行。
@@ -741,11 +755,17 @@ const actions = {
           <DialogDescription>
             {{
               promptState.mode === "link"
-                ? "输入链接地址（选中文本会被设为链接）"
+                ? "输入链接文字与地址；文字留空时用地址作为显示文本"
                 : "输入图片地址与说明；点击编辑器里已有的图片可直接修改"
             }}
           </DialogDescription>
         </DialogHeader>
+        <Input
+          v-if="promptState.mode === 'link'"
+          v-model="promptState.text"
+          placeholder="链接文字（可选，对应 markdown [文字](地址) 的文字）"
+          @keydown.enter="confirmPrompt"
+        />
         <Input
           v-model="promptState.url"
           type="url"
@@ -928,7 +948,8 @@ const actions = {
   background: rgb(55 65 81);
 }
 
-/* 代码块：编辑器内无 Shiki 高亮，给统一的等宽底色块 */
+/* 代码块：lowlight（highlight.js）装饰着色，配色复用前台 Shiki Islands 主题，
+   编辑态与前台渲染观感一致。装饰是 Decoration.inline，不进文档模型，往返零差异。 */
 .markdown-editor :deep(.ProseMirror pre) {
   padding: 0.75em 1em;
   background: rgb(243 244 246);
@@ -941,9 +962,119 @@ const actions = {
   padding: 0;
   background: none;
   font-size: inherit;
+  /* 非装饰文本（运算符/标点/空白/普通变量）的基色 */
+  color: #1f2328;
+}
+.dark .markdown-editor :deep(.ProseMirror pre code) {
+  color: #bcbec4;
 }
 .dark .markdown-editor :deep(.ProseMirror pre) {
   background: rgb(31 41 55);
+}
+
+/* lowlight token 配色 —— 亮色（对齐 Islands Light） */
+.markdown-editor :deep(.ProseMirror pre .hljs-comment),
+.markdown-editor :deep(.ProseMirror pre .hljs-quote) {
+  color: #8c8c8c;
+  font-style: italic;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-keyword),
+.markdown-editor :deep(.ProseMirror pre .hljs-selector-tag),
+.markdown-editor :deep(.ProseMirror pre .hljs-literal),
+.markdown-editor :deep(.ProseMirror pre .hljs-doctag),
+.markdown-editor :deep(.ProseMirror pre .hljs-meta) {
+  color: #0033b3;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-number) {
+  color: #1750eb;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-string) {
+  color: #067d17;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-regexp) {
+  color: #264eff;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-title),
+.markdown-editor :deep(.ProseMirror pre .hljs-section) {
+  color: #00627a;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-type),
+.markdown-editor :deep(.ProseMirror pre .hljs-built_in) {
+  color: #336ecc;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-attr),
+.markdown-editor :deep(.ProseMirror pre .hljs-attribute),
+.markdown-editor :deep(.ProseMirror pre .hljs-property),
+.markdown-editor :deep(.ProseMirror pre .hljs-symbol),
+.markdown-editor :deep(.ProseMirror pre .hljs-bullet),
+.markdown-editor :deep(.ProseMirror pre .hljs-template-variable) {
+  color: #871094;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-tag),
+.markdown-editor :deep(.ProseMirror pre .hljs-name),
+.markdown-editor :deep(.ProseMirror pre .hljs-selector-id) {
+  color: #000080;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-addition) {
+  color: #067d17;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-deletion) {
+  color: #de1b2e;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-emphasis) {
+  font-style: italic;
+}
+.markdown-editor :deep(.ProseMirror pre .hljs-strong) {
+  font-weight: 700;
+}
+
+/* lowlight token 配色 —— 暗色（对齐 Islands Dark） */
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-comment),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-quote) {
+  color: #7a7e85;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-keyword),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-selector-tag),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-literal),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-doctag),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-meta) {
+  color: #cf8e6d;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-number) {
+  color: #2aacb8;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-string) {
+  color: #6aab73;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-regexp) {
+  color: #42c3d4;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-title),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-section) {
+  color: #56a8f5;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-type),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-built_in) {
+  color: #16baac;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-attr),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-attribute),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-property),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-symbol),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-bullet),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-template-variable) {
+  color: #c77dbb;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-tag),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-name),
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-selector-id) {
+  color: #d5b778;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-addition) {
+  color: #6aab73;
+}
+.dark .markdown-editor :deep(.ProseMirror pre .hljs-deletion) {
+  color: #ffa198;
 }
 
 /* 表格 */

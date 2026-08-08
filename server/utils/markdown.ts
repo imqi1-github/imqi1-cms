@@ -19,19 +19,12 @@ import json from "@shikijs/langs/json";
 import bash from "@shikijs/langs/bash";
 import sql from "@shikijs/langs/sql";
 import php from "@shikijs/langs/php";
-import ruby from "@shikijs/langs/ruby";
-import go from "@shikijs/langs/go";
-import rust from "@shikijs/langs/rust";
-import swift from "@shikijs/langs/swift";
-import kotlin from "@shikijs/langs/kotlin";
-import scala from "@shikijs/langs/scala";
 import yaml from "@shikijs/langs/yaml";
 import toml from "@shikijs/langs/toml";
 import markdown from "@shikijs/langs/markdown";
 import vue from "@shikijs/langs/vue";
 import tsx from "@shikijs/langs/tsx";
 import jsx from "@shikijs/langs/jsx";
-import mermaid from "@shikijs/langs/mermaid";
 import ini from "@shikijs/langs/ini";
 import powershell from "@shikijs/langs/powershell";
 
@@ -63,15 +56,6 @@ const supportedLanguages = new Set([
   "shell",
   "sql",
   "php",
-  "ruby",
-  "rb",
-  "go",
-  "rust",
-  "rs",
-  "swift",
-  "kotlin",
-  "kt",
-  "scala",
   "yaml",
   "yml",
   "toml",
@@ -80,7 +64,6 @@ const supportedLanguages = new Set([
   "vue",
   "tsx",
   "jsx",
-  "mermaid",
   "ini",
   "powershell",
   "ps1",
@@ -193,19 +176,12 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
         bash,
         sql,
         php,
-        ruby,
-        go,
-        rust,
-        swift,
-        kotlin,
-        scala,
         yaml,
         toml,
         markdown,
         vue,
         tsx,
         jsx,
-        mermaid,
         ini,
         powershell,
       ],

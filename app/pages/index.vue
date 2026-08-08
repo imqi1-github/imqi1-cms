@@ -1207,9 +1207,7 @@ onMounted(() => {
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
-  font-family:
-    JetBrains Mono,
-    monospace;
+  font-family: var(--font-mono);
 }
 
 .markdown-content :deep(ul) {
