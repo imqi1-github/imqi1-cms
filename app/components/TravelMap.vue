@@ -521,6 +521,13 @@ function createCluster(points: MapPoint[]) {
   const amap = _amap;
   const mapInstance = map;
 
+  // map 缩放区间与聚合上限在这里同步设置（而非下方的 maxZoom watch）。
+  // 切视图时 places 先变空（travelsData 等懒加载未到）→ cluster 被销毁、map 上无点；
+  // 若此时由 watch 立即放开 maxZoom 到 20，会出现「map 上无点却允许放大到街道级」的窗口，
+  // 放大后空荡无信息。改在这里绑定：只有真正建聚合（有数据）时才放开 maxZoom，
+  // 加载期间维持上一次的有效缩放区间（如访客分布的 [4,9]），放大被合理限制。
+  mapInstance.setZooms?.([props.minZoom ?? MIN_ZOOM_DEFAULT, effectiveMax]);
+
   const c = new amap.MarkerClusterer(mapInstance, points as unknown as AMap.Marker[], {
     // gridSize：聚合网格像素阈值，越大越易聚成一坨。2000 会把全国点压成一个；
     // 用 AMap 默认 60，仅聚合屏幕上紧挨的点，分散点各自显示。
@@ -672,9 +679,11 @@ onMounted(async () => {
       viewMode: "2D",
       resizeEnable: true,
       mapStyle: initDark ? "amap://styles/dark" : "amap://styles/whitesmoke",
-      // 缩放区间：[最小下限, 最大上限]。最小下限防缩到全球视图；最大上限访客分布限制城市级。
-      // 运行时切视图改 min/max 用下方 watch + setZooms。
-      zooms: [props.minZoom ?? MIN_ZOOM_DEFAULT, props.maxZoom ?? 20],
+      // 缩放区间：[最小下限, 20]。上限固定 20，不随当前视图 maxZoom 收窄——高德底图 POI 标注
+      // 图层的可见级别在地图初始化时按 zooms 上限锁定：若按访客分布/博客网络的 9 初始化，
+      // 之后切到「我的足迹」即便 setZooms 放开到 20，底图也不会再显示公园/建筑/街道等 POI 文字
+      // （2026-08-09 报此 bug）。这两个视图的 9 级封顶改由 createCluster 内运行时 setZooms 实现。
+      zooms: [props.minZoom ?? MIN_ZOOM_DEFAULT, 20],
     } as AMap.MapOptions & { resizeEnable?: boolean });
     // 等底图瓦片(含样式)渲染完成再撤掉遮罩，杜绝初次加载的亮色闪烁
     map.on("complete", () => {
@@ -782,14 +791,15 @@ watch(
   },
 );
 
-// minZoom / maxZoom 变化（切视图 / 调参）：运行时改地图缩放区间（setZooms 可用），越界则钳回
+// minZoom / maxZoom 变化时只做越界钳制。缩放区间本身由 createCluster 在建聚合时与 maxZoom 同步
+// 设置（见上），不在此 watch 放开——避免 places 懒加载变空（cluster=null、map 上无点）时被提前
+// 放开，造成「放大后地图空荡无信息」的窗口（详见 createCluster 注释）。
 watch(
   () => [props.minZoom, props.maxZoom] as const,
   ([mn, mx]) => {
     if (!map) return;
     const lo = mn ?? MIN_ZOOM_DEFAULT;
     const hi = mx ?? 20;
-    map.setZooms?.([lo, hi]);
     const z = map.getZoom();
     if (z < lo) map.setZoom(lo);
     if (z > hi) fitChinaView();
