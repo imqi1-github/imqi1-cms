@@ -14,6 +14,11 @@ export default defineNuxtPlugin(nuxtApp => {
           placement: "bottom",
           instantMove: true,
           distance: 2,
+          // tooltip 继承自 dropdown 的 autoHide=true,会让 popper 节点拿到 tabindex=0,
+          // 显示时 floating-vue 默认会把焦点从触发元素抢到 popper 上($_applyShowEffect 的 $_popperNode.focus())。
+          // 对纯展示型 tooltip 来说这会让触发按钮失焦 → tooltip 又因 focus 触发器隐藏 → 焦点落空,
+          // 表现为导航栏按 Tab 时 tooltip 闪一下就消失、焦点丢失、Tab 从头开始。禁用自动聚焦即可。
+          noAutoFocus: true,
         },
       },
     });
