@@ -3,6 +3,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { EditorContent, useEditor } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
 // 空文档占位文字：在首个空段落上加 .is-editor-empty + data-placeholder（见 <style>）
 import { Placeholder } from "@tiptap/extension-placeholder";
 // @tiptap/extension-table 根入口只有具名导出（无 default），用具名导入；
@@ -355,13 +356,21 @@ function confirmPrompt() {
   const url = promptState.value.url.trim();
   const alt = promptState.value.alt.trim();
   const mode = promptState.value.mode;
+  const hadSelection = mode === "link" && !ed?.state.selection.empty;
   promptState.value.open = false;
-  if (!ed || !url) return;
+  if (!ed) return;
+
   if (mode === "link") {
-    // 统一用 insertContent 替换当前选区（已有链接已在 promptLink 里 extendMarkRange
-    // 包住、或用户选中的文字）为「文字 + link mark」；无选区（光标新插）则就地插入。
-    // 文字留空时用 url 兜底。这样「新插 / 选中文字设链 / 改已有链接」三种场景都能
-    // 同时编辑名称与地址。
+    // 地址留空 = 移除链接：把「确定」当取消键，让已应用的链接可还原成普通文字。
+    // 旧实现 url 留空直接静默 return，用户无从下手「取消」一个已存在的链接。
+    if (!url) {
+      if (hadSelection) ed.chain().focus().unsetLink().run();
+      else ed.chain().focus().run();
+      return;
+    }
+    // insertContent 替换当前选区为「文字 + link mark」：已有链接（promptLink 里
+    // extendMarkRange 已包住整条）→ 改文字与地址；选中文字 → 给它换上链接；空选区 →
+    // 就地插入。文字留空时用 url 兜底显示文本。
     const text = promptState.value.text.trim() || url;
     ed.chain()
       .focus()
@@ -377,6 +386,14 @@ function confirmPrompt() {
     // 关闭弹窗时的滚动统一由上方 watch(promptState.open) 还原，这里不再单独处理。
     ed.chain().focus().setImage({ src: url, alt }).run();
   }
+}
+
+/** 弹窗里点「移除链接」：清掉选区/光标所在链接 mark 后关弹窗（仅链接模式可见）。 */
+function removeLinkFromPrompt() {
+  const ed = editor.value;
+  promptState.value.open = false;
+  if (!ed) return;
+  ed.chain().focus().unsetLink().run();
 }
 
 // —— 插入表格：弹对话框指定行列数（避免写死 3×3）——
@@ -571,10 +588,20 @@ const editor = useEditor({
     // codeBlock 关掉，改用下方 CodeBlockLowlightWithLang（语言输入框 + lowlight 高亮）
     StarterKit.configure({
       codeBlock: false,
-      link: {
-        openOnClick: false,
-        HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
-      },
+      // 关掉 StarterKit 内置 Link，改用下方扩展的自定义变体（inclusive: false）
+      link: false,
+    }),
+    // Link 的 inclusive 是 schema 级静态字段（@tiptap/core 在 schemaField 里
+    // 经 getExtensionField(extension, "inclusive") 一次性读取），而 Link 扩展的
+    // inclusive() 固定返回 this.options.autolink（默认 true），无视 configure 的传参。
+    // inclusive:true 会让光标停在链接末尾时，其后输入的字符自动继承 link mark，
+    // 表现为「建好链接后再输入，新文字永远是链接的一部分，无法切回普通文本」。
+    // extend 覆盖 inclusive 字段返回 false，链接 mark 不再向后延续，输入流自然回到普通文本。
+    Link.extend({
+      inclusive: () => false,
+    }).configure({
+      openOnClick: false,
+      HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
     }),
     CodeBlockLowlightWithLang,
     // inline:true 让图片作为行内节点落在段落里（与服务端 markdown-it 把独立 ![img](url)
@@ -769,7 +796,7 @@ const actions = {
         <Input
           v-model="promptState.url"
           type="url"
-          :placeholder="promptState.mode === 'link' ? 'https://example.com' : 'https://example.com/image.jpg'"
+          :placeholder="promptState.mode === 'link' ? 'https://example.com（留空并确定可移除链接）' : 'https://example.com/image.jpg'"
           @keydown.enter="confirmPrompt"
         />
         <Input
@@ -779,6 +806,14 @@ const actions = {
           @keydown.enter="confirmPrompt"
         />
         <DialogFooter>
+          <Button
+            v-if="promptState.mode === 'link' && activeFlags.link"
+            variant="destructive"
+            class="mr-auto"
+            @click="removeLinkFromPrompt"
+          >
+            移除链接
+          </Button>
           <Button variant="outline" @click="promptState.open = false">取消</Button>
           <Button @click="confirmPrompt">确定</Button>
         </DialogFooter>
