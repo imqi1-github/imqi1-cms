@@ -230,9 +230,10 @@ const grid = computed<BuildResult>(() => {
     </div>
 
     <!-- 热力图网格 -->
-    <div v-if="heatmapData && years.length" class="mt-5 flex items-start gap-1.5 overflow-x-auto pb-1">
+    <!-- 窄屏横向滚动：overscroll-x-contain 防止滚到边缘时动量串到页面纵向滚动（页面抽搐） -->
+    <div v-if="heatmapData && years.length" class="mt-5 flex items-start gap-1.5 overflow-x-auto overscroll-x-contain pb-1">
       <!-- 左侧星期标签 -->
-      <div class="mt-[15px] grid grid-rows-7 gap-[3px] text-[9px] leading-[12px] text-slate-400 dark:text-slate-500">
+      <div class="mt-3.75 grid grid-rows-7 gap-0.75 text-[9px] leading-3 text-slate-400 dark:text-slate-500">
         <span class="h-3">一</span>
         <span class="h-3"/>
         <span class="h-3">三</span>
@@ -242,14 +243,14 @@ const grid = computed<BuildResult>(() => {
         <span class="h-3"/>
       </div>
       <!-- 周列 -->
-      <div class="flex gap-[3px]">
-        <div v-for="week in grid.weeks" :key="week.key" class="flex flex-col gap-[3px]">
+      <div class="flex gap-0.75">
+        <div v-for="week in grid.weeks" :key="week.key" class="flex flex-col gap-0.75">
           <div
-            class="h-3 text-[9px] leading-[12px] text-slate-400 dark:text-slate-500 select-none"
+            class="h-3 text-[9px] leading-3 text-slate-400 dark:text-slate-500 select-none"
             :class="week.monthLabel ? '' : 'invisible'">
             {{ week.monthLabel }}
           </div>
-          <div class="grid grid-rows-7 gap-[3px]">
+          <div class="grid grid-rows-7 gap-0.75">
             <div
               v-for="(cell, cellIndex) in week.cells"
               :key="cell ? cell.key : `${week.key}-${cellIndex}`"
