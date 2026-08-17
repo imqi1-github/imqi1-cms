@@ -140,7 +140,7 @@
                       v-if="stack.icon"
                       :src="publicAsset(stack.icon)"
                       :alt="stack.label"
-                      class="size-6 shrink-0 object-contain transition-transform duration-300 group-hover:scale-110" >
+                      class="no-img-loading size-6 shrink-0 object-contain transition-transform duration-300 group-hover:scale-110" >
                     <span
                       v-else
                       class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-[0.68rem] font-black uppercase tracking-tight text-white dark:bg-blue-500">
@@ -298,67 +298,30 @@
               </div>
             </div>
           </div>
-          <div class="stats-mbti-bars grid gap-4">
-            <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">外向</div>
-              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
+          <div class="stats-mbti-bars grid gap-6">
+            <div v-for="trait in mbtiTraits" :key="trait.key" class="px-0.5">
+              <div
+                class="relative h-2 rounded"
+                :style="{ backgroundColor: trait.color }">
                 <div
-                  class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.extroversion + '%' }"/>
+                  class="absolute top-1/2 -translate-y-1/2 size-3.5 rounded-full border-[2.5px] border-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-all duration-1000 dark:border-slate-800"
+                  :style="{ left: animatedMbtiData[trait.key] + '%', backgroundColor: trait.color }">
+                  <div class="absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap text-[11px] font-bold">
+                    <span :style="{ color: trait.color }">{{ animatedMbtiData[trait.key] }}%&nbsp;</span>
+                    <span class="text-slate-700 dark:text-slate-200">{{ trait.label }}</span>
+                  </div>
+                </div>
               </div>
-              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
-                {{ animatedMbtiData.extroversion }}%
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">天马行空</div>
-              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
-                <div
-                  class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.intuition + '%' }"/>
-              </div>
-              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
-                {{ animatedMbtiData.intuition }}%
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">情感细腻</div>
-              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
-                <div
-                  class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.thinking + '%' }"/>
-              </div>
-              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
-                {{ animatedMbtiData.thinking }}%
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">运筹帷幄</div>
-              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
-                <div
-                  class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.prospecting + '%' }"/>
-              </div>
-              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
-                {{ animatedMbtiData.prospecting }}%
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="text-slate-600 dark:text-slate-400 text-sm w-16 transition-colors duration-300">自信果断</div>
-              <div class="bg-slate-200 dark:bg-slate-700 rounded-full flex-1 h-2 overflow-hidden transition-colors duration-300">
-                <div
-                  class="bg-blue-600 dark:bg-blue-400 rounded-full h-full transition-all duration-1000"
-                  :style="{ width: animatedMbtiData.assertive + '%' }"/>
-              </div>
-              <div class="text-slate-800 dark:text-slate-200 text-sm font-semibold text-right w-12 transition-colors duration-300">
-                {{ animatedMbtiData.assertive }}%
+              <div class="mt-1 flex justify-between text-xs text-slate-400 dark:text-slate-500">
+                <span>{{ trait.opposite }}</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100">{{ trait.label }}</span>
               </div>
             </div>
           </div>
           <a
             href="https://www.16personalities.com/ch/enfj-%E4%BA%BA%E6%A0%BC"
             target="_blank"
-            class="flex items-center bg-blue-600 dark:bg-blue-500 rounded-full text-white font-semibold gap-2 mt-6 px-6 py-3 transition-all duration-200 w-fit hover:bg-blue-500 dark:hover:bg-blue-400">
+            class="pointer-events-auto flex items-center bg-blue-600 dark:bg-blue-500 rounded-full text-white font-semibold gap-2 mt-6 px-6 py-3 transition-all duration-200 w-fit hover:bg-blue-500 dark:hover:bg-blue-400">
             了解更多 <Icon name="ri:arrow-right-line" class="size-4" />
           </a>
         </div>
@@ -397,6 +360,7 @@
             <div class="text-slate-600 dark:text-slate-400 text-xs tracking-widest uppercase transition-colors duration-300">标签</div>
           </div>
         </div>
+        <SiteActivityHeatmap />
       </div>
 
       <!-- 交个朋友 -->
@@ -410,14 +374,14 @@
         <div class="flex flex-wrap gap-4">
           <a
             :href="siteConfig.social.find(item => item.name === '邮箱')?.link || '#'"
-            class="flex items-center bg-blue-600 dark:bg-blue-500 border border-slate-200 dark:border-slate-700 rounded-full text-white font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-500 dark:hover:bg-blue-400 hover:shadow">
+            class="pointer-events-auto flex items-center bg-blue-600 dark:bg-blue-500 border border-slate-200 dark:border-slate-700 rounded-full text-white font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-500 dark:hover:bg-blue-400 hover:shadow">
             <Icon name="ri:mail-line" class="size-4 text-white" mode="svg" />
             发邮件
           </a>
           <a
             :href="siteConfig.social.find(item => item.name === '个人网站')?.link || '#'"
             target="_blank"
-            class="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
+            class="pointer-events-auto flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
             <Icon
               name="ri:home-line"
               class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white"
@@ -427,7 +391,7 @@
           <a
             :href="siteConfig.social.find(item => item.name === 'Github')?.link || '#'"
             target="_blank"
-            class="flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
+            class="pointer-events-auto flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-800 dark:text-slate-200 font-semibold gap-3 px-8 py-4 transition-all duration-200 hover:bg-blue-600 dark:hover:bg-blue-500 hover:shadow hover:text-white group">
             <Icon
               name="ri:github-line"
               class="transition-all duration-200 size-4 text-slate-600 dark:text-slate-400 group-hover:text-white"
@@ -453,7 +417,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-md:grid-cols-1">
           <NuxtLink
             href="/archiving"
-            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
+            class="pointer-events-auto group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
             <div
               class="flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-16 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <Icon name="ri:archive-line" class="size-8" mode="svg" />
@@ -466,7 +430,7 @@
           </NuxtLink>
           <NuxtLink
             to="/sitemap"
-            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
+            class="pointer-events-auto group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
             <div
               class="flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-16 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <Icon name="ri:compass-line" class="size-8" mode="svg" />
@@ -479,7 +443,7 @@
           </NuxtLink>
           <NuxtLink
             to="/changelogs"
-            class="group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
+            class="pointer-events-auto group bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10">
             <div
               class="flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 text-2xl w-16 h-16 mb-16 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 group-hover:scale-110">
               <Icon name="ri:edit-line" class="size-8" mode="svg" />
@@ -527,7 +491,7 @@
           :href="tenYearPledgeUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm mt-6 transition-colors duration-300">
+          class="pointer-events-auto inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-sm mt-6 transition-colors duration-300">
           看看我的大事记
           <Icon name="ri:arrow-right-line" class="size-4" />
         </a>
@@ -626,46 +590,49 @@ const startProfileTagCarousel = () => {
 
 const skillGroups: SkillGroup[] = [
   {
-    key: "rag",
-    title: "RAG",
-    short: "RAG",
-    tabTitle: "RAG",
-    role: "知识增强生成",
-    eyebrow: "retrieval pipeline",
-    summary: "把散落的资料整理成可检索、可引用、可持续更新的知识上下文，让模型回答更有来源和边界。",
+    key: "agent",
+    title: "Agent 开发",
+    short: "AGT",
+    tabTitle: "Agent 开发",
+    role: "智能体工程",
+    eyebrow: "agent engineering",
+    summary: "用 LangChain 与 LangGraph 把任务拆解、工具调用、RAG 检索与记忆反馈编排成工作流，配合 MCP 构建可观测的智能体应用。",
     stacks: [
-      { label: "Embedding", icon: "/skills/embedding.svg" },
-      { label: "向量检索", icon: "/skills/vector.svg" },
-      { label: "Rerank", icon: "/skills/rerank.svg" },
-      { label: "知识库", icon: "/skills/knowledge.svg" },
+      { label: "LangChain", icon: "/skills/langchain.svg" },
+      { label: "LangGraph", icon: "/skills/langgraph.svg" },
+      { label: "MCP", icon: "/skills/mcp.svg" },
+      { label: "RAG 知识检索", icon: "/skills/knowledge.svg" },
+      { label: "Tool Calling", icon: "/skills/tool.svg" },
+      { label: "Agentic Memory", icon: "/skills/memory.svg" },
     ],
   },
   {
-    key: "agent",
-    title: "agent",
-    short: "AGT",
-    tabTitle: "Agent",
-    role: "自动化协作",
-    eyebrow: "tool orchestration",
-    summary: "围绕任务拆解、工具调用、记忆与反馈闭环，把模型从一次回答推进到可执行的工作流。",
+    key: "python",
+    title: "Python 开发",
+    short: "PY",
+    tabTitle: "Python 开发",
+    role: "服务与脚本",
+    eyebrow: "backend toolkit",
+    summary: "以 Python 为核心把服务、脚本与数据处理管线快速落成，用 FastAPI / Django / Flask 对外提供接口，把 AI 能力接进真实业务。",
     stacks: [
-      { label: "Planning", icon: "/skills/planning.svg" },
-      { label: "Tool Calling", icon: "/skills/tool.svg" },
-      { label: "MCP", icon: "/skills/mcp.svg" },
-      { label: "A2A", icon: "/skills/a2a.svg" },
-      { label: "React", icon: "/skills/react.svg" },
-      { label: "Memory", icon: "/skills/memory.svg" },
+      { label: "FastAPI", icon: "/skills/fastapi.svg" },
+      { label: "Pydantic", icon: "/skills/pydantic.svg" },
+      { label: "Flask", icon: "/skills/flask.svg" },
+      { label: "Django", icon: "/skills/django.svg" },
+      { label: "SQLAlchemy", icon: "/skills/sqlalchemy.svg" },
+      { label: "MySQL", icon: "/skills/mysql.svg" },
     ],
   },
   {
     key: "frontend",
-    title: "前端",
+    title: "前端开发",
     short: "WEB",
-    tabTitle: "前端",
+    tabTitle: "前端开发",
     role: "体验工程",
     eyebrow: "interface craft",
-    summary: "用 Vue 生态把信息结构、交互反馈和视觉节奏组织成稳定、顺手、可维护的界面。",
+    summary: "围绕 Vue 生态把信息结构、交互反馈与视觉节奏组织成稳定、顺手、可维护的界面，配合 TypeScript 与 Tailwind 让类型与样式始终可控。",
     stacks: [
+      { label: "Nuxt", icon: "/skills/nuxt.svg" },
       { label: "Vue", icon: "/skills/vuejs.svg" },
       { label: "Vue Router", icon: "/skills/router.svg" },
       { label: "Pinia", icon: "/skills/pinia.svg" },
@@ -674,19 +641,20 @@ const skillGroups: SkillGroup[] = [
     ],
   },
   {
-    key: "python",
-    title: "Python",
-    short: "PY",
-    tabTitle: "Python",
-    role: "服务与脚本",
-    eyebrow: "backend toolkit",
-    summary: "用 Python 快速把想法落成服务、脚本和数据处理管线，连接 AI 能力与真实业务场景。",
+    key: "other",
+    title: "其他技能",
+    short: "OTH",
+    tabTitle: "其他技能",
+    role: "工程基建",
+    eyebrow: "infra & tooling",
+    summary: "工程化与日常工具箱：微信小程序、CI/CD 与 Docker 容器化部署，配合 Git 版本管理与 Linux 运维，以及 Nginx 等周边基础设施。",
     stacks: [
-      { label: "Python", icon: "/skills/python.svg" },
-      { label: "FastAPI", icon: "/skills/fastapi.svg" },
-      { label: "Django", icon: "/skills/django.svg" },
-      { label: "Flask", icon: "/skills/flask.svg" },
-      { label: "自动化脚本", icon: "/skills/bash.svg" },
+      { label: "微信小程序", icon: "/skills/wechat.svg" },
+      { label: "CI/CD", icon: "/skills/cicd.svg" },
+      { label: "Docker", icon: "/skills/docker.svg" },
+      { label: "Git", icon: "/skills/git.svg" },
+      { label: "Linux", icon: "/skills/linux.svg" },
+      { label: "Nginx", icon: "/skills/nginx.svg" },
     ],
   },
 ];
@@ -777,6 +745,15 @@ const mbtiData = ref({
   prospecting: 71,
   assertive: 76,
 });
+
+// MBTI特质配置：主导特质、对立特质与维度专属色（对齐 16personalities 五维配色）
+const mbtiTraits = [
+  { key: "extroversion", color: "#4298B4", label: "外向", opposite: "内向" },
+  { key: "intuition", color: "#E4AE3A", label: "天马行空", opposite: "求真务实" },
+  { key: "thinking", color: "#33A474", label: "情感细腻", opposite: "理性思考" },
+  { key: "prospecting", color: "#88619A", label: "运筹帷幄", opposite: "随机应变" },
+  { key: "assertive", color: "#F25E62", label: "自信果断", opposite: "情绪易波动" },
+] as const;
 
 // MBTI动画数据
 const animatedMbtiData = ref({

@@ -43,7 +43,7 @@
               class="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 z-30 w-max opacity-0 scale-95 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0"
               :class="{ 'opacity-100! scale-100! translate-y-0!': activeQrcodeIndex === index }">
               <div class="rounded-lg bg-white dark:bg-[#1e1e1e] p-2 shadow-[0_6px_30px_#0000001a] border border-slate-200 dark:border-gray-700">
-                <img :src="link.qrcode" :alt="link.name" width="144" height="144" class="block w-36 h-36 max-w-none rounded-full object-cover" >
+                <img :src="publicAsset(link.qrcode)" :alt="link.name" width="144" height="144" class="block w-36 h-36 max-w-none rounded-full object-cover" >
                 <p class="mt-1 text-center text-xs text-slate-600 dark:text-gray-400">{{ link.name }}</p>
               </div>
             </div>
