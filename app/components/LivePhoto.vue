@@ -74,6 +74,11 @@ const isHovering = ref(false);
 // 实况照片资源提取耗时较长时显示加载标识，避免用户误以为卡住
 const isLiveMediaLoading = ref(false);
 const showLiveLoadingTip = ref(false);
+// 视频元素是否已挂载：只在实际需要显示（悬浮/点击播放）时才挂载 <video>。
+// 若在提取完成后就常驻挂载一个 opacity:0 的 <video preload="auto">，未解码首帧的
+// 视频图层在部分浏览器（正常 GPU 合成路径，devtools 打开时走软件路径不复现）下
+// 会以白色矩形盖住静态图 → 白屏，悬浮播放后才“恢复”。
+const isVideoMounted = ref(false);
 
 // 移动端判定：移动端无 hover 事件，需要强制切换为点击播放模式并让按钮常驻
 const isMobile = useMediaQuery("(max-width: 768px)");
@@ -318,6 +323,20 @@ watch([shouldLoad, cleanSrc], async ([ready, src]) => {
 // let imgOpacityTimer: number | null = null;
 let videoOpacityTimer: number | null = null;
 let resetTimer: number | null = null;
+// 淡出结束后卸载 <video> 的定时器
+let videoUnmountTimer: number | null = null;
+
+// 淡出动画（300ms）结束后卸载视频元素，避免非交互状态下残留 opacity:0 的视频覆盖层。
+// 挂载/重播前需 clearTimeout 本定时器，防止快速进出时把正在播放的视频卸载掉。
+const scheduleVideoUnmount = () => {
+  if (videoUnmountTimer !== null) {
+    clearTimeout(videoUnmountTimer);
+  }
+  videoUnmountTimer = window.setTimeout(() => {
+    isVideoMounted.value = false;
+    videoUnmountTimer = null;
+  }, 350); // 略大于 opacity 过渡时长 300ms
+};
 
 // 鼠标悬浮 - 播放视频（仅悬浮播放模式）
 const handleMouseEnter = async () => {
@@ -342,6 +361,16 @@ const handleMouseEnter = async () => {
   if (resetTimer !== null) {
     clearTimeout(resetTimer);
     resetTimer = null;
+  }
+
+  // 懒挂载视频元素（仅在需要显示时挂载，避免常态 opacity:0 覆盖层在 GPU 合成路径下白屏）
+  if (!isVideoMounted.value) {
+    isVideoMounted.value = true;
+  }
+  // 取消之前可能已调度的卸载，防止快速进出时误卸载
+  if (videoUnmountTimer !== null) {
+    clearTimeout(videoUnmountTimer);
+    videoUnmountTimer = null;
   }
 
   // 等待 DOM 更新，确保 video 元素已渲染
@@ -424,6 +453,9 @@ const handleMouseLeave = () => {
       videoRef.value.currentTime = 0;
     }
   }, 150); // 等待过渡完成后重置
+
+  // 淡出动画结束后卸载 video，避免非交互状态下残留 opacity:0 的视频覆盖层
+  scheduleVideoUnmount();
 };
 
 // 点击播放/暂停（点击播放模式）
@@ -446,6 +478,15 @@ const handlePlayClick = async () => {
     resetTimer = null;
   }
 
+  // 懒挂载视频元素（仅在需要播放时挂载，避免常态 opacity:0 覆盖层白屏）
+  if (!isVideoMounted.value) {
+    isVideoMounted.value = true;
+  }
+  if (videoUnmountTimer !== null) {
+    clearTimeout(videoUnmountTimer);
+    videoUnmountTimer = null;
+  }
+
   await nextTick();
 
   if (videoRef.value) {
@@ -457,6 +498,8 @@ const handlePlayClick = async () => {
       }, 50);
       videoRef.value.pause();
       isPlaying.value = false;
+      // 淡出结束后卸载 video，避免非交互状态下残留 opacity:0 覆盖层
+      scheduleVideoUnmount();
     } else {
       // 播放
       videoRef.value.currentTime = 0;
@@ -495,6 +538,9 @@ const onVideoEnded = () => {
 
     // 更新播放状态
     isPlaying.value = false;
+
+    // 播放结束淡出后卸载 video，避免残留 opacity:0 覆盖层
+    scheduleVideoUnmount();
   }
 };
 
@@ -511,6 +557,13 @@ const onVideoError = () => {
   }
   videoOpacity.value = 0;
   isPlaying.value = false;
+
+  // 卸载解码失败的视频元素，避免残留
+  isVideoMounted.value = false;
+  if (videoUnmountTimer !== null) {
+    clearTimeout(videoUnmountTimer);
+    videoUnmountTimer = null;
+  }
 };
 
 // 播放按钮可见性：
@@ -554,6 +607,10 @@ onUnmounted(() => {
     clearTimeout(resetTimer);
     resetTimer = null;
   }
+  if (videoUnmountTimer !== null) {
+    clearTimeout(videoUnmountTimer);
+    videoUnmountTimer = null;
+  }
 
   // 释放实况照片 Blob URL
   revokeLiveMedia();
@@ -592,9 +649,9 @@ onUnmounted(() => {
       <span>加载中</span>
     </div>
 
-    <!-- 视频容器 -->
+    <!-- 视频容器：按需挂载（仅悬浮/点击播放时存在），非交互状态不残留 opacity:0 的覆盖层 -->
     <video
-      v-if="videoBlobUrl"
+      v-if="videoBlobUrl && isVideoMounted"
       ref="videoRef"
       :src="videoBlobUrl"
       muted
