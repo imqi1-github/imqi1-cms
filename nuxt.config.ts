@@ -470,15 +470,12 @@ export default defineNuxtConfig({
             utils: ["@vueuse/core", "clsx", "class-variance-authority"],
             // 媒体相关（swiper + fancyapps）
             media: ["swiper", "@fancyapps/ui"],
-            // 富文本编辑器
-            tiptap: [
-              "@tiptap/vue-3",
-              "@tiptap/core",
-              "@tiptap/starter-kit",
-              "tiptap-markdown",
-              // prosemirror-* 由上面几个包间接引入，rollup 会自动并入本 chunk；
-              // @tiptap/pm 无根导出，不能列在这里（会解析失败）。
-            ],
+            // 富文本编辑器（Tiptap/ProseMirror）不再设 manual chunk：
+            // object 形式会把依赖模块一并并入手动块，共享的 CJS 互操作 helper
+            // 也因此落进 tiptap 块；而 APlayer 因 import smoothscroll(CJS) 需要该
+            // helper，导致首页动态加载 APlayer 时被迫整包拉取 ~500KB 的 tiptap
+            // （首页渐入卡顿根因之一）。去掉后由 Rollup 默认算法把 helper 分到独立
+            // 小块，tiptap 代码仅随 admin 编辑器页加载。
           },
         },
         // 忽略循环依赖警告以减少日志输出

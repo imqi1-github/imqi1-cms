@@ -342,6 +342,13 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 首次加载遮罩：提升合成层，让 opacity 渐隐在合成线程运行。
+   首页水合尾段主线程仍有微任务洪峰（约 283ms），若不提升，遮罩 0.3s 渐隐
+   期间主线程一忙就掉帧；提升后合成线程独立插值，主线程繁忙不再卡顿。 */
+#first-loading {
+  will-change: opacity;
+}
+
 /* 首次加载遮罩过渡动画 */
 .first-loading-enter-active,
 .first-loading-leave-active {

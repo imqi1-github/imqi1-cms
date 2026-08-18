@@ -49,6 +49,9 @@ let aplayerInstance: APlayerType | null = null;
 // 标记组件是否已卸载
 let isUnmounted = false
 
+// 播放器初始化完成事件：父级据此隐藏「加载中」占位符
+const emit = defineEmits<{ ready: [] }>()
+
 onMounted(async () => {
   if (import.meta.client) {
     // 动态导入 APlayer
@@ -134,6 +137,9 @@ onMounted(async () => {
         playerManager.notifyPlay('meting', playerId)
       }
     })
+
+    // 播放器就绪，通知父级隐藏占位符
+    emit('ready')
   }
 })
 

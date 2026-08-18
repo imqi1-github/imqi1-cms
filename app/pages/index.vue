@@ -3,7 +3,9 @@
     <!-- 英雄区 - fixed定位，独立于section -->
     <h1 id="index-hero-title" class="sr-only">欢迎来到 {{ siteName }}</h1>
     <div ref="heroRef" class="fixed inset-0 flex flex-col items-center justify-center max-w-250 w-[90vw] mx-auto left-0 right-0" :style="heroStyle">
-      <div v-scroll-reveal class="flex items-center justify-between w-full opacity-0 max-md:flex-col max-md:text-center max-md:gap-8">
+      <!-- 英雄区内容（fixed 顶层，永久提升合成层：渐入 opacity/translateY 在合成线程运行，
+           水合尾段主线程微任务洪峰不再掉帧；fixed 定位 + 顶部区域无过度层数开销） -->
+      <div v-scroll-reveal class="will-change-[opacity,transform] flex items-center justify-between w-full opacity-0 max-md:flex-col max-md:text-center max-md:gap-8">
         <!-- 标题区域 -->
         <div class="p-1.5">
           <div class="text-slate-900 dark:text-white text-[5em] font-black leading-none max-md:text-[3em]">
@@ -28,7 +30,7 @@
       </div>
 
       <!-- 联系链接 -->
-      <div v-scroll-reveal class="flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center">
+      <div v-scroll-reveal class="will-change-[opacity,transform] flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center">
         <template v-for="(link, index) in contactLinks" :key="index">
           <!-- 二维码项：悬浮展示二维码图片 -->
           <button
@@ -247,17 +249,24 @@
                       class="absolute top-31 left-36 w-38 h-38 bg-slate-100 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 transition-transform group-hover:translate-x-1 duration-200 shadow-sm" />
                   </div>
 
-                  <!-- 音乐播放器 - 延迟加载 -->
+                  <!-- 音乐播放器 - 首次激活前不挂载（见 musicPlayerActivated）；
+                       就绪前显示占位符，避免面板空白 -->
                   <div v-else-if="rightItem.type === 'music'" class="relative h-75 w-75 flex items-center justify-center">
-                    <ClientOnly>
-                      <div class="absolute top-1/2 -left-24 -right-15 -translate-y-1/2">
-                        <MetingPlayer id="2142943893" server="netease" type="song" :list-folded="false" :mutex="true" />
+                    <!-- 播放器就绪前占位：未激活 / APlayer 动态导入+拉取歌单中 -->
+                    <div v-if="!musicReady" class="flex flex-col items-center gap-3 text-slate-400 dark:text-gray-500 select-none">
+                      <Icon name="lucide:loader-2" class="size-8 animate-spin" mode="svg" />
+                      <span class="text-sm">音乐播放器加载中...</span>
+                    </div>
+                    <ClientOnly v-if="musicPlayerActivated">
+                      <div class="absolute top-1/2 -left-24 -right-15 -translate-y-1/2" :class="{ invisible: !musicReady }">
+                        <MetingPlayer
+                          id="2142943893"
+                          server="netease"
+                          type="song"
+                          :list-folded="false"
+                          :mutex="true"
+                          @ready="musicReady = true" />
                       </div>
-                      <template #fallback>
-                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-sm">
-                          音乐播放器加载中...
-                        </div>
-                      </template>
                     </ClientOnly>
                   </div>
 
@@ -1018,6 +1027,24 @@ const themeRightItems = [{ type: "fonts" }, { type: "layout", image: "/imgs/shen
 
 // 当前激活的样式索引
 const activeThemeIndex = ref(0);
+
+// 音乐面板是否已激活过：首次滚到「样式选择」的音乐项前不挂载 MetingPlayer，
+// 避免首页加载期就动态拉取 APlayer + Tiptap 大包（Tiptap 因 smoothscroll 的
+// CJS 互操作 helper 被并入 tiptap 块，随 APlayer 一起被首页整包拉取）。
+// 激活后保持挂载，切换样式项不重置播放；返回用户若滚动位置已在音乐项，也正确初始化。
+const musicPlayerActivated = ref(false);
+// 音乐面板 APlayer 是否已就绪（MetingPlayer 创建完 APlayer 后 emit ready）。
+// 就绪前面板显示占位符（加载图标+文字）；激活但异步加载中也保持占位，避免空白。
+const musicReady = ref(false);
+watch(
+  activeThemeIndex,
+  (index) => {
+    if (themeRightItems[index]?.type === "music") {
+      musicPlayerActivated.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 // 样式选项元素的ref数组 - 使用Set去重
 const themeItemRefsSet = new Set<HTMLElement>();

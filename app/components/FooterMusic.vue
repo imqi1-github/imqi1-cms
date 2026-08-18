@@ -24,9 +24,17 @@ const playlistConfig = computed(() => {
 // 使用全局音频播放器状态
 const { currentSong, isPlaying, isLoaded, progress, initPlayer, togglePlay } = useAudioPlayer();
 
-// 初始化播放器（只执行一次）
+// 初始化播放器（只执行一次）：延迟到空闲时段，不抢首页加载关键路径。
+// 先用 setTimeout 让出英雄区渐入/字体稳定窗口，再交给 requestIdleCallback 等空闲
+// 时段拉取歌单并创建 Audio；不支持 rIC 的浏览器回退到固定延时。
 onMounted(() => {
-  initPlayer(playlistConfig.value);
+  const MIN_DELAY = 1200;
+  const start = () => initPlayer(playlistConfig.value);
+  if (typeof requestIdleCallback === "function") {
+    setTimeout(() => requestIdleCallback(start), MIN_DELAY);
+  } else {
+    setTimeout(start, MIN_DELAY);
+  }
 });
 </script>
 
@@ -61,6 +69,22 @@ onMounted(() => {
           {{ isPlaying ? '暂停播放' : '开始播放' }}
         </span>
     </button>
+
+    <!-- 播放器初始化前占位：歌单拉取/建 Audio 未完成时不显示空白，先给一个加载态。
+         initPlayer 延迟到空闲时段（rIC + 1200ms），故首屏停留约 1-2s，占位避免按钮位空缺。 -->
+    <div
+      v-else
+      class="flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 max-w-36 h-7.5"
+      :class="btnShell">
+      <span class="relative z-1 min-w-0 flex-1">
+        <span class="block text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
+          音乐加载中
+        </span>
+      </span>
+      <span class="relative z-1 flex h-full shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+        <Icon name="lucide:loader-2" class="size-3.5 animate-spin text-gray-400 dark:text-gray-500" mode="svg" />
+      </span>
+    </div>
   </Transition>
 </template>
 
