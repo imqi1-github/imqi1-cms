@@ -218,8 +218,9 @@ export async function updateAllSubscribes() {
 }
 
 // 获取订阅文章列表（每人最多10篇，总共最多30篇）
-// 仅允许 http/https 外链：防止 RSS 投毒的 javascript:/data: 等协议在点击时执行（存储型 XSS）
-function sanitizeExternalUrl(url: string | null | undefined): string {
+// 仅允许 http/https 外链：防止 RSS 投毒的 javascript:/data: 等协议在点击时执行（存储型 XSS）。
+// 导出供搜索等其它消费 RSS 外链的模块复用（如 /api/search 订阅文章类别）。
+export function sanitizeExternalUrl(url: string | null | undefined): string {
   if (!url) return "";
   try {
     const parsed = new URL(url);

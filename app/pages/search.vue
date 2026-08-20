@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
+import type { SearchResultItem, SearchType } from "~/types/apis/search";
 
 const route = useRoute();
 const router = useRouter();
@@ -12,6 +13,20 @@ const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteN
 // 搜索关键词：初始值取自 URL 的 q。
 const initialQ = (route.query.q as string) || "";
 const searchKeyword = ref(initialQ);
+
+// 搜索类别：初始值取自 URL 的 type（非法值回退为「文章」）。
+// 类别配置同时驱动 Tab 与各类别文案。
+const SEARCH_TYPE_CONFIG: Array<{ value: SearchType; label: string; icon: string }> = [
+  { value: "content", label: "文章", icon: "ri:article-line" },
+  { value: "subscribe", label: "订阅和友链", icon: "ri:rss-line" },
+  { value: "comment", label: "评论", icon: "ri:chat-3-line" },
+  { value: "subscribepost", label: "订阅文章", icon: "ri:newspaper-line" },
+];
+
+const initialType = (route.query.type as SearchType) || "content";
+const searchType = ref<SearchType>(
+  SEARCH_TYPE_CONFIG.some(t => t.value === initialType) ? initialType : "content",
+);
 
 // app.vue 的页面渐出依赖「新页顶层 await 挂起 Suspense 期间、旧页 DOM 保持挂载」：
 // page:start 把 mainOpacity 置 0，只要 setup 的 await 不 resolve，旧页就不会被替换、淡出看得到。
@@ -26,6 +41,7 @@ const { data, pending, error, refresh } = await useFetch("/api/search", {
   headers: getInternalRequestHeaders(),
   query: {
     q: searchKeyword,
+    type: searchType,
   },
   // 仅带 q 进入时初始化查询（真实请求同时挂起 Suspense 让旧页渐出）；
   // 无 q 进入时不发空查询——渐出已由上方的人为挂起保证。
@@ -39,14 +55,28 @@ const { data, pending, error, refresh } = await useFetch("/api/search", {
   },
 });
 
-const results = computed(() => {
+const results = computed<SearchResultItem[]>(() => {
   const d = data.value;
-  return d && "data" in d ? d.data.results || [] : [];
+  return d && "data" in d ? (d.data.results as SearchResultItem[]) || [] : [];
 });
 const total = computed(() => {
   const d = data.value;
   return d && "data" in d ? d.data.total || 0 : 0;
 });
+
+// 结果项唯一 key（各类型主键字段不同）
+function itemKey(item: SearchResultItem): string {
+  switch (item.type) {
+    case "content":
+      return `content-${item.cid}`;
+    case "subscribe":
+      return `subscribe-${item.kind}-${item.id}`;
+    case "comment":
+      return `comment-${item.coid}`;
+    case "subscribepost":
+      return `subscribepost-${item.id}`;
+  }
+}
 
 // 详情页链接：详情 API 按 slug 精确查，故 slug 缺失一律不可点。
 // 分类段：有 slug 用之；无 categoryName 说明文章本就无分类，走 uncategorized 分支（API 支持）；
@@ -86,24 +116,58 @@ function debouncedRefresh() {
   isDebouncing.value = true;
   searchDebounceTimer = setTimeout(() => {
     isDebouncing.value = false;
+    // URL 与搜索一起在防抖沉淀后更新：只把「最终关键词」push 进历史，避免逐键压历史
+    syncSearchUrl();
     refresh();
   }, 300);
 }
 
-// 监听搜索关键词变化
+// URL 同步：把当前 q/type 写入地址栏（仅非默认 type 才携带，保持 /search?q= 链接干净）。
+// 用 router.push 让每次 query 变化都进入浏览历史，浏览器后退/前进可在关键词与类别间导航；
+// vue-router 对相同 query 的 push 会判重（duplicated）忽略，不会重复压入历史。
+function syncSearchUrl() {
+  const q = searchKeyword.value.trim();
+  const type = searchType.value;
+  const query: Record<string, string> = {};
+  if (q) query.q = q;
+  if (type !== "content") query.type = type;
+  router.push({ path: "/search", query });
+}
+
+// 监听搜索关键词变化：输入即搜（useFetch 的 watch:false 已禁用自动响应，由这里手动触发；防抖合并连续输入）。
+// URL 的 push 也收在 debouncedRefresh 的防抖回调里做，只把「沉淀后的关键词」写进地址栏并进入历史，避免逐键压历史。
 watch(
   () => searchKeyword.value,
   newVal => {
     const q = newVal.trim();
-    const currentQ = (route.query.q as string) || "";
-
-    if (q !== currentQ) {
-      router.replace({ path: "/search", query: q ? { q } : {} });
-    }
-
-    // 输入即搜（useFetch 的 watch:false 已禁用自动响应，由这里手动触发；防抖合并连续输入）
     if (q) {
       debouncedRefresh();
+    } else {
+      // 关键词清空：取消排队中的防抖刷新（否则其会用空关键词触发一次 400 请求），并立即移除 URL 里的 q（保留 type）
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+      }
+      isDebouncing.value = false;
+      syncSearchUrl();
+    }
+  },
+);
+
+// 监听类别切换：同步 URL（push 进历史）并立即搜索（Tab 点击不防抖）
+watch(
+  () => searchType.value,
+  (newType, oldType) => {
+    if (newType === oldType) return;
+    // 取消排队中的防抖刷新：避免其用旧关键词覆盖 URL / 再触发一次旧关键词搜索
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = null;
+    }
+    isDebouncing.value = false;
+    syncSearchUrl();
+    if (searchKeyword.value.trim()) {
+      refresh();
     }
   },
 );
@@ -120,6 +184,16 @@ watch(
   },
 );
 
+// 监听 URL 的 type 变化：从地址栏直接改 ?type=（或浏览器前进后退）时同步回 searchType，再走上面的 watch 接力 refresh
+watch(
+  () => (route.query.type as SearchType) || "content",
+  newType => {
+    if (newType !== searchType.value && SEARCH_TYPE_CONFIG.some(t => t.value === newType)) {
+      searchType.value = newType;
+    }
+  },
+);
+
 // FloatingInput 通过 defineExpose 暴露 focus()，onMounted 时自动聚焦
 const searchInputRef = useTemplateRef<{ focus: () => void }>("searchInputRef");
 
@@ -128,7 +202,7 @@ onMounted(() => {
   searchInputRef.value?.focus();
 });
 
-// 执行搜索（与 watch 同步，仅在回车时手动触发刷新，避免 push 新增历史）
+// 执行搜索（与 watch 同步，仅在回车时手动触发刷新；回车是明确的搜索动作，URL 同步 + refresh 即时走）
 function handleSearch() {
   if (searchKeyword.value.trim()) {
     // 取消可能排队中的防抖刷新：回车走即时 refresh，不应再被延迟定时器二次触发，
@@ -138,6 +212,7 @@ function handleSearch() {
       searchDebounceTimer = null;
     }
     isDebouncing.value = false;
+    syncSearchUrl();
     refresh();
   }
 }
@@ -179,6 +254,68 @@ function highlightKeyword(text: string, keyword: string) {
   const regex = new RegExp(`(${escapedKeyword})`, "gi");
   return escapedText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>');
 }
+
+// 提取外链域名（订阅源/友链/订阅文章结果展示用）
+function formatUrl(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+// 各类别文案：搜索框 placeholder / aria-label / 结果计数 / 空状态名词
+const searchPlaceholder = computed(() => {
+  switch (searchType.value) {
+    case "subscribe":
+      return "搜索订阅源或友链名称、链接...";
+    case "comment":
+      return "搜索评论内容、评论者...";
+    case "subscribepost":
+      return "搜索订阅文章标题、摘要...";
+    default:
+      return "搜索文章标题、内容...";
+  }
+});
+
+const searchAriaLabel = computed(() => {
+  switch (searchType.value) {
+    case "subscribe":
+      return "搜索订阅源或友链名称、链接";
+    case "comment":
+      return "搜索评论内容、评论者";
+    case "subscribepost":
+      return "搜索订阅文章标题、摘要";
+    default:
+      return "搜索文章标题、内容";
+  }
+});
+
+const resultCountSuffix = computed(() => {
+  switch (searchType.value) {
+    case "subscribe":
+      return "条相关订阅或友链";
+    case "comment":
+      return "条相关评论";
+    case "subscribepost":
+      return "条相关订阅文章";
+    default:
+      return "篇相关文章";
+  }
+});
+
+const emptyNoun = computed(() => {
+  switch (searchType.value) {
+    case "subscribe":
+      return "订阅或友链";
+    case "comment":
+      return "评论";
+    case "subscribepost":
+      return "订阅文章";
+    default:
+      return "文章";
+  }
+});
 </script>
 
 <template>
@@ -193,8 +330,8 @@ function highlightKeyword(text: string, keyword: string) {
         ref="searchInputRef"
         v-model="searchKeyword"
         leading-icon="ri:search-line"
-        label="搜索文章标题、内容..."
-        aria-label="搜索文章标题、内容"
+        :label="searchPlaceholder"
+        :aria-label="searchAriaLabel"
         class="rounded-lg pr-12 hover:shadow-sm"
         @keydown="handleKeydown">
         <template #trailing>
@@ -212,6 +349,28 @@ function highlightKeyword(text: string, keyword: string) {
         </template>
       </FloatingInput>
     </header>
+
+    <!-- 类别 Tab：文章 / 订阅和友链 / 评论 / 订阅文章 -->
+    <nav v-scroll-reveal class="mb-8" aria-label="搜索类别">
+      <div class="flex flex-wrap gap-2" role="tablist">
+        <button
+          v-for="t in SEARCH_TYPE_CONFIG"
+          :key="t.value"
+          type="button"
+          role="tab"
+          :aria-selected="searchType === t.value"
+          :class="[
+            'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm transition-all cursor-pointer',
+            searchType === t.value
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+          ]"
+          @click="searchType = t.value">
+          <Icon :name="t.icon" class="size-4" aria-hidden="true" />
+          {{ t.label }}
+        </button>
+      </div>
+    </nav>
 
     <!-- 搜索结果 -->
     <div v-if="searchKeyword" v-scroll-reveal role="status" aria-live="polite" aria-atomic="true">
@@ -233,55 +392,177 @@ function highlightKeyword(text: string, keyword: string) {
         <Icon name="ri:search-line" aria-hidden="true" class="size-16 text-muted-foreground/30 mx-auto mb-4" />
         <p class="text-muted-foreground">
           没有找到与 "<span class="font-medium text-foreground">{{ searchKeyword }}</span
-          >" 相关的文章
+          >" 相关的{{ emptyNoun }}
         </p>
       </div>
 
       <!-- 结果列表 -->
       <div v-else>
         <p class="text-sm text-muted-foreground mb-4">
-          找到 <span class="font-bold text-foreground">{{ total }}</span> 篇相关文章
+          找到 <span class="font-bold text-foreground">{{ total }}</span> {{ resultCountSuffix }}
         </p>
 
         <div class="space-y-4">
-          <article v-for="content in results" :key="content.cid" class="group border rounded-lg p-5 hover:border-primary/50 hover:shadow-md transition-all">
-            <!-- 标题：详情页按 slug 精确查，无有效链接（slug 缺失或分类 slug 缺失）时不可点 -->
-            <NuxtLink
-              v-if="resolveLink(content)"
-              :to="resolveLink(content)!"
-              class="block">
+          <article
+            v-for="item in results"
+            :key="itemKey(item)"
+            class="group border rounded-lg p-5 hover:border-blue-600 transition-all">
+
+            <!-- ======== 文章结果 ======== -->
+            <template v-if="item.type === 'content'">
+              <!-- 标题：详情页按 slug 精确查，无有效链接（slug 缺失或分类 slug 缺失）时不可点 -->
+              <NuxtLink
+                v-if="resolveLink(item)"
+                :to="resolveLink(item)!"
+                class="block">
+                <h3
+                  class="text-lg font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2 line-clamp-2"
+                  v-html="highlightKeyword(item.title, sanitizedKeyword)" />
+              </NuxtLink>
               <h3
-                class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2 line-clamp-2"
-                v-html="highlightKeyword(content.title, sanitizedKeyword)" />
-            </NuxtLink>
-            <h3
-              v-else
-              class="text-lg font-semibold text-foreground mb-2 line-clamp-2"
-              v-html="highlightKeyword(content.title, sanitizedKeyword)" />
+                v-else
+                class="text-lg font-semibold text-foreground mb-2 line-clamp-2"
+                v-html="highlightKeyword(item.title, sanitizedKeyword)" />
 
-            <!-- 摘要 -->
-            <div class="mb-3 space-y-2">
-              <!-- 描述高亮 -->
-              <p v-if="content.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(content.desc, sanitizedKeyword)" />
+              <!-- 摘要 -->
+              <div class="mb-3 space-y-2">
+                <!-- 描述高亮 -->
+                <p v-if="item.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(item.desc, sanitizedKeyword)" />
 
-              <!-- 正文高亮摘要（使用后端返回的 highlight 字段） -->
-              <p
-                v-if="content.highlight"
-                class="text-sm text-muted-foreground italic line-clamp-3"
-                v-html="content.highlight" />
-            </div>
+                <!-- 正文高亮摘要（使用后端返回的 highlight 字段） -->
+                <p
+                  v-if="item.highlight"
+                  class="text-sm text-muted-foreground italic line-clamp-3"
+                  v-html="item.highlight" />
+              </div>
 
-            <!-- 元信息 -->
-            <div class="flex items-center gap-3 text-xs text-muted-foreground">
-              <span v-if="content.categoryName" class="inline-flex items-center gap-1">
-                <Icon name="ri:folder-line" class="size-3" />
-                {{ content.categoryName }}
-              </span>
-              <span class="inline-flex items-center gap-1">
-                <Icon name="ri:calendar-line" class="size-3" />
-                {{ formatDate(content.createTime) }}
-              </span>
-            </div>
+              <!-- 元信息 -->
+              <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                <span v-if="item.categoryName" class="inline-flex items-center gap-1">
+                  <Icon name="ri:folder-line" class="size-3" />
+                  {{ item.categoryName }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                  <Icon name="ri:calendar-line" class="size-3" />
+                  {{ formatDate(item.createTime) }}
+                </span>
+              </div>
+            </template>
+
+            <!-- ======== 订阅源 / 友链结果 ======== -->
+            <template v-else-if="item.type === 'subscribe'">
+              <div class="flex items-start gap-4">
+                <!-- 头像（加载失败/缺失时字母回退） -->
+                <div class="size-12 rounded-lg bg-muted flex items-center justify-center text-lg font-bold text-muted-foreground shrink-0 overflow-hidden">
+                  <img
+                    v-if="item.avatar"
+                    :src="item.avatar"
+                    :alt="item.name"
+                    loading="lazy"
+                    class="w-full h-full object-cover">
+                  <span v-else>{{ item.name.charAt(0).toUpperCase() }}</span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <!-- 名称：订阅源点击进 /subscribes?source= 看其文章，友链点击外链 -->
+                  <NuxtLink v-if="item.kind === 'subscribe'" :to="`/subscribes?source=${item.id}`" class="block">
+                    <h3
+                      class="text-lg font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1 line-clamp-2"
+                      v-html="highlightKeyword(item.name, sanitizedKeyword)" />
+                  </NuxtLink>
+                  <a v-else :href="item.url" target="_blank" rel="noopener noreferrer" class="block">
+                    <h3
+                      class="text-lg font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1 line-clamp-2"
+                      v-html="highlightKeyword(item.name, sanitizedKeyword)" />
+                  </a>
+
+                  <!-- 描述：仅显示简介；无简介（订阅源 desc 恒为 null）时留空，网址已在下方元信息行展示，避免重复 -->
+                  <p v-if="item.desc" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(item.desc, sanitizedKeyword)" />
+                </div>
+              </div>
+
+              <!-- 元信息 -->
+              <div class="flex items-center gap-3 text-xs text-muted-foreground mt-3">
+                <span class="inline-flex items-center gap-1">
+                  <Icon :name="item.kind === 'subscribe' ? 'ri:rss-line' : 'ri:link'" class="size-3" />
+                  {{ item.kind === "subscribe" ? "订阅源" : "友链" }}
+                </span>
+                <span class="inline-flex items-center gap-1">
+                  <Icon name="ri:global-line" class="size-3" />
+                  {{ formatUrl(item.url) }}
+                </span>
+              </div>
+            </template>
+
+            <!-- ======== 评论结果 ======== -->
+            <template v-else-if="item.type === 'comment'">
+              <div class="flex items-start gap-4">
+                <Avatar class="size-10 shrink-0">
+                  <AvatarImage v-if="item.avatar" :src="item.avatar" :alt="item.name" />
+                  <AvatarFallback>{{ item.name.charAt(0).toUpperCase() }}</AvatarFallback>
+                </Avatar>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1 text-xs text-muted-foreground">
+                    <span class="font-medium text-foreground">{{ item.name }}</span>
+                    <span>{{ formatDate(item.createTime) }}</span>
+                  </div>
+                  <p
+                    class="text-sm text-foreground mb-2 line-clamp-3 whitespace-pre-wrap"
+                    v-html="highlightKeyword(item.content, sanitizedKeyword)" />
+                  <!-- 评论所在文章：有 articleUrl 才可点（留言板/已发布文章） -->
+                  <div class="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+                    <Icon name="ri:article-line" class="size-3 shrink-0" />
+                    <NuxtLink v-if="item.articleUrl" :to="item.articleUrl" class="text-blue-600 dark:text-blue-400 hover:underline truncate">
+                      {{ item.articleTitle }}
+                    </NuxtLink>
+                    <span v-else class="truncate">{{ item.articleTitle }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- ======== 订阅文章结果 ======== -->
+            <template v-else-if="item.type === 'subscribepost'">
+              <div class="flex items-start gap-4">
+                <!-- 来源头像 -->
+                <div class="size-10 rounded-lg bg-muted flex items-center justify-center font-bold text-muted-foreground shrink-0 overflow-hidden">
+                  <img
+                    v-if="item.subscribeAvatar"
+                    :src="item.subscribeAvatar"
+                    :alt="item.subscribeName"
+                    loading="lazy"
+                    class="w-full h-full object-cover">
+                  <span v-else>{{ item.subscribeName.charAt(0).toUpperCase() }}</span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1 text-xs text-muted-foreground">
+                    <span>{{ item.subscribeName }}</span>
+                    <span v-if="item.pubDate">{{ formatDate(item.pubDate) }}</span>
+                  </div>
+                  <!-- 标题：link 为空（非 http/https 被净化）时不可点 -->
+                  <a v-if="item.link" :href="item.link" target="_blank" rel="noopener noreferrer" class="block group">
+                    <h3
+                      class="text-lg font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1 line-clamp-2"
+                      v-html="highlightKeyword(item.title, sanitizedKeyword)" />
+                  </a>
+                  <h3 v-else class="text-lg font-semibold text-foreground mb-1 line-clamp-2" v-html="highlightKeyword(item.title, sanitizedKeyword)" />
+                  <p v-if="item.description" class="text-sm text-muted-foreground line-clamp-2" v-html="highlightKeyword(item.description, sanitizedKeyword)" />
+                </div>
+
+                <!-- 外链图标 -->
+                <a
+                  v-if="item.link"
+                  :href="item.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="shrink-0 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
+                  :title="item.title">
+                  <Icon name="lucide:external-link" class="size-5" />
+                </a>
+              </div>
+            </template>
           </article>
         </div>
       </div>

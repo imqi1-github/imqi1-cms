@@ -43,11 +43,17 @@ export const PaginationResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) 
 
 // ============= 搜索 Schema =============
 
+// 搜索类别：文章 / 订阅和友链 / 评论 / 订阅文章
+export const SearchTypeSchema = z.enum(["content", "subscribe", "comment", "subscribepost"]);
+
 export const SearchQuerySchema = z.object({
   q: z.string().min(1).max(100),
+  type: SearchTypeSchema.default("content"),
 });
 
+// 文章搜索结果项
 export const SearchResultItemSchema = z.object({
+  type: z.literal("content"),
   cid: z.number(),
   title: z.string(),
   // 实际 formatSearchResults 返回的 slug 可能为 null，与现实对齐（防未来启用响应校验时误 500）
@@ -59,10 +65,50 @@ export const SearchResultItemSchema = z.object({
   highlight: z.string().optional(),
 });
 
+// 订阅源 / 友链搜索结果项（kind 区分来源）
+export const SubscribeSearchItemSchema = z.object({
+  type: z.literal("subscribe"),
+  kind: z.enum(["subscribe", "link"]),
+  id: z.number(),
+  name: z.string(),
+  url: z.string(),
+  desc: z.string().nullable(),
+  avatar: z.string().nullable(),
+});
+
+// 评论搜索结果项（白名单字段，附文章上下文）
+export const CommentSearchItemSchema = z.object({
+  type: z.literal("comment"),
+  coid: z.number(),
+  name: z.string(),
+  content: z.string(),
+  avatar: z.string(),
+  createTime: z.date().or(z.string()),
+  articleTitle: z.string().nullable(),
+  articleUrl: z.string().nullable(),
+});
+
+// 订阅文章搜索结果项（RSS 订阅抓取的文章）
+export const SubscribePostSearchItemSchema = z.object({
+  type: z.literal("subscribepost"),
+  id: z.number(),
+  subscribeId: z.number(),
+  subscribeName: z.string(),
+  subscribeAvatar: z.string().nullable(),
+  title: z.string(),
+  link: z.string(),
+  description: z.string().nullable(),
+  author: z.string().nullable(),
+  pubDate: z.date().or(z.string()).nullable(),
+});
+
 export const SearchResponseSchema = z.object({
-  results: z.array(SearchResultItemSchema),
+  results: z.array(
+    z.union([SearchResultItemSchema, SubscribeSearchItemSchema, CommentSearchItemSchema, SubscribePostSearchItemSchema]),
+  ),
   total: z.number(),
   query: z.string(),
+  type: SearchTypeSchema,
 });
 
 // ============= 评论 Schema =============
