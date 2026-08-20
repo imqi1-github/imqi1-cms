@@ -39,7 +39,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <Transition name="fade">
     <button
       v-if="isLoaded && currentSong"
       class="group relative flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 cursor-pointer transition-all duration-300 overflow-hidden max-w-36 h-7.5"
@@ -81,11 +80,10 @@ onMounted(() => {
           音乐加载中
         </span>
       </span>
-      <span class="relative z-1 flex h-full shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+      <span class="relative z-1 flex aspect-square h-full shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
         <Icon name="lucide:loader-2" class="size-3.5 animate-spin text-gray-400 dark:text-gray-500" mode="svg" />
       </span>
     </div>
-  </Transition>
 </template>
 
 <style scoped>

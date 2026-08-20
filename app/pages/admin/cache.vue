@@ -25,11 +25,11 @@ const categories = [
   { label: "旅行地图", keyword: "map", icon: "lucide:map", desc: "/map" },
   { label: "友链", keyword: "links", icon: "lucide:link", desc: "/links" },
   { label: "留言板", keyword: "messages", icon: "lucide:message-square", desc: "/messages" },
-  { label: "搜索", keyword: "search", icon: "lucide:search", desc: "/search + 结果" },
 ];
 
 const clearingAll = ref(false);
 const clearingPreset = ref<string | null>(null);
+const clearingSearch = ref(false);
 const clearingKeyword = ref(false);
 const customKeyword = ref("");
 const showAllDialog = ref(false);
@@ -87,6 +87,18 @@ async function clearPreset(keyword: string, label: string) {
   }
 }
 
+async function clearSearchCache() {
+  clearingSearch.value = true;
+  try {
+    await postClear({ csrfToken: csrfToken.value, action: "search" }, "已清除搜索缓存");
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
+    toast.error({ message: "清理失败", description: error?.data?.message || "请稍后重试" });
+  } finally {
+    clearingSearch.value = false;
+  }
+}
+
 async function clearKeyword() {
   const keyword = customKeyword.value.trim();
   if (!keyword) {
@@ -140,6 +152,29 @@ onMounted(() => {
             />
             {{ clearingAll ? "清空中..." : "一键清空全部缓存" }}
           </Button>
+        </CardContent>
+      </Card>
+
+      <!-- 搜索缓存：仅清自定义搜索结果缓存，不碰 Nuxt 页面缓存 -->
+      <Card>
+        <CardHeader>
+          <CardTitle>搜索缓存</CardTitle>
+          <CardDescription>清除自定义搜索结果缓存（search:* 前缀键），不影响 Nuxt /search 页面缓存</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="flex items-center gap-3">
+            <Button variant="outline" :disabled="clearingSearch" @click="clearSearchCache">
+              <Icon
+                :name="clearingSearch ? 'lucide:loader-2' : 'lucide:eraser'"
+                :class="{ 'animate-spin': clearingSearch }"
+                class="mr-2 size-4"
+              />
+              {{ clearingSearch ? "清除中..." : "清除搜索缓存" }}
+            </Button>
+            <p class="text-sm text-muted-foreground">
+              热门关键词的结果会缓存为 <code>search:&lt;关键词&gt;:&lt;类型&gt;</code>，数据有更新时可用此按钮清除。
+            </p>
+          </div>
         </CardContent>
       </Card>
 
