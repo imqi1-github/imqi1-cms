@@ -73,6 +73,18 @@ export default defineEventHandler(async event => {
       } satisfies CacheClearResponse;
     }
 
+    // 仅清自定义搜索缓存：search.get.ts 写入的 search:${q}:${type} 键，前缀精确匹配，
+    // 不碰 Nuxt 页面/ISR 缓存（与缓存管理页"搜索"预设的 *search* 子串匹配区分开）
+    if (action === "search") {
+      const total = await scanAndUnlink("search:*");
+      return {
+        success: true,
+        matched: total,
+        cleared: total,
+        note: total === 0 ? "没有匹配的搜索缓存键" : undefined,
+      } satisfies CacheClearResponse;
+    }
+
     // preset 与 keyword 都按键名子串匹配删除
     if (action === "preset" || action === "keyword") {
       const keyword = (value ?? "").trim();

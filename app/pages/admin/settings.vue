@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { siteConfig } from "~~/site.config";
 import type { AdminSettings } from "~/types/apis/admin/settings";
+import type { CacheClearBody, CacheClearResponse } from "~/types/apis/cache";
+import type { ApiError } from "~/types/error";
 
 const loading = ref(true);
 const activeTab = ref("basic");
@@ -8,6 +10,7 @@ const showResetDialog = ref(false);
 const toast = useToast();
 const csrfToken = ref("");
 const initializing = ref(false);
+const clearingSearchCache = ref(false);
 
 const settings = ref<AdminSettings>({
   siteName: siteConfig.siteName,
@@ -259,6 +262,30 @@ async function loadSettings() {
     console.error("获取设置失败:", error);
   } finally {
     loading.value = false;
+  }
+}
+
+// 清除自定义搜索缓存（仅 search:* 前缀键，不动 Nuxt 页面缓存）
+async function clearSearchCache() {
+  clearingSearchCache.value = true;
+  try {
+    const res = await $fetch<CacheClearResponse>("/api/admin/cache/clear", {
+      method: "POST",
+      body: { csrfToken: csrfToken.value, action: "search" } satisfies CacheClearBody,
+    });
+    if (!res.success) {
+      toast.warning({ message: "清理失败", description: res.message });
+      return;
+    }
+    toast.success({
+      message: "搜索缓存已清除",
+      description: res.note || `共清理 ${res.cleared} 个搜索缓存键`,
+    });
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError;
+    toast.error({ message: "清理失败", description: error?.data?.message || "请稍后重试" });
+  } finally {
+    clearingSearchCache.value = false;
   }
 }
 
@@ -1029,6 +1056,21 @@ onMounted(() => {
                       </ul>
                     </div>
                   </div>
+                </div>
+
+                <div class="flex items-center justify-between border-t pt-4">
+                  <div class="space-y-0.5 pr-4">
+                    <p class="text-sm font-medium">清除搜索缓存</p>
+                    <p class="text-xs text-muted-foreground">仅清除自定义搜索结果缓存（search:* 前缀键），不影响 Nuxt 页面缓存</p>
+                  </div>
+                  <Button variant="outline" :disabled="clearingSearchCache" @click="clearSearchCache">
+                    <Icon
+                      :name="clearingSearchCache ? 'lucide:loader-2' : 'lucide:eraser'"
+                      :class="{ 'animate-spin': clearingSearchCache }"
+                      class="mr-2 size-4"
+                    />
+                    {{ clearingSearchCache ? "清除中..." : "清除搜索缓存" }}
+                  </Button>
                 </div>
               </div>
             </CardContent>
