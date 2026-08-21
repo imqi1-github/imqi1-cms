@@ -64,6 +64,8 @@ export function useAudioPlayer() {
   const currentSong = useState<Song | null>("audio:currentSong", () => null);
   const isPlaying = useState<boolean>("audio:isPlaying", () => false);
   const isLoaded = useState<boolean>("audio:isLoaded", () => false);
+  // 播放器是否已被停用（连续失败达到上限）。停用后隐藏胶囊与加载占位，避免「加载中」与「隐藏」逻辑冲突。
+  const isDisabled = useState<boolean>("audio:isDisabled", () => false);
   const progress = useState<number>("audio:progress", () => 0);
   const shouldAutoPlay = useState<boolean>("audio:shouldAutoPlay", () => false);
   const playedIndices = useState<number[]>("audio:playedIndices", () => []);
@@ -101,6 +103,7 @@ export function useAudioPlayer() {
   // 且不污染 initPlayer 的「歌单 API 拉取闸门」（该闸门只对真正的 API 失败持久生效）。
   function disablePlayer(reason: string) {
     console.warn(`${reason}，本次停用页脚音乐，刷新页面后将自动重试`);
+    isDisabled.value = true;
     shouldAutoPlay.value = false;
     isPlaying.value = false;
     currentSong.value = null;
@@ -215,6 +218,7 @@ export function useAudioPlayer() {
     // 检查失败次数，如果超过最大次数则不初始化播放器
     const failureCount = getFailureCount();
     if (failureCount >= MAX_FAILURE_COUNT) {
+      isDisabled.value = true;
       console.warn(`Meting API 已连续失败 ${failureCount} 次，不再加载音乐播放器。如需重试，请清除 localStorage 中的 ${METING_FAILURE_COUNT_KEY}`);
       return;
     }
@@ -235,6 +239,7 @@ export function useAudioPlayer() {
       if (response && Array.isArray(response)) {
         // 请求成功，重置失败计数
         resetFailureCount();
+        isDisabled.value = false;
 
         playlist.value = response;
         // 准备第一首歌
@@ -253,6 +258,7 @@ export function useAudioPlayer() {
 
       // 如果达到最大失败次数，不显示播放器
       if (newCount >= MAX_FAILURE_COUNT) {
+        isDisabled.value = true;
         console.warn(`Meting API 已连续失败 ${MAX_FAILURE_COUNT} 次，音乐播放器已禁用`);
       }
     }
@@ -323,6 +329,7 @@ export function useAudioPlayer() {
     currentSong,
     isPlaying,
     isLoaded,
+    isDisabled,
     progress,
     initPlayer,
     togglePlay,

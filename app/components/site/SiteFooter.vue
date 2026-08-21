@@ -15,6 +15,10 @@ const { isLoggedIn, isLoadingAuth, checkAuthStatus } = useAuth();
 // 使用全局站点设置
 const { siteSettings, fetchSiteSettings } = useSiteSettings();
 
+// 页脚音乐：仅当播放器可用（未被连续失败停用）时才保留胶囊位。停用后整颗胶囊连同占位
+// 一起消失，同时把外层包裹节点一并移出 flex 布局，避免 0 高度 flex 项在 gap 下挤开下方按钮。
+const { isDisabled: isMusicDisabled } = useAudioPlayer();
+
 // 判断是否为首页
 const isHomePage = computed(() => route.path === "/");
 
@@ -370,7 +374,7 @@ onMounted(() => {
         leave-active-class="transition-all duration-200"
         leave-from-class="opacity-100 translate-y-0 scale-100"
         leave-to-class="opacity-0 translate-y-4 scale-75">
-        <div v-show="isMobileButtonsOpen" class="md:hidden">
+        <div v-show="isMobileButtonsOpen && !isMusicDisabled" class="md:hidden">
           <FooterMusic />
         </div>
       </Transition>
@@ -405,7 +409,7 @@ onMounted(() => {
       </ClientOnly>
 
       <!-- PC端：页脚音乐播放器 -->
-      <div class="max-md:hidden">
+      <div v-if="!isMusicDisabled" class="max-md:hidden">
         <FooterMusic />
       </div>
 

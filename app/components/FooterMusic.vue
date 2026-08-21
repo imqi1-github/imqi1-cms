@@ -22,7 +22,7 @@ const playlistConfig = computed(() => {
 });
 
 // 使用全局音频播放器状态
-const { currentSong, isPlaying, isLoaded, progress, initPlayer, togglePlay } = useAudioPlayer();
+const { currentSong, isPlaying, isLoaded, isDisabled, progress, initPlayer, togglePlay } = useAudioPlayer();
 
 // 初始化播放器（只执行一次）：延迟到空闲时段，不抢首页加载关键路径。
 // 先用 setTimeout 让出英雄区渐入/字体稳定窗口，再交给 requestIdleCallback 等空闲
@@ -70,9 +70,10 @@ onMounted(() => {
     </button>
 
     <!-- 播放器初始化前占位：歌单拉取/建 Audio 未完成时不显示空白，先给一个加载态。
-         initPlayer 延迟到空闲时段（rIC + 1200ms），故首屏停留约 1-2s，占位避免按钮位空缺。 -->
+         initPlayer 延迟到空闲时段（rIC + 1200ms），故首屏停留约 1-2s，占位避免按钮位空缺。
+         注意：播放器被连续失败停用（isDisabled）后不渲染任何占位，直接隐藏整颗胶囊，避免与加载态冲突。 -->
     <div
-      v-else
+      v-else-if="!isDisabled"
       class="flex items-center gap-2 rounded-full py-0.75 pr-0.75 pl-2 max-w-36 h-7.5"
       :class="btnShell">
       <span class="relative z-1 min-w-0 flex-1">
