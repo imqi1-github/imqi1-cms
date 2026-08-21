@@ -127,12 +127,15 @@ export const siteConfig = defineSiteConfig({
   },
 
   amap: {
+    // 是否通过服务端同源代理路由 /_AMapService 加载地图（key 不下发到浏览器，由服务端注入）。
+    // 生产建议走代理；开发关掉代理、用 key 直连，方便调试。
     useNginxProxy: {
       development: false,
       production: true,
     },
-    // 是否在站点各处展示指向地图页的入口胶囊。开发默认开；生产默认关——
-    // 待后台/环境配好高德 apikey（地图可正常加载）后再把 production 改为 true。
+    // 是否在站点各处展示指向地图页的入口胶囊（订阅页 / 友链页 / 首页 / 留言板 / 关于页）。
+    // 注意：胶囊是否渲染只由这里控制，与 AMAP_KEY 是否已配置无关；key 未配时点进地图页会显示
+    // 「地图加载失败」。key 可在打包时注入，也可在运行环境设置（见 .env「高德地图」段说明）。
     entryLinks: {
       development: true,
       production: true,

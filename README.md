@@ -158,7 +158,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
 生产环境采用「**本地打包 → 上传产物 → 服务器运行 Node 服务**」的部署模式。
 
-> 📌 **关于端口号**：下文出现的端口均为各路径的默认示例，均可任意修改——开发服务器默认 `3000`、裸机生产示例用 `PORT_PROD=4000`、Docker 示例用 `PORT_PROD=3000`，只需保持 `PORT_PROD`、Nginx 反代目标与容器端口映射三者一致即可。
+> 📌 **关于端口号**：下文出现的端口均为各路径的默认示例，均可任意修改——开发服务器默认 `3000`、裸机生产示例用 `DEPLOY_PORT=4000`、Docker 示例用 `DEPLOY_PORT=3000`，只需保持 `DEPLOY_PORT`、Nginx 反代目标与容器端口映射三者一致即可。
 
 ### 1. 准备开发环境
 
@@ -182,17 +182,19 @@ COS_BUCKET=""
 COS_REGION=""
 
 # 上传服务端产物到服务器（可选，SFTP）
-SERVER_IP="你的服务器 IP"
+SERVER_HOST="你的服务器 IP"        # 旧名 SERVER_IP 仍兼容
 SERVER_PORT="22"
+SERVER_USER="root"                 # 旧名 SERVER_USERNAME 仍兼容
 SERVER_PASSWORD="你的服务器密码"
 SERVER_UPLOAD_DIR="/www/wwwroot/glass"
+SERVER_UPLOAD_CONCURRENCY="8"      # 上传并发数（可选）
 
 # 生成 Nginx 配置所需
-PORT_PROD=4000
-PROJECT_ROOT_DIR_PROD=/www/wwwroot/glass
-SITE_DOMAIN_PROD=your-domain.com
-CDN_DOMAIN_PROD=cdn.your-domain.com
-ENABLE_CDN_REDIRECT_PROD=true
+DEPLOY_PORT=4000
+DEPLOY_PROJECT_ROOT_DIR=/www/wwwroot/glass
+DEPLOY_SITE_DOMAIN=your-domain.com
+DEPLOY_CDN_DOMAIN=cdn.your-domain.com
+DEPLOY_ENABLE_CDN_REDIRECT=true
 ```
 
 生产环境 Redis 是要打包进服务端产物的，所以要在开发环境的 .env 中配置，后三个都是在本地执行 node 命令时自动读取的，和生产环境无关。
@@ -294,6 +296,7 @@ REDIS_PASSWORD_PROD=""
 REDIS_DB_PROD="0"
 
 # 高德地图，可选
+# 生产走服务端代理：打包时可留空，部署后在运行环境设置即可生效（或 NUXT_AMAP_KEY / NUXT_AMAP_SECURITY_CODE）
 AMAP_KEY="your_amap_key"
 AMAP_SECURITY_CODE="your_amap_security_code"
 
@@ -372,7 +375,7 @@ cp .env.example .env
 DB_PASSWORD="改成强密码"          # MySQL root 密码，compose 会用它建库
 DB_NAME="imqi1-nodejs"           # 库名，可自定义；compose 建库与导入 SQL 都用它
 DB_USER="root"
-PORT_PROD=3000                   # 宿主对外端口，按需修改
+DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 ```
 
 > `DB_HOST`、`REDIS_HOST_PROD` 会被 compose 自动覆盖为服务名 `mysql` / `redis`，**无需手动填写容器名**。其它 COS、高德地图 Key 等按需填写。
@@ -436,7 +439,7 @@ docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" "$DB_NAME" > backup.
 
 ### 5. 反向代理与 HTTPS
 
-容器仅对外暴露 `${PORT_PROD}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
+容器仅对外暴露 `${DEPLOY_PORT}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
 
 > ⚠️ **数据持久化与安全**
 > - MySQL 数据存于 `mysql-data` 卷、Redis 存于 `redis-data`、用户上传存于 `uploads` 卷。
@@ -471,7 +474,7 @@ const _cdnUrl = "https://cdn.imqi1.com"; // CDN 根地址（未用 CDN 可与站
 | `build.brotliCompression` | 构建时是否预压缩静态资源为 brotli（`.br`），需 Nginx / CDN 配合发送预压缩文件。 |
 | `features.miniApi` | 是否启用小程序 API。关闭后 `server/api/mini` 不注册、也不打入生产包。 |
 | `features.miniComment` | 是否开启小程序评论。关闭后小程序端不展示评论区，服务端评论接口也不受理。 |
-| `amap` | 高德地图相关：是否走 Nginx 代理、是否展示地图入口胶囊（分开发 / 生产）。 |
+| `amap` | 高德地图相关：是否走服务端代理路由 `/_AMapService`、是否展示地图入口胶囊（分开发 / 生产）。地图能否加载由运行时判断，key 可在构建时或生产运行环境配置。 |
 | `pageTransition.fadeDuration` | 页面过渡淡入淡出时长（ms），也是各页面等待过渡完成再启动元素动画的统一延迟。 |
 | `homeCustomText` | 首页自定义 HTML 文案。 |
 | `links` | 友链页的博客组织入口（`blogOrganizations`）与本站资料（`profile`，供他人添加友链）。 |

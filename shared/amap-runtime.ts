@@ -17,13 +17,13 @@ export function resolveAmapUseProxy(nodeEnv: string | undefined, useNginxProxy: 
 export function resolveAmapRuntimeConfig(options: ResolveAmapRuntimeConfigOptions) {
   const key = options.key || "";
   const securityJsCode = options.securityJsCode || "";
-  const enabled = Boolean(key && securityJsCode);
   const useProxy = resolveAmapUseProxy(options.nodeEnv, options.useNginxProxy);
 
   return {
-    enabled,
+    // 地图能否加载改由运行时判断（见 TravelMap.vue），不再在构建期固化 enabled。
     useProxy,
-    publicKey: enabled && !useProxy ? key : "",
-    publicSecurityJsCode: enabled && !useProxy ? securityJsCode : "",
+    // 非代理模式才把 key 暴露给客户端；代理模式下 key 仅存在于服务端 runtimeConfig。
+    publicKey: !useProxy ? key : "",
+    publicSecurityJsCode: !useProxy ? securityJsCode : "",
   };
 }

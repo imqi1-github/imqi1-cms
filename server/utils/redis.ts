@@ -1,26 +1,6 @@
 import Redis from "ioredis";
 
-// 获取 Redis 配置
-function getRedisConfig() {
-  const isDev = process.env.NODE_ENV !== "production";
-  const host = isDev ? process.env.REDIS_HOST_DEV : process.env.REDIS_HOST_PROD;
-
-  if (!host) {
-    return null;
-  }
-
-  const portKey = isDev ? "REDIS_PORT_DEV" : "REDIS_PORT_PROD";
-  const passwordKey = isDev ? "REDIS_PASSWORD_DEV" : "REDIS_PASSWORD_PROD";
-  const dbKey = isDev ? "REDIS_DB_DEV" : "REDIS_DB_PROD";
-
-  return {
-    host,
-    port: Number(process.env[portKey]) || 6379,
-    password: process.env[passwordKey] || undefined,
-    db: Number(process.env[dbKey]) || 0,
-    lazyConnect: false,
-  };
-}
+import { getRedisConfig } from "#shared/redis-config";
 
 // 创建 Redis 实例
 const redisConfig = getRedisConfig();

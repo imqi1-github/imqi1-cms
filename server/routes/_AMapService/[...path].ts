@@ -12,7 +12,12 @@ export default defineEventHandler(event => {
     });
   }
 
-  if (!config.amapKey || !config.amapSecurityCode) {
+  // key 优先走 runtimeConfig（构建期 .env 或运行时 NUXT_AMAP_KEY 覆盖），
+  // 兜底直接读 process.env.AMAP_KEY，让生产环境直接设置 AMAP_KEY 也能在运行时生效。
+  const amapKey = config.amapKey || process.env.AMAP_KEY || "";
+  const amapSecurityCode = config.amapSecurityCode || process.env.AMAP_SECURITY_CODE || "";
+
+  if (!amapKey || !amapSecurityCode) {
     throw createError({
       statusCode: 503,
       statusMessage: "AMap proxy is not configured.",
@@ -23,8 +28,8 @@ export default defineEventHandler(event => {
   const target = resolveAmapProxyTarget({
     pathname: requestUrl.pathname,
     search: requestUrl.search,
-    key: config.amapKey,
-    securityJsCode: config.amapSecurityCode,
+    key: amapKey,
+    securityJsCode: amapSecurityCode,
   });
 
   if (!target) {

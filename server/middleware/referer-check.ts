@@ -27,7 +27,7 @@ export default defineEventHandler(event => {
 
   // 优先检查：SSR 内部请求标识；未配置 secret 时兼容旧的 true 值，避免旧部署失效
   const ssrInternalRequest = event.node.req.headers["x-ssr-internal-request"];
-  const ssrInternalRequestSecret = process.env.SSR_INTERNAL_REQUEST_SECRET || "";
+  const ssrInternalRequestSecret = useRuntimeConfig().ssrInternalRequestSecret || "";
   const isSsrInternalRequest = ssrInternalRequestSecret
     ? ssrInternalRequest === ssrInternalRequestSecret
     : ssrInternalRequest === "true";

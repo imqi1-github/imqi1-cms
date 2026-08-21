@@ -25,10 +25,12 @@ const props = defineProps<{
 }>();
 
 const config = useRuntimeConfig();
-const amapEnabled = Boolean(config.public.amapEnabled);
 const amapUseProxy = Boolean(config.public.amapUseProxy);
 const amapKey = String(config.public.amapKey || "");
 const amapSecurityCode = String(config.public.amapSecurityCode || "");
+// 运行时判断地图是否可加载：走代理则客户端无需持 key（成败由服务端代理路由决定，key 不暴露给浏览器）；
+// 否则需要 key + securityCode 齐全。不依赖构建期固化，生产运行时补配 env 即可生效。
+const amapEnabled = amapUseProxy || Boolean(amapKey && amapSecurityCode);
 const router = useRouter();
 
 // 跟随站点深浅模式
@@ -655,7 +657,7 @@ onMounted(async () => {
   if (!amapEnabled) {
     loadError.value = true;
     loading.value = false;
-    console.warn("[TravelMap] 未完整配置 AMAP_KEY / AMAP_SECURITY_CODE，请在 .env 中设置高德地图密钥");
+    console.warn("[TravelMap] 地图未启用：缺少 AMAP_KEY / AMAP_SECURITY_CODE。非代理模式需在构建时 .env 配置；代理模式可在构建时或生产运行环境配置（AMAP_KEY 或 NUXT_AMAP_KEY）。");
     return;
   }
   try {

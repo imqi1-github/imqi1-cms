@@ -4,6 +4,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 import { siteConfig, fullOgImage } from "./site.config";
 import { resolveAmapRuntimeConfig } from "./shared/amap-runtime";
+import { getRedisConfig } from "./shared/redis-config";
 
 // 读取构建 hash（如果存在）
 const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
@@ -17,28 +18,7 @@ const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig
 // 见 server/utils/csp.ts（策略拼装）+ server/plugins/csp.ts（render:response 注入 nonce 与设头）
 const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 
-// 获取当前环境的 Redis 配置
-function getRedisConfig() {
-  const isDev = import.meta.env?.DEV ?? process.env.NODE_ENV !== "production";
-  const host = isDev ? process.env.REDIS_HOST_DEV : process.env.REDIS_HOST_PROD;
-
-  if (!host) {
-    return null;
-  }
-
-  const portKey = isDev ? "REDIS_PORT_DEV" : "REDIS_PORT_PROD";
-  const passwordKey = isDev ? "REDIS_PASSWORD_DEV" : "REDIS_PASSWORD_PROD";
-  const dbKey = isDev ? "REDIS_DB_DEV" : "REDIS_DB_PROD";
-
-  return {
-    host,
-    port: Number(process.env[portKey]) || 6379,
-    password: process.env[passwordKey],
-    db: Number(process.env[dbKey]) || 0,
-    lazyConnect: false,
-  };
-}
-
+// 获取当前环境的 Redis 配置（逻辑在 shared/redis-config.ts，供 nitro ISR 存储与 server 缓存共用）
 const redisConfig = getRedisConfig();
 const amapRuntime = resolveAmapRuntimeConfig({
   nodeEnv: process.env.NODE_ENV,
@@ -78,7 +58,6 @@ export default defineNuxtConfig({
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
       rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
-      amapEnabled: amapRuntime.enabled,
       amapUseProxy: amapRuntime.useProxy,
       amapKey: amapRuntime.publicKey,
       amapSecurityCode: amapRuntime.publicSecurityJsCode,

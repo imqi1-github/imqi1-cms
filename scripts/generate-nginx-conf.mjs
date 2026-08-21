@@ -22,11 +22,11 @@ function requireEnv(name) {
   return value;
 }
 
-const portProd = requireEnv('PORT_PROD');
-const serverRoot = requireEnv('PROJECT_ROOT_DIR_PROD');
-const cdnDomain = requireEnv('CDN_DOMAIN_PROD');
-const siteDomain = requireEnv('SITE_DOMAIN_PROD');
-const enableCdnRedirect = requireEnv('ENABLE_CDN_REDIRECT_PROD') === 'true';
+const portProd = requireEnv('DEPLOY_PORT');
+const serverRoot = requireEnv('DEPLOY_PROJECT_ROOT_DIR');
+const cdnDomain = requireEnv('DEPLOY_CDN_DOMAIN');
+const siteDomain = requireEnv('DEPLOY_SITE_DOMAIN');
+const enableCdnRedirect = requireEnv('DEPLOY_ENABLE_CDN_REDIRECT') === 'true';
 
 console.log('📝 生成 Nginx 配置...');
 console.log(`  站点域名: ${siteDomain}`);
@@ -109,7 +109,7 @@ location ~ ^/(uploads)/ {
 }
 ` : `
 # CDN 重定向已禁用（静态资源由 Nuxt routeRules 处理）
-# 如果需要启用 CDN 重定向，请在 .env 中设置 ENABLE_CDN_REDIRECT_PROD=true
+# 如果需要启用 CDN 重定向，请在 .env 中设置 DEPLOY_ENABLE_CDN_REDIRECT=true
 `
   }
 

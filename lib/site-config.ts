@@ -91,7 +91,7 @@ export interface SiteConfig {
   };
   /** 高德地图接入配置 */
   amap: {
-    /** 是否通过同源 Nginx/Nitro 代理获取地图密钥；开发和生产环境可分开配置 */
+    /** 是否通过服务端同源代理路由 /_AMapService 获取地图密钥（key 不下发到浏览器）；开发和生产环境可分开配置 */
     useNginxProxy: {
       development: boolean;
       production: boolean;
