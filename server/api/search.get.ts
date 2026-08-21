@@ -311,7 +311,20 @@ async function searchComments(q: string): Promise<SearchBranchResult> {
   const comments = await prisma.comments.findMany({
     where: {
       status: 1, // 已审核
-      OR: [{ content: { contains: q } }, { name: { contains: q } }],
+      AND: [
+        {
+          // 只搜前台可见的评论：留言板评论放行（/messages 系统路由始终可访问），
+          // 其余仅保留已发布文章（status:1）上的评论——否则草稿文章上的评论会出现在
+          // 结果里却拼不出有效链接（且该文章前台本就不可见）
+          OR: [
+            ...(guestbookCid ? [{ cid: guestbookCid }] : []),
+            { content_ref: { status: 1 } },
+          ],
+        },
+        {
+          OR: [{ content: { contains: q } }, { name: { contains: q } }],
+        },
+      ],
     },
     select: {
       coid: true,
@@ -358,10 +371,17 @@ async function searchComments(q: string): Promise<SearchBranchResult> {
       if (guestbookCid && ref.cid === guestbookCid) {
         articleUrl = `/messages#comment-${comment.coid}`;
       }
-      // 文章评论：需分类关系才能拼 /content/<分类slug>/<文章slug>，且只指向已发布文章避免 404
-      else if (ref.status === 1 && ref.slug && ref.contentrelations.length > 0 && ref.contentrelations[0]?.metas) {
-        const categorySlug = ref.contentrelations[0].metas.slug ?? "";
-        articleUrl = `/content/${categorySlug}/${ref.slug}#comment-${comment.coid}`;
+      // 文章评论：仅已发布文章，且需能拼出有效详情页链接
+      // - 有分类：/content/<分类slug>/<文章slug>
+      // - 无任何分类：兜底 /content/uncategorized/<文章slug>（同 search.vue 的 resolveLink 规则）
+      // - 有分类但分类 slug 缺失：无法拼出有效链接，保持 null（前台同样不可达）
+      else if (ref.status === 1 && ref.slug) {
+        const categorySlug = ref.contentrelations[0]?.metas?.slug;
+        if (categorySlug) {
+          articleUrl = `/content/${categorySlug}/${ref.slug}#comment-${comment.coid}`;
+        } else if (ref.contentrelations.length === 0) {
+          articleUrl = `/content/uncategorized/${ref.slug}#comment-${comment.coid}`;
+        }
       }
     }
 
