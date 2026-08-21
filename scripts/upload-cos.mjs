@@ -37,27 +37,34 @@ const args = process.argv.slice(2)
 const subDir = args.find(arg => !arg.startsWith('-'))
 
 // 指定子目录时只上传该子目录；
-// 未指定时默认上传 _nuxt/ 构建产物（带构建 hash）。
+// 未指定时默认上传扁平化后的构建产物（构建产物直接位于 public 根目录，带构建 hash）。
 // imgs/skills/icons/emojis 等静态资源不走构建 hash，不在此上传。
 const SOURCE_DIR = subDir
   ? path.join(BASE_DIR, subDir)
-  : path.join(BASE_DIR, '_nuxt')
+  : BASE_DIR
 
-// 收集默认上传文件：_nuxt/ 全部 + manifest.webmanifest
+// 构建产物扁平化后直接位于 public 根目录（nuxt.config.ts 的 buildAssetsDir: "/"），
+// 默认上传项 = 根目录的构建 chunk（.js/.css 及 .br/.gz 变体）+ builds/ 懒加载元数据。
+// 不包含 manifest.webmanifest（HTML/链接指向 CDN 根，由镜像回源提供，无需上传到 hash 目录）
+// 与 sw.js（静态入口，同样由回源提供）。
 // 注：workbox 运行时已内联进 sw.js（inlineWorkboxRuntime），不再有独立 workbox-*.js 文件
+const STATIC_DIRS_RE = /^(?:imgs|fonts|icons|skills|emojis|uploads)\//
+const BUILD_ASSET_RE = /^builds\//
+const BUILD_CHUNK_RE = /\.(?:js|css)(?:\.(?:br|gz))?$/
+
+function isBuildAsset(relativePath) {
+  if (STATIC_DIRS_RE.test(relativePath)) return false // 静态资源目录（font.css 等）不走 hash 目录
+  if (BUILD_ASSET_RE.test(relativePath)) return true
+  if (!BUILD_CHUNK_RE.test(relativePath)) return false
+  if (relativePath === 'sw.js') return false // sw.js 是静态入口，不走 hash 目录
+  return true
+}
+
 function collectDefaultFiles() {
-  const files = []
-  const nuxtDir = path.join(BASE_DIR, '_nuxt')
-  if (fs.existsSync(nuxtDir)) {
-    files.push(...getAllFiles(nuxtDir))
-  }
-  if (fs.existsSync(BASE_DIR)) {
-    const rootFiles = fs.readdirSync(BASE_DIR)
-      .filter(f => f === 'manifest.webmanifest')
-      .map(f => path.join(BASE_DIR, f))
-    files.push(...rootFiles)
-  }
-  return files
+  return getAllFiles(BASE_DIR).filter(file => {
+    const relativePath = path.relative(BASE_DIR, file).replace(/\\/g, '/')
+    return isBuildAsset(relativePath)
+  })
 }
 
 // COS 配置
@@ -300,7 +307,7 @@ async function main() {
     }
     files = getAllFiles(SOURCE_DIR)
   } else {
-    // 默认：收集 _nuxt/ + manifest.webmanifest
+    // 默认：收集扁平化构建产物（public 根目录，不含 manifest）
     files = collectDefaultFiles()
   }
 
@@ -311,7 +318,7 @@ async function main() {
   }
 
   console.log(`📦 找到 ${files.length} 个文件`)
-  console.log(`📂 来源: ${subDir ? SOURCE_DIR : '_nuxt/ + manifest.webmanifest'}`)
+  console.log(`📂 来源: ${subDir ? SOURCE_DIR : '构建产物（public 根目录，不含 manifest）'}`)
   console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 10}）`)
 
   // 清空远程目录

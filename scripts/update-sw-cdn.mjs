@@ -80,9 +80,10 @@ if (!existsSync(swPath)) {
 let swContent = readFileSync(swPath, "utf-8");
 
 // 替换 precacheAndRoute 中的所有静态资源路径为 CDN 路径
-// 匹配 url:"_nuxt/...", url:"manifest.webmanifest" 等
+// 匹配扁平化后的构建产物 url:"entry.<hash>.js"、url:"<hash>.css"、url:"builds/*.json"、
+// url:"*.js.br"/"*.css.gz" 等，以及 url:"manifest.webmanifest"
 // 注：workbox 运行时已通过 inlineWorkboxRuntime 内联进 sw.js，无需再处理 workbox 导入
-const precacheRegex = /url:"(_nuxt\/[^"]+|manifest\.webmanifest|[^"]+\.json)"/g;
+const precacheRegex = /url:"([^"]+\.(?:js|css|json)(?:\.(?:br|gz))?|manifest\.webmanifest)"/g;
 const precacheMatches = [...swContent.matchAll(precacheRegex)];
 
 if (precacheMatches.length > 0) {

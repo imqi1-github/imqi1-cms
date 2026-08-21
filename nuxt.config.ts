@@ -285,7 +285,8 @@ export default defineNuxtConfig({
 
   app: {
     baseURL: "/",
-    buildAssetsDir: "/_nuxt/",
+    // 构建产物扁平化：直接放在 cdnURL 根下（如 /static/<hash>/entry.<hash>.js），去掉 _nuxt/ 层级
+    buildAssetsDir: "/",
     cdnURL: cdnURL,
     head: {
       htmlAttrs: {
