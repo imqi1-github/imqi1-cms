@@ -454,8 +454,8 @@ docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysqldump
 容器仅对外暴露 `${DEPLOY_PORT}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
 
 > ⚠️ **数据持久化与安全**
-> - MySQL 数据存于 `mysql-data` 卷、用户上传存于 `uploads` 卷；带 Redis 版本下其数据存于 `redis-data` 卷。
-> - Docker 部署下用户上传已由 `uploads` 具名卷持久化，重建镜像不会丢失，**无需**额外设置 `UPLOADS_DIR`（非 Docker 的裸机部署才需要，见下文第 8 节）。若确实要改上传路径，`compose` 的卷挂载点会自动跟随 `UPLOADS_DIR`，但指向 `/app/.output/public/uploads` 之外的新路径时需确保容器内 `node` 用户对其有写权限。
+> - MySQL 数据存于 `mysql-data` 卷、带 Redis 版本下 Redis 数据存于 `redis-data` 卷。
+> - 用户上传目录是 **bind mount**：宿主目录 `UPLOADS_DIR`（默认项目根 `uploads/`，本地文件系统直接可见）挂载到容器内固定路径 `/app/.output/public/uploads`。重建镜像不丢失，上传文件在宿主机即可直接访问/备份。Linux 上若容器内 `node` 用户写不进去（EACCES），需自行 `chown` 该宿主目录。
 > - `docker compose down` **不会**删除数据卷；仅 `docker compose down -v` 会清空所有数据，请谨慎使用。
 > - 首次 `up -d --build` 会执行 Bun 构建，耗时较长，属正常现象。
 
@@ -656,7 +656,7 @@ type ChangelogItem = {
 | 现象 | 排查方向 |
 | --- | --- |
 | 启动报 Prisma 相关错误、查询报模型 / 字段不存在 | 忘记执行 `bun prisma generate`，或修改 `schema.prisma` 后未重新生成 Client。 |
-| 重新打包后 `uploads/` 下之前上传的文件全部消失 | 裸机部署未设置 `UPLOADS_DIR`，`bun run build` 会重建 `.output/`。把 `UPLOADS_DIR` 指向 `.output` 之外的独立目录；Docker 部署已用 `uploads` 具名卷持久化，无此问题。 |
+| 重新打包后 `uploads/` 下之前上传的文件全部消失 | 裸机部署未设置 `UPLOADS_DIR`，`bun run build` 会重建 `.output/`。把 `UPLOADS_DIR` 指向 `.output` 之外的独立目录；Docker 部署已用 bind mount（`UPLOADS_DIR` 默认项目根 `uploads/`）持久化，无此问题。 |
 | 本地 `bun run preview` 时页脚音乐、高德地图等被拦截 | CSP 仅在生产构建注入，会拦第三方直链 / 脚本。把 `site.config.ts` 的 `security.enableCsp` 临时改 `false`，验证完改回 `true`。 |
 | Bun 相关命令异常 | 项目要求 Bun ≥ 1.3（`packageManager` 锁定 `bun@1.3.10`），版本过低请升级。 |
 | 小程序请求 `/api/mini/*` 返回 401 / 签名校验失败 | 主站 `MINI_API_SECRET` 与小程序 `VITE_MINI_API_SECRET` 必须完全一致；其中一端留空时另一端也必须留空。 |

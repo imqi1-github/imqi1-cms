@@ -32,10 +32,6 @@ ENV NODE_ENV=production \
     NITRO_PORT=3000 \
     PORT=3000
 
-# 本地上传目录（与 compose 的 UPLOADS_DIR / 卷挂载点一致），随 build ARG 预建 + chown。
-ARG UPLOADS_DIR=/app/.output/public/uploads
-ENV UPLOADS_DIR=${UPLOADS_DIR}
-
 COPY --from=builder /app/.output ./.output
 
 # 覆盖被裁剪的 undici：Nitro/nft 对 undici trace 不完整，缺 index.js 会导致
@@ -43,8 +39,9 @@ COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/node_modules/undici ./.output/server/node_modules/undici
 
 # 预建运行时写入目录并交给非 root 的 node 用户（root 写入的内容 node 无法再写）。
-RUN mkdir -p /app/.nitro/cache /app/.data/storage "${UPLOADS_DIR}" /app/.sessions /app/logs/mail \
-    && chown -R node:node /app/.nitro /app/.data "${UPLOADS_DIR}" /app/.sessions /app/logs
+# 上传目录固定为 /app/.output/public/uploads（compose bind mount 挂载点）。
+RUN mkdir -p /app/.nitro/cache /app/.data/storage /app/.output/public/uploads /app/.sessions /app/logs/mail \
+    && chown -R node:node /app/.nitro /app/.data /app/.output/public/uploads /app/.sessions /app/logs
 
 USER node
 EXPOSE 3000

@@ -9,9 +9,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.noredis
-      args:
-        # 预建 + chown 上传目录，与下方 environment / 卷挂载点同源。
-        UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
     image: imqi1-nodejs:latest
     container_name: imqi1-app
     restart: unless-stopped
@@ -20,12 +17,13 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: "3306"
-      UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
+      # 容器内上传目录固定；UPLOADS_DIR（.env）表示宿主演路径，见下方 volumes。
+      UPLOADS_DIR: /app/.output/public/uploads
     env_file:
       - ../.env
     volumes:
-      # 用户上传文件持久化；挂载点跟随 UPLOADS_DIR。
-      - uploads:${UPLOADS_DIR:-/app/.output/public/uploads}
+      # 本地上传目录 bind mount：宿主 UPLOADS_DIR（默认项目根/uploads）→ 容器内 /app/.output/public/uploads
+      - ${UPLOADS_DIR:-../uploads}:/app/.output/public/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -57,4 +55,3 @@ services:
 
 volumes:
   mysql-data:
-  uploads:

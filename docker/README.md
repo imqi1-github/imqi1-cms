@@ -19,6 +19,7 @@
 | `DB_NAME` | 库名，compose 建库与导入 `init-db.sql` 都用它 |
 | `DB_USER` | 应用连接的**普通用户**。**不能设为 `root`**：MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设成 `root` 会在 entrypoint 直接报错退出、容器无限重启。root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`） |
 | `DEPLOY_PORT` | 宿主对外端口（默认 `3000`） |
+| `UPLOADS_DIR` | 本地上传目录的**宿主路径**（bind mount）。默认 `../uploads`（即项目根 `uploads/`，本地文件系统直接可见）；容器内挂载点固定为 `/app/.output/public/uploads`。裸机部署则指应用直接写入的目录。不设置即用默认 |
 
 `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，无需填写。
 
