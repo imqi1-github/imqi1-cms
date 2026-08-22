@@ -1,10 +1,8 @@
-# 不带 Redis 版本：应用（Node）+ MySQL 8
-# 使用：在项目根目录执行
-#   docker compose --env-file .env -f docker/docker-compose.noredis.yml up -d --build
-# 本版本不烘焙任何 Redis 配置（构建时 getRedisConfig() 返回 null，
-# ISR 走文件系统缓存、搜索缓存关闭），也不创建 redis 容器/卷。
-# 需要 Redis 的部署请用 docker-compose.yml（见 docker/README.md）。
-# 所有 ../ 相对路径均指项目根目录（compose 文件位于 docker/ 子目录）。
+# 不带 Redis 版本：应用 + MySQL 8，ISR 走文件系统缓存、搜索缓存关闭，无 redis 容器/卷。
+# 运行：项目根目录执行 docker compose --env-file .env -f docker/docker-compose.noredis.yml up -d --build
+
+# 固定项目名（默认取配置文件所在目录名），决定卷名前缀，两套文件保持一致。
+name: imqi1-cms
 
 services:
   app:
@@ -12,30 +10,21 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.noredis
       args:
-        # 传给 Dockerfile 用于动态预建 + chown 上传目录，与下方 environment / 卷挂载点同源。
+        # 预建 + chown 上传目录，与下方 environment / 卷挂载点同源。
         UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
-        # 无 Redis 构建参数：本版本 ISR 走文件系统缓存、搜索缓存关闭。
     image: imqi1-nodejs:latest
     container_name: imqi1-app
     restart: unless-stopped
     ports:
       - "${DEPLOY_PORT:-3000}:3000"
     environment:
-      # 覆盖 .env 中的连接目标，指向 compose 内的服务名
       DB_HOST: mysql
       DB_PORT: "3306"
-      # 本地上传目录：应用运行时（getUploadsDir）与下方卷挂载点共用同一路径，
-      # 保证不设也能对上默认的 .output/public/uploads。若在 .env/shell 中设置了
-      # UPLOADS_DIR，二者会一起跟随，避免写入位置与持久化卷错配。
       UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
     env_file:
       - ../.env
     volumes:
-      # 用户上传文件持久化（应用运行时写入）；挂载点跟随 UPLOADS_DIR。
-      # 注意：若把 UPLOADS_DIR 指向 /app/.output/public/uploads 之外的路径，
-      # 该路径在镜像中不存在时，具名卷首次挂载会以 root 属主创建，非 root 的
-      # node 用户可能无法写入（EACCES）。此时需在 Dockerfile 预建该目录并
-      # chown node:node，或改用已 chown 的路径。
+      # 用户上传文件持久化；挂载点跟随 UPLOADS_DIR。
       - uploads:${UPLOADS_DIR:-/app/.output/public/uploads}
     depends_on:
       mysql:
@@ -46,12 +35,10 @@ services:
     container_name: imqi1-mysql
     restart: unless-stopped
     environment:
-      # root 密码：MySQL 镜像强制要求设置，且 root 账户无法物理删除。
-      # 但应用连接与下方 healthcheck 全部使用 nodejs，root 仅存在、不被使用。
+      # root 与 nodejs 普通用户密码都用 DB_PASSWORD；应用与 healthcheck 只用 nodejs。
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: ${DB_NAME:-imqi1}
-      # 首次初始化（数据卷为空）时自动创建 nodejs 用户，并授予 MYSQL_DATABASE 全部权限。
-      # 官方镜像仅在首次初始化时执行这些变量；已存在的卷不会重建用户。
+      # ⚠️ 不能设为 root（MYSQL_USER 只用于创建普通用户，root 会报错起不来）
       MYSQL_USER: ${DB_USER:-nodejs}
       MYSQL_PASSWORD: ${DB_PASSWORD:-root}
     command:
@@ -59,15 +46,10 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql-data:/var/lib/mysql
-      # 数据库自动初始化：MySQL 官方镜像会在「数据目录为空」（即首次创建）时，
-      # 自动按文件名顺序执行 /docker-entrypoint-initdb.d/ 下的 .sql，且默认库为
-      # MYSQL_DATABASE（DB_NAME）。init-db.sql 只建表/插数据、不含库名，正好导入该库。
-      # 因此首次 `docker compose up` 即完成建表 + 默认设置 + 示例数据，无需再手动初始化。
-      # 注意：仅当 mysql-data 卷为空时才会执行；卷已有数据则跳过（不会覆盖已有数据）。
+      # 卷为空时首次启动自动执行 init-db.sql（建表 + 默认数据）；卷已有数据则跳过。
       - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      # 用 nodejs 应用账户探活：只有当 nodejs 用户初始化完成后才判定 healthy，
-      # app 因此会等到用户就绪再启动，避免启动初期的 Access denied。
+      # 用应用账户探活，nodejs 就绪后才启动 app，避免启动初期 Access denied。
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-nodejs}", "-p${DB_PASSWORD:-root}"]
       interval: 10s
       timeout: 5s

@@ -374,13 +374,15 @@ cp .env.example .env
 编辑 `.env`，至少修改以下几项：
 
 ```bash
-DB_PASSWORD="改成强密码"          # MySQL root 密码，compose 会用它建库
+DB_PASSWORD="改成强密码"          # MySQL 密码（root 与普通用户共用），compose 用它建库
 DB_NAME="imqi1-nodejs"           # 库名，可自定义；compose 建库与导入 SQL 都用它
-DB_USER="root"
+DB_USER="nodejs"                 # 应用连接的普通用户；⚠️ 不能设为 root，见下
 DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 ```
 
 > `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本，并在 `.env` 填 `REDIS_HOST_PROD`（实际烘焙地址固定为 compose 服务名 `redis`，端口 6379、无密码，无需另填）；不需要就选不带 Redis 的版本即可。其它 COS、高德地图 Key 等按需填写。
+>
+> ⚠️ **`DB_USER` 不能设为 `root`**：compose 会把它映射成 MySQL 镜像的 `MYSQL_USER`，而 MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设为 `root` 会在 entrypoint 阶段直接报错退出、容器无限重启。请使用普通用户名（如 `nodejs`），root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`），应用与 healthcheck 全程只使用 `DB_USER` 这个普通用户。
 
 改动 site.config.ts 的配置，改成你自己的，比如 CDN 路径。
 
@@ -660,3 +662,4 @@ type ChangelogItem = {
 | 小程序请求 `/api/mini/*` 返回 401 / 签名校验失败 | 主站 `MINI_API_SECRET` 与小程序 `VITE_MINI_API_SECRET` 必须完全一致；其中一端留空时另一端也必须留空。 |
 | 改了 `DB_NAME` 后 Docker 节里的 `mysql` / `mysqldump` 命令连不上 | 这些命令请用 `"$DB_NAME"` 而非硬编码库名，详见 [「使用 Docker 部署」](#使用-docker-部署)。 |
 | Firefox 下实况照片无法播放 | 多为 HEVC 编码，Firefox 暂不支持，会自动降级为静态图；如需播放需服务端转码。 |
+| Docker 部署时 `imqi1-mysql` 容器无限重启，日志报 `MYSQL_USER="root" ... cannot be used for the root user` | `.env` 的 `DB_USER` 误设为 `root`。改为普通用户名（如 `nodejs`）后重新 `docker compose ... up -d`；若数据卷从未成功初始化，mysql 会全新建库并自动导入 `init-db.sql`。 |

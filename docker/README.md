@@ -9,6 +9,19 @@
 
 > 注意：`.env` 只保留 `REDIS_*_DEV` / `REDIS_*_PROD` 各四个环境变量即可；**不需要任何 `COMPOSE_PROFILES`**。是否启用 Redis 由「选用哪套 compose 文件」决定，而非环境变量魔法。
 
+## .env 关键变量
+
+运行命令统一从项目根目录的 `.env` 读变量（`--env-file .env`）。至少需设置以下四项：
+
+| 变量 | 说明 |
+| --- | --- |
+| `DB_PASSWORD` | MySQL 密码（root 与普通用户共用），compose 用它建库 |
+| `DB_NAME` | 库名，compose 建库与导入 `init-db.sql` 都用它 |
+| `DB_USER` | 应用连接的**普通用户**。**不能设为 `root`**：MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设成 `root` 会在 entrypoint 直接报错退出、容器无限重启。root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`） |
+| `DEPLOY_PORT` | 宿主对外端口（默认 `3000`） |
+
+`DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，无需填写。
+
 ## 带 Redis 版本
 
 ```bash
