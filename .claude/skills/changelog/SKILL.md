@@ -1,6 +1,6 @@
 ---
 name: changelog
-description: 依据 git 实际改动生成网站更新日志，写入根目录 changelogs.json，并提示到后台导入。核心是「看 git diff 里的改动」而不是仅靠提交信息。调用可带参数 N 指定回看多少条提交；不带参数则取 changelogs.json 最近记录的 createTime 作游标向后推到最新；无记录则取最近 3 天。用于每次迭代后整理对外发布说明。
+description: 依据 git 实际改动生成网站更新日志，写入根目录 changelogs.json，并提示到后台导入。核心是「看 git diff 里的改动」而不是仅靠提交信息。changelogs.json 是待导入暂存文件，每次**覆盖为仅含本批最新记录、不携带旧纪录**。调用可带参数 N 指定回看多少条提交；不带参数则取 changelogs.json 里最大的 createTime 作游标向后推到最新，（按提交 hash 精确定位并排除上一批最后一条，避免重复摘抄）；无记录则取最近 3 天。用于每次迭代后整理对外发布说明。
 ---
 
 # 生成更新日志（changelog）
@@ -20,17 +20,24 @@ git log -N --pretty=format:"%h|%ad|%s" --date=format:"%Y-%m-%d %H:%M" HEAD
 从这段输出里取要处理的那批提交。
 
 **模式 1（默认，靠 changelogs.json 游标往前推）**
-1. 取根目录 `changelogs.json` 里**最大的** `createTime` 作游标 = 上一次生成日志锚定的最新提交时间：
+1. 取根目录 `changelogs.json` 里**最大的** `createTime` 作游标 = 上一次生成日志锚定的最新提交时间（取最大值可覆盖整个文件——记录即使乱序/手工补录也能找到真正的锚点）：
 ```bash
-node -e "const a=require('./changelogs.json');let m='';for(const r of a){const t=r.createTime||'';if(t>m)m=t}console.log(m)"
+cursor="$(node -e "const a=require('./changelogs.json');let m='';for(const r of a){const t=r.createTime||'';if(t>m)m=t}console.log(m)")"
 ```
-2. 用它过滤出「比游标更新」的提交（**必须丢掉恰好等于游标那一分钟的交界提交**——它是上一批的最后一条，不能重复摘录）：
+2. **按提交 hash 精确定位交界边界，再取「边界之后」的提交**。这样既不重复上一批（上一批最后一条被排除），也不会漏掉与游标同一分钟但更晚的新提交——旧写法 `--after <分钟> + grep -v` 会用「分钟串」一刀切，把同分钟的新提交一起吞掉（丢归「覆盖不全」，把边界外的同分钟提交删掉归「含上次内容」，两头都错）：
 ```bash
-cursor="<上一步得到的值，如 2026-08-20 23:42>"
-git log --pretty=format:"%h|%ad|%s" --date=format:"%Y-%m-%d %H:%M" --after "$cursor" \
-  | grep -vE "^[0-9a-f]+\|${cursor}\|"
+# 上一批的最后一条 = git log 里第一个「提交时间分钟 == 游标」的提交
+boundary="$(git log --pretty=format:'%H|%ad' --date=format:'%Y-%m-%d %H:%M' HEAD \
+  | awk -F'|' -v c="$cursor" '$2==c {print $1; exit}')"
+if [ -n "$boundary" ]; then
+  # boundary..HEAD = 严格在边界之后的全部提交（线性历史等价按时间递增；同分钟更晚的新提交被正确保留，边界本身被排除）
+  git log "${boundary}..HEAD" --pretty=format:"%h|%ad|%s" --date=format:"%Y-%m-%d %H:%M"
+else
+  # 游标对应不到提交（历史被改写/导入，无同分钟提交）→ 回退时间阈值；此时无法精确排除，尽量只丢交界那一分钟的提交
+  git log --pretty=format:"%h|%ad|%s" --date=format:"%Y-%m-%d %H:%M" --after "$cursor" \
+    | grep -vE "^[0-9a-f]+\|${cursor}\|"
+fi
 ```
-（`git log --after` 会把「等于游标时刻」的交界提交也包含进来，`grep -v` 把它丢掉，剩下的就是真正要总结的新提交。）
 
 **模式 2（changelogs.json 为空/无记录，或游标对应不到提交时）——回退最近 3 天**
 ```bash
@@ -87,12 +94,14 @@ git diff <最早那条提交>^..HEAD  # 该批整体 diff（看合并后的用�
 
 1. `createTime` = **本批最新一条提交的提交时间**（这样下次运行能无缝锚定游标，不重复）：
    `git log -1 --format=%ad --date=format:"%Y-%m-%d %H:%M"`
-2. Read 现有 `changelogs.json`，把新记录**放到数组最前**（新在前，与后台/前台按 create_time desc 展示一致）；保留原记录不动。保持既有缩进风格（记录对象内部属性、条目对象单行紧凑）。
-3. 用 Write 写回（或拿编辑工具改）。写前确认不会重复：若本批最新提交时间已在文件里出现过（等于某条 createTime），已在别处生成过 → 提示用户，不再混入。
+2. **`changelogs.json` 是「待导入」暂存文件，只保留本批新记录，不携带旧纪录**（旧条目入库后即失效；若连同旧记录一起保留，重复导入会产生重复行）。故用 Write 整体覆盖——数组里只有本批这一条记录（`createTime` + `entries`），旧纪录全部丢弃，数组长度恒为 1。保持既有缩进风格（记录对象内部属性、条目对象单行紧凑），结构沿用上一节 JSON 示例。
+3. **写前确认两件事，都满足才覆盖：**
+   - **非空**：本批有内容才写；若「模式 1 过滤后为空」且文件已有记录 → 按第一节提示「无新提交」，**不动文件**（先读现有文件再决定，别把文件覆盖成空数组）。
+   - **不重叠**：新 `createTime` > 现有文件里的 `createTime`（模式下自动成立，边界已排除上一批）。若新 `createTime` ≤ 现有 `createTime`（模式 0 手动指定 N 回溯到更早的提交才会出现），说明本批与已入库记录重叠 → 提示用户，**不要覆盖**（否则游标倒退、下次又重复处理）。
 
 ## 五、发布提示（必须告知）
 写完后提醒用户到后台导入，文案类似：
-> 已更新根目录 `changelogs.json`（新增 1 条记录 / N 个条目）。去后台 **`/admin/changelogs` → 「导入 JSON」→ 选择根目录 `changelogs.json` → 导入** 即可入库，前台 `/changelogs` 会按月展示。
+> 已更新根目录 `changelogs.json`（覆盖为仅含本批 1 条记录 / N 个条目，旧纪录已清除）。去后台 **`/admin/changelogs` → 「导入 JSON」→ 选择根目录 `changelogs.json` → 导入** 即可入库，前台 `/changelogs` 会按月展示。
 > ⚠️ 导入会**新增** DB 记录；若重复导入会产生重复行，需要重导可先在后台删除对应记录。
 
 ## 边界
