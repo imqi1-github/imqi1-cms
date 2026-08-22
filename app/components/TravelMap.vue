@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {loadAmap} from "~/utils/amap-loader";
+import {loadAmap, resolveAmapClientConfig} from "~/utils/amap-loader";
 import { parseEmojiContent } from "~/utils/emoji";
 import type {
   AMapClusterEvent,
@@ -24,13 +24,6 @@ const props = defineProps<{
   maxZoom?: number;
 }>();
 
-const config = useRuntimeConfig();
-const amapUseProxy = Boolean(config.public.amapUseProxy);
-const amapKey = String(config.public.amapKey || "");
-const amapSecurityCode = String(config.public.amapSecurityCode || "");
-// 运行时判断地图是否可加载：走代理则客户端无需持 key（成败由服务端代理路由决定，key 不暴露给浏览器）；
-// 否则需要 key + securityCode 齐全。不依赖构建期固化，生产运行时补配 env 即可生效。
-const amapEnabled = amapUseProxy || Boolean(amapKey && amapSecurityCode);
 const router = useRouter();
 
 // 跟随站点深浅模式
@@ -654,10 +647,13 @@ function createCluster(points: MapPoint[]) {
 }
 
 onMounted(async () => {
-  if (!amapEnabled) {
+  // key/securityCode 运行时获取（不烘焙进包）：代理模式返回空 key（由 /_AMapService 注入），
+  // 直连模式从 /api/amap/config 下发。生产/开发运行时补配 AMAP_KEY / AMAP_SECURITY_CODE 即可生效。
+  const { useProxy: amapUseProxy, key: amapKey, securityJsCode: amapSecurityCode } = await resolveAmapClientConfig();
+  if (!amapUseProxy && (!amapKey || !amapSecurityCode)) {
     loadError.value = true;
     loading.value = false;
-    console.warn("[TravelMap] 地图未启用：缺少 AMAP_KEY / AMAP_SECURITY_CODE。非代理模式需在构建时 .env 配置；代理模式可在构建时或生产运行环境配置（AMAP_KEY 或 NUXT_AMAP_KEY）。");
+    console.warn("[TravelMap] 地图未启用：缺少 AMAP_KEY / AMAP_SECURITY_CODE。直连模式需在运行环境（开发/生产）设置这两个变量。");
     return;
   }
   try {

@@ -158,7 +158,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
 生产环境采用「**本地打包 → 上传产物 → 服务器运行 Node 服务**」的部署模式。
 
-> 📌 **关于端口号**：下文出现的端口均为各路径的默认示例，均可任意修改——开发服务器默认 `3000`、裸机生产示例用 `DEPLOY_PORT=4000`、Docker 示例用 `DEPLOY_PORT=3000`，只需保持 `DEPLOY_PORT`、Nginx 反代目标与容器端口映射三者一致即可。
+> 📌 **关于端口号**：下文出现的端口均为各路径的默认示例，均可任意修改——开发服务器默认 `3000`、裸机生产示例用 `DEPLOY_PORT=3000`、Docker 示例用 `DEPLOY_PORT=3000`，只需保持 `DEPLOY_PORT`、Nginx 反代目标与容器端口映射三者一致即可。
 
 ### 1. 准备开发环境
 
@@ -190,7 +190,7 @@ SERVER_UPLOAD_DIR="/www/wwwroot/glass"
 SERVER_UPLOAD_CONCURRENCY="8"      # 上传并发数（可选）
 
 # 生成 Nginx 配置所需
-DEPLOY_PORT=4000
+DEPLOY_PORT=3000
 DEPLOY_PROJECT_ROOT_DIR=/www/wwwroot/glass
 DEPLOY_SITE_DOMAIN=your-domain.com
 DEPLOY_CDN_DOMAIN=cdn.your-domain.com
@@ -277,12 +277,12 @@ DB_PASSWORD="your_password"
 DB_NAME="nodejs"
 
 # 运行环境
-PORT=4000
+PORT=3000
 NODE_PROJECT_NAME="glass"
+# 必须为完整单词 production（写 prod / 留空会按非生产处理）：构建与启动都需要。
+# 非 production 时 referer / 小程序签名校验会跳过、上传目录解析错误、CDN / ISR / cookie secure 不生效。
 NODE_ENV="production"
 UV_THREADPOOL_SIZE=64
-PROD=1
-ROOT_DOMAIN="your-domain.com"
 
 # 本地上传目录（强烈建议设置为 .output 之外的绝对路径）
 # 不设时默认写入 .output/public/uploads，而每次重新打包 `bun run build` 会
@@ -293,7 +293,10 @@ UPLOADS_DIR="/www/wwwroot/glass/uploads"
 # Redis 环境变量（见上文「生产环境搭建」第 2 节）。
 
 # 高德地图，可选
-# 生产走服务端代理：打包时可留空，部署后在运行环境设置即可生效（或 NUXT_AMAP_KEY / NUXT_AMAP_SECURITY_CODE）
+# key / securityCode 均为运行时读取，不烘焙进构建产物：
+# - 生产走服务端 nitro 代理（site.config 的 amap.useServerProxy=true）：浏览器不持 key，
+#   部署后在运行环境设置 AMAP_KEY / AMAP_SECURITY_CODE 即可生效，无需重新打包。
+# - 开发环境恒直连：浏览器需 key 加载高德 JS，开发运行时从环境变量读取。
 AMAP_KEY="your_amap_key"
 AMAP_SECURITY_CODE="your_amap_security_code"
 
@@ -335,7 +338,7 @@ bun run restart:server -- stop  # 停止
 bun run restart:server -- start # 启动
 ```
 
-服务启动后，还需配置 Nginx 将其（默认 `127.0.0.1:4000`）反向代理到对外域名，并处理 HTTPS、PWA 脚本缓存与静态资源重定向。可执行 `bun run nginx:generate` 根据 `.env` 中的 `*_PROD` 变量生成参考配置。
+服务启动后，还需配置 Nginx 将其（默认 `127.0.0.1:3000`）反向代理到对外域名，并处理 HTTPS、PWA 脚本缓存与静态资源重定向。可执行 `bun run nginx:generate` 根据 `.env` 中的 `*_PROD` 变量生成参考配置。
 
 ### 10. 查看运行日志
 
@@ -345,7 +348,7 @@ bun run restart:server -- start # 启动
 - 使用 PM2 时，通过 `pm2 logs` 查看；
 - 直接运行时，观察终端输出或将 `node .output/server/index.mjs` 的 stdout/stderr 重定向到日志文件。
 
-看到类似 `Listening on http://[::]:4000` 的输出即表示服务已成功启动。
+看到类似 `Listening on http://[::]:3000` 的输出即表示服务已成功启动。
 
 ## 使用 Docker 部署
 
@@ -500,7 +503,7 @@ const _cdnUrl = "https://cdn.imqi1.com"; // CDN 根地址（未用 CDN 可与站
 | `build.brotliCompression` | 构建时是否预压缩静态资源为 brotli（`.br`），需 Nginx / CDN 配合发送预压缩文件。 |
 | `features.miniApi` | 是否启用小程序 API。关闭后 `server/api/mini` 不注册、也不打入生产包。 |
 | `features.miniComment` | 是否开启小程序评论。关闭后小程序端不展示评论区，服务端评论接口也不受理。 |
-| `amap` | 高德地图相关：是否走服务端代理路由 `/_AMapService`、是否展示地图入口胶囊（分开发 / 生产）。地图能否加载由运行时判断，key 可在构建时或生产运行环境配置。 |
+| `amap` | 高德地图相关：`useServerProxy` 生产是否走服务端 nitro 代理路由 `/_AMapService`（开发恒直连）、`entryLinks` 是否展示地图入口胶囊（分开发 / 生产）。地图能否加载由运行时判断，key / securityCode 运行时从环境变量读取（不打包进产物），生产代理模式下浏览器不持 key。 |
 | `pageTransition.fadeDuration` | 页面过渡淡入淡出时长（ms），也是各页面等待过渡完成再启动元素动画的统一延迟。 |
 | `homeCustomText` | 首页自定义 HTML 文案。 |
 | `links` | 友链页的博客组织入口（`blogOrganizations`）与本站资料（`profile`，供他人添加友链）。 |

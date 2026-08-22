@@ -25,9 +25,10 @@ export default defineEventHandler(event => {
     return;
   }
 
-  // 优先检查：SSR 内部请求标识；未配置 secret 时兼容旧的 true 值，避免旧部署失效
+  // 优先检查：SSR 内部请求标识；未配置 secret 时兼容旧的 true 值，避免旧部署失效。
+  // 应用层环境变量直接读 process.env，不经 Nuxt runtimeConfig 注入。
   const ssrInternalRequest = event.node.req.headers["x-ssr-internal-request"];
-  const ssrInternalRequestSecret = useRuntimeConfig().ssrInternalRequestSecret || "";
+  const ssrInternalRequestSecret = process.env.SSR_INTERNAL_REQUEST_SECRET || "";
   const isSsrInternalRequest = ssrInternalRequestSecret
     ? ssrInternalRequest === ssrInternalRequestSecret
     : ssrInternalRequest === "true";

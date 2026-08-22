@@ -22,9 +22,7 @@ const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 const redisConfig = getRedisConfig();
 const amapRuntime = resolveAmapRuntimeConfig({
   nodeEnv: process.env.NODE_ENV,
-  key: process.env.AMAP_KEY || "",
-  securityJsCode: process.env.AMAP_SECURITY_CODE || "",
-  useNginxProxy: siteConfig.amap.useNginxProxy,
+  useServerProxy: siteConfig.amap.useServerProxy,
 });
 
 export default defineNuxtConfig({
@@ -46,13 +44,12 @@ export default defineNuxtConfig({
   sourcemap: false,
 
   // devServer: {
-  //   port: 4000,
+  //   port: 3000,
   // },
 
   runtimeConfig: {
-    amapKey: process.env.AMAP_KEY || "",
-    amapSecurityCode: process.env.AMAP_SECURITY_CODE || "",
-    ssrInternalRequestSecret: process.env.SSR_INTERNAL_REQUEST_SECRET || "",
+    // 高德 key/securityCode 不烘焙进包：运行时由服务端从 process.env 读取
+    //（见 server/routes/_AMapService 与 server/api/amap/config）。
     // Redis 配置：构建期从 REDIS_*_DEV/_PROD 解析并烘焙（见 shared/redis-config.ts）。
     // 生产运行时不再读取任何 Redis 环境变量；搜索缓存统一从这里取值，
     // ISR 缓存走上方 nitro storage / routeRules 的同一份 redisConfig（两者共用）。
@@ -62,9 +59,7 @@ export default defineNuxtConfig({
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
       buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
       rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
-      amapUseProxy: amapRuntime.useProxy,
-      amapKey: amapRuntime.publicKey,
-      amapSecurityCode: amapRuntime.publicSecurityJsCode,
+      amapUseServerProxy: amapRuntime.useProxy,
     },
   },
 

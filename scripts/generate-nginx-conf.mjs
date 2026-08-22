@@ -67,27 +67,6 @@ location = /feed {
     add_header Cache-Control "no-cache, no-store, must-revalidate";
 }
 
-# ============================================
-# 高德地图同源代理
-# 前端访问 /_AMapService/* → 转发给高德 API，避免跨域
-# ============================================
-location ^~ /_AMapService/ {
-    proxy_pass http://127.0.0.1:${portProd};
-    proxy_set_header Host $host:$server_port;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header REMOTE-HOST $remote_addr;
-    add_header X-Cache $upstream_cache_status;
-    proxy_set_header X-Host $host:$server_port;
-    proxy_set_header X-Scheme $scheme;
-    proxy_connect_timeout 30s;
-    proxy_read_timeout 86400s;
-    proxy_send_timeout 30s;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-}
-
 # CDN 重定向规则（静态资源）
 ${enableCdnRedirect ? `
 # 单文件重定向

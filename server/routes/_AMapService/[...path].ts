@@ -5,17 +5,16 @@ import { resolveAmapProxyTarget } from "#shared/amap-proxy";
 export default defineEventHandler(event => {
   const config = useRuntimeConfig();
 
-  if (!config.public.amapUseProxy) {
+  if (!config.public.amapUseServerProxy) {
     throw createError({
       statusCode: 404,
       statusMessage: "AMap proxy is disabled.",
     });
   }
 
-  // key 优先走 runtimeConfig（构建期 .env 或运行时 NUXT_AMAP_KEY 覆盖），
-  // 兜底直接读 process.env.AMAP_KEY，让生产环境直接设置 AMAP_KEY 也能在运行时生效。
-  const amapKey = config.amapKey || process.env.AMAP_KEY || "";
-  const amapSecurityCode = config.amapSecurityCode || process.env.AMAP_SECURITY_CODE || "";
+  // key/securityCode 不烘焙进包：运行时直接读 process.env（生产环境设 AMAP_KEY / AMAP_SECURITY_CODE 即可生效，无需重新打包）。
+  const amapKey = process.env.AMAP_KEY || "";
+  const amapSecurityCode = process.env.AMAP_SECURITY_CODE || "";
 
   if (!amapKey || !amapSecurityCode) {
     throw createError({

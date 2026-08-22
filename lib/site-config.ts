@@ -91,11 +91,9 @@ export interface SiteConfig {
   };
   /** 高德地图接入配置 */
   amap: {
-    /** 是否通过服务端同源代理路由 /_AMapService 获取地图密钥（key 不下发到浏览器）；开发和生产环境可分开配置 */
-    useNginxProxy: {
-      development: boolean;
-      production: boolean;
-    };
+    /** 生产环境是否通过服务端 nitro 同源代理路由 /_AMapService 获取地图密钥（key 不下发到浏览器）。
+     *  开发环境恒直连（key 直连 webapi.amap.com，运行时从环境变量读取），不再单独配置代理 */
+    useServerProxy: boolean;
     /** 是否在站点各处（订阅页 / 友链页 / 首页 / 留言板 / 关于页）展示指向地图页的入口胶囊；
      *  生产环境尚未配置高德 apikey 时可置为 false，避免出现指向「无法加载的地图页」的死链。
      *  开发、生产环境可分开配置（如开发默认开、生产待配好密钥后再开） */

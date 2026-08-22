@@ -1,5 +1,6 @@
 import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost } from "#shared/amap-proxy";
-import type { LoadAmapOptions, AmapWindow } from "~/types/utils/amap";
+import { useRuntimeConfig } from "#imports";
+import type { AmapClientConfig, LoadAmapOptions, AmapWindow } from "~/types/utils/amap";
 
 const AMAP_SCRIPT_CALLBACK = "__onAmapProxyLoaded" as const;
 
@@ -43,6 +44,22 @@ async function loadMissingPlugins(_AMap: typeof AMap, plugins: string[]) {
   });
 
   return _AMap;
+}
+
+// 运行时解析高德客户端配置：key/securityCode 不烘焙进包，直连模式从 /api/amap/config 获取
+//（服务端读 process.env）；代理模式浏览器不持 key，返回空串。
+export async function resolveAmapClientConfig(): Promise<AmapClientConfig> {
+  const config = useRuntimeConfig();
+  const useProxy = Boolean(config.public.amapUseServerProxy);
+  if (useProxy) {
+    return { useProxy, key: "", securityJsCode: "" };
+  }
+  const res = await $fetch<{ key?: string; securityCode?: string }>("/api/amap/config");
+  return {
+    useProxy,
+    key: res.key || "",
+    securityJsCode: res.securityCode || "",
+  };
 }
 
 export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AMap> {
