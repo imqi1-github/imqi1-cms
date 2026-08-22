@@ -74,20 +74,20 @@ const isHovering = ref(false);
 // 实况照片资源提取耗时较长时显示加载标识，避免用户误以为卡住
 const isLiveMediaLoading = ref(false);
 const showLiveLoadingTip = ref(false);
-// 视频元素是否已挂载：只在实际需要显示（悬浮/点击播放）时才挂载 <video>。
-// 若在提取完成后就常驻挂载一个 opacity:0 的 <video preload="auto">，未解码首帧的
-// 视频图层在部分浏览器（正常 GPU 合成路径，devtools 打开时走软件路径不复现）下
-// 会以白色矩形盖住静态图 → 白屏，悬浮播放后才“恢复”。
-const isVideoMounted = ref(false);
+// 视频层在提取完成后常驻挂载并预载解码，但置于图片层之下（模板里 <video> 在 <img> 之前，
+// 且 <img> 加了 relative 压在其上）：非交互时被不透明图片完整盖住，未解码首帧的视频层
+// 即使被浏览器在 GPU 合成路径下合成成白色矩形也看不见 → 不触发”白色矩形盖住静态图”白屏。
+// 悬浮/点击时靠图片淡出（imgOpacity 100→0）把已就绪的视频”露”出来，形成渐变。
+// 视频一直在 DOM 里，切换无需重新挂载/等首帧。
 
 // 移动端判定：移动端无 hover 事件，需要强制切换为点击播放模式并让按钮常驻
 const isMobile = useMediaQuery("(max-width: 768px)");
 // 实际生效的悬浮播放模式：移动端无论 props.hoverPlay 为何，都不走 hover 自动播放
 const effectiveHoverPlay = computed(() => props.hoverPlay && !isMobile.value);
 
-// 两个独立的透明度状态，用于交叉淡入淡出
+// 图片透明度：非交互 100，悬浮/播放时淡出到 0 露出下层视频（视频层本身不控制透明度，
+// 可见性完全由压在其上的图片决定）
 const imgOpacity = ref(100);
-const videoOpacity = ref(0);
 
 // 清理后的图片 URL
 const cleanSrc = computed(() => cleanLivePhotoUrl(props.src));
@@ -320,23 +320,31 @@ watch([shouldLoad, cleanSrc], async ([ready, src]) => {
 }, { immediate: true });
 
 // 存储定时器 ID，用于清除
-// let imgOpacityTimer: number | null = null;
-let videoOpacityTimer: number | null = null;
 let resetTimer: number | null = null;
-// 淡出结束后卸载 <video> 的定时器
-let videoUnmountTimer: number | null = null;
 
-// 淡出动画（300ms）结束后卸载视频元素，避免非交互状态下残留 opacity:0 的视频覆盖层。
-// 挂载/重播前需 clearTimeout 本定时器，防止快速进出时把正在播放的视频卸载掉。
-const scheduleVideoUnmount = () => {
-  if (videoUnmountTimer !== null) {
-    clearTimeout(videoUnmountTimer);
-  }
-  videoUnmountTimer = window.setTimeout(() => {
-    isVideoMounted.value = false;
-    videoUnmountTimer = null;
-  }, 350); // 略大于 opacity 过渡时长 300ms
-};
+/**
+ * 等视频首帧可解码显示（readyState≥2 或 loadeddata/canplay 事件）。
+ * 视频层已常驻挂载，绝大多数情况 readyState≥2 直接放行；仅当用户悬浮/点击发生在
+ * 首帧解码完成之前（极少）才短暂等待，避免图片淡出后露出的还是空白、再突兀弹出首帧。
+ * 解码失败（如 Firefox 不解 HEVC）也 resolve，由调用方对 `!videoRef.value` 的守卫兜底。
+ */
+function waitForVideoReady(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState >= 2) return Promise.resolve(); // HAVE_CURRENT_DATA：首帧已就绪
+  return new Promise(resolve => {
+    let timer: number | null = null;
+    const onReady = () => {
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("canplay", onReady);
+      video.removeEventListener("error", onReady);
+      if (timer !== null) clearTimeout(timer);
+      resolve();
+    };
+    video.addEventListener("loadeddata", onReady);
+    video.addEventListener("canplay", onReady);
+    video.addEventListener("error", onReady);
+    timer = window.setTimeout(onReady, 2000); // 长时间无事件也继续，避免悬浮后视频永不显示
+  });
+}
 
 // 鼠标悬浮 - 播放视频（仅悬浮播放模式）
 const handleMouseEnter = async () => {
@@ -349,51 +357,32 @@ const handleMouseEnter = async () => {
     return;
   }
 
-  // 清除所有之前的定时器
-  // if (imgOpacityTimer !== null) {
-  //   clearTimeout(imgOpacityTimer);
-  //   imgOpacityTimer = null;
-  // }
-  if (videoOpacityTimer !== null) {
-    clearTimeout(videoOpacityTimer);
-    videoOpacityTimer = null;
-  }
+  // 清除之前可能残留的重置定时器
   if (resetTimer !== null) {
     clearTimeout(resetTimer);
     resetTimer = null;
   }
 
-  // 懒挂载视频元素（仅在需要显示时挂载，避免常态 opacity:0 覆盖层在 GPU 合成路径下白屏）
-  if (!isVideoMounted.value) {
-    isVideoMounted.value = true;
+  // 视频层提取完成后已常驻挂载在图片层之下；若首帧还没解码完（极少）则稍等一下，
+  // 避免图片淡出后露出的还是空白、首帧再突兀弹出（readyState≥2 直接放行）
+  const videoEl = videoRef.value;
+  if (isUnmounted || !videoEl) {
+    return;
   }
-  // 取消之前可能已调度的卸载，防止快速进出时误卸载
-  if (videoUnmountTimer !== null) {
-    clearTimeout(videoUnmountTimer);
-    videoUnmountTimer = null;
-  }
+  await waitForVideoReady(videoEl);
 
-  // 等待 DOM 更新，确保 video 元素已渲染
-  await nextTick();
-
-  // ✅ 异步操作后检查：组件已卸载或 DOM 不存在则返回
-  if (isUnmounted || !videoRef.value) {
+  // ✅ 等待期间可能移出/卸载：组件已卸载、DOM 已卸载或鼠标已移开，则不再淡入
+  if (isUnmounted || !videoRef.value || !isHovering.value) {
     return;
   }
 
   // 先设置视频到开头
   videoRef.value.currentTime = 0;
 
-  // 交叉淡入淡出：
-  // 1. 先让视频淡入（0 -> 100）
-  videoOpacity.value = 100;
+  // 交叉淡入淡出：图片淡出（100 -> 0），把下面已就绪的视频"露"出来
+  imgOpacity.value = 0;
 
-  // 2. 等待一小段时间后，再让图片淡出
-  // imgOpacityTimer = window.setTimeout(() => {
-  //   imgOpacity.value = 0;
-  // }, 150); // 150ms 后让图片淡出
-
-  // 3. 开始播放视频
+  // 开始播放视频
   videoRef.value
     .play()
     .then(() => {
@@ -406,8 +395,7 @@ const handleMouseEnter = async () => {
       // ✅ 异步回调中也检查组件状态
       if (!isUnmounted) {
         // 播放失败时恢复显示图片
-        // imgOpacity.value = 100;
-        videoOpacity.value = 0;
+        imgOpacity.value = 100;
         isPlaying.value = false;
       }
     });
@@ -421,30 +409,14 @@ const handleMouseLeave = () => {
 
   if (!videoRef.value) return;
 
-  // 清除所有之前的定时器
-  // if (imgOpacityTimer !== null) {
-  //   clearTimeout(imgOpacityTimer);
-  //   imgOpacityTimer = null;
-  // }
-  if (videoOpacityTimer !== null) {
-    clearTimeout(videoOpacityTimer);
-    videoOpacityTimer = null;
-  }
+  // 清除可能残留的重置定时器
   if (resetTimer !== null) {
     clearTimeout(resetTimer);
     resetTimer = null;
   }
 
-  // 交叉淡入淡出：
-  // 1. 先让图片淡入（0 -> 100）
-  // imgOpacity.value = 100;
-
-  // 2. 等待一小段时间后，再让视频淡出
-  // videoOpacityTimer = window.setTimeout(() => {
-    videoOpacity.value = 0;
-  // }, 150); // 50ms 后让视频淡出
-
-  // 3. 暂停视频并重置进度
+  // 交叉淡入淡出：图片淡回（0 -> 100）盖住视频，暂停并重置进度
+  imgOpacity.value = 100;
   videoRef.value.pause();
   isPlaying.value = false;
 
@@ -454,8 +426,7 @@ const handleMouseLeave = () => {
     }
   }, 150); // 等待过渡完成后重置
 
-  // 淡出动画结束后卸载 video，避免非交互状态下残留 opacity:0 的视频覆盖层
-  scheduleVideoUnmount();
+  // 视频常驻挂载在图片层之下，无需卸载
 };
 
 // 点击播放/暂停（点击播放模式）
@@ -464,83 +435,47 @@ const handlePlayClick = async () => {
 
   if (!videoBlobUrl.value) return;
 
-  // 清除所有之前的定时器
-  // if (imgOpacityTimer !== null) {
-  //   clearTimeout(imgOpacityTimer);
-  //   imgOpacityTimer = null;
-  // }
-  if (videoOpacityTimer !== null) {
-    clearTimeout(videoOpacityTimer);
-    videoOpacityTimer = null;
-  }
+  // 清除可能残留的重置定时器
   if (resetTimer !== null) {
     clearTimeout(resetTimer);
     resetTimer = null;
   }
 
-  // 懒挂载视频元素（仅在需要播放时挂载，避免常态 opacity:0 覆盖层白屏）
-  if (!isVideoMounted.value) {
-    isVideoMounted.value = true;
-  }
-  if (videoUnmountTimer !== null) {
-    clearTimeout(videoUnmountTimer);
-    videoUnmountTimer = null;
-  }
+  if (!videoRef.value) return;
 
-  await nextTick();
-
-  if (videoRef.value) {
-    if (isPlaying.value) {
-      // 暂停
-      // imgOpacity.value = 100;
-      videoOpacityTimer = window.setTimeout(() => {
-        videoOpacity.value = 0;
-      }, 50);
-      videoRef.value.pause();
-      isPlaying.value = false;
-      // 淡出结束后卸载 video，避免非交互状态下残留 opacity:0 覆盖层
-      scheduleVideoUnmount();
-    } else {
-      // 播放
-      videoRef.value.currentTime = 0;
-      videoOpacity.value = 100;
-      // imgOpacityTimer = window.setTimeout(() => {
-      //   imgOpacity.value = 0;
-      // }, 50);
-      videoRef.value
-        .play()
-        .then(() => {
-          isPlaying.value = true;
-        })
-        .catch(err => {
-          console.error("[LivePhoto] 视频播放失败:", err);
-          // imgOpacity.value = 100;
-          videoOpacity.value = 0;
-          isPlaying.value = false;
-        });
-    }
+  if (isPlaying.value) {
+    // 暂停：图片淡回（0 -> 100）盖住视频
+    imgOpacity.value = 100;
+    videoRef.value.pause();
+    isPlaying.value = false;
+  } else {
+    // 播放：视频已常驻预载，首帧未就绪则稍等（readyState≥2 直接放行）
+    await waitForVideoReady(videoRef.value);
+    if (!videoRef.value) return;
+    videoRef.value.currentTime = 0;
+    // 图片淡出（100 -> 0）露出下层视频
+    imgOpacity.value = 0;
+    videoRef.value
+      .play()
+      .then(() => {
+        isPlaying.value = true;
+      })
+      .catch(err => {
+        console.error("[LivePhoto] 视频播放失败:", err);
+        imgOpacity.value = 100;
+        isPlaying.value = false;
+      });
   }
 };
 
 // 视频播放结束
 const onVideoEnded = () => {
-  // 视频播放结束后自动暂停并显示图片
+  // 视频播放结束后自动暂停并显示图片（图片淡回盖住视频）
   if (videoRef.value && isPlaying.value) {
-    // 显示图片
-    // imgOpacity.value = 100;
-
-    // 等待一小段时间后隐藏视频
-    // setTimeout(() => {
-    if (videoRef.value) {
-      videoOpacity.value = 0;
-    }
-    // }, 25);
-
-    // 更新播放状态
+    imgOpacity.value = 100;
+    videoRef.value.pause();
     isPlaying.value = false;
-
-    // 播放结束淡出后卸载 video，避免残留 opacity:0 覆盖层
-    scheduleVideoUnmount();
+    // 视频常驻挂载在图片层之下，无需卸载
   }
 };
 
@@ -553,17 +488,10 @@ const onVideoError = () => {
   console.warn("[LivePhoto] 视频解码失败，已退化为静态图（浏览器可能不支持该编码，如 HEVC）");
   if (videoBlobUrl.value) {
     URL.revokeObjectURL(videoBlobUrl.value);
-    videoBlobUrl.value = null;
+    videoBlobUrl.value = null; // 触发 <video> v-if 卸载，退化为静态图
   }
-  videoOpacity.value = 0;
+  imgOpacity.value = 100;
   isPlaying.value = false;
-
-  // 卸载解码失败的视频元素，避免残留
-  isVideoMounted.value = false;
-  if (videoUnmountTimer !== null) {
-    clearTimeout(videoUnmountTimer);
-    videoUnmountTimer = null;
-  }
 };
 
 // 播放按钮可见性：
@@ -595,21 +523,9 @@ onUnmounted(() => {
   }
 
   // 清理所有定时器
-  // if (imgOpacityTimer !== null) {
-  //   clearTimeout(imgOpacityTimer);
-  //   imgOpacityTimer = null;
-  // }
-  if (videoOpacityTimer !== null) {
-    clearTimeout(videoOpacityTimer);
-    videoOpacityTimer = null;
-  }
   if (resetTimer !== null) {
     clearTimeout(resetTimer);
     resetTimer = null;
-  }
-  if (videoUnmountTimer !== null) {
-    clearTimeout(videoUnmountTimer);
-    videoUnmountTimer = null;
   }
 
   // 释放实况照片 Blob URL
@@ -627,7 +543,22 @@ onUnmounted(() => {
     :style="wrapperStyle"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave">
-    <!-- 原始图片：Blob URL 准备好后再挂载，避免空 src 短暂显示碎图图标 -->
+    <!-- 视频层：提取完成即常驻挂载并预载解码，置于图片层之下（模板在前 + img 的 relative
+         压在其上）。非交互时被不透明图片完整盖住，未解码首帧层即使被浏览器合成成
+         白色矩形也不可见（规避旧方案 opacity:0 视频层在 GPU 路径下盖白屏的坑）。 -->
+    <video
+      v-if="videoBlobUrl"
+      ref="videoRef"
+      :src="videoBlobUrl"
+      muted
+      playsinline
+      preload="auto"
+      class="live-photo-video absolute w-full h-full inset-0 max-h-[inherit] rounded-lg pointer-events-none object-cover"
+      :style="mediaStyle"
+      @ended="onVideoEnded"
+      @error="onVideoError" />
+
+    <!-- 原始图片：悬浮/点击播放时淡出（opacity 100->0）把下层已就绪的视频"露"出来 -->
     <img
       ref="imgRef"
       :src="cleanSrc"
@@ -635,7 +566,7 @@ onUnmounted(() => {
       v-bind="liveImageAttrs"
       :loading="lazy ? 'lazy' : 'eager'"
       decoding="async"
-      class="live-photo-image w-full h-full max-h-[inherit] transition-opacity duration-300 ease-in-out object-cover"
+      class="live-photo-image relative w-full h-full max-h-[inherit] transition-opacity duration-300 ease-in-out object-cover"
       :style="{
         opacity: imgOpacity / 100,
         ...mediaStyle,
@@ -648,22 +579,6 @@ onUnmounted(() => {
       <Icon name="ri:loader-4-line" class="size-3.5 animate-spin" mode="svg" />
       <span>加载中</span>
     </div>
-
-    <!-- 视频容器：按需挂载（仅悬浮/点击播放时存在），非交互状态不残留 opacity:0 的覆盖层 -->
-    <video
-      v-if="videoBlobUrl && isVideoMounted"
-      ref="videoRef"
-      :src="videoBlobUrl"
-      muted
-      playsinline
-      preload="auto"
-      class="live-photo-video absolute w-full h-full inset-0 max-h-[inherit] rounded-lg pointer-events-none transition-opacity duration-300 ease-in-out object-cover"
-      :style="{
-        opacity: videoOpacity / 100,
-        ...mediaStyle,
-      }"
-      @ended="onVideoEnded"
-      @error="onVideoError" />
 
     <!-- 实况照片标识 -->
     <div
