@@ -371,7 +371,7 @@ cd imqi1
 cp .env.example .env
 ```
 
-编辑 `.env`，至少修改以下几项：
+编辑 `.env`，至少修改以下几项（`UPLOADS_DIR` 等其余均为可选，留空用默认）：
 
 ```bash
 DB_PASSWORD="改成强密码"          # MySQL 密码（root 与普通用户共用），compose 用它建库
@@ -380,7 +380,21 @@ DB_USER="nodejs"                 # 应用连接的普通用户；⚠️ 不能�
 DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 ```
 
-> `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本，并在 `.env` 填 `REDIS_HOST_PROD`（实际烘焙地址固定为 compose 服务名 `redis`，端口 6379、无密码，无需另填）；不需要就选不带 Redis 的版本即可。其它 COS、高德地图 Key 等按需填写。
+常用可选变量（按需添加，均可留空）：
+
+```bash
+UPLOADS_DIR=""                 # 上传目录宿主路径；默认项目根 uploads/，本地可见
+REDIS_HOST_PROD=""             # 带 Redis 版填非空即启用（烘焙为服务名 redis:6379）
+REDIS_PORT_PROD="6379"
+REDIS_PASSWORD_PROD=""
+REDIS_DB_PROD="0"
+AMAP_KEY=""                    # 高德地图 Key（旅行足迹地图功能）
+AMAP_SECURITY_CODE=""          # 高德 JS API 安全密钥
+SSR_INTERNAL_REQUEST_SECRET="" # SSR 内部请求密钥（建议随机长串）
+MINI_API_SECRET=""             # 小程序 API 签名密钥
+```
+
+> `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本（`docker-compose.yml`），并在 `.env` 填 `REDIS_HOST_PROD`；不需要就选不带 Redis 的版本。其它 COS 等按需填写，完整变量见 `.env.example`。
 >
 > ⚠️ **`DB_USER` 不能设为 `root`**：compose 会把它映射成 MySQL 镜像的 `MYSQL_USER`，而 MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设为 `root` 会在 entrypoint 阶段直接报错退出、容器无限重启。请使用普通用户名（如 `nodejs`），root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`），应用与 healthcheck 全程只使用 `DB_USER` 这个普通用户。
 
