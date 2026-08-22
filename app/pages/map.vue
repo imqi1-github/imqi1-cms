@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
 
 import { CITY_COORDS } from "~~/shared/city-coords";
 import { siteConfig } from "~~/site.config";
@@ -158,24 +158,14 @@ const blogPlaces = computed(() =>
   })),
 );
 
-const places = computed(() =>
+// 当前视图的真实点集：切换 tab 时新视图数据未到（pending）会先为空数组
+const currentPlaces = computed(() =>
   view.value === "footprint"
     ? footprintPlaces.value
     : view.value === "blogs"
       ? blogPlaces.value
       : travelPlaces.value,
 );
-const mapEverShown = ref(false);
-watch(
-  places,
-  currentPlaces => {
-    if (currentPlaces.length > 0) mapEverShown.value = true;
-  },
-  { immediate: true },
-);
-const shouldShowMap = computed(() => mapEverShown.value || places.value.length > 0);
-// ?place 聚焦仅对「我的足迹」有意义
-const focusId = computed(() => (view.value === "travels" ? (route.query.place as string) || null : null));
 
 const pending = computed(() =>
   view.value === "footprint"
@@ -192,10 +182,79 @@ const error = computed(() =>
       : travelsError.value,
 );
 
+// 地图组件自身的加载/失败状态（TravelMap 经 loading-change / error-change 上报）：
+const mapLoading = ref(false);
+const mapLoadError = ref(false);
+
+// 右下角状态行文字：加载中 / 地图加载中 / 各视图统计 / 空态。错误态单独用「点击重试」按钮展示，
+// 不在 statusText 里拼文案（避免与按钮重复）。
+const statusText = computed(() => {
+  if (pending.value) return "加载中...";
+  if (mapLoading.value) return "地图加载中...";
+  if (view.value === "travels") {
+    return travelProvinceStats.value.places > 0
+      ? `已到访 ${travelProvinceStats.value.provinces} 个省市 · ${travelProvinceStats.value.places} 个地点`
+      : "还没有任何足迹";
+  }
+  if (view.value === "footprint") {
+    const stats = footprintStats.value;
+    return stats
+      ? stats.total > 0
+        ? `共 ${stats.total} 位访客 · 海外 ${stats.overseas} · 未知 ${stats.unknown}`
+        : "还没有访客足迹"
+      : "";
+  }
+  if (view.value === "blogs") {
+    const stats = blogStats.value;
+    return stats
+      ? stats.total > 0
+        ? `共 ${stats.total} 个站点 · 海外 ${stats.overseas} · 未定位 ${stats.unknown}`
+        : "还没有博客站点"
+      : "";
+  }
+  return "";
+});
+
+// 最近一次非空 places 引用：tab 切换、新视图数据未到（pending）时用它顶住旧点，
+// 避免地图上的点「短暂消失再跳变」。引用不变 → TravelMap 的 places watch 不触发、旧聚合不被销毁。
+const lastNonEmptyPlaces = shallowRef<(typeof currentPlaces)["value"]>(
+  [] as (typeof currentPlaces)["value"],
+);
+watch(
+  currentPlaces,
+  cp => {
+    if (cp.length) lastNonEmptyPlaces.value = cp;
+  },
+  { immediate: true },
+);
+
+// 交给 TravelMap 的点集：加载中保持旧点（引用稳定），数据到位后整体替换触发重建聚合。
+const places = computed(() =>
+  pending.value && currentPlaces.value.length === 0 ? lastNonEmptyPlaces.value : currentPlaces.value,
+);
+const mapEverShown = ref(false);
+watch(
+  places,
+  cp => {
+    if (cp.length > 0) mapEverShown.value = true;
+  },
+  { immediate: true },
+);
+const shouldShowMap = computed(() => mapEverShown.value || places.value.length > 0);
+// ?place 聚焦仅对「我的足迹」有意义
+const focusId = computed(() => (view.value === "travels" ? (route.query.place as string) || null : null));
+
 function setView(v: string) {
   // place 仅「我的足迹」视图用（见下方 focusId）；切 tab 时丢弃，避免 URL 残留 / 切回 travels 时误聚焦。
   const { place: _place, ...rest } = route.query;
   router.push({ query: { ...rest, view: v } });
+}
+
+// tab 切换加载失败后重试当前视图：useFetch execute 会重置 error、置 pending，走正常加载流程。
+function retryCurrentView() {
+  if (view.value === "footprint") executeFootprint();
+  else if (view.value === "blogs") executeBlog();
+  else executeTravels();
 }
 
 const viewTitleMap: Record<string, string> = {
@@ -252,28 +311,15 @@ onUnmounted(() => {
 
 <template>
   <section class="relative -mt-20 -mx-5 h-svh overflow-hidden bg-gray-100 dark:bg-gray-900" :style="sectionStyle">
-    <!-- 地图主体 -->
-    <div v-if="pending && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
-      <div class="text-center text-white">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"/>
-        <p class="mt-3">加载中...</p>
-      </div>
-    </div>
-    <div v-else-if="error && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
-      <div class="text-center text-white">
-        <Icon name="ri:error-warning-line" class="size-8 mx-auto mb-2" />
-        <p>加载失败，请刷新重试</p>
-      </div>
-    </div>
-    <div v-else-if="places.length === 0 && !shouldShowMap" class="absolute inset-0 flex items-center justify-center">
-      <div class="text-center text-gray-300 dark:text-white/90">
-        <Icon name="ri:map-pin-line" class="size-12 mx-auto mb-4 opacity-70" />
-        <p>{{ view === "footprint" ? "还没有访客足迹" : view === "blogs" ? "还没有博客站点" : "还没有任何足迹" }}</p>
-      </div>
-    </div>
-
+    <!-- 地图主体：不再居中遮罩，加载中/地图加载中/失败/空态统一由右下角状态行小字提示。
+         TravelMap 的加载与错误状态经 loading-change / error-change 上报到本页状态行。 -->
     <ClientOnly v-if="shouldShowMap">
-      <TravelMap :places="places" :focus-id="focusId" :max-zoom="view === 'footprint' || view === 'blogs' ? FOOTPRINT_MAX_ZOOM : undefined" />
+      <TravelMap
+        :places="places"
+        :focus-id="focusId"
+        :max-zoom="view === 'footprint' || view === 'blogs' ? FOOTPRINT_MAX_ZOOM : undefined"
+        @loading-change="mapLoading = $event"
+        @error-change="mapLoadError = $event" />
       <template #fallback>
         <div class="w-full h-full bg-gray-100 dark:bg-gray-900 animate-pulse" />
       </template>
@@ -306,47 +352,31 @@ onUnmounted(() => {
       {{ currentYear }}@{{ siteName }}
     </div>
 
-    <!-- 右下浮层：我的足迹统计（仅 travels 视图） -->
+    <!-- 右下角状态行：统计 / 加载中 / 地图加载中 / 加载失败（可点重试）/ 空态，统一小字一行，不用遮罩 -->
     <div
-      v-if="view === 'travels' && travelProvinceStats.places > 0"
-      class="pointer-events-none absolute right-2 z-20 flex items-end gap-1.5"
+      class="pointer-events-none absolute right-2 z-20 flex items-end gap-1.5 text-[10px] leading-none text-slate-700 dark:text-slate-200"
       :style="{ bottom: `${footerH + 4}px` }">
-      <!-- 已登录：前往后台编辑足迹（外层 pointer-events-none 不挡地图，按钮单独可点） -->
+      <!-- 已登录：前往后台编辑足迹（外层 pointer-events-none 不挡地图，链接单独可点） -->
       <ClientOnly>
         <NuxtLink
-          v-if="isLoggedIn"
+          v-if="isLoggedIn && view === 'travels' && travelProvinceStats.places > 0"
           to="/admin/travels"
           target="_blank"
-          class="pointer-events-auto inline-flex items-center gap-1 text-[10px] font-medium text-slate-700">
+          class="pointer-events-auto inline-flex items-center gap-1 font-medium text-slate-700 hover:text-blue-600">
           <Icon name="ri:edit-line" class="size-3" />
           编辑足迹
         </NuxtLink>
       </ClientOnly>
-      <div class="text-[10px] text-slate-700 dark:text-slate-200">
-        已到访 {{ travelProvinceStats.provinces }} 个省市 · {{ travelProvinceStats.places }} 个地点
-      </div>
-    </div>
-
-    <!-- 右下浮层：访客分布统计（仅 footprint 视图）。避让顶栏导航：用 footerH 把它顶到页脚之上，
-         不会落在页脚背后或被 z-50 导航遮挡。 -->
-    <div
-      v-if="view === 'footprint' && footprintStats"
-      class="pointer-events-none absolute right-2 z-20"
-      :style="{ bottom: `${footerH + 4}px` }">
-      <div
-        class="text-[10px] text-slate-700 dark:text-slate-200">
-        共 {{ footprintStats.total }} 位访客 · 海外 {{ footprintStats.overseas }} · 未知 {{ footprintStats.unknown }}
-      </div>
-    </div>
-
-    <!-- 右下浮层：博客网络统计（仅 blogs 视图） -->
-    <div
-      v-if="view === 'blogs' && blogStats"
-      class="pointer-events-none absolute right-2 z-20"
-      :style="{ bottom: `${footerH + 4}px` }">
-      <div class="text-[10px] text-slate-700 dark:text-slate-200">
-        共 {{ blogStats.total }} 个站点 · 海外 {{ blogStats.overseas }} · 未定位 {{ blogStats.unknown }}
-      </div>
+      <button
+        v-if="error"
+        type="button"
+        class="pointer-events-auto inline-flex cursor-pointer items-center gap-1 hover:underline"
+        @click="retryCurrentView">
+        <Icon name="ri:refresh-line" class="size-3" />
+        加载失败，点击重试
+      </button>
+      <span v-else-if="mapLoadError">地图加载失败</span>
+      <span v-else-if="statusText">{{ statusText }}</span>
     </div>
   </section>
 </template>

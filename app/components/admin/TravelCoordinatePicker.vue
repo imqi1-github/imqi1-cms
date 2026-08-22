@@ -179,22 +179,30 @@ onMounted(async () => {
       mapStyle: initDark ? "amap://styles/dark" : "amap://styles/whitesmoke",
     });
 
-    map.on("complete", () => {
+    // 初次建 marker 要等底图 complete（瓦片/样式渲染完成）后再做：
+    // 底图渲染管线未就绪时创建的 marker 会被推迟到地图首个渲染周期才画，
+    // 导致「底图先出、marker 后冒出」。统一在 complete 回调里建 marker + 撤遮罩，
+    // 让 marker 与底图同一周期画出、一起出现。兜底 timer 与 complete 走同一幂等 init。
+    let initialRenderDone = false;
+    const finishInitialRender = () => {
+      if (initialRenderDone) return;
+      initialRenderDone = true;
+      if (loadingFallbackTimer) {
+        clearTimeout(loadingFallbackTimer);
+        loadingFallbackTimer = null;
+      }
+      if (initialLngLat) {
+        ensureMarker(initialLngLat);
+      }
       loading.value = false;
       scheduleResize();
-    });
+    };
+    map.on("complete", finishInitialRender);
     map.on("click", (event: AMapMapEvent) => {
       selectLngLat(event.lnglat);
     });
 
-    if (initialLngLat) {
-      ensureMarker(initialLngLat);
-    }
-
-    loadingFallbackTimer = setTimeout(() => {
-      loading.value = false;
-      scheduleResize();
-    }, 3000);
+    loadingFallbackTimer = setTimeout(finishInitialRender, 3000);
     scheduleResize();
   } catch (error) {
     console.error("[TravelCoordinatePicker] 地图加载失败:", error);

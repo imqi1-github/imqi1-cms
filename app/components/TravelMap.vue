@@ -24,6 +24,11 @@ const props = defineProps<{
   maxZoom?: number;
 }>();
 
+// 加载/错误状态上报父级（map.vue）做右下角状态行展示；本组件不再自绘居中遮罩。
+const emit = defineEmits<{
+  (e: "loading-change" | "error-change", value: boolean): void;
+}>();
+
 const router = useRouter();
 
 // 跟随站点深浅模式
@@ -32,6 +37,9 @@ const isDark = computed(() => colorMode.value === "dark");
 
 const loadError = ref(false);
 const loading = ref(true);
+// loading/loadError 变化即上报（immediate 让父级在挂载时就拿到初始态），状态行据此切换文案。
+watch(loading, v => emit("loading-change", v), { immediate: true });
+watch(loadError, v => emit("error-change", v), { immediate: true });
 
 let _amap: AMapNamespace | null = null;
 let map: AMapMapInstance | null = null;
@@ -683,14 +691,33 @@ onMounted(async () => {
       // （2026-08-09 报此 bug）。这两个视图的 9 级封顶改由 createCluster 内运行时 setZooms 实现。
       zooms: [props.minZoom ?? MIN_ZOOM_DEFAULT, 20],
     } as AMap.MapOptions & { resizeEnable?: boolean });
-    // 等底图瓦片(含样式)渲染完成再撤掉遮罩，杜绝初次加载的亮色闪烁
-    map.on("complete", () => {
+    // 初次定位 + 建聚合要等底图 complete（瓦片/样式渲染完成）后再做：
+    // 聚合 marker 图层挂在底图渲染管线里，complete 前创建聚合会被推迟到地图首个渲染周期才画，
+    // 于是出现「底图先出、点后冒出」的跳变。统一在 complete 回调里定视野 + 建聚合 + 撤遮罩，
+    // 让点与底图同一周期画出、一起出现。兜底 timer 与 complete 都走 finishInitialRender（幂等）。
+    let initialRenderDone = false;
+    const finishInitialRender = () => {
+      if (initialRenderDone) return;
+      initialRenderDone = true;
+      if (loadingFallbackTimer) {
+        clearTimeout(loadingFallbackTimer);
+        loadingFallbackTimer = null;
+      }
+      // 先定视野（固定中国范围），再建聚合点——聚合层按当前视口惰性渲染，定好视野后新点才在正确范围被画出。
+      // 用当前 props.places 而非挂载时快照 initialPoints：加载期间切过 tab 时，complete 到达时刻的点集
+      // 可能已不是初值（map.vue 在 pending 期间会顶住上一次非空点集），按现值建聚合同步渲染正确视图。
+      fitChinaView();
+      if (!cluster) cluster = createCluster(buildPoints(props.places));
+      // 联动：focusId 命中则定位
+      const fid = props.focusId != null ? String(props.focusId) : "";
+      const target = fid ? props.places.find(p => String(p.id) === fid) : null;
+      if (target) focusPlace(target);
+      // 点已与底图同帧画出，此时撤遮罩不会再出现「地图空转、点后冒出」
       loading.value = false;
-    });
-    // 兜底：complete 未触发时也不让 loading 卡死
-    loadingFallbackTimer = setTimeout(() => {
-      loading.value = false;
-    }, 3000);
+    };
+    map.on("complete", finishInitialRender);
+    // 兜底：complete 未触发时也不让 loading 卡死（同时兜底建聚合，避免底图空转无点）
+    loadingFallbackTimer = setTimeout(finishInitialRender, 3000);
     // isCustom：用纯自定义 HTML，去掉 InfoWindow 自带的白底外壳/箭头/关闭键
     infoWindow = new AMap.InfoWindow({
       isCustom: true,
@@ -734,17 +761,6 @@ onMounted(async () => {
       }
     };
     document.addEventListener("click", linkClickHandler);
-
-    // 先定视野（固定中国范围），再建聚合点——聚合层按当前视口惰性渲染，定好视野后新点才在正确范围被画出
-    fitChinaView();
-    cluster = createCluster(initialPoints);
-
-    // 联动：focusId 命中则定位
-    const fid = props.focusId != null ? String(props.focusId) : "";
-    const target = fid ? props.places.find(p => String(p.id) === fid) : null;
-    if (target) focusPlace(target);
-
-    // loading 由 map 的 complete 事件关闭（见上方）
   } catch (e) {
     console.error("[TravelMap] 地图加载失败:", e);
     loadError.value = true;
@@ -832,23 +848,10 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- 不再自绘居中遮罩：加载/失败状态经 loading-change / error-change 上报 map.vue，
+       由右下角状态行小字展示。容器底色在瓦片渲染前可见，视觉无跳变。 -->
   <div class="relative h-full w-full">
     <div id="travel-map" class="h-full w-full bg-gray-100 dark:bg-gray-900"/>
-
-    <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <div class="text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"/>
-        <p class="mt-2 text-sm text-slate-500">地图加载中...</p>
-      </div>
-    </div>
-
-    <div v-if="loadError" class="absolute inset-0 flex items-center justify-center p-6">
-      <div class="text-center">
-        <Icon name="ri:map-pin-line" class="size-10 text-slate-400 mx-auto mb-2" />
-        <p class="text-slate-600 dark:text-slate-400 font-medium">地图加载失败</p>
-        <p class="text-xs text-slate-400 mt-1">未配置高德地图 Key，请联系站长</p>
-      </div>
-    </div>
   </div>
 </template>
 
