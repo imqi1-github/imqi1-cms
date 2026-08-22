@@ -1,4 +1,4 @@
-import { markdownToPlainText } from "#server/utils/markdownToPlainText";
+import { markdownToPlainText, spaceCjkLatin } from "#server/utils/markdownToPlainText";
 import { parseCovers } from "#server/utils/covers";
 import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
@@ -75,40 +75,34 @@ export default defineEventHandler(async event => {
         const author = content.user?.nickname || content.user?.name || "Admin";
         const pubDate = new Date(content.create_time).toUTCString();
 
-        // 正文转纯文本：markdown→纯文本，::: 容器整块替换为 <中文类型> 占位
-        // （见 utils/markdownToPlainText）。需求“只要全文、不重复”：不再做摘要截断，
-        // 只用 description 输出完整正文纯文本——兼容性最好（所有阅读器/聚合器都读它）。
+        // 正文转纯文本：markdown→纯文本，::: 容器/代码块/图片/表格按规则替换为中文占位
+        // （<图片：标题>、<代码块：语言xx，共xx行>、<表格：共x行y列>、<音乐：平台，id=xxx> 等，
+        //  实况照片为 <实况照片：标题>，见 utils/markdownToPlainText）。
+        // 需求“只要全文、不重复”：不再做摘要截断，全文放 description。
         const fullText = markdownToPlainText(content.content || content.desc || "");
 
-        // 解析封面图片
-        let coverImage: string;
-        let mediaContent = "";
-        let enclosure = "";
-
+        // 封面占位：<图片：标题>/<实况照片：标题>（封面标题为空则仅占位，不带标题）；
+        // 视频封面不展示图片占位。实况封面按 url 里的 #live 标记判定。
         const covers = parseCovers(content.covers);
-        const firstCover = covers[0];
-        if (firstCover) {
-          coverImage = firstCover.url;
-
-          // Media RSS 内容标签
-          mediaContent = `    <media:content url="${coverImage}" medium="image" type="image/jpeg">
-      <media:title><![CDATA[${content.title}]]></media:title>
-    </media:content>`;
-
-          // 标准 enclosure 标签（用于兼容性）
-          enclosure = `    <enclosure url="${coverImage}" type="image/jpeg" length="0" />`;
-        }
+        const cover = covers[0];
+        const isVideoCover = /\.(mp4|webm)([?#]|$)/i.test(cover?.url ?? "");
+        const isLiveCover = /#live\b/i.test(cover?.url ?? "");
+        const coverTitle = cover?.desc?.trim() ?? "";
+        const coverKind = isLiveCover ? "实况照片" : "图片";
+        const coverPlaceholder = cover && !isVideoCover
+          ? (coverTitle ? `<${coverKind}：${coverTitle}>` : `<${coverKind}>`)
+          : "";
+        // 封面占位单独补一次中英空格（正文已在 markdownToPlainText 内补过，无需再处理）
+        const descriptionText = coverPlaceholder ? `${spaceCjkLatin(coverPlaceholder)}\n${fullText}` : fullText;
 
         return `
     <item>
       <title><![CDATA[${content.title}]]></title>
       <link>${contentUrl}</link>
-      <description><![CDATA[${cdata(fullText)}]]></description>
+      <description><![CDATA[${cdata(descriptionText)}]]></description>
       <author><![CDATA[${author}]]></author>
       <guid isPermaLink="true">${contentUrl}</guid>
       <pubDate>${pubDate}</pubDate>
-${enclosure}
-${mediaContent}
     </item>`;
       })
       .join("\n");
