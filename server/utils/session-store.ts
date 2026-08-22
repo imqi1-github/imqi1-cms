@@ -214,33 +214,42 @@ export class DatabaseSessionStore implements SessionStore {
 }
 
 // 获取存储实例
-let currentStore: SessionStore | null = null;
-let currentStoreType: SessionStoreType | null = null;
+// 单例必须挂到 globalThis：SSR 渲染（app bundle）与 API handler（nitro bundle）
+// 会各自内联一份本模块，模块级变量会被打包成多份独立实例。memory 存储是纯内存
+// 单例，多份实例互不可见 → 登录写进 API 那份、SSR 中间件读 app 那份为空，
+// 导致 /admin 每次整页进入都被判 session 无效、302 跳登录（见 auth 中间件）。
+// file/database 走文件系统/MySQL 天然跨 bundle 共享，故只有 memory 受影响。
+// node-server preset 为单进程，globalThis 在同一进程内跨模块图共享。
+interface GlobalSessionStore {
+  __imqiSessionStore?: SessionStore;
+  __imqiSessionStoreType?: SessionStoreType;
+}
+const globalStore = globalThis as GlobalSessionStore;
 
 export async function getSessionStore(): Promise<SessionStore> {
   const config = await getSessionConfig();
   const storeType = config.storeType || "memory";
 
-  if (currentStore && currentStoreType === storeType) {
-    return currentStore;
+  if (globalStore.__imqiSessionStore && globalStore.__imqiSessionStoreType === storeType) {
+    return globalStore.__imqiSessionStore;
   }
 
-  currentStoreType = storeType;
+  globalStore.__imqiSessionStoreType = storeType;
 
   switch (storeType) {
     case "file":
-      currentStore = new FileSessionStore();
+      globalStore.__imqiSessionStore = new FileSessionStore();
       break;
     case "database":
-      currentStore = new DatabaseSessionStore();
+      globalStore.__imqiSessionStore = new DatabaseSessionStore();
       break;
     case "memory":
     default:
-      currentStore = new MemorySessionStore();
+      globalStore.__imqiSessionStore = new MemorySessionStore();
       break;
   }
 
-  return currentStore;
+  return globalStore.__imqiSessionStore;
 }
 
 // 获取 Session 配置
