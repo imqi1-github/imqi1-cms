@@ -170,7 +170,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
 ```shell
 # 生产环境 Redis（可选，构建期配置；打包时烘焙进产物，改动需重新打包）
-REDIS_HOST_PROD="localhost"
+REDIS_HOST_PROD="localhost"     # 裸机填 localhost/服务器 IP；Docker 部署填 redis（见下方「使用 Docker 部署」章节）
 REDIS_PORT_PROD="6379"
 REDIS_PASSWORD_PROD=""
 REDIS_DB_PROD="0"
@@ -351,7 +351,7 @@ bun run restart:server -- start # 启动
 
 Docker 部署文件已整理进 `docker/` 子目录，提供**两套独立版本**按是否需要 Redis 二选一：
 
-- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + MySQL 8 + Redis 7。宿主 `.env` 配置了 `REDIS_HOST_PROD`（非空）即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
+- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + MySQL 8 + Redis 7。宿主 `.env` 填 `REDIS_HOST_PROD=redis` 即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
 - **不带 Redis**（`docker/docker-compose.noredis.yml` + `docker/Dockerfile.noredis`）：仅应用 + MySQL 8。ISR 走文件系统缓存、搜索缓存关闭，不创建 redis 容器/卷。
 
 不需要在 `.env` 中配置任何 `COMPOSE_PROFILES`，Redis 段只保留 `REDIS_*_DEV` / `REDIS_*_PROD` 各四个变量即可。两个版本的具体用法、启动命令与运维命令见 **[`docker/README.md`](docker/README.md)**。
@@ -384,7 +384,7 @@ DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 
 ```bash
 UPLOADS_DIR=""                 # 上传目录宿主路径；默认项目根 uploads/，本地可见
-REDIS_HOST_PROD=""             # 带 Redis 版填非空即启用（烘焙为服务名 redis:6379）
+REDIS_HOST_PROD=""             # 启用 Redis 填 redis（compose 服务名，非空即烘焙 redis:6379）；留空则不启用
 REDIS_PORT_PROD="6379"
 REDIS_PASSWORD_PROD=""
 REDIS_DB_PROD="0"
@@ -394,7 +394,7 @@ SSR_INTERNAL_REQUEST_SECRET="" # SSR 内部请求密钥（建议随机长串）
 MINI_API_SECRET=""             # 小程序 API 签名密钥
 ```
 
-> `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本（`docker-compose.yml`），并在 `.env` 填 `REDIS_HOST_PROD`；不需要就选不带 Redis 的版本。其它 COS 等按需填写，完整变量见 `.env.example`。
+> `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本（`docker-compose.yml`），并在 `.env` 填 `REDIS_HOST_PROD=redis`；不需要就选不带 Redis 的版本。其它 COS 等按需填写，完整变量见 `.env.example`。
 >
 > ⚠️ **`DB_USER` 不能设为 `root`**：compose 会把它映射成 MySQL 镜像的 `MYSQL_USER`，而 MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设为 `root` 会在 entrypoint 阶段直接报错退出、容器无限重启。请使用普通用户名（如 `nodejs`），root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`），应用与 healthcheck 全程只使用 `DB_USER` 这个普通用户。
 

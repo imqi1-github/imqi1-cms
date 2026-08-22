@@ -4,7 +4,7 @@
 
 | 版本 | 文件 | 服务 | 说明 |
 | --- | --- | --- | --- |
-| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + MySQL 8 + Redis 7 | `.env` 配置了 `REDIS_HOST_PROD`（非空）即烘焙 Redis 连接，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
+| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + MySQL 8 + Redis 7 | `.env` 填 `REDIS_HOST_PROD=redis` 即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
 | **不带 Redis** | `docker-compose.noredis.yml` + `Dockerfile.noredis` | 应用 + MySQL 8 | 不烘焙任何 Redis 配置：ISR 走文件系统缓存、搜索缓存关闭，无 redis 容器/卷 |
 
 > 注意：`.env` 只保留 `REDIS_*_DEV` / `REDIS_*_PROD` 各四个环境变量即可；**不需要任何 `COMPOSE_PROFILES`**。是否启用 Redis 由「选用哪套 compose 文件」决定，而非环境变量魔法。
@@ -29,7 +29,7 @@
 docker compose --env-file .env -f docker/docker-compose.yml up -d --build
 ```
 
-- 宿主 `.env` 的 `REDIS_HOST_PROD` 非空 → 把 compose 服务名 `redis`（端口 6379、无密码）烘焙进镜像，启动 redis 容器；
+- 宿主 `.env` 的 `REDIS_HOST_PROD` 填 `redis`（compose 服务名，非空即可，值会被强制按服务名解析）→ 把 `redis:6379`（无密码）烘焙进镜像并启动 redis 容器；
 - 留空 → 传空串，`getRedisConfig()` 返回 null，ISR 走文件系统、搜索缓存关闭（redis 容器仍会启动，只是应用不使用）。
 
 ## 不带 Redis 版本
