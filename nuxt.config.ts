@@ -53,6 +53,10 @@ export default defineNuxtConfig({
     amapKey: process.env.AMAP_KEY || "",
     amapSecurityCode: process.env.AMAP_SECURITY_CODE || "",
     ssrInternalRequestSecret: process.env.SSR_INTERNAL_REQUEST_SECRET || "",
+    // Redis 配置：构建期从 REDIS_*_DEV/_PROD 解析并烘焙（见 shared/redis-config.ts）。
+    // 生产运行时不再读取任何 Redis 环境变量；搜索缓存统一从这里取值，
+    // ISR 缓存走上方 nitro storage / routeRules 的同一份 redisConfig（两者共用）。
+    redis: redisConfig ?? undefined,
     public: {
       cdnURL: cdnURL,
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
@@ -265,7 +269,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: "/",
     // 构建产物扁平化：直接放在 cdnURL 根下（如 /static/<hash>/entry.<hash>.js），去掉 _nuxt/ 层级
-    buildAssetsDir: "/",
+    buildAssetsDir: isProduction ? "/" : "_nuxt/",
     cdnURL: cdnURL,
     head: {
       htmlAttrs: {

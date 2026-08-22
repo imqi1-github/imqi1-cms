@@ -1,7 +1,13 @@
 /**
- * Redis 配置读取（nuxt.config.ts 与 server/utils/redis.ts 共用）
+ * Redis 配置读取（仅构建期使用）
  *
- * 判环境统一为 NODE_ENV：开发用 REDIS_*_DEV 系列，生产用 REDIS_*_PROD 系列。
+ * 由 nuxt.config.ts 在打包时调用，按 NODE_ENV 从环境变量解析 Redis 配置
+ * （开发 REDIS_*_DEV 系列，生产 REDIS_*_PROD 系列），并烘焙进两处：
+ *   1. Nitro storage / routeRules  → ISR 增量缓存
+ *   2. runtimeConfig.redis         → 服务器运行时搜索缓存（server/utils/redis.ts 读取）
+ * 生产服务器运行环境不要再设置任何 Redis 环境变量（REDIS_*_PROD / NUXT_REDIS_*），
+ * 改 prod 配置后需重新打包才生效。未配置时（host 为空）返回 null：ISR 退回文件系统缓存、
+ * 搜索缓存关闭，均不报错。
  * 纯 env 读取、无外部依赖，避免把 ioredis 拉进 Nuxt 构建流程。
  */
 

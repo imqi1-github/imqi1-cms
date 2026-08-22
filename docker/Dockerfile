@@ -1,6 +1,12 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================
+# 带 Redis 版本（构建期烘焙 REDIS_*_PROD）
+# 与 docker-compose.yml 配套使用。不需要 Redis 的部署请改用
+# Dockerfile.noredis + docker-compose.noredis.yml。
+# ============================================================
+
+# ============================================================
 # Stage 1: 依赖安装 + 构建（使用 Bun）
 # ============================================================
 FROM oven/bun:1.3.10 AS builder
@@ -16,6 +22,19 @@ RUN bun install --frozen-lockfile --ignore-scripts
 # 生成 Prisma Client（mariadb 驱动适配器为纯 JS，无需原生引擎二进制）
 # 并执行 nuxt prepare 生成 .nuxt 类型
 RUN bunx prisma generate
+
+# Redis 构建期烘焙：compose 构建时传入 REDIS_*_PROD build args
+# （见 docker-compose.yml 的 build.args；宿主 .env 的 REDIS_HOST_PROD 非空即启用）。
+# 未启用时 REDIS_HOST_PROD 为空 → nuxt.config 里 getRedisConfig() 返回 null，
+# ISR 走文件系统缓存、搜索缓存关闭；生产运行时容器内始终无 Redis 环境变量。
+ARG REDIS_HOST_PROD=
+ARG REDIS_PORT_PROD=6379
+ARG REDIS_PASSWORD_PROD=
+ARG REDIS_DB_PROD=0
+ENV REDIS_HOST_PROD=${REDIS_HOST_PROD} \
+    REDIS_PORT_PROD=${REDIS_PORT_PROD} \
+    REDIS_PASSWORD_PROD=${REDIS_PASSWORD_PROD} \
+    REDIS_DB_PROD=${REDIS_DB_PROD}
 
 # 构建 Nuxt（prebuild 生成 build hash，postbuild 拷贝 qqwry.ipdb/字体/wasm 到 .output）
 RUN bun run build

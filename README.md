@@ -17,7 +17,7 @@
 
 ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个人博客与内容管理系统，也是个人站点 [imqi1.com](https://imqi1.com) 的完整源码。它并非通用型 CMS 模板，而是围绕「做技术的分享者、生活的摄影师、时事的评论员」这一定位打磨的一站式内容平台，覆盖从内容创作、发布、管理到多端展示的完整链路。
 
-项目采用 **SSR + ISR（增量静态再生成）** 架构：页面在服务端渲染以保证首屏与 SEO，同时借助 Redis（未配置时自动降级到文件系统）缓存渲染结果，兼顾性能与实时性。数据层使用 Prisma 7 搭配 MariaDB 适配器直连 MySQL/MariaDB，前后端类型则通过 Nuxt 的 `InternalApi` 自动推断，无需额外的类型生成器。
+项目采用 **SSR + ISR（增量静态再生成）** 架构：页面在服务端渲染以保证首屏与 SEO，同时借助 Redis（未配置时 ISR 自动降级到文件系统、搜索缓存关闭）缓存渲染结果，兼顾性能与实时性。数据层使用 Prisma 7 搭配 MariaDB 适配器直连 MySQL/MariaDB，前后端类型则通过 Nuxt 的 `InternalApi` 自动推断，无需额外的类型生成器。
 
 除了 Web 主站，仓库还以 Git 子模块的形式包含了一个基于 **uni-app** 的小程序端（`mini/`），支持 H5 / 微信小程序 / 支付宝小程序三端，并复用主站提供的专用 API。
 
@@ -39,7 +39,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 - **Node.js** ≥ 20（推荐 LTS 版本）
 - **MySQL** 或 **MariaDB**（用于存储站点数据）
 - **Bun** ≥ 1.3（项目使用的包管理器与脚本运行器）
-- **Redis**（可选，用于 ISR 缓存；未配置时自动降级到文件系统）
+- **Redis**（可选，用于 ISR 增量缓存与搜索缓存；未配置时 ISR 降级到文件系统、搜索缓存关闭）
 
 ### 安装项目
 
@@ -169,7 +169,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 在项目根目录的 `.env` 中补充生产环境相关变量（可参考 `.env.example`）。关键项包括：
 
 ```shell
-# 生产环境 Redis（可选，强烈建议启用以提升性能）
+# 生产环境 Redis（可选，构建期配置；打包时烘焙进产物，改动需重新打包）
 REDIS_HOST_PROD="localhost"
 REDIS_PORT_PROD="6379"
 REDIS_PASSWORD_PROD=""
@@ -197,7 +197,7 @@ DEPLOY_CDN_DOMAIN=cdn.your-domain.com
 DEPLOY_ENABLE_CDN_REDIRECT=true
 ```
 
-生产环境 Redis 是要打包进服务端产物的，所以要在开发环境的 .env 中配置，后三个都是在本地执行 node 命令时自动读取的，和生产环境无关。
+Redis 是**构建期配置**：`nuxt build` 打包时从本机 `.env` 读取 `REDIS_*_PROD` 并烘焙进服务端产物，ISR 增量缓存与搜索缓存共用同一组值。**生产服务器运行环境不要再设置任何 Redis 环境变量**（`REDIS_*_PROD` / `NUXT_REDIS_*`），改动 prod 配置后重新打包即可生效。未配置（`REDIS_HOST_PROD` 为空）时：ISR 自动降级到文件系统缓存、搜索缓存关闭。
 
 ### 3. 配置站点信息
 
@@ -289,11 +289,8 @@ ROOT_DOMAIN="your-domain.com"
 # 删除并重建整个 .output，导致已上传的用户文件全部丢失。设为独立目录即可持久保留。
 UPLOADS_DIR="/www/wwwroot/glass/uploads"
 
-# REDIS配置，用于搜索功能的缓存，可选
-REDIS_HOST_PROD="localhost"
-REDIS_PORT_PROD="6379"
-REDIS_PASSWORD_PROD=""
-REDIS_DB_PROD="0"
+# Redis 无需在此配置：Redis 是构建期配置，打包时烘焙进产物，生产运行时不再读取
+# Redis 环境变量（见上文「生产环境搭建」第 2 节）。
 
 # 高德地图，可选
 # 生产走服务端代理：打包时可留空，部署后在运行环境设置即可生效（或 NUXT_AMAP_KEY / NUXT_AMAP_SECURITY_CODE）
@@ -352,7 +349,12 @@ bun run restart:server -- start # 启动
 
 ## 使用 Docker 部署
 
-项目提供开箱即用的 `Dockerfile` 与 `docker-compose.yml`，一条命令即可拉起 **应用（Node）+ MySQL 8 + Redis** 三个容器，无需在服务器上手动安装 Node、MySQL、Redis。
+Docker 部署文件已整理进 `docker/` 子目录，提供**两套独立版本**按是否需要 Redis 二选一：
+
+- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + MySQL 8 + Redis 7。宿主 `.env` 配置了 `REDIS_HOST_PROD`（非空）即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
+- **不带 Redis**（`docker/docker-compose.noredis.yml` + `docker/Dockerfile.noredis`）：仅应用 + MySQL 8。ISR 走文件系统缓存、搜索缓存关闭，不创建 redis 容器/卷。
+
+不需要在 `.env` 中配置任何 `COMPOSE_PROFILES`，Redis 段只保留 `REDIS_*_DEV` / `REDIS_*_PROD` 各四个变量即可。两个版本的具体用法、启动命令与运维命令见 **[`docker/README.md`](docker/README.md)**。
 
 前置要求：服务器已安装 **Docker** 与 **Docker Compose v2**（`docker compose version` 可用）。
 
@@ -378,15 +380,20 @@ DB_USER="root"
 DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 ```
 
-> `DB_HOST`、`REDIS_HOST_PROD` 会被 compose 自动覆盖为服务名 `mysql` / `redis`，**无需手动填写容器名**。其它 COS、高德地图 Key 等按需填写。
+> `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本，并在 `.env` 填 `REDIS_HOST_PROD`（实际烘焙地址固定为 compose 服务名 `redis`，端口 6379、无密码，无需另填）；不需要就选不带 Redis 的版本即可。其它 COS、高德地图 Key 等按需填写。
 
 改动 site.config.ts 的配置，改成你自己的，比如 CDN 路径。
 
 ### 2. 构建并启动
 
+从项目根目录运行（注意命令带 `--env-file .env` 和 `-f docker/...`，详见 `docker/README.md`）：
+
 ```bash
-# 构建镜像 + 后台启动 app / mysql / redis
-docker compose up -d --build
+# 带 Redis：构建镜像 + 后台启动 app / mysql / redis
+docker compose --env-file .env -f docker/docker-compose.yml up -d --build
+
+# 不带 Redis：仅 app / mysql
+docker compose --env-file .env -f docker/docker-compose.noredis.yml up -d --build
 ```
 
 首次启动时，MySQL 会自动创建空库（`DB_NAME`）并**自动执行数据库初始化**：`scripts/init-db.sql` 已挂载到 MySQL 官方镜像的 `/docker-entrypoint-initdb.d/` 目录，容器首次启动（数据卷为空）时会自动导入——建全部表 + 写入默认设置 + 插入示例数据，并创建默认管理员：
@@ -399,37 +406,40 @@ docker compose up -d --build
 ### 3. 验证
 
 ```bash
-docker compose ps                # 查看 app/mysql/redis 状态（healthy/up）
-docker compose logs -f app       # 查看应用日志
+# 查看 app/mysql（+ redis，若用带 Redis 版本）状态（healthy/up）
+docker compose --env-file .env -f docker/docker-compose.yml ps
+docker compose --env-file .env -f docker/docker-compose.yml logs -f app   # 查看应用日志
 curl http://localhost:3000       # 或浏览器访问 服务器IP:3000
 ```
 
 ### 4. 常用运维命令
 
+以下以带 Redis 版本为例；不带 Redis 时把 `docker/docker-compose.yml` 换成 `docker/docker-compose.noredis.yml` 即可。
+
 ```bash
 # 更新代码后重新部署（不影响数据库数据）
 git pull --recurse-submodules
-docker compose up -d --build
+docker compose --env-file .env -f docker/docker-compose.yml up -d --build
 
 # 重启 / 停止
-docker compose restart app
-docker compose down              # 停止并删除容器（数据卷保留）
+docker compose --env-file .env -f docker/docker-compose.yml restart app
+docker compose --env-file .env -f docker/docker-compose.yml down   # 停止并删除容器（数据卷保留）
 
 # 查看日志
-docker compose logs -f mysql
+docker compose --env-file .env -f docker/docker-compose.yml logs -f mysql
 
 # 进入 MySQL 命令行（库名以 .env 中的 $DB_NAME 为准）
-docker compose exec mysql mysql -uroot -p"$DB_PASSWORD" "$DB_NAME"
+docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysql -uroot -p"$DB_PASSWORD" "$DB_NAME"
 
 # 数据备份
-docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" "$DB_NAME" > backup.sql
+docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysqldump -uroot -p"$DB_PASSWORD" "$DB_NAME" > backup.sql
 ```
 
 > ⚠️ **重新构建/升级前，请先在后台备份数据**
 >
-> 常规的 `docker compose up -d --build` 只重建应用镜像，**不会**动 MySQL 数据卷，数据是安全的。但在以下场景数据可能丢失或不兼容，务必先备份：
+> 常规的 `docker compose ... up -d --build` 只重建应用镜像，**不会**动 MySQL 数据卷，数据是安全的。但在以下场景数据可能丢失或不兼容，务必先备份：
 >
-> - 需要执行 `docker compose down -v`（会**删除数据卷、清空所有数据**）；
+> - 需要执行 `docker compose ... down -v`（会**删除数据卷、清空所有数据**）；
 > - 迁移服务器、更换数据库；
 > - 版本升级涉及数据表结构变更。
 >
@@ -442,7 +452,7 @@ docker compose exec mysql mysqldump -uroot -p"$DB_PASSWORD" "$DB_NAME" > backup.
 容器仅对外暴露 `${DEPLOY_PORT}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
 
 > ⚠️ **数据持久化与安全**
-> - MySQL 数据存于 `mysql-data` 卷、Redis 存于 `redis-data`、用户上传存于 `uploads` 卷。
+> - MySQL 数据存于 `mysql-data` 卷、用户上传存于 `uploads` 卷；带 Redis 版本下其数据存于 `redis-data` 卷。
 > - Docker 部署下用户上传已由 `uploads` 具名卷持久化，重建镜像不会丢失，**无需**额外设置 `UPLOADS_DIR`（非 Docker 的裸机部署才需要，见下文第 8 节）。若确实要改上传路径，`compose` 的卷挂载点会自动跟随 `UPLOADS_DIR`，但指向 `/app/.output/public/uploads` 之外的新路径时需确保容器内 `node` 用户对其有写权限。
 > - `docker compose down` **不会**删除数据卷；仅 `docker compose down -v` 会清空所有数据，请谨慎使用。
 > - 首次 `up -d --build` 会执行 Bun 构建，耗时较长，属正常现象。

@@ -48,10 +48,11 @@ public/uploads/*
 new-theme.sql
 nginx.conf
 
-# Docker 自身
-Dockerfile
-.dockerignore
-docker-compose*.yml
+# Docker 自身（锚定根目录：docker/ 子目录里的 Dockerfile/compose 是构建与部署所需，
+# 不能排除出构建上下文）
+/Dockerfile
+/.dockerignore
+/docker-compose*.yml
 
 # 其它
 .DS_Store

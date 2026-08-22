@@ -1,11 +1,20 @@
+# 不带 Redis 版本：应用（Node）+ MySQL 8
+# 使用：在项目根目录执行
+#   docker compose --env-file .env -f docker/docker-compose.noredis.yml up -d --build
+# 本版本不烘焙任何 Redis 配置（构建时 getRedisConfig() 返回 null，
+# ISR 走文件系统缓存、搜索缓存关闭），也不创建 redis 容器/卷。
+# 需要 Redis 的部署请用 docker-compose.yml（见 docker/README.md）。
+# 所有 ../ 相对路径均指项目根目录（compose 文件位于 docker/ 子目录）。
+
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile.noredis
       args:
         # 传给 Dockerfile 用于动态预建 + chown 上传目录，与下方 environment / 卷挂载点同源。
         UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
+        # 无 Redis 构建参数：本版本 ISR 走文件系统缓存、搜索缓存关闭。
     image: imqi1-nodejs:latest
     container_name: imqi1-app
     restart: unless-stopped
@@ -15,14 +24,12 @@ services:
       # 覆盖 .env 中的连接目标，指向 compose 内的服务名
       DB_HOST: mysql
       DB_PORT: "3306"
-      REDIS_HOST_PROD: redis
-      REDIS_PORT_PROD: "6379"
       # 本地上传目录：应用运行时（getUploadsDir）与下方卷挂载点共用同一路径，
       # 保证不设也能对上默认的 .output/public/uploads。若在 .env/shell 中设置了
       # UPLOADS_DIR，二者会一起跟随，避免写入位置与持久化卷错配。
       UPLOADS_DIR: ${UPLOADS_DIR:-/app/.output/public/uploads}
     env_file:
-      - .env
+      - ../.env
     volumes:
       # 用户上传文件持久化（应用运行时写入）；挂载点跟随 UPLOADS_DIR。
       # 注意：若把 UPLOADS_DIR 指向 /app/.output/public/uploads 之外的路径，
@@ -33,8 +40,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
 
   mysql:
     image: mysql:8.4
@@ -59,7 +64,7 @@ services:
       # MYSQL_DATABASE（DB_NAME）。init-db.sql 只建表/插数据、不含库名，正好导入该库。
       # 因此首次 `docker compose up` 即完成建表 + 默认设置 + 示例数据，无需再手动初始化。
       # 注意：仅当 mysql-data 卷为空时才会执行；卷已有数据则跳过（不会覆盖已有数据）。
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       # 用 nodejs 应用账户探活：只有当 nodejs 用户初始化完成后才判定 healthy，
       # app 因此会等到用户就绪再启动，避免启动初期的 Access denied。
@@ -68,15 +73,6 @@ services:
       timeout: 5s
       retries: 10
 
-  redis:
-    image: redis:7-alpine
-    container_name: imqi1-redis
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis-data:/data
-
 volumes:
   mysql-data:
-  redis-data:
   uploads:
