@@ -50,7 +50,10 @@ new-theme.sql
 .attachments
 .live-photos
 .compressed-live-photos
-.claude
+# Claude Code: project knowledge (memory/skills/commands) is tracked; machine-local config stays ignored
+.claude/settings.local.json
+.claude/settings.json
+.claude/worktrees/
 changelogs.json
 nginx.conf
 .excluded
