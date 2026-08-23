@@ -5,7 +5,14 @@ import { SearchQuerySchema, SearchResponseSchema } from "#server/utils/schemas";
 import { sanitizeExternalUrl } from "#server/utils/rss";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { escapeHtml, escapeRegExp } from "~~/lib/html";
-import type { SearchContentItem } from "#server/types/apis/serach";
+import type {
+  SearchContentItem,
+  SearchBranchResult,
+  ContentSearchResult,
+  SubscribeSearchResult,
+  CommentSearchResult,
+  SubscribePostSearchResult,
+} from "#server/types/apis/search";
 
 // 搜索关键词净化
 function sanitizeSearchKeyword(keyword: string): string {
@@ -93,64 +100,6 @@ function stripHtml(html: string): string {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, "");
 }
-
-// ============ 各类型搜索结果结构 ============
-
-// 文章搜索结果项
-interface ContentSearchResult {
-  type: "content";
-  cid: number;
-  title: string;
-  slug: string | null;
-  desc: string | null;
-  createTime: Date;
-  categoryName: string | null;
-  categorySlug: string | null;
-  // 正文高亮摘要
-  highlight: string;
-}
-
-// 订阅源 / 友链搜索结果项（kind 区分来源）
-interface SubscribeSearchResult {
-  type: "subscribe";
-  kind: "subscribe" | "link";
-  id: number;
-  name: string;
-  url: string;
-  desc: string | null;
-  avatar: string | null;
-}
-
-// 评论搜索结果项（白名单字段，附文章上下文）
-interface CommentSearchResult {
-  type: "comment";
-  coid: number;
-  name: string;
-  content: string;
-  avatar: string;
-  createTime: Date;
-  articleTitle: string | null;
-  articleUrl: string | null;
-}
-
-// 订阅文章搜索结果项（RSS 订阅抓取的文章）
-interface SubscribePostSearchResult {
-  type: "subscribepost";
-  id: number;
-  subscribeId: number;
-  subscribeName: string;
-  subscribeAvatar: string | null;
-  title: string;
-  link: string;
-  description: string | null;
-  author: string | null;
-  pubDate: Date | null;
-}
-
-type SearchBranchResult = {
-  results: (ContentSearchResult | SubscribeSearchResult | CommentSearchResult | SubscribePostSearchResult)[];
-  total: number;
-};
 
 // 格式化文章搜索结果（分类信息已通过 contentrelations 关联查询获取）
 function formatSearchResults(contents: SearchContentItem[], query: string): ContentSearchResult[] {

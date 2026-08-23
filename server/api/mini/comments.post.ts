@@ -1,7 +1,7 @@
 import DOMPurify from "isomorphic-dompurify";
 
 import { siteConfig } from "~~/site.config";
-import type { MiniCommentCreateResponse } from "#server/types/apis/mini";
+import type { MiniCommentBody, MiniCommentCreateResponse } from "#server/types/apis/mini";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
@@ -23,17 +23,6 @@ const PURIFY_CONFIG = {
     allowCustomizedBuiltInElements: false,
   },
 };
-
-interface MiniCommentBody {
-  cid?: number;
-  content?: string;
-  name?: string;
-  mail?: string | null;
-  link?: string | null;
-  parent_id?: number | null;
-  /** 蜜罐字段：人类不会填写，机器人会自动填充 */
-  website?: string;
-}
 
 export default defineEventHandler(async event => {
   // 评论功能总开关：关闭时直接拒收（与 comments.get 的空列表行为对应）。

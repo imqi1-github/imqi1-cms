@@ -148,6 +148,18 @@ export interface MiniCommentsResponse {
   commentEnabled: boolean;
 }
 
+/** 提交评论的请求体（小程序端） */
+export interface MiniCommentBody {
+  cid?: number;
+  content?: string;
+  name?: string;
+  mail?: string | null;
+  link?: string | null;
+  parent_id?: number | null;
+  /** 蜜罐字段：人类不会填写，机器人会自动填充 */
+  website?: string;
+}
+
 /** 提交评论的响应；data.needModeration 为 true 表示进入待审核、暂不展示 */
 export interface MiniCommentCreateResponse {
   success: true;
@@ -203,6 +215,17 @@ export interface MiniRepo {
 export interface MiniRepoResponse {
   success: true;
   data: MiniRepo;
+}
+
+/** GitHub / Gitee 仓库 API 的响应字段（仅取用到的部分） */
+export interface RepoApiData {
+  full_name?: string;
+  name?: string;
+  description?: string | null;
+  language?: string | null;
+  stargazers_count?: number;
+  forks_count?: number;
+  private?: boolean;
 }
 
 /** 足迹关联的文章（点击可跳转文章详情） */

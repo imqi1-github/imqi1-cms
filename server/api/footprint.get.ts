@@ -4,6 +4,7 @@ import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { CITY_COORDS } from "~~/shared/city-coords";
 import type { Reader } from "#server/types/apis/reader";
+import type { IdStatus } from "#server/types/apis/footprint";
 
 /**
  * 读者足迹（访客分布）聚合端点
@@ -101,7 +102,6 @@ export default defineEventHandler(async event => {
   // 落点取该身份「最新的国内评论」所在城市——避免读者走 VPN（IP 解析成境外）或临时出国时
   // 从国内地图凭空消失。境外/坐标解析不出的身份仅当其**没有任何可落点的国内评论**时，
   // 才计入 overseas / unknown 桶。
-  type IdStatus = "placed" | "unknown" | "overseas";
   const RANK: Record<IdStatus, number> = { placed: 3, unknown: 2, overseas: 1 };
   const idStatus = new Map<string, IdStatus>();
   const tally = new Map<string, { readers: Reader[]; longitude: number; latitude: number }>();

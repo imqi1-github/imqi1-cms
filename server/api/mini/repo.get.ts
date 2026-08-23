@@ -1,18 +1,7 @@
 // 小程序仓库卡片接口：服务端代理 GitHub / Gitee API，
 // 归一化字段后返回，使小程序合法域名只需站点自身、无需额外配置 api.github.com。
 
-import type { MiniRepo, MiniRepoResponse } from "#server/types/apis/mini";
-
-// GitHub / Gitee 仓库 API 的响应字段（仅取用到的部分）
-interface RepoApiData {
-  full_name?: string;
-  name?: string;
-  description?: string | null;
-  language?: string | null;
-  stargazers_count?: number;
-  forks_count?: number;
-  private?: boolean;
-}
+import type { MiniRepo, MiniRepoResponse, RepoApiData } from "#server/types/apis/mini";
 
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=600, s-maxage=600");

@@ -86,6 +86,10 @@ export default defineEventHandler(async event => {
     };
   } catch (error) {
     console.error(error);
+    // 已带 statusCode 的错误（400/403）原样抛出，避免被统一吞成 500
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
     throw createError({
       statusCode: 500,
       message: "批量删除失败",
