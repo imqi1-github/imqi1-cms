@@ -53,7 +53,12 @@ export default defineNuxtConfig({
     // Redis 配置：构建期从 REDIS_*_DEV/_PROD 解析并烘焙（见 shared/redis-config.ts）。
     // 生产运行时不再读取任何 Redis 环境变量；搜索缓存统一从这里取值，
     // ISR 缓存走上方 nitro storage / routeRules 的同一份 redisConfig（两者共用）。
-    redis: redisConfig ?? undefined,
+    // 未配置时 getRedisConfig() 返回 null，这里兜成一个 host 为空的零对象：
+    // 保证值始终是对象——untyped 据此生成对象类型（否则 Nuxt 会把未设置的键
+    // 默认成 "" 字符串，运行时配置类型会漂移成 string）。是否启用由
+    // server/utils/redis.ts 的 redisConfig.host 判定（空 host 视为关闭），
+    // 而上方 storage/routeRules 的启停仍直接用 getRedisConfig() 的原生 null。
+    redis: redisConfig ?? { host: "", port: 0, password: undefined, db: 0, lazyConnect: false },
     public: {
       cdnURL: cdnURL,
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源

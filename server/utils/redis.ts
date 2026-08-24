@@ -5,11 +5,12 @@ import type { RedisConfig } from "#shared/redis-config";
 // 搜索缓存用的 Redis 连接。
 // 配置在构建期烘焙进 runtimeConfig（nuxt.config.ts 从 REDIS_*_DEV/_PROD 解析，
 // 见 shared/redis-config.ts），生产运行时不再读取任何 Redis 环境变量；
-// 未配置时为 null，搜索缓存自动关闭（ISR 缓存由 nitro storage/routeRules
-// 决定，未配置时同样降级到文件系统）。
+// 未配置时 runtimeConfig.redis 已被 nuxt.config 兜成 host 为空的零对象，
+// 这里以 redisConfig.host 为空判定为关闭，搜索缓存自动关闭（ISR 缓存由
+// nitro storage/routeRules 决定，未配置时同样降级到文件系统）。
 const redisConfig = useRuntimeConfig().redis as RedisConfig | null | undefined;
 
-export const redis = redisConfig
+export const redis = redisConfig?.host
   ? new Redis({
       ...redisConfig,
       retryStrategy: (times) => {
