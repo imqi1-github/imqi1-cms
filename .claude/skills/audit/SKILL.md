@@ -58,14 +58,30 @@ done
 - 用户定范围后再动；改完逐条说明**功能影响（是否回归）**。
 
 ## 5. 修复后验证
-- **静态**：先 `bunx eslint <改动路径>`；再 `bunx nuxi typecheck`（慢，但 `select` 等类型改动必过）。都 exit 0 才算过；有错原样贴，勿降级 warn/跳过。
-- **实测（chrome-devtools / playwright MCP）**：
-  - dev server 常驻 `http://localhost:3001`（绑 `[::1]`，`localhost` 可解析；`127.0.0.1` 不通）。确认 `curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/`。没起 → 后台 `bun run dev`（3000 被占自动落 3001；重复起被 Nuxt dev lock 挡，用已有的即可）。
-  - 登录 `admin / 123456`（`db:init` 种子）；访问后台被重定向到 `/login?to=...`。
-  - **优先 chrome-devtools MCP**：`list_pages` / `navigate_page` / `take_snapshot` / `click` / `fill`。若报 `browser already running for chrome-profile` → 有残留锁，杀该 chrome-devtools-mcp 浏览器进程，或回退 playwright。
-  - **回退 playwright MCP**：`browser_navigate` / `browser_snapshot` / `browser_click` / `browser_fill_form` / `browser_console_messages`。
-  - 实测点：登录 → 目标页加载/空态/交互（搜索、筛选、分页、删除）→ 编辑/保存 → 抓 console/page 错误。
+
+### 5.1 会话策略（先定，再实测）
+后台是**单端登录**：每次登 admin 都会清掉该用户其它 session、并让旧 session 的 authCode 失配被判失效（`server/lib/auth.ts` `setSession`/`getUser`）。并行多个 /audit 各自登录会**互相踢下线**。所以：
+
+- **并行 /audit（推荐）→ 共享会话**：只登录一次，各会话只注入 cookie、不重复登录（否则一登就清了别人）。
+  ```bash
+  cd "$(git rev-parse --show-toplevel)"
+  SID=$(bash scripts/audit-shared-session.sh)   # 播种一次；已有且仍有效则复用，缓存 .audit-session（gitignored）
+  ```
+  - **注入浏览器**：**别再走 `/login` 重新登录**。优先用 **Playwright MCP**（它有 `browser_context.add_cookies()` 能设 httpOnly cookie，且每个会话自带一个浏览器）：`browser_context.add_cookies([{name:'session', value:"$SID", url:'http://localhost:3001'}])` → `browser_navigate` `/admin`。**chrome-devtools MCP 不便设 httpOnly cookie**（`document.cookie` 写不进 httpOnly），单会话排查才走它。
+  - **纯 API 契约校验（零浏览器、真并行）**：`bash scripts/audit-api-check.sh /api/admin/stats /api/admin/recent-comments`。
+  - 每个并行会话要用**独立浏览器实例**（Playwright 自带，或脚本化 headless），别让多个会话共用一个 chrome-devtools-profile。
+- **单会话 / 交互排查（fallback）**：才走老路径登录 `admin / 123456`。注意——一旦又登一次，其它还持有旧共享会话的会话会被踢。
+
+### 5.2 静态校验
+先 `bunx eslint <改动路径>`；再 `bunx nuxi typecheck`（慢，但 `select` 等类型改动必过）。都 exit 0 才算过；有错原样贴，勿降级 warn/跳过。
+
+### 5.3 浏览器实测（chrome-devtools / playwright MCP）
+- dev server 常驻 `http://localhost:3001`（绑 `[::1]`，`localhost` 可解析；`127.0.0.1` 不通）。确认 `curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/`。没起 → 后台 `bun run dev`（3000 被占自动落 3001；重复起被 Nuxt dev lock 挡，用已有的即可）。
+- **优先 chrome-devtools MCP**：`list_pages` / `navigate_page` / `take_snapshot` / `click` / `fill`。若报 `browser already running for chrome-profile` → 有残留锁，杀该 chrome-devtools-mcp 浏览器进程，或回退 playwright。
+- **回退 playwright MCP**：`browser_navigate` / `browser_snapshot` / `browser_click` / `browser_fill_form` / `browser_console_messages`。
+- 实测点：进入会话（共享注入或登录）→ 目标页加载/空态/交互（搜索、筛选、分页、删除）→ 编辑/保存 → 抓 console/page 错误。
 
 ## 说明
 - 与既有 skill 分工：`/review` 只扫约定且只报告；`/check` 只 lint/typecheck；本 skill **约定 + 真 bug + 用户拍板 + 实测**一条龙，会读逻辑、给选择题。
+- **并行提速**：找 bug 阶段（step 0-3，纯读代码）零浏览器、天然可并行，多个会话各审不同目录即可；只有 step-5 要浏览器，用 `scripts/audit-shared-session.sh` 播种共享会话、各会话 `audit-api-check.sh` 或 Playwright inject，避开单端登录互踢。共享缓存 `.audit-session` / `.audit-cookies*` 已 gitignored。
 - 测试产物 `.playwright-mcp`（及 `.playwright`）已 gitignore，别提交。

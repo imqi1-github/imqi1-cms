@@ -37,6 +37,10 @@ stats.html
 .playwright-mcp
 .playwright
 
+# /audit 并行共享会话缓存（运行时生成，勿提交）
+.audit-session
+.audit-cookies*
+
 # Mini program (uni-app) build outputs
 mini/dist
 mini/unpackage
