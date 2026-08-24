@@ -16,7 +16,7 @@ services:
         REDIS_PORT_PROD: ${REDIS_PORT_PROD:-6379}
         REDIS_PASSWORD_PROD: ${REDIS_PASSWORD_PROD:-}
         REDIS_DB_PROD: ${REDIS_DB_PROD:-0}
-    image: imqi1-nodejs:latest
+    image: imqi1-cms:latest
     container_name: imqi1-app
     restart: unless-stopped
     ports:

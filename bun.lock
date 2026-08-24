@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "imqi1-nodejs",
+      "name": "imqi1-cms",
       "dependencies": {
         "@amap/amap-jsapi-loader": "^1.0.1",
         "@fancyapps/ui": "^6.1.14",

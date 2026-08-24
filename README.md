@@ -378,7 +378,7 @@ cp .env.example .env
 
 ```bash
 DB_PASSWORD="改成强密码"          # MySQL 密码（root 与普通用户共用），compose 用它建库
-DB_NAME="imqi1-nodejs"           # 库名，可自定义；compose 建库与导入 SQL 都用它
+DB_NAME="imqi1-cms"           # 库名，可自定义；compose 建库与导入 SQL 都用它
 DB_USER="nodejs"                 # 应用连接的普通用户；⚠️ 不能设为 root，见下
 DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 ```

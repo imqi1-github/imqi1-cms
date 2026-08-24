@@ -29,7 +29,7 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 ## 硬性约定（必须遵守）
 1. **公开接口白名单** — 前台任何 `findMany` 必带 `select` 或逐字段构造响应，禁 `...row`。隐私 + 内部审核字段都算泄露。
 2. **Admin 写接口必带 CSRF** — `/api/admin/*` POST/PUT/DELETE 走 `validateCsrfToken`（POST/PUT 从 body `csrfToken`，DELETE 从 header `x-csrf-token`）；catch 别吞 400/404。
-3. **DB 改动** — 禁用 `migrate dev/reset`（会 reset 丢数据）。schema 变更走 db execute 或 `scripts/` 里幂等 tsx。**库名 `imqi1-nodejs`**（package name 正是它；别误写成**目录名** `nodejs-imqi1`；同实例 imqi1/imqi1-old 是历史库别碰；docker-compose 的 `MYSQL_DATABASE` 默认 `${DB_NAME:-imqi1}`，真值在 .env）。
+3. **DB 改动** — 禁用 `migrate dev/reset`（会 reset 丢数据）。schema 变更走 db execute 或 `scripts/` 里幂等 tsx。**库名 `imqi1-cms`**（与项目目录 / package name 一致；旧名 imqi1-nodejs 已统一改掉；同实例 imqi1/imqi1-old 是历史库别碰；docker-compose 的 `MYSQL_DATABASE` 默认 `${DB_NAME:-imqi1}`，真值在 .env）。
 4. **类型放独立文件** — 前端 `app/types/apis`、服务端 `server/types/apis`，不在 .ts/.vue 内联 interface/type；API 端到端类型用 Nuxt 内置 InternalApi，入参加 zod 局部 `z.infer`。
 5. **敏感配置运行时化** — redis/amap key 等走构建期烘焙或 env 注入（`shared/redis-config.ts`），别写死在前端/后端分支里。
 
@@ -37,4 +37,4 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 项目踩坑/规范细节按主题存在 **`.claude/memory/`**（git 跟踪：`MEMORY.md` 索引 + 每主题一个 `.md`）。
 涉及 Nuxt 双 bundle 单例、AMap zooms/complete、Tiptap link/markdown、mini 端、admin CSRF、auth 回跳 fullPath、公开接口白名单等时，**先读 `.claude/memory/` 对应条目再动手**。
 
-> auto-memory 每会话自动加载的是**用户级镜像**（`~/.claude/projects/A--nodejs-imqi1/memory/`）。`.claude/memory/` 是仓库权威版。改记忆两边同步写。
+> auto-memory 每会话自动加载的是**用户级镜像**，其目录由 Claude Code 按项目路径**自动派生**（形如 `~/.claude/projects/<路径派生ID>/memory/`），**随机器/路径不同而不同——勿在文件里写死具体 ID**。`.claude/memory/`（git 跟踪）是**仓库权威版、跨机一致**，改记忆以它为准。若要某机会话自动加载到最新，把 `.claude/memory/*.md` 复制到该机对应的用户级镜像目录即可（路径机器相关，属开发态 `cp` 同步）。

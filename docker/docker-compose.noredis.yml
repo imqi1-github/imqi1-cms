@@ -9,7 +9,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.noredis
-    image: imqi1-nodejs:latest
+    image: imqi1-cms:latest
     container_name: imqi1-app
     restart: unless-stopped
     ports:

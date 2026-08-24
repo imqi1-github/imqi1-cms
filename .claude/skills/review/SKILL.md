@@ -85,7 +85,7 @@ rg -n 'Math\.random' server/lib/auth.ts server/utils/session-store.ts server/uti
 rg -n 'migrate\s+(dev|reset)' package.json scripts
 ```
 > tripwire：改成 `migrate dev/reset` 会 reset 丢数据，命中即违规。当前为空。
-> 另注意**库名 `imqi1-nodejs`**（不是目录名 `nodejs-imqi1`；同实例 imqi1/imqi1-old/imqi1-test 是历史库别碰），写库名处核对。
+> 另注意**库名 `imqi1-cms`**（与目录/包名一致；同实例 imqi1/imqi1-old/imqi1-test 是历史库别碰），写库名处核对。
 
 ## 汇报格式
 按 A/B/C/D 分组输出，每条：

@@ -33,6 +33,10 @@ pids
 # Bundle analysis
 stats.html
 
+# Playwright (MCP snapshot/console artifacts)
+.playwright-mcp
+.playwright
+
 # Mini program (uni-app) build outputs
 mini/dist
 mini/unpackage

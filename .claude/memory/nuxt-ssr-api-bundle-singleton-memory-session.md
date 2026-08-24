@@ -15,4 +15,4 @@ Docker 部署（sessionStoreType=memory）下，每次整页进入 /admin 先 30
 - 排查：curl 登录拿 cookie 后对比 `curl -i /admin`（302）与 `curl /api/auth/verify`（valid）即暴露；302 响应无 Set-Cookie 删除头 = store.get 返回 null（非 authCode 分支）
 - 修复范式：进程内共享单例挂 `globalThis`（`globalStore.__imqiSessionStore`），node-server preset 单进程跨模块图共享；多进程 cluster 时 globalThis 仍不共享，需 file/database
 - 写 Nuxt server util 若含模块级可变状态且可能被 app+nitro 同时引用，一律 globalThis 或共享存储，别用模块级 `let`
-- 相关：[[auth-session-security-invariants]]、[[nodejs-imqi1-db-imqi1-nodejs]]
+- 相关：[[auth-session-security-invariants]]、[[imqi1-cms-db-imqi1-cms]]
