@@ -24,6 +24,17 @@ const activeTab = ref("content");
 const loading = ref(isEdit.value);
 const csrfToken = ref("");
 
+// 跟踪是否有未保存的更改
+const hasUnsavedChanges = ref(false);
+const initialTitle = ref("");
+const initialSlug = ref("");
+const initialContent = ref("");
+const initialDesc = ref("");
+const initialShowToc = ref(false);
+const initialStatus = ref(1);
+const initialManyCovers = ref(false);
+const initialCoversInput = ref("");
+
 // 表单数据
 const title = ref("");
 const slug = ref("");
@@ -151,13 +162,9 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
         formData.append("livePhoto", "true");
       }
 
-      // 获取 CSRF token
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1];
-      if (csrfToken) {
-        formData.append('csrfToken', csrfToken);
+      // CSRF token（统一用加载时取的 ref）
+      if (csrfToken.value) {
+        formData.append('csrfToken', csrfToken.value);
       }
 
       try {
@@ -238,6 +245,54 @@ const copyLink = async (url: string) => {
   }
 };
 
+// 保存初始内容（作为未保存判定的基线）
+const saveInitialContent = () => {
+  initialTitle.value = title.value;
+  initialSlug.value = slug.value;
+  initialContent.value = content.value;
+  initialDesc.value = desc.value;
+  initialShowToc.value = showToc.value;
+  initialStatus.value = status.value;
+  initialManyCovers.value = manyCovers.value;
+  initialCoversInput.value = coversInput.value;
+  hasUnsavedChanges.value = false;
+};
+
+// 检查是否有未保存的更改
+const checkUnsavedChanges = () => (
+  title.value !== initialTitle.value ||
+  slug.value !== initialSlug.value ||
+  content.value !== initialContent.value ||
+  desc.value !== initialDesc.value ||
+  showToc.value !== initialShowToc.value ||
+  status.value !== initialStatus.value ||
+  manyCovers.value !== initialManyCovers.value ||
+  coversInput.value !== initialCoversInput.value
+);
+
+// 监听所有字段变化
+watch([
+  title,
+  slug,
+  content,
+  desc,
+  showToc,
+  status,
+  manyCovers,
+  coversInput,
+], () => {
+  hasUnsavedChanges.value = checkUnsavedChanges();
+}, { deep: true });
+
+// beforeunload 事件处理
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges.value) {
+    e.preventDefault();
+    e.returnValue = ""; // Chrome 需要设置 returnValue
+    return "";
+  }
+};
+
 // 获取页面数据
 const fetchPage = async () => {
   if (!pageId.value) return;
@@ -271,6 +326,10 @@ const fetchPage = async () => {
 
       // 获取附件
       await fetchAttachments();
+
+      // 保存初始内容（作为未保存判定的基线）
+      await nextTick();
+      saveInitialContent();
     }
   } catch (error) {
     console.error("获取页面失败:", error);
@@ -352,6 +411,10 @@ const savePage = async () => {
         await fetchAttachments();
         await router.replace(`/admin/pages/edit?cid=${newCid}`);
       }
+
+      // 保存成功后更新基线
+      await nextTick();
+      saveInitialContent();
     }
   } catch (rawError: unknown) {
     const error = rawError as ApiError;
@@ -391,10 +454,12 @@ onMounted(async () => {
     fetchPage();
   }
   window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
 onUnmounted(() => {
   window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("beforeunload", handleBeforeUnload);
 });
 </script>
 

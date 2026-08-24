@@ -56,7 +56,22 @@ export default defineEventHandler(async event => {
         orderBy: { cid: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: {
+        // 列表不取正文 content（LongText，量大）；只有详情接口 [cid].get 才回正文供编辑
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          desc: true,
+          create_time: true,
+          update_time: true,
+          status: true,
+          comment_num: true,
+          many_covers: true,
+          covers: true,
+          show_toc: true,
+          tags: true,
+          type: true,
+          uid: true,
           user: {
             select: {
               uid: true,

@@ -41,9 +41,9 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    // 删除现有的分类关系
+    // 删除现有的分类关系（只删分类，别把同表的标签关联一并删掉）
     await prisma.contentrelations.deleteMany({
-      where: { cid: Number(id) },
+      where: { cid: Number(id), metas: { type: "category" } },
     });
 
     // 创建新的分类关系

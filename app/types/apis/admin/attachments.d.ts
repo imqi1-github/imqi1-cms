@@ -5,6 +5,12 @@ export interface AttachmentMetadata {
 	format: string | null;
 }
 
+/** 图片宽高（展示用；AttachmentItem / AttachmentDetail 均含） */
+export interface ImageDimension {
+	width?: number | null;
+	height?: number | null;
+}
+
 /** 附件列表项关联文章 */
 export interface AttachmentItemContent {
 	cid: number;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AttachmentItem, AttachmentListResponse } from "~/types/apis/admin/attachments";
+import type { AttachmentItem, AttachmentListResponse, ImageDimension } from "~/types/apis/admin/attachments";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
@@ -25,20 +25,18 @@ const attachmentTypes = [
 
 
 // 分页（页码从 URL query 读取，从详情页返回时仍停留在原页）
-const page = ref(Number(route.query.page) || 1);
+const page = ref(Math.max(1, Number(route.query.page) || 1));
 const pageSize = ref(20);
 const total = ref(0);
 
+// 请求序号守卫：只认最后一次发起的请求，丢弃过期响应（防异步乱序覆盖新结果）
+let fetchSeq = 0;
+
 // 获取附件列表
 const fetchAttachments = async () => {
+  const seq = ++fetchSeq;
   loading.value = true;
   try {
-    // 获取 CSRF token
-    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
-    if (csrfRes?.data?.token) {
-      csrfToken.value = csrfRes.data.token;
-    }
-
     const params = new URLSearchParams({
       page: String(page.value),
       pageSize: String(pageSize.value),
@@ -51,9 +49,18 @@ const fetchAttachments = async () => {
     }
 
     const res = await $fetch<AttachmentListResponse>(`/api/admin/attachments/all?${params}`);
+    if (seq !== fetchSeq) return; // 已有更新的请求，丢弃本次结果
+
     if (res?.success) {
       attachments.value = res.data.list || [];
       total.value = res.data.total || 0;
+
+      // 删除/陈旧 URL 可能让当前页越界返回空（如删光最后一页）：跳到最后一页重取，
+      // 由下方 [selectedType, page] watch 触发实际拉取。
+      const totalPages = Math.ceil(total.value / pageSize.value);
+      if (attachments.value.length === 0 && total.value > 0 && page.value > totalPages) {
+        page.value = Math.max(1, totalPages);
+      }
     }
   } catch (error) {
     console.error("获取附件列表失败:", error);
@@ -61,13 +68,29 @@ const fetchAttachments = async () => {
       message: "获取附件列表失败",
     });
   } finally {
-    loading.value = false;
+    if (seq === fetchSeq) loading.value = false;
   }
 };
 
-watch([selectedType, searchQuery, page], () => {
+// 类型筛选 / 分页变化时立即拉取（不防抖）
+watch([selectedType, page], () => {
   fetchAttachments();
   syncPageQuery();
+});
+
+// 搜索防抖：停止输入 500ms 后才重置到第 1 页并拉取，避免每次按键都请求
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+watch(searchQuery, () => {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    if (page.value === 1) {
+      // 已在第 1 页，page 变化不会触发 page watch，需显式拉一次
+      fetchAttachments();
+      syncPageQuery();
+    } else {
+      page.value = 1; // 触发 [selectedType, page] watch 拉取
+    }
+  }, 500);
 });
 
 // 把当前页码写回 URL（page=1 时省略，保持地址栏干净）
@@ -83,15 +106,6 @@ function syncPageQuery() {
 const detailRoute = (id: number | string) => ({
   path: `/admin/attachments/${id}`,
   query: page.value !== 1 ? { page: String(page.value) } : {},
-});
-
-// 防抖搜索
-let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-watch(searchQuery, () => {
-  if (searchTimeout) clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    page.value = 1;
-  }, 500);
 });
 
 const displayedContents = (item: AttachmentItem) => item.contents.slice(0, 2);
@@ -213,7 +227,7 @@ const formatFileSize = (size: string | number) => {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 };
 
-const formatImageDimensions = (item: { width?: number | null; height?: number | null }) => {
+const formatImageDimensions = (item: ImageDimension) => {
   if (!item.width || !item.height) return "-";
   return `${item.width} × ${item.height}`;
 };
@@ -264,7 +278,16 @@ const copyLink = async (url: string) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // 获取 CSRF token（写接口用；GET 列表不需要，仅拉一次）
+  try {
+    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    if (csrfRes?.data?.token) {
+      csrfToken.value = csrfRes.data.token;
+    }
+  } catch (error) {
+    console.error("获取 CSRF token 失败:", error);
+  }
   fetchAttachments();
 });
 </script>

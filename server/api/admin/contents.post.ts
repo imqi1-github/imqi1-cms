@@ -47,6 +47,19 @@ export default defineEventHandler(async event => {
   // 验证字段长度
   validateContentData({ title, slug });
 
+  // 创建前检查 slug 唯一（与 PUT 对齐；仅当提供了 slug 时检查）
+  if (slug) {
+    const slugExists = await prisma.contents.findFirst({
+      where: { slug, type },
+    });
+    if (slugExists) {
+      throw createError({
+        statusCode: 400,
+        message: `Slug "${slug}" 已被其他文章使用，请使用不同的 slug`,
+      });
+    }
+  }
+
   // 处理发布日期
   let createTime: Date | undefined = undefined;
   if (publishDate) {

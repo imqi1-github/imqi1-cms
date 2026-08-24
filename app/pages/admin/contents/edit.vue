@@ -260,7 +260,7 @@ function formatFileSize(bytes: number) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function formatImageDimensions(item: { width?: number | null; height?: number | null }) {
+function formatImageDimensions(item: Attachment) {
   if (!item.width || !item.height) return "-";
   return `${item.width} × ${item.height}`;
 }
@@ -367,13 +367,9 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
         formData.append("livePhoto", "true");
       }
 
-      // 获取 CSRF token
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1];
-      if (csrfToken) {
-        formData.append('csrfToken', csrfToken);
+      // CSRF token（统一用加载时取的 ref）
+      if (csrfToken.value) {
+        formData.append('csrfToken', csrfToken.value);
       }
 
       try {

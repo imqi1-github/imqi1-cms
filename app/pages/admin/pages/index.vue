@@ -3,6 +3,7 @@ import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const { confirm } = useConfirm();
 const loading = ref(true);
@@ -90,7 +91,7 @@ function toggleSelect(cid: number) {
   }
 }
 
-async function fetchPages(page: number = 1) {
+async function fetchPages(page: number = 1, updateUrl: boolean = true) {
   loading.value = true;
   selectedIds.value = [];
   try {
@@ -110,6 +111,19 @@ async function fetchPages(page: number = 1) {
     const res = await $fetch<PageListResponse>(`/api/admin/pages?${params.toString()}`);
     pages.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
+
+    // 删除/陈旧 URL 可能让当前页越界返回空：跳到最后一页重取
+    if (pages.value.length === 0 && pagination.value.totalPages > 0 && pagination.value.page > pagination.value.totalPages) {
+      return fetchPages(pagination.value.totalPages, updateUrl);
+    }
+
+    // 同步当前页码/筛选到 URL（page=1 时省略）
+    if (updateUrl) {
+      const query: Record<string, string> = {};
+      if (page > 1) query.page = page.toString();
+      if (selectedStatus.value !== null) query.status = selectedStatus.value.toString();
+      await router.push({ query });
+    }
   } catch (error) {
     console.error("获取页面失败:", error);
     pages.value = [];
@@ -137,7 +151,7 @@ async function deletePage(cid: number) {
         method: "DELETE",
         headers: { "x-csrf-token": csrfToken.value },
       });
-      await fetchPages(pagination.value.page);
+      await fetchPages(pagination.value.page, false);
       toast.success({ message: "页面已删除" });
     } catch (error) {
       console.error("删除失败:", error);
@@ -168,7 +182,7 @@ async function batchDelete() {
       });
       toast.success({ message: res.message || "批量删除成功" });
       selectedIds.value = [];
-      await fetchPages(pagination.value.page);
+      await fetchPages(pagination.value.page, false);
     } catch (error) {
       console.error("批量删除失败:", error);
       toast.error({ message: "批量删除失败" });
@@ -200,16 +214,29 @@ function goToPage(page: number) {
   }
 }
 
-function previewPage(cid: number, slug: string | null) {
-  if (slug) {
-    window.open(`/${slug}`, "_blank");
+function previewPage(page: PageItem) {
+  // 草稿未发布到前台，直接预览会 404
+  if (page.status !== 1) {
+    toast.warning({ message: "草稿页面暂不可在前台预览" });
+    return;
+  }
+  if (page.slug) {
+    window.open(`/${page.slug}`, "_blank", "noopener");
   } else {
     toast.error({ message: "页面未配置 slug" });
   }
 }
 
 onMounted(() => {
-  fetchPages();
+  // 从 URL 恢复状态筛选（status=0 是有效值「草稿」，用存在性判断而非真值）
+  if (route.query.status !== undefined) {
+    const statusFromUrl = Number(route.query.status);
+    if (!Number.isNaN(statusFromUrl) && [0, 1].includes(statusFromUrl)) {
+      selectedStatus.value = statusFromUrl;
+    }
+  }
+  const pageFromUrl = parseInt(route.query.page as string) || 1;
+  fetchPages(pageFromUrl, false); // 不更新 URL，避免重复导航
 });
 </script>
 
@@ -338,7 +365,7 @@ onMounted(() => {
             <TableCell>{{ formatDate(page.create_time) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">
-                <Button variant="ghost" size="icon" class="size-8" @click="previewPage(page.cid, page.slug)">
+                <Button variant="ghost" size="icon" class="size-8" @click="previewPage(page)">
                   <Icon name="lucide:eye" class="size-4" />
                 </Button>
                 <Button variant="ghost" size="icon" class="size-8" @click="editPage(page.cid)">
@@ -406,7 +433,7 @@ onMounted(() => {
           <div class="flex items-center justify-between pt-2 border-t">
             <span class="text-xs text-muted-foreground">{{ formatDate(page.create_time) }}</span>
             <div class="flex items-center gap-1">
-              <Button variant="ghost" size="icon" class="size-8" @click="previewPage(page.cid, page.slug)">
+              <Button variant="ghost" size="icon" class="size-8" @click="previewPage(page)">
                 <Icon name="lucide:eye" class="size-4" />
               </Button>
               <Button variant="ghost" size="icon" class="size-8" @click="editPage(page.cid)">

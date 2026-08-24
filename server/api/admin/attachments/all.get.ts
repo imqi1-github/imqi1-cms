@@ -15,8 +15,8 @@ export default defineEventHandler(async event => {
     }
 
     const query = getQuery(event)
-    const page = Number(query.page) || 1
-    const pageSize = Number(query.pageSize) || 20
+    const page = Math.max(1, Number(query.page) || 1)
+    const pageSize = Math.max(1, Number(query.pageSize) || 20)
     const type = query.type as string | undefined
     const search = query.search as string | undefined
 
@@ -42,7 +42,13 @@ export default defineEventHandler(async event => {
       orderBy: { aid: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: {
+      select: {
+        aid: true,
+        title: true,
+        type: true,
+        url: true,
+        metadata: true,
+        create_time: true,
         contentattachments: {
           select: {
             content: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse} from "~/types/apis/admin/attachments";
+import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse, ImageDimension} from "~/types/apis/admin/attachments";
 import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 import type { AdminContent, AdminContentListResponse } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
@@ -90,7 +90,7 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleString('zh-CN')
 }
 
-const formatImageDimensions = (item: { width?: number | null; height?: number | null }) => {
+const formatImageDimensions = (item: ImageDimension) => {
   if (!item.width || !item.height) return '-'
   return `${item.width} × ${item.height}`
 }
