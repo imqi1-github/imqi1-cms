@@ -16,6 +16,9 @@ export const useConfirm = () => {
 
   const confirm = (options: ConfirmOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
+      // 已有待响应的确认弹窗时，先取消旧的那个（resolve(false)）：
+      // 否则它会被下面的覆盖，旧 Promise 永远悬挂不决（「连点/并行 confirm」孤儿问题）
+      state.value?.resolve(false);
       state.value = {
         title: options.title ?? "确认操作",
         description: options.description ?? "",

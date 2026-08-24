@@ -7,10 +7,12 @@
  * 「表格行列 / 合并 / 删除」之间切换。链接 / 图片 / 插入表格弹窗仍由父组件持有
  * （actions.link/image/table 是父组件里的闭包，弹窗全局只渲染一次），工具栏本身不含弹窗。
  */
+import type { ToolbarActions, ToolbarActiveFlags } from "~/types/markdown-editor";
+
 const props = withDefaults(
   defineProps<{
-    actions: Record<string, () => unknown>;
-    activeFlags: Record<string, boolean>;
+    actions: ToolbarActions;
+    activeFlags: Partial<ToolbarActiveFlags>;
     canUndo: boolean;
     canRedo: boolean;
     canMergeCells: boolean;

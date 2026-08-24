@@ -18,8 +18,9 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
 
   // 服务端由 site-settings.server 插件直连数据库预取；若到这里仍无值，
   // 说明预取失败，返回空对象兜底而不发 HTTP（SSR 走 /api/site 会被 referer-check 拦成 403）。
+  // 实际消费方会按字段读取，空对象不会抛 TypeError（曾因返回 null 且强转 SiteSettings 导致 SSR 崩溃）。
   if (import.meta.server) {
-    return siteSettings.value as unknown as SiteSettings;
+    return (siteSettings.value ?? {}) as SiteSettings;
   }
 
   // 正在加载，复用同一个 Promise

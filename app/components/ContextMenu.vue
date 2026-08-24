@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from "@/lib/utils";
-import { findRichInputHandle, type RichInputHandle } from "~/composables/useRichInputRegistry";
+import { findRichInputHandle } from "~/composables/useRichInputRegistry";
+import type { RichInputHandle } from "~/types/composables/rich-input";
 
 const router = useRouter();
 const { notify } = useFrontNotification();

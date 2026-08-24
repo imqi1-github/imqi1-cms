@@ -11,52 +11,10 @@
 // enhanced=true（前台）额外启用：自实现撤销/重做历史栈、Ctrl+Z/Y/A、剪切、右键菜单用的
 // clipboard 复制/剪切/粘贴、框内拖拽移动文字（+接受外部纯文本拖入，禁图片文件）。
 // enhanced=false（后台）保持原生行为：onKeyDown 只管 Enter，drag 一律 preventDefault，cut 走原生。
-import { type ComputedRef, type Ref, computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
+import type { EmojiRichInputHandle, UseEmojiRichInputOptions } from "~/types/composables/emoji-rich-input";
 import { buildEmojiPlaceholder, getEmojiByKey, textToEditableHtml } from "~/utils/emoji";
-
-export interface UseEmojiRichInputOptions {
-  /** `:[key]` 字符串模型（双向） */
-  model: Ref<string>;
-  /** 可编辑容器元素引用（由组件 useTemplateRef 持有，传入） */
-  editorRef: Readonly<Ref<HTMLElement | null>>;
-  /** 模型→DOM 渲染后回调（用于切换占位符 is-empty 态） */
-  onModelRendered?: (isEmpty: boolean) => void;
-  /** true=前台编辑增强（撤销/重做、Ctrl 快捷键、剪切、clipboard、拖拽移动、右键菜单）；false=后台保持原生 */
-  enhanced?: boolean;
-}
-
-export interface EmojiRichInputHandle {
-  onInput: (e: Event) => void;
-  onPaste: (e: ClipboardEvent) => void;
-  onKeyDown: (e: KeyboardEvent) => void;
-  onCopy: (e: ClipboardEvent) => void;
-  onCut: (e: ClipboardEvent) => void;
-  onDrop: (e: DragEvent) => void;
-  onDragOver: (e: DragEvent) => void;
-  onDragStart: (e: DragEvent) => void;
-  onDragEnd: () => void;
-  /** 在光标处插入表情（选区不在编辑器内则追加到末尾）；面板连插多个时保持聚焦 */
-  insertEmoji: (key: string) => void;
-  /** 聚焦并把光标移到末尾 */
-  focus: () => void;
-  /** 读取 DOM→`:[key]` 字符串（导出供回环测试/复制） */
-  readDom: (root: HTMLElement) => string;
-  /** 撤销/重做（enhanced） */
-  undo: () => void;
-  redo: () => void;
-  /** 全选编辑器内容（enhanced；Ctrl+A 与右键菜单共用） */
-  selectAll: () => void;
-  /** 右键菜单复制/剪切/粘贴（走 clipboard API；enhanced） */
-  copySelection: () => Promise<void>;
-  cutSelection: () => Promise<void>;
-  pasteFromClipboard: () => Promise<void>;
-  /** 菜单 disabled 态 */
-  canUndo: ComputedRef<boolean>;
-  canRedo: ComputedRef<boolean>;
-  /** 当前选区是否落在编辑器内且非折叠（菜单剪切/复制 disabled 态） */
-  hasSelection: () => boolean;
-}
 
 // 零宽空格：img 后的可落点文本节点占位，readDom 会从文本里剥掉，永不进模型。
 // 用 fromCodePoint 避免 source 里出现不可见字符 / 转义歧义。
@@ -226,6 +184,8 @@ export function useEmojiRichInput(opts: UseEmojiRichInputOptions): EmojiRichInpu
       lastPushAt = now;
     }
     model.value = next;
+    // 输入会改变 isEmpty（placeholder 态）：与 syncFromModel/onMounted 保持一致，刷新 is-empty 回调
+    onModelRendered?.(!model.value);
   }
 
   /** 在 range 处插入多行文本（enhanced 时记一条撤销历史）；供 onPaste/pasteFromClipboard/drop 复用。
@@ -535,7 +495,8 @@ export function useEmojiRichInput(opts: UseEmojiRichInputOptions): EmojiRichInpu
     if (!img) return;
 
     if (enhanced) pushHistory(model.value);
-    const range = wasInEditor && selBefore ? selBefore.getRangeAt(0) : placeCaretAtEnd(editor);
+    // 用 focus() 前捕获的选区快照（cloneRange），避免 focus() 重置/漂移光标后拿到错位 Range
+    const range = wasInEditor && selBefore ? selBefore.getRangeAt(0).cloneRange() : placeCaretAtEnd(editor);
     range.deleteContents();
     range.insertNode(img);
     // img 后插零宽空格，让光标有可落点的文本节点（contenteditable=false 的 img 自身不能承载光标）

@@ -1,14 +1,10 @@
+import type { AuthVerifyResponse } from "~/types/apis/auth";
+
 // 全局认证状态
 const isLoggedIn = ref(false);
 const isLoadingAuth = ref(true);
-const currentUser = ref<{
-  uid: number;
-  name: string;
-  nickname: string | null;
-  mail: string | null;
-  avatar: string | null;
-} | null>(null);
-let hasInitialized = false;
+const currentUser = ref<AuthVerifyResponse["user"]>(null);
+const hasInitialized = ref(false);
 
 // 检查用户登录状态
 async function checkAuthStatus() {
@@ -22,7 +18,7 @@ async function checkAuthStatus() {
       currentUser.value = null;
     } finally {
       isLoadingAuth.value = false;
-      hasInitialized = true;
+      hasInitialized.value = true;
     }
   }
 }
@@ -32,7 +28,7 @@ export function useAuth() {
     isLoggedIn: readonly(isLoggedIn),
     isLoadingAuth: readonly(isLoadingAuth),
     currentUser: readonly(currentUser),
-    hasInitialized: computed(() => hasInitialized),
+    hasInitialized: readonly(hasInitialized),
     checkAuthStatus,
   };
 }

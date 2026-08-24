@@ -16,9 +16,14 @@ let isInitialized = false;
 // 播放器实例 ID（用于播放器管理器）
 const playerId = `footer-${Date.now()}-${Math.random()}`;
 
-// 音乐播放器失败计数相关常量（歌单拉取失败 + 单首播放卡顿/失败共用同一计数）
+// 歌单 API 拉取闸门失败计数（持久 localStorage；只在 initPlayer 的 meting 请求失败时累加、成功即清零）。
+// 单首播放卡顿/失败走独立的会话内计数 playbackFailureCount（见 handleSongProblem），两者完全隔离——
+// 播放层「连续失败」绝不冤枉封掉「刷新后自动重试」的 API 拉取闸门，反之亦然。
 const METING_FAILURE_COUNT_KEY = "meting_api_failure_count";
 const MAX_FAILURE_COUNT = 3;
+
+// 单首播放失败的会话内计数（内存、非持久）：达到上限停用整个播放器；成功播放即清零，刷新自动重试。
+let playbackFailureCount = 0;
 
 // 获取失败次数
 function getFailureCount(): number {
@@ -110,8 +115,11 @@ export function useAudioPlayer() {
     isLoaded.value = false;
     if (audio) {
       audio.pause();
+      detachAudioListeners(audio);
+      audio.removeEventListener("canplay", playWhenReady);
+      audio = null; // 释放单例引用，避免已停用实例仍挂事件/被 `canplay` 残留回调复活
     }
-    resetFailureCount();
+    playbackFailureCount = 0; // 会话内计数归零；刷新页面即自动重试（见文件头注释）
   }
 
   const handleSongEnd = () => {
@@ -122,9 +130,9 @@ export function useAudioPlayer() {
   // error 与 stalled 处理逻辑一致，仅文案不同，合并为单一实现避免重复维护
   function handleSongProblem(reason: string, disableReason: string) {
     console.warn(reason);
-    const newCount = incrementFailureCount();
-    if (newCount >= MAX_FAILURE_COUNT) {
-      disablePlayer(`${disableReason} ${newCount} 次`);
+    playbackFailureCount += 1;
+    if (playbackFailureCount >= MAX_FAILURE_COUNT) {
+      disablePlayer(`${disableReason} ${playbackFailureCount} 次`);
       return;
     }
     shouldAutoPlay.value = isPlaying.value;
@@ -132,7 +140,13 @@ export function useAudioPlayer() {
   }
 
   const handleSongError = () => handleSongProblem("歌曲加载失败，切换下一首", "歌曲连续加载失败");
-  const handleSongStalled = () => handleSongProblem("网络卡顿，切换下一首", "网络连续卡顿");
+  // stalled 是瞬时网络缓冲（seek/起播/弱网），不是硬失败：成功播放会清零 playbackFailureCount，
+  // 这里只轻量切到下一首继续、不累加也不触发停用——否则一场连环卡顿会冤枉禁用整个播放器。
+  const handleSongStalled = () => {
+    console.warn("网络卡顿，切换下一首");
+    shouldAutoPlay.value = isPlaying.value;
+    playNext();
+  };
 
   const handleCanPlayThrough = () => {
     if (shouldAutoPlay.value && audio) {
@@ -146,8 +160,8 @@ export function useAudioPlayer() {
     isPlaying.value = true;
     shouldAutoPlay.value = false;
 
-    // 成功播放，重置连续失败计数（与歌单拉取成功一致），避免偶发卡顿冤枉累积
-    resetFailureCount();
+    // 成功播放，清零会话内播放失败计数；不动歌单 API 闸门，偶发卡顿不冤枉累积
+    playbackFailureCount = 0;
 
     // 通知播放器管理器，暂停其他所有播放器
     const manager = getPlayerManager();
@@ -211,8 +225,6 @@ export function useAudioPlayer() {
   // 初始化播放器
   async function initPlayer(playlistConfig: { id: string; server: string }) {
     if (isInitialized) return;
-    isInitialized = true;
-
     if (!playlistConfig.id) return;
 
     // 检查失败次数，如果超过最大次数则不初始化播放器
@@ -222,6 +234,8 @@ export function useAudioPlayer() {
       console.warn(`Meting API 已连续失败 ${failureCount} 次，不再加载音乐播放器。如需重试，请清除 localStorage 中的 ${METING_FAILURE_COUNT_KEY}`);
       return;
     }
+    // 以上守卫全过才置位：空 id / 已到失败上限时保持未初始化，后续可用新配置重试，而非被「假置位」卡死
+    isInitialized = true;
 
     // 注册到播放器管理器
     const manager = getPlayerManager();
@@ -309,7 +323,8 @@ export function useAudioPlayer() {
     }
   }
 
-  // 清理资源
+  // 清理资源：注销播放器管理器 + 暂停/解绑 audio + 释放单例。
+  // 同时复位 isInitialized：否则 FooterMusic 卸载后重新挂载时 initPlayer 会被 isInitialized 卡死（不再播放）。
   function cleanup() {
     // 从播放器管理器中注销
     const manager = getPlayerManager();
@@ -321,7 +336,9 @@ export function useAudioPlayer() {
       audio.pause();
       detachAudioListeners(audio);
       audio.removeEventListener("canplay", playWhenReady);
+      audio = null;
     }
+    isInitialized = false;
   }
 
   return {

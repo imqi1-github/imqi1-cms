@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onBeforeUnmount, onMounted } from "vue";
 
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
@@ -22,7 +22,7 @@ const playlistConfig = computed(() => {
 });
 
 // 使用全局音频播放器状态
-const { currentSong, isPlaying, isLoaded, isDisabled, progress, initPlayer, togglePlay } = useAudioPlayer();
+const { currentSong, isPlaying, isLoaded, isDisabled, progress, initPlayer, togglePlay, cleanup } = useAudioPlayer();
 
 // 初始化播放器（只执行一次）：延迟到空闲时段，不抢首页加载关键路径。
 // 先用 setTimeout 让出英雄区渐入/字体稳定窗口，再交给 requestIdleCallback 等空闲
@@ -35,6 +35,12 @@ onMounted(() => {
   } else {
     setTimeout(start, MIN_DELAY);
   }
+});
+
+// 页脚卸载时释放全局音频：停止播放、解绑监听、注销播放器管理器、复位单例
+// （否则 SPA 导航/页脚移除后，模块级 audio 仍持续播放并留在播放器管理器）。
+onBeforeUnmount(() => {
+  cleanup();
 });
 </script>
 

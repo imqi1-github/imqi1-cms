@@ -28,7 +28,6 @@ const loadError = ref(false);
 let _amap: AMapNamespace | null = null;
 let map: AMapMapInstance | null = null;
 let marker: AMap.Marker | null = null;
-let updatingFromPicker = false;
 // loading 兜底 setTimeout 句柄 —— 卸载时取消，避免写 loading ref / 在销毁的地图上 scheduleResize
 let loadingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -88,13 +87,13 @@ function scheduleResize() {
 }
 
 function ensureMarker(lnglat: LngLatTuple) {
-  if (!AMap || !map) return;
+  if (!_amap || !map) return;
 
   if (!marker) {
-    marker = new AMap.Marker({
+    marker = new _amap.Marker({
       position: lnglat,
       content: markerHtml(),
-      offset: new AMap.Pixel(-16, -38),
+      offset: new _amap.Pixel(-16, -38),
       draggable: true,
       cursor: "move",
       map,
@@ -139,12 +138,21 @@ function selectLngLat(value: LngLatInput, moveCenter = true) {
     map.setZoomAndCenter(Math.max(map.getZoom?.() || 4, 13), lnglat);
   }
 
-  updatingFromPicker = true;
   emit("update:longitude", formatCoord(lnglat[0]));
   emit("update:latitude", formatCoord(lnglat[1]));
-  window.setTimeout(() => {
-    updatingFromPicker = false;
-  }, 0);
+}
+
+// 自回声守卫：选点/拖拽已把 marker 移到目标并 emit，props 回传到与 marker 当前坐标一致时，
+// 说明是自身 emit 的回声，跳过 syncMarkerFromProps（否则会强制 recenter/setZoom 覆盖拖拽结果）。
+function isMarkerAtProps(): boolean {
+  if (!marker) return false;
+  const lnglat = formLngLat();
+  if (!lnglat) return false;
+  const pos = marker.getPosition();
+  if (!pos) return false;
+  const normalized = normalizeLngLat(pos);
+  if (!normalized) return false;
+  return Math.abs(normalized[0] - lnglat[0]) < 1e-6 && Math.abs(normalized[1] - lnglat[1]) < 1e-6;
 }
 
 onMounted(async () => {
@@ -219,7 +227,7 @@ watch(isDark, dark => {
 watch(
   () => [props.longitude, props.latitude],
   () => {
-    if (updatingFromPicker) return;
+    if (isMarkerAtProps()) return;
     syncMarkerFromProps();
   },
 );

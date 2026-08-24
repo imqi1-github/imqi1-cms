@@ -1,4 +1,4 @@
-import { onMounted, watch } from "vue";
+import { watch } from "vue";
 
 export function useScrollbarTheme() {
   const colorMode = useColorMode();
@@ -73,17 +73,13 @@ export function useScrollbarTheme() {
     document.head.appendChild(style);
   };
 
-  // 监听颜色模式变化
+  // 监听颜色模式变化（@vueuse/core v14 的 useColorMode 无 preference 字段，仅 .value；用它
+  // 才能解析 system/auto 这类透传到 OS 系统色的偏好，并保持与全站其它消费方一致）。
   watch(
-    () => colorMode.preference,
+    () => colorMode.value,
     (newValue) => {
       updateScrollbarColor(newValue === "dark");
     },
     { immediate: true }
   );
-
-  onMounted(() => {
-    // 初始化时应用
-    updateScrollbarColor(colorMode.preference === "dark");
-  });
 }

@@ -3,7 +3,8 @@
  * CustomContainer 节点的可视化 NodeView。
  *
  * 不可编辑（contenteditable=false）的占位块：展示容器图标 + 类型标签 + 截断原文，
- * 提供「编辑源码」（弹窗改 raw）与「删除」两个操作。raw 改动后同步刷新 type（驱动图标）。
+ * 提供「编辑源码」（弹窗改 raw）与「删除」两个操作。raw 是唯一事实来源，
+ * 改动后 meta/type 均由 raw 重算（meta 里 deriveContainerType 刷新图标/标签，不再单独写 type 属性）。
  */
 import { computed, ref, watch } from "vue";
 import { NodeViewWrapper, nodeViewProps } from "@tiptap/vue-3";
@@ -86,7 +87,7 @@ watch(dialogOpen, (open) => {
 
 function saveEdit() {
   const next = editingRaw.value;
-  props.updateAttributes({ raw: next, type: deriveContainerType(next) ?? "" });
+  props.updateAttributes({ raw: next });
   dialogOpen.value = false;
 }
 </script>

@@ -5,21 +5,7 @@
 // WeakMap 以 DOM 元素为 key：元素销毁即自动 GC；组件层仍成对 register/unregister 兜底
 //（CommentInput 走 v-if，回复框展开/取消会频繁 mount/unmount EmojiRichInput）。
 
-/** 暴露给全局右键菜单的编辑句柄（引擎 handle 的转发子集 + 状态查询）。 */
-export interface RichInputHandle {
-  undo: () => void;
-  redo: () => void;
-  selectAll: () => void;
-  copySelection: () => Promise<void>;
-  cutSelection: () => Promise<void>;
-  pasteFromClipboard: () => Promise<void>;
-  /** 撤销栈是否非空（菜单"撤销"disabled 态） */
-  canUndo: () => boolean;
-  /** 重做栈是否非空（菜单"重做"disabled 态） */
-  canRedo: () => boolean;
-  /** 当前选区是否落在编辑器内且非折叠（菜单"剪切/复制"disabled 态） */
-  hasSelection: () => boolean;
-}
+import type { RichInputHandle } from "~/types/composables/rich-input";
 
 const registry = new WeakMap<HTMLElement, RichInputHandle>();
 

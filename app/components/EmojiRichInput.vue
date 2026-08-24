@@ -2,7 +2,8 @@
 import type { HTMLAttributes } from "vue";
 
 import { cn } from "@/lib/utils";
-import { registerRichInput, type RichInputHandle, unregisterRichInput } from "~/composables/useRichInputRegistry";
+import { registerRichInput, unregisterRichInput } from "~/composables/useRichInputRegistry";
+import type { RichInputHandle } from "~/types/composables/rich-input";
 
 // 评论内容富文本输入：contenteditable 渲染 :[key] 占位符为内联 <img>，
 // 退格删整张图、绝不露占位符。引擎见 composables/useEmojiRichInput。

@@ -1,35 +1,25 @@
 import { toast } from 'vue-sonner'
 
-import type { ToastProps } from '@/types/toast'
+import type { ToastProps } from '~/types/composables/toast'
 
 export const useToast = () => {
-  const success = (props: ToastProps) => {
-    return toast.success(props.message, {
-      description: props.description,
-      duration: props.duration ?? 4000,
-    })
-  }
+  // 共享 options 构造（description/duration 默认值）—— 抽出避免 4 个 helper 重复拼同一对象
+  const baseOptions = (props: ToastProps) => ({
+    description: props.description,
+    duration: props.duration ?? 4000,
+  })
 
-  const error = (props: ToastProps) => {
-    return toast.error(props.message, {
-      description: props.description,
-      duration: props.duration ?? 4000,
-    })
-  }
+  const success = (props: ToastProps) =>
+    toast.success(props.message, baseOptions(props))
 
-  const info = (props: ToastProps) => {
-    return toast.info(props.message, {
-      description: props.description,
-      duration: props.duration ?? 4000,
-    })
-  }
+  const error = (props: ToastProps) =>
+    toast.error(props.message, baseOptions(props))
 
-  const warning = (props: ToastProps) => {
-    return toast.warning(props.message, {
-      description: props.description,
-      duration: props.duration ?? 4000,
-    })
-  }
+  const info = (props: ToastProps) =>
+    toast.info(props.message, baseOptions(props))
+
+  const warning = (props: ToastProps) =>
+    toast.warning(props.message, baseOptions(props))
 
   const promise = <T,>(
     promise: Promise<T>,

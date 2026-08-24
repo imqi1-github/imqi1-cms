@@ -4,7 +4,8 @@
  * 设计要点：
  *   - `atom: true`：作为一个整体被选中/移动/删除，内部不可编辑（contenteditable=false）；
  *     原始 `:::` 全文存在 attrs.raw，回写时原样吐回（见下方 markdown.serialize）。
- *   - attrs.type 仅用于选占位块的图标/标签（由 deriveContainerType 从 raw 推导），不参与序列化。
+ *   - 容器类型（占位块图标/标签/高亮、工具栏点亮按钮）一律由 raw 经 deriveContainerType /
+ *     deriveCalloutVariant **运行期推导**，不另存 type 属性——raw 是唯一事实来源。
  *   - NodeView（CustomContainerNodeView.vue）覆盖渲染：展示图标 + 标签 + 截断原文 +
  *     「编辑源码」按钮（弹窗改 raw）。
  *   - 序列化（editor→markdown）：注册 markdown.serialize 规则，直接 state.write(raw) 原样输出，
@@ -20,11 +21,7 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
 import CustomContainerNodeView from "../CustomContainerNodeView.vue";
 
-/** prosemirror-markdown 序列化器 state 用到的最小子集（避免引入其类型依赖）。 */
-interface MarkdownSerializerStateLike {
-  write(content: string): void;
-  closeBlock(node: ProseMirrorNode): void;
-}
+import type { MarkdownSerializerStateLike } from "~/types/markdown-editor";
 
 export const CustomContainer = Node.create({
   name: "customContainer",
@@ -36,9 +33,6 @@ export const CustomContainer = Node.create({
   addAttributes() {
     return {
       raw: {
-        default: "",
-      },
-      type: {
         default: "",
       },
     };

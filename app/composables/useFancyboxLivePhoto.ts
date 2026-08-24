@@ -220,10 +220,16 @@ export const useFancyboxLivePhoto = () => {
     // 重置到开头
     currentVideoEl.currentTime = 0;
 
-    // 交叉淡入：双 raf 确保初始 opacity:0 已应用，再切换到 is-visible
+    // 交叉淡入：双 raf 确保初始 opacity:0 已应用，再切换到 is-visible。
+    // 快照 mountEl/videoEl，回调内二次校验身份：若期间用户切换幻灯片/清理（模块级 current*
+    // 已变），放弃本次淡入——否则上一张挂起的 raf 会误把新 slide 的 wrapper 标 is-flp-playing，
+    // 导致新幻灯片图片被淡出却没有视频（竞态 bug）。
+    const targetMountEl = currentMountEl;
+    const targetVideoEl = currentVideoEl;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        currentVideoEl?.classList.add("is-visible");
+        if (currentMountEl !== targetMountEl || currentVideoEl !== targetVideoEl) return;
+        targetVideoEl?.classList.add("is-visible");
         // 同步淡出 wrapper 内所有非视频内容（含 Panzoom 放大的图片）
         setPlaying(true);
       });
@@ -364,6 +370,13 @@ export const useFancyboxLivePhoto = () => {
           });
         }),
         "Carousel.settle": wrap("Carousel.settle", (fancybox, _carousel, slide) => {
+          // 切换幻灯片：先取消上一张进行中的视频提取（此前只有 close/destroy 的 fullCleanup 会 abort，
+          // settle 漏了 → 上一张的 fetch 会白跑完再被丢弃）。已切换的请求结果在 toggleVideo 里已被
+          // currentImageUrl!==targetUrl 判废，这里提前 abort 更省。
+          if (extractAbortController) {
+            extractAbortController.abort();
+            extractAbortController = null;
+          }
           removeAllOverlays(fancybox);
           revokeVideo();
 

@@ -28,6 +28,7 @@ import { deriveCalloutVariant } from "./markdown-editor/containerMeta";
 
 import { deriveContainerType, splitMarkdown } from "~/utils/markdownSplit";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
+import type { ToolbarActiveFlags } from "~/types/markdown-editor";
 
 const props = defineProps<{
   contentId?: number;
@@ -103,7 +104,7 @@ onBeforeUnmount(() => {
 // 工具栏态：撤销/重做可用性 + 当前激活的格式（用于按钮高亮），随事务刷新
 const canUndo = ref(false);
 const canRedo = ref(false);
-const activeFlags = ref<Record<string, boolean>>({});
+const activeFlags = ref<Partial<ToolbarActiveFlags>>({});
 // 表格合并/拆分是否可用（需选区跨多格 / 光标在已合并格）
 const canMergeCells = ref(false);
 const canSplitCell = ref(false);
@@ -129,7 +130,6 @@ function buildDoc(editor: Editor, md: string): ProseMirrorNode {
       blocks.push(
         editor.schema.nodes.customContainer!.create({
           raw: seg.raw,
-          type: deriveContainerType(seg.raw) ?? "",
         }),
       );
     } else if (seg.text.trim()) {
@@ -192,7 +192,9 @@ function activeContainerButtonKey(ed: Editor): string | null {
   const node = selection.node;
   if (node.type.name !== "customContainer") return null;
   const raw = (node.attrs.raw as string) ?? "";
-  const type = (node.attrs.type as string) || deriveContainerType(raw);
+  // 以 raw 为唯一事实来源推导容器类型：不读 attrs.type —— 编辑源码对话框改 raw 后该属性不再刷新，
+  // 若当权威读会点亮过期按钮（如把 :::details 改成 :::callout success 后仍亮「折叠」）。与 NodeView 的 meta、序列化路径一致。
+  const type = deriveContainerType(raw);
   switch (type) {
     case "live-photo":
       return "livePhoto";
@@ -284,7 +286,7 @@ function insertContainer(template: string) {
     .focus()
     .insertContent({
       type: "customContainer",
-      attrs: { raw: template, type: deriveContainerType(template) ?? "" },
+      attrs: { raw: template },
     })
     .run();
 }

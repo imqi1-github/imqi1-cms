@@ -61,6 +61,12 @@ export const useMarkdownImages = () => {
         return;
       }
 
+      // 已增强过的图片（同一次渲染里 mount 被重复调用 / HMR 重跑）跳过，避免「套娃」：
+      // 普通图已替换成 .markdown-image-container 内的 .markdown-image，实况图已替换成 .live-photo-container
+      if (imgEl.closest(".markdown-image-container, .markdown-live-photo-container")) {
+        return;
+      }
+
       const src = imgEl.src;
       const alt = imgEl.alt || "";
       const className = imgEl.className || "";
@@ -121,7 +127,7 @@ export const useMarkdownImages = () => {
         const wrapper = document.createElement("div");
         wrapper.className = "markdown-image-container";
         wrapper.innerHTML = `
-          <div class="markdown-image-wrapper relative overflow-hidden ${className}"${wrapperStyle ? ` style="${escapeHtmlAttr(wrapperStyle)}"` : ""}>
+          <div class="markdown-image-wrapper relative overflow-hidden ${escapeHtmlAttr(className)}"${wrapperStyle ? ` style="${escapeHtmlAttr(wrapperStyle)}"` : ""}>
             <img
               src="${escapeHtmlAttr(src)}"
               alt="${escapeHtmlAttr(alt)}"

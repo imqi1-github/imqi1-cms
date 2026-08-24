@@ -7,7 +7,7 @@
  * 容器的真正渲染仍由服务端管线负责。容器名集合与服务端保持一致。
  */
 
-import type { ContainerMeta, ContainerType } from "~/types/markdown-editor";
+import type { CalloutVariant, ContainerMeta, ContainerType } from "~/types/markdown-editor";
 
 export const CONTAINER_META: Record<ContainerType, ContainerMeta> = {
   "live-photo": { type: "live-photo", label: "实况照片", icon: "lucide:aperture" },
@@ -24,7 +24,7 @@ export const CONTAINER_META: Record<ContainerType, ContainerMeta> = {
 
 /** 未知容器类型的兜底展示。 */
 export const UNKNOWN_CONTAINER_META: ContainerMeta = {
-  type: "details", // 占位，仅满足类型；label/icon 才是实际用到的
+  type: null, // 诚实哨兵：无确定容器类型（不再用 "details" 占位，防未来消费方误判）
   label: "自定义容器",
   icon: "lucide:box",
 };
@@ -33,7 +33,7 @@ export const UNKNOWN_CONTAINER_META: ContainerMeta = {
  * 解析 callout 的变体（success/warning/error/info），用于占位块按变体着色。
  * 非 callout 容器返回 null。
  */
-export function deriveCalloutVariant(raw: string): "success" | "warning" | "error" | "info" | null {
+export function deriveCalloutVariant(raw: string): CalloutVariant | null {
   const m = raw.match(/^:::callout\s+(success|warning|error|info)\b/);
-  return m ? (m[1] as "success" | "warning" | "error" | "info") : null;
+  return m ? (m[1] as CalloutVariant) : null;
 }

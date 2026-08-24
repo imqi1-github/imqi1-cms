@@ -8,16 +8,20 @@ export const useLivePhoto = () => {
   });
 
   const findMotionVideoStart = (bytes: Uint8Array): number => {
-    // 查找 ftyp 标记（MP4 文件的起始标记）
-    // ftyp 的十六进制是: 0x66 0x74 0x79 0x70
-    for (let i = 0; i < bytes.length - 8; i++) {
+    // 查找 ftyp 标记（MP4 文件的起始标记）。偏移 i 处是一整块 MP4 box：
+    // bytes[i..i+3] = box size（大端）、bytes[i+4..i+7] = "ftyp"（66 74 79 70）。
+    // 修两点：① 循环上界 length-7 才覆盖到最后一个 8 字节窗口（原 -8 差一位）；
+    //   ② 校验「前置 box size ≥ 8」——JPEG 压缩字节里偶然出现的 ftyp 序列会被过滤掉，避免误切片。
+    for (let i = 0; i < bytes.length - 7; i++) {
       if (
         bytes[i + 4] === 0x66 && // f
         bytes[i + 5] === 0x74 && // t
         bytes[i + 6] === 0x79 && // y
         bytes[i + 7] === 0x70 // p
       ) {
-        return i;
+        // 循环上界已保证 i+7 ≤ length-1，这四个字节索引必在界内（TS 不知道，用 ! 断言）
+        const boxSize = (bytes[i]! << 24) | (bytes[i + 1]! << 16) | (bytes[i + 2]! << 8) | bytes[i + 3]!;
+        if (boxSize >= 8) return i;
       }
     }
 
@@ -79,17 +83,19 @@ export const useLivePhoto = () => {
   };
 
   /**
-   * 判断图片 URL 是否为实况照片
+   * 判断图片 URL 是否为实况照片。
+   * 生产方（useMarkdownImages / slug.vue / MarkdownEditor）一律把 `#live` 追加在 URL 末尾，
+   * 故与 cleanLivePhotoUrl 统一用「末尾匹配」语义（旧实现 includes 与 replace(/#live$/) 漂移不一致）。
    */
   const isLivePhoto = (url: string): boolean => {
-    return url.includes("#live");
+    return url.endsWith("#live");
   };
 
   /**
    * 清理 URL，移除 #live 锚点
    */
   const cleanLivePhotoUrl = (url: string): string => {
-    return url.replace(/#live$/, "");
+    return url.endsWith("#live") ? url.slice(0, -"#live".length) : url;
   };
 
   return {
