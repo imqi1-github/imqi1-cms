@@ -2,7 +2,9 @@ import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost
 import { useRuntimeConfig } from "#imports";
 import type { AmapClientConfig, LoadAmapOptions, AmapWindow } from "~/types/utils/amap";
 
-const AMAP_SCRIPT_CALLBACK = "__onAmapProxyLoaded" as const;
+// 高德 script 加载回调的全局 key。代理/直连两种模式共用同一回调名（见 buildAmapProxyScriptUrl /
+// buildAmapDirectScriptUrl），避免命名误导引发「直连模式不该出现此残留」之类的误删重构。
+const AMAP_SCRIPT_CALLBACK = "__amapScriptLoaded" as const;
 
 let amapLoadPromise: Promise<typeof AMap> | null = null;
 let loadedVersion: string | null = null;
@@ -101,8 +103,9 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
         return;
       }
 
-      browserWindow[AMAP_SCRIPT_CALLBACK] = (error?: unknown) => {
-        delete browserWindow.__onAmapProxyLoaded;
+      (browserWindow as unknown as Record<string, unknown>)[AMAP_SCRIPT_CALLBACK] = (error?: unknown) => {
+        // 删除动态计算的 key；用 Reflect.deleteProperty 避免 @typescript-eslint/no-dynamic-delete 报错。
+        Reflect.deleteProperty(browserWindow, AMAP_SCRIPT_CALLBACK);
 
         if (error) {
           resetLoaderState();
@@ -115,8 +118,8 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
       };
 
       const script = document.createElement("script");
+      // 动态 append 的 script，defer 与 async 行为等价，留 async 即可。
       script.async = true;
-      script.defer = true;
       script.src = useProxy
         ? buildAmapProxyScriptUrl({
             version,
@@ -130,9 +133,16 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
             key: options.key!,
           });
       script.onerror = () => {
-        delete browserWindow.__onAmapProxyLoaded;
+        // 失败时移除已 append 的 script 节点，避免 DOM 残留；script.onerror 不会重复触发，
+        // 但节点仍可能继续尝试解析、留下无意义资源。
+        script.parentNode?.removeChild(script);
+        Reflect.deleteProperty(browserWindow, AMAP_SCRIPT_CALLBACK);
         resetLoaderState();
-        reject(new Error("Failed to load the proxied AMap script."));
+        reject(new Error(
+          useProxy
+            ? "Failed to load the proxied AMap script."
+            : "Failed to load the AMap script.",
+        ));
       };
 
       parentNode.appendChild(script);

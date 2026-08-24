@@ -41,5 +41,7 @@ type AmapWindow = Window & {
     securityJsCode?: string;
   };
 
-  __onAmapProxyLoaded?: (error?: unknown) => void;
+  // 高德 script 加载回调：代理/直连两种模式共用（见 app/utils/amap-loader.ts 的 AMAP_SCRIPT_CALLBACK）。
+  // 实际全局 key 由 AMAP_SCRIPT_CALLBACK 常量定义；此处仅覆盖 callback 形状。
+  __amapScriptLoaded?: (error?: unknown) => void;
 };

@@ -7,7 +7,7 @@
 import { publicAsset } from "./asset";
 
 import emojisData from "~/assets/emojis.json";
-import type { EmojiItem } from "~/types/emoji";
+import type { EmojiDict, EmojiItem } from "~/types/emoji";
 import { escapeAttribute, escapeHtml } from "~~/lib/html";
 // 表情分类配置与 stripEmojiPrefix 的源头在 ~~shared/emoji-categories（前端/服务端共用）：
 // Nitro 不打包 app/，服务端无法 import ~/utils 或 ~/types，故跨边界常量必须放 shared/。
@@ -15,8 +15,6 @@ import { EMOJI_CATEGORIES, stripEmojiPrefix } from "~~/shared/emoji-categories";
 
 // 保持 ~/utils/emoji 既有导入入口兼容（CommentInput 等仍从此 import EMOJI_CATEGORIES）。
 export { EMOJI_CATEGORIES, stripEmojiPrefix };
-
-type EmojiDict = Record<string, string>;
 
 function getEmojiDict(dataKey: string): EmojiDict | undefined {
   return (emojisData as Record<string, EmojiDict>)[dataKey];
@@ -40,12 +38,14 @@ export function getEmojiList(dataKey: string): EmojiItem[] {
   const cached = emojiListCache.get(dataKey);
   if (cached) return cached;
 
-  const cat = EMOJI_CATEGORIES.find(c => c.dataKey === dataKey);
   const dict = getEmojiDict(dataKey);
   const list: EmojiItem[] = [];
-  if (cat && dict) {
-    for (const [key, path] of Object.entries(dict)) {
-      list.push({ key, url: publicAsset(path), name: stripEmojiPrefix(key, cat.prefix) });
+  if (dict) {
+    for (const key of Object.keys(dict)) {
+      // 复用启动期算好的 (path, name)，避免对同一 (key, prefix) 重复 stripEmojiPrefix。
+      const meta = EMOJI_KEY_MAP.get(key);
+      if (!meta) continue;
+      list.push({ key, url: publicAsset(meta.path), name: meta.name });
     }
   }
   emojiListCache.set(dataKey, list);

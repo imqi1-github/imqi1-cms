@@ -57,9 +57,15 @@ function getObserver(threshold: number, rootMargin: string): IntersectionObserve
 }
 
 const scrollRevealDirective: Directive<HTMLElement, ScrollRevealOptions | undefined> = {
-  // SSR：注入 data-scroll-reveal 属性，CSS 在首屏即应用 opacity:0，避免 hydration 闪烁
-  getSSRProps() {
-    return { [DATA_ATTR]: "" };
+  // SSR：注入 data-scroll-reveal 属性，CSS 在首屏即应用 opacity:0，避免 hydration 闪烁。
+  // 同时根据 binding 同步注入 data-no-transform，避免 .no-transform 元素在 SSR 首屏被
+  // 默认 translateY 规则命中、待客户端 mounted 才补上属性造成 FOUC（CSS 见 app/assets/styles/scroll-reveal.css）。
+  getSSRProps(binding) {
+    const noTransform =
+      binding.modifiers?.noTransform === true || binding.value?.noTransform === true;
+    return noTransform
+      ? { [DATA_ATTR]: "", [NO_TRANSFORM_ATTR]: "" }
+      : { [DATA_ATTR]: "" };
   },
 
   mounted(el, binding) {
