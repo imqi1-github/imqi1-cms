@@ -1,20 +1,20 @@
 // 将 art-template 转换为 JavaScript 模板函数
-import type Icons from '../icons';
+import { escapeHtml } from '../utils';
 
 import tplListItem from './list-item'
 
-import type { ResolvedAPlayerOptions } from '~/types/aplayer';
+import type { APlayerPlayTemplateData } from '~/types/aplayer';
 
-export default function (data: { options: ResolvedAPlayerOptions; icons: typeof Icons; cover: string; getObject?: (obj: unknown) => unknown }): string {
+export default function (data: APlayerPlayTemplateData): string {
   const { options, icons, cover } = data
 
   if (!options.fixed) {
     return `
 <div class="aplayer-body">
-    <div class="aplayer-pic" style="background-color: ${options.theme};">
+    <div class="aplayer-pic" style="background-color: ${escapeHtml(options.theme)};">
         ${cover ? `
             <div class="aplayer-pic-box">
-                <img src="${cover}" alt="歌曲封面"/>
+                <img src="${escapeHtml(cover)}" alt="歌曲封面"/>
             </div>
         ` : ''}
     </div>
@@ -30,8 +30,8 @@ export default function (data: { options: ResolvedAPlayerOptions; icons: typeof 
             <div class="aplayer-bar-wrap">
                 <div class="aplayer-bar">
                     <div class="aplayer-loaded" style="width: 0"></div>
-                    <div class="aplayer-played" style="width: 0; background: ${options.theme};">
-                        <span class="aplayer-thumb" style="background: ${options.theme};">
+                    <div class="aplayer-played" style="width: 0; background: ${escapeHtml(options.theme)};">
+                        <span class="aplayer-thumb" style="background: ${escapeHtml(options.theme)};">
                             <span class="aplayer-loading-icon">${icons.loading}</span>
                         </span>
                     </div>
@@ -56,7 +56,7 @@ export default function (data: { options: ResolvedAPlayerOptions; icons: typeof 
                     </button>
                     <div class="aplayer-volume-bar-wrap">
                         <div class="aplayer-volume-bar">
-                            <div class="aplayer-volume" style="height: 80%; background: ${options.theme};"></div>
+                            <div class="aplayer-volume" style="height: 80%; background: ${escapeHtml(options.theme)};"></div>
                         </div>
                     </div>
                 </div>
@@ -91,10 +91,10 @@ export default function (data: { options: ResolvedAPlayerOptions; icons: typeof 
     </ol>
 </div>
 <div class="aplayer-body">
-    <div class="aplayer-pic" style="background-color: ${options.theme};">
+    <div class="aplayer-pic" style="background-color: ${escapeHtml(options.theme)};">
         ${cover ? `
             <div class="aplayer-pic-box">
-                <img src="${cover}" alt="歌曲封面"/>
+                <img src="${escapeHtml(cover)}" alt="歌曲封面"/>
             </div>
         ` : ''}
     </div>
@@ -107,8 +107,8 @@ export default function (data: { options: ResolvedAPlayerOptions; icons: typeof 
             <div class="aplayer-bar-wrap">
                 <div class="aplayer-bar">
                     <div class="aplayer-loaded" style="width: 0"></div>
-                    <div class="aplayer-played" style="width: 0; background: ${options.theme};">
-                        <span class="aplayer-thumb" style="background: ${options.theme};">
+                    <div class="aplayer-played" style="width: 0; background: ${escapeHtml(options.theme)};">
+                        <span class="aplayer-thumb" style="background: ${escapeHtml(options.theme)};">
                             <span class="aplayer-loading-icon">${icons.loading}</span>
                         </span>
                     </div>
@@ -133,7 +133,7 @@ export default function (data: { options: ResolvedAPlayerOptions; icons: typeof 
                     </button>
                     <div class="aplayer-volume-bar-wrap">
                         <div class="aplayer-volume-bar">
-                            <div class="aplayer-volume" style="height: 80%; background: ${options.theme};"></div>
+                            <div class="aplayer-volume" style="height: 80%; background: ${escapeHtml(options.theme)};"></div>
                         </div>
                     </div>
                 </div>

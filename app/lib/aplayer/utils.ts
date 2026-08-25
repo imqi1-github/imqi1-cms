@@ -1,5 +1,14 @@
 const isMobile = /mobile/i.test(window.navigator.userAgent);
 
+/** 模板插值 HTML 转义(防 DOM XSS);icons.* 这类内联 SVG 应保持原样,勿由此转义 */
+export const escapeHtml = (input: unknown): string =>
+    String(input == null ? '' : input)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
 const utils = {
     /**
      * Parse second to time string
@@ -19,10 +28,20 @@ const utils = {
 
     storage: {
         set: (key: string, value: string): void => {
-            localStorage.setItem(key, value);
+            try {
+                localStorage.setItem(key, value);
+            } catch {
+                /* 隐私模式/满容/沙箱抛错时静默降级,避免打断音量/初始化 */
+            }
         },
 
-        get: (key: string): string | null => localStorage.getItem(key),
+        get: (key: string): string | null => {
+            try {
+                return localStorage.getItem(key);
+            } catch {
+                return null;
+            }
+        },
     },
 
     nameMap: {

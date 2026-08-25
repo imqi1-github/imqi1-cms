@@ -15,6 +15,8 @@ class List {
 
     showing: boolean;
 
+    hideTimer?: ReturnType<typeof setTimeout>;
+
     constructor(player: APlayer) {
         this.player = player;
         this.index = 0;
@@ -45,6 +47,9 @@ class List {
 
     show() {
         this.showing = true;
+        if (this.hideTimer) {
+            clearTimeout(this.hideTimer);
+        }
         this.player.template.list.scrollTop = this.index * 33;
         this.player.template.list.style.height = `${Math.min(this.player.template.list.scrollHeight, this.player.options.listMaxHeight)}px`;
         this.player.events.trigger('listshow');
@@ -53,7 +58,14 @@ class List {
     hide() {
         this.showing = false;
         this.player.template.list.style.height = `${Math.min(this.player.template.list.scrollHeight, this.player.options.listMaxHeight)}px`;
-        setTimeout(() => {
+        if (this.hideTimer) {
+            clearTimeout(this.hideTimer);
+        }
+        this.hideTimer = setTimeout(() => {
+            if (this.showing) {
+                // show() 已抢先,不再收起
+                return;
+            }
             this.player.template.list.style.height = '0px';
             this.player.events.trigger('listhide');
         }, 0);
@@ -74,6 +86,10 @@ class List {
 
         if (!Array.isArray(audios)) {
             audios = [audios];
+        }
+        if (audios.length === 0) {
+            // 空批次直接返回,避免 listCurs[-1]!/innerHTML 拼接出问题
+            return;
         }
         audios.map((item) => {
             item.name = item.name || item.title || 'Audio name';
@@ -101,7 +117,8 @@ class List {
         this.player.randomOrder = utils.randomOrder(this.audios.length);
         this.player.template.listCurs = this.player.container.querySelectorAll('.aplayer-list-cur');
 
-        this.player.template.listCurs[this.audios.length - 1]!.style.backgroundColor = (audios as unknown as APlayerAudio).theme || this.player.options.theme;
+        const lastAdded = audios[audios.length - 1]!;
+        this.player.template.listCurs[this.audios.length - 1]!.style.backgroundColor = lastAdded.theme || this.player.options.theme;
 
         if (wasEmpty) {
             if (this.player.options.order === 'random') {
@@ -143,6 +160,8 @@ class List {
                 }
 
                 this.player.template.listCurs = this.player.container.querySelectorAll('.aplayer-list-cur');
+                // 删除后重建 randomOrder,避免 random 模式 nextIndex/prevIndex 引用过期/越界下标
+                this.player.randomOrder = utils.randomOrder(this.audios.length);
             } else {
                 this.clear();
             }

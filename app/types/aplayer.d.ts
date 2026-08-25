@@ -1,3 +1,5 @@
+import type APlayer from '~/lib/aplayer/player';
+
 export type APlayerLoop = 'none' | 'one' | 'all';
 export type APlayerOrder = 'list' | 'random';
 export type APlayerPreload = 'none' | 'metadata' | 'auto';
@@ -94,6 +96,46 @@ export type EventHandler = (data?: unknown) => void;
 
 /** 解析后的歌词行:[时间秒, 文本] */
 export type LrcLine = [number, string];
+
+/** bar.ts 构造参数:三条进度/音量条元素 */
+export interface APlayerBarTemplate {
+  volume: HTMLElement;
+  played: HTMLElement;
+  loaded: HTMLElement;
+}
+
+/** template.ts 构造参数 */
+export interface APlayerTemplateOptions {
+  container: HTMLElement;
+  options: ResolvedAPlayerOptions;
+  randomOrder: number[];
+}
+
+/** lrc.ts 构造参数 */
+export interface APlayerLrcOptions {
+  container: HTMLElement;
+  async: boolean;
+  player: APlayer;
+}
+
+/** template/list-item.ts 渲染数据 */
+export interface APlayerListItemData {
+  theme: string;
+  audio: APlayerAudio[];
+  index: number;
+}
+
+/** template/lrc.ts 渲染数据 */
+export interface APlayerLrcData {
+  lyrics: LrcLine[];
+}
+
+/** template/player.ts 渲染数据(icons 为内联 SVG 字符串,不经转义) */
+export interface APlayerPlayTemplateData {
+  options: ResolvedAPlayerOptions;
+  icons: Record<string, string>;
+  cover: string;
+}
 
 declare global {
   interface Window {

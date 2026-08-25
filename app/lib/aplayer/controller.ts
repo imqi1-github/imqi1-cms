@@ -4,11 +4,20 @@ import type APlayer from './player';
 
 import type { DragEvent } from '~/types/aplayer';
 
-const eventClientX = (e: DragEvent): number =>
-    (e as MouseEvent).clientX || (e as TouchEvent).changedTouches[0]!.clientX;
+// 取指针事件坐标:MouseEvent 的 clientX/clientY 可能是合法值 0,不能用 || 误判成触屏
+const eventClientX = (e: DragEvent): number => {
+    if (typeof (e as MouseEvent).clientX === 'number') {
+        return (e as MouseEvent).clientX;
+    }
+    return (e as TouchEvent).changedTouches?.[0]?.clientX ?? 0;
+};
 
-const eventClientY = (e: DragEvent): number =>
-    (e as MouseEvent).clientY || (e as TouchEvent).changedTouches[0]!.clientY;
+const eventClientY = (e: DragEvent): number => {
+    if (typeof (e as MouseEvent).clientY === 'number') {
+        return (e as MouseEvent).clientY;
+    }
+    return (e as TouchEvent).changedTouches?.[0]?.clientY ?? 0;
+};
 
 class Controller {
     player: APlayer;
@@ -16,8 +25,10 @@ class Controller {
     // 拖拽中的 document 级监听 —— 保存引用以便 destroy 时移除（拖拽中销毁会泄露）
     private barThumbMove?: (e: DragEvent) => void;
     private barThumbUp?: (e: DragEvent) => void;
+    private barCancel?: () => void;
     private volumeThumbMove?: (e: DragEvent) => void;
     private volumeThumbUp?: (e: DragEvent) => void;
+    private volumeCancel?: () => void;
 
     constructor(player: APlayer) {
         this.player = player;
@@ -53,6 +64,7 @@ class Controller {
 
         const thumbUp = (e: DragEvent) => {
             this.removeBarDragListeners();
+            this.removeBarCancelListeners();
             let percentage = (eventClientX(e) - this.player.template.barWrap.getBoundingClientRect().left) / this.player.template.barWrap.clientWidth;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
@@ -61,13 +73,23 @@ class Controller {
             this.player.disableTimeupdate = false;
         };
 
+        // 拖拽被打断(指针 cancel/触屏取消/窗口失焦)时兜底清理,防 document 监听泄露 + disableTimeupdate 卡死
+        const barCancel = () => {
+            this.removeBarDragListeners();
+            this.removeBarCancelListeners();
+            this.player.disableTimeupdate = false;
+        };
+
         this.barThumbMove = thumbMove;
         this.barThumbUp = thumbUp;
+        this.barCancel = barCancel;
 
         this.player.template.barWrap.addEventListener(utils.nameMap.dragStart, () => {
             this.player.disableTimeupdate = true;
             document.addEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
             document.addEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
+            document.addEventListener('pointercancel', barCancel as EventListener);
+            window.addEventListener('blur', barCancel as EventListener);
         });
     }
 
@@ -92,19 +114,30 @@ class Controller {
         const thumbUp = (e: DragEvent) => {
             this.player.template.volumeBarWrap.classList.remove('aplayer-volume-bar-wrap-active');
             this.removeVolumeDragListeners();
+            this.removeVolumeCancelListeners();
             let percentage = 1 - (eventClientY(e) - this.player.template.volumeBar.getBoundingClientRect().top) / this.player.template.volumeBar.clientHeight;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.volume(percentage);
         };
 
+        // 音量条拖拽被打断时兜底:清理监听 + 移除 active 类
+        const volumeCancel = () => {
+            this.player.template.volumeBarWrap.classList.remove('aplayer-volume-bar-wrap-active');
+            this.removeVolumeDragListeners();
+            this.removeVolumeCancelListeners();
+        };
+
         this.volumeThumbMove = thumbMove;
         this.volumeThumbUp = thumbUp;
+        this.volumeCancel = volumeCancel;
 
         this.player.template.volumeBarWrap.addEventListener(utils.nameMap.dragStart, () => {
             this.player.template.volumeBarWrap.classList.add('aplayer-volume-bar-wrap-active');
             document.addEventListener(utils.nameMap.dragMove, thumbMove as EventListener);
             document.addEventListener(utils.nameMap.dragEnd, thumbUp as EventListener);
+            document.addEventListener('pointercancel', volumeCancel as EventListener);
+            window.addEventListener('blur', volumeCancel as EventListener);
         });
     }
 
@@ -128,12 +161,30 @@ class Controller {
         }
     }
 
+    // 移除进度条拖拽的取消监听(pointercancel/窗口 blur)
+    private removeBarCancelListeners() {
+        if (this.barCancel) {
+            document.removeEventListener('pointercancel', this.barCancel as EventListener);
+            window.removeEventListener('blur', this.barCancel as EventListener);
+        }
+    }
+
+    // 移除音量条拖拽的取消监听(pointercancel/窗口 blur)
+    private removeVolumeCancelListeners() {
+        if (this.volumeCancel) {
+            document.removeEventListener('pointercancel', this.volumeCancel as EventListener);
+            window.removeEventListener('blur', this.volumeCancel as EventListener);
+        }
+    }
+
     /**
      * 销毁拖拽监听 —— player.destroy() 兜底调用，防止拖拽中销毁导致 document 监听泄露
      */
     destroy() {
         this.removeBarDragListeners();
+        this.removeBarCancelListeners();
         this.removeVolumeDragListeners();
+        this.removeVolumeCancelListeners();
     }
 
     initOrderButton() {

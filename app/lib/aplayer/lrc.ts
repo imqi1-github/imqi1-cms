@@ -1,7 +1,7 @@
 import tplLrc from './template/lrc';
 import type APlayer from './player';
 
-import type { LrcLine } from '~/types/aplayer';
+import type { APlayerLrcOptions, LrcLine } from '~/types/aplayer';
 
 class Lrc {
     container: HTMLElement;
@@ -12,15 +12,22 @@ class Lrc {
 
     parsed: LrcLine[][];
 
+    /** 各曲目是否正在异步加载(仅 async;避免占位符堵死缓存/重复发请求) */
+    loading: boolean[];
+
+    /** 当前在途歌词 XHR —— destroy 时 abort,防销毁后回写 DOM */
+    pendingXhr?: XMLHttpRequest;
+
     index: number;
 
     current: LrcLine[];
 
-    constructor(options: { container: HTMLElement; async: boolean; player: APlayer }) {
+    constructor(options: APlayerLrcOptions) {
         this.container = options.container;
         this.async = options.async;
         this.player = options.player;
         this.parsed = [];
+        this.loading = [];
         this.index = 0;
         this.current = [];
     }
@@ -57,43 +64,63 @@ class Lrc {
         }
     }
 
+    /** 渲染指定曲目歌词于容器;未缓存时显示 Loading 占位(占位不写入缓存) */
+    private render(index: number) {
+        const lines: LrcLine[] = this.parsed[index] || ([[0, 'Loading']] as LrcLine[]);
+        this.container.innerHTML = tplLrc({ lyrics: lines });
+        this.current = lines;
+        this.update(0);
+    }
+
     switch(index: number) {
-        if (!this.parsed[index]) {
-            if (!this.async) {
-                if (this.player.list.audios[index]!.lrc) {
-                    this.parsed[index] = this.parse(this.player.list.audios[index]!.lrc!);
-                } else {
-                    this.parsed[index] = [['00:00', 'Not available']] as unknown as LrcLine[];
+        if (this.async) {
+            if (!this.parsed[index]) {
+                if (this.loading[index]) {
+                    // 已在加载:仅渲染 Loading,不重复发请求
+                    this.render(index);
+                    return;
                 }
-            } else {
-                this.parsed[index] = [['00:00', 'Loading']] as unknown as LrcLine[];
+                const apiurl = this.player.list.audios[index]!.lrc;
+                if (!apiurl) {
+                    // 无歌词:不入加载态
+                    this.parsed[index] = [[0, 'Not available']] as LrcLine[];
+                    this.render(index);
+                    return;
+                }
+                this.loading[index] = true;
+                this.render(index); // 立即显示 Loading
                 const xhr = new XMLHttpRequest();
+                this.pendingXhr = xhr;
                 xhr.onreadystatechange = () => {
-                    if (index === this.player.list.index && xhr.readyState === 4) {
-                        if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) {
-                            this.parsed[index] = this.parse(xhr.responseText);
-                        } else {
-                            this.player.notice(`LRC file request fails: status ${xhr.status}`);
-                            this.parsed[index] = [['00:00', 'Not available']] as unknown as LrcLine[];
-                        }
-                        this.container.innerHTML = tplLrc({
-                            lyrics: this.parsed[index]!,
-                        });
-                        this.update(0);
-                        this.current = this.parsed[index]!;
+                    // 至 4:重置加载态,并在动画(返回后)写入真实结果
+                    this.pendingXhr = undefined;
+                    this.loading[index] = false;
+                    this.parsed[index] = ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) ? this.parse(xhr.responseText) : ([[0, 'Not available']] as LrcLine[]);
+                    // 真实结果始终落缓存(切回可直接命中);仅当前曲才刷 DOM(避免写已释放/被切走容器)
+                    if (index === this.player.list.index) {
+                        this.render(index);
                     }
                 };
-                const apiurl = this.player.list.audios[index]!.lrc;
-                xhr.open('get', apiurl!, true);
+                xhr.onerror = () => {
+                    this.pendingXhr = undefined;
+                    this.loading[index] = false;
+                    this.parsed[index] = [[0, 'Not available']] as LrcLine[];
+                    if (index === this.player.list.index) {
+                        this.render(index);
+                    }
+                };
+                xhr.open('get', apiurl, true);
                 xhr.send(null);
+            } else {
+                this.render(index);
             }
+        } else {
+            if (!this.parsed[index]) {
+                const lrcUrl = this.player.list.audios[index]!.lrc;
+                this.parsed[index] = lrcUrl ? this.parse(lrcUrl) : ([[0, 'Not available']] as LrcLine[]);
+            }
+            this.render(index);
         }
-
-        this.container.innerHTML = tplLrc({
-            lyrics: this.parsed[index]!,
-        });
-        this.current = this.parsed[index]!;
-        this.update(0);
     }
 
     /**
@@ -147,10 +174,22 @@ class Lrc {
 
     remove(index: number) {
         this.parsed.splice(index, 1);
+        this.loading.splice(index, 1);
     }
 
     clear() {
         this.parsed = [];
+        this.loading = [];
+        this.container.innerHTML = '';
+    }
+
+    destroy() {
+        if (this.pendingXhr && this.pendingXhr.readyState !== 4) {
+            this.pendingXhr.abort();
+        }
+        this.pendingXhr = undefined;
+        this.parsed = [];
+        this.loading = [];
         this.container.innerHTML = '';
     }
 }

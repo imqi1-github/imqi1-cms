@@ -1,9 +1,13 @@
 import type { APlayerOptions, ResolvedAPlayerOptions } from '~/types/aplayer';
 
 export default (options: APlayerOptions): ResolvedAPlayerOptions => {
+    // 需要明确的自有 container:不留全局 .aplayer 兜底(会抢走已存在实例的 DOM)
+    if (!options.element && !options.container) {
+        throw new Error('APlayer: container is required');
+    }
     // default options
     const defaultOption = {
-        container: options.element || document.getElementsByClassName('aplayer')[0] as HTMLElement,
+        container: options.element || options.container,
         mini: options.narrow || options.fixed || false,
         fixed: false,
         mutex: true,
@@ -30,13 +34,13 @@ export default (options: APlayerOptions): ResolvedAPlayerOptions => {
     if (!Array.isArray(audio)) {
         audio = audio ? [audio] : [];
     }
-    audio.map((item) => {
+    audio = audio.map((item) => {
         item.name = item.name || item.title || 'Audio name';
         item.artist = item.artist || item.author || 'Audio artist';
         item.cover = item.cover || item.pic;
         item.type = item.type || 'normal';
         return item;
-    });
+    }).filter((item) => item.url); // 缺 url 的条目过滤,避免 <audio src="undefined">
     options.audio = audio;
 
     if (audio.length <= 1 && options.loop === 'one') {

@@ -1,7 +1,7 @@
 import Icons from './icons';
 import tplPlayer from './template/player';
 
-import type { ResolvedAPlayerOptions } from '~/types/aplayer';
+import type { APlayerTemplateOptions, ResolvedAPlayerOptions } from '~/types/aplayer';
 
 class Template {
     container: HTMLElement;
@@ -68,7 +68,7 @@ class Template {
 
     lrcButton!: HTMLElement;
 
-    constructor(options: { container: HTMLElement; options: ResolvedAPlayerOptions; randomOrder: number[] }) {
+    constructor(options: APlayerTemplateOptions) {
         this.container = options.container;
         this.options = options.options;
         this.randomOrder = options.randomOrder;
@@ -89,7 +89,6 @@ class Template {
             options: this.options,
             icons: Icons,
             cover: cover,
-            getObject: (obj) => obj,
         });
 
         this.lrc = this.container.querySelector('.aplayer-lrc-contents')!;

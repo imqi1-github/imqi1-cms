@@ -48,10 +48,6 @@ class Timer {
 
     enable(type: string) {
         (this as unknown as Record<string, unknown>)[`enable${type}Checker`] = true;
-
-        if (type === 'fps') {
-            (this as unknown as Record<string, (() => void) | undefined>)[`init${type}Checker`]?.();
-        }
     }
 
     disable(type: string) {

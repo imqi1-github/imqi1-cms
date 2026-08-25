@@ -9,11 +9,17 @@ class Storage {
     constructor(player: APlayer) {
         this.storageName = player.options.storageName;
 
-        this.data = JSON.parse(utils.storage.get(this.storageName) ?? 'null') as Record<string, unknown>;
-        if (!this.data) {
-            this.data = {};
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(utils.storage.get(this.storageName) ?? 'null');
+        } catch {
+            parsed = null;
         }
-        this.data.volume = (this.data.volume as number) || player.options.volume;
+        // 仅接受可写对象;损坏/非对象值一律重置,避免构造器抛错
+        this.data = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+        if (typeof this.data.volume !== 'number') {
+            this.data.volume = player.options.volume;
+        }
     }
 
     get(key: string) {

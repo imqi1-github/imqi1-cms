@@ -22,8 +22,6 @@ class APlayer {
 
     paused: boolean;
 
-    playedPromise: Promise<void>;
-
     mode: 'normal' | 'mini';
 
     randomOrder: number[];
@@ -70,7 +68,6 @@ class APlayer {
         this.options = handleOption(options);
         this.container = this.options.container;
         this.paused = true;
-        this.playedPromise = Promise.resolve();
         this.mode = 'normal';
 
         this.randomOrder = utils.randomOrder(this.options.audio.length);
@@ -465,7 +462,10 @@ class APlayer {
      * destroy this player
      */
     destroy() {
-        instances.splice(instances.indexOf(this), 1);
+        const instanceIndex = instances.indexOf(this);
+        if (instanceIndex !== -1) {
+            instances.splice(instanceIndex, 1);
+        }
         this.pause();
         // 清理待执行的定时器，避免销毁后回调操作已释放的资源
         if (this.skipTime) {
@@ -480,6 +480,7 @@ class APlayer {
         }
         this.audioHandlers = [];
         this.controller.destroy();
+        this.lrc?.destroy();
         this.container.innerHTML = '';
         this.audio.src = '';
         this.timer.destroy();

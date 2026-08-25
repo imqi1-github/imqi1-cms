@@ -1,7 +1,11 @@
 // 将 art-template 转换为 JavaScript 模板函数
-export default function (data: { lyrics: [number, string][] }): string {
+import { escapeHtml } from '../utils';
+
+import type { APlayerLrcData } from '~/types/aplayer';
+
+export default function (data: APlayerLrcData): string {
   const { lyrics } = data
 
   return lyrics.map((item, i) => `
-    <p${i === 0 ? ' class="aplayer-lrc-current"' : ''}>${item[1]}</p>`).join('')
+    <p${i === 0 ? ' class="aplayer-lrc-current"' : ''}>${escapeHtml(item[1])}</p>`).join('')
 }

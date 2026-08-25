@@ -357,7 +357,8 @@
 .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap {
   cursor: pointer !important;
   flex: 1;
-  padding: 4px 0
+  padding: 4px 0;
+  touch-action: none;
 }
 
 .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar {
@@ -447,6 +448,7 @@
   position: absolute;
   right: -3px;
   transition: .15s ease-in-out;
+  touch-action: none;
   width: 25px;
   z-index: 99
 }
