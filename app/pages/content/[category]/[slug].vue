@@ -542,6 +542,8 @@ const markdownLivePhotoContainers: HTMLElement[] = [];
 
 // 动态创建的 Swiper 实例 —— 必须在 onUnmounted 中逐个 destroy，否则每次导航累积 Navigation/Pagination/Mousewheel 监听 + resize observer
 const markdownSwipers: import("swiper").default[] = [];
+// 标记组件已卸载：Swiper/其它回调用 setTimeout 延迟初始化时若已卸载则直接放弃，避免「卸载后才 resolve」的实例漏进 markdownSwipers 而无法 destroy
+let isUnmounted = false;
 
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
@@ -873,7 +875,7 @@ onMounted(async () => {
             <span class="transform transition-transform duration-200 text-slate-500 dark:text-slate-400 text-[10px]">
               ▼
             </span>
-            <span class="font-medium text-slate-900 dark:text-slate-100">${summary}</span>
+            <span class="font-medium text-slate-900 dark:text-slate-100">${escapeHtmlAttr(summary)}</span>
           </button>
           <div class="markdown-details-content px-4 py-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 hidden">
             ${innerHtml}
@@ -914,7 +916,7 @@ onMounted(async () => {
           class="w-full aspect-video rounded-lg shadow-lg max-h-150 bg-slate-100 dark:bg-slate-800"
           controls
           preload="metadata">
-          <source src="${url}" type="video/mp4">
+          <source src="${escapeHtmlAttr(url)}" type="video/mp4">
           您的浏览器不支持视频播放。
         </video>
       `;
@@ -988,10 +990,10 @@ onMounted(async () => {
         // 解析参数：url | title | description | image
         const parts = paramsStr.split("|").map(p => p.trim());
 
-        const url = parts[0] || "";
-        const title = parts[1] || "标题";
-        const description = parts[2] || "";
-        const image = parts[3] || "";
+        const url = escapeHtmlAttr(parts[0] || "");
+        const title = escapeHtmlAttr(parts[1] || "标题");
+        const description = escapeHtmlAttr(parts[2] || "");
+        const image = escapeHtmlAttr(parts[3] || "");
 
         // 创建卡片元素
         const cardContainer = document.createElement("div");
@@ -1055,8 +1057,8 @@ onMounted(async () => {
         // 解析参数：url | title
         const parts = paramsStr.split("|").map(p => p.trim());
 
-        const url = parts[0] || "";
-        const title = parts[1] || "链接标题";
+        const url = escapeHtmlAttr(parts[0] || "");
+        const title = escapeHtmlAttr(parts[1] || "链接标题");
 
         // 创建简单卡片元素
         const simpleCardContainer = document.createElement("div");
@@ -1156,8 +1158,10 @@ onMounted(async () => {
         // 初始化 Swiper（主体懒加载：仅当存在轮播图容器时才 import ~156kB 的 swiper 主体，
         // 避免无轮播图的文章（如纯照片页）也在 onMounted 期间解析它、与首屏渐入抢主线程）
         setTimeout(() => {
+          if (isUnmounted) return;
           import("swiper")
             .then(({ default: Swiper }) => {
+              if (isUnmounted) return;
               const swiper = new Swiper(`.${uniqueClass}`, {
                 modules: [Navigation, Pagination, Mousewheel],
                 slidesPerView: "auto",
@@ -1251,10 +1255,10 @@ onMounted(async () => {
           const data = await response.json();
 
           // 提取仓库信息
-          const repoName = data.full_name || data.name || "";
-          const description = data.description || "";
+          const repoName = escapeHtmlAttr(data.full_name || data.name || "");
+          const description = escapeHtmlAttr(data.description || "");
           const language = data.language || "";
-          const stars = platform === "github" ? data.stargazers_count : data.stargazers_count;
+          const stars = data.stargazers_count;
           const forks = data.forks_count;
           const isPrivate = data.private || false;
 
@@ -1271,7 +1275,7 @@ onMounted(async () => {
 
           cardContainer.innerHTML = `
           <a
-            href="${url}"
+            href="${escapeHtmlAttr(url)}"
             target="_blank"
             rel="noopener noreferrer"
             class="block group">
@@ -1338,7 +1342,7 @@ onMounted(async () => {
                     ${
                       language
                         ? `<div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                        <span>${language}</span>
+                        <span>${escapeHtmlAttr(language)}</span>
                         <span class="size-2 rounded-full ${
                           language === "JavaScript"
                             ? "bg-yellow-400"
@@ -1558,6 +1562,13 @@ onMounted(async () => {
 
             app.mount(mountEl);
             metingApps.push(app);
+          } else if (mountEl) {
+            // 解析不出 id（平台不支持或格式非法）：把 spinner 换成错误提示，避免永久无限旋转
+            mountEl.innerHTML = `
+            <div class="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+              无法识别的音乐链接
+            </div>
+          `;
           }
         } catch (error) {
           console.error("Failed to load music player:", error);
@@ -1822,6 +1833,7 @@ onMounted(async () => {
 
 // 清理 Fancybox 和滚动监听
 onUnmounted(() => {
+  isUnmounted = true;
   if (FancyboxModule) {
     FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
   }

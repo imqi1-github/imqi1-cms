@@ -33,6 +33,7 @@ export default defineEventHandler(async event => {
                 cid: true,
                 title: true,
                 slug: true,
+                type: true,
               },
             },
           },

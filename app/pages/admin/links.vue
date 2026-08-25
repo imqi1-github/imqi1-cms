@@ -12,6 +12,8 @@ const newLink = ref({ name: "", link: "", desc: "", avatar: "" });
 const editingLink = ref<LinkItem | null>(null);
 const editLinkForm = ref({ name: "", link: "", desc: "", avatar: "" });
 const csrfToken = ref("");
+const submitting = ref(false);
+const togglingId = ref<number | null>(null);
 
 async function fetchLinks() {
   loading.value = true;
@@ -28,6 +30,12 @@ async function fetchLinks() {
 }
 
 async function addLink() {
+  if (submitting.value) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+  submitting.value = true;
   try {
     await $fetch("/api/admin/links", {
       method: "POST",
@@ -44,10 +52,18 @@ async function addLink() {
     toast.error({
       message: "添加失败",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
 async function toggleEnabled(link: LinkItem) {
+  if (togglingId.value !== null) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+  togglingId.value = link.id;
   try {
     await $fetch(`/api/admin/links/${link.id}/toggle`, {
       method: "PATCH",
@@ -62,6 +78,8 @@ async function toggleEnabled(link: LinkItem) {
     toast.error({
       message: "操作失败",
     });
+  } finally {
+    togglingId.value = null;
   }
 }
 
@@ -78,6 +96,12 @@ function openEditModal(link: LinkItem) {
 
 async function saveEdit() {
   if (!editingLink.value) return;
+  if (submitting.value) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+  submitting.value = true;
   try {
     await $fetch(`/api/admin/links/${editingLink.value.id}`, {
       method: "PATCH",
@@ -93,6 +117,8 @@ async function saveEdit() {
     toast.error({
       message: "更新失败",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
@@ -105,6 +131,10 @@ async function deleteLink(id: number) {
     icon: "lucide:trash-2",
   });
   if (confirmed) {
+    if (!csrfToken.value) {
+      toast.error({ message: "会话已失效，请刷新页面后重试" });
+      return;
+    }
     try {
       await $fetch(`/api/admin/links/${id}`, {
         method: "DELETE",

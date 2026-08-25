@@ -49,11 +49,16 @@ const extractToc = () => {
 
   const headings = content.querySelectorAll("h1, h2, h3");
   const items: TocItem[] = [];
+  // generateSlug 只保留 \w 与中文，会把 C++/C#、同名标题洗成相同 id；按「基础 slug」计数保证目录 key 唯一
+  const slugCounts: Record<string, number> = {};
 
   headings.forEach(heading => {
     // 直接使用标题文本生成 id
     const text = heading.textContent || "";
-    const id = generateSlug(text);
+    const base = generateSlug(text);
+    // 首现用 base；再出现 -> base-1, base-2 ...（按 base 计数，避免后缀自身再冲突）
+    slugCounts[base] = (slugCounts[base] || 0) + 1;
+    const id = slugCounts[base] === 1 ? base : `${base}-${slugCounts[base] - 1}`;
 
     // 给标题元素设置 id
     (heading as HTMLElement).id = id;
@@ -133,11 +138,13 @@ const handleTocScroll = () => {
 
   try {
     const headings = document.querySelectorAll(".markdown-body h1, .markdown-body h2, .markdown-body h3");
+    // 统一用 getBoundingClientRect + window.scrollY 换算到文档坐标（与 scrollToHeading 同口径），
+    // 避免 offsetTop 相对 .article-body（transform 祖先）与 window.scrollY 基准不一致、高亮提前切换
     const scrollTop = window.scrollY + 120;
 
     let currentId = "";
     headings.forEach(heading => {
-      const headingTop = (heading as HTMLElement).offsetTop;
+      const headingTop = (heading as HTMLElement).getBoundingClientRect().top + window.scrollY;
       if (scrollTop >= headingTop) {
         currentId = heading.id;
       }
@@ -261,8 +268,8 @@ onUnmounted(() => {
           </nav>
         </aside>
 
-        <!-- 协议正文 -->
-        <div class="min-w-0 flex-1 opacity-0 translate-y-8 duration-300 ease-out markdown-body article-body" v-html="page.renderedContent"/>
+        <!-- 协议正文：仅由外层 v-scroll-reveal 控制渐入；去掉内层 opacity-0 与 article-fade-in 动画的冗余揭示 -->
+        <div class="min-w-0 flex-1 markdown-body article-body" v-html="page.renderedContent"/>
       </div>
     </div>
   </div>
@@ -729,18 +736,6 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .text-\[3em\] {
     font-size: 2em;
-  }
-}
-
-/* 正文内容动画 */
-.article-body {
-  animation: article-fade-in 0.5s ease-out forwards;
-}
-
-@keyframes article-fade-in {
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

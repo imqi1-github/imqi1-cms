@@ -18,6 +18,7 @@ const selectedTag = ref<number | null>(null);
 const selectedStatus = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
+const fetchSeq = ref(0);
 const pagination = ref({
   page: 1,
   pageSize: 10,
@@ -116,6 +117,8 @@ async function fetchTags() {
 }
 
 async function fetchContents(page: number = 1, updateUrl: boolean = true) {
+  page = Math.max(1, page);
+  const seq = ++fetchSeq.value;
   loading.value = true;
   selectedIds.value = [];
   try {
@@ -137,6 +140,7 @@ async function fetchContents(page: number = 1, updateUrl: boolean = true) {
     }
 
     const res = await $fetch<AdminContentListResponse>(`/api/admin/contents?${params.toString()}`);
+    if (seq !== fetchSeq.value) return;
     contents.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
@@ -156,10 +160,13 @@ async function fetchContents(page: number = 1, updateUrl: boolean = true) {
       await router.push({ query });
     }
   } catch (error) {
+    if (seq !== fetchSeq.value) return;
     console.error("获取文章失败:", error);
     contents.value = [];
   } finally {
-    loading.value = false;
+    if (seq === fetchSeq.value) {
+      loading.value = false;
+    }
   }
 }
 
@@ -186,6 +193,11 @@ function clearFilters() {
 }
 
 async function deleteContent(cid: number) {
+  if (deleting.value) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   const confirmed = await confirm({
     title: "删除文章",
     description: "确定要删除这篇文章吗？",
@@ -194,6 +206,7 @@ async function deleteContent(cid: number) {
     icon: "lucide:trash-2",
   });
   if (confirmed) {
+    deleting.value = true;
     try {
       await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE", headers: { "x-csrf-token": csrfToken.value } });
       await fetchContents(pagination.value.page, false);
@@ -201,6 +214,8 @@ async function deleteContent(cid: number) {
     } catch (error) {
       console.error("删除失败:", error);
       toast.error({ message: "删除失败" });
+    } finally {
+      deleting.value = false;
     }
   }
 }
@@ -219,6 +234,10 @@ async function batchDelete() {
     icon: "lucide:trash-2",
   });
   if (confirmed) {
+    if (!csrfToken.value) {
+      toast.error({ message: "会话已失效，请刷新页面后重试" });
+      return;
+    }
     deleting.value = true;
     try {
       const res = await $fetch("/api/admin/contents/batch-delete", {
@@ -313,7 +332,7 @@ onMounted(() => {
   }
 
   // 从 URL 读取页码，默认第1页
-  const pageFromUrl = parseInt(route.query.page as string) || 1;
+  const pageFromUrl = Math.max(1, parseInt(route.query.page as string) || 1);
   fetchContents(pageFromUrl, false); // 不更新 URL，避免重复导航
 });
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {AcceptableValue} from "reka-ui";
 
-import type {Attachment, Category, ContentMeta, ContentSaveResponse, Tag, Travel, ContentApiResponse} from "~/types/apis/admin/contents";
+import type {Attachment, Category, ContentMeta, ContentSaveResponse, CoversInput, Tag, Travel, ContentApiResponse} from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 
@@ -11,6 +11,15 @@ const toast = useToast();
 const { confirm } = useConfirm();
 
 const csrfToken = ref("");
+
+// CSRF token 未就绪（onMounted 拉取失败/尚未返回）时拦截写请求，避免必 403 的空请求
+const ensureCsrf = (): boolean => {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return false;
+  }
+  return true;
+};
 
 // 判断是新建还是编辑
 const isEdit = computed(() => !!route.query.cid);
@@ -164,6 +173,7 @@ const toggleTag = (tagId: number, checked: boolean) => {
 const travels = ref<Travel[]>([]);
 const travelKeyword = ref("");
 const selectedTravelId = ref("");
+const travelPending = ref(false);
 
 // 获取全部旅行地点
 const fetchTravels = async () => {
@@ -198,6 +208,8 @@ const availableTravels = computed(() => {
 async function setTravelContent(travel: Travel, add: boolean) {
   const pid = contentId.value;
   if (pid == null) return;
+  if (travelPending.value) return;
+  travelPending.value = true;
   const current: number[] = Array.isArray(travel.cids) ? travel.cids : [];
   const next = add
     ? Array.from(new Set([...current, pid]))
@@ -221,6 +233,8 @@ async function setTravelContent(travel: Travel, add: boolean) {
   } catch (error) {
     console.error("更新旅行地点关联失败:", error);
     toast.error({ message: "更新关联失败" });
+  } finally {
+    travelPending.value = false;
   }
 }
 
@@ -411,6 +425,7 @@ const deleteAttachment = async (attachment: Attachment) => {
   });
   if (!confirmed) return;
   if (!contentId.value) return;
+  if (!ensureCsrf()) return;
 
   try {
     const params = new URLSearchParams({ cid: String(contentId.value) });
@@ -470,7 +485,7 @@ const fetchContent = async () => {
       // 解析封面数据：从 JSON 格式转为输入框格式
       if (contentData.covers) {
         try {
-          const coversArray = JSON.parse(contentData.covers) as Array<{ url?: string; cover?: string; title?: string }>;
+          const coversArray = JSON.parse(contentData.covers) as CoversInput[];
           coversInput.value = coversArray.map(c => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ""}`).join("\n");
         } catch {
           coversInput.value = "";
@@ -570,6 +585,7 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
 
 // 保存文章
 const saveContent = async () => {
+  if (!ensureCsrf()) return;
   if (!title.value) {
     toast.error({
       message: "标题不能为空",

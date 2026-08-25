@@ -2,7 +2,7 @@
 import type { PublicAttachment, PublicAttachmentListResponse, PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 import type { ContentDetailResponse } from "~/types/apis/admin/pages";
-import type { ContentSaveResponse } from "~/types/apis/admin/contents";
+import type { ContentSaveResponse, CoversInput } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
 
@@ -302,6 +302,11 @@ const fetchPage = async () => {
     const res = await $fetch<ContentDetailResponse>(`/api/admin/contents/${pageId.value}`);
     if (res?.data) {
       const page = res.data;
+      // 页面编辑器只应编辑 type=1 的记录；命中文章(type=0)则跳文章编辑器，避免保存时把文章转成页面
+      if (page.type !== 1) {
+        toast.error({ message: "这不是一个页面，请使用文章编辑器编辑" });
+        return await navigateTo(`/admin/contents/edit?cid=${pageId.value}`, { replace: true });
+      }
       title.value = page.title || "";
       slug.value = page.slug || "";
       content.value = page.content || "";
@@ -313,7 +318,7 @@ const fetchPage = async () => {
       // 解析封面数据：从 JSON 格式转为输入框格式
       if (page.covers) {
         try {
-          const coversArray = JSON.parse(page.covers) as Array<{ url?: string; cover?: string; title?: string }>;
+          const coversArray = JSON.parse(page.covers) as CoversInput[];
           coversInput.value = coversArray
             .map(c => `${c.url || c.cover}${c.title ? ` || ${c.title}` : ''}`)
             .join('\n');
@@ -343,6 +348,7 @@ const fetchPage = async () => {
 
 // 保存页面
 const savePage = async () => {
+  if (loading.value) return;
   if (!title.value.trim()) {
     toast.error({
       message: "请输入页面标题",

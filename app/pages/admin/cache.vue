@@ -22,7 +22,7 @@ const categories = [
   { label: "协议", keyword: "agreement", icon: "lucide:scale", desc: "/agreement" },
   { label: "站点地图", keyword: "sitemap", icon: "lucide:network", desc: "/sitemap" },
   { label: "关于", keyword: "about", icon: "lucide:info", desc: "/about" },
-  { label: "旅行地图", keyword: "map", icon: "lucide:map", desc: "/map" },
+  { label: "旅行地图", keyword: "/map", icon: "lucide:map", desc: "/map" },
   { label: "友链", keyword: "links", icon: "lucide:link", desc: "/links" },
   { label: "留言板", keyword: "messages", icon: "lucide:message-square", desc: "/messages" },
 ];
@@ -76,6 +76,10 @@ async function clearAll() {
 }
 
 async function clearPreset(keyword: string, label: string) {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   clearingPreset.value = keyword;
   try {
     await postClear({ csrfToken: csrfToken.value, action: "preset", value: keyword }, `已清理${label}缓存`);
@@ -88,6 +92,10 @@ async function clearPreset(keyword: string, label: string) {
 }
 
 async function clearSearchCache() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   clearingSearch.value = true;
   try {
     await postClear({ csrfToken: csrfToken.value, action: "search" }, "已清除搜索缓存");
@@ -100,6 +108,10 @@ async function clearSearchCache() {
 }
 
 async function clearKeyword() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   const keyword = customKeyword.value.trim();
   if (!keyword) {
     toast.warning({ message: "请输入关键词" });

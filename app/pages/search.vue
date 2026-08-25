@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { escapeHtml, escapeRegExp } from "~~/lib/html";
+import { escapeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
-import type { SearchResultItem, SearchType } from "~/types/apis/search";
+import type { HandledError } from "~/types/error";
+import type { SearchResultItem, SearchType, SearchTypeConfig } from "~/types/apis/search";
 
 const route = useRoute();
 const router = useRouter();
@@ -16,7 +17,7 @@ const searchKeyword = ref(initialQ);
 
 // 搜索类别：初始值取自 URL 的 type（非法值回退为「文章」）。
 // 类别配置同时驱动 Tab 与各类别文案。
-const SEARCH_TYPE_CONFIG: Array<{ value: SearchType; label: string; icon: string }> = [
+const SEARCH_TYPE_CONFIG: SearchTypeConfig[] = [
   { value: "content", label: "文章", icon: "ri:article-line" },
   { value: "subscribe", label: "订阅和友链", icon: "ri:rss-line" },
   { value: "comment", label: "评论", icon: "ri:chat-3-line" },
@@ -51,7 +52,7 @@ const { data, pending, error, refresh } = await useFetch("/api/search", {
   watch: false,
   // 标记错误已处理，避免全局 toast 重复提示
   onResponseError({ error: fetchError }) {
-    (fetchError as Error & { __handled__?: boolean }).__handled__ = true;
+    (fetchError as Error & HandledError).__handled__ = true;
   },
 });
 
@@ -202,6 +203,15 @@ onMounted(() => {
   searchInputRef.value?.focus();
 });
 
+// 离开搜索页时清理防抖定时器：否则 debouncedRefresh 会在组件卸载后仍触发
+// router.push 把用户拽回 /search（router 是全局单例，push 照样生效）。
+onBeforeUnmount(() => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+});
+
 // 执行搜索（与 watch 同步，仅在回车时手动触发刷新；回车是明确的搜索动作，URL 同步 + refresh 即时走）
 function handleSearch() {
   if (searchKeyword.value.trim()) {
@@ -249,10 +259,28 @@ function formatDate(date: string | Date) {
 // 高亮关键词
 function highlightKeyword(text: string, keyword: string) {
   if (!keyword || !text) return escapeHtml(text || "");
-  const escapedText = escapeHtml(text);
-  const escapedKeyword = escapeRegExp(keyword);
-  const regex = new RegExp(`(${escapedKeyword})`, "gi");
-  return escapedText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>');
+  // 先在「原始未转义文本」上求命中区间，再对原始文本 escapeHtml 并给命中区间包 <mark>。
+  // 旧实现把高亮正则作用在 escapeHtml 后的文本上：搜 "&" 会命中 &amp; 里的 &、把实体拆成
+  // "&(高亮)+amp;" 渲染出多余字面量；搜含 &<>"' 的关键词则因转义后无字面串而静默失效。
+  const lowerText = text.toLowerCase();
+  const lowerKeyword = keyword.toLowerCase();
+  const ranges: [number, number][] = [];
+  let idx = 0;
+  while ((idx = lowerText.indexOf(lowerKeyword, idx)) !== -1) {
+    ranges.push([idx, idx + keyword.length]);
+    idx += keyword.length;
+  }
+  if (ranges.length === 0) return escapeHtml(text);
+
+  let out = "";
+  let cursor = 0;
+  for (const [start, end] of ranges) {
+    out += escapeHtml(text.slice(cursor, start));
+    out += `<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">${escapeHtml(text.slice(start, end))}</mark>`;
+    cursor = end;
+  }
+  out += escapeHtml(text.slice(cursor));
+  return out;
 }
 
 // 提取外链域名（订阅源/友链/订阅文章结果展示用）

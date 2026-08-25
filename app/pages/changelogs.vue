@@ -40,12 +40,20 @@ const { atTop, atBottom } = useScrollFadeMask(sidebarRef);
 
 // 处理左侧边栏的滚轮事件
 function handleSidebarWheel(event: WheelEvent) {
-  if (sidebarRef.value && event.target instanceof Node && sidebarRef.value.contains(event.target)) {
+  const sidebar = sidebarRef.value;
+  if (sidebar && event.target instanceof Node && sidebar.contains(event.target)) {
+    const delta = event.deltaY;
+    // 仅当侧栏真正可滚动、且当前方向还能再滚时才拦截；否则放行让页面滚动（否则悬停左侧窄条会吞掉整页滚轮）
+    const canScroll =
+      sidebar.scrollHeight > sidebar.clientHeight + 1 &&
+      !(
+        (delta > 0 && sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight - 1) ||
+        (delta < 0 && sidebar.scrollTop <= 1)
+      );
+    if (!canScroll) return;
+
     event.preventDefault();
     event.stopPropagation();
-
-    const sidebar = sidebarRef.value;
-    const delta = event.deltaY;
     sidebar.scrollTop += delta;
   }
 }
@@ -104,7 +112,10 @@ function clearFilter() {
 
 // 格式化日期。水合前用 UTC（两端一致，避免 hydration mismatch），水合后切访客本地时间。
 function formatDate(dateStr: string | Date) {
+  // 防御空/非法日期：new Date(undefined/非法串) 得 Invalid Date，会把 NaN 拼进页面
+  if (dateStr === null || dateStr === undefined || dateStr === "") return "";
   const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "";
   if (!isHydrated.value) {
     const month = date.getUTCMonth() + 1;
     const day = date.getUTCDate();

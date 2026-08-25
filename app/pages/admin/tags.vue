@@ -12,6 +12,7 @@ const tags = ref<TagItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newTag = ref({ name: "", slug: "", desc: "" });
+const submitting = ref(false);
 const editingTag = ref<TagItem | null>(null);
 const editTagForm = ref({ name: "", slug: "", desc: "" });
 const csrfToken = ref("");
@@ -35,6 +36,8 @@ async function fetchTags() {
 }
 
 async function addTag() {
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     await $fetch("/api/admin/tags", {
       method: "POST",
@@ -53,6 +56,8 @@ async function addTag() {
       message: "添加失败",
       description: error?.data?.message || "请稍后重试",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
@@ -103,6 +108,8 @@ function handleEditModalOpenChange(open: boolean) {
 
 async function updateTag() {
   if (!editingTag.value) return;
+  if (submitting.value) return;
+  submitting.value = true;
 
   try {
     await $fetch(`/api/admin/tags/${editingTag.value.mid}`, {
@@ -126,10 +133,16 @@ async function updateTag() {
       message: "更新失败",
       description: error?.data?.message || "请稍后重试",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
 async function deleteTag(mid: number) {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   const confirmed = await confirm({
     title: "删除标签",
     description: "确定要删除这个标签吗？删除后文章将不再关联此标签。",

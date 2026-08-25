@@ -63,7 +63,7 @@ export default defineEventHandler(async event => {
     validateLinkData({
       name: body.name,
       link: body.link,
-      desc: body.sort,
+      desc: body.desc,
       avatar: body.avatar,
     });
 
@@ -147,7 +147,7 @@ export default defineEventHandler(async event => {
         name: body.name.trim(),
         // 补全协议，避免无 http(s):// 前缀的链接在前台被当相对路径 → 死链
         link: ensureUrlProtocol(body.link),
-        desc: body.sort?.trim() || null,
+        desc: body.desc?.trim() || null,
         avatar: body.avatar?.trim() || null,
         enabled: autoApproved, // 如果检测到友链则自动启用
       },

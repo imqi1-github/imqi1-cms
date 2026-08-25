@@ -21,6 +21,7 @@ const defaultForm = () => ({
   sort: "0",
 });
 const newTravel = ref(defaultForm());
+const submitting = ref(false);
 const editingTravel = ref<TravelItem | null>(null);
 const editTravelForm = ref(defaultForm());
 const addContentKeyword = ref("");
@@ -130,6 +131,8 @@ async function addTravel() {
   if (!validateCoordinates(newTravel.value)) {
     return;
   }
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     await $fetch("/api/admin/travels", {
       method: "POST",
@@ -147,6 +150,8 @@ async function addTravel() {
   } catch (error) {
     console.error("添加失败:", error);
     toast.error({ message: "添加失败" });
+  } finally {
+    submitting.value = false;
   }
 }
 
@@ -174,6 +179,8 @@ async function saveEdit() {
   if (!validateCoordinates(editTravelForm.value)) {
     return;
   }
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     await $fetch(`/api/admin/travels/${editingTravel.value.id}`, {
       method: "PUT",
@@ -189,10 +196,16 @@ async function saveEdit() {
   } catch (error) {
     console.error("更新失败:", error);
     toast.error({ message: "更新失败" });
+  } finally {
+    submitting.value = false;
   }
 }
 
 async function toggleEnabled(travel: TravelItem) {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   try {
     await $fetch(`/api/admin/travels/${travel.id}`, {
       method: "PUT",
@@ -224,6 +237,10 @@ async function deleteTravel(id: number) {
     icon: "lucide:trash-2",
   });
   if (confirmed) {
+    if (!csrfToken.value) {
+      toast.error({ message: "会话已失效，请刷新页面后重试" });
+      return;
+    }
     try {
       await $fetch(`/api/admin/travels/${id}`, {
         method: "DELETE",

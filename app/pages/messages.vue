@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import "@/assets/css/fancybox.css";
 import type { FancyboxOptions } from "@fancyapps/ui";
-import { computed, nextTick, onMounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
@@ -18,6 +18,10 @@ const { data: messageConfig } = await useFetch("/api/messages/config", {
 const messageContentId = computed(() => messageConfig.value?.data?.contentId);
 const route = useRoute();
 
+// hash 滚动相关定时器句柄：onUnmounted 统一清理，避免卸载后仍回调（重试链会残留 setTimeout）
+let clearRingTimer: ReturnType<typeof setTimeout> | null = null;
+let hashRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
 function scrollToComment(hash: string) {
   if (!import.meta.client) return;
 
@@ -33,7 +37,8 @@ function scrollToComment(hash: string) {
 
   window.scrollTo({ top: offsetPosition, behavior: "smooth" });
   element.classList.add("ring-2", "ring-blue-500", "ring-offset-2", "dark:ring-offset-slate-900");
-  setTimeout(() => {
+  // 记录句柄，onUnmounted 清理，避免卸载后仍对已被 Vue 替换的 DOM 操作 class（轻微残留）
+  clearRingTimer = setTimeout(() => {
     element.classList.remove("ring-2", "ring-blue-500", "ring-offset-2", "dark:ring-offset-slate-900");
   }, 3000);
 }
@@ -43,14 +48,17 @@ watch(
   hash => {
     if (!hash?.startsWith("#comment-")) return;
     nextTick(() => {
+      // 评论依赖两跳异步（顶层 useFetch /api/messages/config → CommentList 再加载评论），
+      // 延长重试窗口（最多 ~3s）否则慢网时 1s 内元素未挂载、重试耗尽直接 return 停在顶部
       let attempts = 0;
+      const maxAttempts = 30;
       const checkAndScroll = () => {
         const commentId = hash.replace(/^#comment-/, "");
         const element = document.getElementById(`comment-${commentId}`);
-        if (element || attempts >= 10) scrollToComment(hash);
+        if (element || attempts >= maxAttempts) scrollToComment(hash);
         else {
           attempts++;
-          setTimeout(checkAndScroll, 100);
+          hashRetryTimer = setTimeout(checkAndScroll, 100);
         }
       };
       checkAndScroll();
@@ -118,6 +126,15 @@ onUnmounted(() => {
   // Fancybox.destroy();
   if (FancyboxModule) {
     FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
+  }
+  // 清理 hash 滚动相关定时器（重试链 / ring 高亮），避免卸载后仍对已替换 DOM 操作
+  if (hashRetryTimer) {
+    clearTimeout(hashRetryTimer);
+    hashRetryTimer = null;
+  }
+  if (clearRingTimer) {
+    clearTimeout(clearRingTimer);
+    clearRingTimer = null;
   }
 });
 </script>

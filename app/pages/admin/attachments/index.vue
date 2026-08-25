@@ -154,6 +154,10 @@ const handleLivePhotoFileChange = async (event: Event) => {
 };
 
 const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {}) => {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   uploading.value = true;
   uploadProgress.value = 0;
 
@@ -241,6 +245,10 @@ async function deleteAttachment(item: AttachmentItem) {
     icon: "lucide:trash-2",
   });
   if (!confirmed) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
 
   try {
     await $fetch(`/api/attachments/${item.id}`, {

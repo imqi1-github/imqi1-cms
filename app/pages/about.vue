@@ -62,7 +62,7 @@
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="aspect-video rounded-2xl overflow-hidden relative">
-            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/jixi.webp')" alt="沈阳" >
+            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/jixi.webp')" alt="鸡西" >
             <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="text-xs mb-1 opacity-80">来自</div>
               <div class="text-lg font-semibold">黑龙江省鸡西市</div>
@@ -76,7 +76,7 @@
             </div>
           </div>
           <div class="aspect-video rounded-2xl overflow-hidden relative">
-            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/shenyang.webp')" alt="秦皇岛" >
+            <img class="w-full h-full object-cover transition-transform duration-300" :src="publicAsset('/imgs/shenyang.webp')" alt="沈阳" >
             <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white p-6">
               <div class="text-xs mb-1 opacity-80">现居</div>
               <div class="text-lg font-semibold">辽宁省沈阳市</div>
@@ -106,7 +106,7 @@
             <div class="relative flex size-20 items-center justify-center">
               <div class="skill-orbit absolute inset-0 rounded-full border border-blue-500/20 dark:border-blue-400/20"/>
               <span class="relative text-slate-300 dark:text-slate-700 text-4xl font-black leading-none transition-colors duration-300">
-                0{{ activeSkillIndex + 1 }}
+                {{ String(activeSkillIndex + 1).padStart(2, "0") }}
               </span>
             </div>
           </div>
@@ -1039,6 +1039,15 @@ onUnmounted(() => {
   .skill-slide-prev-enter-active,
   .skill-slide-prev-leave-active,
   .skill-orbit {
+    animation: none;
+    transition: none;
+  }
+
+  /* 滚动渐入（.ready opacity:0 + .fadeIn slideUp）也对减弱动态效果降级：内容直接可见、不做位移渐入 */
+  .ready {
+    opacity: 1;
+  }
+  .fadeIn {
     animation: none;
     transition: none;
   }

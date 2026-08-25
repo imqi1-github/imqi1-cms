@@ -3,15 +3,18 @@ import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/apis/admin/s
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
+const { confirm } = useConfirm();
 const subscribes = ref<SubscribeItem[]>([]);
 const loading = ref(true);
 const hasLoadedSubscribes = ref(false);
 const showAddForm = ref(false);
 const showEditForm = ref(false);
 const updating = ref(false);
-const updateResult = ref<{ success: number; failed: number; total: number } | null>(null);
+const submitting = ref(false);
+const updateResult = ref<SubscribesUpdateResponse['data'] | null>(null);
 const feedCacheInterval = ref(8); // 默认8小时
 const csrfToken = ref("");
+const loadSeq = ref(0);
 
 const newSubscribe = ref({ name: "", url: "", avatar: "" });
 const editingSubscribe = ref<{ id: number | null; name: string; url: string; avatar: string }>({
@@ -36,20 +39,32 @@ async function loadSettings() {
 // 加载订阅列表
 async function loadSubscribes() {
   loading.value = true;
+  const seq = ++loadSeq.value;
   try {
     const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
-    subscribes.value = await $fetch<SubscribeItem[]>("/api/admin/subscribes");
+    const data = await $fetch<SubscribeItem[]>("/api/admin/subscribes");
+    if (seq !== loadSeq.value) return;
+    subscribes.value = data;
   } catch (error) {
     console.error("获取订阅失败:", error);
+    if (seq !== loadSeq.value) return;
     subscribes.value = [];
   } finally {
-    hasLoadedSubscribes.value = true;
-    loading.value = false;
+    if (seq === loadSeq.value) {
+      hasLoadedSubscribes.value = true;
+      loading.value = false;
+    }
   }
 }
 
 async function addSubscribe() {
+  if (submitting.value) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+  submitting.value = true;
   try {
     await $fetch("/api/admin/subscribes", {
       method: "POST",
@@ -69,10 +84,20 @@ async function addSubscribe() {
     toast.error({
       message: "添加失败",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
 async function deleteSubscribe(id: number) {
+  const confirmed = await confirm({
+    title: "删除订阅",
+    description: "确定要删除这个订阅源吗？其关联的文章将一并移除，且不可恢复。",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
+  if (!confirmed) return;
   try {
     await $fetch(`/api/admin/subscribes/${id}`, {
       method: "DELETE",
@@ -91,6 +116,10 @@ async function deleteSubscribe(id: number) {
 }
 
 async function updateSubscribes() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   updating.value = true;
   updateResult.value = null;
   try {
@@ -134,6 +163,10 @@ function openEditForm(subscribe: SubscribeItem) {
 
 async function updateSubscribe() {
   if (!editingSubscribe.value.id) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
 
   try {
     await $fetch(`/api/admin/subscribes/${editingSubscribe.value.id}`, {

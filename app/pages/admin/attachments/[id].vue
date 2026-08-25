@@ -32,13 +32,13 @@ const relationTargets = computed(() => [
   })),
 ])
 
-const pageCidSet = computed(() => new Set(uploadPages.value.map(pageItem => pageItem.cid)))
+const getRelationTypeLabel = (cid: number) =>
+  attachment.value?.contents.find(c => c.cid === cid)?.type === 1 ? "页面" : "文章"
 
-const getRelationTypeLabel = (cid: number) => pageCidSet.value.has(cid) ? "页面" : "文章"
-
-const getRelationEditPath = (cid: number) => pageCidSet.value.has(cid)
-  ? `/admin/pages/edit?cid=${cid}`
-  : `/admin/contents/edit?cid=${cid}`
+const getRelationEditPath = (cid: number) =>
+  attachment.value?.contents.find(c => c.cid === cid)?.type === 1
+    ? `/admin/pages/edit?cid=${cid}`
+    : `/admin/contents/edit?cid=${cid}`
 
 const availableRelationTargets = computed(() => {
   const linked = new Set(attachment.value?.contents.map(content => content.cid) ?? [])
@@ -132,10 +132,15 @@ async function fetchRelationTargets() {
 }
 
 async function syncRelations(cids: number[]) {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl, {
     method: 'PATCH',
     body: {
-      name: form.value.name,
+      // 只提交已持久化的 name，避免把未保存的名称输入连带写入
+      name: attachment.value?.name ?? '',
       cids,
       csrfToken: csrfToken.value,
     },
@@ -174,6 +179,10 @@ async function removeRelation(cid: number) {
 }
 
 async function saveAttachment() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   saving.value = true
   try {
     const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl, {

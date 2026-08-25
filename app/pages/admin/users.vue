@@ -5,6 +5,7 @@ import type {ApiError} from "~/types/error";
 const toast = useToast()
 
 const loading = ref(true)
+const loadError = ref('')
 const saving = ref(false)
 const user = ref<UserDetail | null>(null)
 const csrfToken = ref('')
@@ -32,6 +33,7 @@ async function fetchUser() {
     const me = await $fetch<CurrentUser>('/api/auth/me')
     const data = await $fetch<UserDetail>(`/api/admin/users/${me.uid}`)
     user.value = data
+    loadError.value = ''
     formData.value = {
       name: data.name,
       nickname: data.nickname || '',
@@ -42,6 +44,7 @@ async function fetchUser() {
   } catch (rawError: unknown) {
     const error = rawError as ApiError
     console.error('获取账户失败:', error)
+    loadError.value = error?.data?.message || '加载失败，请稍后重试'
     toast.error({
       message: '获取账户失败',
       description: error?.data?.message || '请稍后重试',
@@ -53,6 +56,10 @@ async function fetchUser() {
 
 // 保存账户
 async function saveUser() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   saving.value = true
   try {
     if (!user.value) return
@@ -195,9 +202,17 @@ onMounted(() => {
       </form>
     </Card>
 
-    <!-- 加载状态 -->
+    <!-- 加载状态 / 错误态 -->
     <Card v-else class="p-12">
-      <div class="flex flex-col items-center justify-center gap-4">
+      <div v-if="loadError" class="flex flex-col items-center justify-center gap-4 text-center">
+        <Icon name="lucide:circle-alert" class="size-8 text-destructive" />
+        <p class="text-muted-foreground">{{ loadError }}</p>
+        <Button variant="outline" @click="fetchUser">
+          <Icon name="lucide:refresh-cw" class="mr-2 size-4" />
+          重试
+        </Button>
+      </div>
+      <div v-else class="flex flex-col items-center justify-center gap-4">
         <div class="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         <p class="text-muted-foreground">加载中...</p>
       </div>

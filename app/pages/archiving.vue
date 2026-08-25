@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import type { HandledError } from "~/types/error";
 import { siteConfig } from "~~/site.config";
 
 const { data, pending, error } = await useFetch("/api/archiving", {
   headers: getInternalRequestHeaders(),
   // 标记错误已处理，避免全局 toast 重复提示（页面内已有 v-else-if="error" 分支渲染）
   onResponseError({ error: fetchError }) {
-    (fetchError as Error & { __handled__?: boolean }).__handled__ = true;
+    (fetchError as Error & HandledError).__handled__ = true;
   },
 });
 
@@ -55,8 +56,7 @@ function toggleMonth(year: number, month: number) {
   } else {
     expandedMonths.value.add(key);
   }
-  // 触发响应式更新
-  expandedMonths.value = new Set(expandedMonths.value);
+  // Vue 3 ref 对 Set 的 add/delete 已做响应式插桩（同 watch 回调内的 add ），无需再整表重赋值
 }
 
 // 检查月份是否展开

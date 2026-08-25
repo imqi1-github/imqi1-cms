@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
 
 import { CITY_COORDS } from "~~/shared/city-coords";
 import { siteConfig } from "~~/site.config";
+import type { BlogNetworkData } from "~/types/apis/blog-network";
 
 const { siteSettings } = useSiteSettings();
 const { isLoggedIn } = useAuth();
@@ -63,25 +64,7 @@ const {
   pending: blogPending,
   error: blogError,
   execute: executeBlog,
-} = await useFetch<{
-  data?: {
-    points: Array<{
-      id: number;
-      name: string;
-      avatar: string | null;
-      longitude: number;
-      latitude: number;
-      source: "subscribe" | "link";
-      sourceId: number;
-      targetUrl: string | null;
-      serverLocation: string | null;
-      serverIsp: string | null;
-    }>;
-    overseas: number;
-    unknown: number;
-    total: number;
-  };
-}>("/api/blog-network", {
+} = await useFetch<BlogNetworkData>("/api/blog-network", {
   ...fetchOptions,
   immediate: view.value === "blogs",
 });
@@ -101,6 +84,8 @@ const travelPlaces = computed(() => travelsData.value?.data || []);
 const cityCoordEntries = Object.entries(CITY_COORDS);
 
 function nearestCityByCoord(longitude: number, latitude: number): string | null {
+  // Number(null) === 0 会绕过 Number.isFinite 并把空坐标当 (0,0) 归到最近城市，污染省市统计；先显式判空
+  if (longitude == null || latitude == null) return null;
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
 
   let nearest: string | null = null;
@@ -185,6 +170,14 @@ const error = computed(() =>
 // 地图组件自身的加载/失败状态（TravelMap 经 loading-change / error-change 上报）：
 const mapLoading = ref(false);
 const mapLoadError = ref(false);
+// 递增 key 强制重挂载 TravelMap：地图初始化/加载失败时「点击重试」借此重新初始化 AMap 并重置失败态
+const mapKey = ref(0);
+
+// 地图加载失败重试：重置失败态 + 强制重挂载 TravelMap（仅刷新数据不会重新初始化地图）
+function retryMap() {
+  mapLoadError.value = false;
+  mapKey.value++;
+}
 
 // 右下角状态行文字：加载中 / 地图加载中 / 各视图统计 / 空态。错误态单独用「点击重试」按钮展示，
 // 不在 statusText 里拼文案（避免与按钮重复）。
@@ -315,6 +308,7 @@ onUnmounted(() => {
          TravelMap 的加载与错误状态经 loading-change / error-change 上报到本页状态行。 -->
     <ClientOnly v-if="shouldShowMap">
       <TravelMap
+        :key="mapKey"
         :places="places"
         :focus-id="focusId"
         :max-zoom="view === 'footprint' || view === 'blogs' ? FOOTPRINT_MAX_ZOOM : undefined"
@@ -375,7 +369,14 @@ onUnmounted(() => {
         <Icon name="ri:refresh-line" class="size-3" />
         加载失败，点击重试
       </button>
-      <span v-else-if="mapLoadError">地图加载失败</span>
+      <button
+        v-else-if="mapLoadError"
+        type="button"
+        class="pointer-events-auto inline-flex cursor-pointer items-center gap-1 hover:underline"
+        @click="retryMap">
+        <Icon name="ri:refresh-line" class="size-3" />
+        地图加载失败，点击重试
+      </button>
       <span v-else-if="statusText">{{ statusText }}</span>
     </div>
   </section>

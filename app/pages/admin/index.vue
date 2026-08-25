@@ -317,7 +317,7 @@ onMounted(() => {
                 <p class="text-sm text-muted-foreground">{{ formatDate(content.create_time) }}</p>
               </div>
               <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-                <Badge variant="outline" class="text-xs">{{ content.status || '已发布' }}</Badge>
+                <Badge variant="outline" class="text-xs">{{ content.status === 1 ? '已发布' : '草稿' }}</Badge>
                 <Button variant="ghost" size="icon" class="size-8" @click="editContent(content.cid)">
                   <Icon name="lucide:pencil" class="size-4" />
                 </Button>

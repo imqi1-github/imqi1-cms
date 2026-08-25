@@ -11,6 +11,8 @@ const loading = ref(true);
 const comments = ref<CommentItem[]>([]);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
+const saving = ref(false);
+const fetchSeq = ref(0);
 const csrfToken = ref("");
 const filterCid = ref<number | null>(null); // 筛选的文章ID
 const filterStatus = ref<number | null>(null); // 筛选的评论状态（null = 全部）
@@ -123,6 +125,8 @@ function toggleSelect(coid: number) {
 }
 
 async function fetchComments(page: number = 1, updateUrl: boolean = true) {
+  page = Math.max(1, page);
+  const seq = ++fetchSeq.value;
   loading.value = true;
   selectedIds.value = [];
   try {
@@ -144,6 +148,7 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
       data: CommentItem[];
       pagination: { page: number; pageSize: number; total: number; totalPages: number };
     }>(url);
+    if (seq !== fetchSeq.value) return;
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
 
@@ -156,10 +161,13 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
       await router.push({ query });
     }
   } catch (error) {
+    if (seq !== fetchSeq.value) return;
     console.error("获取评论失败:", error);
     comments.value = [];
   } finally {
-    loading.value = false;
+    if (seq === fetchSeq.value) {
+      loading.value = false;
+    }
   }
 }
 
@@ -191,6 +199,8 @@ function openEditDialog(comment: CommentItem) {
 // 保存编辑
 async function saveEdit() {
   if (!editingComment.value) return;
+  if (saving.value) return;
+  saving.value = true;
 
   try {
     await $fetch(`/api/admin/comments/${editingComment.value.coid}`, {
@@ -210,11 +220,17 @@ async function saveEdit() {
     toast.error({
       message: "更新失败",
     });
+  } finally {
+    saving.value = false;
   }
 }
 
 // 快捷设置状态
 async function setStatus(coid: number, status: number) {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   try {
     await $fetch(`/api/admin/comments/${coid}`, {
       method: "PATCH",
@@ -243,6 +259,10 @@ async function deleteComment(coid: number) {
     icon: "lucide:trash-2",
   });
   if (confirmed) {
+    if (!csrfToken.value) {
+      toast.error({ message: "会话已失效，请刷新页面后重试" });
+      return;
+    }
     try {
       await $fetch(`/api/admin/comments/${coid}`, {
         method: "DELETE",
@@ -357,7 +377,7 @@ function formatCommentMeta(comment: CommentItem) {
 
 onMounted(() => {
   // 从 URL 读取页码和筛选参数，默认第1页
-  const pageFromUrl = parseInt(route.query.page as string) || 1;
+  const pageFromUrl = Math.max(1, parseInt(route.query.page as string) || 1);
   const cidFromUrl = route.query.cid ? parseInt(route.query.cid as string) : null;
   if (cidFromUrl) {
     filterCid.value = cidFromUrl;

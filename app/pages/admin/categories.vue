@@ -17,6 +17,7 @@ const categories = ref<CategoryItem[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newCategory = ref({ name: "", slug: "", desc: "" });
+const submitting = ref(false);
 const editingCategory = ref<CategoryItem | null>(null);
 const editCategoryForm = ref({ name: "", slug: "", desc: "" });
 const csrfToken = ref("");
@@ -40,6 +41,8 @@ async function fetchCategories() {
 }
 
 async function addCategory() {
+  if (submitting.value) return;
+  submitting.value = true;
   try {
     await $fetch<CategoryCreateResponse>("/api/admin/categories/create", {
       method: "POST",
@@ -66,6 +69,8 @@ async function addCategory() {
       message: errorMessage,
       description: "请稍后重试",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
@@ -79,9 +84,10 @@ function openEditModal(category: CategoryItem) {
   showEditModal.value = true;
 }
 
-// 关闭添加弹窗
+// 关闭添加弹窗（同时重置表单，避免再次打开残留陈旧草稿）
 function closeAddModal() {
   showAddModal.value = false;
+  newCategory.value = { name: "", slug: "", desc: "" };
 }
 
 // 关闭编辑弹窗
@@ -91,6 +97,8 @@ function closeEditModal() {
 
 async function updateCategory() {
   if (!editingCategory.value) return;
+  if (submitting.value) return;
+  submitting.value = true;
 
   try {
     await $fetch<CategoryUpdateResponse>(`/api/admin/categories/${editingCategory.value.mid}`, {
@@ -118,6 +126,8 @@ async function updateCategory() {
       message: errorMessage,
       description: "请稍后重试",
     });
+  } finally {
+    submitting.value = false;
   }
 }
 
@@ -128,6 +138,10 @@ async function deleteCategory(mid: number) {
       message: "无法删除",
       description: "至少需要保留一个分类",
     });
+    return;
+  }
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
     return;
   }
 

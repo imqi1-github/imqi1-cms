@@ -52,6 +52,13 @@ export interface ContentMeta {
 	slug: string | null;
 }
 
+/** 封面条目：covers JSON 序列化的元素（url 为主地址；cover 兼容旧字段） */
+export interface CoversInput {
+	url?: string;
+	cover?: string;
+	title?: string;
+}
+
 export interface Travel {
 	id: number;
 	name: string;

@@ -4,8 +4,9 @@ import type { AdminSettings } from "~/types/apis/admin/settings";
 
 const loading = ref(true);
 const activeTab = ref("basic");
-const showResetDialog = ref(false);
 const toast = useToast();
+const { confirm } = useConfirm();
+const saving = ref(false);
 const csrfToken = ref("");
 const initializing = ref(false);
 
@@ -91,7 +92,6 @@ const testingEmail = ref(false);
 // ==================== 数据备份与恢复 ====================
 const exporting = ref(false);
 const importing = ref(false);
-const showImportDialog = ref(false);
 const importFileInput = ref<HTMLInputElement | null>(null);
 const pendingImportSource = ref("");
 const pendingImportFileName = ref("");
@@ -130,7 +130,7 @@ async function onImportFile(event: Event) {
   try {
     pendingImportSource.value = await file.text();
     pendingImportFileName.value = file.name;
-    showImportDialog.value = true;
+    await confirmImport();
   } catch (error) {
     console.error("读取文件失败:", error);
     toast.error({ message: "读取备份文件失败" });
@@ -142,6 +142,14 @@ async function onImportFile(event: Event) {
 
 // 确认后执行导入（清空后完整还原）
 async function confirmImport() {
+  const confirmed = await confirm({
+    title: "导入所有数据",
+    description: `即将从 ${pendingImportFileName.value || "备份文件"} 还原数据。此操作会<strong class="text-destructive">清空并覆盖</strong>现有的文章、评论、分类、友链等全部业务数据，且不可撤销。确定继续吗？`,
+    variant: "destructive",
+    confirmText: "确认导入",
+    icon: "lucide:database",
+  });
+  if (!confirmed) return;
   importing.value = true;
   try {
     const res = await $fetch<{ total?: number }>("/api/admin/data/import", {
@@ -151,7 +159,8 @@ async function confirmImport() {
     toast.success({
       message: res?.total != null ? `导入成功，共还原 ${res.total} 条数据` : "导入成功",
     });
-    showImportDialog.value = false;
+    pendingImportSource.value = "";
+    pendingImportFileName.value = "";
   } catch (err: unknown) {
     console.error("导入失败:", err);
     const data = err && typeof err === "object" && "data" in err ? (err as { data?: unknown }).data : undefined;
@@ -161,8 +170,6 @@ async function confirmImport() {
     toast.error({ message: msg });
   } finally {
     importing.value = false;
-    pendingImportSource.value = "";
-    pendingImportFileName.value = "";
   }
 }
 
@@ -264,6 +271,8 @@ async function loadSettings() {
 
 // 保存设置
 async function saveSettings() {
+  if (saving.value) return;
+  saving.value = true;
   try {
     await $fetch("/api/admin/settings", {
       method: "POST",
@@ -280,16 +289,29 @@ async function saveSettings() {
     toast.error({
       message: "保存失败",
     });
+  } finally {
+    saving.value = false;
   }
 }
 
-// 重置为默认值
+// 重置为默认值（确认后执行）
+async function confirmReset() {
+  const confirmed = await confirm({
+    title: "重置为默认值",
+    description: "确定要将所有设置重置为默认值吗？此操作不可撤销。",
+    variant: "destructive",
+    confirmText: "确认重置",
+    icon: "lucide:rotate-ccw",
+  });
+  if (!confirmed) return;
+  await resetToDefaults();
+}
+
 async function resetToDefaults() {
   // messageContentId 在本页无 UI、是"指向留言板文章"的内容引用而非可重置的默认值，
   // 重置时保留原值，避免静默清空留言板配置。
   const preservedMessageContentId = settings.value.messageContentId;
   settings.value = { ...defaultSettings, messageContentId: preservedMessageContentId };
-  showResetDialog.value = false;
   try {
     await $fetch("/api/admin/settings", {
       method: "POST",
@@ -366,7 +388,7 @@ onMounted(() => {
           />
           {{ initializing ? '补全中...' : '补全缺失配置' }}
         </Button>
-        <Button variant="outline" @click="showResetDialog = true">
+        <Button variant="outline" @click="confirmReset">
           <Icon name="lucide:rotate-ccw" class="mr-2 size-4" />
           重置为默认
         </Button>
@@ -1127,46 +1149,11 @@ onMounted(() => {
 
       <!-- 保存按钮 -->
       <div class="flex justify-end">
-        <Button size="lg" @click="saveSettings">
+        <Button size="lg" :disabled="saving || loading" @click="saveSettings">
           <Icon name="lucide:save" class="mr-2 size-4" />
-          保存设置
+          {{ saving ? '保存中...' : '保存设置' }}
         </Button>
       </div>
     </div>
-
-    <!-- 重置确认弹窗 -->
-    <Dialog v-model:open="showResetDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>重置为默认值</DialogTitle>
-          <DialogDescription> 确定要将所有设置重置为默认值吗？此操作不可撤销。 </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" @click="showResetDialog = false"> 取消 </Button>
-          <Button variant="destructive" @click="resetToDefaults"> 确认重置 </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <!-- 导入确认弹窗 -->
-    <Dialog v-model:open="showImportDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>导入所有数据</DialogTitle>
-          <DialogDescription>
-            即将从
-            <span class="font-medium text-foreground">{{ pendingImportFileName }}</span>
-            还原数据。此操作会<strong class="text-destructive">清空并覆盖</strong>现有的文章、评论、分类、友链等全部业务数据，且不可撤销。确定继续吗？
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" :disabled="importing" @click="showImportDialog = false"> 取消 </Button>
-          <Button variant="destructive" :disabled="importing" @click="confirmImport">
-            <Icon v-if="importing" name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
-            {{ importing ? "导入中..." : "确认导入" }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </AdminLayout>
 </template>

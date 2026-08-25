@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { siteConfig } from "~~/site.config";
+import type { WaterfallItem } from "~/types/components/waterfall";
 
 const route = useRoute();
 const router = useRouter();
@@ -29,7 +30,7 @@ const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取分类文章数据
 // URL/watch 基于 apiSlug（仅分类页内同步）：切分类时重新请求，SPA 导航离开文章页时不再误请求
-const { data, pending, error } = await useFetch(() => `/api/category/${apiSlug.value}/contents`, {
+const { data, pending, error, refresh } = await useFetch(() => `/api/category/${apiSlug.value}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: contentPageSize },
   watch: [page, apiSlug],
@@ -39,12 +40,23 @@ const category = computed(() => data.value?.data?.category);
 const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
+// 页码越界钳制：?page=999 等越界直链会把 page 归位到最后一页，避免渲染「第999/3页 + 暂无文章」矛盾空态。
+// immediate：SSR payload 已把 pagination 解析为 page=999/totalPages=3，水合时不会再有「变化」，须立即求值才会钳制。
+// 仅客户端：SSR 不触发 router.replace。
+watch(pagination, pg => {
+  if (!import.meta.client || !pg || pg.totalPages < 1) return;
+  if (page.value > pg.totalPages) {
+    page.value = pg.totalPages;
+    router.replace({ path: `/category/${slug.value}`, query: { page: pg.totalPages.toString() } });
+  }
+}, { immediate: true });
+
 // 判断是否为图片分类
 const isPhotoCategory = computed(() => slug.value === photoCategorySlug.value);
 
 // 将 contents 转换为瀑布流组件需要的格式（平铺所有封面）
 const waterfallItems = computed(() => {
-  const items: { url: string; title: string; desc?: string; width?: number | null; height?: number | null; cid?: number; slug: string; categorySlug: string }[] = [];
+  const items: WaterfallItem[] = [];
   contents.value.forEach(content => {
     const contentSlug = content.slug;
     if (content.covers && content.covers.length > 0 && contentSlug) {
@@ -65,8 +77,10 @@ const waterfallItems = computed(() => {
   return items;
 });
 
-// 判断是否为404
-const isNotFound = computed(() => !pending.value && (!category.value || error.value));
+// 判断是否为404 —— 仅当真实 404 才当作「分类不存在」；瞬时 500/超时等走 isError 呈现重试态，避免把有效分类烘焙成 404
+const isNotFound = computed(() => !pending.value && !category.value && (error.value?.statusCode === 404 || error.value?.status === 404));
+// 非 404 的加载错误（瞬时 DB 抖动/网络/超时）：保留标题并给重试，不触发 setResponseStatus(404)
+const isError = computed(() => !pending.value && !!error.value && !isNotFound.value);
 
 // 分类不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
 if (import.meta.server) {
@@ -79,6 +93,13 @@ const showSkeleton = ref(false);
 const isPaginating = ref(false);
 const hasPlayedEntryFade = ref(false);
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
+// 渐入/渐出相关 setTimeout 句柄集合：onBeforeUnmount 统一清空
+const fadeTimers = new Set<ReturnType<typeof setTimeout>>();
+let isUnmounted = false;
+const trackFadeTimer = (id: ReturnType<typeof setTimeout>) => {
+  fadeTimers.add(id);
+  return id;
+};
 
 // 生成图片分类翻页骨架屏随机高度 - 模拟真实瀑布流的随机效果
 const photoSkeletonHeights = ref<number[]>([]);
@@ -224,7 +245,8 @@ watch(pending, (newVal, oldVal) => {
     }
 
     // 强制触发渐入动画
-    setTimeout(() => {
+    trackFadeTimer(setTimeout(() => {
+      if (isUnmounted) return;
       const includeEntryFade = !hasPlayedEntryFade.value;
 
       // 对于图片分类，需要先重置状态再触发动画
@@ -239,7 +261,7 @@ watch(pending, (newVal, oldVal) => {
         triggerFadeIn(includeEntryFade);
         hasPlayedEntryFade.value = true;
       }
-    }, 50);
+    }, 50));
   }
 
   // 开始加载新数据时，确保所有元素隐藏（只改变透明度）
@@ -266,9 +288,10 @@ watch(
       hideFadeElements();
 
       // 等待数据加载完成后触发动画
-      setTimeout(() => {
+      trackFadeTimer(setTimeout(() => {
+        if (isUnmounted) return;
         triggerFadeIn();
-      }, 300);
+      }, 300));
     }
   },
 );
@@ -293,6 +316,7 @@ watch(
 usePageSeo({
   title: computed(() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
+    if (isError.value) return `加载失败 - ${siteName.value}`;
     if (isNotFound.value) return `分类不存在 - ${siteName.value}`;
     return `分类 ${category.value?.name} - ${siteName.value}`;
   }),
@@ -303,9 +327,20 @@ usePageSeo({
 // 初始化渐入动画
 onMounted(() => {
   // 延迟触发，确保 DOM 完全渲染
-  setTimeout(() => {
+  trackFadeTimer(setTimeout(() => {
+    if (isUnmounted) return;
     triggerEntryFadeIn();
-  }, 100);
+  }, 100));
+});
+
+onBeforeUnmount(() => {
+  isUnmounted = true;
+  if (skeletonTimer) {
+    clearTimeout(skeletonTimer);
+    skeletonTimer = null;
+  }
+  for (const id of fadeTimers) clearTimeout(id);
+  fadeTimers.clear();
 });
 </script>
 
@@ -314,6 +349,20 @@ onMounted(() => {
     <div :class="['mx-auto', isPhotoCategory ? 'photo-category-shell max-w-[1800px] -mt-6' : 'max-w-225 flex flex-col justify-center items-center']">
       <!-- 404（加载由全局页面过渡兜底，pending 期间普通分类显示骨架屏） -->
       <NotFound v-if="isNotFound" title="分类不存在" />
+
+      <!-- 非 404 加载错误：保留标题并给重试，避免瞬时故障被渲染成 NotFound/被 SSR 写成 404 -->
+      <div v-else-if="isError" class="text-center py-24 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+        <Icon name="lucide:alert-circle" aria-hidden="true" class="size-12 text-destructive mx-auto mb-4" />
+        <h2 class="text-xl font-bold mb-2">加载失败</h2>
+        <p class="text-muted-foreground mb-4">请稍后重试</p>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 cursor-pointer"
+          @click="refresh()">
+          <Icon name="lucide:refresh-cw" class="size-4" />
+          重试
+        </button>
+      </div>
 
       <!-- 图片分类 - 瀑布流布局 -->
       <template v-else-if="isPhotoCategory">

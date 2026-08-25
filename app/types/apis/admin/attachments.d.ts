@@ -39,6 +39,8 @@ export interface AttachmentDetailContent {
 	cid: number;
 	title: string;
 	slug: string | null;
+	/** contents 表 type:0=文章, 1=页面 */
+	type: number;
 }
 
 /** 附件详情（/api/admin/attachments/:id GET 返回的 data） */

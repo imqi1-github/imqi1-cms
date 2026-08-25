@@ -49,8 +49,14 @@ import type {AuthVerifyResponse} from "~/types/apis/auth";
 const route = useRoute()
 const redirectTo = computed(() => {
   const to = route.query.to
-  // 仅允许站内绝对路径，避免开放重定向（拒绝 //evil.com、/\evil.com、外链等）
-  if (typeof to === 'string' && to.startsWith('/') && !to.startsWith('//') && !to.startsWith('/\\')) {
+  // 仅允许站内绝对路径，避免开放重定向（拒绝 //evil.com、/\evil.com、外链等）。
+  // 追加字符白名单：拒绝控制字符（%00 等）、空白、反斜杠，防浏览器规范化差异绕过（如 "/\evil.com"、含 \n\t 的 payload）
+  if (
+    typeof to === 'string' &&
+    /^\/[a-zA-Z0-9/?#&=_%.\-:@~]+$/.test(to) &&
+    !to.startsWith('//') &&
+    !to.includes('\\')
+  ) {
     return to
   }
   return '/admin'
@@ -94,6 +100,9 @@ onMounted(async () => {
 })
 
 const handleLogin = async () => {
+  // 重入守卫：密码框 @keyup.enter 不随 loading 禁用，点击后请求进行中再按 Enter 会重复发 POST
+  if (loading.value) return
+
   if (!form.username || !form.password) {
     toast.error({ message: '请填写完整信息' })
     return

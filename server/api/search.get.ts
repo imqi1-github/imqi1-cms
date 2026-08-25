@@ -222,7 +222,7 @@ async function searchSubscribes(q: string): Promise<SearchBranchResult> {
       kind: "link" as const,
       id: l.id,
       name: l.name,
-      url: l.link,
+      url: sanitizeExternalUrl(l.link),
       desc: l.desc,
       avatar: l.avatar,
     })),

@@ -28,7 +28,7 @@ const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取标签文章数据
 // URL/watch 基于 apiSlug（仅标签页内同步）：切标签时重新请求，SPA 导航离开文章页时不再误请求
-const { data, pending, error } = await useFetch(() => `/api/tag/${apiSlug.value}/contents`, {
+const { data, pending, error, refresh } = await useFetch(() => `/api/tag/${apiSlug.value}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: contentPageSize },
   watch: [page, apiSlug],
@@ -38,8 +38,21 @@ const tag = computed(() => data.value?.data?.tag);
 const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
-// 判断是否为404
-const isNotFound = computed(() => !pending.value && (!tag.value || error.value));
+// 页码越界钳制：?page=999 等越界直链会把 page 归位到最后一页，避免渲染「第999/4页 + 暂无文章」矛盾空态。
+// immediate：SSR payload 已把 pagination 解析为 page=999/totalPages=4，水合时不会再有「变化」，须立即求值才会钳制。
+// 仅客户端：SSR 不触发 router.replace。
+watch(pagination, pg => {
+  if (!import.meta.client || !pg || pg.totalPages < 1) return;
+  if (page.value > pg.totalPages) {
+    page.value = pg.totalPages;
+    router.replace({ path: `/tag/${slug.value}`, query: { page: pg.totalPages.toString() } });
+  }
+}, { immediate: true });
+
+// 判断是否为404 —— 仅当真实 404 才当作「标签不存在」；瞬时 500/超时等走 isError 呈现重试态，避免把有效标签烘焙成 404
+const isNotFound = computed(() => !pending.value && !tag.value && (error.value?.statusCode === 404 || error.value?.status === 404));
+// 非 404 的加载错误（瞬时 DB 抖动/网络/超时）：保留标题并给重试，不触发 setResponseStatus(404)
+const isError = computed(() => !pending.value && !!error.value && !isNotFound.value);
 
 // 标签不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
 if (import.meta.server) {
@@ -52,6 +65,14 @@ const showSkeleton = ref(false);
 const isPaginating = ref(false);
 const hasPlayedEntryFade = ref(false);
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
+// 渐入/渐出相关 setTimeout 句柄集合：onBeforeUnmount 统一清空，
+// 避免「切换标签重挂载」后旧实例的定时器在新页 document 上 querySelectorAll 窜改渐隐状态
+const fadeTimers = new Set<ReturnType<typeof setTimeout>>();
+let isUnmounted = false;
+const trackFadeTimer = (id: ReturnType<typeof setTimeout>) => {
+  fadeTimers.add(id);
+  return id;
+};
 
 // 骨架屏数量 - 根据每页文章数量和当前页码动态调整
 const skeletonCount = computed(() => {
@@ -169,7 +190,8 @@ watch(pending, (newVal, oldVal) => {
     }
 
     // 强制触发渐入动画 - 给足够时间让DOM渲染完成
-    setTimeout(() => {
+    trackFadeTimer(setTimeout(() => {
+      if (isUnmounted) return;
       const includeEntryFade = !hasPlayedEntryFade.value;
       hideFadeElements(includeEntryFade);
       // 需要下一帧再触发动画，否则浏览器会合并DOM更新导致动画不播放
@@ -177,7 +199,7 @@ watch(pending, (newVal, oldVal) => {
         triggerFadeIn(includeEntryFade);
         hasPlayedEntryFade.value = true;
       });
-    }, 150);
+    }, 150));
   }
 
   // 开始加载新数据时，确保正文列表隐藏，标题和分页只在首次进入时渐入
@@ -204,9 +226,10 @@ watch(
       hideFadeElements();
 
       // 等待数据加载完成后触发正文列表动画
-      setTimeout(() => {
+      trackFadeTimer(setTimeout(() => {
+        if (isUnmounted) return;
         triggerFadeIn();
-      }, 300);
+      }, 300));
     }
   },
 );
@@ -231,6 +254,7 @@ watch(
 usePageSeo({
   title: computed(() => {
     if (pending.value) return `加载中... - ${siteName.value}`;
+    if (isError.value) return `加载失败 - ${siteName.value}`;
     if (isNotFound.value) return `标签不存在 - ${siteName.value}`;
     return `标签 ${tag.value?.name} - ${siteName.value}`;
   }),
@@ -241,9 +265,20 @@ usePageSeo({
 // 初始化渐入动画
 onMounted(() => {
   // 延迟触发，确保 DOM 完全渲染
-  setTimeout(() => {
+  trackFadeTimer(setTimeout(() => {
+    if (isUnmounted) return;
     triggerEntryFadeIn();
-  }, 100);
+  }, 100));
+});
+
+onBeforeUnmount(() => {
+  isUnmounted = true;
+  if (skeletonTimer) {
+    clearTimeout(skeletonTimer);
+    skeletonTimer = null;
+  }
+  for (const id of fadeTimers) clearTimeout(id);
+  fadeTimers.clear();
 });
 </script>
 
@@ -252,6 +287,20 @@ onMounted(() => {
     <div class="max-w-225 mx-auto flex flex-col justify-center items-center">
       <!-- 404（加载由全局页面过渡兜底） -->
       <NotFound v-if="isNotFound" title="标签不存在" />
+
+      <!-- 非 404 加载错误：保留标题并给重试，避免瞬时故障被渲染成 NotFound/被 SSR 写成 404 -->
+      <div v-else-if="isError" class="py-24 text-center fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+        <Icon name="lucide:alert-circle" aria-hidden="true" class="size-12 text-destructive mx-auto mb-4" />
+        <h2 class="text-xl font-bold mb-2">加载失败</h2>
+        <p class="text-muted-foreground mb-4">请稍后重试</p>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 cursor-pointer"
+          @click="refresh()">
+          <Icon name="lucide:refresh-cw" class="size-4" />
+          重试
+        </button>
+      </div>
 
       <!-- 标签文章页 -->
       <template v-else>

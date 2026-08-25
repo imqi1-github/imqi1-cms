@@ -593,10 +593,11 @@
             width: `calc(${tocSlotPercent}% - 8px)`,
             transition: 'left 300ms cubic-bezier(0, 0, 0.2, 1)',
           }" />
-        <div
+        <button
           v-for="(item, index) in tocItems"
           :key="item.id"
-          class="group relative z-10 px-4 py-2 cursor-pointer"
+          type="button"
+          class="group relative z-10 px-4 py-2 cursor-pointer bg-transparent text-inherit text-left border-0 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 hover:bg-transparent"
           :class="{ 'text-white': activeTocIndex === index }"
           @click="scrollToSection(index)">
           <!-- 非激活态悬浮背景：与高亮指示框同尺寸的内嵌药丸（inset-1 与指示框四周 4px 内缩一致） -->
@@ -604,7 +605,7 @@
             v-if="activeTocIndex !== index"
             class="absolute inset-1 rounded-full bg-gray-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:bg-gray-700" />
           <span class="relative">{{ item.title }}</span>
-        </div>
+        </button>
       </div>
     </div>
     <!-- 间隔 -->
@@ -1106,7 +1107,8 @@ let heroVisible = true;
 // 计算英雄区缩放/淡出样式（统一 rAF tick 内调用；已隐藏后早退，值未变时跳过赋值）
 const computeHero = (scrollTop: number, windowHeight: number) => {
   if (!heroRef.value) return;
-  const maxOffset = windowHeight - 500;
+  // 视口高度 ≤500 时 maxOffset 会 ≤0，导致 offset=负数、opacity 恒 0（英雄区首帧就不可见）；兜底为 ≥1 保分子恒正
+  const maxOffset = Math.max(windowHeight - 500, 1);
   const offset = Math.min(scrollTop, maxOffset);
   const scale = 1 - (offset / maxOffset) * 0.2;
   const opacity = 1 - offset / maxOffset;

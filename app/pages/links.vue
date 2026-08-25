@@ -5,8 +5,9 @@ import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 
 import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
-import type {LinkItem} from "~/types/apis/links";
+import type {LinkItem, LinkStatus, LinkFormMode} from "~/types/apis/links";
 import type {CsrfTokenResponse} from "~/types/apis/csrf";
+import type {ApiError} from "~/types/error";
 
 // 导入前台通知 composable
 const { success, error: showError, } = useFrontNotification();
@@ -38,7 +39,7 @@ const csrfToken = ref("");
 
 // 友链检测状态
 const isCheckingLinks = ref(false);
-const linkStatuses = ref<Record<string, { status: "up" | "down" | "checking"; checkedAt: number }>>({});
+const linkStatuses = ref<Record<string, LinkStatus>>({});
 const lastCheckTime = ref<number>(0);
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
 
@@ -195,12 +196,9 @@ usePageSeo({
 
 // 表单状态
 const submitting = ref(false);
-const submitSuccess = ref(false);
-const submitError = ref("");
 const showForceSubmit = ref(false); // 是否显示"仍然提交"按钮
-
 // 表单模式：apply=申请, edit=修改
-const formMode = ref<"apply" | "edit">("apply");
+const formMode = ref<LinkFormMode>("apply");
 
 // 修改友链：搜索和筛选
 const linkSearchQuery = ref("");
@@ -254,6 +252,8 @@ const selectedLink = ref<LinkItem | null>(null);
 
 // 检查必填字段是否已填写
 const isRequiredFieldsFilled = computed(() => {
+  // CSRF token 未就绪前禁止提交（提交需要 token，否则被 403 拒）
+  if (!csrfToken.value) return false;
   // 名称和链接始终为必填
   if (!formData.value.name?.trim()) return false;
   if (!formData.value.link?.trim()) return false;
@@ -307,9 +307,6 @@ const formatUrl = (url: string) => {
 
 // 提交表单
 const handleSubmit = async (forceSubmit = false) => {
-  // 重置状态
-  submitSuccess.value = false;
-  submitError.value = "";
   submitting.value = true;
   showForceSubmit.value = false;
 
@@ -321,7 +318,7 @@ const handleSubmit = async (forceSubmit = false) => {
         body: {
           name: formData.value.name,
           link: formData.value.link,
-          sort: formData.value.sort,
+          desc: formData.value.sort,
           avatar: formData.value.avatar,
           blogLinkUrl: formData.value.blogLinkUrl,
           forceSubmit: forceSubmit, // 是否强制提交（跳过检测）
@@ -330,7 +327,6 @@ const handleSubmit = async (forceSubmit = false) => {
       });
 
       if (data.code === 200) {
-        submitSuccess.value = true;
         success(data.message || "友链申请成功，请等待审核");
         // 重置表单
         cancelSelection();
@@ -338,10 +334,8 @@ const handleSubmit = async (forceSubmit = false) => {
         // 如果检测失败且返回了 needRetry 标识，显示"仍然提交"按钮
         if ("needRetry" in data && data.needRetry) {
           showForceSubmit.value = true;
-          submitError.value = data.message || "链接检测失败，请检查是否正确添加本站友链";
           showError(data.message || "链接检测失败，请检查是否正确添加本站友链");
         } else {
-          submitError.value = data.message || "申请失败，请重试";
           showError(data.message || "申请失败，请重试");
         }
       }
@@ -366,19 +360,16 @@ const handleSubmit = async (forceSubmit = false) => {
       });
 
       if (data.code === 200) {
-        submitSuccess.value = true;
         success("友链修改请求已提交，等待管理员审核");
         // 重置表单和选择
         cancelSelection();
       } else {
-        submitError.value = data.message || "提交失败，请重试";
         showError(data.message || "提交失败，请重试");
       }
     }
   } catch (err) {
     // H3 抛出的 createError 会把 { statusCode, message } 放到 err.data，优先展示服务端的具体原因（如"链接格式不正确"）
-    const message = (err as { data?: { message?: string } })?.data?.message || "网络错误，请稍后重试";
-    submitError.value = message;
+    const message = (err as ApiError)?.data?.message || "网络错误，请稍后重试";
     showError(message);
   } finally {
     submitting.value = false;
@@ -390,10 +381,14 @@ let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
 // 初始化 Fancybox 与友链检测
 onMounted(async () => {
-  // 预取 CSRF token（写接口 /api/links、/api/links/patch 需在 body 带上）
-  $fetch<CsrfTokenResponse>("/api/csrf/token", { credentials: "include" }).then(csrfRes => {
+  // 预取 CSRF token（写接口 /api/links、/api/links/patch 需在 body 带上）。
+  // 用 await 而非 fire-and-forget：token 未回填前点击提交会带空 csrfToken 被 403 拒，让访客误以为出错。
+  try {
+    const csrfRes = await $fetch<CsrfTokenResponse>("/api/csrf/token", { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
-  });
+  } catch {
+    // 预取失败不阻断初始化，提交时 isRequiredFieldsFilled（含 token 判断）会拦住空 token
+  }
   // 动态导入 Fancybox（仅客户端）
   FancyboxModule = await import("@fancyapps/ui");
   // 加载友链状态
@@ -846,7 +841,7 @@ onUnmounted(() => {
               id="link-sort"
               v-model="formData.sort"
               icon="lucide:tag"
-              label="分类" />
+              label="描述 / 简介" />
             <FloatingInput
               id="link-avatar"
               v-model="formData.avatar"

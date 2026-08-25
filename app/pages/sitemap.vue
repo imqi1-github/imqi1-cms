@@ -4,10 +4,18 @@ import { siteConfig } from "~~/site.config";
 // 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，
 // 渐入时直接带数据。服务端渲染时通过内部请求 header 放行 referer-check（与其它页面一致）。
 const ssrHeaders = { headers: getInternalRequestHeaders() };
-const { data: sitemapRes, pending: sitemapPending } = await useFetch("/api/sitemap", ssrHeaders);
-const { data: commentsRes } = await useFetch("/api/recent-comments?limit=10", ssrHeaders);
-const { data: tagsRes } = await useFetch("/api/tags", ssrHeaders);
-const { data: statsRes } = await useFetch("/api/stats", ssrHeaders);
+// 四个请求彼此无数据依赖，串行会叠加每个 handler 的延迟放大 TTFB / SPA 等待；改 Promise.all 并行
+const [sitemapFetch, commentsFetch, tagsFetch, statsFetch] = await Promise.all([
+  useFetch("/api/sitemap", ssrHeaders),
+  useFetch("/api/recent-comments?limit=10", ssrHeaders),
+  useFetch("/api/tags", ssrHeaders),
+  useFetch("/api/stats", ssrHeaders),
+]);
+const sitemapRes = sitemapFetch.data;
+const sitemapPending = sitemapFetch.pending;
+const commentsRes = commentsFetch.data;
+const tagsRes = tagsFetch.data;
+const statsRes = statsFetch.data;
 
 const sitemapData = computed(() => sitemapRes.value?.data ?? null);
 const recentComments = computed(() => commentsRes.value?.data || []);
@@ -175,13 +183,18 @@ usePageSeo({
       </section>
 
       <!-- 分类和文章 -->
-      <section v-if="sitemapData.categories && sitemapData.categories.length > 0" v-scroll-reveal>
+      <section v-if="sitemapData.categories" v-scroll-reveal>
         <div class="mb-5">
           <h2 class="text-xl font-bold text-slate-900 dark:text-white">分类文章</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">按分类浏览最新文章</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- 分类为空：仅在本分区内展示空态，避免与上方已有分区（页面/标签/评论）并存时视觉错位 -->
+        <div v-if="sitemapData.categories.length === 0" class="text-center py-16">
+          <Icon name="ri:folder-open-line" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p class="text-slate-500 dark:text-slate-400">暂无分类</p>
+        </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div
             v-for="category in sitemapData.categories"
             :key="category.mid"
@@ -253,9 +266,8 @@ usePageSeo({
           <NuxtLink
             v-for="comment in recentComments"
             :key="comment.coid"
-            :to="comment.contents ? `${comment.contents.url}#comment-${comment.coid}` : '#'"
-            class="group block rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/40 p-4 transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10"
-            :class="{ 'pointer-events-none opacity-50': !comment.contents }">
+            :to="`${comment.contents.url}#comment-${comment.coid}`"
+            class="group block rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/40 p-4 transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10">
             <div class="flex items-center gap-2 mb-2">
               <div class="flex items-center justify-center size-7 rounded-full shrink-0 overflow-hidden bg-blue-600/10 dark:bg-blue-400/15 text-blue-600 dark:text-blue-400 text-xs font-bold">
                 <img
@@ -277,19 +289,13 @@ usePageSeo({
               <EmojiParser :content="comment.text" size="sm" />
             </p>
 
-            <div v-if="comment.contents" class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+            <div class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
               <Icon name="ri:article-line" class="size-3.5 shrink-0" />
               <span class="truncate">{{ comment.contents.title }}</span>
             </div>
           </NuxtLink>
         </div>
       </section>
-
-      <!-- 空状态 -->
-      <div v-if="!sitemapData.categories || sitemapData.categories.length === 0" class="text-center py-16">
-        <Icon name="ri:folder-open-line" class="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-        <p class="text-slate-500 dark:text-slate-400">暂无分类</p>
-      </div>
     </div>
 
     <!-- 错误状态 -->

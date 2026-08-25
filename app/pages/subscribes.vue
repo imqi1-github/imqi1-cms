@@ -58,12 +58,20 @@ const isExpanded = ref(false);
 
 // 处理左侧边栏的滚轮事件
 function handleSidebarWheel(event: WheelEvent) {
-  if (sidebarRef.value && event.target instanceof Node && sidebarRef.value.contains(event.target)) {
+  const sidebar = sidebarRef.value;
+  if (sidebar && event.target instanceof Node && sidebar.contains(event.target)) {
+    const delta = event.deltaY;
+    // 仅当侧栏真正可滚动、且当前方向还能再滚时才拦截；否则放行让页面滚动（否则悬停左侧窄条会吞掉整页滚轮）
+    const canScroll =
+      sidebar.scrollHeight > sidebar.clientHeight + 1 &&
+      !(
+        (delta > 0 && sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight - 1) ||
+        (delta < 0 && sidebar.scrollTop <= 1)
+      );
+    if (!canScroll) return;
+
     event.preventDefault();
     event.stopPropagation();
-
-    const sidebar = sidebarRef.value;
-    const delta = event.deltaY;
     sidebar.scrollTop += delta;
   }
 }

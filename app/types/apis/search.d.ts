@@ -3,6 +3,13 @@
 /** 搜索类别：文章 / 订阅和友链 / 评论 / 订阅文章 */
 export type SearchType = "content" | "subscribe" | "comment" | "subscribepost";
 
+/** 搜索类别 Tab 配置：value 驱动查询，label/icon 驱动展示 */
+export interface SearchTypeConfig {
+  value: SearchType;
+  label: string;
+  icon: string;
+}
+
 /** 文章搜索结果项 */
 export interface ContentSearchItem {
 	type: "content";

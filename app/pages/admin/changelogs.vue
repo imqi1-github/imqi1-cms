@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta} from "~~/shared/changelog";
-import type {ChangelogItem} from "~/types/apis/admin/changelogs/logs";
+import type {ChangelogItem, FormEntry} from "~/types/apis/admin/changelogs/logs";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
@@ -16,11 +16,6 @@ const csrfToken = ref("");
 const editingId = ref<number | null>(null);
 
 // 编辑表单的条目：带稳定 _key，供 v-for 使用（用 index 作 key 会在增删时串行错位）
-interface FormEntry {
-  _key: number;
-  type: ChangelogType;
-  value: string;
-}
 let entryKeySeed = 0;
 const makeEntry = (type: ChangelogType = "新增", value = ""): FormEntry => ({ _key: ++entryKeySeed, type, value });
 
@@ -93,6 +88,10 @@ function cancelEdit() {
 
 // 保存
 async function save() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   // 过滤掉 value 空行
   const entries: ChangelogEntry[] = editForm.entries.map(e => ({ type: e.type, value: e.value.trim() })).filter(e => e.value.length > 0);
 
@@ -138,6 +137,11 @@ async function deleteLog(id: number) {
     return;
   }
 
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+
   try {
     await $fetch(`/api/admin/changelogs/${id}`, {
       method: "DELETE",
@@ -161,6 +165,10 @@ async function onImportFile(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
 
   importing.value = true;
   try {

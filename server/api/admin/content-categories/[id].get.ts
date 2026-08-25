@@ -23,7 +23,12 @@ export default defineEventHandler(async event => {
 
   try {
     const relations = await prisma.contentrelations.findMany({
-      where: { cid: Number(id) },
+      where: {
+        cid: Number(id),
+        metas: {
+          type: "category",
+        },
+      },
       include: {
         metas: true,
       },
