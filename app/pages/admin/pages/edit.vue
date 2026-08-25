@@ -5,6 +5,7 @@ import type { ContentDetailResponse } from "~/types/apis/admin/pages";
 import type { ContentSaveResponse, CoversInput } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
+import { isSpecialPageSlug, SPECIAL_PAGE_OPTIONS, type SpecialPageValue } from "~~/shared/special-pages";
 
 const route = useRoute();
 const router = useRouter();
@@ -39,7 +40,9 @@ const initialCoversInput = ref("");
 
 // 表单数据
 const title = ref("");
-const slug = ref("");
+const pageType = ref<SpecialPageValue>("messages");
+const customSlug = ref("");
+const slug = computed(() => (pageType.value === "custom" ? customSlug.value.trim() : pageType.value));
 const content = ref("");
 const desc = ref("");
 const showToc = ref(false);
@@ -310,7 +313,10 @@ const fetchPage = async () => {
         return await navigateTo(`/admin/contents/edit?cid=${pageId.value}`, { replace: true });
       }
       title.value = page.title || "";
-      slug.value = page.slug || "";
+      // slug 由 pageType+customSlug 推导：命中预设选类型，否则归为「自定义」并回填自由输入
+      const ps = page.slug || "";
+      if (isSpecialPageSlug(ps)) { pageType.value = ps; customSlug.value = ""; }
+      else { pageType.value = "custom"; customSlug.value = ps; }
       content.value = page.content || "";
       desc.value = page.desc || "";
       showToc.value = page.show_toc || false;
@@ -582,16 +588,31 @@ onUnmounted(() => {
                   <Textarea id="page-desc" v-model="desc" placeholder="请输入页面描述，用于 SEO 和分享" :rows="2" />
                 </div>
 
-                <!-- Slug -->
+                <!-- Slug：预设特殊页面下拉；选「自定义」时可自由输入（前台仍 404，未实现） -->
                 <div class="space-y-2">
                   <Label for="page-slug">页面 Slug</Label>
                   <div class="flex items-center gap-2">
                     <span class="text-sm text-muted-foreground">特殊页面：</span>
-                    <Input id="page-slug" v-model="slug" placeholder="如: agreement, message" class="flex-1" />
+                    <Select v-model="pageType" class="flex-1">
+                      <SelectTrigger id="page-slug" class="flex-1">
+                        <SelectValue placeholder="选择特殊页面" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="option in SPECIAL_PAGE_OPTIONS" :key="option.value" :value="option.value">
+                          {{ option.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <!-- 自定义：自由输入 slug（未实现，前台访问返回 404） -->
+                  <div v-if="pageType === 'custom'" class="flex items-center gap-2">
+                    <span class="text-sm text-muted-foreground">自定义 Slug：</span>
+                    <Input v-model="customSlug" placeholder="输入自定义 slug，如 about" class="flex-1" />
                   </div>
                   <p class="text-xs text-muted-foreground">
-                    特殊页面的唯一标识符。如 <code class="bg-muted px-1 py-0.5 rounded">agreement</code> 为协议页，
-                    <code class="bg-muted px-1 py-0.5 rounded">messages</code> 为留言页。留空则不生成特殊页面路由
+                    「留言板」对应 <code class="bg-muted px-1 py-0.5 rounded">/messages</code>，「协议」对应
+                    <code class="bg-muted px-1 py-0.5 rounded">/agreement</code>；「自定义」暂未实现，
+                    保存后前台访问会返回 404（等真正支持自定义页面后再启用）。
                   </p>
                 </div>
               </CardContent>

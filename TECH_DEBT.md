@@ -1,17 +1,28 @@
 # 技术债 / 待办清单（邪门扫描 2026-08-25）
 
-> 全项目「邪门」扫描（5 区域 grep 驱动）发现的、**暂不动、留给以后**的重大重构/加固。
+> 全项目「邪门」扫描（5 区域 grep 驱动）发现的重大重构/加固。
 > 每项附问题、为何滞后、建议改法、风险。执行前先跑 eslint + typecheck + 相关页面回归。
-> 当前待办：**1 项**（[slug].vue 拆分）。另两项（#3 router 私有字段、#11 data-transfer）已处理，见文末。
+> **进行中**：[slug].vue markdown 引擎组件化（B 方案，组件+引擎+重接已完成、静态全绿，待全语法文章运行时验证）。#3/#11 已处理（见文末）；#7/#8 按用户决定不改。
 
 ---
 
-## 1. `app/pages/content/[category]/[slug].vue` — 2891 行单文件微框架拆分
+## 1. `app/pages/content/[category]/[slug].vue` — markdown 扩展引擎组件化（B 方案，进行中）
 
-- **现象**：这一个 SFC 自成一个"markdown 扩展引擎"：`onMounted` 里 `createApp + h(MetingPlayer)` 起整个新 Vue 实例水合音乐块；`createVNode + render()` 手动挂 LivePhoto（扒 `useNuxtApp().vueApp._context`）；运行时拼 `<style>` 注入 head；清监听用 `button.replaceWith(cloneNode)` 把节点整个炸掉；还有 `.noneed` 碎英文类名。
-- **为何滞后**：改动面大、每个 widget（音乐/实况照片/Fancybox/Swiper/代码复制/目录/仓库卡片）都要回归；且这些是跟 Nuxt/Vue 内部实现的既有 workaround，拆分成组件要重新设计挂载方式。
-- **建议改法**：把 MetingPlayer / LivePhoto / Fancybox / Swiper / code-copy / TOC / repo-card 各自抽成 `components/markdown/*` Vue 组件；`createApp/h()` 改为组件内 `defineComponent` + `render`；运行时样式收进各自 SFC（scoped / `:deep`）。跨 bundle 的 markdown 渲染结构（同源三份的 markdownToPlainText）也要同步考虑。
-- **风险**：高。需逐 widget 回归；建议单独一个任务、分批做（先音乐+照片+轮播）。
+**状态：组件 + 引擎 + [slug].vue 重接已完成并静态校验全绿；运行时待「全语法」测试文章逐 widget 验证。**
+
+**已完成：**
+- `app/components/markdown/*`（9 组件）：`MarkdownDetails` / `MarkdownVideo` / `MarkdownCallout` / `MarkdownCard` / `MarkdownSimpleCard` / `MarkdownSwiper`（自管 Swiper 实例 + destroy）/ `MarkdownRepo`（自管 fetch + 加载/错误态）/ `MarkdownWaterfall` / `MarkdownMusic`（去掉 createApp 子实例，直接渲染 `MetingPlayer`）。
+- `app/composables/useMarkdownWidgets.ts`：扫描占位符（`.markdown-*-wrapper` / `.markdown-live-photo-*`）→ `createVNode + render` 挂载对应组件（用 `useNuxtApp().vueApp._context` 作 appContext），返回 `{ cleanup() }`（onUnmounted 调用卸载全部）。含 LivePhoto 双向挂载：独立 `.markdown-live-photo-wrapper` + swiper/waterfall 内 `.markdown-live-photo-mount`（须在 widget 挂载后统一 hydrate）。
+- `app/utils/markdownWidgets.ts`：`escapeHtmlAttr` / `safeDecodeURIComponent` / `parseImageLine`。
+- `[slug].vue`：切除 **-869 行**（`metingApps`/`markdownLivePhotoContainers`/`markdownSwipers`/`isUnmounted` + `unmountMarkdownLivePhotos`/`mountLivePhoto`/`parseImageLine`/`mountMarkdownLivePhotos`/`mountMarkdownGalleryLivePhotos` + 相关 import），`onMounted` 里调 `useMarkdownWidgets(document.body, { findImageDimensions })`，`onUnmounted` 调 `cleanupWidgets()`；**保留** Fancybox / code-copy（`pre.shiki`）/ TOC（extractToc/handleTocScroll/scrollToHeading/scrollToComment）/ 评论滚动 / 运行时 `<style>` 注入（大段 CSS）/ 正文 `v-html` / `:deep()` / 内容数据与 useFetch。
+- 校验：`eslint .` 0 错误 0 warning（`--fix` 已清新组件 7 条）、`nuxi typecheck` 0 `error TS`、`/content/default/hello-world` 200 且浏览器 console 0 error（2 warning）。
+
+**剩余 / 注意：**
+- **运行时逐 widget 回归**（最重点）：写一篇含全部语法的文章（details / video / callout / card / simple-card / swiper / repo / waterfall / music / 实况照片 / gallery），逐个验：折叠开关、轮播切换 + 拖拽、仓库 fetch 渲染、音乐播放、实况照片点击播放、Fancybox 灯箱。
+- `useMarkdownWidgets` 用 `document.body` 作 root（正文元素无 template ref），内部全局 `document.querySelectorAll`；若将来正文作用域要收窄需加 ref。
+- `swiper/css` 副作用 import 保留在 `[slug].vue`（给 `MarkdownSwiper` 供样式）；若再抽走需一并迁移。
+- `MarkdownMusic` 的 `idPresent` ref 目前恒 true；`id` 为空时 `v-else` 已兜底显示"无法识别的音乐链接"（与原来一致）。
+- 跨 bundle 的 markdown 渲染结构（`server/utils/markdown.ts` / `markdownToPlainText.ts` / `app/utils/markdownSplit.ts` 三处同源）**未动**，与本拆分无关。
 
 ---
 

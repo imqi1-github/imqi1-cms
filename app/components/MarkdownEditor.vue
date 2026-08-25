@@ -1007,6 +1007,9 @@ const actions = {
 }
 .dark .markdown-editor :deep(.ProseMirror pre code) {
   color: #bcbec4;
+  /* 块级代码背景须透明（背景交给 pre）；否则被暗色行内代码 rule `.dark .ProseMirror code`(rgb 55 65 81)
+     以更高特异性覆盖，代码块每个字符都带灰底 */
+  background: none;
 }
 .dark .markdown-editor :deep(.ProseMirror pre) {
   background: rgb(31 41 55);
