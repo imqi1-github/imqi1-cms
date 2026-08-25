@@ -41,10 +41,11 @@ export default <RouterConfig>{
           requestAnimationFrame(() => resolve({ left: 0, top: 0 }));
         };
         nuxtApp.hooks.hookOnce("page:loading:end", () => {
-          // ~transitionPromise 为 Nuxt 内部字段：等当前页面过渡完成后再滚动，避免滚动半过渡的页面。
-          const transitionPromise = (nuxtApp as NuxtAppWithTransition)["~transitionPromise"];
+          // 等页面过渡完成后再滚动，避免滚动半过渡的页面；transition promise 取不到/异常时直接滚动。
+          const transitionPromise = _getPageTransitionPromise(nuxtApp);
           if (transitionPromise) {
-            transitionPromise.then(doScroll);
+            // 成功/失败都滚动：若过渡 promise 被 reject，仅 .then 会卡住永不滚动并产生未捕获拒绝。
+            transitionPromise.then(doScroll, doScroll);
           } else {
             doScroll();
           }
@@ -66,10 +67,10 @@ export default <RouterConfig>{
         requestAnimationFrame(() => resolve(_calculatePosition(to, from, savedPosition, hashScrollBehaviour)));
       };
       nuxtApp.hooks.hookOnce("page:loading:end", () => {
-        // ~transitionPromise 为 Nuxt 内部字段：等当前页面过渡完成后再滚动，避免滚动半过渡的页面。
-        const transitionPromise = (nuxtApp as NuxtAppWithTransition)["~transitionPromise"];
+        // 等页面过渡完成后再滚动，避免滚动半过渡的页面；transition promise 取不到/异常时直接滚动。
+        const transitionPromise = _getPageTransitionPromise(nuxtApp);
         if (transitionPromise) {
-          transitionPromise.then(doScroll);
+          transitionPromise.then(doScroll, doScroll);
         } else {
           doScroll();
         }
@@ -77,6 +78,20 @@ export default <RouterConfig>{
     });
   },
 };
+
+/**
+ * 读取当前页面过渡的 promise（Nuxt 私有字段 ~transitionPromise，见下方两处使用）。
+ * 注意：这是 Nuxt 内部字段、非公开 API，跨版本可能改名/移除——升级 Nuxt 时需重新核对。
+ * 统一 try/catch + null 兜底：取不到或抛错都返回 null，由调用方走「直接滚动」路径，
+ * 避免极端情况下 scrollBehavior 卡死（永不滚动）。
+ */
+function _getPageTransitionPromise(nuxtApp: ReturnType<typeof useNuxtApp>): Promise<unknown> | null {
+  try {
+    return (nuxtApp as NuxtAppWithTransition)["~transitionPromise"] ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /** 读取锚点元素的 scroll-margin-top + 根节点 scroll-padding-top，用于贴顶偏移（粘性头避让） */
 function _getHashElementScrollMarginTop(selector: string): number {

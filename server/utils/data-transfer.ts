@@ -34,14 +34,35 @@ export const DATA_TABLES: DataTableSpec[] = [
 	{ model: "subscribeposts", dateFields: ["pubDate", "create_time"] },
 ];
 
-/** 取得指定模型的 Prisma 委托（findMany / createMany）。 */
-export function getDelegate(model: string): PrismaModelDelegate {
-	const delegate = (prisma as unknown as Record<string, PrismaModelDelegate>)[model];
-	if (!delegate || typeof delegate.findMany !== "function") {
+/**
+ * 取得指定模型的 Prisma 委托（findMany / createMany 等）。
+ * client 传 prisma 或事务 tx；默认 prisma（导出用），导入事务内传 tx。
+ * 这是全仓唯一一处「字符串索引 prisma 委托」的 double-as 收口点，集中在此便于审计与替换。
+ */
+export function getDelegate(model: string, client: object = prisma): PrismaModelDelegate {
+	const delegate = (client as unknown as Record<string, PrismaModelDelegate>)[model];
+	if (!delegate) {
 		throw createError({ statusCode: 500, message: `未知的数据表：${model}` });
 	}
 	return delegate;
 }
+
+/**
+ * informations 表中按 key 存储的敏感配置项（SMTP 密钥/COS 密钥/百度审核密钥等）。
+ * 导出备份时必须掩码或剔除，与 settings.get 的 SENSITIVE_KEYS 一致——
+ * 否则下载的备份文件会明文携带真实密钥（约定5 敏感配置运行时化）。
+ * 恢复后这些值需在后台重新填写。
+ */
+export const SENSITIVE_INFORMATIONS_KEYS = new Set([
+	"smtpUser",
+	"smtpPassword",
+	"cosSecretId",
+	"cosSecretKey",
+	"baiduAppId",
+	"baiduApiKey",
+	"baiduSecretKey",
+]);
+export const SENSITIVE_MASK = "********";
 
 /**
  * 将导入行中的日期字段由 ISO 字符串还原为 Date，其余字段原样保留。

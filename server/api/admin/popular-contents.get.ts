@@ -17,6 +17,7 @@ export default defineEventHandler(async event => {
     const popularContents = await prisma.contents.findMany({
       where: {
         type: 0, // 只查询文章
+        status: 1, // 只统计已发布（与其它文章查询一致，避免热门混入草稿/下架）
         comment_num: {
           gt: 0, // 只显示有评论的文章
         },

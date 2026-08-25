@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { Toaster as Sonner } from 'vue-sonner'
 
-type Props = {
+const props = withDefaults(defineProps<{
   class?: string
   richColors?: boolean
   closeButton?: boolean
   expand?: boolean
   duration?: number
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center'
-}
-
-const props = withDefaults(defineProps<Props>(), {
+}>(), {
   richColors: true,
   closeButton: true,
   expand: false,

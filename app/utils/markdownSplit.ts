@@ -92,8 +92,26 @@ export function splitMarkdown(md: string): MarkdownSegment[] {
       i++;
       let depth = 1;
       let closed = false;
+      let fenceOpen = false;
+      let fenceCloseRe: RegExp | null = null;
       while (i < lines.length) {
         const inner = lines[i]!;
+        // 代码围栏内的 ":::" 行是字面内容，不能当容器开/闭，用围栏状态机跳过
+        if (fenceOpen) {
+          rawLines.push(inner);
+          i++;
+          if (fenceCloseRe && fenceCloseRe.test(inner)) fenceOpen = false;
+          continue;
+        }
+        const fenceMatch = inner.match(FENCE_OPEN_RE);
+        if (fenceMatch) {
+          const fence = fenceMatch[1]!;
+          fenceOpen = true;
+          fenceCloseRe = new RegExp(`^\\s*\\${fence[0]!}{${fence.length},}`);
+          rawLines.push(inner);
+          i++;
+          continue;
+        }
         if (CONTAINER_CLOSE_RE.test(inner)) {
           depth -= 1;
           rawLines.push(inner);

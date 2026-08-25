@@ -6,7 +6,7 @@ import { getMiniApiSecret, verifyMiniSignature } from "#server/utils/mini-auth";
  * 覆盖 `/api/mini/*` 全部方法（GET/POST 等），校验 HMAC-SHA256 签名 + 时间戳。
  * 与 referer-check 的取舍一致：
  *   - 开发环境（NODE_ENV=development）跳过，方便本地调试；
- *   - 未配置 MINI_API_SECRET 时放行，兼容旧部署/未配置场景，仅在配置了密钥后才强制校验。
+ *   - 生产环境未配置 MINI_API_SECRET 时 fail-closed（拒绝 401），避免未鉴权放行公开接口。
  *
  * CORS 预检（OPTIONS）不带签名头且由 [...].options.ts 单独处理，此处显式放行。
  */
@@ -28,10 +28,12 @@ export default defineEventHandler(event => {
     return;
   }
 
-  // 未配置密钥时不启用鉴权（兼容旧部署）
+  // 未配置密钥时 fail-closed：生产环境拒绝，避免 /api/mini/* 未鉴权放行
   const secret = getMiniApiSecret();
   if (!secret) {
-    return;
+    console.error("[mini-auth] 缺少 MINI_API_SECRET，已拒绝访问 /api/mini/*（生产环境必须配置）");
+    setResponseStatus(event, 401);
+    return "";
   }
 
   const result = verifyMiniSignature(event, secret);

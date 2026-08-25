@@ -11,6 +11,7 @@ export default defineEventHandler(async event => {
     });
   }
   try {
+    // 标签数量有限，保留数组形状（前端 tags.vue 直接消费为数组）；加 take 上限防无界全表
     const tags = await prisma.metas.findMany({
       where: {
         type: "tag",
@@ -23,6 +24,7 @@ export default defineEventHandler(async event => {
       orderBy: {
         mid: "asc",
       },
+      take: 1000,
     });
 
     return tags.map(tag => ({

@@ -1,61 +1,9 @@
-import path from "node:path";
-
 import { prisma } from "#server/utils/prisma";
+import { buildUrlKeys, hasSharedUrlKey } from "#server/utils/cover-keys";
 import { getSubscribePosts } from '#server/utils/rss';
 import { parseCovers } from "#server/utils/covers";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { renderChangelogContent } from "#server/utils/changelog";
-
-const stripUrlDecorations = (value: string) => {
-  const hashIndex = value.indexOf("#");
-  const withoutHash = hashIndex >= 0 ? value.slice(0, hashIndex) : value;
-  const queryIndex = withoutHash.indexOf("?");
-  return queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
-};
-
-const normalizePathname = (value: string) => {
-  const clean = stripUrlDecorations(value);
-  try {
-    return new URL(clean).pathname;
-  } catch {
-    return clean;
-  }
-};
-
-const normalizeObjectKey = (value: string) => {
-  return decodeURIComponent(normalizePathname(value).replace(/^\/+/, ""));
-};
-
-const buildUrlKeys = (url: string) => {
-  const key = normalizeObjectKey(url);
-  const candidates = [key];
-
-  if (!key.startsWith("uploads/")) {
-    candidates.push(`uploads/${key}`);
-
-    const fileName = path.basename(key);
-    const datedName = /^(\d{4})-(\d{2})-\d{2}-/.exec(fileName);
-    if (datedName) {
-      candidates.push(`uploads/${datedName[1]}/${datedName[2]}/${fileName}`);
-    }
-  } else {
-    candidates.push(key.replace(/^uploads\//, ""));
-  }
-
-  const fileName = path.basename(key);
-  if (fileName) {
-    candidates.push(fileName);
-  }
-
-  return new Set(candidates.filter(Boolean));
-};
-
-const hasSharedUrlKey = (a: Set<string>, b: Set<string>) => {
-  for (const key of a) {
-    if (b.has(key)) return true;
-  }
-  return false;
-};
 
 export default defineEventHandler(async event => {
   try {
@@ -66,12 +14,13 @@ export default defineEventHandler(async event => {
     // 1. 获取图片分类 slug（只读需要的单个 key，避免拉取整张 informations 表）
     const photoCategoryInfo = await prisma.informations.findUnique({
       where: { key: "photoCategorySlug" },
+      select: { value: true },
     });
     const photoCategorySlug = (photoCategoryInfo?.value as string) || "shot";
 
     // 2. 获取图片分类的 mid（一次查询）
     const photoCategory = await prisma.metas.findFirst({
-      where: { slug: photoCategorySlug },
+      where: { slug: photoCategorySlug, type: "category" },
       select: { mid: true },
     });
     const photoCategoryMid = photoCategory?.mid;
@@ -89,9 +38,18 @@ export default defineEventHandler(async event => {
       prisma.metas.findMany({
         where: { type: "category" },
         take: 4,
-        include: {
+        select: {
+          mid: true,
+          name: true,
+          slug: true,
+          desc: true,
           _count: {
-            select: { contentrelations: true },
+            // 只统计已发布文章(type=0,status=1)，与 tags.get.ts 口径一致，避免把隐藏内容计入可见数。
+            select: {
+              contentrelations: {
+                where: { content: { type: 0, status: 1 } },
+              },
+            },
           },
         },
         orderBy: { mid: "asc" },
@@ -210,6 +168,11 @@ export default defineEventHandler(async event => {
                 cid: { notIn: excludeCids }, // 排除最新6篇
                 contentrelations: {
                   some: { mid: category.mid },
+                  // 同时挂图片分类与普通分类且不在最新6篇的内容，会同时出现在 photoContents 与本分类列表，
+                  // 造成首页重复展示。此处按与本分区一致的口径排除图片分类内容。
+                  ...(photoCategoryMid && {
+                    none: { mid: photoCategoryMid },
+                  }),
                 },
               },
               take: 4,
@@ -371,6 +334,7 @@ export default defineEventHandler(async event => {
         .findMany({
           take: 1,
           orderBy: { create_time: "desc" },
+          select: { id: true, content: true, create_time: true },
         })
         .then(logs =>
           logs.map(log => ({
@@ -400,6 +364,16 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
+    // 预期 4xx（如校验/未找到）原样抛，不打印完整堆栈
+    if (error instanceof Error && 'statusCode' in error) {
+      throw error;
+    }
+    if (error instanceof Error && 'code' in error && error.code === "P2025") {
+      throw createError({
+        statusCode: 404,
+        message: "数据不存在",
+      });
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

@@ -27,9 +27,15 @@ export default defineEventHandler(async event => {
   const entries = normalizeChangelogEntries(body?.content);
   validateChangelogData(entries);
 
+  // MySQL TEXT 上限 65535 字节：序列化后超限在写入前拦成 400，避免 DB 溢出成 500（与 import.post 一致）
+  const serialized = stringifyChangelogContent(entries);
+  if (Buffer.byteLength(serialized, "utf8") > 65535) {
+    throw createError({ statusCode: 400, message: "更新日志内容过长" });
+  }
+
   await prisma.changelogs.create({
     data: {
-      content: stringifyChangelogContent(entries),
+      content: serialized,
     },
   });
 

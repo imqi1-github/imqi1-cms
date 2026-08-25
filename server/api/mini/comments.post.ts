@@ -3,6 +3,7 @@ import DOMPurify from "isomorphic-dompurify";
 import { siteConfig } from "~~/site.config";
 import type { MiniCommentBody, MiniCommentCreateResponse } from "#server/types/apis/mini";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
+import { getClientIp } from "#server/utils/client-ip";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
 import { validateCommentData } from "#server/utils/validation";
@@ -32,10 +33,19 @@ export default defineEventHandler(async event => {
 
   try {
     const body = await readBody<MiniCommentBody>(event);
+    // 请求体必须是对象：缺 body（null）或非对象时直接 400，避免解构/属性访问踩 TypeError 变 500。
+    if (!body || typeof body !== "object") {
+      throw createError({ statusCode: 400, message: "缺少必填参数" });
+    }
+
     const { cid, content, name } = body;
-    const mail = body.mail || null;
-    const link = body.link || null;
-    const parentId = body.parent_id || null;
+    // mail/link 仅在 string 且非空时收下，其余（数字/对象等）视为未填，避免非字符串进入 Prisma 字段。
+    const mail = typeof body.mail === "string" && body.mail ? body.mail : null;
+    const link = typeof body.link === "string" && body.link ? body.link : null;
+    const parentId =
+      typeof body.parent_id === "number" && Number.isInteger(body.parent_id) && body.parent_id > 0
+        ? body.parent_id
+        : null;
 
     // 反垃圾：蜜罐。命中则静默"成功"，不暴露拦截逻辑给机器人。
     if (body.website) {
@@ -46,7 +56,15 @@ export default defineEventHandler(async event => {
       } satisfies MiniCommentCreateResponse;
     }
 
-    if (!cid || !Number.isInteger(cid) || cid <= 0 || !content || !name) {
+    if (
+      typeof cid !== "number" ||
+      !Number.isInteger(cid) ||
+      cid <= 0 ||
+      typeof content !== "string" ||
+      content.length === 0 ||
+      typeof name !== "string" ||
+      name.length === 0
+    ) {
       throw createError({ statusCode: 400, message: "缺少必填参数" });
     }
 
@@ -64,15 +82,14 @@ export default defineEventHandler(async event => {
     }
 
     // ========== IP 间隔防刷（小程序无 CSRF/图形验证码，这是主力防线）==========
-    const clientIP = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim() ||
-      getHeader(event, "x-real-ip") ||
-      event.node.req.socket.remoteAddress ||
-      "unknown";
+    const clientIP = getClientIp(event);
 
     const intervalMeta = await prisma.informations.findUnique({
       where: { key: "commentInterval" },
+      select: { value: true },
     });
-    const commentInterval = intervalMeta ? parseInt(intervalMeta.value) : 60;
+    const parsedInterval = parseInt(intervalMeta?.value ?? "", 10);
+    const commentInterval = Number.isFinite(parsedInterval) ? parsedInterval : 60;
 
     if (commentInterval > 0) {
       const intervalTime = new Date(Date.now() - commentInterval * 1000);
@@ -96,8 +113,8 @@ export default defineEventHandler(async event => {
 
     // 邮箱/链接必填跟随主站设置（commentRequireMail 默认 true、commentRequireLink 默认 false）。
     const [mailMeta, linkMeta] = await Promise.all([
-      prisma.informations.findUnique({ where: { key: "commentRequireMail" } }),
-      prisma.informations.findUnique({ where: { key: "commentRequireLink" } }),
+      prisma.informations.findUnique({ where: { key: "commentRequireMail" }, select: { value: true } }),
+      prisma.informations.findUnique({ where: { key: "commentRequireLink" }, select: { value: true } }),
     ]);
     const requireMail = mailMeta ? mailMeta.value === "true" : true;
     const requireLink = linkMeta ? linkMeta.value === "true" : false;
@@ -148,37 +165,49 @@ export default defineEventHandler(async event => {
 
     if (auditConfig.enabled) {
       auditResult = await auditText(`昵称：${name}，评论内容：${content}`);
-      commentStatus = mapAuditResultToStatus(auditResult.conclusionType);
+      // 审核服务异常/配置不完整（conclusionType 0）时，原 mapAuditResultToStatus 会当作“通过”放行；
+      // 改为 fail-closed（置待审核），避免违规内容绕过审核。
+      commentStatus =
+        auditResult.conclusion === "审核服务异常" || auditResult.conclusion === "审核配置不完整"
+          ? 0
+          : mapAuditResultToStatus(auditResult.conclusionType);
     } else {
       const meta = await prisma.informations.findUnique({
         where: { key: "commentModeration" },
+        select: { value: true },
       });
       commentStatus = meta?.value === "true" ? 0 : 1;
     }
 
     const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG) as string;
 
-    const comment = await prisma.comments.create({
-      data: {
-        cid,
-        content: sanitizedContent,
-        name,
-        mail,
-        link,
-        parent_id: parentId,
-        status: commentStatus,
-        agent: userAgent,
-        ip: clientIP,
-      },
-    });
-
-    // 仅已发布评论计入文章评论数
-    if (commentStatus === 1) {
-      await prisma.contents.update({
-        where: { cid },
-        data: { comment_num: { increment: 1 } },
+    // 评论写入与文章评论数累加放入同一事务：要么都成功要么都回滚，
+    // 避免后续 update（如目标文章被并发删除）失败时留下孤立评论。
+    const comment = await prisma.$transaction(async tx => {
+      const created = await tx.comments.create({
+        data: {
+          cid,
+          content: sanitizedContent,
+          name,
+          mail,
+          link,
+          parent_id: parentId,
+          status: commentStatus,
+          agent: userAgent,
+          ip: clientIP,
+        },
       });
-    }
+
+      // 仅已发布评论计入文章评论数
+      if (commentStatus === 1) {
+        await tx.contents.update({
+          where: { cid },
+          data: { comment_num: { increment: 1 } },
+        });
+      }
+
+      return created;
+    });
 
     // ========== 邮件通知（异步，不阻塞响应）==========
     if (commentStatus !== 1) {
@@ -199,9 +228,7 @@ export default defineEventHandler(async event => {
 
     const message = commentStatus === 0
       ? "评论提交成功，请等待审核"
-      : commentStatus === 2
-        ? "评论内容违规，已被标记"
-        : "评论提交成功";
+      : "评论提交成功";
 
     return {
       success: true,
@@ -212,6 +239,11 @@ export default defineEventHandler(async event => {
     // 已构造的 HTTP 错误（400/404/429 等）原样抛出，交给端上提示。
     if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
+    }
+
+    // Prisma 目标记录不存在：预检后目标被并发删除 → 404 而非 500。
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({ statusCode: 404, message: "文章不存在" });
     }
 
     console.error(error);

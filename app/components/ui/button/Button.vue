@@ -9,13 +9,11 @@ import { buttonVariants } from "."
 import { cn } from "@/lib/utils"
 
 
-interface Props extends PrimitiveProps {
+const props = withDefaults(defineProps<PrimitiveProps & {
   variant?: ButtonVariants["variant"]
   size?: ButtonVariants["size"]
   class?: HTMLAttributes["class"]
-}
-
-const props = withDefaults(defineProps<Props>(), {
+}>(), {
   as: "button",
 })
 </script>

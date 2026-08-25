@@ -11,6 +11,7 @@ const showAddForm = ref(false);
 const showEditForm = ref(false);
 const updating = ref(false);
 const submitting = ref(false);
+const saveUpdating = ref(false);
 const updateResult = ref<SubscribesUpdateResponse['data'] | null>(null);
 let updateResultTimer: ReturnType<typeof setTimeout> | null = null;
 const feedCacheInterval = ref(8); // 默认8小时
@@ -174,7 +175,9 @@ async function updateSubscribe() {
     toast.error({ message: "会话已失效，请刷新页面后重试" });
     return;
   }
+  if (saveUpdating.value) return;
 
+  saveUpdating.value = true;
   try {
     await $fetch(`/api/admin/subscribes/${editingSubscribe.value.id}`, {
       method: "PUT",
@@ -196,6 +199,8 @@ async function updateSubscribe() {
     toast.error({
       message: "修改失败",
     });
+  } finally {
+    saveUpdating.value = false;
   }
 }
 
@@ -296,7 +301,7 @@ onMounted(() => {
             <Input v-model="editingSubscribe.url" type="url" placeholder="RSS URL" required />
             <Input v-model="editingSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />
             <div class="flex gap-2">
-              <Button type="submit">保存</Button>
+              <Button type="submit" :disabled="saveUpdating">保存</Button>
               <Button type="button" variant="outline" @click="cancelEdit">取消</Button>
             </div>
           </form>

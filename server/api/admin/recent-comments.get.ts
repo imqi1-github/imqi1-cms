@@ -16,7 +16,15 @@ export default defineEventHandler(async event => {
     const comments = await prisma.comments.findMany({
       take: 5,
       orderBy: {create_time: "desc"},
-      include: {
+      // 约定1 白名单：只取前端需要的字段，不回显 ip/agent/mail 等内部/隐私字段
+      select: {
+        coid: true,
+        cid: true,
+        name: true,
+        content: true,
+        create_time: true,
+        status: true,
+        parent_id: true,
         content_ref: {
           select: {
             title: true,

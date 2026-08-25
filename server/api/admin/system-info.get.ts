@@ -14,15 +14,14 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    // 获取数据库版本
-    const dbVersion = await prisma.$queryRaw`SELECT VERSION() as version`;
+    // 数据库版本：$queryRaw 行形状用局部类型收窄（避免内联 as Array<{version}> 违反约定4）
+    const dbVersionRows = await prisma.$queryRaw<{ version: string }[]>`SELECT VERSION() as version`;
+    const dbVersion = dbVersionRows[0]?.version || 'Unknown';
 
-    // 获取附件统计
-    const attachments = await prisma.attachments.findMany({
-      select: { metadata: true },
-    });
-    const attachmentCount = attachments.length;
-    const attachmentTotalSize = attachments.reduce((total, attachment) => {
+    // 附件统计：count() 计数 + 只拉 metadata 求和（避免全量 findMany 载入所有行）
+    const attachmentCount = await prisma.attachments.count();
+    const attachmentMetas = await prisma.attachments.findMany({ select: { metadata: true } });
+    const attachmentTotalSize = attachmentMetas.reduce((total, attachment) => {
       return total + normalizeAttachmentMetadata(attachment.metadata).size;
     }, 0);
 
@@ -43,7 +42,7 @@ export default defineEventHandler(async event => {
         unit: 'MB',
       },
       database: {
-        version: (dbVersion as Array<{ version: string }>)[0]?.version || 'Unknown',
+        version: dbVersion,
       },
       attachments: {
         count: attachmentCount,

@@ -5,14 +5,21 @@ import type { ChangelogGroup } from "#server/types/apis/changelog";
 export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
-    const limit = query.limit ? parseInt(query.limit as string) : undefined;
+    // limit 收紧为 [1,100] 的整数，避免 NaN/负数/浮点/超大值传给 Prisma take；
+    // 未传 limit 或空串 → 返回全部（保持原契约）
+    const rawLimit = query.limit;
+    const limit =
+      typeof rawLimit === "string" && rawLimit.trim() !== ""
+        ? Math.min(100, Math.max(1, Math.floor(Number(rawLimit)) || 1))
+        : undefined;
     const simple = query.simple === "true"; // 是否返回简化格式（不分组）
 
     // 设置缓存头：CDN和浏览器缓存30分钟
     setHeader(event, "Cache-Control", "public, max-age=1800, s-maxage=1800");
 
-    // 获取更新日志，按时间倒序
+    // 获取更新日志，按时间倒序（公开接口只取前台渲染所需字段）
     const changelogs = await prisma.changelogs.findMany({
+      select: { id: true, content: true, create_time: true },
       orderBy: {
         create_time: "desc",
       },

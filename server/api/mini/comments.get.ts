@@ -2,27 +2,8 @@ import { createHash } from "node:crypto";
 
 import { siteConfig } from "~~/site.config";
 import type { MiniComment, MiniCommentsResponse } from "#server/types/apis/mini";
+import { formatRelativeTime } from "#server/utils/mini";
 import { prisma } from "#server/utils/prisma";
-
-const minute = 60 * 1000;
-const hour = 60 * minute;
-const day = 24 * hour;
-const week = 7 * day;
-const month = 30 * day;
-const year = 365 * day;
-
-function formatRelativeTime(value: Date) {
-  const diff = Date.now() - value.getTime();
-
-  if (diff < minute) return "刚刚";
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`;
-  if (diff < week) return `${Math.floor(diff / day)} 天前`;
-  if (diff < month) return `${Math.floor(diff / week)} 周前`;
-  if (diff < year) return `${Math.floor(diff / month)} 个月前`;
-
-  return `${Math.floor(diff / year)} 年前`;
-}
 
 // 头像直接返回镜像站地址（与主站 footprint 一致），端上 <image> 直连；
 // 需在小程序合法域名白名单里加入所用镜像站域名（gravatar/cravatar/weavatar）。
@@ -63,9 +44,9 @@ export default defineEventHandler(async event => {
     // 表单必填项跟随主站设置：commentRequireMail 默认 true、commentRequireLink 默认 false；
     // 头像服务与主站共用一份后台设置（commentAvatarService）。
     const [mailMeta, linkMeta, avatarMeta] = await Promise.all([
-      prisma.informations.findUnique({ where: { key: "commentRequireMail" } }),
-      prisma.informations.findUnique({ where: { key: "commentRequireLink" } }),
-      prisma.informations.findUnique({ where: { key: "commentAvatarService" } }),
+      prisma.informations.findUnique({ where: { key: "commentRequireMail" }, select: { value: true } }),
+      prisma.informations.findUnique({ where: { key: "commentRequireLink" }, select: { value: true } }),
+      prisma.informations.findUnique({ where: { key: "commentAvatarService" }, select: { value: true } }),
     ]);
     const requireMail = mailMeta ? mailMeta.value === "true" : true;
     const requireLink = linkMeta ? linkMeta.value === "true" : false;

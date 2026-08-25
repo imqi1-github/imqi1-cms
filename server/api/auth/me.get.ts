@@ -1,6 +1,9 @@
 import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
+  // 用户敏感接口：禁止任何代理/浏览器缓存，避免他人机器拿到本用户资料
+  setResponseHeader(event, "Cache-Control", "no-store");
+
   const user = await getUser(event);
 
   if (!user) {

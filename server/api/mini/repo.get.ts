@@ -7,9 +7,11 @@ export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=600, s-maxage=600");
 
   const query = getQuery(event);
-  const platform = query.platform as string;
-  const owner = (query.owner as string || "").trim();
-  const repo = (query.repo as string || "").trim();
+
+  // getQuery 对重复参数会返回数组，这里强制按字符串处理，避免数组/异常值触发 .trim() 抛错变成 500。
+  const platform = typeof query.platform === "string" ? query.platform : "";
+  const owner = (typeof query.owner === "string" ? query.owner : "").trim();
+  const repo = (typeof query.repo === "string" ? query.repo : "").trim();
 
   if ((platform !== "github" && platform !== "gitee") || !owner || !repo) {
     throw createError({ statusCode: 400, message: "缺少或非法的仓库参数" });
@@ -24,6 +26,8 @@ export default defineEventHandler(async event => {
   try {
     // GitHub 要求带 User-Agent，否则拒绝请求
     const data = await $fetch<RepoApiData>(apiUrl, {
+      // redirect:"error"：拒绝任何重定向，防止上游 30x 跳转到其他主机（SSRF 防护）
+      redirect: "error",
       headers: {
         "User-Agent": "imqi1-mini",
         Accept: "application/json",

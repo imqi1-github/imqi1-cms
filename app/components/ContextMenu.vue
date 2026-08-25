@@ -218,7 +218,7 @@ const handleCopyLinkUrl = () => {
 const handleOpenLink = () => {
   if (linkTarget.value) {
     const link = linkTarget.value.getAttribute("href");
-    if (link) window.open(link, "_blank");
+    if (link) window.open(link, "_blank", "noopener,noreferrer");
     closeMenu();
   }
 };

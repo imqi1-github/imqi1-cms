@@ -41,6 +41,14 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // 非字符串/非空值直接拒 400：validateCommentData 只用 .length 探测，数字/对象会绕过长度校验，
+  // 仍写入 String 列被 Prisma 打挂成 500（name/mail/link/content 均需收窄）
+  for (const v of [name, mail, link, content]) {
+    if (v !== undefined && v !== null && typeof v !== "string") {
+      throw createError({ statusCode: 400, message: "评论字段格式错误" });
+    }
+  }
+
   // 验证字段长度（name/mail/link 为 string 时才校验，避免非字符串流入 validateCommentData）
   if (name !== undefined || mail !== undefined || link !== undefined) {
     validateCommentData({ name, mail, link });

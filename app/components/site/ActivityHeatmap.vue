@@ -13,18 +13,23 @@ const categoryOptions = ref<CategoryOption[]>([]);
 const tagOptions = ref<TagOption[]>([]);
 
 const loadOptions = async () => {
-  const [categoriesRes, tagsRes] = await Promise.all([
-    $fetch<{ success: boolean; data: CategoryOption[] }>("/api/categories", {
-      query: { limit: 100 },
-      headers: getInternalRequestHeaders(),
-    }),
-    $fetch<{ success: boolean; data: TagOption[] }>("/api/tags", {
-      headers: getInternalRequestHeaders(),
-    }),
-  ]);
-  // slug 为空的分筛选不了，直接过滤掉
-  categoryOptions.value = (categoriesRes?.data ?? []).filter(cat => cat.slug);
-  tagOptions.value = tagsRes?.data ?? [];
+  try {
+    const [categoriesRes, tagsRes] = await Promise.all([
+      $fetch<{ success: boolean; data: CategoryOption[] }>("/api/categories", {
+        query: { limit: 100 },
+        headers: getInternalRequestHeaders(),
+      }),
+      $fetch<{ success: boolean; data: TagOption[] }>("/api/tags", {
+        headers: getInternalRequestHeaders(),
+      }),
+    ]);
+    // slug 为空的分筛选不了，直接过滤掉
+    categoryOptions.value = (categoriesRes?.data ?? []).filter(cat => cat.slug);
+    tagOptions.value = tagsRes?.data ?? [];
+  } catch (error) {
+    // 与 loadHeatmap 对齐：失败保持下拉为空，避免未捕获的 Promise rejection
+    console.error("加载筛选项失败:", error);
+  }
 };
 
 // ---- 热力图数据 ----

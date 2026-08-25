@@ -41,6 +41,20 @@ export function getMiniApiSecret(): string {
   return process.env.MINI_API_SECRET || "";
 }
 
+// 已见 nonce（防重放）：捕获的合法请求在 ±MAX_SKEW_SECONDS 窗口内重发即被拒。
+// 按时间戳做 TTL 修剪避免无限增长；单实例内存约定（多副本需 Redis，参照 login-rate-limit）。
+const seenNonces = new Map<string, number>();
+function recordNonce(nonce: string, tsSec: number): boolean {
+  const now = tsSec * 1000;
+  const maxAge = MAX_SKEW_SECONDS * 1000;
+  for (const [k, t] of seenNonces) {
+    if (now - t > maxAge) seenNonces.delete(k);
+  }
+  if (seenNonces.has(nonce)) return false;
+  seenNonces.set(nonce, now);
+  return true;
+}
+
 /**
  * 校验请求是否携带合法的小程序签名。
  * @param event H3Event
@@ -82,6 +96,11 @@ export function verifyMiniSignature(event: H3Event, secret: string): MiniAuthRes
   const providedBuf = Buffer.from(sign, "utf8");
   if (expectedBuf.length !== providedBuf.length || !timingSafeEqual(expectedBuf, providedBuf)) {
     return { ok: false, reason: "签名不匹配" };
+  }
+
+  // 防重放：窗口内同一 nonce 仅允许一次（在签名验证通过后登记，避免无效请求污染 nonce 表）
+  if (!recordNonce(nonce, ts)) {
+    return { ok: false, reason: "nonce 已使用（重放）" };
   }
 
   return { ok: true };

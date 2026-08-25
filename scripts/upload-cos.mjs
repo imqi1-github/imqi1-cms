@@ -319,7 +319,7 @@ async function main() {
 
   console.log(`📦 找到 ${files.length} 个文件`)
   console.log(`📂 来源: ${subDir ? SOURCE_DIR : '构建产物（public 根目录，不含 manifest）'}`)
-  console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 10}）`)
+  console.log(`⚡ 使用并发上传（并发数: ${process.env.COS_CONCURRENCY || 15}）`)
 
   // 清空远程目录
   const shouldContinue = await clearRemoteDirectory()

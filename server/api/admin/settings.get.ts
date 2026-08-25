@@ -2,6 +2,19 @@ import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
+// 敏感配置项：GET 不回显真实值，只回显掩码（约定5 敏感配置运行时化 + 防密钥经浏览器/网络明文下发）。
+// settings.post 会对这些字段做「掩码/空值 → 跳过更新」处理，避免回显的掩码被保存覆盖真实密钥。
+const SENSITIVE_KEYS = new Set([
+  "smtpUser",
+  "smtpPassword",
+  "cosSecretId",
+  "cosSecretKey",
+  "baiduAppId",
+  "baiduApiKey",
+  "baiduSecretKey",
+]);
+const MASK = "********";
+
 export default defineEventHandler(async event => {
   // 验证用户登录
   const user = await getUser(event);
@@ -88,6 +101,11 @@ export default defineEventHandler(async event => {
         settings[meta.key] = value;
       }
     });
+
+    // 敏感配置不回显真实值：非空则替换为掩码，空值保留空（前端可据此判断「未设置」）
+    for (const key of SENSITIVE_KEYS) {
+      if (settings[key]) settings[key] = MASK;
+    }
 
     return settings;
   } catch (error) {

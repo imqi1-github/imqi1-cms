@@ -3,17 +3,23 @@ import { prisma } from "#server/utils/prisma";
 export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
-    const limit = parseInt(query.limit as string) || 20;
+    // 数值参数取正整型并设上限（与评论区一致）：对负数/NaN/Infinity/重复参数回退默认，
+    // 防止负数或超大值进入 take（take: limit*2）造成 SQL 报错或拖库。上限 100 为溢出保护。
+    const limit = Number.isFinite(Number(query.limit))
+      ? Math.min(100, Math.max(1, Math.floor(Number(query.limit))))
+      : 20;
 
     // 解析留言板关联文章 cid：留言板是独立 /messages 路由（page 型，无分类关系），
     // 其评论在下面的过滤里要单独放行、并改走 /messages 链接（解析逻辑同 /api/messages/config）。
     const messageContentIdMeta = await prisma.informations.findUnique({
       where: { key: "messageContentId" },
+      select: { value: true },
     });
     let guestbookCid = messageContentIdMeta?.value ? parseInt(messageContentIdMeta.value) : null;
     if (!guestbookCid) {
       const messageContent = await prisma.contents.findFirst({
-        where: { slug: "messages" },
+        // 留言板是 page 型内容（type:1），裸 slug 查找可能命中同 slug 的文章（type:0），需判别
+        where: { slug: "messages", type: 1, status: 1 },
         select: { cid: true },
       });
       guestbookCid = messageContent?.cid ?? null;
@@ -52,6 +58,9 @@ export default defineEventHandler(async event => {
                   },
                 },
               },
+              // 一篇文章可能关联多个分类，按 mid 升序排序保证拼接 /content/<分类slug>/<文章slug>
+              // 时取到确定性的第一个分类，避免每次请求取到不同分类导致 URL 漂移。
+              orderBy: { mid: "asc" },
               take: 1,
             },
           },
@@ -119,6 +128,16 @@ export default defineEventHandler(async event => {
       data: formattedComments,
     };
   } catch (error) {
+    // 预期状态码（含带 statusCode 的错误）原样抛，不打印完整堆栈；不回传内部错误文案。
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({
+        statusCode: 404,
+        message: "该评论不存在",
+      });
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

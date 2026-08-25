@@ -6,11 +6,19 @@ import type { CommentNode } from "#server/types/apis/comment-node";
 export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
-    const cid = parseInt(query.cid as string);
-    const page = parseInt(query.page as string) || 1;
-    const pageSize = parseInt(query.pageSize as string) || 10;
 
-    if (!cid) {
+    // 数值参数统一取正整型：cid 必须为正整数；page/pageSize 对负数/NaN/Infinity 回退默认。
+    // pageSize 上限 10000 与前台「加载全部评论」实际传值对齐（CommentList loadAllComments），
+    // 不收紧到 50 以免破坏该功能；pageSize 只做内存切片，不进入 Prisma skip/take，无 DB 滥用面。
+    const cid = Number(query.cid);
+    const page = Number.isFinite(Number(query.page))
+      ? Math.max(1, Math.floor(Number(query.page)))
+      : 1;
+    const pageSize = Number.isFinite(Number(query.pageSize))
+      ? Math.min(10000, Math.max(1, Math.floor(Number(query.pageSize))))
+      : 10;
+
+    if (!Number.isInteger(cid) || cid <= 0) {
       throw createError({
         statusCode: 400,
         message: "缺少文章ID参数",
@@ -150,13 +158,17 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error(error);
-    if (error instanceof Error) {
+    // 预期 400/404 原样抛（含缺少文章 ID 的 400），不打印完整堆栈；不回传内部错误文案
+    if (error instanceof Error && 'statusCode' in error) {
+      throw error;
+    }
+    if (error instanceof Error && 'code' in error && error.code === "P2025") {
       throw createError({
-        statusCode: 400,
-        message: error.message,
+        statusCode: 404,
+        message: "评论不存在",
       });
     }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "获取评论列表失败",

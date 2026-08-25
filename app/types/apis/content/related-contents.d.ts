@@ -10,7 +10,7 @@ export interface RelatedContent {
 	slug: string | null;
 	desc: string | null;
 	covers: Array<{ url: string; title: string }>;
-	created: Date;
+	created: string; // Prisma DateTime，经 Nitro 序列化为 string
 	commentsNum: number;
 	categories: Meta[];
 	tags: Meta[];

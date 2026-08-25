@@ -1,4 +1,12 @@
+<script lang="ts">
+// 模块级 IntersectionObserver 单例：跨 LivePhoto 实例共享（原在 setup 内每实例各建一个，
+// N 张图 N 个 observer，与注释"全局共享"相悖）。单客户端 bundle，无 app/nitro 双实例坑。
+let lazyObserver: IntersectionObserver | null = null;
+</script>
+
 <script setup lang="ts">
+// 模块级单例 lazyObserver 在上方 <script> 块，导入被 import/first 视为越序（SFC 双 script 块的已知误报），保持单例不动。
+/* eslint-disable import/first */
 import {type CSSProperties, onMounted, ref, useAttrs} from "vue";
 import {useMediaQuery} from "@vueuse/core";
 
@@ -103,8 +111,13 @@ const onImageLoaded = (e: Event) => {
   loaded.value = true;
   (e.target as HTMLImageElement).classList.add("opacity-100");
 };
-// ✅ IntersectionObserver 单例（全局共享，性能更好）
-let lazyObserver: IntersectionObserver | null = null;
+// 非实况图片加载失败(404/网络)：置 loaded 让占位/骨架撤掉、并把 img 转为可见，
+// 否则 loaded 恒 false → 骨架(pulse)或 opacity-0 永久空白/破图不可见。
+const onImageError = (e: Event) => {
+  loaded.value = true;
+  (e.target as HTMLImageElement).classList.add("opacity-100");
+};
+// ✅ IntersectionObserver 单例：已提升到模块级（见文件顶部 <script>），跨实例共享
 
 // 实际加载的 src：懒加载时只有在可见后才设置
 const actualSrc = computed(() => {
@@ -607,7 +620,7 @@ onUnmounted(() => {
       v-bind="imageAttrs"
       :loading="lazy ? 'lazy' : 'eager'"
       decoding="async"
-      class="block w-full h-full object-cover transition-opacity duration-300 opacity-0"      @load="onImageLoaded" >
+      class="block w-full h-full object-cover transition-opacity duration-300 opacity-0"      @load="onImageLoaded" @error="onImageError" >
     <!-- 占位骨架屏（图片未解码完成前持续显示，避免空白占位） -->
     <div
       v-if="showPlaceholder && !loaded"

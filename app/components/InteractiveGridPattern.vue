@@ -7,15 +7,13 @@ import { cn } from "@/lib/utils";
 // 来源: https://inspira-ui.com/docs/en/components/backgrounds/interactive-grid-pattern
 // 用 SVG 绘制网格，鼠标悬停的格子高亮，纯 CSS 过渡，无第三方依赖（仅用项目内 cn）
 
-interface InteractiveGridPatternProps {
+const props = withDefaults(defineProps<{
   className?: HTMLAttributes["class"];
   squaresClassName?: HTMLAttributes["class"];
   width?: number;
   height?: number;
   squares?: [number, number];
-}
-
-const props = withDefaults(defineProps<InteractiveGridPatternProps>(), {
+}>(), {
   width: 40,
   height: 40,
   squares: () => [24, 24],

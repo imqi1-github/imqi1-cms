@@ -1,5 +1,4 @@
-import { createHash } from "node:crypto";
-
+import { commentAvatarUrl } from "#server/utils/comment-avatar";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { CITY_COORDS } from "~~/shared/city-coords";
@@ -31,18 +30,6 @@ function commentSnippet(raw: string | null | undefined): string | null {
     .trim();
   if (!text) return null;
   return text.length > 80 ? `${text.slice(0, 80)}…` : text;
-}
-
-function avatarUrl(mail: string | null, service: string): string | null {
-  if (!mail) return null;
-  const hash = createHash("md5").update(mail.toLowerCase().trim()).digest("hex");
-  const serviceUrls: Record<string, string> = {
-    gravatar: "https://www.gravatar.com/avatar",
-    cravatar: "https://cn.cravatar.com/avatar",
-    weavatar: "https://weavatar.com/avatar",
-  };
-  const baseUrl = serviceUrls[service] || serviceUrls.gravatar;
-  return `${baseUrl}/${hash}?d=identicon&s=80`;
 }
 
 function isMeaningfulName(name: string): boolean {
@@ -87,14 +74,12 @@ export default defineEventHandler(async event => {
   // 预扫一遍：为昵称相关键记录其出现过的邮箱（取最新一条）。这样同一个人偶尔漏填邮箱
   // 或换网址时，能并到他惯用的邮箱身份里，而不是另立身份。昵称单键只用于非泛化昵称。
   const nlToMail = new Map<string, string>();
-  const nameToMail = new Map<string, string>();
   for (const row of rows) {
     const name = row.name?.trim() || "";
     const link = row.link?.trim().toLowerCase() || "";
     const mail = row.mail?.trim().toLowerCase() || null;
     if (!name || !mail) continue;
     if (link && !nlToMail.has(`${name}|${link}`)) nlToMail.set(`${name}|${link}`, mail);
-    if (isMeaningfulName(name) && !nameToMail.has(name)) nameToMail.set(name, mail);
   }
 
   // 读者身份去重键：邮箱 > 昵称+网址/昵称命中的邮箱 > 非泛化昵称 > 昵称+网址 > IP。
@@ -159,7 +144,7 @@ export default defineEventHandler(async event => {
           articleTitle,
           articleUrl,
           comment: commentSnippet(row.content),
-          avatar: avatarUrl(mail, avatarService),
+          avatar: mail ? commentAvatarUrl(mail, avatarService) : null,
         };
 
         const ex = tally.get(name);

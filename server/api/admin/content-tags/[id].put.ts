@@ -51,6 +51,25 @@ export default defineEventHandler(async event => {
 
   // deleteMany + createMany 需原子：若 createMany 因不存在 mid 触发外键 P2003，deleteMany 已提交会丢失原标签关系
   try {
+    // 预检文章存在：cid 可能已被删除（别的标签页），此时 createMany 会触发 cid 外键 P2003，
+    // 被误报为「标签不存在」；应明确 404「文章不存在」
+    const content = await prisma.contents.findUnique({ where: { cid }, select: { cid: true } });
+    if (!content) {
+      throw createError({ statusCode: 404, message: "文章不存在" });
+    }
+
+    // 预检每个 mid 的 metas.type 为 'tag'：否则编辑器误传分类 mid 会静默给文章加分类关系
+    const tagIdSet = new Set(validTagIds);
+    if (tagIdSet.size > 0) {
+      const tags = await prisma.metas.findMany({
+        where: { mid: { in: [...tagIdSet] }, type: "tag" },
+        select: { mid: true },
+      });
+      if (tags.length !== tagIdSet.size) {
+        throw createError({ statusCode: 400, message: "存在无效的标签" });
+      }
+    }
+
     await prisma.$transaction(async tx => {
       await tx.contentrelations.deleteMany({
         where: {
@@ -77,9 +96,9 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    // tagIds 含不存在的标签 mid → 外键 P2003 → 404
+    // tagIds 含不存在的标签 mid → 外键 P2003 → 400（与 content-categories 的 400 语义一致；P2003 是非法输入非资源缺失）
     if (error instanceof Error && "code" in error && error.code === "P2003") {
-      throw createError({ statusCode: 404, message: "标签不存在" });
+      throw createError({ statusCode: 400, message: "存在无效的标签" });
     }
     console.error(error);
     throw createError({

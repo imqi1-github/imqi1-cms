@@ -97,6 +97,11 @@ export function resolveAmapProxyTarget(options: ResolveAmapProxyTargetOptions) {
   }
 
   const target = new URL(options.pathname.slice(basePath.length + 1), AMAP_REST_UPSTREAM);
+  // SSRF 防御（下沉到 shared）：pathname 剩余段若以 //、https:// 等开头会覆盖固定上游 host，
+  // 这里当场校验 hostname 命中白名单，避免未来调用方复用本函数而漏掉 hostname 回查。
+  if (!(target.hostname === "restapi.amap.com" || target.hostname === "webapi.amap.com")) {
+    return null;
+  }
   params.set("jscode", options.securityJsCode);
   target.search = params.toString();
   return target;

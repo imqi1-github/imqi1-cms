@@ -162,6 +162,8 @@ async function searchContents(q: string): Promise<SearchBranchResult> {
       },
     },
     orderBy: { create_time: "desc" },
+    // 其余分支均 take:50，文章分支也加截断（否则一次搜索可返回全部命中，total 也随之封顶）
+    take: 50,
   });
 
   return { results: formatSearchResults(contents, q), total: contents.length };
@@ -242,7 +244,7 @@ async function resolveGuestbookCid(): Promise<number | null> {
   let guestbookCid = messageContentIdMeta?.value ? parseInt(messageContentIdMeta.value) : null;
   if (!guestbookCid) {
     const messageContent = await prisma.contents.findFirst({
-      where: { slug: "messages" },
+      where: { slug: "messages", type: 1, status: 1 },
       select: { cid: true },
     });
     guestbookCid = messageContent?.cid ?? null;
@@ -267,7 +269,8 @@ async function searchComments(q: string): Promise<SearchBranchResult> {
           // 结果里却拼不出有效链接（且该文章前台本就不可见）
           OR: [
             ...(guestbookCid ? [{ cid: guestbookCid }] : []),
-            { content_ref: { status: 1 } },
+            // 与文章搜索分支一致：仅已发布文章（status:1 且 type:0），排除页面/下架内容上的评论
+            { content_ref: { status: 1, type: 0 } },
           ],
         },
         {
@@ -434,7 +437,6 @@ export default defineTypedApiHandler(
           // 尝试从缓存获取
           const cached = await redis.get(cacheKey);
           if (cached) {
-            console.log(`[搜索缓存命中] 关键词: "${q}", 类型: ${type}`);
             return {
               code: 200,
               message: "搜索成功（来自缓存）",
@@ -460,7 +462,6 @@ export default defineTypedApiHandler(
       }
 
       const { results, total } = searchResult;
-      console.log(`[搜索] 关键词: "${q}", 类型: ${type}, 找到 ${total} 条结果`);
 
       const responseData = {
         results,
@@ -474,7 +475,6 @@ export default defineTypedApiHandler(
         try {
           const cacheKey = `search:${q}:${type}`;
           await redis.setex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
-          console.log(`[搜索缓存已保存] 关键词: "${q}", 类型: ${type}, 过期时间: ${searchSettings.cacheExpire}秒`);
         } catch (error) {
           console.error(error);
         }
@@ -487,9 +487,17 @@ export default defineTypedApiHandler(
       };
     } catch (error) {
       console.error(error);
+      // 已携带 statusCode 的错误（如校验类 4xx）原样上抛，勿吞成通用 500
+      if (typeof error === "object" && error !== null && "statusCode" in error) {
+        throw error;
+      }
+      // Prisma 记录不存在 -> 404
+      if (typeof error === "object" && error !== null && (error as { code?: string }).code === "P2025") {
+        throw createError({ statusCode: 404, message: "资源不存在" });
+      }
       throw createError({
         statusCode: 500,
-        statusMessage: "搜索失败",
+        message: "搜索失败",
       });
     }
   },

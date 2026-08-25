@@ -107,6 +107,8 @@ export function mapAuditResultToStatus(conclusionType: number): number {
     case 3:
       return 0;
     default:
-      return 1;
+      // 结论不确定（新版接口 4=待人工复核）或未知值 → 挂起待审（fail-closed），
+      // 与 comments.post 提示「请等待审核」语义一致；原 default 直接发布属 fail-open
+      return 0;
   }
 }

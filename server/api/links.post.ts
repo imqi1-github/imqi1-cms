@@ -20,7 +20,8 @@ async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promis
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       },
       signal: controller.signal,
-      redirect: "follow",
+      // redirect:"error"：拒绝任何重定向，防止公开 URL 一跳到内网绕过 assertPublicHttpUrl 的 SSRF 防护
+      redirect: "error",
     });
 
     clearTimeout(timeoutId);
@@ -45,18 +46,34 @@ export default defineEventHandler(async event => {
   try {
     const body = await readBody(event);
 
+    // 写接口入参必须是普通对象，拒绝 null/数组/标量，避免后续 body.name/.trim() 抛 TypeError → 500
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw createError({ statusCode: 400, message: "请求参数格式错误" });
+    }
+
     // CSRF 双提交校验（游客写接口同样需要，防跨站伪造提交）
     const { csrfToken } = body as { csrfToken?: string };
     if (!validateCsrfToken(event, csrfToken ?? "")) {
       throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
     }
 
-    // 验证参数
-    if (!body.name || !body.link) {
+    // 验证参数：名称/链接必填且必须为字符串（非字符串会在下方 .trim() 抛 TypeError → 500）
+    if (typeof body.name !== "string" || typeof body.link !== "string" || !body.name.trim() || !body.link.trim()) {
       throw createError({
         statusCode: 400,
         message: "名称和链接为必填项",
       });
+    }
+
+    // 可选字段若提供必须为字符串（数字/对象会使 .trim()/new URL 崩溃，须以 400 拒绝而非 500）
+    if (body.desc != null && typeof body.desc !== "string") {
+      throw createError({ statusCode: 400, message: "描述格式不正确" });
+    }
+    if (body.avatar != null && typeof body.avatar !== "string") {
+      throw createError({ statusCode: 400, message: "头像格式不正确" });
+    }
+    if (body.blogLinkUrl != null && typeof body.blogLinkUrl !== "string") {
+      throw createError({ statusCode: 400, message: "友链地址格式不正确" });
     }
 
     // 验证字段长度
@@ -108,6 +125,11 @@ export default defineEventHandler(async event => {
       where: {
         key: { in: ["linkAutoApprove", "siteUrl"] },
       },
+      // 硬性约定 1：公开读 findMany 显式 select，仅取消费者用到的列
+      select: {
+        key: true,
+        value: true,
+      },
     });
 
     const settingsMap: Record<string, string> = {};
@@ -125,11 +147,9 @@ export default defineEventHandler(async event => {
 
     // 如果开启了自动审核，且不是强制提交，且用户填写了友链地址
     if (linkAutoApprove && !forceSubmit && body.blogLinkUrl) {
-      console.log(`开始检测友链: ${body.blogLinkUrl} 是否包含 ${siteUrl}`);
       const hasBacklink = await checkPageContainsLink(body.blogLinkUrl, siteUrl);
 
       if (hasBacklink) {
-        console.log("检测到友链，自动通过申请");
         autoApproved = true;
       } else {
         // 检测失败，返回错误信息

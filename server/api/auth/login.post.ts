@@ -1,6 +1,5 @@
-import type { H3Event } from "h3";
-
 import { setSession, verifyPassword } from "#server/lib/auth";
+import { getClientIp } from "#server/utils/client-ip";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import {
@@ -22,15 +21,6 @@ async function getDummyHash(): Promise<string> {
     dummyHashPromise = bcrypt.hash("dummy-login-secret", 10);
   }
   return dummyHashPromise;
-}
-
-// 从请求头解析客户端 IP（优先取 X-Forwarded-For 首段）
-function getClientIp(event: H3Event): string {
-  const xff = getHeader(event, "x-forwarded-for");
-  if (typeof xff === "string" && xff.length > 0) {
-    return (xff.split(",")[0] ?? "").trim();
-  }
-  return "unknown";
 }
 
 export default defineEventHandler(async event => {
@@ -74,9 +64,17 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    // 查找用户
+    // 查找用户：只取登录/建会话所需的列，auth_code（单端登录令牌）与 create_time 无需进内存
     const user = await prisma.users.findUnique({
       where: { name: username },
+      select: {
+        uid: true,
+        name: true,
+        nickname: true,
+        mail: true,
+        avatar: true,
+        password: true,
+      },
     });
 
     if (!user) {

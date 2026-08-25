@@ -12,9 +12,18 @@ export default defineEventHandler(async event => {
     });
   }
   try {
+    // 约定1 白名单：select 限定顶层字段，避免裸返回内部审核字段（isModification/modificationStatus/originalLinkId）
     return await prisma.links.findMany({
-      include: {
-        // 包含原友链信息（如果是修改请求）
+      select: {
+        id: true,
+        name: true,
+        link: true,
+        desc: true,
+        avatar: true,
+        enabled: true,
+        originalLinkId: true,
+        isModification: true,
+        modificationStatus: true,
         originalLink: {
           select: {
             id: true,

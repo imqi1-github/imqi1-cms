@@ -29,7 +29,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken, ...updateData } = body;
 
   // CSRF 验证
@@ -74,9 +74,9 @@ export default defineEventHandler(async event => {
   validateMetaData({ name, slug, desc });
 
   try {
-    // 检查分类是否存在
-    const existingCategory = await prisma.metas.findUnique({
-      where: { mid },
+    // 检查分类是否存在 —— 必须限定 type='category'，否则传 tag 的 mid 会把 tag 当分类改掉
+    const existingCategory = await prisma.metas.findFirst({
+      where: { mid, type: "category" },
     });
 
     if (!existingCategory) {
@@ -150,6 +150,14 @@ export default defineEventHandler(async event => {
       throw createError({
         statusCode: 404,
         message: "分类不存在",
+      });
+    }
+
+    // 并发编辑/抢注时 name/slug 唯一约束冲突（P2002）→ 400 而非 500
+    if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+      throw createError({
+        statusCode: 400,
+        message: "分类名称或标识(slug)已存在",
       });
     }
 

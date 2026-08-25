@@ -14,13 +14,16 @@ export default defineEventHandler(async event => {
   try {
     const messageContentIdMeta = await prisma.informations.findUnique({
       where: { key: "messageContentId" },
+      select: { value: true },
     });
 
-    let messageContentId = messageContentIdMeta?.value ? parseInt(messageContentIdMeta.value) : null;
+    const parsedContentId = messageContentIdMeta?.value ? Number.parseInt(messageContentIdMeta.value, 10) : NaN;
+    let messageContentId = Number.isFinite(parsedContentId) && parsedContentId > 0 ? parsedContentId : null;
 
     if (!messageContentId) {
+      // 留言板是独立 /messages 路由（page 型 type:1），加 type/status 判别避免抓到同 slug 的文章
       const messageContent = await prisma.contents.findFirst({
-        where: { slug: "messages" },
+        where: { slug: "messages", type: 1, status: 1 },
         select: { cid: true },
       });
       messageContentId = messageContent?.cid ?? null;

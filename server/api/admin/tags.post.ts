@@ -13,7 +13,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { name, slug, desc, csrfToken } = body;
 
   // CSRF 验证
@@ -24,11 +24,18 @@ export default defineEventHandler(async event => {
     });
   }
 
-  if (!name || !name.trim()) {
+  // 类型 + 空值校验：非字符串 truthy（如 name:123）会让 name.trim() 抛 TypeError→500
+  if (typeof name !== 'string' || !name.trim()) {
     throw createError({
       statusCode: 400,
       message: "标签名称不能为空",
     });
+  }
+  if (slug !== undefined && slug !== null && typeof slug !== 'string') {
+    throw createError({ statusCode: 400, message: "标签标识格式错误" });
+  }
+  if (desc !== undefined && desc !== null && typeof desc !== 'string') {
+    throw createError({ statusCode: 400, message: "标签描述格式错误" });
   }
 
   // 验证字段长度
@@ -38,20 +45,22 @@ export default defineEventHandler(async event => {
     const tag = await prisma.metas.create({
       data: {
         name: name.trim(),
-        slug: slug || null,
-        desc: desc || null,
+        slug: typeof slug === 'string' && slug.trim() !== '' ? slug.trim() : null,
+        desc: typeof desc === 'string' && desc.trim() !== '' ? desc.trim() : null,
         type: "tag",
       },
     });
     return tag;
   } catch (error) {
-    console.error(error);
+    // P2002 重名是预期 4xx，不打印完整堆栈
     if (error instanceof Error && 'code' in error && error.code === "P2002") {
+      // metas 表 name 与 slug 均 @unique，冲突可能是任一字段：给出通用文案
       throw createError({
         statusCode: 400,
-        message: "标签名称已存在",
+        message: "标签名称或标识(slug)已存在",
       });
     }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "创建标签失败",

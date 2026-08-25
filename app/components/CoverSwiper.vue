@@ -148,6 +148,7 @@ onUnmounted(() => {
 watch(
   () => props.covers,
   () => {
+    if (initTimer) clearTimeout(initTimer);
     initTimer = setTimeout(() => {
       initSwiper();
     }, 100);

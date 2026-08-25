@@ -54,16 +54,16 @@ export interface SiteConfig {
   /** 站长社交/联系方式 */
   social: Array<{
     /** 名称 */
-    name: string,
+    name: string;
     /** 图标 */
-    icon: string,
+    icon: string;
     /** 社交链接*/
-    link?: string,
+    link?: string;
     /** target */
-    target?: boolean,
+    target?: boolean;
     /** 悬浮展示的二维码图片（如小程序码），设置后该项不作为链接 */
-    qrcode?: string
-  }>,
+    qrcode?: string;
+  }>;
   /** PWA manifest 静态配置 */
   manifest: {
     /** manifest name */

@@ -21,7 +21,7 @@ export default defineEventHandler(async event => {
     })
   }
 
-  const body = await readBody(event)
+  const body = (await readBody(event)) ?? {}
   const { csrfToken } = body
 
   // CSRF 验证
@@ -57,8 +57,17 @@ export default defineEventHandler(async event => {
 
     const cidList: number[] | null = body.cids !== undefined
       ? (Array.isArray(body.cids)
-          ? Array.from(new Set(body.cids.map((cid: unknown) => Number(cid)).filter(Number.isInteger)))
-          : [])
+          ? (() => {
+              const nums: number[] = body.cids.map((cid: unknown) => Number(cid))
+              // 任一元素非正整数 → 400：否则非数组/含非法元素的 cids 会被清成 []，静默清空该附件全部关联
+              if (nums.some(n => !Number.isInteger(n) || n <= 0)) {
+                throw createError({ statusCode: 400, message: 'cids 格式错误' })
+              }
+              return Array.from(new Set(nums))
+            })()
+          : (() => {
+              throw createError({ statusCode: 400, message: 'cids 格式错误' })
+            })())
       : null
 
     // 更新附件

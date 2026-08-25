@@ -17,16 +17,7 @@ import { fileURLToPath } from "node:url";
 import { escapeAttribute, escapeHtml } from "~~/lib/html";
 import { EMOJI_CATEGORIES, stripEmojiPrefix } from "~~/shared/emoji-categories";
 import { getPublicDir } from "#server/utils/attachment-file";
-
-export interface MailEmojiAttachment {
-  /** Content-ID，ASCII，形如 emoji-0@imqi1（RFC 2392 message-id 形式，兼容性好）。 */
-  cid: string;
-  /** PNG 绝对路径（含中文文件名，fs / nodemailer 读取不挑）。 */
-  path: string;
-  /** ASCII 文件名（emoji-0.png），避免中文 filename 触发 MIME 头编码后 Outlook 解析不稳。 */
-  filename: string;
-  contentType: string;
-}
+import type { MailEmojiAttachment } from "#server/types/utils/emoji-mail";
 
 interface EmojiEntry {
   path: string;

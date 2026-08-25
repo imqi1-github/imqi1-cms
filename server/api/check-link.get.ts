@@ -8,7 +8,7 @@ export default defineEventHandler(async event => {
   if (!url || typeof url !== "string") {
     throw createError({
       statusCode: 400,
-      statusMessage: "缺少URL参数",
+      message: "缺少URL参数",
     });
   }
 
@@ -25,7 +25,8 @@ export default defineEventHandler(async event => {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91 Safari/537.36",
       },
       signal: controller.signal,
-      redirect: "follow",
+      // 拒绝重定向：公共 URL 可能被 30x 跳转到内网/环回地址，绕过上方 assertPublicHttpUrl 的 SSRF 防护
+      redirect: "error",
     });
 
     clearTimeout(timeoutId);
@@ -47,18 +48,11 @@ export default defineEventHandler(async event => {
       };
     }
 
-    // 标准 Error
-    if (error instanceof Error) {
-      return {
-        status: "down",
-        message: `链接不可访问: ${error.message}`,
-      };
-    }
-
-    // 兜底
+    // 其余错误（连接失败 / 被拒绝的重定向等）：只返回通用文案，
+    // 完整细节已在上方 console.error 记录，不向客户端泄露内部错误信息
     return {
       status: "down",
-      message: `链接不可访问: ${String(error)}`,
+      message: "链接不可访问",
     };
   }
 });

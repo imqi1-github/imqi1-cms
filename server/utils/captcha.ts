@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 import { getCookie, setCookie, type H3Event } from "h3";
 import { initialize, svg2png } from "svg2png-wasm";
 
+import { escapeXml } from "#server/utils/xml";
+
 /**
  * 图形验证码工具
  *
@@ -84,19 +86,6 @@ function randomText(): string {
   }
 
   return text;
-}
-
-/** 转义 XML 特殊字符，避免 SVG 注入 */
-function escapeXml(value: string): string {
-  const entityMap: Record<string, string> = {
-    "<": "&lt;",
-    ">": "&gt;",
-    "&": "&amp;",
-    "'": "&apos;",
-    '"': "&quot;",
-  };
-
-  return value.replace(/[<>&'"]/g, char => entityMap[char] || char);
 }
 
 /** 生成带干扰线、噪点、彩色旋转字符的 SVG 验证码图片 */
@@ -229,11 +218,21 @@ async function rasterizePng(svg: string): Promise<Buffer> {
 function cleanup() {
   if (STORE.size < MAX_STORE) return;
 
+  // 优先删除已过期的项。
   const now = Date.now();
   for (const [token, record] of STORE) {
     if (now > record.expires) {
       STORE.delete(token);
     }
+  }
+
+  // 极端流量兜底：若 TTL 内一次性涌入超过 MAX_STORE 个未过期 token，上面的删除
+  // 全部为 no-op。此时按写入顺序（Map 迭代即插入序）逐出最旧的未过期 token，保证
+  // STORE 大小恒被钳制在 MAX_STORE 以内，避免内存无限增长、并使每次签发不再做
+  // 无收益的 O(size) 扫描。被逐出的 token 只是尚未校验的一次性验证码，失败即作废。
+  for (const token of STORE.keys()) {
+    if (STORE.size <= MAX_STORE) break;
+    STORE.delete(token);
   }
 }
 

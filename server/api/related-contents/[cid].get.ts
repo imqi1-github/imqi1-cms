@@ -3,16 +3,29 @@ import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
   try {
-    const contentId = Number(getRouterParam(event, "cid"));
     const query = getQuery(event);
-    const limit = Number(query.limit) || 3;
 
-    if (!contentId) {
+    // 公开分页参数 limit：clamp 到正整 1..100，NaN/float/负/Infinity 不得直接传给 Prisma take；
+    // 未传 limit 或非字符串（重复参数成数组/空串/null）→ 采用默认 3
+    const rawLimit = query.limit;
+    const limit =
+      typeof rawLimit === "string" && rawLimit.trim() !== ""
+        ? Math.min(100, Math.max(1, Math.floor(Number(rawLimit)) || 3))
+        : 3;
+
+    // 相关性候选池：先取出稍宽的候选集（共享标签的已发布文章），再按相关度排序并截取前 limit 条。
+    // 若直接 take:limit 再排序，老但高相关的文章会被"最新 N 条"挡在外面，使"相关推荐"失去意义。
+    const candidateLimit = Math.min(100, Math.max(limit * 4, 20));
+
+    // 路由参数 cid 防御性校验：NaN/浮点/负数一律 400，避免把浮点整型传给 Prisma 主键过滤
+    const rawContentId = Number(getRouterParam(event, "cid"));
+    if (!rawContentId || !Number.isInteger(rawContentId) || rawContentId < 1) {
       throw createError({
         statusCode: 400,
-        statusMessage: "文章ID不能为空",
+        message: "文章ID不能为空",
       });
     }
+    const contentId = rawContentId;
 
     // 设置缓存头：CDN和浏览器缓存5分钟
     setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
@@ -72,7 +85,8 @@ export default defineEventHandler(async event => {
           },
         },
       },
-      take: limit,
+      // take 用一个更宽的候选池，使相关性排序有意义；最终在 JS 里按相关度排序后 slice 到 limit 条
+      take: candidateLimit,
       orderBy: {
         create_time: "desc",
       },
@@ -158,10 +172,23 @@ export default defineEventHandler(async event => {
       data,
     };
   } catch (error) {
-    console.error(error);
-    return {
-      success: false,
-      data: [],
-    };
+    const err = error as { statusCode?: number; code?: string };
+    // 带 statusCode 的错误（含本处理器抛出的 createError 400）原样抛出，绝不吞成 200 success:false
+    if (err && typeof err.statusCode === "number") {
+      throw error;
+    }
+    // Prisma 记录不存在 → 404
+    if (err && err.code === "P2025") {
+      throw createError({
+        statusCode: 404,
+        message: "文章不存在",
+      });
+    }
+    // 未知故障：记录详细日志，抛通用 500，绝不把 error.message 透传给前端
+    console.error("[related-contents]", error);
+    throw createError({
+      statusCode: 500,
+      message: "获取相关文章失败",
+    });
   }
 });

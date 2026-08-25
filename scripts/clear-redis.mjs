@@ -1,10 +1,8 @@
 /**
- * 通过宝塔面板 API 重启 / 启动 / 停止服务器上的 Node 项目
+ * 通过宝塔面板 API 清空 Redis 数据库（清缓存）
  *
  * 用法：
- *   npm run restart:server            # 重启（默认）
- *   npm run restart:server -- start   # 启动
- *   npm run restart:server -- stop    # 停止
+ *   bun run clear:redis
  *
  * 需在 .env 配置：
  *   BT_PANEL_URL     宝塔面板地址（含协议与端口），如 http://1.2.3.4:8888
@@ -15,6 +13,7 @@
  *   - 宝塔 API 需在「API 接口」里开启，并把调用方（本机）公网 IP 加入 IP 白名单，否则请求会被拒绝。
  *   - 签名规则：request_token = md5(request_time + md5(api_key))
  *   - 接口：POST /database/redis/clear_flushdb
+ *   - 该接口会清空 Redis 全部 16 个 DB（0-15），请勿在生产随意执行。
  */
 import crypto from 'node:crypto'
 

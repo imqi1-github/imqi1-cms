@@ -6,10 +6,11 @@ export default defineEventHandler(event => {
     return;
   }
 
-  // 非 API 端点跳过
-  const path = event.node.req.url;
+  // 非 API 端点跳过。剥离查询串，避免 "?..." 干扰前缀匹配（如 /api/mini?x=1 也须命中跳过规则）。
+  const rawUrl = event.node.req.url || "";
+  const path = rawUrl.split("?")[0] ?? "";
 
-  if (!path?.startsWith("/api/")) {
+  if (!path.startsWith("/api/")) {
     return;
   }
 
@@ -29,9 +30,9 @@ export default defineEventHandler(event => {
   // 应用层环境变量直接读 process.env，不经 Nuxt runtimeConfig 注入。
   const ssrInternalRequest = event.node.req.headers["x-ssr-internal-request"];
   const ssrInternalRequestSecret = process.env.SSR_INTERNAL_REQUEST_SECRET || "";
-  const isSsrInternalRequest = ssrInternalRequestSecret
-    ? ssrInternalRequest === ssrInternalRequestSecret
-    : ssrInternalRequest === "true";
+  // 生产未配置 secret 时不再接受可伪造的 "true"（fail-closed）：只有配置了随机 secret 且匹配才放行，
+  // 否则该标头可被任意外部调用方伪造绕过 referer 门禁（配合 app/utils/internal-request.ts 同源收紧）。
+  const isSsrInternalRequest = !!ssrInternalRequestSecret && ssrInternalRequest === ssrInternalRequestSecret;
 
   if (isSsrInternalRequest) {
     return;
@@ -78,8 +79,6 @@ export default defineEventHandler(event => {
     );
 
     setResponseStatus(event, 403);
-
-    console.warn("referer 解析失败:", referer, error);
 
     return "";
   }

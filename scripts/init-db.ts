@@ -41,9 +41,11 @@ async function main() {
     port,
     user,
     password,
-    database,
     multipleStatements: true,
   });
+  // 目标库可能尚未创建：先建库再切库（全新 MySQL 上连接带 database 会抛 ER_BAD_DB_ERROR Unknown database）
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await connection.changeUser({ database });
 
   try {
     console.log(`→ 连接数据库 ${user}@${host}:${port}/${database}`);

@@ -2,6 +2,7 @@
 // （仅在 /api/meting 路由内部使用）
 
 import type { MetingSong, FormattedSong } from "#server/types/apis/meting";
+import { toHttps } from "#server/utils/mini";
 
 // 允许的音乐服务域名白名单
 const ALLOWED_REDIRECT_DOMAINS = [
@@ -31,13 +32,6 @@ function validateCallback(callback: string): boolean {
   return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(callback);
 }
 
-// 网易云等音乐 CDN 直链常返回 http://，在 https 站点下会被 CSP media-src/img-src
-// （仅允许 https）与浏览器混合内容策略双重拦截（Firefox 不会像 Chrome 那样静默升级 http
-// 媒体，故直接报错）。126.net 等节点同时支持 https，统一升级后再重定向。
-function toHttps(url: string): string {
-  return url.replace(/^http:\/\//i, "https://");
-}
-
 export default defineEventHandler(async event => {
   const query = getQuery(event);
 
@@ -53,7 +47,7 @@ export default defineEventHandler(async event => {
   if (!id || !server) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Missing required parameters: id and server",
+      message: "Missing required parameters: id and server",
     });
   }
 
@@ -62,7 +56,7 @@ export default defineEventHandler(async event => {
   if (!validServers.includes(server)) {
     throw createError({
       statusCode: 400,
-      statusMessage: `Invalid server. Must be one of: ${validServers.join(", ")}`,
+      message: `Invalid server. Must be one of: ${validServers.join(", ")}`,
     });
   }
 
@@ -70,7 +64,7 @@ export default defineEventHandler(async event => {
   if (format === "jsonp" && callback && !validateCallback(callback)) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Invalid callback parameter. Only alphanumeric characters, $, and _ are allowed.",
+      message: "Invalid callback parameter. Only alphanumeric characters, $, and _ are allowed.",
     });
   }
 
@@ -90,7 +84,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
         const playlist = songs.map((song: MetingSong) => ({
@@ -113,7 +107,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
         const song = songs.map((s: MetingSong) => ({
@@ -136,7 +130,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
 
@@ -144,7 +138,7 @@ export default defineEventHandler(async event => {
         if (!validateRedirectUrl(urlData.url)) {
           throw createError({
             statusCode: 400,
-            statusMessage: "Invalid redirect URL",
+            message: "Invalid redirect URL",
           });
         }
 
@@ -160,7 +154,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
 
@@ -168,7 +162,7 @@ export default defineEventHandler(async event => {
         if (!validateRedirectUrl(picData.url)) {
           throw createError({
             statusCode: 400,
-            statusMessage: "Invalid redirect URL",
+            message: "Invalid redirect URL",
           });
         }
 
@@ -185,7 +179,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
         const lyrics = lyricData.lyric || "";
@@ -204,7 +198,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
         const songName = songs.map((s: MetingSong) => s.name).join("\n");
@@ -222,7 +216,7 @@ export default defineEventHandler(async event => {
           console.error(error);
           throw createError({
             statusCode: 500,
-            statusMessage: "Failed to parse music API response",
+            message: "Failed to parse music API response",
           });
         }
         const artistNames = songs.map((s: MetingSong) => (Array.isArray(s.artist) ? s.artist.join("/") : s.artist)).join("\n");
@@ -234,7 +228,7 @@ export default defineEventHandler(async event => {
       default:
         throw createError({
           statusCode: 400,
-          statusMessage: `Invalid type. Must be one of: playlist, song, url, pic, lrc, name, artist`,
+          message: `Invalid type. Must be one of: playlist, song, url, pic, lrc, name, artist`,
         });
     }
   } catch (error) {
@@ -244,10 +238,10 @@ export default defineEventHandler(async event => {
     if (typeof error === "object" && error !== null && "statusCode" in error) {
       throw error;
     }
-    // 其他未知错误
+    // 其他未知错误：日志记录细节，客户端只回通用错误，避免泄露内部信息
     throw createError({
       statusCode: 500,
-      statusMessage: `Meting API error: ${error instanceof Error ? error.message : String(error)}`,
+      message: "Meting API error",
     });
   }
 });

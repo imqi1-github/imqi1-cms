@@ -1,35 +1,6 @@
-import { siteConfig } from "~~/site.config";
 import type { MiniTravelsResponse } from "#server/types/apis/mini";
+import { getPhotoCategoryMid, toAbsoluteUrl } from "#server/utils/mini";
 import { prisma } from "#server/utils/prisma";
-
-function toAbsoluteUrl(url: string, origin: string) {
-  if (!url) return "";
-
-  try {
-    return new URL(url).href;
-  } catch {
-    const base = process.env.NODE_ENV === "production"
-      ? siteConfig.cdnUrl || siteConfig.siteUrl
-      : origin;
-
-    return new URL(url.startsWith("/") ? url : `/${url}`, base).href;
-  }
-}
-
-async function getPhotoCategoryMid() {
-  const photoCategorySlugInfo = await prisma.informations.findUnique({
-    where: { key: "photoCategorySlug" },
-    select: { value: true },
-  });
-  const photoCategorySlug = photoCategorySlugInfo?.value || "shot";
-
-  const photoCategory = await prisma.metas.findFirst({
-    where: { slug: photoCategorySlug },
-    select: { mid: true },
-  });
-
-  return photoCategory?.mid;
-}
 
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
@@ -41,7 +12,11 @@ export default defineEventHandler(async event => {
     const travels = await prisma.travels.findMany({
       where: { enabled: true },
       orderBy: [{ sort: "asc" }, { create_time: "desc" }],
-      include: {
+      select: {
+        id: true,
+        name: true,
+        desc: true,
+        cover: true,
         // contenttravels 关联表，需通过 .content 取到文章；只保留已发布普通文章。
         contenttravels: {
           where: {
@@ -79,6 +54,10 @@ export default defineEventHandler(async event => {
       })),
     } satisfies MiniTravelsResponse;
   } catch (error) {
+    // 已携带 statusCode 的错误（如内部 createError）原样上抛，勿吞成通用 500
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

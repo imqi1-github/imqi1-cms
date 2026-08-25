@@ -88,9 +88,8 @@ export default defineNuxtPlugin(() => {
   };
 
   const cleanupImage = (img: HTMLImageElement) => {
-    // MutationObserver 无 unobserve 单目标 API，只能 disconnect() 全部 —— 这里不处理 attrObserver，
-    // 单个 img 的 src 监听开销极小，img 被 GC 后观察自然失效。
-    // IntersectionObserver 支持 unobserve，需主动取消以释放视口观察。
+    // attrObserver 已改全局观察 documentElement（见下）：被移除的 img 不在 DOM 中、不再触发 src 回调，
+    // 也不会被观察器强引用，可被 GC。这里只需处理 IntersectionObserver 的候选与清理超时定时器。
     intersectionObserver?.unobserve(img);
     processingQueue = processingQueue.filter(item => item !== img);
     const timer = img.getAttribute(ATTR_TIMER);
@@ -116,36 +115,36 @@ export default defineNuxtPlugin(() => {
   document.addEventListener("load", handleDocumentLoad, true);
   document.addEventListener("error", handleDocumentError, true);
 
-  // 监听 src 属性变更（Vue 响应式更新 src 时重新进入加载态）
+  // 监听 src 属性变更（Vue 响应式更新 src 时重新进入加载态）。
+  // 全局观察 documentElement（而非每 img 单独 observe）：MutationObserver 无单目标 unobserve，
+  // 逐 img 观察会强引用已移除的 img 直到关页 → SPA 长会话内存单调增长。
   const attrObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
       if (m.type === "attributes" && m.attributeName === "src") {
         const img = m.target as HTMLImageElement;
+        // 只对仍挂在 DOM 的 <img> 生效；已移除的 img 随节点 GC，不再被观察器引用。
+        if (!(img instanceof HTMLImageElement) || !img.isConnected) continue;
         img.removeAttribute(ATTR_LOADED);
         queueProcessImage(img);
       }
     }
   });
-
-  const observeSrc = (img: HTMLImageElement) => {
-    attrObserver.observe(img, {
-      attributes: true,
-      attributeFilter: ["src"],
-    });
-  };
+  attrObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["src"],
+    subtree: true,
+  });
 
   const processImage = (img: HTMLImageElement) => {
     if (shouldSkip(img)) return;
     // 图片已经缓存并完成加载 → 不需要加载效果，直接跳过包裹
     if (img.complete && img.naturalHeight > 0) {
       img.setAttribute(ATTR_LOADED, "true");
-      // 不需要包裹，也不需要监听（src 变化时会重新 process）
+      // 不需要包裹，也不需要监听（src 变化时全局 attrObserver 会重新 process）
     } else {
       // 图片未加载完成 → 需要包裹和加载效果
       markLoading(img);
     }
-    // 监听 src 属性变更，src 改变时重新处理
-    observeSrc(img);
   };
 
   // ✅ 批量处理队列：当大量图片同时插入时，攒一批在空闲时段处理，减少卡顿

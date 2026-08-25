@@ -326,7 +326,7 @@ onMounted(() => {
   // 从 URL 恢复状态筛选（status=0 是有效值「草稿」，需用存在性判断而非真值）
   if (route.query.status !== undefined) {
     const statusFromUrl = Number(route.query.status);
-    if (!Number.isNaN(statusFromUrl)) {
+    if (!Number.isNaN(statusFromUrl) && [0, 1].includes(statusFromUrl)) {
       selectedStatus.value = statusFromUrl;
     }
   }

@@ -5,21 +5,31 @@ export default defineEventHandler(async event => {
   try {
     const slug = getRouterParam(event, "slug");
     const query = getQuery(event);
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 12;
+
+    // 页码/分页大小必须为有限正整数，避免负数/浮点/NaN/Infinity 传入 skip/take
+    const page = Math.min(10000, Math.max(1, Math.floor(Number(query.page) || 1)));
+    const pageSize = Math.min(50, Math.max(1, Math.floor(Number(query.pageSize) || 12)));
+    const skip = (page - 1) * pageSize;
 
     if (!slug) {
       throw createError({
         statusCode: 400,
-        statusMessage: "标签slug不能为空",
+        message: "标签slug不能为空",
       });
     }
 
-    // 查询标签信息（从 category 表）
+    // 查询标签信息（从 category 表；metas.slug 全局唯一、分类与标签共用同一张表，
+    // 必须按 type 过滤，否则传入某分类的 slug 也会命中它）
     const tag = await prisma.metas.findFirst({
       where: {
         slug,
         type: "tag",
+      },
+      select: {
+        mid: true,
+        name: true,
+        slug: true,
+        desc: true,
       },
     });
 
@@ -54,7 +64,17 @@ export default defineEventHandler(async event => {
       },
       include: {
         content: {
-          include: {
+          select: {
+            cid: true,
+            title: true,
+            slug: true,
+            desc: true,
+            update_time: true,
+            create_time: true,
+            comment_num: true,
+            many_covers: true,
+            covers: true,
+            // 关联的分类/标签信息（只取 slug + name + type，用于前端生成链接）
             contentrelations: {
               select: {
                 cid: true,
@@ -81,7 +101,7 @@ export default defineEventHandler(async event => {
           create_time: "desc",
         },
       },
-      skip: (page - 1) * pageSize,
+      skip,
       take: pageSize,
     });
 
@@ -146,7 +166,7 @@ export default defineEventHandler(async event => {
     console.error(error);
     throw createError({
       statusCode: 500,
-      statusMessage: "获取标签文章失败",
+      message: "获取标签文章失败",
     });
   }
 });

@@ -115,10 +115,7 @@ function buildLocation(data: IpdbData): string {
   const city = normalizeChinaName(data.city_name || "");
   const district = normalizeChinaName(data.district_name || "");
 
-  if (country === "中国") {
-    return [country, region, city, district].filter(Boolean).join("-");
-  }
-
+  // 境内外拼接逻辑一致（原 if/else 两分支逐字相同，合并保留）
   return [country, region, city, district].filter(Boolean).join("-");
 }
 

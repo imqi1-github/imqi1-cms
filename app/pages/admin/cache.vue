@@ -63,6 +63,10 @@ async function postClear(body: CacheClearBody, successMsg: string) {
 }
 
 async function clearAll() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   showAllDialog.value = false;
   clearingAll.value = true;
   try {

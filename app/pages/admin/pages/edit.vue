@@ -15,13 +15,15 @@ const { confirm } = useConfirm();
 const isEdit = computed(() => !!route.query.cid);
 const pageId = ref<number | null>(null);
 watch(() => route.query.cid, (newCid) => {
-  pageId.value = newCid ? Number(newCid) : null;
+  // 对齐 contents/edit.vue：cid 必须为正整数，坏值置 null（否则 NaN 拼 URL / 骨架屏卡死）
+  const parsed = newCid ? Number(newCid) : NaN;
+  pageId.value = Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }, { immediate: true });
 
 const activeTab = ref("content");
 // 编辑页首帧即给骨架屏：isEdit 在 SSR 时即可由 route.query.cid 判定，loading 初始即 true，
 // 避免先渲染空编辑器再切骨架再灌内容的三段式闪烁；新建页 isEdit=false → 直接显示空编辑器
-const loading = ref(isEdit.value);
+const loading = ref(isEdit.value && !!pageId.value);
 const csrfToken = ref("");
 
 // 跟踪是否有未保存的更改

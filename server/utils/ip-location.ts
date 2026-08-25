@@ -18,8 +18,25 @@ import type { CityInfo } from "#server/types/utils/ip-location";
 // 行政区划后缀，城市/省份名去掉后与内置坐标表 key 对齐
 const ADMIN_SUFFIX = /(省|市|区|县|镇|乡|街道|地区|开发区|高新区|新区|新城|自治区|自治州|盟|旗)$/g;
 
+// 民族自治区/自治州全称 → 短名：ADMIN_SUFFIX 只剥「自治区」后缀，会残留「广西壮族/宁夏回族/新疆维吾尔」
+// 等民族前缀，未命中 PROVINCES 后被误判为境外；这里做全称归约。
+const AUTON_SHORT: Record<string, string> = {
+  "广西壮族自治区": "广西",
+  "广西壮族": "广西",
+  "宁夏回族自治区": "宁夏",
+  "宁夏回族": "宁夏",
+  "新疆维吾尔自治区": "新疆",
+  "新疆维吾尔": "新疆",
+  "内蒙古自治区": "内蒙古",
+  "西藏自治区": "西藏",
+};
+
 function stripSuffix(s: string): string {
   return s.replace(ADMIN_SUFFIX, "");
+}
+
+function normalizeProvince(p: string): string {
+  return AUTON_SHORT[p] ?? p;
 }
 
 /**
@@ -61,7 +78,7 @@ export async function resolveCity(ip: string): Promise<CityInfo> {
     return { city: null, province: null, isDomestic: false, country: raw };
   }
 
-  const province = stripSuffix(parts[0] ?? "");
+  const province = normalizeProvince(stripSuffix(parts[0] ?? ""));
   // parts[0] 命中已知省级才算国内，否则当作境外（country 用原文）
   if (!PROVINCES.has(province)) {
     return { city: null, province: null, isDomestic: false, country: raw };

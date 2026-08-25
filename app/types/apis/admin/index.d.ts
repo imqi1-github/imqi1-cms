@@ -9,14 +9,10 @@ export interface RecentComment {
 	coid: number;
 	cid: number;
 	name: string;
-	mail: string | null;
-	link: string | null;
 	content: string;
 	create_time: string;
 	status: number;
 	parent_id: number | null;
-	agent: string | null;
-	ip: string | null;
 	contents: {
 		title: string;
 		cid: number;

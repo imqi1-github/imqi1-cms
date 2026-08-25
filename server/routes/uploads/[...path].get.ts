@@ -26,11 +26,32 @@ const CONTENT_TYPES: Record<string, string> = {
  */
 export default defineEventHandler(async event => {
   const segments = getRouterParam(event, "path") ?? "";
-  const decoded = decodeURIComponent(segments);
+
+  // 非法 % 编码（如 %zz）会让 decodeURIComponent 抛 URIError → 500；回退到未解码的原始路径，
+  // 让后续的目录穿越/后缀校验决定是否 400，而不是坏输入直接 500。
+  let decoded = segments;
+  try {
+    decoded = decodeURIComponent(segments);
+  } catch {
+    // 保留原始路径
+  }
 
   // 目录穿越防护
   const normalized = decoded.replace(/\\/g, "/");
-  if (!normalized || normalized.split("/").some(seg => seg === ".." || seg === "")) {
+  if (
+    !normalized ||
+    normalized.split("/").some(seg => {
+      if (seg === "" || seg === "..") {
+        return true; // 空段或父目录段
+      }
+      // Win32 dot/space stripping：Windows 会把末尾的 "."/空格剥掉，使 ".. " / ".. ." / "foo."
+      // 在字符串相等校验时逃逸、实际却落在上级目录或同名文件上，必须一并拒绝。
+      if (seg.endsWith(".") || seg !== seg.trimEnd()) {
+        return true;
+      }
+      return false;
+    })
+  ) {
     throw createError({ statusCode: 400, message: "非法路径" });
   }
 

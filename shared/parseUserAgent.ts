@@ -6,10 +6,11 @@
  * （app/pages/admin/comments.vue）需要展示，二者解析结果必须一致，所以放 shared/。
  *
  * 关键约定：
- * - browsers/osMap 顺序敏感：包含通用子串的键（Chrome/Safari/Firefox/Macintosh/Linux）
- *   必须放在更具体的键（MicroMessenger/QQBrowser/UBrowser/Mini/Edg/Edge/Android/iPhone/iPad）
- *   之后，否则先命中通用键 break，具体键永远走不到。
- * - matchesUserAgent 拆分独立 helper，方便顺序排列后只调一次。
+ * - 浏览器/系统各自拆成「具体键 specific → 先匹配」+「通用键 generic → 后匹配」两档。
+ *   具体 UA（MicroMessenger/QQBrowser/UBrowser/OPR/Android/Ubuntu…）必然先于子串更通用的
+ *   键（Chrome/Safari/Firefox/Macintosh/Linux）命中，不再依赖对象插入顺序。
+ *   此前两档混在一个有序对象里、靠插入顺序硬撑——新增条目放错位置就静默误判（顺序炸弹）。
+ * - matchesUserAgent 拆分独立 helper，先 specific 后 generic 各调一次。
  */
 
 export interface ParsedAgent {
@@ -19,44 +20,54 @@ export interface ParsedAgent {
   osIcon: string;
 }
 
-// 浏览器映射。顺序：先 Edges/微信系/小程序/QQ/UC 等具体键，再 Chrome/Firefox/Safari 等通用键。
-const browsers: Record<string, { name: string; icon: string }> = {
+// 浏览器「具体档」：这些键要么是唯一标识（微信/QQ/UC），要么是特定版本标记（OPR 之于 Blink Opera）。
+// 必须排在 Chrome 等通用键之前命中，否则会被 UA 里同时包含的 "Chrome" 抢先。
+const browserSpecific: Record<string, { name: string; icon: string }> = {
   Edg: { name: "Edge", icon: "ri-edge-new-fill" },
   Edge: { name: "Edge", icon: "ri-edge-new-fill" },
   MicroMessenger: { name: "微信", icon: "ri-wechat-fill" },
-  Mini: { name: "小程序", icon: "ri-mini-program-fill" },
   QQBrowser: { name: "QQ浏览器", icon: "ri-qq-fill" },
   UBrowser: { name: "UC浏览器", icon: "ri-browser-fill" },
   // 现代 Opera(Blink) UA 含 "OPR/" 而非 "Opera"，且同时含 "Chrome/"——OPR 必须排在 Chrome 之前
   OPR: { name: "Opera", icon: "ri-opera-fill" },
-  Chrome: { name: "Chrome", icon: "ri-chrome-fill" },
-  Firefox: { name: "Firefox", icon: "ri-firefox-fill" },
-  Safari: { name: "Safari", icon: "ri-safari-fill" },
   MSIE: { name: "IE", icon: "ri-ie-fill" },
   Trident: { name: "IE", icon: "ri-ie-fill" },
   Opera: { name: "Opera", icon: "ri-opera-fill" },
 };
 
-// 操作系统映射。顺序：先 iPhone/iPad/Android 等具体键，再 Macintosh/Linux 等通用键。
-const osMap: Record<string, { name: string; icon: string }> = {
+// 浏览器「通用档」：最后兜底。
+const browserGeneric: Record<string, { name: string; icon: string }> = {
+  Chrome: { name: "Chrome", icon: "ri-chrome-fill" },
+  Firefox: { name: "Firefox", icon: "ri-firefox-fill" },
+  Safari: { name: "Safari", icon: "ri-safari-fill" },
+};
+
+// 操作系统「具体档」
+const osSpecific: Record<string, { name: string; icon: string }> = {
   "Windows NT": { name: "Windows", icon: "ri-windows-fill" },
   iPhone: { name: "iOS", icon: "ri-apple-fill" },
   iPad: { name: "iOS", icon: "ri-apple-fill" },
   Android: { name: "Android", icon: "ri-android-fill" },
-  Macintosh: { name: "Mac", icon: "ri-finder-fill" },
-  // 具体发行版须排在通用 "Linux" 之前，否则被 includes("Linux") 先行命中成死代码
+  // 具体发行版放具体档，先于通用 "Linux" 命中（其 UA 同时含 "Linux"）
   Ubuntu: { name: "Ubuntu", icon: "ri-ubuntu-fill" },
   Debian: { name: "Debian", icon: "ri-coreos-fill" },
   CentOS: { name: "CentOS", icon: "ri-coreos-fill" },
+};
+
+// 操作系统「通用档」：最后兜底。
+const osGeneric: Record<string, { name: string; icon: string }> = {
+  Macintosh: { name: "Mac", icon: "ri-finder-fill" },
   Linux: { name: "Linux", icon: "app-linux" },
 };
 
 function matchesUserAgent(
   userAgent: string,
-  map: Record<string, { name: string; icon: string }>,
+  ...maps: Array<Record<string, { name: string; icon: string }>>
 ): { name: string; icon: string } | null {
-  for (const [key, value] of Object.entries(map)) {
-    if (userAgent.includes(key)) return value;
+  for (const map of maps) {
+    for (const [key, value] of Object.entries(map)) {
+      if (userAgent.includes(key)) return value;
+    }
   }
   return null;
 }
@@ -80,8 +91,8 @@ export function parseUserAgent(userAgent: string): ParsedAgent {
     };
   }
 
-  const browser = matchesUserAgent(userAgent, browsers);
-  let os = matchesUserAgent(userAgent, osMap);
+  const browser = matchesUserAgent(userAgent, browserSpecific, browserGeneric);
+  let os = matchesUserAgent(userAgent, osSpecific, osGeneric);
 
   // 如果没有识别到操作系统，尝试从其他特征判断（iOS 设备常带 like Mac + KHTML）
   if (!os && userAgent.includes("like Mac") && userAgent.includes("KHTML")) {

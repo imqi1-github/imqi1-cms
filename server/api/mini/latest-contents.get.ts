@@ -1,56 +1,7 @@
-import { siteConfig } from "~~/site.config";
 import type { MiniLatestContent, MiniLatestContentsResponse } from "#server/types/apis/mini";
 import { parseCovers } from "#server/utils/covers";
+import { formatRelativeTime, getPhotoCategoryMid, toAbsoluteUrl } from "#server/utils/mini";
 import { prisma } from "#server/utils/prisma";
-
-const minute = 60 * 1000;
-const hour = 60 * minute;
-const day = 24 * hour;
-const week = 7 * day;
-const month = 30 * day;
-const year = 365 * day;
-
-function formatRelativeTime(value: Date) {
-  const diff = Date.now() - value.getTime();
-
-  if (diff < minute) return "刚刚";
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`;
-  if (diff < week) return `${Math.floor(diff / day)} 天前`;
-  if (diff < month) return `${Math.floor(diff / week)} 周前`;
-  if (diff < year) return `${Math.floor(diff / month)} 个月前`;
-
-  return `${Math.floor(diff / year)} 年前`;
-}
-
-function toAbsoluteUrl(url: string, origin: string) {
-  if (!url) return "";
-
-  try {
-    return new URL(url).href;
-  } catch {
-    const base = process.env.NODE_ENV === "production"
-      ? siteConfig.cdnUrl || siteConfig.siteUrl
-      : origin;
-
-    return new URL(url.startsWith("/") ? url : `/${url}`, base).href;
-  }
-}
-
-async function getPhotoCategoryMid() {
-  const photoCategorySlugInfo = await prisma.informations.findUnique({
-    where: { key: "photoCategorySlug" },
-    select: { value: true },
-  });
-  const photoCategorySlug = photoCategorySlugInfo?.value || "shot";
-
-  const photoCategory = await prisma.metas.findFirst({
-    where: { slug: photoCategorySlug },
-    select: { mid: true },
-  });
-
-  return photoCategory?.mid;
-}
 
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
@@ -95,6 +46,10 @@ export default defineEventHandler(async event => {
       data,
     } satisfies MiniLatestContentsResponse;
   } catch (error) {
+    // 预期 4xx 原样抛，不打印完整堆栈
+    if (error instanceof Error && 'statusCode' in error) {
+      throw error;
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

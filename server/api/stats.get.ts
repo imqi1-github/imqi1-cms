@@ -2,34 +2,13 @@ import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async () => {
   try {
-    // 获取已发布的文章数
-    const publishedContentsNum = await prisma.contents.count({
-      where: {
-        type: 0, // 文章
-        status: 1, // 已发布
-      },
-    });
-
-    // 获取已审核的评论数
-    const publishedCommentsNum = await prisma.comments.count({
-      where: {
-        status: 1, // 已审核
-      },
-    });
-
-    // 获取分类数
-    const categoriesNum = await prisma.metas.count({
-      where: {
-        type: "category",
-      },
-    });
-
-    // 获取标签数
-    const tagsNum = await prisma.metas.count({
-      where: {
-        type: "tag",
-      },
-    });
+    // 四个独立 count 并行查询（互不依赖，避免串行叠加延迟）
+    const [publishedContentsNum, publishedCommentsNum, categoriesNum, tagsNum] = await Promise.all([
+      prisma.contents.count({ where: { type: 0, status: 1 } }), // 已发布文章
+      prisma.comments.count({ where: { status: 1 } }), // 已审核评论
+      prisma.metas.count({ where: { type: "category" } }), // 分类数
+      prisma.metas.count({ where: { type: "tag" } }), // 标签数
+    ]);
 
     return {
       success: true,

@@ -27,7 +27,9 @@ import type { Bucket, ResolvedPoint } from "#server/types/apis/blog-network";
 function domainOf(url: string): string | null {
   if (!url) return null;
   try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    // 用真正的 scheme 前缀判断：startsWith("http") 会把「httpbin.org」「HTTP://…」
+    // 这类无协议的裸主机名误判为已带协议，随后 new URL 抛错把合法域名静默丢掉
+    const u = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
     return u.hostname.toLowerCase().replace(/^www\./, "");
   } catch (error) {
     console.error(error);
@@ -36,8 +38,15 @@ function domainOf(url: string): string | null {
 }
 
 // 单条 DNS 解析带超时兜底（系统 resolver 默认可能很久），超时返回 fallback
+// 无论哪一方胜出都清掉未触发的 timer，避免在每个 IP 上积压无用的 setTimeout 回调
 function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([p, new Promise<T>(r => setTimeout(() => r(fallback), ms))]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>(resolve => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([p, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 function uniqueValues(values: Array<string | null | undefined>): string[] {

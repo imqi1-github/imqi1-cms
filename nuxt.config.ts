@@ -596,7 +596,7 @@ export default defineNuxtConfig({
     // 注意：ISR在开发环境可能不稳定，建议生产环境启用
     ...(isProduction
       ? {
-          // 首页：每5分钟重新生成一次（推荐）
+          // 首页：每1小时重新生成一次（推荐）
           "/": {
             isr: 3600,
             // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
@@ -610,7 +610,7 @@ export default defineNuxtConfig({
               : {}),
           },
 
-          // 文章归档：每10分钟重新生成
+          // 文章归档：每12小时重新生成
           "/archiving": {
             isr: 43200,
             ...(redisConfig
@@ -620,7 +620,7 @@ export default defineNuxtConfig({
               : {}),
           },
 
-          // 分类页：每10分钟重新生成
+          // 分类页：每1小时重新生成
           "/category/**": {
             isr: 3600,
             ...(redisConfig
@@ -640,7 +640,7 @@ export default defineNuxtConfig({
               : {}),
           },
 
-          // 标签页：每15分钟重新生成
+          // 标签页：每1小时重新生成
           "/tag/**": {
             isr: 3600,
             ...(redisConfig
@@ -650,7 +650,7 @@ export default defineNuxtConfig({
               : {}),
           },
 
-          // 订阅页：每10分钟重新生成
+          // 订阅页：每1小时重新生成
           "/subscribes": {
             isr: 3600,
             ...(redisConfig
@@ -660,7 +660,7 @@ export default defineNuxtConfig({
               : {}),
           },
 
-          // 更新日志：每30分钟重新生成
+          // 更新日志：每1小时重新生成
           "/changelogs": {
             isr: 3600,
             ...(redisConfig
@@ -754,11 +754,11 @@ export default defineNuxtConfig({
             ? {
                 // 有Redis时启用ISR
                 "/": {
-                  isr: 30, // 5分钟
+                  isr: 30, // 30秒
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/archiving": {
-                  isr: 30, // 10分钟
+                  isr: 30, // 30秒
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/category/**": {
@@ -770,7 +770,7 @@ export default defineNuxtConfig({
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/tag/**": {
-                  isr: 30, // 15分钟
+                  isr: 30, // 30秒
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/subscribes": {
@@ -778,7 +778,7 @@ export default defineNuxtConfig({
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/changelogs": {
-                  isr: 30, // 30分钟
+                  isr: 30, // 30秒
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/agreement": {
@@ -786,7 +786,7 @@ export default defineNuxtConfig({
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/sitemap": {
-                  isr: 30, // 1小时
+                  isr: 30, // 30秒
                   cache: { maxAge: 30, base: "redis" },
                 },
                 "/sitemap.xml": {

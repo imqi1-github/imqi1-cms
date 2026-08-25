@@ -60,7 +60,7 @@ import { computed, onBeforeUnmount, ref, useId, watchEffect } from "vue";
 
 import { cn } from "~/lib/utils";
 
-type AnimatedBeamProps = {
+const props = withDefaults(defineProps<{
   class?: string;
   containerRef: HTMLElement | null;
   fromRef: HTMLElement | null;
@@ -77,9 +77,7 @@ type AnimatedBeamProps = {
   startYOffset?: number;
   endXOffset?: number;
   endYOffset?: number;
-};
-
-const props = withDefaults(defineProps<AnimatedBeamProps>(), {
+}>(), {
   curvature: 0,
   reverse: false,
   // 固定默认值（非 Math.random）：随机默认会让 SSR/客户端首帧 duration 不一致 → 水合属性 mismatch

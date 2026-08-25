@@ -62,7 +62,7 @@ export function useScrollFadeMask(el: Ref<HTMLElement | null>) {
         resizeObserver = null;
       };
     },
-    { flush: "post" },
+    { flush: "post", immediate: true },
   );
 
   onMounted(() => {

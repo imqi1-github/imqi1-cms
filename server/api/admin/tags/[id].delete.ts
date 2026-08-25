@@ -30,6 +30,12 @@ export default defineEventHandler(async event => {
   }
 
   const tagId = Number(id);
+  if (!Number.isInteger(tagId) || tagId <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "无效的标签 ID",
+    });
+  }
 
   try {
     const tagToDelete = await prisma.metas.findUnique({
@@ -50,20 +56,23 @@ export default defineEventHandler(async event => {
       });
     }
 
-    await prisma.contentrelations.deleteMany({
-      where: { mid: tagId },
-    });
-
-    await prisma.metas.delete({
-      where: { mid: tagId },
-    });
+    // 删关系 + 删主表需原子：任一步失败整体回滚，避免「关系已清、标签残留」的半完成态
+    await prisma.$transaction([
+      prisma.contentrelations.deleteMany({ where: { mid: tagId } }),
+      prisma.metas.delete({ where: { mid: tagId } }),
+    ]);
 
     return { success: true };
   } catch (error) {
-    console.error(error);
+    // 预期 400/404 原样抛，不打印完整堆栈
     if (error instanceof Error && 'statusCode' in error) {
       throw error;
     }
+    // 并发删除竞态 → P2025 → 404
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+      throw createError({ statusCode: 404, message: "标签不存在" });
+    }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "删除标签失败",

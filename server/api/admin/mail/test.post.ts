@@ -13,7 +13,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event)
+  const body = ((await readBody(event)) ?? {})
   const {csrfToken} = body
 
   // CSRF 验证（位于下方 try/catch 之外，避免 403 被吞成 500）
@@ -36,11 +36,12 @@ export default defineEventHandler(async event => {
 
     return await sendTestEmail(to)
   } catch (error) {
-    console.error(error);
     if (error && typeof error === "object" && "statusCode" in error) throw error;
+    // 仅对真正的 500 打印堆栈；不要把底层 SMTP error.message（含主机/端口/认证信息）直传客户端
+    console.error(error);
     throw createError({
       statusCode: 500,
-      message: error instanceof Error ? error.message : '发送测试邮件失败',
+      message: '发送测试邮件失败，请查看服务端日志',
     })
   }
 })

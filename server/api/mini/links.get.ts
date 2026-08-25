@@ -6,7 +6,10 @@ function domainOf(url: string): string | null {
   if (!url) return null;
 
   try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    // 用真正的 scheme 前缀正则判定是否已带协议：url.startsWith("http")（大小写敏感）会把
+    // 无协议裸主机名（如 httpbin.org）或大写 HTTP://… 误判为已带协议，交给 new URL 后抛错、
+    // 静默丢弃合法域名。与主站 blog-network 保持一致的修复版本。
+    const u = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
     return u.hostname.toLowerCase().replace(/^www\./, "");
   } catch {
     return null;

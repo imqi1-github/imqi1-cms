@@ -150,7 +150,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
     // 如果有 alt 文本，包装成 figure 并添加 figcaption
     if (alt) {
-      return `<figure class="markdown-figure">${imgHtml}<figcaption class="markdown-figcaption">${alt}</figcaption></figure>`;
+      return `<figure class="markdown-figure">${imgHtml}<figcaption class="markdown-figcaption">${escapeHtml(alt)}</figcaption></figure>`;
     }
 
     return imgHtml;
@@ -605,7 +605,7 @@ function transformMusicLinks(content: string): string {
   musicPlatforms.forEach(platform => {
     const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, "g");
     transformedContent = transformedContent.replace(regex, (match, linkText, ...args) => {
-      const matchArray = args.slice(0, -2) as RegExpMatchArray;
+      const matchArray = [match, ...args.slice(0, -2)] as RegExpMatchArray;
       const server = platform.getServer();
       const type = platform.getType(matchArray);
       const id = platform.getId(matchArray);

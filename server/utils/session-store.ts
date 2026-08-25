@@ -58,7 +58,9 @@ export class FileSessionStore implements SessionStore {
   }
 
   private getFilePath(sessionId: string): string {
-    return path.join(this.sessionsDir, `${sessionId}.json`);
+    // 防御路径穿越：sessionId 来自客户端 cookie，须净化后再拼路径（否则 session=../../package 可读/删任意 .json）
+    const safeName = path.basename(sessionId);
+    return path.join(this.sessionsDir, `${safeName}.json`);
   }
 
   async get(sessionId: string): Promise<SessionData | null> {
@@ -226,11 +228,24 @@ interface GlobalSessionStore {
 }
 const globalStore = globalThis as GlobalSessionStore;
 
+// 周期清理过期 session：三处 cleanup() 原本都是死代码（过期项只在再次 get() 时懒清），
+// 长期运行会导致 memory Map/.sessions 目录/MySQL sessions 表无限增长。这里按固定间隔触发一次，
+// 异步 fire-and-forget，不阻塞鉴权路径。
+let lastCleanupAt = 0;
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 分钟
+function maybeCleanupStore(store: SessionStore) {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+  lastCleanupAt = now;
+  void store.cleanup().catch(() => {});
+}
+
 export async function getSessionStore(): Promise<SessionStore> {
   const config = await getSessionConfig();
   const storeType = config.storeType || "memory";
 
   if (globalStore.__imqiSessionStore && globalStore.__imqiSessionStoreType === storeType) {
+    maybeCleanupStore(globalStore.__imqiSessionStore);
     return globalStore.__imqiSessionStore;
   }
 
@@ -249,6 +264,7 @@ export async function getSessionStore(): Promise<SessionStore> {
       break;
   }
 
+  maybeCleanupStore(globalStore.__imqiSessionStore);
   return globalStore.__imqiSessionStore;
 }
 

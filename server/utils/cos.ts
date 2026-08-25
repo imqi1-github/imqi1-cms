@@ -46,7 +46,6 @@ export async function validateCosConfig(): Promise<{ valid: boolean; error?: str
   const domains = await getCosDomain();
 
   console.log("[COS配置验证]", {
-    SecretId: config.SecretId.substring(0, 15) + "...",
     Bucket: config.Bucket,
     Region: config.Region,
     sourceDomain: domains.source || "自动生成",
@@ -57,7 +56,7 @@ export async function validateCosConfig(): Promise<{ valid: boolean; error?: str
 }
 
 // 获取访问域名
-async function getCosDomain(): Promise<{ source: string; cdn: string }> {
+async function getCosDomain(existingConfig?: CosConfig | null): Promise<{ source: string; cdn: string }> {
   try {
     const meta = await prisma.informations.findMany({
       where: {
@@ -72,8 +71,8 @@ async function getCosDomain(): Promise<{ source: string; cdn: string }> {
       domains[meta.key] = meta.value;
     });
 
-    // 如果没有配置源站域名，则生成默认域名
-    const config = await getCosConfig();
+    // 如果没有配置源站域名，则生成默认域名（复用调用方已查好的配置，避免重复查库）
+    const config = existingConfig === undefined ? await getCosConfig() : existingConfig;
     if (!domains.cosSourceDomain && config) {
       domains.cosSourceDomain = `https://${config.Bucket}.cos.${config.Region}.myqcloud.com`;
     }
@@ -99,27 +98,24 @@ function generateSignature(method: string, path: string, headers: Record<string,
   const now = Math.floor(Date.now() / 1000);
   const keyTime = `${now};${now + 600}`;
 
-  console.log("[COS签名] KeyTime:", keyTime);
-
   // 步骤二：生成 SignKey
   const signKey = createHmac("sha1", secretKey).update(keyTime, "utf8").digest("hex");
-
-  console.log("[COS签名] SignKey:", signKey);
 
   // 步骤三：生成 HttpParameters 和 UrlParamList
   const urlParamList = "";
   const httpParameters = "";
 
   // 步骤四：生成 HttpHeaders 和 HeaderList
-  // 需要参与签名的头部（按字典序）
-  // 注意：只添加实际存在的头部
+  // 需要参与签名的头部（按字典序）；只添加实际存在且 fetch 会真正发送的头。
+  // 注意：Date/Host 属于 WHATWG fetch 禁设头（会被剥离/自动重建），纳入签名会导致
+  // 服务端按实际收到的头重算签名不一致 → 这里只签 content-md5/content-type。
   const headerMap: Record<string, string> = {};
 
   // 遍历所有headers，只添加需要的
   for (const key of Object.keys(headers)) {
     const lowerKey = key.toLowerCase();
-    // 只包含这些头部：content-md5, content-type, date, host
-    if (["content-md5", "content-type", "date", "host"].includes(lowerKey)) {
+    // 只包含这些头部：content-md5, content-type
+    if (["content-md5", "content-type"].includes(lowerKey)) {
       headerMap[lowerKey] = headers[key] ?? "";
     }
   }
@@ -136,29 +132,19 @@ function generateSignature(method: string, path: string, headers: Record<string,
   // 生成 HeaderList
   const headerList = sortedKeys.join(";");
 
-  console.log("[COS签名] HeaderList:", headerList);
-  console.log("[COS签名] HttpHeaders:", httpHeaders);
-
   // 步骤五：生成 HttpString
   const httpMethod = method.toLowerCase();
   const uriPathname = path.startsWith("/") ? path : `/${path}`;
 
   const httpString = [httpMethod, uriPathname, httpParameters, httpHeaders, ""].join("\n");
 
-  console.log("[COS签名] HttpString:", JSON.stringify(httpString));
-
   // 步骤六：生成 StringToSign
   const httpStringSha1 = createHash("sha1").update(httpString, "utf8").digest("hex");
 
   const stringToSign = `sha1\n${keyTime}\n${httpStringSha1}\n`;
 
-  console.log("[COS签名] StringToSign:", JSON.stringify(stringToSign));
-  console.log("[COS签名] HttpString SHA1:", httpStringSha1);
-
   // 步骤七：生成 Signature
   const signature = createHmac("sha1", signKey).update(stringToSign, "utf8").digest("hex");
-
-  console.log("[COS签名] Signature:", signature);
 
   // 步骤八：生成 Authorization
   const authorization = [
@@ -171,24 +157,13 @@ function generateSignature(method: string, path: string, headers: Record<string,
     `q-signature=${signature}`,
   ].join("&");
 
-  console.log("[COS签名] Authorization:", authorization);
-
   return authorization;
 }
 
 // 上传文件到COS
 export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentType: string, imageSuffix?: string): Promise<CosUploadResult> {
   try {
-    // 验证配置
-    const validation = await validateCosConfig();
-    if (!validation.valid) {
-      return {
-        success: false,
-        error: validation.error || "COS配置验证失败",
-      };
-    }
-
-    // 获取配置
+    // 只读一次配置与域名：原 validateCosConfig→getCosConfig→getCosDomain 会在单次上传重复查库
     const config = await getCosConfig();
     if (!config) {
       return {
@@ -197,7 +172,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
       };
     }
 
-    const domains = await getCosDomain();
+    const domains = await getCosDomain(config);
     if (!domains.source) {
       return {
         success: false,
@@ -241,18 +216,10 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
     const filePath = `/uploads/${year}/${month}/${finalFileName}`;
     const url = `${domains.source}${filePath}`;
 
-    // 生成Date头部（必须使用GMT格式）
-    const date = new Date().toUTCString();
-
-    // 获取Host（从URL中提取）
-    const sourceUrl = new URL(domains.source);
-    const host = sourceUrl.hostname;
-
-    // 构造请求头
+    // 构造请求头：Date/Host 由 fetch 传输层自动处理（显式置入会被 WHATWG fetch 剥离），
+    // 签名只需覆盖实际发送的 content-md5/content-type，避免头不一致导致 COS 验签失败
     const headers: Record<string, string> = {
       "Content-Type": finalContentType,
-      Date: date,
-      Host: host,
     };
 
     // 计算Content-MD5
@@ -356,7 +323,7 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
       };
     }
 
-    const domains = await getCosDomain();
+    const domains = await getCosDomain(config);
     if (!domains.source) {
       return {
         success: false,
@@ -383,14 +350,8 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
       deleteUrl,
     });
 
-    // 生成Date头部
-    const date = new Date().toUTCString();
-
-    // 构造请求头
-    const headers: Record<string, string> = {
-      Date: date,
-      Host: new URL(domains.source).hostname,
-    };
+    // 构造请求头：DELETE 无 body/特殊头；Host 由 fetch 按 URL 自动生成。签名 HeaderList 为空即合法。
+    const headers: Record<string, string> = {};
 
     // 生成签名
     headers["Authorization"] = generateSignature("DELETE", filePath, headers, config.SecretKey, config.SecretId);

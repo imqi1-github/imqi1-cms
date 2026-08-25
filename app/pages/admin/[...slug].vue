@@ -7,6 +7,13 @@ definePageMeta({
 useHead({
   title: "页面未找到 - 404",
 });
+
+// 与前台 404 对齐：服务端返回真正的 404 状态码（后台 catch-all 之前漏了），
+// 避免未登录守卫/爬虫把 /admin 不存在的路径误判为 200。
+if (import.meta.server) {
+  const event = useRequestEvent();
+  if (event) setResponseStatus(event, 404);
+}
 </script>
 
 <template>

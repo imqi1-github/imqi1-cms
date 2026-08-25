@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 
 import { getCookie, setCookie, type H3Event } from "h3";
 
@@ -45,7 +45,7 @@ export function setCsrfToken(event: H3Event): string {
  * @param providedToken 用户提供的 token
  * @returns 是否验证通过
  */
-export function validateCsrfToken(event: H3Event, providedToken: string): boolean {
+export function validateCsrfToken(event: H3Event, providedToken: string | undefined): boolean {
   const storedToken = getStoredCsrfToken(event);
 
   if (!storedToken) {
@@ -58,7 +58,10 @@ export function validateCsrfToken(event: H3Event, providedToken: string): boolea
     return false;
   }
 
-  const isValid = storedToken === providedToken;
+  // 定长比较防时序侧信道（与 mini-auth 一致）；长度不同直接判失败（timingSafeEqual 要求等长）
+  const storedBuf = Buffer.from(storedToken, "utf8");
+  const providedBuf = Buffer.from(providedToken, "utf8");
+  const isValid = storedBuf.length === providedBuf.length && timingSafeEqual(storedBuf, providedBuf);
 
   if (!isValid) {
     console.warn("[CSRF] CSRF token 验证失败", {

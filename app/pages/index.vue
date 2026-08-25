@@ -917,9 +917,9 @@ const isHydrated = ref(false);
 // 格式化为绝对日期（SSR 与客户端一致，不依赖当前时间）
 function formatAbsoluteDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 

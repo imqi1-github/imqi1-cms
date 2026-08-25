@@ -7,7 +7,15 @@ export default defineEventHandler(async event => {
     const travels = await prisma.travels.findMany({
       where: { enabled: true },
       orderBy: [{ sort: "asc" }, { create_time: "desc" }],
-      include: {
+      // 公开接口：仅取消费方用到的列，杜绝整行摊开泄漏内部/冗余字段
+      select: {
+        id: true,
+        name: true,
+        desc: true,
+        cover: true,
+        longitude: true,
+        latitude: true,
+        sort: true,
         // contenttravels 关联表，需通过 .content 取到文章
         contenttravels: {
           select: {
@@ -16,7 +24,6 @@ export default defineEventHandler(async event => {
                 cid: true,
                 title: true,
                 slug: true,
-                type: true,
                 covers: true,
                 many_covers: true,
                 contentrelations: {
@@ -65,6 +72,14 @@ export default defineEventHandler(async event => {
       data,
     };
   } catch (error) {
+    // 校验/查询抛出的 400、404 原样传递；findMany 不抛 P2025，但保留映射以防后续改动引入 OrThrow；
+    // 未知服务端故障记日志 + 通用 500，绝不把 error.message 透传给客户端。
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({ statusCode: 404, message: "旅行地点不存在" });
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

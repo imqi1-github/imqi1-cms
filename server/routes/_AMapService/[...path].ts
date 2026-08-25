@@ -2,13 +2,20 @@ import { createError, defineEventHandler, getRequestURL, proxyRequest, setRespon
 
 import { resolveAmapProxyTarget } from "#shared/amap-proxy";
 
+// Only AMap-owned hosts are valid proxy targets. The catch-all REST branch resolves against
+// https://restapi.amap.com/, but a decoded path remainder like "//evil.com", "http://evil.com"
+// or "/\\evil.com" makes new URL() escape the base host (SSRF). Re-checking the resolved
+// hostname against an allowlist rejects any such escape regardless of how it is constructed,
+// while still permitting the fixed script/style upstreams (webapi.amap.com).
+const AMAP_ALLOWED_HOSTS = new Set(["restapi.amap.com", "webapi.amap.com"]);
+
 export default defineEventHandler(event => {
   const config = useRuntimeConfig();
 
   if (!config.public.amapUseServerProxy) {
     throw createError({
       statusCode: 404,
-      statusMessage: "AMap proxy is disabled.",
+      message: "AMap proxy is disabled.",
     });
   }
 
@@ -19,7 +26,7 @@ export default defineEventHandler(event => {
   if (!amapKey || !amapSecurityCode) {
     throw createError({
       statusCode: 503,
-      statusMessage: "AMap proxy is not configured.",
+      message: "AMap proxy is not configured.",
     });
   }
 
@@ -34,11 +41,23 @@ export default defineEventHandler(event => {
   if (!target) {
     throw createError({
       statusCode: 404,
-      statusMessage: "Unknown AMap proxy path.",
+      message: "Unknown AMap proxy path.",
+    });
+  }
+
+  if (!AMAP_ALLOWED_HOSTS.has(target.hostname)) {
+    throw createError({
+      statusCode: 400,
+      message: "Invalid AMap proxy target.",
     });
   }
 
   return proxyRequest(event, target.toString(), {
+    fetchOptions: {
+      // Do not follow redirects: AMap never issues them, and following a redirect to an
+      // off-host target would bypass the hostname allowlist above.
+      redirect: "error",
+    },
     onResponse: () => {
       if (target.searchParams.has("callback")) {
         setResponseHeader(event, "Content-Type", "application/javascript; charset=utf-8");

@@ -15,7 +15,7 @@ const props = defineProps<PrimitiveProps & {
   class?: HTMLAttributes["class"]
 }>()
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class", "variant")
 </script>
 
 <template>

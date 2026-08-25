@@ -7,6 +7,12 @@ import { siteConfig } from "~~/site.config";
 import { escapeHtml } from "~~/lib/html";
 import type { MailOptions } from "#server/types/utils/mail";
 
+// 邮件里放进 href 的 URL 仅允许 http(s)：拒绝 javascript:/data: 等（防邮件里注入脚本链接）
+function safeHttpUrl(u: string): string {
+  const t = typeof u === "string" ? u.trim() : "";
+  return /^https?:\/\//i.test(t) ? t : "#";
+}
+
 // 邮件日志目录
 const LOG_DIR = path.join(process.cwd(), "logs", "mail");
 
@@ -275,7 +281,10 @@ async function getContentUrl(cid: number, commentId?: number): Promise<string> {
   if (content?.slug) {
     // 优先使用 slug
     const category = await prisma.contentrelations.findFirst({
-      where: { cid },
+      // contentrelations 同时承接 tag 与 category，缺 type 过滤时 findFirst 可能取到标签，
+      // 使邮件链接指向 tag 路由而 404；orderBy 保证取第一个分类的确定性。
+      where: { cid, metas: { type: "category" } },
+      orderBy: { metas: { mid: "asc" } },
       select: {
         metas: {
           select: {
@@ -330,8 +339,8 @@ export async function notifyFriendLinkApplication(linkName: string, linkUrl: str
         : `<p>有人在 <strong>${siteInfo.name}</strong> 申请了友链：</p>`
     }
     <div class="info-box">
-      <p><strong>网站名称：</strong>${linkName}</p>
-      <p><strong>网站链接：</strong><a href="${linkUrl}" target="_blank">${linkUrl}</a></p>
+      <p><strong>网站名称：</strong>${escapeHtml(linkName)}</p>
+      <p><strong>网站链接：</strong><a href="${escapeHtml(safeHttpUrl(linkUrl))}" target="_blank">${escapeHtml(linkUrl)}</a></p>
     </div>
     ${autoApproved ? `<p>此友链已自动启用，您可以前往后台进行管理。</p>` : `<p>请前往后台审核此友链申请。</p>`}
     <p><a href="${siteInfo.url}/admin/links" class="link">前往后台管理</a></p>
@@ -401,8 +410,8 @@ export async function notifyCommentReply(
     return false;
   }
 
-  // 如果被回复者就是自己（同一个邮箱），不发送通知
-  if (parentCommenterEmail === config.address) {
+  // 如果被回复者就是自己（同一个邮箱或站点管理员），不发送通知
+  if (parentCommenterEmail === config.adminEmail || parentCommenterEmail === config.address) {
     writeLog("info", "被回复者为自己，跳过回复通知", {
       contentId,
       parentCommenterName,
@@ -512,16 +521,16 @@ export async function notifyFriendLinkModification(
 
     <div class="info-box">
       <p><strong>原友链信息：</strong></p>
-      <p>名称：${originalLink.name}</p>
-      <p>链接：<a href="${originalLink.link}" target="_blank">${originalLink.link}</a></p>
+      <p>名称：${escapeHtml(originalLink.name)}</p>
+      <p>链接：<a href="${escapeHtml(safeHttpUrl(originalLink.link))}" target="_blank">${escapeHtml(originalLink.link)}</a></p>
     </div>
 
     <div class="info-box">
       <p><strong>新友链信息：</strong></p>
-      <p>名称：${newLink.name}</p>
-      <p>链接：<a href="${newLink.link}" target="_blank">${newLink.link}</a></p>
-      ${newLink.desc ? `<p>描述：${newLink.desc}</p>` : ""}
-      ${newLink.avatar ? `<p>头像：<a href="${newLink.avatar}" target="_blank">${newLink.avatar}</a></p>` : ""}
+      <p>名称：${escapeHtml(newLink.name)}</p>
+      <p>链接：<a href="${escapeHtml(safeHttpUrl(newLink.link))}" target="_blank">${escapeHtml(newLink.link)}</a></p>
+      ${newLink.desc ? `<p>描述：${escapeHtml(newLink.desc)}</p>` : ""}
+      ${newLink.avatar ? `<p>头像：<a href="${escapeHtml(safeHttpUrl(newLink.avatar))}" target="_blank">${escapeHtml(newLink.avatar)}</a></p>` : ""}
     </div>
 
     <p>请前往后台审核此修改请求。批准后将更新原友链，拒绝后将删除此请求。</p>

@@ -6,6 +6,14 @@ let updateTimer: NodeJS.Timeout | null = null;
 const STARTUP_DELAY = 60 * 60 * 1000; // 1小时
 const DEFAULT_UPDATE_INTERVAL = 8;
 
+// setTimeout 最大可接受延迟为 2^31-1 ms（约 24.8 天），超过会立刻触发。
+// 以 23 天为上限钳制，防止 DB 中异常大的 interval 值让定时器失效。
+const MAX_UPDATE_DELAY_MS = 23 * 24 * 60 * 60 * 1000;
+
+function updateDelayMs(intervalHours: number): number {
+  return Math.min(MAX_UPDATE_DELAY_MS, intervalHours * 60 * 60 * 1000);
+}
+
 async function getUpdateInterval() {
   const setting = await prisma.informations.findFirst({
     where: { key: 'feedCacheInterval' },
@@ -27,9 +35,15 @@ async function runUpdate() {
 
 function scheduleNextUpdate(delay: number) {
   updateTimer = setTimeout(async () => {
-    await runUpdate();
-    const interval = await getUpdateInterval();
-    scheduleNextUpdate(interval * 60 * 60 * 1000);
+    try {
+      await runUpdate();
+      const interval = await getUpdateInterval();
+      scheduleNextUpdate(updateDelayMs(interval));
+    } catch (error) {
+      // 任何一步出错都不让调度器死掉：回退到默认间隔，保证后续仍能重试
+      console.error('[RSS订阅] 自动更新调度异常，重置为默认间隔', error);
+      scheduleNextUpdate(updateDelayMs(DEFAULT_UPDATE_INTERVAL));
+    }
   }, delay);
 }
 

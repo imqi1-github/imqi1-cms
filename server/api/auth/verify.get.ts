@@ -12,6 +12,10 @@ import { prisma } from "#server/utils/prisma";
  * 并不构成额外风险（管理员存在是公开事实），换取的是少一个常驻探测端点。
  */
 export default defineEventHandler(async event => {
+  // 本接口返回当前会话对应用户的敏感信息（uid/mail 等），属 per-user GET，
+  // 禁止代理/CDN 缓存，避免把某会话的用户数据伺给同址上的其他客户端。
+  setResponseHeader(event, "Cache-Control", "no-store, no-cache, must-revalidate");
+
   const user = await getUser(event);
 
   if (!user) {

@@ -3,6 +3,8 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
 import { prisma } from "./prisma";
 
+import { assertPublicHttpUrl } from "#server/utils/urlGuard";
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "_",
@@ -34,6 +36,8 @@ async function fetchWithTimeout(url: string, timeout = 30000): Promise<Response>
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; RSS Reader)",
       },
+      // 不跟随重定向：assertPublicHttpUrl 只校验初始主机，302 到内网/环回会绕过 SSRF 白名单
+      redirect: "error",
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -49,6 +53,12 @@ async function fetchWithTimeout(url: string, timeout = 30000): Promise<Response>
 async function fetchSubscribePosts(subscribeId: number, url: string) {
   console.log(`[订阅更新] 开始获取订阅 ${subscribeId}: ${url}`);
   try {
+    // 订阅源 URL 做 SSRF 防护：仅允许公网 http(s)，封内部/环路/云元数据地址（防订阅源指向内网）
+    const safeUrl = await assertPublicHttpUrl(url).catch(() => null);
+    if (!safeUrl) {
+      throw new Error("订阅源 URL 不合法（仅允许公网 http/https）");
+    }
+
     const response = await fetchWithTimeout(url, 30000);
 
     if (!response.ok) {
@@ -84,13 +94,15 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
           }
         }
 
+        const pub = getTextValue(item.pubDate);
+        const pubDate = pub ? new Date(pub) : undefined;
         items.push({
           title: getTextValue(item.title) || "Untitled",
           link: link || "",
           description: getTextValue(item.description),
           content: getTextValue(item["content:encoded"]) || getTextValue(item.content),
           author: getTextValue(item.author) || getTextValue(item["dc:creator"]),
-          pubDate: getTextValue(item.pubDate) ? new Date(getTextValue(item.pubDate)!) : undefined,
+          pubDate: pubDate && !Number.isNaN(pubDate.getTime()) ? pubDate : undefined,
         });
       }
     }
@@ -123,6 +135,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
 
         // 处理日期
         const dateValue = getTextValue(entry.published) || getTextValue(entry.updated);
+        const atomPubDate = dateValue ? new Date(dateValue) : undefined;
 
         items.push({
           title: getTextValue(entry.title) || "Untitled",
@@ -130,7 +143,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
           description: getTextValue(entry.summary),
           content: getTextValue(entry.content),
           author: author,
-          pubDate: dateValue ? new Date(dateValue) : undefined,
+          pubDate: atomPubDate && !Number.isNaN(atomPubDate.getTime()) ? atomPubDate : undefined,
         });
       }
     }
@@ -148,13 +161,18 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
     for (const item of contentsToSave) {
       if (!item.link) continue;
 
+      // 写库前 sanitize（纵深防御）：把过滤固化到写入侧，否则外部 RSS 源可注入 javascript:/data: 链接，
+      // 一旦某消费方（读取侧）忘记 sanitize 即触发存储型 XSS。非 http(s) 链接丢空 → continue
+      const safeLink = sanitizeExternalUrl(item.link);
+      if (!safeLink) continue;
+
       try {
         await prisma.subscribeposts.upsert({
-          where: { link: item.link },
+          where: { link: safeLink },
           create: {
             subscribeId,
             title: item.title,
-            link: item.link,
+            link: safeLink,
             description: truncateWithEllipsis(item.description, 1000), // 限制描述长度并添加省略号
             content: truncateWithEllipsis(item.content, 5000), // 限制内容长度并添加省略号
             author: item.author,

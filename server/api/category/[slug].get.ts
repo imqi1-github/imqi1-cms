@@ -23,29 +23,41 @@ export default defineEventHandler(async event => {
     };
   }
 
-  // 获取分类信息
-  const category = await prisma.metas.findUnique({
-    where: {
-      slug: categorySlug,
-      type: 'category', // 确保只返回分类类型
-    },
-    select: {
-      mid: true,
-      name: true,
-      slug: true,
-      desc: true,
-    },
-  });
+  try {
+    // 获取分类信息
+    const category = await prisma.metas.findUnique({
+      where: {
+        slug: categorySlug,
+        type: 'category', // 确保只返回分类类型
+      },
+      select: {
+        mid: true,
+        name: true,
+        slug: true,
+        desc: true,
+      },
+    });
 
-  if (!category) {
+    if (!category) {
+      throw createError({
+        statusCode: 404,
+        message: "分类不存在",
+      });
+    }
+
+    return {
+      success: true,
+      data: category,
+    };
+  } catch (error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
+
+    console.error(error);
     throw createError({
-      statusCode: 404,
-      message: "分类不存在",
+      statusCode: 500,
+      message: "获取分类信息失败",
     });
   }
-
-  return {
-    success: true,
-    data: category,
-  };
 });

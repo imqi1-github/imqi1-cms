@@ -12,7 +12,11 @@ export default defineEventHandler(async event => {
     });
   }
   try {
-    return await prisma.subscribes.findMany();
+    // 约定1 白名单：select 显式取字段，不裸返回整行
+    return await prisma.subscribes.findMany({
+      select: { id: true, url: true, name: true, avatar: true, lastUpdated: true },
+      orderBy: { id: "desc" },
+    });
   } catch (error) {
     console.error(error);
     throw createError({

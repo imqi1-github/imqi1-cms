@@ -23,8 +23,15 @@ export default defineEventHandler(async event => {
       message: "缺少用户 ID",
     });
   }
+  const uid = Number(id);
+  if (!Number.isSafeInteger(uid) || uid <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "无效的用户 ID",
+    });
+  }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken, ...updateBody } = body;
 
   // CSRF 验证
@@ -35,13 +42,31 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // IDOR 防御：会话用户只能操作自己的账户（否则任意登录用户可重置他人密码/篡改邮箱）
+  if (user.uid !== uid) {
+    throw createError({
+      statusCode: 403,
+      message: "无权操作该账户",
+    });
+  }
+
   const { name, nickname, mail, password, avatar } = updateBody;
 
-  if (!name || !mail) {
+  // 类型 + 空值校验：非字符串（如 name:123）会让 validateUserData 的 .length 绕过、写库抛错→500
+  if (typeof name !== 'string' || !name.trim() || typeof mail !== 'string' || !mail.trim()) {
     throw createError({
       statusCode: 400,
       message: "用户名和邮箱不能为空",
     });
+  }
+  if (nickname !== undefined && nickname !== null && typeof nickname !== 'string') {
+    throw createError({ statusCode: 400, message: "昵称格式错误" });
+  }
+  if (avatar !== undefined && avatar !== null && typeof avatar !== 'string') {
+    throw createError({ statusCode: 400, message: "头像格式错误" });
+  }
+  if (password !== undefined && password !== null && typeof password !== 'string') {
+    throw createError({ statusCode: 400, message: "密码格式错误" });
   }
 
   // 验证字段长度
@@ -50,7 +75,7 @@ export default defineEventHandler(async event => {
   try {
     // 检查用户是否存在
     const existingUser = await prisma.users.findUnique({
-      where: { uid: Number(id) },
+      where: { uid },
     });
 
     if (!existingUser) {
@@ -65,7 +90,7 @@ export default defineEventHandler(async event => {
       where: { mail },
     });
 
-    if (mailUser && mailUser.uid !== Number(id)) {
+    if (mailUser && mailUser.uid !== uid) {
       throw createError({
         statusCode: 400,
         message: "邮箱已被其他用户使用",
@@ -77,7 +102,7 @@ export default defineEventHandler(async event => {
       where: { name },
     });
 
-    if (nameUser && nameUser.uid !== Number(id)) {
+    if (nameUser && nameUser.uid !== uid) {
       throw createError({
         statusCode: 400,
         message: "用户名已被其他用户使用",
@@ -87,9 +112,9 @@ export default defineEventHandler(async event => {
     // 构建更新数据
     const updateData: Prisma.usersUpdateInput = {
       name,
-      nickname: nickname || null,
+      nickname: typeof nickname === 'string' ? nickname : null,
       mail,
-      avatar: avatar || null,
+      avatar: typeof avatar === 'string' ? avatar : null,
     };
 
     // 如果提供了新密码，则更新密码
@@ -106,7 +131,7 @@ export default defineEventHandler(async event => {
 
     // 更新用户
     const updatedUser = await prisma.users.update({
-      where: { uid: Number(id) },
+      where: { uid },
       data: updateData,
       select: {
         uid: true,
@@ -123,13 +148,19 @@ export default defineEventHandler(async event => {
       data: updatedUser,
     };
   } catch (error) {
-    console.error(error);
+    // 预期 400/403/404 原样抛，不打印完整堆栈
     if (error instanceof Error && "statusCode" in error) {
-      const statusCode = (error as { statusCode: unknown }).statusCode;
-      if (statusCode === 404 || statusCode === 400) {
-        throw error;
-      }
+      throw error;
     }
+    // findUnique 预检与 update 间并发删除竞态 → P2025 → 404
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({ statusCode: 404, message: "用户不存在" });
+    }
+    // 并发抢注时 name/mail 唯一约束冲突（P2002）→ 400 而非 500（与 tags/[id].put 处理一致）
+    if (error instanceof Error && "code" in error && error.code === "P2002") {
+      throw createError({ statusCode: 400, message: "用户名或邮箱已被使用" });
+    }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新用户失败",

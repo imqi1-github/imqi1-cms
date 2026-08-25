@@ -42,11 +42,11 @@ services:
     restart: unless-stopped
     environment:
       # root 与 nodejs 普通用户密码都用 DB_PASSWORD；应用与 healthcheck 只用 nodejs。
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME:-imqi1}
       # ⚠️ 不能设为 root（MYSQL_USER 只用于创建普通用户，root 会报错起不来）
       MYSQL_USER: ${DB_USER:-nodejs}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -56,7 +56,7 @@ services:
       - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       # 用应用账户探活，nodejs 就绪后才启动 app，避免启动初期 Access denied。
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-nodejs}", "-p${DB_PASSWORD:-root}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-nodejs}", "-p${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -65,7 +65,7 @@ services:
     image: redis:7-alpine
     container_name: imqi1-redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD_PROD:-}"]
     volumes:
       - redis-data:/data
 

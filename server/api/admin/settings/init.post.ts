@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
@@ -40,7 +42,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken } = body;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
@@ -56,7 +58,8 @@ export default defineEventHandler(async event => {
     });
 
     const existingKeySet = new Set(existingKeys.map(item => item.key));
-    const createdItems: { key: string; value: string }[] = [];
+    // 用 Prisma 生成类型替代内联匿名对象类型（约定4 类型放独立文件）
+    const createdItems: Prisma.informationsCreateManyInput[] = [];
 
     // 找出缺失的配置项
     for (const [key, defaultValue] of Object.entries(defaults)) {
@@ -68,10 +71,11 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // 批量创建缺失的配置项
+    // 批量创建缺失的配置项（skipDuplicates：并发初始化撞唯一键时静默跳过，不抛 P2002→500）
     if (createdItems.length > 0) {
       await prisma.informations.createMany({
         data: createdItems,
+        skipDuplicates: true,
       });
     }
 
@@ -84,11 +88,11 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error(error);
     // 已带 statusCode 的错误（400/403）原样抛出，避免被统一吞成 500
     if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "初始化配置失败",

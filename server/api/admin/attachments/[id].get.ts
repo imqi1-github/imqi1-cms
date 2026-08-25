@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
 
     const id = Number(getRouterParam(event, "id"));
 
-    if (!id) {
+    if (!Number.isInteger(id) || id <= 0) {
       throw createError({
         statusCode: 400,
         message: "无效的附件 ID",
@@ -79,11 +79,12 @@ export default defineEventHandler(async event => {
       },
     };
   } catch (error) {
-    console.error(error);
-
+    // 已带 statusCode 的错误（401/400/404）原样抛，不打印完整堆栈
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
+
+    console.error(error);
 
     throw createError({
       statusCode: 500,

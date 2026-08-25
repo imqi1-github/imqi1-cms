@@ -13,27 +13,25 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event).catch(() => ({} as { csrfToken?: string }));
+  const body = ((await readBody(event).catch(() => ({}))) ?? {});
   const { csrfToken } = body;
 
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({ statusCode: 403, message: 'CSRF token 验证失败，请刷新页面重试' });
   }
 
-  console.log('[API] 开始更新所有订阅');
   try {
     const result = await updateAllSubscribes();
-    console.log('[API] 订阅更新完成:', result);
     return {
       success: true,
       data: result,
     };
   } catch (error) {
-    console.error(error);
     // 已带 statusCode 的错误（400/403）原样抛出，避免被统一吞成 500
     if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: '更新订阅失败',

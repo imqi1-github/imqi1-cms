@@ -19,9 +19,8 @@ export default defineEventHandler(async () => {
           where: {
             metas: { type: "category" },
           },
+          // 只取分类 slug；cid/mid 是连接表外键，输出用不到，不拉（与 footprint.get.ts 同口径）
           select: {
-            cid: true,
-            mid: true,
             metas: {
               select: {
                 slug: true,
@@ -29,6 +28,11 @@ export default defineEventHandler(async () => {
             },
           },
           take: 1,
+          // 多分类文章取"第一个分类"：无 orderBy 时 MySQL LIMIT 1 为任意行，
+          // 会让 /content/{categorySlug}/{slug} 链接跨请求不稳定。按 metas.mid 升序固定首分类。
+          orderBy: {
+            metas: { mid: "asc" },
+          },
         },
       },
       orderBy: {
@@ -63,7 +67,7 @@ export default defineEventHandler(async () => {
         title: content.title,
         slug: content.slug,
         categorySlug,
-        createTime: content.create_time,
+        createTime: content.create_time.toISOString(),
       });
 
       return acc;

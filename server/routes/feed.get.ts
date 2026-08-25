@@ -1,6 +1,7 @@
 import { markdownToPlainText, spaceCjkLatin } from "#server/utils/markdownToPlainText";
 import { parseCovers } from "#server/utils/covers";
 import { prisma } from "#server/utils/prisma";
+import { escapeXml } from "#server/utils/xml";
 import { siteConfig } from "~~/site.config";
 
 // CDATA 内容若含 ]]> 会提前闭合，用标准拆分技巧规避（markdown 正文极少出现，兜底防御）。
@@ -10,8 +11,58 @@ function cdata(text: string): string {
 
 export default defineEventHandler(async event => {
   try {
-    // 获取站点设置（逐 key 读取，与其他 API 一致）
-    const meta = await prisma.informations.findMany();
+    // 站点设置与最新文章并行查询（二者无依赖，串行会叠加延迟）。
+    // 设置只取本 handler 用到的 key；文章的 contentrelations 需 type:"category" 过滤 + orderBy，
+    // 否则 contentrelations[0] 可能取到标签而非分类，导致 feed 链接指向 tag 路由。
+    const [meta, contents] = await Promise.all([
+      prisma.informations.findMany({
+        where: {
+          key: { in: ["siteName", "siteUrl", "siteDesc"] },
+        },
+        select: {
+          key: true,
+          value: true,
+        },
+      }),
+      prisma.contents.findMany({
+        where: {
+          status: 1,
+          type: 0,
+        },
+        select: {
+          cid: true,
+          slug: true,
+          title: true,
+          desc: true,
+          content: true,
+          create_time: true,
+          covers: true,
+          user: {
+            select: {
+              nickname: true,
+              name: true,
+            },
+          },
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            orderBy: { mid: "asc" },
+            select: {
+              metas: {
+                select: {
+                  slug: true,
+                },
+              },
+            },
+            take: 1,
+          },
+        },
+        orderBy: {
+          create_time: "desc",
+        },
+        take: 20, // 最多20篇
+      }),
+    ]);
+
     const infoMap: Record<string, string> = {};
     meta.forEach((item) => {
       infoMap[item.key] = item.value;
@@ -21,50 +72,17 @@ export default defineEventHandler(async event => {
     const siteUrl = infoMap["siteUrl"] || siteConfig.siteUrl;
     const siteDesc = infoMap["siteDesc"] || siteConfig.seo.description;
 
-    // 获取最新文章（只获取已发布的，type=0 表示文章）
-    const contents = await prisma.contents.findMany({
-      where: {
-        status: 1,
-        type: 0,
-      },
-      select: {
-        cid: true,
-        slug: true,
-        title: true,
-        desc: true,
-        content: true,
-        create_time: true,
-        covers: true,
-        user: {
-          select: {
-            nickname: true,
-            name: true,
-          },
-        },
-        contentrelations: {
-          select: {
-            metas: {
-              select: {
-                slug: true,
-              },
-            },
-          },
-          take: 1, // 只取第一个分类
-        },
-      },
-      orderBy: {
-        create_time: "desc",
-      },
-      take: 20, // 最多20篇
-    });
-
-    // 获取请求的协议和主机
-    let host = event.node.req.headers.host || "";
-    // 移除标准端口号（443 和 80）
-    host = host.replace(/:(443|80)$/, "");
-
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = siteUrl || `${protocol}://${host}`;
+    // 站点根地址：只用配置（DB siteUrl → siteConfig.siteUrl），不信任客户端 Host 头，
+    // 防 Host 注入生成任意绝对 URL 污染 feed 内 link/guid。
+    let baseUrl = siteUrl;
+    if (!baseUrl) {
+      const config = useRuntimeConfig();
+      const rootDomain = (config.public.rootDomain as string) || siteConfig.rootDomain || "";
+      if (rootDomain) {
+        const protocol = rootDomain.includes("localhost") ? "http" : "https";
+        baseUrl = `${protocol}://${rootDomain}`;
+      }
+    }
 
     // 生成 RSS XML
     const rssItems = contents
@@ -78,7 +96,7 @@ export default defineEventHandler(async event => {
         // 正文转纯文本：markdown→纯文本，::: 容器/代码块/图片/表格按规则替换为中文占位
         // （<图片：标题>、<代码块：语言xx，共xx行>、<表格：共x行y列>、<音乐：平台，id=xxx> 等，
         //  实况照片为 <实况照片：标题>，见 utils/markdownToPlainText）。
-        // 需求“只要全文、不重复”：不再做摘要截断，全文放 description。
+        // 需求"只要全文、不重复"：不再做摘要截断，全文放 description。
         const fullText = markdownToPlainText(content.content || content.desc || "");
 
         // 封面占位：<图片：标题>/<实况照片：标题>（封面标题为空则仅占位，不带标题）；
@@ -97,11 +115,11 @@ export default defineEventHandler(async event => {
 
         return `
     <item>
-      <title><![CDATA[${content.title}]]></title>
-      <link>${contentUrl}</link>
+      <title><![CDATA[${cdata(content.title)}]]></title>
+      <link>${escapeXml(contentUrl)}</link>
       <description><![CDATA[${cdata(descriptionText)}]]></description>
-      <author><![CDATA[${author}]]></author>
-      <guid isPermaLink="true">${contentUrl}</guid>
+      <author><![CDATA[${cdata(author)}]]></author>
+      <guid isPermaLink="true">${escapeXml(contentUrl)}</guid>
       <pubDate>${pubDate}</pubDate>
     </item>`;
       })
@@ -114,12 +132,12 @@ export default defineEventHandler(async event => {
      xmlns:atom="http://www.w3.org/2005/Atom"
      xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
-    <title><![CDATA[${siteName}]]></title>
-    <link>${baseUrl}</link>
-    <description><![CDATA[${siteDesc || siteName + " - 最新文章"}]]></description>
+    <title><![CDATA[${cdata(siteName)}]]></title>
+    <link>${escapeXml(baseUrl)}</link>
+    <description><![CDATA[${cdata(siteDesc || siteName + " - 最新文章")}]]></description>
     <language>zh-CN</language>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>
-    <atom:link href="${baseUrl}/feed" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(baseUrl + "/feed")}" rel="self" type="application/rss+xml" />
     ${rssItems}
   </channel>
 </rss>`;

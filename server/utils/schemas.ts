@@ -296,20 +296,6 @@ export const RelatedContentsResponseSchema = z.array(
   }),
 );
 
-// ============= 订阅文章 Schema =============
-
-export const SubscribePostSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  link: z.string(),
-  description: z.string().nullable(),
-  author: z.string().nullable(),
-  pubDate: z.string().nullable(),
-  feedId: z.number(),
-});
-
-export const SubscribePostsResponseSchema = z.array(SubscribePostSchema);
-
 // ============= 统计数据 Schema =============
 
 export const StatsResponseSchema = z.object({

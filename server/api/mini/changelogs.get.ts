@@ -9,6 +9,11 @@ export default defineEventHandler(async event => {
     // 与主站 /api/changelogs 同源，按时间倒序取全部更新日志
     const changelogs = await prisma.changelogs.findMany({
       orderBy: { create_time: "desc" },
+      select: {
+        id: true,
+        content: true,
+        create_time: true,
+      },
     });
 
     // 解析 content（JSON 条目数组）为纯文本条目，小程序端直接展示不走 markdown

@@ -52,6 +52,25 @@ export default defineEventHandler(async event => {
 
   // deleteMany + createMany 需原子：若 createMany 因不存在 mid 触发外键 P2003，deleteMany 已提交会丢失原有分类关系
   try {
+    // 预检文章存在：cid 可能已被删除（别的标签页），此时 createMany 会触发 cid 外键 P2003，
+    // 被误报为「存在无效的分类」；应明确 404「文章不存在」
+    const content = await prisma.contents.findUnique({ where: { cid }, select: { cid: true } });
+    if (!content) {
+      throw createError({ statusCode: 404, message: "文章不存在" });
+    }
+
+    // 预检每个 mid 的 metas.type 为 'category'：否则分类编辑器误传标签 mid 会静默给文章加标签关系
+    const categoryIdSet = new Set(validCategoryIds);
+    if (categoryIdSet.size > 0) {
+      const cats = await prisma.metas.findMany({
+        where: { mid: { in: [...categoryIdSet] }, type: "category" },
+        select: { mid: true },
+      });
+      if (cats.length !== categoryIdSet.size) {
+        throw createError({ statusCode: 400, message: "存在无效的分类" });
+      }
+    }
+
     await prisma.$transaction(async tx => {
       // 删除现有的分类关系（只删分类，别把同表的标签关联一并删掉）
       await tx.contentrelations.deleteMany({

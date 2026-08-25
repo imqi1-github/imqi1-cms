@@ -18,40 +18,29 @@ let isDisposed = false;
 // 播放器实例 ID（用于播放器管理器）
 const playerId = `footer-${Date.now()}-${Math.random()}`;
 
-// 歌单 API 拉取闸门失败计数（持久 localStorage；只在 initPlayer 的 meting 请求失败时累加、成功即清零）。
-// 单首播放卡顿/失败走独立的会话内计数 playbackFailureCount（见 handleSongProblem），两者完全隔离——
-// 播放层「连续失败」绝不冤枉封掉「刷新后自动重试」的 API 拉取闸门，反之亦然。
-const METING_FAILURE_COUNT_KEY = "meting_api_failure_count";
+// 歌单 API 拉取闸门失败计数（内存、非持久）：只在 initPlayer 的 meting 请求失败时累加、成功即清零。
+// 不写 localStorage——瞬时失败不再永久弃用播放器，刷新页面自动重试（自动复位）。
+// 单首播放卡顿/失败走独立的会话内计数 playbackFailureCount（见 handleSongProblem），两者完全隔离。
 const MAX_FAILURE_COUNT = 3;
+let metingFailureCount = 0;
 
 // 单首播放失败的会话内计数（内存、非持久）：达到上限停用整个播放器；成功播放即清零，刷新自动重试。
 let playbackFailureCount = 0;
 
 // 获取失败次数
 function getFailureCount(): number {
-  if (import.meta.client) {
-    const count = localStorage.getItem(METING_FAILURE_COUNT_KEY);
-    return count ? parseInt(count, 10) : 0;
-  }
-  return 0;
+  return metingFailureCount;
 }
 
 // 增加失败次数
-function incrementFailureCount() {
-  if (import.meta.client) {
-    const currentCount = getFailureCount();
-    const newCount = currentCount + 1;
-    localStorage.setItem(METING_FAILURE_COUNT_KEY, newCount.toString());
-    return newCount;
-  }
-  return 0;
+function incrementFailureCount(): number {
+  metingFailureCount += 1;
+  return metingFailureCount;
 }
 
 // 重置失败次数
 function resetFailureCount() {
-  if (import.meta.client) {
-    localStorage.removeItem(METING_FAILURE_COUNT_KEY);
-  }
+  metingFailureCount = 0;
 }
 
 // 获取播放器管理器
@@ -233,7 +222,7 @@ export function useAudioPlayer() {
     const failureCount = getFailureCount();
     if (failureCount >= MAX_FAILURE_COUNT) {
       isDisabled.value = true;
-      console.warn(`Meting API 已连续失败 ${failureCount} 次，不再加载音乐播放器。如需重试，请清除 localStorage 中的 ${METING_FAILURE_COUNT_KEY}`);
+      console.warn(`Meting API 已连续失败 ${failureCount} 次，本次会话不再加载音乐播放器；刷新页面自动重试`);
       return;
     }
     // 以上守卫全过才置位：空 id / 已到失败上限时保持未初始化，后续可用新配置重试，而非被「假置位」卡死

@@ -8,22 +8,49 @@ export default defineEventHandler(async event => {
   try {
     const body = await readBody(event);
 
-    // CSRF 双提交校验（游客写接口同样需要，防跨站伪造提交）
-    const { csrfToken } = body as { csrfToken?: string };
-    if (!validateCsrfToken(event, csrfToken ?? "")) {
-      throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
+    // 请求体必须是对象：readBody 可能返回 null/数组/字符串，后续解构或字段访问会抛 TypeError
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw createError({
+        statusCode: 400,
+        message: "请求体格式错误",
+      });
     }
 
-    // 验证必填字段
-    if (!body.name || !body.link) {
+    const { name, link, desc, avatar, originalLinkId, csrfToken } = body as Record<string, unknown>;
+
+    // CSRF 双提交校验（游客写接口同样需要，防跨站伪造提交）
+    if (!validateCsrfToken(event, typeof csrfToken === "string" ? csrfToken : "")) {
+      throw createError({
+        statusCode: 403,
+        message: "CSRF token 验证失败，请刷新页面重试",
+      });
+    }
+
+    // 验证必填字段：name/link 必须是字符串，否则后续 .trim()/URL 解析会抛 TypeError
+    if (typeof name !== "string" || !name.trim() || typeof link !== "string" || !link.trim()) {
       throw createError({
         statusCode: 400,
         message: "名称和链接为必填项",
       });
     }
 
-    // 验证原友链ID
-    if (!body.originalLinkId) {
+    // desc/avatar 可选：若提供必须为字符串（允许 null/缺省），否则后续 .trim() 会抛 TypeError
+    if (desc !== undefined && desc !== null && typeof desc !== "string") {
+      throw createError({
+        statusCode: 400,
+        message: "描述格式不正确",
+      });
+    }
+    if (avatar !== undefined && avatar !== null && typeof avatar !== "string") {
+      throw createError({
+        statusCode: 400,
+        message: "头像格式不正确",
+      });
+    }
+
+    // 验证原友链ID | 必须是正整数，否则 Prisma where id 传非整数会抛校验错误 → 500
+    const originalId = Number(originalLinkId);
+    if (!Number.isInteger(originalId) || originalId <= 0) {
       throw createError({
         statusCode: 400,
         message: "缺少原友链ID",
@@ -32,15 +59,15 @@ export default defineEventHandler(async event => {
 
     // 验证字段长度
     validateLinkData({
-      name: body.name,
-      link: body.link,
-      desc: body.desc,
-      avatar: body.avatar,
+      name,
+      link,
+      desc,
+      avatar,
     });
 
     // 严格校验链接协议：仅允许 http/https，杜绝 javascript:/data: 等存储型 XSS
     try {
-      const parsed = new URL(ensureUrlProtocol(body.link));
+      const parsed = new URL(ensureUrlProtocol(link));
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
         throw new Error("invalid protocol");
       }
@@ -51,9 +78,9 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 查找原友链
+    // 查找原友链（existence 前置校验，避免先建后又因后续 400 产生孤儿行）
     const originalLink = await prisma.links.findUnique({
-      where: { id: body.originalLinkId },
+      where: { id: originalId },
     });
 
     if (!originalLink) {
@@ -66,14 +93,14 @@ export default defineEventHandler(async event => {
     // 创建修改请求（默认禁用，等待审核）
     const modificationLink = await prisma.links.create({
       data: {
-        name: body.name.trim(),
+        name: name.trim(),
         // 补全协议，避免无 http(s):// 前缀的链接在前台被当相对路径 → 死链
-        link: ensureUrlProtocol(body.link),
-        desc: body.desc?.trim() || null,
-        avatar: body.avatar?.trim() || null,
+        link: ensureUrlProtocol(link),
+        desc: desc?.trim() || null,
+        avatar: avatar?.trim() || null,
         enabled: false,  // 默认禁用，等待审核
         isModification: true,
-        originalLinkId: body.originalLinkId,
+        originalLinkId: originalId,
         modificationStatus: "pending",
       },
     });

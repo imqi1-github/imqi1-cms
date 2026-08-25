@@ -135,6 +135,11 @@ function parseMusicUrl(url: string): { kind: string; platform: string; id: strin
     const typeMap: Record<string, string> = { playlist: "playlist", songDetail: "song", albumDetail: "album" };
     return { kind: typeMap[tencentM[1]!] || "song", platform: "tencent", id: tencentM[2]! };
   }
+  // 与服务端 markdown.ts 的 musicPlatforms 同源：酷我 / 酷狗
+  const kuwoM = url.match(/kuwo\.cn\/(playlist|song|album)\/(\d+)/i);
+  if (kuwoM) return { kind: kuwoM[1]!, platform: "kuwo", id: kuwoM[2]! };
+  const kugouM = url.match(/kugou\.com\/(song|album|playlist)\/(\w+)\.html/i);
+  if (kugouM) return { kind: kugouM[1]!, platform: "kugou", id: kugouM[2]! };
   return null;
 }
 

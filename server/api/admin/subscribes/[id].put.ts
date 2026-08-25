@@ -22,8 +22,15 @@ export default defineEventHandler(async event => {
       message: "缺少订阅 ID",
     });
   }
+  const subId = Number(id);
+  if (!Number.isInteger(subId) || subId <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "无效的订阅 ID",
+    });
+  }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken } = body;
 
   if (!validateCsrfToken(event, csrfToken)) {
@@ -31,6 +38,11 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    // 必填 + 类型校验：validateSubscribeData 只校验存在时的长度，缺 name/url 或传非字符串会放行到 Prisma 报必填错→500（POST 已有该守卫，PUT 需对齐）
+    if (typeof body.name !== 'string' || !body.name.trim() || typeof body.url !== 'string' || !body.url.trim()) {
+      throw createError({ statusCode: 400, message: "名称和链接为必填项" });
+    }
+
     // 验证字段长度
     validateSubscribeData({
       name: body.name,
@@ -39,17 +51,17 @@ export default defineEventHandler(async event => {
     });
 
     const subscribe = await prisma.subscribes.update({
-      where: { id: Number(id) },
+      where: { id: subId },
       data: {
         name: body.name,
         url: body.url,
-        avatar: body.avatar || null,
+        avatar: typeof body.avatar === 'string' ? body.avatar : null,
       },
+      // 约定1 白名单：不裸返回整行
+      select: { id: true, url: true, name: true, avatar: true, lastUpdated: true },
     });
     return subscribe;
   } catch (error) {
-    console.error(error);
-
     // 已带 statusCode 的错误（如 validateSubscribeData 的 400）原样抛出，避免被统一吞成 500
     if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
@@ -59,7 +71,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "code" in error && error.code === "P2025") {
       throw createError({ statusCode: 404, message: "订阅不存在" });
     }
-
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新订阅失败",

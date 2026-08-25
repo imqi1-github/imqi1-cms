@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
 
     const id = Number(getRouterParam(event, "id"));
 
-    if (!id) {
+    if (!Number.isInteger(id) || id <= 0) {
       throw createError({
         statusCode: 400,
         message: "无效的附件 ID",
@@ -58,7 +58,9 @@ export default defineEventHandler(async event => {
       });
     }
 
-    const unlinkCid = Number(query.cid);
+    // 仅接受正整数 cid，避免把 float/negative/NaN 传给 Prisma 的 where
+    const rawCid = Number(query.cid);
+    const unlinkCid = Number.isInteger(rawCid) && rawCid > 0 ? rawCid : 0;
     if (unlinkCid) {
       const content = await prisma.contents.findUnique({
         where: { cid: unlinkCid },
@@ -111,17 +113,20 @@ export default defineEventHandler(async event => {
       message: "删除成功",
     };
   } catch (error) {
-    console.error(error);
-
+    // 预期的 400/403/404 原样抛出，不打印完整堆栈
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-
-    const message = error instanceof Error ? error.message : "删除失败";
-
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({
+        statusCode: 404,
+        message: "附件不存在",
+      });
+    }
+    console.error(error);
     throw createError({
       statusCode: 500,
-      message,
+      message: "删除失败",
     });
   }
 });

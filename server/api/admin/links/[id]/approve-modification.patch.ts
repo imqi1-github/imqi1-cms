@@ -20,8 +20,15 @@ export default defineEventHandler(async event => {
       message: "缺少友链ID",
     });
   }
+  const linkId = Number(id);
+  if (!Number.isInteger(linkId) || linkId <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "无效的友链ID",
+    });
+  }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { action, csrfToken } = body; // "approve" 或 "reject"
 
   if (!validateCsrfToken(event, csrfToken)) {
@@ -39,11 +46,17 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    // 查找修改请求
+    // 查找修改请求（不 include originalLink：该关联结果未被使用，属死查询）
     const modification = await prisma.links.findUnique({
-      where: { id: Number(id) },
-      include: {
-        originalLink: true,
+      where: { id: linkId },
+      select: {
+        id: true,
+        name: true,
+        link: true,
+        desc: true,
+        avatar: true,
+        originalLinkId: true,
+        isModification: true,
       },
     });
 
@@ -69,20 +82,22 @@ export default defineEventHandler(async event => {
     }
 
     if (action === "approve") {
-      // 批准修改：更新原友链，删除修改请求
-      await prisma.links.update({
-        where: { id: modification.originalLinkId },
-        data: {
-          name: modification.name,
-          link: modification.link,
-          desc: modification.desc,
-          avatar: modification.avatar,
-        },
-      });
+      // 批准修改：更新原友链 + 删除修改请求，需原子（同成同败）
+      await prisma.$transaction(async tx => {
+        await tx.links.update({
+          where: { id: modification.originalLinkId! },
+          data: {
+            name: modification.name,
+            link: modification.link,
+            desc: modification.desc,
+            avatar: modification.avatar,
+          },
+        });
 
-      // 删除修改请求
-      await prisma.links.delete({
-        where: { id: Number(id) },
+        // 删除修改请求
+        await tx.links.delete({
+          where: { id: linkId },
+        });
       });
 
       return {
@@ -92,7 +107,7 @@ export default defineEventHandler(async event => {
     } else {
       // 拒绝修改：更新状态并删除修改请求
       await prisma.links.delete({
-        where: { id: Number(id) },
+        where: { id: linkId },
       });
 
       return {
@@ -101,6 +116,14 @@ export default defineEventHandler(async event => {
       };
     }
   } catch (error) {
+    // 已带 statusCode 的错误（400/404）原样抛出，避免被统一吞成 500
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    // 原友链已删 / 修改请求被并发删除 → P2025 → 404
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({ statusCode: 404, message: "原友链或修改请求不存在" });
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

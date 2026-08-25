@@ -20,11 +20,13 @@ const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 // null 表示该字节为可变字段（如 WebP 头部的文件大小），校验时跳过
 const FILE_MAGIC_NUMBERS: Record<string, (number | null)[]> = {
   "image/jpeg": [0xff, 0xd8, 0xff],
+  "image/jpg": [0xff, 0xd8, 0xff],
   "image/png": [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
   "image/gif": [0x47, 0x49, 0x46, 0x38],
   // WebP: "RIFF"(0-3) + 文件大小(4-7,可变) + "WEBP"(8-11)
   "image/webp": [0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50],
-  "video/mp4": [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70],
+  // MP4: 仅要求字节 4-7 为 "ftyp"（box 大小可变，勿写死为 0x18）
+  "video/mp4": [null, null, null, null, 0x66, 0x74, 0x79, 0x70],
   "video/webm": [0x1a, 0x45, 0xdf, 0xa3],
 };
 
@@ -209,9 +211,11 @@ export default defineEventHandler(async event => {
       : await uploadToLocal(buffer, fileName);
 
     if (!result.success) {
+      // 服务端记录详细错误，不把原始 error.message 透传给客户端
+      console.error(`[上传附件] 上传失败: ${result.error}`);
       throw createError({
         statusCode: 500,
-        message: result.error || (uploadLocation === "cos" ? "COS上传失败" : "本地上传失败"),
+        message: uploadLocation === "cos" ? "COS上传失败" : "本地上传失败",
       });
     }
 
@@ -283,9 +287,16 @@ export default defineEventHandler(async event => {
       throw error;
     }
 
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      throw createError({
+        statusCode: 404,
+        message: "文章不存在",
+      });
+    }
+
     throw createError({
       statusCode: 500,
-      message: "获取上传附件失败",
+      message: "上传失败",
     });
   }
 });

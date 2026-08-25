@@ -13,3 +13,7 @@ metadata:
 - 后台登录 `admin / 123456`（`db:init` 种子）；后台页未登录会 302 到 `/login?to=...`。
 - chrome-devtools MCP 报 `browser already running for chrome-profile` → 有残留进程锁，杀掉该 chrome-devtools-mcp 浏览器进程，或回退 playwright MCP。
 - 测试产物 `.playwright-mcp` / `.playwright` 已 gitignore。相关：[[imqi1-cms-db]]。
+
+**大目录审计技巧（2026-08 用过）**：`server/api/admin`（61 文件）、`server/utils`+`server/types`（39 文件）这种量级用 **Workflow** 并行：按域分 ~8-12 个 finder 只读找问题 → 每个 finding 交给独立 agent 对抗复核，最后 AskUserQuestion 定修复范围。纯读阶段天然可并行；只有修复后要浏览器实测才受单端登录/会话约束。
+
+**验证取舍**：`server/utils`/`server/types` 等**后端/非 handler** 改动（无 UI 可交互）可只跑 `bunx eslint` + `bunx nuxi typecheck`，不必真浏览器实测（用户 2026-08-25 明确「修改完后不用实测」）；**页面/交互类**审计才需 chrome-devtools/playwright 实测，且后台单端登录须用 `scripts/audit-shared-session.sh` 共享会话或单会话登录。改完务必确认 `nuxi typecheck` 只报**自己改的文件**，别把 batch-2（另一会话）在途代码的报错揽到自己头上。

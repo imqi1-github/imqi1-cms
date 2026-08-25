@@ -28,22 +28,30 @@ export async function setSession(event: H3Event, user: Omit<SessionUser, "authCo
   const authCode = generateAuthCode();
   const expires = Date.now() + SESSION_MAX_AGE * 1000;
 
-  // 更新数据库中的 auth_code，实现单端登录
-  await prisma.users.update({
-    where: { uid: user.uid },
-    data: { auth_code: authCode },
-  });
-
-  // 清除该用户的所有旧 session
   const store = await getSessionStore();
-  await store.clearUserSessions(user.uid);
 
-  // 保存新 session
+  // 先持久化新 session：必须放在旋转 auth_code / 清除旧 session 之前。
+  // 若 store.set 失败，此时 auth_code 未旋转、旧 session 未被清除，用户仍保有有效登录态；
+  // 反之（旧顺序先旋转 auth_code 再清旧 session 最后才 store.set），一旦 store 写失败
+  // 用户将只剩零个有效 session，被迫在全部设备登出。
   await store.set(sessionId, {
     userId: user.uid,
     authCode,
     expires,
   });
+
+  // 再旋转数据库中的 auth_code，实现单端登录：
+  // 旧设备的 session 因 authCode 不匹配，在下次 getUser() 校验时自动失效（见 getUser）。
+  await prisma.users.update({
+    where: { uid: user.uid },
+    data: { auth_code: authCode },
+  });
+
+  // 此处不再单独清除旧 session。store.clearUserSessions 按 userId 删除该用户全部会话：
+  // 在 store.set 之后再调用会把刚创建的新 session 一并删除；在 store.set 之前调用又会令
+  // store.set 一失败用户便丢失全部登录态。故单端登录完全依赖上面的 auth_code 旋转实现
+  // （旧会话在 getUser() 时因 authCode 不匹配被删除），过期的孤儿会话由 store.cleanup()
+  // 周期清理，无需在此逐个清点。
 
   setCookie(event, SESSION_COOKIE_NAME, sessionId, {
     secure: import.meta.env.PROD, // 生产环境使用 HTTPS 传输

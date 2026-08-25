@@ -1,10 +1,12 @@
+import { setResponseHeader } from "h3";
+
 import { prisma } from "#server/utils/prisma";
 import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
   try {
     // 禁用缓存（每次都要随机，不能缓存）
-    setHeader(event, "Cache-Control", "no-cache, no-store, must-revalidate");
+    setResponseHeader(event, "Cache-Control", "no-store, no-cache, must-revalidate");
 
     const total = await prisma.contents.count({
       where: {
@@ -35,7 +37,12 @@ export default defineEventHandler(async event => {
         slug: true,
         desc: true,
         covers: true,
+        // 只取分类关系：contentrelations 同时承接 tag 与 category，
+        // 若无 metas.type 过滤，category = contentrelations[0] 可能取到标签而非分类，
+        // 导致首页随机文章跳转/展示到 tag 路由。orderBy 保证 [0] 确定性。
         contentrelations: {
+          where: { metas: { type: "category" } },
+          orderBy: { mid: "asc" },
           select: {
             cid: true,
             mid: true,
@@ -88,9 +95,11 @@ export default defineEventHandler(async event => {
     };
   } catch (error) {
     console.error(error);
-    return {
-      success: false,
-      data: null,
-    };
+    // 未知故障统一 500，绝不把 error.message / 内部详情透传给客户端，
+    // 避免把 DB 故障吞成 200 success:false。
+    throw createError({
+      statusCode: 500,
+      message: "生成随机文章失败",
+    });
   }
 });

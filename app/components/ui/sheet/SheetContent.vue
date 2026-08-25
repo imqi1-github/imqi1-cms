@@ -9,16 +9,14 @@ import SheetOverlay from "./SheetOverlay.vue";
 
 import { cn } from "@/lib/utils";
 
-interface SheetContentProps extends DialogContentProps {
-  class?: HTMLAttributes["class"];
-  side?: "top" | "right" | "bottom" | "left";
-}
-
 defineOptions({
   inheritAttrs: false,
 });
 
-const props = withDefaults(defineProps<SheetContentProps>(), {
+const props = withDefaults(defineProps<DialogContentProps & {
+  class?: HTMLAttributes["class"];
+  side?: "top" | "right" | "bottom" | "left";
+}>(), {
   side: "right",
 });
 const emits = defineEmits<DialogContentEmits>();

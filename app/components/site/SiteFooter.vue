@@ -89,8 +89,9 @@ const handleClick = async (event: MouseEvent) => {
   const y = event.clientY;
   const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
 
-  // 判断当前是否为暗色模式
-  const isCurrentDark = colorMode.preference === "dark";
+  // 判断当前是否为暗色模式：用「实际解析模式」而非存储偏好（preference 可=system），
+  // 与按钮 isDarkMode（colorMode.value）同源，保证切换方向始终与所示示意一致。
+  const isCurrentDark = colorMode.value === "dark";
   const newMode = isCurrentDark ? "light" : "dark";
 
   // 设置锁

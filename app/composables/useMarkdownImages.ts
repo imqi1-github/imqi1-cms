@@ -88,11 +88,11 @@ export const useMarkdownImages = () => {
       ].filter(Boolean).join(" ");
 
       // 检查是否为实况照片
-      const isLive = src.includes("#live") || alt.includes("[live]");
+      const isLive = src.endsWith("#live") || alt.includes("[live]");
 
       if (isLive) {
         // 兼容 [live] 标记：若仅 alt 含 [live]，给 src 补上 #live 后缀，让 LivePhoto 内部正确识别
-        const finalSrc = src.includes("#live") ? src : `${src}#live`;
+        const finalSrc = src.endsWith("#live") ? src : `${src}#live`;
 
         // 创建挂载容器
         const container = document.createElement("div");

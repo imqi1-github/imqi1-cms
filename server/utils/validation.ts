@@ -64,18 +64,18 @@ export function validateUserData(data: {
   nickname?: string | null;
   avatar?: string | null;
 }): void {
-  // MySQL 默认 VARCHAR 长度为 255，但用户名和邮箱通常不会太长
+  // Prisma MySQL 默认 String = VARCHAR(191)：校验上限须 ≤ 列长，否则超过 191 会在写入时 DB 溢出 500
   if (data.name) {
     validateMaxLength(data.name, 100, "用户名");
   }
   if (data.mail) {
-    validateMaxLength(data.mail, 255, "邮箱");
+    validateMaxLength(data.mail, 191, "邮箱");
   }
   if (data.nickname) {
     validateMaxLength(data.nickname, 100, "昵称");
   }
   if (data.avatar) {
-    validateMaxLength(data.avatar, 500, "头像");
+    validateMaxLength(data.avatar, 191, "头像");
   }
 }
 
@@ -94,7 +94,7 @@ export function validateMetaData(data: {
     validateMaxLength(data.slug, 100, "标识");
   }
   if (data.desc) {
-    validateMaxLength(data.desc, 500, "描述");
+    validateMaxLength(data.desc, 191, "描述");
   }
 }
 
@@ -111,13 +111,13 @@ export function validateLinkData(data: {
     validateMaxLength(data.name, 100, "名称");
   }
   if (data.desc) {
-    validateMaxLength(data.desc, 500, "描述");
+    validateMaxLength(data.desc, 191, "描述");
   }
   if (data.link) {
-    validateMaxLength(data.link, 500, "链接");
+    validateMaxLength(data.link, 191, "链接");
   }
   if (data.avatar) {
-    validateMaxLength(data.avatar, 500, "头像");
+    validateMaxLength(data.avatar, 191, "头像");
   }
 }
 
@@ -133,10 +133,10 @@ export function validateSubscribeData(data: {
     validateMaxLength(data.name, 100, "名称");
   }
   if (data.url) {
-    validateMaxLength(data.url, 500, "链接");
+    validateMaxLength(data.url, 191, "链接");
   }
   if (data.avatar) {
-    validateMaxLength(data.avatar, 500, "头像");
+    validateMaxLength(data.avatar, 191, "头像");
   }
 }
 
@@ -152,10 +152,10 @@ export function validateAttachmentData(data: {
     validateMaxLength(data.type, 50, "类型");
   }
   if (data.title) {
-    validateMaxLength(data.title, 255, "标题");
+    validateMaxLength(data.title, 191, "标题");
   }
   if (data.url) {
-    validateMaxLength(data.url, 500, "链接");
+    validateMaxLength(data.url, 191, "链接");
   }
 }
 
@@ -168,10 +168,10 @@ export function validateSettingsData(data: Record<string, string | null | undefi
     validateMaxLength(data.siteName, 100, "站点名称");
   }
   if (data.siteUrl) {
-    validateMaxLength(data.siteUrl, 500, "站点URL");
+    validateMaxLength(data.siteUrl, 191, "站点URL");
   }
   if (data.siteDesc) {
-    validateMaxLength(data.siteDesc, 500, "站点描述");
+    validateMaxLength(data.siteDesc, 191, "站点描述");
   }
   if (data.siteIcp) {
     validateMaxLength(data.siteIcp, 100, "ICP备案号");
@@ -184,19 +184,19 @@ export function validateSettingsData(data: Record<string, string | null | undefi
 
   // 邮件设置
   if (data.smtpHost) {
-    validateMaxLength(data.smtpHost, 255, "SMTP主机");
+    validateMaxLength(data.smtpHost, 191, "SMTP主机");
   }
   if (data.smtpUser) {
-    validateMaxLength(data.smtpUser, 255, "SMTP用户名");
+    validateMaxLength(data.smtpUser, 191, "SMTP用户名");
   }
   if (data.smtpAddress) {
-    validateMaxLength(data.smtpAddress, 255, "SMTP发件地址");
+    validateMaxLength(data.smtpAddress, 191, "SMTP发件地址");
   }
   if (data.smtpFromName) {
     validateMaxLength(data.smtpFromName, 100, "SMTP发件人名称");
   }
   if (data.adminEmail) {
-    validateMaxLength(data.adminEmail, 255, "管理员邮箱");
+    validateMaxLength(data.adminEmail, 191, "管理员邮箱");
   }
 
   // 上传设置
@@ -206,44 +206,48 @@ export function validateSettingsData(data: Record<string, string | null | undefi
 
   // 腾讯云COS设置
   if (data.cosSecretId) {
-    validateMaxLength(data.cosSecretId, 255, "COS SecretId");
+    validateMaxLength(data.cosSecretId, 191, "COS SecretId");
   }
   if (data.cosSecretKey) {
-    validateMaxLength(data.cosSecretKey, 255, "COS SecretKey");
+    validateMaxLength(data.cosSecretKey, 191, "COS SecretKey");
   }
   if (data.cosBucket) {
-    validateMaxLength(data.cosBucket, 255, "COS存储桶名称");
+    validateMaxLength(data.cosBucket, 191, "COS存储桶名称");
   }
   if (data.cosRegion) {
     validateMaxLength(data.cosRegion, 100, "COS地域");
   }
   if (data.cosSourceDomain) {
-    validateMaxLength(data.cosSourceDomain, 500, "COS源站域名");
+    validateMaxLength(data.cosSourceDomain, 191, "COS源站域名");
   }
   if (data.cosCdnDomain) {
-    validateMaxLength(data.cosCdnDomain, 500, "COS CDN域名");
+    validateMaxLength(data.cosCdnDomain, 191, "COS CDN域名");
   }
 
   // 百度审核设置
   if (data.baiduAppId) {
-    validateMaxLength(data.baiduAppId, 255, "百度应用ID");
+    validateMaxLength(data.baiduAppId, 191, "百度应用ID");
   }
   if (data.baiduApiKey) {
-    validateMaxLength(data.baiduApiKey, 255, "百度API Key");
+    validateMaxLength(data.baiduApiKey, 191, "百度API Key");
   }
   if (data.baiduSecretKey) {
-    validateMaxLength(data.baiduSecretKey, 255, "百度Secret Key");
+    validateMaxLength(data.baiduSecretKey, 191, "百度Secret Key");
   }
 
   // 其他设置
   if (data.musicPlaylistId) {
-    validateMaxLength(data.musicPlaylistId, 255, "音乐播放列表ID");
+    validateMaxLength(data.musicPlaylistId, 191, "音乐播放列表ID");
   }
   if (data.photoCategorySlug) {
     validateMaxLength(data.photoCategorySlug, 100, "相册分类标识");
   }
   if (data.messageContentId) {
     validateMaxLength(data.messageContentId, 50, "留言板文章ID");
+  }
+  // homeCustomText 存进 informations.value(VARCHAR(191))，超长会在整批 upsert 时 DB 溢出 500（此前为唯一遗漏键）
+  if (data.homeCustomText) {
+    validateMaxLength(data.homeCustomText, 191, "首页自定义文本");
   }
 }
 

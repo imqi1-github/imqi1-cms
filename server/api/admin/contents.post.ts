@@ -44,6 +44,20 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // 读入字段做 typeof 收窄：非字符串流进 Prisma String 字段会触发校验错误 500（与 [cid].put 一致）
+  if (typeof title !== "string") {
+    throw createError({ statusCode: 400, message: "标题格式错误" });
+  }
+  if (desc !== undefined && desc !== null && typeof desc !== "string") {
+    throw createError({ statusCode: 400, message: "简介格式错误" });
+  }
+  if (content !== undefined && content !== null && typeof content !== "string") {
+    throw createError({ statusCode: 400, message: "内容格式错误" });
+  }
+  if (slug !== undefined && slug !== null && typeof slug !== "string") {
+    throw createError({ statusCode: 400, message: "slug 格式错误" });
+  }
+
   // status/type 是 Prisma Int 字段：字符串/布尔/浮点会触发校验错误；归一化为整数并校验取值范围
   const statusNum = Number(status);
   const typeNum = Number(type);
