@@ -13,15 +13,21 @@ export default defineEventHandler(async event => {
   }
 
   const id = getRouterParam(event, "id");
-
   if (!id) {
     throw createError({
       statusCode: 400,
       message: "缺少文章 ID",
     });
   }
+  const cid = Number(id);
+  if (!Number.isInteger(cid) || cid <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "文章 ID 不合法",
+    });
+  }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { tagIds, csrfToken } = body;
 
   // CSRF 验证
@@ -38,36 +44,44 @@ export default defineEventHandler(async event => {
       message: "tagIds 必须是数组",
     });
   }
+  // tagIds 每个元素必须是正整数（Int mid 字段），否则 createMany 触发 Prisma/外键错误 500
+  const validTagIds = tagIds
+    .map((mid: unknown) => (typeof mid === "number" ? mid : Number(mid)))
+    .filter((mid): mid is number => Number.isInteger(mid) && mid > 0);
 
+  // deleteMany + createMany 需原子：若 createMany 因不存在 mid 触发外键 P2003，deleteMany 已提交会丢失原标签关系
   try {
-    await prisma.contentrelations.deleteMany({
-      where: {
-        cid: Number(id),
-        metas: {
-          type: "tag",
+    await prisma.$transaction(async tx => {
+      await tx.contentrelations.deleteMany({
+        where: {
+          cid,
+          metas: {
+            type: "tag",
+          },
         },
-      },
-    });
-
-    if (tagIds.length > 0) {
-      await prisma.contentrelations.createMany({
-        data: tagIds.map((mid: number) => ({
-          cid: Number(id),
-          mid,
-        })),
       });
-    }
+
+      if (validTagIds.length > 0) {
+        await tx.contentrelations.createMany({
+          data: validTagIds.map(mid => ({ cid, mid })),
+        });
+      }
+    });
 
     return {
       success: true,
       message: "标签更新成功",
     };
   } catch (error) {
-    console.error(error);
     // 已带 statusCode 的错误（400/403）原样抛出，避免被统一吞成 500
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
+    // tagIds 含不存在的标签 mid → 外键 P2003 → 404
+    if (error instanceof Error && "code" in error && error.code === "P2003") {
+      throw createError({ statusCode: 404, message: "标签不存在" });
+    }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "更新文章标签失败",

@@ -14,11 +14,17 @@ export default defineEventHandler(async event => {
   }
 
   const id = getRouterParam(event, 'id');
-
   if (!id) {
     throw createError({
       statusCode: 400,
       message: '缺少日志 ID',
+    });
+  }
+  const logId = Number(id);
+  if (!Number.isInteger(logId) || logId <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: '无效的日志 ID',
     });
   }
 
@@ -29,17 +35,15 @@ export default defineEventHandler(async event => {
 
   try {
     await prisma.changelogs.delete({
-      where: { id: Number(id) },
+      where: { id: logId },
     });
     return { success: true };
   } catch (error) {
-    console.error(error);
-
-    // 删除不存在的日志
+    // 删除不存在的日志（预期 404，先于 console.error，免得打印预期 4xx 堆栈）
     if (error instanceof Error && "code" in error && error.code === "P2025") {
       throw createError({ statusCode: 404, message: "更新日志不存在" });
     }
-
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: '删除更新日志失败',

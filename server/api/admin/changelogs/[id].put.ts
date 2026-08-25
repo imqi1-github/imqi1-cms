@@ -20,14 +20,14 @@ export default defineEventHandler(async event => {
 
   const id = Number(getRouterParam(event, "id"));
 
-  if (!id) {
+  if (!Number.isInteger(id) || id <= 0) {
     throw createError({
       statusCode: 400,
-      message: "ID 不能为空",
+      message: "无效的日志 ID",
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken } = body as { csrfToken?: string };
   if (!validateCsrfToken(event, csrfToken ?? "")) {
     throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
@@ -36,25 +36,37 @@ export default defineEventHandler(async event => {
   const entries = normalizeChangelogEntries(body?.content);
   validateChangelogData(entries);
 
-  // 检查日志是否存在
-  const existing = await prisma.changelogs.findUnique({
-    where: { id },
-  });
-
-  if (!existing) {
-    throw createError({
-      statusCode: 404,
-      message: "更新日志不存在",
+  try {
+    // 检查日志是否存在
+    const existing = await prisma.changelogs.findUnique({
+      where: { id },
     });
+
+    if (!existing) {
+      throw createError({
+        statusCode: 404,
+        message: "更新日志不存在",
+      });
+    }
+
+    // 更新日志
+    await prisma.changelogs.update({
+      where: { id },
+      data: {
+        content: stringifyChangelogContent(entries),
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    // 校验抛的 400 原样传递；update 与 findUnique 间的并发删除竞态 → P2025 → 404
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({ statusCode: 404, message: "更新日志不存在" });
+    }
+    console.error(error);
+    throw createError({ statusCode: 500, message: "更新更新日志失败" });
   }
-
-  // 更新日志
-  await prisma.changelogs.update({
-    where: { id },
-    data: {
-      content: stringifyChangelogContent(entries),
-    },
-  });
-
-  return { success: true };
 });

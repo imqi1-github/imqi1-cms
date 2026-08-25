@@ -27,6 +27,8 @@ const CONTAINER_NAME = "[a-zA-Z][a-zA-Z0-9-]*";
 const CONTAINER_OPEN_RE = new RegExp(`^:::(${CONTAINER_NAME})\\b`);
 /** 行首独立闭合：::: 后只有空白 */
 const CONTAINER_CLOSE_RE = /^:::\s*$/;
+/** 单行容器：行内出现 ≥2 个 :::（如 `:::music a | b | c :::` 即开即闭），净深度变化为 0 */
+const isSingleLineContainer = (line: string): boolean => (line.match(/:::/g) ?? []).length >= 2;
 /** 围栏代码块开启：可选缩进 + 3 个及以上 ` 或 ~ */
 const FENCE_OPEN_RE = /^\s*(`{3,}|~{3,})/;
 
@@ -77,8 +79,7 @@ export function splitMarkdown(md: string): MarkdownSegment[] {
     // —— 2. 容器开启行？——
     if (CONTAINER_OPEN_RE.test(line)) {
       // 单行容器：同一行 ::: 出现 ≥2 次（如 :::music a | b | c :::）
-      const tripleCount = (line.match(/:::/g) ?? []).length;
-      if (tripleCount >= 2) {
+      if (isSingleLineContainer(line)) {
         flushMd();
         segments.push({ kind: "container", raw: line });
         i++;
@@ -101,11 +102,12 @@ export function splitMarkdown(md: string): MarkdownSegment[] {
             closed = true;
             break;
           }
-        } else if (CONTAINER_OPEN_RE.test(inner)) {
+        } else if (CONTAINER_OPEN_RE.test(inner) && !isSingleLineContainer(inner)) {
           depth += 1;
           rawLines.push(inner);
           i++;
         } else {
+          // 含嵌套单行容器(如 :::music ... :::)时净深度不变，仅原样保留该行
           rawLines.push(inner);
           i++;
         }

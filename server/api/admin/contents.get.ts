@@ -16,11 +16,15 @@ export default defineEventHandler(async event => {
 
   try {
     const query = getQuery(event);
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 10;
-    const categoryId = query.category ? Number(query.category) : undefined;
-    const tagId = query.tag ? Number(query.tag) : undefined;
-    const status = query.status ? Number(query.status) : undefined;
+    // 负数/浮点 page 会让 skip/take 为非负整数失败 → Prisma 抛错 500；floor + 上下限 + 整数校验
+    const rawPage = Number(query.page);
+    const page = Number.isFinite(rawPage) ? Math.max(1, Math.floor(rawPage)) : 1;
+    const rawPageSize = Number(query.pageSize);
+    const pageSize = Number.isFinite(rawPageSize) ? Math.min(100, Math.max(1, Math.floor(rawPageSize))) : 10;
+    const categoryId = Number.isInteger(Number(query.category)) ? Number(query.category) : undefined;
+    const tagId = Number.isInteger(Number(query.tag)) ? Number(query.tag) : undefined;
+    // status 必须为整数否则不进 where（NaN 真值判空会骗过 if，进 Prisma 抛错）
+    const status = Number.isInteger(Number(query.status)) ? Number(query.status) : undefined;
 
     const where: Prisma.contentsWhereInput = {
       type: 0, // 0: 文章

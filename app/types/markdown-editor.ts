@@ -136,3 +136,26 @@ export interface ToolbarActiveFlags {
   musicSong: boolean;
   musicPlaylist: boolean;
 }
+
+/** 编辑器 storage（tiptap-markdown 序列化/解析的收窄类型）。 */
+export interface MarkdownStorage {
+  getMarkdown: () => string;
+  parser: { parse: (content: string, opts?: { inline?: boolean }) => string };
+}
+
+/** 链接/图片插入弹窗状态。 */
+export interface LinkImagePromptState {
+  open: boolean;
+  mode: "link" | "image";
+  url: string;
+  alt: string;
+  text: string;
+}
+
+/** 表格创建弹窗状态。 */
+export interface TableCreateState {
+  open: boolean;
+  rows: number;
+  cols: number;
+  withHeaderRow: boolean;
+}

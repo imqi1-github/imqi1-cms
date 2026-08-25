@@ -22,6 +22,7 @@ const colorMode = useColorMode();
 const isDark = computed(() => colorMode.value === "dark");
 
 const mapEl = ref<HTMLElement | null>(null);
+let disposed = false;
 const loading = ref(true);
 const loadError = ref(false);
 
@@ -167,6 +168,8 @@ onMounted(async () => {
     }
     return;
   }
+  // 捕获稳定的容器引用：async 加载期间组件可能卸载(模板 ref 复位为 null)，用局部 const 避免传 null 给 AMap
+  const container = mapEl.value;
 
   try {
     _amap = await loadAmap({
@@ -176,11 +179,12 @@ onMounted(async () => {
       securityJsCode: amapSecurityCode,
     });
 
+    if (disposed) return;
     if (!_amap) throw new Error("高德地图加载失败");
 
     const initialLngLat = formLngLat();
     const initDark = document.documentElement.classList.contains("dark");
-    map = new _amap.Map(mapEl.value as HTMLDivElement, {
+    map = new _amap.Map(container as HTMLDivElement, {
       zoom: initialLngLat ? 13 : 4,
       center: initialLngLat || [104, 35],
       viewMode: "2D",
@@ -233,6 +237,7 @@ watch(
 );
 
 onUnmounted(() => {
+  disposed = true;
   if (loadingFallbackTimer) {
     clearTimeout(loadingFallbackTimer);
     loadingFallbackTimer = null;

@@ -2,6 +2,7 @@
 import { cn } from "@/lib/utils";
 import { findRichInputHandle } from "~/composables/useRichInputRegistry";
 import type { RichInputHandle } from "~/types/composables/rich-input";
+import type { MenuType } from "~/types/components/context-menu";
 
 const router = useRouter();
 const { notify } = useFrontNotification();
@@ -10,7 +11,7 @@ const { notify } = useFrontNotification();
 const visible = ref(false);
 const x = ref(0);
 const y = ref(0);
-const menuType = ref<"default" | "text" | "link" | "input" | "image" | "editable">("default");
+const menuType = ref<MenuType>("default");
 const selectedText = ref("");
 const linkTarget = ref<HTMLAnchorElement | null>(null);
 const inputTarget = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
@@ -197,7 +198,8 @@ const handleCopyText = () => {
 
 const handleCopyLinkText = () => {
   if (linkTarget.value) {
-    const text = linkTarget.value.innerText?.replace(/\s/g, "") || "";
+    // 分离锚点(未入 DOM)innerText 恒为空，用 textContent；仅折叠空白，勿剥全部词间空格
+    const text = linkTarget.value.textContent?.replace(/\s+/g, " ").trim() || "";
     navigator.clipboard.writeText(text);
     notify("复制链接文字成功", "success");
     closeMenu();
@@ -230,11 +232,18 @@ const handleCopyInput = () => {
   }
 };
 
+// 程序化改完 `.value` 后派发 input 事件，让受控(v-model)输入框同步到模型（否则下次渲染按旧模型回写）
+const dispatchInputSync = () => {
+  inputTarget.value?.dispatchEvent(new Event("input", { bubbles: true }));
+};
+
 const handlePasteInput = async () => {
   if (inputTarget.value) {
     try {
       const text = await navigator.clipboard.readText();
-      inputTarget.value.value += text;
+      // 按光标/选区插入而非恒追加到末尾
+      inputTarget.value.setRangeText(text, inputTarget.value.selectionStart ?? 0, inputTarget.value.selectionEnd ?? 0, "end");
+      dispatchInputSync();
       notify("粘贴成功", "success");
       closeMenu();
     } catch {
@@ -285,6 +294,7 @@ const handleCutInput = () => {
     navigator.clipboard.writeText(text);
     inputTarget.value.value = inputTarget.value.value.slice(0, start) + inputTarget.value.value.slice(end);
     inputTarget.value.setSelectionRange(start, start);
+    dispatchInputSync();
     notify("剪切成功", "success");
     closeMenu();
   }
@@ -302,6 +312,7 @@ const handleSelectAllInput = () => {
 const handleClearInput = () => {
   if (inputTarget.value) {
     inputTarget.value.value = "";
+    dispatchInputSync();
     notify("已清空", "success");
     closeMenu();
   }
@@ -352,6 +363,7 @@ const handleToUpperCase = () => {
     if (text) {
       inputTarget.value.value = inputTarget.value.value.slice(0, start) + text.toUpperCase() + inputTarget.value.value.slice(end);
       inputTarget.value.setSelectionRange(start, end);
+      dispatchInputSync();
       closeMenu();
     }
   }
@@ -366,6 +378,7 @@ const handleToLowerCase = () => {
     if (text) {
       inputTarget.value.value = inputTarget.value.value.slice(0, start) + text.toLowerCase() + inputTarget.value.value.slice(end);
       inputTarget.value.setSelectionRange(start, end);
+      dispatchInputSync();
       closeMenu();
     }
   }
@@ -381,6 +394,7 @@ const handleCapitalize = () => {
       const capitalized = text.charAt(0).toUpperCase() + text.slice(1);
       inputTarget.value.value = inputTarget.value.value.slice(0, start) + capitalized + inputTarget.value.value.slice(end);
       inputTarget.value.setSelectionRange(start, end);
+      dispatchInputSync();
       closeMenu();
     }
   }

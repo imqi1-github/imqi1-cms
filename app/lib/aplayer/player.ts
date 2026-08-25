@@ -298,7 +298,7 @@ class APlayer {
                 }
             }
             if (type === 'hls') {
-                if (window.Hls!.isSupported()) {
+                if (window.Hls && window.Hls.isSupported()) {
                     this.hls = new window.Hls!();
                     this.hls.loadSource(audio.url as string);
                     this.hls.attachMedia(this.audio);

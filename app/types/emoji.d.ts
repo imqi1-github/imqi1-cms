@@ -11,3 +11,9 @@ export interface EmojiItem {
   url: string;
   name: string;
 }
+
+// 扁平查找表条目：原始 path（未过 publicAsset）+ 显示名，供解析把 key 反查成 <img>。
+export interface EmojiLookupEntry {
+  path: string;
+  name: string;
+}

@@ -4,10 +4,12 @@ import type {Notification} from "~/types/components/notification";
 const notifications = ref<Notification[]>([]);
 // 自动移除的 setTimeout 句柄 —— 卸载时全部取消，避免写已卸载组件的 ref
 const removeTimers = new Map<string, ReturnType<typeof setTimeout>>();
+// 递增序号，避免同一毫秒内多条通知 id 碰撞（重复 key + 覆盖 timer 致首条不自动移除）
+let notifySeq = 0;
 
 // 显示通知
 const show = (message: string, type: "success" | "error" | "info" = "info") => {
-  const id = Date.now().toString();
+  const id = `${Date.now()}-${++notifySeq}`;
   notifications.value.push({ id, message, type });
 
   // 5秒后自动移除

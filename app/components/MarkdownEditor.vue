@@ -28,7 +28,7 @@ import { deriveCalloutVariant } from "./markdown-editor/containerMeta";
 
 import { deriveContainerType, splitMarkdown } from "~/utils/markdownSplit";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
-import type { ToolbarActiveFlags } from "~/types/markdown-editor";
+import type { ToolbarActiveFlags, MarkdownStorage, LinkImagePromptState, TableCreateState } from "~/types/markdown-editor";
 
 const props = defineProps<{
   contentId?: number;
@@ -99,6 +99,10 @@ onBeforeUnmount(() => {
   // 拖拽进行中卸载组件时清理监听与全局样式
   window.removeEventListener("pointermove", onResizeMove);
   window.removeEventListener("pointerup", endResize);
+  // 冲刷 150ms 防抖回写，避免最后一段输入在卸载时丢失
+  if (!suppressEmit.value) {
+    writeMarkdownOut();
+  }
 });
 
 // 工具栏态：撤销/重做可用性 + 当前激活的格式（用于按钮高亮），随事务刷新
@@ -110,11 +114,6 @@ const canMergeCells = ref(false);
 const canSplitCell = ref(false);
 
 /** tiptap-markdown 注入到 editor.storage.markdown 的运行时对象（类型收窄，避免 unsafe 访问）。 */
-interface MarkdownStorage {
-  getMarkdown: () => string;
-  parser: { parse: (content: string, opts?: { inline?: boolean }) => string };
-}
-
 function getMarkdownStorage(editor: Editor): MarkdownStorage {
   return (editor.storage as unknown as { markdown: MarkdownStorage }).markdown;
 }
@@ -292,7 +291,7 @@ function insertContainer(template: string) {
 }
 
 // —— 链接 / 图片 URL 输入弹窗（避免原生 prompt）——
-const promptState = ref<{ open: boolean; mode: "link" | "image"; url: string; alt: string; text: string }>({
+const promptState = ref<LinkImagePromptState>({
   open: false,
   mode: "link",
   url: "",
@@ -386,6 +385,10 @@ function confirmPrompt() {
     // 选区是图片节点（点击图片时 handleClickOn 已设 NodeSelection）→ 改其 src/alt；
     // 否则（工具栏图片按钮）在光标处插入新图片。
     // 关闭弹窗时的滚动统一由上方 watch(promptState.open) 还原，这里不再单独处理。
+    if (!url) {
+      toast.error({ message: "请输入图片地址" });
+      return;
+    }
     ed.chain().focus().setImage({ src: url, alt }).run();
   }
 }
@@ -399,7 +402,7 @@ function removeLinkFromPrompt() {
 }
 
 // —— 插入表格：弹对话框指定行列数（避免写死 3×3）——
-const tableCreateState = ref<{ open: boolean; rows: number; cols: number; withHeaderRow: boolean }>({
+const tableCreateState = ref<TableCreateState>({
   open: false,
   rows: 3,
   cols: 3,

@@ -48,7 +48,14 @@ const availableRelationTargets = computed(() => {
 // 动态 id 拼出的 URL 会同时命中 `/api/admin/attachments/:id` 与字面路由 `/all`，
 // 导致响应类型变成两者并集、可用方法被取交集只剩 get。这里用显式返回类型泛型绕过路由推断，
 // 既收敛响应类型又避免对 InternalApi 全表做 MatchedRoutes 深递归（会触发"堆栈深度过高"）。
-const attachmentDetailUrl = `/api/admin/attachments/${route.params.id}`;
+// 用 computed 让 route.params.id 变化时 URL 同步刷新，避免跨 id 复用组件展示陈旧数据。
+const attachmentDetailUrl = computed(() => `/api/admin/attachments/${route.params.id}`);
+watch(() => route.params.id, (newId) => {
+  const numeric = newId ? Number(newId) : NaN;
+  if (Number.isInteger(numeric) && numeric > 0) {
+    fetchAttachment();
+  }
+});
 
 // 返回附件列表：保留来源页码（由列表页 ?page= 带入），退出后仍在那一页
 function backToAttachments() {
@@ -95,17 +102,20 @@ const formatImageDimensions = (item: ImageDimension) => {
   return `${item.width} × ${item.height}`
 }
 
-async function fetchAttachment() {
+async function fetchAttachment(keepFormInput = false) {
   loading.value = true
   try {
     // 获取 CSRF token
     const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" })
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token
 
-    const res = await $fetch<AttachmentDetailResponse>(attachmentDetailUrl)
+    const res = await $fetch<AttachmentDetailResponse>(attachmentDetailUrl.value)
     if (res?.success) {
       attachment.value = res.data
-      form.value.name = res.data.name
+      // 改关联后刷新时保留用户未保存的名称输入，避免同步操作把它静默清掉
+      if (!keepFormInput) {
+        form.value.name = res.data.name
+      }
     }
   } catch (rawError: unknown) {
     const error = rawError as ApiError
@@ -136,7 +146,7 @@ async function syncRelations(cids: number[]) {
     toast.error({ message: "会话已失效，请刷新页面后重试" });
     return;
   }
-  const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl, {
+  const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl.value, {
     method: 'PATCH',
     body: {
       // 只提交已持久化的 name，避免把未保存的名称输入连带写入
@@ -147,7 +157,8 @@ async function syncRelations(cids: number[]) {
   })
 
   if (res?.success) {
-    await fetchAttachment()
+    // keepFormInput=true：改关联后只刷新附件数据，不覆盖用户正在编辑的名称
+    await fetchAttachment(true)
   }
 }
 
@@ -185,7 +196,7 @@ async function saveAttachment() {
   }
   saving.value = true
   try {
-    const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl, {
+    const res = await $fetch<AttachmentUpdateResponse>(attachmentDetailUrl.value, {
       method: 'PATCH',
       body: {
         name: form.value.name,

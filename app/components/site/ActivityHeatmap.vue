@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CategoryOption, HeatmapDayData, HeatmapData, HeatmapResponse, TagOption } from "~/types/apis/heatmap";
+import type { CategoryOption, HeatmapCell, HeatmapDayData, HeatmapData, HeatmapGridBuildResult, HeatmapResponse, HeatmapWeek, TagOption } from "~/types/apis/heatmap";
 
 // 站点统计热力图：GitHub 风格贡献网格（行=周一~周日，列=周），
 // 展示已发布文章 + 已审核评论的每日数量，支持分类/标签筛选与年份切换。
@@ -30,8 +30,10 @@ const loadOptions = async () => {
 // ---- 热力图数据 ----
 const heatmapData = ref<HeatmapData | null>(null);
 const status = ref<"idle" | "pending" | "error">("idle");
+let heatmapSeq = 0;
 
 const loadHeatmap = async () => {
+  const seq = ++heatmapSeq;
   status.value = "pending";
   try {
     const res = await $fetch<HeatmapResponse>("/api/heatmap", {
@@ -41,9 +43,18 @@ const loadHeatmap = async () => {
       },
       headers: getInternalRequestHeaders(),
     });
-    if (res?.data) heatmapData.value = res.data;
+    if (seq !== heatmapSeq) return;
+    if (res?.data) {
+      heatmapData.value = res.data;
+      // 筛选重拉后所选年份可能不存在：回退到「近一年」，避免显示全 0 且无高亮
+      const available = years.value;
+      if (selectedView.value !== 0 && !available.includes(selectedView.value)) {
+        selectedView.value = 0;
+      }
+    }
     status.value = "idle";
   } catch {
+    if (seq !== heatmapSeq) return;
     status.value = "error";
   }
 };
@@ -67,25 +78,6 @@ const viewLabel = computed(() =>
 );
 
 // ---- 网格构建 ----
-type Cell = {
-  key: string;
-  level: number;
-  articles: number;
-  comments: number;
-  tooltip: string;
-} | null;
-
-interface Week {
-  key: string;
-  monthLabel: string;
-  cells: Cell[];
-}
-
-interface BuildResult {
-  weeks: Week[];
-  totals: { articles: number; comments: number };
-}
-
 // 强度映射到完整类名（Tailwind 扫描源码字面量）
 const LEVEL_CLASSES: Record<number, string> = {
   0: "bg-slate-200/70 dark:bg-slate-700/40",
@@ -117,7 +109,7 @@ const startOfToday = (): Date => {
 const recentStart = (today: Date): Date =>
   new Date(today.getFullYear(), today.getMonth(), today.getDate() - 364);
 
-function buildWeeks(start: Date, end: Date): BuildResult {
+function buildWeeks(start: Date, end: Date): HeatmapGridBuildResult {
   const dayData = heatmapData.value?.days ?? {};
   const today = startOfToday();
   const endTs = Math.min(end.getTime(), today.getTime());
@@ -126,13 +118,13 @@ function buildWeeks(start: Date, end: Date): BuildResult {
   const colStart = new Date(start);
   colStart.setDate(colStart.getDate() - ((start.getDay() + 6) % 7));
 
-  const weeks: Week[] = [];
+  const weeks: HeatmapWeek[] = [];
   const totals = { articles: 0, comments: 0 };
   const cursor = new Date(colStart);
 
   while (cursor.getTime() <= endTs) {
     const mondayKey = toKey(cursor);
-    const cells: Cell[] = [];
+    const cells: (HeatmapCell | null)[] = [];
     let monthLabel = "";
 
     for (let i = 0; i < 7; i++) {
@@ -172,7 +164,7 @@ function buildWeeks(start: Date, end: Date): BuildResult {
   return { weeks, totals };
 }
 
-const grid = computed<BuildResult>(() => {
+const grid = computed<HeatmapGridBuildResult>(() => {
   const today = startOfToday();
   const view = selectedView.value;
   if (view === 0) {

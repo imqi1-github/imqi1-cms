@@ -35,7 +35,10 @@ watch([emojiLoadedCount, currentEmojis], () => {
   }
 });
 
-function onEmojiImgLoad() {
+function onEmojiImgLoad(e: Event) {
+  // 旧分类被卸载的图片延迟 @load/@error：已脱离 DOM，不应计入当前分类的加载计数
+  const img = e.target as HTMLImageElement;
+  if (!img.isConnected) return;
   emojiLoadedCount.value++;
 }
 
@@ -101,7 +104,6 @@ function insertEmoji(key: string) {
               :src="emoji.url"
               alt=""
               class="size-full rounded bg-slate-100 object-contain dark:bg-slate-800"
-              loading="lazy"
               @load="onEmojiImgLoad"
               @error="onEmojiImgLoad" >
           </button>

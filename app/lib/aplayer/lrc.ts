@@ -92,7 +92,11 @@ class Lrc {
                 const xhr = new XMLHttpRequest();
                 this.pendingXhr = xhr;
                 xhr.onreadystatechange = () => {
-                    // 至 4:重置加载态,并在动画(返回后)写入真实结果
+                    // 只处理完成态：state 1→3 时 readyState 非 4、responseText 未就绪、status 仍为 0，
+                    // 若都当成最终结果会闪 'Not available'/空 并提前清 loading 破坏去重
+                    if (xhr.readyState !== 4) {
+                        return;
+                    }
                     this.pendingXhr = undefined;
                     this.loading[index] = false;
                     this.parsed[index] = ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) ? this.parse(xhr.responseText) : ([[0, 'Not available']] as LrcLine[]);

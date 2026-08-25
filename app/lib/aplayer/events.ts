@@ -52,8 +52,9 @@ class Events {
     trigger(name: string, data?: unknown) {
         const list = this.events[name];
         if (list && list.length) {
-            for (let i = 0; i < list.length; i++) {
-                list[i]!(data);
+            // 快照拷贝：回调内部可能 on() 追加/移除 handler，不让迭代中的数组长度变化影响本轮回调
+            for (const handler of list.slice()) {
+                handler(data);
             }
         }
     }

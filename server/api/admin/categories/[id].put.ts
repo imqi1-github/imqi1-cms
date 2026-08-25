@@ -21,6 +21,13 @@ export default defineEventHandler(async event => {
       message: "缺少分类 ID",
     });
   }
+  const mid = Number(id);
+  if (!Number.isInteger(mid) || mid <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "无效的分类 ID",
+    });
+  }
 
   const body = await readBody(event);
   const { csrfToken, ...updateData } = body;
@@ -34,6 +41,26 @@ export default defineEventHandler(async event => {
   }
 
   const { name, slug, desc } = updateData;
+
+  // 读入字段做类型收窄：readBody 无运行时校验，非字符串直接 .trim() 会抛 TypeError（且在 try 外）
+  if (typeof name !== 'string') {
+    throw createError({
+      statusCode: 400,
+      message: "分类名称格式错误",
+    });
+  }
+  if (slug !== undefined && typeof slug !== 'string') {
+    throw createError({
+      statusCode: 400,
+      message: "分类标识格式错误",
+    });
+  }
+  if (desc !== undefined && typeof desc !== 'string') {
+    throw createError({
+      statusCode: 400,
+      message: "分类描述格式错误",
+    });
+  }
 
   // 验证必填字段
   if (!name || name.trim() === "") {
@@ -49,7 +76,7 @@ export default defineEventHandler(async event => {
   try {
     // 检查分类是否存在
     const existingCategory = await prisma.metas.findUnique({
-      where: { mid: Number(id) },
+      where: { mid },
     });
 
     if (!existingCategory) {
@@ -64,7 +91,7 @@ export default defineEventHandler(async event => {
       where: {
         name: name.trim(),
         type: "category",
-        mid: { not: Number(id) },
+        mid: { not: mid },
       },
     });
 
@@ -81,7 +108,7 @@ export default defineEventHandler(async event => {
         where: {
           slug: slug.trim(),
           type: "category",
-          mid: { not: Number(id) },
+          mid: { not: mid },
         },
       });
 
@@ -93,13 +120,14 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // 更新分类
+    // 更新分类。区分「未提供」与「清空」：字段为 undefined 时保留原值，显式空串才算清空，
+    // 避免只改 name 而未传 slug/desc 时被整体置 null（部分更新丢数据）
     const category = await prisma.metas.update({
-      where: { mid: Number(id) },
+      where: { mid },
       data: {
         name: name.trim(),
-        slug: slug && slug.trim() !== "" ? slug.trim() : null,
-        desc: desc && desc.trim() !== "" ? desc.trim() : null,
+        slug: slug === undefined ? existingCategory.slug : (slug && slug.trim() !== "" ? slug.trim() : null),
+        desc: desc === undefined ? existingCategory.desc : (desc && desc.trim() !== "" ? desc.trim() : null),
       },
     });
 
@@ -116,6 +144,13 @@ export default defineEventHandler(async event => {
     // 如果是我们抛出的错误，直接传递
     if (error instanceof Error && 'statusCode' in error) {
       throw error;
+    }
+    // 预检（findUnique）与 update 之间存在并发窗口：记录被删时 update 抛 P2025 → 404 而非 500
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+      throw createError({
+        statusCode: 404,
+        message: "分类不存在",
+      });
     }
 
     // 记录详细的错误信息

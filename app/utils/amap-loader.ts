@@ -104,10 +104,13 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
       }
 
       (browserWindow as unknown as Record<string, unknown>)[AMAP_SCRIPT_CALLBACK] = (error?: unknown) => {
+        clearTimeout(timeout);
         // 删除动态计算的 key；用 Reflect.deleteProperty 避免 @typescript-eslint/no-dynamic-delete 报错。
         Reflect.deleteProperty(browserWindow, AMAP_SCRIPT_CALLBACK);
 
         if (error) {
+          // 回调携带 error 时同样移除已 append 的 script 节点，避免重试累积 DOM（与 script.onerror 对齐）
+          script.parentNode?.removeChild(script);
           resetLoaderState();
           reject(error instanceof Error ? error : new Error(String(error)));
           return;
@@ -135,6 +138,7 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
       script.onerror = () => {
         // 失败时移除已 append 的 script 节点，避免 DOM 残留；script.onerror 不会重复触发，
         // 但节点仍可能继续尝试解析、留下无意义资源。
+        clearTimeout(timeout);
         script.parentNode?.removeChild(script);
         Reflect.deleteProperty(browserWindow, AMAP_SCRIPT_CALLBACK);
         resetLoaderState();
@@ -146,6 +150,15 @@ export async function loadAmap(options: LoadAmapOptions = {}): Promise<typeof AM
       };
 
       parentNode.appendChild(script);
+
+      // 超时兜底：脚本加载/全局回调永不触发时不能永久 pending（会毒化 amapLoadPromise 单例 + 下游 await 无限等）。
+      // 复用 script.onerror 的清理，避免残留 <script> 节点与回调名。
+      const timeout = setTimeout(() => {
+        script.parentNode?.removeChild(script);
+        Reflect.deleteProperty(browserWindow, AMAP_SCRIPT_CALLBACK);
+        resetLoaderState();
+        reject(new Error("Failed to load the AMap script: timed out."));
+      }, 12000);
     });
   }
 

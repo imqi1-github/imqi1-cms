@@ -50,7 +50,16 @@ export default defineEventHandler(async event => {
 
     const metadata = normalizeAttachmentMetadata(attachment.metadata);
     const format = metadata.format ?? (attachment.type === "image"
-      ? path.extname(attachment.url).toLowerCase().slice(1) || null
+      ? (() => {
+          // path.extname 不解析 query/hash，直接作用在 URL 会把 `?size=large` 算进扩展名；
+          // 先取 pathname 再取扩展名，非法 URL 兜底 null
+          try {
+            const pathname = new URL(attachment.url).pathname;
+            return path.extname(pathname).toLowerCase().slice(1) || null;
+          } catch {
+            return null;
+          }
+        })()
       : null);
 
     return {

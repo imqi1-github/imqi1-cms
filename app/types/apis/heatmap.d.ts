@@ -18,6 +18,27 @@ export interface HeatmapResponse {
   data: HeatmapData;
 }
 
+// —— 前端网格构建内部类型（ActivityHeatmap 渲染用） ——
+
+export interface HeatmapCell {
+  key: string;
+  level: number;
+  articles: number;
+  comments: number;
+  tooltip: string;
+}
+
+export interface HeatmapWeek {
+  key: string;
+  monthLabel: string;
+  cells: (HeatmapCell | null)[];
+}
+
+export interface HeatmapGridBuildResult {
+  weeks: HeatmapWeek[];
+  totals: { articles: number; comments: number };
+}
+
 // 分类/标签筛选下拉选项（/api/categories、/api/tags）
 export interface CategoryOption {
   name: string;

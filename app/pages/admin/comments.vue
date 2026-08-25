@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {parseUserAgent} from "~/utils/parseUserAgent";
-import type {CommentItem} from "~/types/apis/admin/comments";
+import type {CommentItem, CommentListResponse} from "~/types/apis/admin/comments";
 import type {CsrfResponse} from "~/types/apis/admin/categories";
 
 const route = useRoute();
@@ -144,13 +144,15 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
     if (filterStatus.value !== null) {
       url += `&status=${filterStatus.value}`;
     }
-    const res = await $fetch<{
-      data: CommentItem[];
-      pagination: { page: number; pageSize: number; total: number; totalPages: number };
-    }>(url);
+    const res = await $fetch<CommentListResponse>(url);
     if (seq !== fetchSeq.value) return;
     comments.value = res.data || [];
     pagination.value = res.pagination || pagination.value;
+
+    // 删除/陈旧 URL 可能让当前页越界返回空：跳到最后一页重取（只钳上界，防 "第 N / M 页" 错乱与死分页按钮）
+    if (pagination.value.totalPages > 0 && page > pagination.value.totalPages) {
+      return fetchComments(pagination.value.totalPages, updateUrl);
+    }
 
     // 更新 URL（如果需要）
     if (updateUrl) {
@@ -200,6 +202,10 @@ function openEditDialog(comment: CommentItem) {
 async function saveEdit() {
   if (!editingComment.value) return;
   if (saving.value) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   saving.value = true;
 
   try {
@@ -294,6 +300,10 @@ async function batchDelete() {
     icon: "lucide:trash-2",
   });
   if (confirmed) {
+    if (!csrfToken.value) {
+      toast.error({ message: "会话已失效，请刷新页面后重试" });
+      return;
+    }
     deleting.value = true;
     try {
       const res = await $fetch<{ message?: string }>("/api/admin/comments/batch-delete", {

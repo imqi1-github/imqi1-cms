@@ -34,7 +34,7 @@ export default defineEventHandler(async event => {
   }
 
   const contentId = Number(cid);
-  if (!Number.isInteger(contentId)) {
+  if (!Number.isInteger(contentId) || contentId <= 0) {
     throw createError({
       statusCode: 400,
       message: "文章 ID 无效",
@@ -55,13 +55,11 @@ export default defineEventHandler(async event => {
 
     return { success: true };
   } catch (error) {
-    console.error(error);
-
-    // 删除不存在的文章
+    // 删除不存在的文章（预期 404，先于 console.error，免得打印预期 4xx 堆栈）
     if (error instanceof Error && "code" in error && error.code === "P2025") {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
-
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "删除文章失败",

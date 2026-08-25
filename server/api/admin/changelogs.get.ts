@@ -14,6 +14,7 @@ export default defineEventHandler(async event => {
   }
   try {
     const changelogs = await prisma.changelogs.findMany({
+      select: { id: true, content: true, create_time: true },
       orderBy: { create_time: "desc" },
     });
 

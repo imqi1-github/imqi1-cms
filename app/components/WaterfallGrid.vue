@@ -5,6 +5,7 @@ import type {Props, WaterfallItem} from "~/types/components/waterfall";
 
 const props = withDefaults(defineProps<Props>(), {
   asLink: true,
+  lazy: true,
   items: () => [] as WaterfallItem[],
 });
 
@@ -50,7 +51,7 @@ const getAspectRatio = (item: WaterfallItem) => {
             :aspect-ratio="getAspectRatio(item)"
             :show-placeholder="false"
             class="w-full h-full object-cover"
-            :lazy="false"
+            :lazy="props.lazy"
           />
 
           <div
@@ -77,7 +78,7 @@ const getAspectRatio = (item: WaterfallItem) => {
             :aspect-ratio="getAspectRatio(item)"
             :show-placeholder="false"
             class="w-full h-full object-cover"
-            :lazy="false"
+            :lazy="props.lazy"
           />
 
           <div

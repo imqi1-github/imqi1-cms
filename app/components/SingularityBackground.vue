@@ -1,26 +1,8 @@
 <script lang="ts" setup>
-import type { HTMLAttributes } from "vue";
-
-import type { MouseMode } from "./InspiraShaderToy";
-
 import { cn } from "@/lib/utils";
+import type { SingularityBackgroundProps } from "~/types/components/shader";
 
-interface Props {
-  class?: HTMLAttributes["class"];
-  mouseMode?: MouseMode;
-  hue?: number;
-  saturation?: number;
-  brightness?: number;
-  speed?: number;
-  mouseSensitivity?: number;
-  damping?: number;
-  noise?: {
-    opacity: number;
-    scale: number;
-  };
-}
-
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<SingularityBackgroundProps>(), {
   mouseMode: "click",
   hue: 0,
   saturation: 1,

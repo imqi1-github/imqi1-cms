@@ -14,7 +14,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { ids, csrfToken } = body;
 
   // CSRF 验证
@@ -32,7 +32,15 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const cidList = Array.from(new Set(ids.map((id: unknown) => Number(id)).filter(Number.isInteger)));
+  // 严格校验每个元素为正整数：Number(true)=1、Number(null)/''=0、负数都会误删非目标记录；
+  // 只有 Number.isSafeInteger(n) && n>0 才放行
+  const cidList = Array.from(
+    new Set(
+      ids
+        .map((id: unknown) => (typeof id === "number" ? id : Number(id)))
+        .filter((n): n is number => Number.isSafeInteger(n) && n > 0),
+    ),
+  );
   if (cidList.length === 0) {
     throw createError({
       statusCode: 400,
@@ -49,47 +57,44 @@ export default defineEventHandler(async event => {
     });
     const affectedAttachmentIds = affectedAttachments.map(attachment => attachment.aid);
 
-    // 删除文章关联
-    await prisma.contentrelations.deleteMany({
-      where: {
-        cid: { in: cidList },
-      },
-    });
+    // 四个 deleteMany 包进事务：任一步失败整体回滚，避免「关系/评论/附件已删而文章还在」的脏状态
+    await prisma.$transaction([
+      prisma.contentrelations.deleteMany({
+        where: {
+          cid: { in: cidList },
+        },
+      }),
+      prisma.contentattachments.deleteMany({
+        where: {
+          cid: { in: cidList },
+        },
+      }),
+      prisma.comments.deleteMany({
+        where: {
+          cid: { in: cidList },
+        },
+      }),
+      prisma.contents.deleteMany({
+        where: {
+          cid: { in: cidList },
+        },
+      }),
+    ]);
 
-    // 删除附件关联
-    await prisma.contentattachments.deleteMany({
-      where: {
-        cid: { in: cidList },
-      },
-    });
-
-    // 删除评论
-    await prisma.comments.deleteMany({
-      where: {
-        cid: { in: cidList },
-      },
-    });
-
-    // 删除文章
-    const result = await prisma.contents.deleteMany({
-      where: {
-        cid: { in: cidList },
-      },
-    });
-
+    // 物理文件删除不可入 DB 事务，放到事务提交后执行
     await deleteOrphanAttachments(affectedAttachmentIds);
 
     return {
       success: true,
-      message: `成功删除 ${result.count} 篇文章`,
-      count: result.count,
+      message: `成功删除 ${cidList.length} 篇文章`,
+      count: cidList.length,
     };
   } catch (error) {
-    console.error(error);
     // 已带 statusCode 的错误（400/403）原样抛出，避免被统一吞成 500
     if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
+    console.error(error);
     throw createError({
       statusCode: 500,
       message: "批量删除失败",

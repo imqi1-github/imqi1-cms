@@ -4,34 +4,35 @@ import { validateCsrfToken } from '#server/utils/csrf'
 import { validateAttachmentData } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
+  // 鉴权与 CSRF 放在 try 块外：这两条安全不变式不应进入会吞错的 catch
+  const user = await getUser(event)
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: '未登录',
+    })
+  }
+
+  const id = Number(getRouterParam(event, 'id'))
+  if (!Number.isInteger(id) || id <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: '无效的附件 ID',
+    })
+  }
+
+  const body = await readBody(event)
+  const { csrfToken } = body
+
+  // CSRF 验证
+  if (!validateCsrfToken(event, csrfToken)) {
+    throw createError({
+      statusCode: 403,
+      message: 'CSRF token 验证失败，请刷新页面重试',
+    })
+  }
+
   try {
-    const user = await getUser(event)
-    if (!user) {
-      throw createError({
-        statusCode: 401,
-        message: '未登录',
-      })
-    }
-
-    const id = Number(getRouterParam(event, 'id'))
-    const body = await readBody(event)
-    const { csrfToken } = body
-
-    // CSRF 验证
-    if (!validateCsrfToken(event, csrfToken)) {
-      throw createError({
-        statusCode: 403,
-        message: 'CSRF token 验证失败，请刷新页面重试',
-      })
-    }
-
-    if (!id) {
-      throw createError({
-        statusCode: 400,
-        message: '无效的附件 ID',
-      })
-    }
-
     // 检查附件是否存在
     const existing = await prisma.attachments.findUnique({
       where: { aid: id },
@@ -44,9 +45,12 @@ export default defineEventHandler(async event => {
       })
     }
 
+    // body.name 若非字符串：长度校验会因 value.length 为 undefined/数值而绕过，写入 Prisma 会打挂成 500；先收窄类型
+    const title = typeof body.name === 'string' ? body.name : ''
+
     // 验证字段长度
     validateAttachmentData({
-      title: body.name,
+      title,
       type: existing.type,
       url: existing.url,
     })
@@ -62,13 +66,14 @@ export default defineEventHandler(async event => {
       const updated = await tx.attachments.update({
         where: { aid: id },
         data: {
-          title: body.name,
+          title,
         },
       })
 
       if (cidList !== null) {
         await tx.contentattachments.deleteMany({ where: { aid: id } })
         if (cidList.length > 0) {
+          // createMany 的 skipDuplicates 只跳复合主键重复，不含外键约束：cid 不存在时抛 P2003 → 应在 catch 映射为 400
           await tx.contentattachments.createMany({
             data: cidList.map(cid => ({ aid: id, cid })),
             skipDuplicates: true,
@@ -90,6 +95,13 @@ export default defineEventHandler(async event => {
     console.error(error)
     if (error instanceof Error && 'statusCode' in error) {
       throw error
+    }
+    // cids 关联到不存在的 content → 外键 P2003，语义上应为 400
+    if (error instanceof Error && 'code' in error && error.code === 'P2003') {
+      throw createError({
+        statusCode: 400,
+        message: '存在无效的关联内容',
+      })
     }
 
     throw createError({

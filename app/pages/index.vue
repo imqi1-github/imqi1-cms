@@ -764,6 +764,8 @@ import { useDebounceFn, useEventListener } from "@vueuse/core";
 
 import MetingPlayer from "~/components/MetingPlayer.vue";
 import type { GridItem } from "~/types/apis";
+import type { WaterfallItem } from "~/types/components/waterfall";
+import type { ThemeCardItem } from "~/types/pages/home";
 import { getChangelogMeta } from "~~/shared/changelog";
 import { siteConfig } from "~~/site.config";
 
@@ -887,7 +889,7 @@ const recentChangelogs = computed(() => homeData.value?.data?.changelogs || []);
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {
-  const images: { url: string; desc?: string; width?: number | null; height?: number | null; title: string; slug: string; cid: number; categorySlug?: string }[] = [];
+  const images: WaterfallItem[] = [];
   photoContents.value.forEach(content => {
     if (content.covers && content.covers.length > 0) {
       content.covers.forEach(cover => {
@@ -981,7 +983,7 @@ const toggleQrcode = (index: number) => {
   activeQrcodeIndex.value = activeQrcodeIndex.value === index ? -1 : index;
 };
 
-const themeItems = computed(() => [
+const themeItems = computed<ThemeCardItem[]>(() => [
   {
     title: "字体选择",
     type: "grid",
@@ -1021,7 +1023,7 @@ const themeItems = computed(() => [
             { text: cat.desc || "暂无描述", isCategory: true },
           ])
         : [{ text: "暂无分类" }, { text: "", isCategory: true }],
-  } as { title: string; type: string; grids: GridItem[] },
+  },
 ]);
 
 const themeRightItems = [{ type: "fonts" }, { type: "layout", image: "/imgs/shenyang.webp" }, { type: "music" }, { type: "article" }];

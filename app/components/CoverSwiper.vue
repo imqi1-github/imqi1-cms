@@ -7,18 +7,23 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "@/assets/css/fancybox.css";
-import type {Props} from "~/types/components/cover-swiper";
+import type {Props, SwiperType} from "~/types/components/cover-swiper";
 
 // swiper 主体（Swiper 类，~156kB）懒加载，避免静态打包进共享 chunk、拖累首屏。
 // 3 个模块用静态具名 import：能 tree-shake 只留用到的 3 个（合计 ~45kB），
 // 不会像 `await import("swiper/modules")` 那样把 16 个模块整体打包（215kB）。
 // 注意：swiper 的 package.json exports 未暴露 modules/*.mjs 子路径，无法直接
 // 动态 import 具体模块文件，故模块走静态 import，仅主体动态加载。
-type SwiperType = typeof import("swiper").default;
 let swiperPromise: Promise<SwiperType> | null = null;
 const loadSwiper = () => {
   if (!swiperPromise) {
-    swiperPromise = import("swiper").then(m => m.default);
+    swiperPromise = import("swiper")
+      .then(m => m.default)
+      .catch(err => {
+        // 失败不缓存 rejected promise，否则后续无法重试初始化
+        swiperPromise = null;
+        throw err;
+      });
   }
   return swiperPromise;
 };
@@ -155,7 +160,7 @@ watch(
   <div ref="fancyboxContainer">
     <div ref="swiperContainer" class="swiper-container">
     <div :class="['swiper-wrapper', !isPhotoCategory && 'noneed']">
-      <div v-for="(cover, index) in covers" :key="index" class="swiper-slide">
+      <div v-for="(cover, index) in covers" :key="cover.url || index" class="swiper-slide">
         <LivePhoto
           :src="cover.url"
           :alt="cover.desc || '封面'"

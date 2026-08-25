@@ -38,7 +38,7 @@ export default (options: APlayerOptions): ResolvedAPlayerOptions => {
         item.name = item.name || item.title || 'Audio name';
         item.artist = item.artist || item.author || 'Audio artist';
         item.cover = item.cover || item.pic;
-        item.type = item.type || 'normal';
+        item.type = item.type || 'auto'; // 无 type 给 'auto'，让 setAudio 的 m3u8/HLS 自动识别生效（勿强制 'normal' 跳过）
         return item;
     }).filter((item) => item.url); // 缺 url 的条目过滤,避免 <audio src="undefined">
     options.audio = audio;

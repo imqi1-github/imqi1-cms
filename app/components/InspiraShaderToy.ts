@@ -4,24 +4,9 @@
 // 供 SingularityBackground / DitherShader 等 shader 类组件使用
 import { Renderer, Camera, Transform, Geometry, Program, Mesh } from "ogl";
 
-export interface ShaderConfig {
-  source: string;
-}
+import type { ShaderConfig, MouseState, HSVControls, MouseMode } from "~/types/components/shader";
 
-export interface MouseState {
-  x: number;
-  y: number;
-  clickX: number;
-  clickY: number;
-}
-
-export interface HSVControls {
-  hue: number; // 0-360
-  saturation: number; // 0-1
-  brightness: number; // 0-1
-}
-
-export type MouseMode = "click" | "hover";
+export type { ShaderConfig, MouseState, HSVControls, MouseMode };
 
 export class InspiraShaderToy {
   private renderer: Renderer;

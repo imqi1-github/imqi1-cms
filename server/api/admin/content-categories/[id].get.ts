@@ -13,24 +13,33 @@ export default defineEventHandler(async event => {
   }
 
   const id = getRouterParam(event, "id");
-
   if (!id) {
     throw createError({
       statusCode: 400,
       message: "缺少文章 ID",
     });
   }
+  const cid = Number(id);
+  if (!Number.isInteger(cid) || cid <= 0) {
+    throw createError({
+      statusCode: 400,
+      message: "文章 ID 不合法",
+    });
+  }
 
   try {
     const relations = await prisma.contentrelations.findMany({
       where: {
-        cid: Number(id),
+        cid,
         metas: {
           type: "category",
         },
       },
+      // 约定1 白名单：不裸返回整行 metas，只取必要字段
       include: {
-        metas: true,
+        metas: {
+          select: { mid: true, name: true, slug: true, desc: true },
+        },
       },
     });
 
@@ -39,6 +48,10 @@ export default defineEventHandler(async event => {
       data: relations.map(r => r.metas),
     };
   } catch (error) {
+    // 已知 4xx 原样抛，不打印堆栈
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
     console.error(error);
     throw createError({
       statusCode: 500,

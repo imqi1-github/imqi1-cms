@@ -9,23 +9,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, type HTMLAttributes } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 
-import { InspiraShaderToy, type MouseMode } from "./InspiraShaderToy";
+import { InspiraShaderToy } from "./InspiraShaderToy";
 
-interface Props {
-  mouseMode?: MouseMode;
-  class?: HTMLAttributes["class"];
-  shaderCode: string;
-  hue?: number;
-  saturation?: number;
-  brightness?: number;
-  speed?: number;
-  mouseSensitivity?: number;
-  damping?: number;
-}
+import type { ShaderToyProps } from "~/types/components/shader";
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<ShaderToyProps>(), {
   mouseMode: "click",
   hue: 0,
   saturation: 1,

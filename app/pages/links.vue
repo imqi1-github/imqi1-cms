@@ -278,6 +278,7 @@ const selectLink = (link: LinkItem) => {
 
 // 取消选择
 const cancelSelection = () => {
+  showForceSubmit.value = false;
   selectedLink.value = null;
   formData.value = {
     name: "",
@@ -535,7 +536,7 @@ onUnmounted(() => {
           :key="link.id"
           :href="link.link"
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           :aria-label="`访问友链：${link.name}${link.desc ? ' - ' + link.desc : ''}`"
           class="group relative flex flex-col bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-gray-700/60 rounded-2xl no-underline overflow-hidden transition-all duration-300 ease-out hover:border-blue-600">
           <!-- 状态点（检测中带呼吸光环） -->
@@ -607,7 +608,7 @@ onUnmounted(() => {
           :key="org.name"
           :href="org.url"
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-600 transition-all duration-300 group">
           <img
             :src="publicAsset(org.icon)"

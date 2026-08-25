@@ -144,7 +144,7 @@ async function onImportFile(event: Event) {
 async function confirmImport() {
   const confirmed = await confirm({
     title: "导入所有数据",
-    description: `即将从 ${pendingImportFileName.value || "备份文件"} 还原数据。此操作会<strong class="text-destructive">清空并覆盖</strong>现有的文章、评论、分类、友链等全部业务数据，且不可撤销。确定继续吗？`,
+    description: `即将从 ${pendingImportFileName.value || "备份文件"} 还原数据。此操作会清空并覆盖现有的文章、评论、分类、友链等全部业务数据，且不可撤销。确定继续吗？`,
     variant: "destructive",
     confirmText: "确认导入",
     icon: "lucide:database",
@@ -159,6 +159,8 @@ async function confirmImport() {
     toast.success({
       message: res?.total != null ? `导入成功，共还原 ${res.total} 条数据` : "导入成功",
     });
+    // 刷新设置表单为还原后的值，避免随后「保存设置」用陈旧内存值覆盖刚还原的数据
+    await loadSettings();
     pendingImportSource.value = "";
     pendingImportFileName.value = "";
   } catch (err: unknown) {
@@ -388,7 +390,7 @@ onMounted(() => {
           />
           {{ initializing ? '补全中...' : '补全缺失配置' }}
         </Button>
-        <Button variant="outline" @click="confirmReset">
+        <Button variant="outline" :disabled="initializing || loading" @click="confirmReset">
           <Icon name="lucide:rotate-ccw" class="mr-2 size-4" />
           重置为默认
         </Button>

@@ -85,14 +85,19 @@ onMounted(async () => {
 
       try {
         const response = await fetch(apiUrl)
-        audioData = await response.json()
+        if (!response.ok) {
+          throw new Error(`Meting API responded ${response.status}`)
+        }
+        const json: unknown = await response.json()
+        audioData = Array.isArray(json) ? json : []
       } catch (error) {
         console.error('Failed to fetch music data:', error)
+        audioData = []
       }
     }
 
-    // ✅ 异步操作后再次检查
-    if (isUnmounted || !container.value || audioData.length === 0) {
+    // ✅ 异步操作后再次检查（空/失败数据仍走 init 空播放器 + emit ready，让父级离开占位符，避免永久转圈）
+    if (isUnmounted || !container.value) {
       return
     }
 

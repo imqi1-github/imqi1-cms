@@ -25,7 +25,9 @@ const ensureCsrf = (): boolean => {
 const isEdit = computed(() => !!route.query.cid);
 const contentId = ref<number | null>(null);
 watch(() => route.query.cid, (newCid) => {
-  contentId.value = newCid ? Number(newCid) : null;
+  // 仅接受正整数 cid，避免非数字字符串被 Number() 成 NaN 后拼出 /api/admin/contents/NaN
+  const parsed = newCid ? Number(newCid) : NaN;
+  contentId.value = Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }, { immediate: true });
 
 const activeTab = ref("content");
@@ -176,12 +178,16 @@ const selectedTravelId = ref("");
 const travelPending = ref(false);
 
 // 获取全部旅行地点
+const travelFetchSeq = ref(0);
 const fetchTravels = async () => {
+  const seq = ++travelFetchSeq.value;
   try {
     const res = await $fetch<Travel[]>("/api/admin/travels");
+    if (seq !== travelFetchSeq.value) return;
     travels.value = Array.isArray(res) ? res : [];
   } catch (error) {
     console.error("获取旅行地点失败:", error);
+    if (seq !== travelFetchSeq.value) return;
     travels.value = [];
   }
 };
@@ -269,9 +275,14 @@ const dragOver = ref(false);
 // 格式化文件大小
 function formatFileSize(bytes: number) {
   if (!bytes || bytes === 0) return "-";
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let value = bytes;
+  while (value >= 1024 && i < units.length - 1) {
+    value /= 1024;
+    i++;
+  }
+  return value.toFixed(1) + " " + units[i];
 }
 
 function formatImageDimensions(item: Attachment) {
@@ -337,6 +348,11 @@ const handleDrop = async (event: DragEvent) => {
 
 // 上传文件
 const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {}) => {
+  // 重入守卫：拖放区/隐藏 input 未禁用，多入口并发时会污染共享 uploading/uploadProgress
+  if (uploading.value) {
+    toast.error({ message: "已有文件正在上传，请等待完成" });
+    return;
+  }
   if (!contentId.value) {
     toast.error({
       message: "请先保存文章",
@@ -352,6 +368,8 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
     for (let i = 0; i < files.length; i++) {
       const file = files[i]!;
       const isLivePhoto = options.livePhoto === true;
+      // 每轮都按「当前序号 / 总数」更新，含被类型/大小跳过的文件，避免进度卡在非满分
+      uploadProgress.value = Math.round(((i + 1) / files.length) * 100);
 
       // 验证文件类型
       const allowedTypes = isLivePhoto
@@ -405,8 +423,6 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
           description: file.name,
         });
       }
-
-      uploadProgress.value = Math.round(((i + 1) / files.length) * 100);
     }
   } finally {
     uploading.value = false;

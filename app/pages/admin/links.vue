@@ -171,6 +171,10 @@ async function approveModification(link: LinkItem, approve: boolean) {
       });
 
   if (confirmed) {
+    if (!csrfToken.value) {
+      toast.error({ message: "会话已失效，请刷新页面后重试" });
+      return;
+    }
     try {
       await $fetch(`/api/admin/links/${link.id}/approve-modification`, {
         method: "PATCH",

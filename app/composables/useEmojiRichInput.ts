@@ -13,7 +13,7 @@
 // enhanced=false（后台）保持原生行为：onKeyDown 只管 Enter，drag 一律 preventDefault，cut 走原生。
 import { computed, onMounted, ref, watch } from "vue";
 
-import type { EmojiRichInputHandle, UseEmojiRichInputOptions } from "~/types/composables/emoji-rich-input";
+import type { DocWithCaretRange, EmojiRichInputHandle, UseEmojiRichInputOptions } from "~/types/composables/emoji-rich-input";
 import { buildEmojiPlaceholder, getEmojiByKey, textToEditableHtml } from "~/utils/emoji";
 
 // 零宽空格：img 后的可落点文本节点占位，readDom 会从文本里剥掉，永不进模型。
@@ -112,10 +112,7 @@ function insertFragmentAtRange(range: Range, text: string) {
 
 /** 由鼠标坐标取编辑器内的落点 Range；坐标未落在编辑器内则回退到当前选区/末尾。 */
 function rangeFromPointInEditor(editor: HTMLElement, x: number, y: number): Range {
-  const doc = document as Document & {
-    caretRangeFromPoint?: (x: number, y: number) => Range | null;
-    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
-  };
+  const doc = document as DocWithCaretRange;
   let r: Range | null = null;
   if (typeof doc.caretRangeFromPoint === "function") {
     r = doc.caretRangeFromPoint(x, y);

@@ -10,6 +10,11 @@ export interface SearchTypeConfig {
   icon: string;
 }
 
+/** FloatingInput 暴露的句柄（搜索框 auto-focus） */
+export interface SearchInputHandle {
+  focus: () => void;
+}
+
 /** 文章搜索结果项 */
 export interface ContentSearchItem {
 	type: "content";

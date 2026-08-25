@@ -8,3 +8,16 @@ export type LivePhotoElement = HTMLElement & {
    */
   __livePhotoLoadCallback?: () => void;
 };
+
+/** LivePhoto 组件 props；class/width/height/aspectRatio 走 attrs，仅在解码与布局时消费 */
+export interface LivePhotoProps {
+  src: string;
+  alt?: string;
+  class?: string;
+  hoverPlay?: boolean;
+  lazy?: boolean;
+  width?: number | string | null;
+  height?: number | string | null;
+  aspectRatio?: string | null;
+  showPlaceholder?: boolean;
+}

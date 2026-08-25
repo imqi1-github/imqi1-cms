@@ -22,6 +22,8 @@ const maxLevel = ref(4);
 const commentInterval = ref(60);
 const requireMail = ref(true);
 const requireLink = ref(false);
+// 请求序号守卫：静默刷新 vs 在途 loadMore 竞争时只允许最新请求写状态
+let fetchSeq = 0;
 
 // 使用全局认证状态
 const { isLoggedIn, isLoadingAuth } = useAuth();
@@ -63,6 +65,7 @@ function cancelReply() {
 }
 
 const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
+  const seq = ++fetchSeq;
   // silent=true（如提交评论后刷新）时不切换任何 loading 标志，
   // 避免顶部的 refreshing 旋转指示器插入/移除把下方评论框顶下去造成布局偏移
   if (!silent) {
@@ -80,6 +83,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
     const response = await fetch(`/api/comments?cid=${props.contentId}&page=${page}&pageSize=${pageSize.value}`);
     const data: CommentsApiResponse = await response.json();
 
+    if (seq !== fetchSeq) return;
     if (data.code === 200) {
       if (page === 1 || isRefresh) {
         comments.value = data.data;
@@ -94,11 +98,14 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
       error.value = data.message || "获取评论失败";
     }
   } catch {
+    if (seq !== fetchSeq) return;
     error.value = "网络错误，请稍后重试";
   } finally {
-    loading.value = false;
-    refreshing.value = false;
-    loadingMore.value = false;
+    if (seq === fetchSeq) {
+      loading.value = false;
+      refreshing.value = false;
+      loadingMore.value = false;
+    }
   }
 };
 
@@ -134,8 +141,13 @@ watch(
 );
 
 onMounted(async () => {
-  // 等待站点设置加载完成，确保使用正确的 pageSize
-  const settings = await useSiteSettings().fetchSiteSettings();
+  // 等待站点设置加载完成，确保使用正确的 pageSize；失败则沿用默认值，不阻断评论加载/loading 复位
+  let settings = null;
+  try {
+    settings = await useSiteSettings().fetchSiteSettings();
+  } catch {
+    settings = null;
+  }
 
   // 直接从设置中读取配置，而不是依赖 watch
   if (settings) {
@@ -166,6 +178,8 @@ onMounted(async () => {
       // 使用 totalAllComments 显示所有评论总数（包括子评论）
       totalComments.value = data.pagination.totalAllComments;
       hasMore.value = data.pagination.hasMore;
+    } else {
+      error.value = data.message || "获取评论失败";
     }
     loading.value = false;
   } else {

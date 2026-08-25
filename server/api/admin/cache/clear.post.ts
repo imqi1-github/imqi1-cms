@@ -87,7 +87,8 @@ export default defineEventHandler(async event => {
 
     // preset 与 keyword 都按键名子串匹配删除
     if (action === "preset" || action === "keyword") {
-      const keyword = (value ?? "").trim();
+      // readBody 仅类型标注无运行时校验：value 可能是数字/对象/数组，直接 .trim() 会抛 TypeError
+      const keyword = typeof value === "string" ? value.trim() : "";
       if (!keyword) {
         throw createError({
           statusCode: 400,

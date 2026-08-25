@@ -17,7 +17,7 @@ export default defineEventHandler(async event => {
   }
 
   const cid = Number(getRouterParam(event, 'cid'));
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
 
   const { csrfToken } = body;
 
@@ -29,10 +29,10 @@ export default defineEventHandler(async event => {
     });
   }
 
-  if (!cid) {
+  if (!Number.isInteger(cid) || cid <= 0) {
     throw createError({
       statusCode: 400,
-      message: "文章 ID 不能为空",
+      message: "文章 ID 不合法",
     });
   }
 
@@ -56,6 +56,37 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // 读入字段做 typeof 收窄：非字符串流进 Prisma String 字段会触发校验错误 500；
+  // status/type 为 Int 字段需归一化为整数并校验取值范围
+  if (typeof title !== 'string') {
+    throw createError({ statusCode: 400, message: "标题格式错误" });
+  }
+  if (desc !== undefined && desc !== null && typeof desc !== 'string') {
+    throw createError({ statusCode: 400, message: "简介格式错误" });
+  }
+  if (content !== undefined && content !== null && typeof content !== 'string') {
+    throw createError({ statusCode: 400, message: "内容格式错误" });
+  }
+  if (slug !== undefined && slug !== null && typeof slug !== 'string') {
+    throw createError({ statusCode: 400, message: "slug 格式错误" });
+  }
+  let statusNum: number | undefined;
+  if (status !== undefined) {
+    const s = Number(status);
+    if (!Number.isInteger(s) || ![0, 1].includes(s)) {
+      throw createError({ statusCode: 400, message: "状态无效" });
+    }
+    statusNum = s;
+  }
+  let typeNum: number | undefined;
+  if (type !== undefined) {
+    const t = Number(type);
+    if (!Number.isInteger(t) || ![0, 1].includes(t)) {
+      throw createError({ statusCode: 400, message: "类型无效" });
+    }
+    typeNum = t;
+  }
+
   // 验证字段长度
   validateContentData({ title, slug });
 
@@ -76,23 +107,33 @@ export default defineEventHandler(async event => {
     title,
     desc,
     content,
-    status,
-    ...(type !== undefined && { type }),
+    ...(statusNum !== undefined && { status: statusNum }),
+    ...(typeNum !== undefined && { type: typeNum }),
     many_covers: manyCovers,
     covers,
     show_toc: showToc,
     update_time: new Date(),
-    // 如果提供了 publishDate，更新 create_time
-    ...(publishDate ? { create_time: new Date(publishDate) } : {}),
+    // 如果提供了 publishDate，更新 create_time；非法日期得 Invalid Date 会写入报错，先校验
+    ...(publishDate
+      ? (() => {
+          const d = new Date(publishDate as string);
+          if (Number.isNaN(d.getTime())) {
+            throw createError({ statusCode: 400, message: "publishDate 格式无效" });
+          }
+          return { create_time: d };
+        })()
+      : {}),
   };
 
   // 处理 slug：只有当提供了新的 slug 且与当前不同时才更新
   if (slug !== undefined && slug !== null && slug !== existing.slug) {
-    // 检查新 slug 是否已被其他文章使用（同一 type 下唯一）
+    // 检查新 slug 是否已被其他文章使用。type 可能随本次请求变更，须用「本次生效类型」而非旧类型校验，
+    // 否则类型切换时会在新类型下允许重复 slug
+    const effType = typeNum !== undefined ? typeNum : existing.type;
     const slugExists = await prisma.contents.findFirst({
       where: {
         slug,
-        type: existing.type, // 使用当前文章的 type
+        type: effType,
         cid: { not: cid }, // 排除当前文章
       },
     });
@@ -110,15 +151,27 @@ export default defineEventHandler(async event => {
     updateData.slug = String(cid);
   }
 
-  // 更新文章
-  await prisma.contents.update({
-    where: { cid },
-    data: updateData,
-  });
+  try {
+    // 更新文章
+    await prisma.contents.update({
+      where: { cid },
+      data: updateData,
+    });
 
-  // 前端保存后只需 cid，不再回查全字段（含正文）。
-  return {
-    success: true,
-    data: { cid },
-  };
+    // 前端保存后只需 cid，不再回查全字段（含正文）。
+    return {
+      success: true,
+      data: { cid },
+    };
+  } catch (error) {
+    // 校验抛的 400 原样传递；findUnique 与 update 间的并发删除竞态 → P2025 → 404
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw createError({ statusCode: 404, message: "文章不存在" });
+    }
+    console.error(error);
+    throw createError({ statusCode: 500, message: "更新文章失败" });
+  }
 });

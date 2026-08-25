@@ -1,6 +1,6 @@
 import { toast } from 'vue-sonner'
 
-import type { ToastProps } from '~/types/composables/toast'
+import type { PromiseToastOptions, ToastProps } from '~/types/composables/toast'
 
 export const useToast = () => {
   // 共享 options 构造（description/duration 默认值）—— 抽出避免 4 个 helper 重复拼同一对象
@@ -27,11 +27,7 @@ export const useToast = () => {
       loading,
       success,
       error,
-    }: {
-      loading: string
-      success: string | ((data: T) => string)
-      error: string | ((err: unknown) => string)
-    }
+    }: PromiseToastOptions<T>
   ) => {
     return toast.promise(promise, {
       loading,

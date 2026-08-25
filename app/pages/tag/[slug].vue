@@ -28,6 +28,8 @@ const page = ref(initialPage > 0 ? initialPage : 1);
 
 // 获取标签文章数据
 // URL/watch 基于 apiSlug（仅标签页内同步）：切标签时重新请求，SPA 导航离开文章页时不再误请求
+// 先挂满 fadeDuration 让旧页渐出，再拉数据（否则 useFetch 秒回时旧页没淡到位就替换）
+await useFadeOutOnNavigate();
 const { data, pending, error, refresh } = await useFetch(() => `/api/tag/${apiSlug.value}/contents`, {
   headers: getInternalRequestHeaders(),
   query: { page, pageSize: contentPageSize },
@@ -170,9 +172,6 @@ function triggerFadeIn(includeEntryFade = false) {
 
 const triggerEntryFadeIn = () => {
   if (hasPlayedEntryFade.value) return;
-
-  const entryElements = document.querySelectorAll<HTMLElement>(".entry-fade-element");
-  if (!entryElements.length) return;
 
   hasPlayedEntryFade.value = true;
   hideFadeElements(true);

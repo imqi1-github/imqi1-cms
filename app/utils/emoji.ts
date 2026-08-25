@@ -7,7 +7,7 @@
 import { publicAsset } from "./asset";
 
 import emojisData from "~/assets/emojis.json";
-import type { EmojiDict, EmojiItem } from "~/types/emoji";
+import type { EmojiDict, EmojiItem, EmojiLookupEntry } from "~/types/emoji";
 import { escapeAttribute, escapeHtml } from "~~/lib/html";
 // 表情分类配置与 stripEmojiPrefix 的源头在 ~~shared/emoji-categories（前端/服务端共用）：
 // Nitro 不打包 app/，服务端无法 import ~/utils 或 ~/types，故跨边界常量必须放 shared/。
@@ -21,7 +21,7 @@ function getEmojiDict(dataKey: string): EmojiDict | undefined {
 }
 
 // 扁平查找表：emoji key -> {原始 path, 显示名}。启动时一次性构建，解析时 O(1) 查找。
-const EMOJI_KEY_MAP = new Map<string, { path: string; name: string }>();
+const EMOJI_KEY_MAP = new Map<string, EmojiLookupEntry>();
 for (const cat of EMOJI_CATEGORIES) {
   const dict = getEmojiDict(cat.dataKey);
   if (!dict) continue;
@@ -86,7 +86,7 @@ export function textToEditableHtml(text: string): string {
 }
 
 // 供 useEmojiRichInput.insertEmoji 构造 <img> 时反查 path/name（key 来自面板，恒为合法 key）。
-export function getEmojiByKey(key: string): { path: string; name: string } | undefined {
+export function getEmojiByKey(key: string): EmojiLookupEntry | undefined {
   return EMOJI_KEY_MAP.get(key);
 }
 

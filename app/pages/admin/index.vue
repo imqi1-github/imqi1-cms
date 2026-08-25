@@ -62,7 +62,7 @@ const statCards = computed(() => [
     title: '文章总数',
     value: stats.value.contents,
     icon: 'lucide:file-text',
-    description: '已发布文章',
+    description: '全部文章(含草稿)',
     badge: detailedStats.value.contents.thisMonth > 0 ? `本月 +${detailedStats.value.contents.thisMonth}` : '',
   },
   {

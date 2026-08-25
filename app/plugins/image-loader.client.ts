@@ -193,7 +193,7 @@ export default defineNuxtPlugin(() => {
 
     // 检查图片是否在视口外，如果在视口外，等待进入视口再处理
     const rect = img.getBoundingClientRect();
-    const isOutsideViewport = rect.top > window.innerHeight * 2 && rect.bottom < 0;
+    const isOutsideViewport = rect.top > window.innerHeight * 2 || rect.bottom < 0;
     if (isOutsideViewport) {
       // 图片在视口外很远，延迟到可见时再处理
       getIntersectionObserver().observe(img);

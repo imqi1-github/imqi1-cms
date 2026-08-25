@@ -3,7 +3,7 @@ import {type CSSProperties, onMounted, ref, useAttrs} from "vue";
 import {useMediaQuery} from "@vueuse/core";
 
 import {useLivePhoto} from "~/composables/useLivePhoto";
-import type {LivePhotoElement} from "~/types/components/live-photo";
+import type {LivePhotoElement, LivePhotoProps} from "~/types/components/live-photo";
 
 // 禁用自动属性继承，手动控制属性传递
 defineOptions({
@@ -11,17 +11,7 @@ defineOptions({
 });
 
 const props = withDefaults(
-  defineProps<{
-    src: string;
-    alt?: string;
-    class?: string;
-    hoverPlay?: boolean; // 是否悬浮播放，默认 true
-    lazy?: boolean; // 是否开启可见性懒加载，默认 true（仅对非实况照片生效）
-    width?: number | string | null;
-    height?: number | string | null;
-    aspectRatio?: string | null;
-    showPlaceholder?: boolean; // 图片加载完成前是否显示占位骨架
-  }>(),
+  defineProps<LivePhotoProps>(),
   {
     hoverPlay: true,
     lazy: true,

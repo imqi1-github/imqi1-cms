@@ -39,9 +39,10 @@ function formatLocation(location: string): string {
     result = parts[0] ?? ""; // 只有省份，例如：辽宁
   }
 
-  // 去掉行政区划后缀
+  // 去掉行政区划后缀。注意「特别行政区」须在单字「区」之前匹配，否则香港/澳门特别行政区的「区」先被
+  // 单字剥掉，后面的 /(特别行政区)$/ 永远匹配不上 → 注释声明的「→特区」不生效
   result = result
-    .replace(/(市|区|县|镇|乡|街道|地区|开发区|高新区|新区|新城|自治区|自治州|盟|旗)$/g, "")
+    .replace(/(特别行政区|市|区|县|镇|乡|街道|地区|开发区|高新区|新区|新城|自治区|自治州|盟|旗)$/g, "")
     .replace(/(特别行政区)$/g, "特区"); // 香港/澳门特别行政区 → 特区
 
   return result;
@@ -60,9 +61,10 @@ export default defineEventHandler(async event => {
 
   try {
     const query = getQuery(event);
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 10;
-    const cid = query.cid ? Number(query.cid) : null;
+    // 负数/浮点 page 会让 skip/take 为负/非整数被 Prisma 抛错 → 整单 500；floor + 上下限钳制（含上限，防海量 take）
+    const page = Math.min(10000, Math.max(1, Math.floor(Number(query.page) || 1)));
+    const pageSize = Math.min(100, Math.max(1, Math.floor(Number(query.pageSize) || 10)));
+    const cid = Number.isInteger(Number(query.cid)) ? Number(query.cid) : null;
 
     // 状态筛选：status 为 0/1/2 时按精确状态过滤，未传或 "all" 表示全部
     const statusRaw = query.status;

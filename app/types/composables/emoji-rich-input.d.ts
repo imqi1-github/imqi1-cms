@@ -5,6 +5,12 @@
 
 import type { ComputedRef, Ref } from "vue";
 
+/** 旧 WebKit/Firefox 的 caret 定位 API：部分环境只实现其一，且 TS 标准库未声明 */
+export interface DocWithCaretRange extends Document {
+  caretRangeFromPoint?: (x: number, y: number) => Range | null;
+  caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+}
+
 export interface UseEmojiRichInputOptions {
   /** `:[key]` 字符串模型（双向） */
   model: Ref<string>;

@@ -14,10 +14,10 @@ export default defineEventHandler(async event => {
 
   const cid = Number(getRouterParam(event, 'cid'));
 
-  if (!cid) {
+  if (!Number.isInteger(cid) || cid <= 0) {
     throw createError({
       statusCode: 400,
-      message: "文章 ID 不能为空",
+      message: "文章 ID 不合法",
     });
   }
 

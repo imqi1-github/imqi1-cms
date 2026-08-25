@@ -2,6 +2,7 @@
 import { Menu } from "lucide-vue-next";
 
 import { siteConfig } from "~~/site.config";
+import type { CategoryOption } from "~/types/apis/heatmap";
 
 const route = useRoute();
 defineProps({
@@ -20,12 +21,14 @@ const travelNavPillClass =
 const isMobileMenuOpen = ref(false);
 
 // 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
-const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch<{ data: Array<{ name: string; slug: string | null }> }>("/api/categories", {
+const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch<{ data: CategoryOption[] }>("/api/categories", {
   headers: getInternalRequestHeaders(),
 }), {
   server: true,
 });
 const categories = computed(() => categoriesData.value?.data || []);
+// 导航只显示有 slug 的分类，避免 /category/null 死链
+const linkedCategories = computed(() => categories.value.filter(c => c.slug));
 
 // 导航项数据
 const navItems = [
@@ -93,7 +96,7 @@ aria-hidden="true"
           aria-label="分类"
           class="absolute right-0 top-full mt-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 py-1 px-2 min-w-28 opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible group-focus-within/dropdown:opacity-100 group-focus-within/dropdown:visible transition-all duration-200 before:left-0 before:right-0 before:-top-5 before:h-5 before:absolute">
           <NuxtLink
-            v-for="cat in categories"
+            v-for="cat in linkedCategories"
             :key="cat.slug ?? cat.name"
             :to="`/category/${cat.slug}`"
             role="menuitem"
@@ -159,7 +162,7 @@ aria-hidden="true"
         <div v-if="categories.length > 0" class="space-y-1">
           <div class="px-4 py-2 text-sm font-medium text-muted-foreground">分类</div>
           <NuxtLink
-            v-for="cat in categories"
+            v-for="cat in linkedCategories"
             :key="cat.slug ?? cat.name"
             :to="`/category/${cat.slug}`"
             class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors w-full text-left"

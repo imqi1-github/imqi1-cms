@@ -126,12 +126,12 @@ const handleClick = async (event: MouseEvent) => {
   // 仅由圆形扩散快照负责过渡，避免导航/logo 等自带 transition-all 的元素
   // 在快照之上再叠一遍颜色过渡，造成"颜色变得更慢"的观感
   html.classList.add("theme-color-instant");
-  const transition = document.startViewTransition(async () => {
-    colorMode.preference = newMode;
-    await nextTick();
-  });
 
   try {
+    const transition = document.startViewTransition(async () => {
+      colorMode.preference = newMode;
+      await nextTick();
+    });
     await transition.ready;
 
     // 进暗色由 old root 收缩（从大到小），进亮色由 new root 扩散（从小到大）

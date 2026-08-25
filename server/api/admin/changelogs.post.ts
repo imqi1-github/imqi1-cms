@@ -18,7 +18,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken } = body as { csrfToken?: string };
   if (!validateCsrfToken(event, csrfToken ?? "")) {
     throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });

@@ -11,6 +11,11 @@ export default defineNuxtPlugin(nuxtApp => {
    * 处理错误并显示 toast 提示
    */
   const handleError = (error: Error | unknown) => {
+    // 来自 window "error"/unhandledrejection 的 error 可能为 null/undefined/非对象，避免直接读属性崩
+    if (error === null || error === undefined || typeof error !== "object") {
+      console.error("[Global Error]", error);
+      return;
+    }
     const handled = error as HandledError;
 
     if (handled.__handled__ || handled.response?.__handled__) {
@@ -46,17 +51,13 @@ export default defineNuxtPlugin(nuxtApp => {
     }
   };
 
-  // 1. 捕获 Vue 渲染错误和生命周期错误
+  // 1. 捕获 Vue 渲染错误和生命周期错误（Vue 3.5 handleError 的统一入口；Nuxt 的 nuxt-root 还会
+  //    再调一次 vue:error，若同时注册会同一错误触发两次 toast —— 故只留 config.errorHandler）
   nuxtApp.vueApp.config.errorHandler = error => {
     handleError(error);
   };
 
-  // 2. 捕获 Nuxt 应用错误（包括 createError 抛出的错误）
-  nuxtApp.hook("vue:error", error => {
-    handleError(error);
-  });
-
-  // 3. 捕获未处理的 Promise 拒绝（包括 $fetch 错误）
+  // 2. 捕获未处理的 Promise 拒绝（包括 $fetch 错误）
   if (typeof window !== "undefined") {
     window.addEventListener("unhandledrejection", event => {
       handleError(event.reason);

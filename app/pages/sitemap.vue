@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { siteConfig } from "~~/site.config";
+import type { SitemapPageItem } from "~/types/pages/sitemap";
 
 // 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，
 // 渐入时直接带数据。服务端渲染时通过内部请求 header 放行 referer-check（与其它页面一致）。
@@ -45,7 +46,7 @@ const systemPages = [
 // systemPages 优先，避免 agreement 这类同时存在于静态页与 CMS 的条目重复出现。
 const mergedPages = computed(() => {
   const seen = new Set<string>();
-  const result: { path: string; name: string; icon: string; external?: boolean }[] = [];
+  const result: SitemapPageItem[] = [];
   for (const page of systemPages) {
     if (seen.has(page.path)) continue;
     seen.add(page.path);

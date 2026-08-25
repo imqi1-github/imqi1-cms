@@ -30,7 +30,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const body = await readBody(event);
+  const body = (await readBody(event)) ?? {};
   const { csrfToken } = body as { csrfToken?: string };
   if (!validateCsrfToken(event, csrfToken ?? "")) {
     throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
@@ -48,8 +48,9 @@ export default defineEventHandler(async event => {
   let data: ChangelogInputJson;
   try {
     data = JSON.parse(source) as ChangelogInputJson;
-  } catch (error) {
-    console.error(error);
+  } catch {
+    // 用户传了坏 JSON：预期 400，用 warn 以免打印完整 SyntaxError 堆栈
+    console.warn("changelog import: invalid JSON");
     throw createError({
       statusCode: 400,
       message: "JSON 格式错误，无法解析",
@@ -110,9 +111,18 @@ export default defineEventHandler(async event => {
       const entries = normalizeChangelogEntries(rec.entries);
       validateChangelogData(entries);
 
+      // 序列化后的 content 存在 MySQL TEXT 上限（65535 字节）；单条超限要提前拦成 400，避免过了校验却 DB 溢出 500
+      const serialized = stringifyChangelogContent(entries);
+      if (Buffer.byteLength(serialized, "utf8") > 65535) {
+        throw createError({
+          statusCode: 400,
+          message: "单条更新日志内容过长，无法导入",
+        });
+      }
+
       // 可选 createTime：非法日期时回退为默认（now）
       const payload: { content: string; create_time?: Date } = {
-        content: stringifyChangelogContent(entries),
+        content: serialized,
       };
       if (rec.createTime) {
         const d = new Date(rec.createTime);

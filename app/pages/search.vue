@@ -2,7 +2,7 @@
 import { escapeHtml } from "~~/lib/html";
 import { siteConfig } from "~~/site.config";
 import type { HandledError } from "~/types/error";
-import type { SearchResultItem, SearchType, SearchTypeConfig } from "~/types/apis/search";
+import type { ContentSearchItem, SearchInputHandle, SearchResultItem, SearchType, SearchTypeConfig } from "~/types/apis/search";
 
 const route = useRoute();
 const router = useRouter();
@@ -82,7 +82,7 @@ function itemKey(item: SearchResultItem): string {
 // 详情页链接：详情 API 按 slug 精确查，故 slug 缺失一律不可点。
 // 分类段：有 slug 用之；无 categoryName 说明文章本就无分类，走 uncategorized 分支（API 支持）；
 // 有 categoryName 却无 slug（分类 slug 缺失）则无有效 URL，不可点。
-function resolveLink(content: { slug: string | null; categorySlug: string | null; categoryName: string | null }) {
+function resolveLink(content: Pick<ContentSearchItem, "slug" | "categorySlug" | "categoryName">) {
   if (!content.slug) return null;
   if (content.categorySlug) return `/content/${content.categorySlug}/${content.slug}`;
   if (!content.categoryName) return `/content/uncategorized/${content.slug}`;
@@ -196,7 +196,7 @@ watch(
 );
 
 // FloatingInput 通过 defineExpose 暴露 focus()，onMounted 时自动聚焦
-const searchInputRef = useTemplateRef<{ focus: () => void }>("searchInputRef");
+const searchInputRef = useTemplateRef<SearchInputHandle>("searchInputRef");
 
 onMounted(() => {
   isHydrated.value = true;
@@ -229,7 +229,8 @@ function handleSearch() {
 
 // 回车搜索
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === "Enter") {
+  // IME 合成态（中文输入法选字）的回车是 composition 的一部分，不应触发搜索
+  if (event.key === "Enter" && !event.isComposing) {
     handleSearch();
   }
 }

@@ -95,18 +95,20 @@ class List {
             item.name = item.name || item.title || 'Audio name';
             item.artist = item.artist || item.author || 'Audio artist';
             item.cover = item.cover || item.pic;
-            item.type = item.type || 'normal';
+            item.type = item.type || 'auto'; // 无 type 给 'auto'，让 setAudio 的 m3u8/HLS 自动识别生效
             return item;
         });
 
         const wasSingle = !(this.audios.length > 1);
         const wasEmpty = this.audios.length === 0;
 
-        this.player.template.list.innerHTML += tplListItem({
+        // 插入到外层 .aplayer-list 的内层 <ol> 里（直接 append 到 div 会绕过 ol，新条目丢样式/滚动）
+        const listOl = this.player.template.list.querySelector('ol');
+        (listOl ?? this.player.template.list).insertAdjacentHTML('beforeend', tplListItem({
             theme: this.player.options.theme,
             audio: audios,
             index: this.audios.length + 1,
-        });
+        }));
 
         this.audios = this.audios.concat(audios);
 
@@ -180,6 +182,11 @@ class List {
 
             // set html
             this.player.template.pic.style.backgroundImage = audio.cover ? `url('${audio.cover}')` : '';
+            // 同步旋转封面盘的 <img>(模板只注入首曲封面,切歌不更新会显示旧封面)
+            const picBoxImg = this.player.container.querySelector('.aplayer-pic-box img') as HTMLImageElement | null;
+            if (picBoxImg) {
+                picBoxImg.src = audio.cover || '';
+            }
             this.player.theme(this.audios[this.index]!.theme || this.player.options.theme, this.index, false);
             this.player.template.title.innerHTML = audio.name || '';
             this.player.template.author.innerHTML = audio.artist ? ' - ' + audio.artist : '';
@@ -215,6 +222,10 @@ class List {
         this.player.audio.src = '';
         this.player.template.list.innerHTML = '';
         this.player.template.pic.style.backgroundImage = '';
+        const picBoxImg = this.player.container.querySelector('.aplayer-pic-box img') as HTMLImageElement | null;
+        if (picBoxImg) {
+            picBoxImg.src = '';
+        }
         this.player.theme(this.player.options.theme, this.index, false);
         this.player.template.title.innerHTML = 'No audio';
         this.player.template.author.innerHTML = '';

@@ -33,7 +33,8 @@ const submitError = ref("");
 const honeypot = ref("");
 
 // 反垃圾：页面加载时间戳（提交太快说明是机器人）
-const pageLoadTime = Date.now();
+// 页面加载起点（performance.timeOrigin）；不随回复框重挂而重置，供 5s 反 bot 判定用
+const pageLoadTime = performance.timeOrigin;
 
 // 反垃圾：图形验证码（未登录用户需填写，登录用户免验证）
 const captchaInput = ref("");

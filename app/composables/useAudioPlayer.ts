@@ -12,6 +12,8 @@ let audio: HTMLAudioElement | null = null;
 
 // 初始化标志（客户端单例守卫，防止重复初始化）
 let isInitialized = false;
+// 卸载标志：initPlayer 的 `await $fetch` 期间组件卸载则放弃后续写入/建 Audio，避免异步后残留
+let isDisposed = false;
 
 // 播放器实例 ID（用于播放器管理器）
 const playerId = `footer-${Date.now()}-${Math.random()}`;
@@ -236,6 +238,7 @@ export function useAudioPlayer() {
     }
     // 以上守卫全过才置位：空 id / 已到失败上限时保持未初始化，后续可用新配置重试，而非被「假置位」卡死
     isInitialized = true;
+    isDisposed = false;
 
     // 注册到播放器管理器
     const manager = getPlayerManager();
@@ -249,6 +252,9 @@ export function useAudioPlayer() {
 
     try {
       const response = await $fetch<Song[]>(`/api/meting?type=playlist&server=${playlistConfig.server}&id=${playlistConfig.id}`);
+
+      // await 期间组件已卸载则放弃后续写入/创建 Audio（异步后残留）
+      if (isDisposed) return;
 
       if (response && Array.isArray(response)) {
         // 请求成功，重置失败计数
@@ -326,6 +332,7 @@ export function useAudioPlayer() {
   // 清理资源：注销播放器管理器 + 暂停/解绑 audio + 释放单例。
   // 同时复位 isInitialized：否则 FooterMusic 卸载后重新挂载时 initPlayer 会被 isInitialized 卡死（不再播放）。
   function cleanup() {
+    isDisposed = true;
     // 从播放器管理器中注销
     const manager = getPlayerManager();
     if (manager) {

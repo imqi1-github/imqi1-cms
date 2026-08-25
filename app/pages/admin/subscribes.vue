@@ -12,6 +12,7 @@ const showEditForm = ref(false);
 const updating = ref(false);
 const submitting = ref(false);
 const updateResult = ref<SubscribesUpdateResponse['data'] | null>(null);
+let updateResultTimer: ReturnType<typeof setTimeout> | null = null;
 const feedCacheInterval = ref(8); // 默认8小时
 const csrfToken = ref("");
 const loadSeq = ref(0);
@@ -120,6 +121,11 @@ async function updateSubscribes() {
     toast.error({ message: "会话已失效，请刷新页面后重试" });
     return;
   }
+  // 清除上一次的复位定时器，避免它提前清掉本次新结果
+  if (updateResultTimer) {
+    clearTimeout(updateResultTimer);
+    updateResultTimer = null;
+  }
   updating.value = true;
   updateResult.value = null;
   try {
@@ -140,8 +146,9 @@ async function updateSubscribes() {
     });
   } finally {
     updating.value = false;
-    setTimeout(() => {
+    updateResultTimer = setTimeout(() => {
       updateResult.value = null;
+      updateResultTimer = null;
     }, 5000);
   }
 }

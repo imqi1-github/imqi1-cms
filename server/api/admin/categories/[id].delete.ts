@@ -31,87 +31,96 @@ export default defineEventHandler(async event => {
   }
 
   const categoryId = Number(id);
-
-  // 检查分类总数，至少保留一个分类
-  const categoryCount = await prisma.metas.count({
-    where: { type: "category" },
-  });
-
-  if (categoryCount <= 1) {
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
     throw createError({
       statusCode: 400,
-      message: "至少需要保留一个分类",
+      message: "无效的分类 ID",
     });
   }
 
   try {
-    // 获取要删除的分类
-    const categoryToDelete = await prisma.metas.findUnique({
-      where: { mid: categoryId },
+    // 检查分类总数，至少保留一个分类
+    const categoryCount = await prisma.metas.count({
+      where: { type: "category" },
     });
 
-    if (!categoryToDelete) {
+    if (categoryCount <= 1) {
       throw createError({
-        statusCode: 404,
-        message: "分类不存在",
+        statusCode: 400,
+        message: "至少需要保留一个分类",
       });
     }
 
-    // 获取该分类下的所有文章关联
-    const contentrelations = await prisma.contentrelations.findMany({
-      where: { mid: categoryId },
-      select: { cid: true },
-    });
-
-    // 如果有关联文章，需要转移到其他分类
-    if (contentrelations.length > 0) {
-      // 获取第一个可用的目标分类（不是要删除的分类）
-      const targetCategory = await prisma.metas.findFirst({
-        where: {
-          type: "category",
-          mid: { not: categoryId },
-        },
-        select: { mid: true },
+    // 整个迁移+删除序列包进事务：中途任何一步失败可回滚，避免「部分文章已迁到目标分类、主类却没删」不一致
+    await prisma.$transaction(async tx => {
+      // 获取要删除的分类 —— 必须限定 type='category'，否则传 tag 的 mid 会把 tag 当分类删掉并误迁其文章
+      const categoryToDelete = await tx.metas.findFirst({
+        where: { mid: categoryId, type: "category" },
       });
 
-      if (!targetCategory) {
+      if (!categoryToDelete) {
         throw createError({
-          statusCode: 400,
-          message: "没有可用的目标分类进行转移",
+          statusCode: 404,
+          message: "分类不存在",
         });
       }
 
-      // 获取每个文章当前的所有分类
-      for (const relation of contentrelations) {
-        // 检查该文章是否还有其他分类
-        const otherRelations = await prisma.contentrelations.findMany({
+      // 获取该分类下的所有文章关联
+      const contentrelations = await tx.contentrelations.findMany({
+        where: { mid: categoryId },
+        select: { cid: true },
+      });
+
+      // 如果有关联文章，需要转移到其他分类
+      if (contentrelations.length > 0) {
+        // 获取第一个可用的目标分类（不是要删除的分类）
+        const targetCategory = await tx.metas.findFirst({
           where: {
-            cid: relation.cid,
+            type: "category",
             mid: { not: categoryId },
-            metas: { type: "category" },
           },
+          select: { mid: true },
         });
 
-        // 如果文章没有其他分类了，创建新的关联到目标分类
-        if (otherRelations.length === 0) {
-          await prisma.contentrelations.create({
-            data: {
-              cid: relation.cid,
-              mid: targetCategory.mid,
-            },
+        if (!targetCategory) {
+          throw createError({
+            statusCode: 400,
+            message: "没有可用的目标分类进行转移",
           });
         }
+
+        // 获取每个文章当前的所有分类
+        for (const relation of contentrelations) {
+          // 检查该文章是否还有其他分类
+          const otherRelations = await tx.contentrelations.findMany({
+            where: {
+              cid: relation.cid,
+              mid: { not: categoryId },
+              metas: { type: "category" },
+            },
+          });
+
+          // 如果文章没有其他分类了，创建新的关联到目标分类
+          if (otherRelations.length === 0) {
+            await tx.contentrelations.create({
+              data: {
+                cid: relation.cid,
+                mid: targetCategory.mid,
+              },
+            });
+          }
+        }
+
+        // 删除原分类的所有关联关系
+        await tx.contentrelations.deleteMany({
+          where: { mid: categoryId },
+        });
       }
 
-      // 删除原分类的所有关联关系
-      await prisma.contentrelations.deleteMany({
+      // 删除分类
+      await tx.metas.delete({
         where: { mid: categoryId },
       });
-    }
-
-    // 删除分类
-    await prisma.metas.delete({
-      where: { mid: categoryId },
     });
 
     return { success: true };
@@ -119,6 +128,13 @@ export default defineEventHandler(async event => {
     // 如果是我们抛出的错误，直接传递
     if (error instanceof Error && 'statusCode' in error) {
       throw error;
+    }
+    // Prisma 删除/更新单条不存在记录 → P2025，映射为 404（预检与 delete 间存在并发窗口）
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+      throw createError({
+        statusCode: 404,
+        message: "分类不存在",
+      });
     }
 
     // 记录详细的错误信息
