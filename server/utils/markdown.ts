@@ -603,7 +603,7 @@ function transformMusicLinks(content: string): string {
   let transformedContent = content;
 
   musicPlatforms.forEach(platform => {
-    const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, "g");
+    const regex = new RegExp(`\\[([^\\]]+)\\]\\(${platform.regex.source}\\)`, platform.regex.flags.includes("g") ? platform.regex.flags : `${platform.regex.flags}g`);
     transformedContent = transformedContent.replace(regex, (match, linkText, ...args) => {
       const matchArray = [match, ...args.slice(0, -2)] as RegExpMatchArray;
       const server = platform.getServer();

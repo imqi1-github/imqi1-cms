@@ -115,7 +115,7 @@ export default defineEventHandler(async event => {
 
     throw createError({
       statusCode: 500,
-      message: (error instanceof Error ? error.message : String(error)) || '更新附件失败',
+      message: '更新附件失败',
     })
   }
 })

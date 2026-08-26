@@ -45,8 +45,8 @@ export function parseCovers(
 
       const obj = (item ?? {}) as Record<string, unknown>;
       return {
-        url: (obj.url as string) ?? (obj.cover as string) ?? "",
-        desc: (obj.title as string) ?? (obj.desc as string) ?? "",
+        url: (obj.url as string) || (obj.cover as string) || "",
+        desc: (obj.title as string) || (obj.desc as string) || "",
         width: toNullableNumber(obj.width),
         height: toNullableNumber(obj.height),
       };

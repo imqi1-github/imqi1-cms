@@ -11,15 +11,11 @@ import MarkdownSwiper from "~/components/markdown/MarkdownSwiper.vue";
 import MarkdownVideo from "~/components/markdown/MarkdownVideo.vue";
 import MarkdownWaterfall from "~/components/markdown/MarkdownWaterfall.vue";
 import { parseImageLine, safeDecodeURIComponent } from "~/utils/markdownWidgets";
-
-type MarkdownImageDimensions = { width: number | null; height: number | null };
-type MarkdownSlide = { url: string; title: string; width: number | null; height: number | null };
-type MarkdownWaterfallImage = { url: string; caption: string; width: number | null; height: number | null };
-
-interface UseMarkdownWidgetsOptions {
-  /** 由页面提供：基于文章附件元数据解析图片尺寸（markdownImageAttachments）。 */
-  findImageDimensions: (url: string) => MarkdownImageDimensions;
-}
+import type {
+  MarkdownSlide,
+  MarkdownWaterfallImage,
+  UseMarkdownWidgetsOptions,
+} from "~/types/composables/markdown-widgets";
 
 const METEING_LIVE_PHOTO_PROPS = {
   hoverPlay: false,

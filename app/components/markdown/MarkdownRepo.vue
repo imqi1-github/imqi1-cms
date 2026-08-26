@@ -1,18 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
+import type { RepoData } from "~/types/components/markdown-repo";
+
 // 仓库卡片：服务端渲染为 .markdown-repo-wrapper 占位，客户端组件化挂载并自管 fetch。
 const props = defineProps<{ url: string }>();
-
-type RepoData = {
-  full_name?: string;
-  name?: string;
-  description?: string | null;
-  language?: string | null;
-  stargazers_count?: number;
-  forks_count?: number;
-  private?: boolean;
-};
 
 const state = ref<"loading" | "ok" | "invalid" | "error">("loading");
 const data = ref<RepoData | null>(null);

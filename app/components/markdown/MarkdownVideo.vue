@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 // 视频：服务端渲染为 .markdown-video-wrapper 占位，客户端组件化挂载。
-defineProps<{ url: string }>();
+// http 源会被站点 CSP media-src(仅 https)拦截，统一升级为 https。
+const props = defineProps<{ url: string }>();
+const safeUrl = computed(() => props.url.replace(/^http:\/\//i, "https://"));
 </script>
 
 <template>
@@ -10,7 +14,7 @@ defineProps<{ url: string }>();
       controls
       preload="metadata"
     >
-      <source :src="url" type="video/mp4">
+      <source :src="safeUrl" type="video/mp4">
       您的浏览器不支持视频播放。
     </video>
   </div>

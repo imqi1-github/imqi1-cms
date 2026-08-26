@@ -96,7 +96,7 @@ export default defineEventHandler(async event => {
     console.error(error)
     throw createError({
       statusCode: 500,
-      message: (error instanceof Error ? error.message : String(error)) || '获取附件列表失败',
+      message: '获取附件列表失败',
     })
   }
 })

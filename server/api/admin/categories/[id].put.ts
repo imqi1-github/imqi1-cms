@@ -166,7 +166,7 @@ export default defineEventHandler(async event => {
 
     throw createError({
       statusCode: 500,
-      message: "更新分类失败: " + ((error instanceof Error ? error.message : String(error)) || "未知错误"),
+      message: "更新分类失败",
     });
   }
 });

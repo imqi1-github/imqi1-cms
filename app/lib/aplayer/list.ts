@@ -29,13 +29,11 @@ class List {
 
     bindEvents() {
         this.player.template.list.addEventListener('click', (e: MouseEvent) => {
-            let target: HTMLElement;
-            if ((e.target as HTMLElement).tagName.toUpperCase() === 'LI') {
-                target = e.target as HTMLElement;
-            } else {
-                target = (e.target as HTMLElement).parentElement!;
-            }
-            const audioIndex = parseInt(target.getElementsByClassName('aplayer-list-index')[0]!.innerHTML, 10) - 1;
+            // closest('li') 容错点击列表空白/内层元素（原 parentElement! + [0]! 会崩 TypeError）
+            const target = (e.target as Element | null)?.closest?.('li');
+            const indexEl = target?.querySelector('.aplayer-list-index');
+            if (!target || !indexEl) return;
+            const audioIndex = parseInt(indexEl.innerHTML, 10) - 1;
             if (audioIndex !== this.index) {
                 this.switch(audioIndex);
                 this.player.play();

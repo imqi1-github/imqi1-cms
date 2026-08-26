@@ -72,8 +72,15 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 解析 URL 路径
-  let requestPath = decodeURIComponent(req.url);
+  // 解析 URL 路径（非法百分号编码需吞掉，否则同步 URIError 崩掉整个 server）
+  let requestPath;
+  try {
+    requestPath = decodeURIComponent(req.url);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<h1>400 Bad Request</h1>');
+    return;
+  }
 
   // 默认访问 index.html
   if (requestPath === '/') {
@@ -85,8 +92,15 @@ const server = http.createServer((req, res) => {
     requestPath = requestPath.substring(1);
   }
 
-  // 构建完整的文件路径
-  const filePath = path.join(ROOT_DIR, requestPath);
+  // 构建完整路径并防目录穿越：normalize 折叠 `..` 后必须仍落在 ROOT_DIR 内，
+  // 否则 `GET /../../.env` 会逃出 .attachments 读到任意文件（含密钥），且本 server 绑定 0.0.0.0 局域网可达。
+  const resolved = path.resolve(ROOT_DIR);
+  const filePath = path.resolve(path.join(resolved, requestPath));
+  if (filePath !== resolved && !filePath.startsWith(resolved + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<h1>403 Forbidden</h1>');
+    return;
+  }
 
   // 检查文件是否存在
   fs.stat(filePath, (err, stats) => {

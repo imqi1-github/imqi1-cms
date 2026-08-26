@@ -3,6 +3,7 @@ import DOMPurify from "isomorphic-dompurify";
 import { getUser } from "#server/lib/auth";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { verifyCaptcha } from "#server/utils/captcha";
+import { getClientIp } from "#server/utils/client-ip";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
@@ -80,21 +81,9 @@ export default defineTypedApiHandler(
       }
 
       // ========== 检查评论间隔 ==========
-      // 客户端 IP 推导：优先 X-Real-IP（反向代理设置，可信），否则取 X-Forwarded-For 最右
-      // （最接近客户端）一项，最后回退到 socket 直连地址。空值/unknown 归一为 null，
-      // 绝不用空串或 "unknown" 作为防刷 bucket 键。
-      const forwardedFor = getHeader(event, "x-forwarded-for");
-      const lastForwarded = forwardedFor
-        ?.split(",")
-        .map(s => s.trim())
-        .filter(Boolean)
-        .pop();
-      const rawIP =
-        getHeader(event, "x-real-ip")?.trim() ||
-        lastForwarded ||
-        event.node.req.socket.remoteAddress ||
-        "";
-      const clientIP = rawIP && rawIP !== "unknown" ? rawIP : null;
+      // 客户端 IP：用共享 getClientIp（X-Real-IP → 最右 XFF → socket），与 mini/comments.post 保持一致，
+      // 避免两端对同一请求推导出不同 IP 导致限流行为分叉。
+      const clientIP = getClientIp(event);
 
       // 获取评论间隔设置
       const intervalMeta = await prisma.informations.findUnique({

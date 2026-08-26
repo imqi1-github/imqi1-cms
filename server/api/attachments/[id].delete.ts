@@ -58,9 +58,15 @@ export default defineEventHandler(async event => {
       });
     }
 
-    // 仅接受正整数 cid，避免把 float/negative/NaN 传给 Prisma 的 where
-    const rawCid = Number(query.cid);
-    const unlinkCid = Number.isInteger(rawCid) && rawCid > 0 ? rawCid : 0;
+    // 仅接受正整数 cid，避免把 float/negative/NaN 传给 Prisma 的 where。
+    // 注意：cid 存在但非法（非空却解析不出正整数）时必须 400，绝不能静默落入"全局删除"分支——
+    // 否则客户端传个畸形 cid 会被放大成"永久删除整个附件+文件+全部关联"，不可逆。
+    const rawCidParam = query.cid;
+    const hasCid = rawCidParam !== undefined && rawCidParam !== null && String(rawCidParam).trim() !== "";
+    const unlinkCid = hasCid ? Number(rawCidParam) : 0;
+    if (hasCid && (!Number.isInteger(unlinkCid) || unlinkCid <= 0)) {
+      throw createError({ statusCode: 400, message: "cid 参数不合法" });
+    }
     if (unlinkCid) {
       const content = await prisma.contents.findUnique({
         where: { cid: unlinkCid },
