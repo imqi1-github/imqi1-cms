@@ -41,6 +41,10 @@ async function fetchCategories() {
 }
 
 async function addCategory() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (submitting.value) return;
   submitting.value = true;
   try {
@@ -96,6 +100,10 @@ function closeEditModal() {
 }
 
 async function updateCategory() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (!editingCategory.value) return;
   if (submitting.value) return;
   submitting.value = true;

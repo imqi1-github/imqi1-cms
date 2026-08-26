@@ -132,6 +132,10 @@ async function fetchData() {
 }
 
 async function deleteContent(cid: number) {
+  if (!csrfToken.value) {
+    toast.error({ message: '会话已失效，请刷新页面后重试' })
+    return
+  }
   const confirmed = await confirm({
     title: '删除文章',
     description: '确定要删除这篇文章吗？',
@@ -154,6 +158,10 @@ async function deleteContent(cid: number) {
 }
 
 async function deleteComment(coid: number) {
+  if (!csrfToken.value) {
+    toast.error({ message: '会话已失效，请刷新页面后重试' })
+    return
+  }
   const confirmed = await confirm({
     title: '删除评论',
     description: '确定要删除这条评论吗？',

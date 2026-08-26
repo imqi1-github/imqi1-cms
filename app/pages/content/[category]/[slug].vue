@@ -61,14 +61,17 @@ function formatDate(date: string | Date): string {
 }
 
 // 获取文章数据 - 使用新的 API 格式
-const { data, pending, error } = await useFetch(`/api/contents/${categorySlug}/${slug}`, {
+const { data, pending, error, refresh } = await useFetch(`/api/contents/${categorySlug}/${slug}`, {
   headers: getInternalRequestHeaders(),
 });
 
 const content = computed(() => data.value?.data);
 
-// 判断文章是否存在
-const isNotFound = computed(() => !pending.value && (!content.value || error.value));
+// 仅当真实 404（文章不存在）才算未找到，避免瞬时 500/超时被 SSR 固化成 404、客户端误显示「文章未找到」。
+// 对照 category/[slug].vue：用 error.statusCode===404 判别，其余错误走 isError 呈现可重试态。
+const isNotFound = computed(() => !pending.value && !content.value && (error.value?.statusCode === 404 || error.value?.status === 404));
+// 非 404 的加载错误（瞬时 DB 抖动/网络/超时）：保留标题并给重试，不触发 setResponseStatus(404)
+const isError = computed(() => !pending.value && !!error.value && !isNotFound.value);
 
 // 文章不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
 if (import.meta.server) {
@@ -749,8 +752,9 @@ onMounted(async () => {
         window.addEventListener("scroll", handleTocScroll);
       });
 
-      // 添加轮播图样式
+      // 添加轮播图样式（固定 id：文章页每次 SPA 重挂载都重跑 onMounted，用 id 判存避免向 <head> 累积重复 <style>）
       const style = document.createElement("style");
+      style.id = "markdown-widget-styles";
       style.textContent = `
       /* Markdown LivePhoto 动态挂载容器仅用于 Vue render/unmount，不参与布局，避免影响 Swiper/Flex 尺寸计算 */
       .markdown-live-photo-mount {
@@ -981,7 +985,9 @@ onMounted(async () => {
         background: rgb(31 41 55);
       }
     `;
-      document.head.appendChild(style);
+      if (!document.getElementById("markdown-widget-styles")) {
+        document.head.appendChild(style);
+      }
 
       // 初始化实况照片（兼容旧文章中 #live / [live] 图片写法，逻辑见 composables/useMarkdownImages.ts）
       mountMarkdownImages(document, {
@@ -1050,6 +1056,20 @@ onUnmounted(() => {
     </div>
 
     <NotFound v-else-if="isNotFound" />
+
+    <!-- 非 404 加载错误：保留标题并给重试，避免瞬时故障被渲染成 NotFound/被 SSR 写成 404 -->
+    <div v-else-if="isError" class="text-center py-24 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
+      <Icon name="lucide:alert-circle" aria-hidden="true" class="size-12 text-destructive mx-auto mb-4" />
+      <h2 class="text-xl font-bold mb-2">加载失败</h2>
+      <p class="text-muted-foreground mb-4">请稍后重试</p>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 cursor-pointer"
+        @click="refresh()">
+        <Icon name="lucide:refresh-cw" class="size-4" />
+        重试
+      </button>
+    </div>
 
     <article v-else-if="content" class="w-full animate-fade-in">
       <!-- 标题区域 -->

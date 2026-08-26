@@ -28,7 +28,8 @@ function expandIpv6(ip: string): number[] {
 }
 
 // 判断一个 IP 是否落在私有/环回/链路本地/保留段——这些地址不应被服务端 fetch 触达（SSRF 防护）
-function isPrivateIp(ip: string): boolean {
+// 导出供 safe-fetch 在「连接前二次校验已钉 IP」时复用（DNS rebinding 防护）
+export function isPrivateIp(ip: string): boolean {
   const v = isIP(ip);
   if (v === 4) {
     const parts = ip.split(".").map(Number);

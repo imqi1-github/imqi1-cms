@@ -124,6 +124,10 @@ function buildPayload(form: ReturnType<typeof defaultForm>) {
 }
 
 async function addTravel() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (!newTravel.value.name.trim()) {
     toast.error({ message: "请填写名称" });
     return;
@@ -171,6 +175,10 @@ function openEditModal(travel: TravelItem) {
 }
 
 async function saveEdit() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (!editingTravel.value) return;
   if (!editTravelForm.value.name.trim()) {
     toast.error({ message: "请填写名称" });

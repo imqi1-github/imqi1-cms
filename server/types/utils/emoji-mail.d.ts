@@ -8,3 +8,9 @@ export interface MailEmojiAttachment {
   filename: string;
   contentType: string;
 }
+
+/** 单个表情项：png 绝对路径 + 显示名（来自 emojis.json，供注册进 emojiKeyMap）。 */
+export interface EmojiEntry {
+  path: string;
+  name: string;
+}

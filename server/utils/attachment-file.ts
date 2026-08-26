@@ -4,11 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 
 import { deleteFromCOS } from "#server/utils/cos";
-
-interface AttachmentFileTarget {
-  storage: string;
-  url: string;
-}
+import type { AttachmentFileTarget } from "#server/types/utils/attachment-file";
 
 /**
  * 本地上传文件的静态资源根目录（uploads 的上级 public）。

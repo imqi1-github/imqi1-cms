@@ -1,6 +1,6 @@
 import { createError, getQuery } from "h3";
 
-import { assertPublicHttpUrl } from "#server/utils/urlGuard";
+import { fetchPublicUrl } from "#server/utils/safe-fetch";
 
 export default defineEventHandler(async event => {
   const { url } = getQuery(event);
@@ -12,33 +12,32 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 校验 URL：仅 http/https，且不得解析到内网/环回地址（SSRF 防护）
-  const validatedUrl = await assertPublicHttpUrl(url);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
   try {
-    const response = await fetch(validatedUrl.href, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91 Safari/537.36",
+    // 安全外联：校验公网 + 钉定已校验 IP（封 DNS rebinding），统一 redirect:"error" 与 10s 超时
+    const result = await fetchPublicUrl(
+      url,
+      async response => ({ up: response.ok, statusCode: response.status }),
+      {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91 Safari/537.36",
+        },
       },
-      signal: controller.signal,
-      // 拒绝重定向：公共 URL 可能被 30x 跳转到内网/环回地址，绕过上方 assertPublicHttpUrl 的 SSRF 防护
-      redirect: "error",
-    });
-
-    clearTimeout(timeoutId);
+      10000,
+    );
 
     return {
-      status: response.ok ? "up" : "down",
-      message: response.ok ? "链接可访问" : `链接返回状态码: ${response.status}`,
-      statusCode: response.status,
+      status: result.up ? "up" : "down",
+      message: result.up ? "链接可访问" : `链接返回状态码: ${result.statusCode}`,
+      statusCode: result.statusCode,
     };
   } catch (error) {
     console.error(error);
-    clearTimeout(timeoutId);
+
+    // 非法/内网 URL 等业务校验错误（400）原样抛出，保持语义；其余（超时/连接失败/重定向被拒）→ "down"
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
 
     // AbortError（超时）
     if (error instanceof DOMException && error.name === "AbortError") {

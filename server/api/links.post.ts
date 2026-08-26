@@ -1,37 +1,32 @@
 import { prisma } from "#server/utils/prisma";
 import { notifyFriendLinkApplication } from "#server/utils/mail";
 import { validateLinkData } from "#server/utils/validation";
-import { assertPublicHttpUrl, ensureUrlProtocol } from "#server/utils/urlGuard";
+import { ensureUrlProtocol } from "#server/utils/urlGuard";
+import { fetchPublicUrl } from "#server/utils/safe-fetch";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { siteConfig } from "~~/site.config";
 
 // 检测页面是否包含指定链接
 async function checkPageContainsLink(pageUrl: string, targetUrl: string): Promise<boolean> {
   try {
-    // 校验目标页面：仅 http/https 且不得指向内网（SSRF 防护）
-    const safeUrl = await assertPublicHttpUrl(pageUrl);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
-
-    const response = await fetch(safeUrl.href, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    // 安全外联：校验公网 + 钉定已校验 IP（封 DNS rebinding），统一 redirect:"error" 与 10s 超时
+    const html = await fetchPublicUrl(
+      pageUrl,
+      async response => {
+        if (!response.ok) {
+          console.error(`检查友链页面失败: ${response.status}`);
+          return "";
+        }
+        return response.text();
       },
-      signal: controller.signal,
-      // redirect:"error"：拒绝任何重定向，防止公开 URL 一跳到内网绕过 assertPublicHttpUrl 的 SSRF 防护
-      redirect: "error",
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.error(`检查友链页面失败: ${response.status}`);
-      return false;
-    }
-
-    const html = await response.text();
+      {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
+      },
+      10000,
+    );
 
     // 检查页面中是否包含本站链接（完全匹配数据库中的URL）
     const pageLower = html.toLowerCase();

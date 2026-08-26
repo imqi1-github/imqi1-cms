@@ -88,7 +88,7 @@ export default defineEventHandler(async event => {
 
     throw createError({
       statusCode: 500,
-      message: error instanceof Error ? error.message : "获取附件详情失败",
+      message: "获取附件详情失败",
     });
   }
 });

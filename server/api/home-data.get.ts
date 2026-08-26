@@ -25,6 +25,73 @@ export default defineEventHandler(async event => {
     });
     const photoCategoryMid = photoCategory?.mid;
 
+    // 2. 获取最新6篇文章（排除图片分类）——抽成命名 promise：既作 recentContentsData，又供第3分支复用其 cid
+    //    做排除，避免第3分支再 findMany 一次（原实现冗余查询一遍）。
+    const recentContentsPromise = prisma.contents.findMany({
+      where: {
+        type: 0,
+        status: 1,
+        ...(photoCategoryMid && {
+          contentrelations: {
+            none: { mid: photoCategoryMid },
+          },
+        }),
+      },
+      take: 6,
+      orderBy: { create_time: "desc" },
+      select: {
+        cid: true,
+        title: true,
+        slug: true,
+        desc: true,
+        covers: true,
+        many_covers: true,
+        create_time: true,
+        comment_num: true,
+        contentrelations: {
+          select: {
+            metas: {
+              select: {
+                mid: true,
+                name: true,
+                slug: true,
+                type: true,
+              },
+            },
+          },
+        },
+        // 关联的启用地点数（封面角标用）
+        travels: {
+          where: { travel: { enabled: true } },
+          select: { travel_id: true },
+        },
+      },
+    }).then(contents => contents.map(content => {
+      const categories = content.contentrelations
+        .filter(r => r.metas.type === "category")
+        .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
+
+      const tags = content.contentrelations
+        .filter(r => r.metas.type === "tag")
+        .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
+
+      const covers = parseCovers(content.covers);
+
+      return {
+        cid: content.cid,
+        title: content.title,
+        slug: content.slug,
+        desc: content.desc,
+        covers,
+        many_covers: content.many_covers,
+        travelCount: content.travels.length,
+        created: content.create_time,
+        commentsNum: content.comment_num || 0,
+        categories,
+        tags,
+      };
+    }));
+
     // ========== 并行获取所有数据（复用上面的查询结果）==========
     const [
       categoriesData,
@@ -63,90 +130,13 @@ export default defineEventHandler(async event => {
         }))
       ),
 
-      // 2. 获取最新6篇文章（排除图片分类）
-      prisma.contents.findMany({
-        where: {
-          type: 0,
-          status: 1,
-          ...(photoCategoryMid && {
-            contentrelations: {
-              none: { mid: photoCategoryMid },
-            },
-          }),
-        },
-        take: 6,
-        orderBy: { create_time: "desc" },
-        select: {
-          cid: true,
-          title: true,
-          slug: true,
-          desc: true,
-          covers: true,
-          many_covers: true,
-          create_time: true,
-          comment_num: true,
-          contentrelations: {
-            select: {
-              metas: {
-                select: {
-                  mid: true,
-                  name: true,
-                  slug: true,
-                  type: true,
-                },
-              },
-            },
-          },
-          // 关联的启用地点数（封面角标用）
-          travels: {
-            where: { travel: { enabled: true } },
-            select: { travel_id: true },
-          },
-        },
-      }).then(contents => contents.map(content => {
-        const categories = content.contentrelations
-          .filter(r => r.metas.type === "category")
-          .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
-
-        const tags = content.contentrelations
-          .filter(r => r.metas.type === "tag")
-          .map(r => ({ name: r.metas.name, slug: r.metas.slug }));
-
-        const covers = parseCovers(content.covers);
-
-        return {
-          cid: content.cid,
-          title: content.title,
-          slug: content.slug,
-          desc: content.desc,
-          covers,
-          many_covers: content.many_covers,
-          travelCount: content.travels.length,
-          created: content.create_time,
-          commentsNum: content.comment_num || 0,
-          categories,
-          tags,
-        };
-      })),
+      // 2. 最新6篇文章
+      recentContentsPromise,
 
       // 3. 获取分类文章（3个分类，每个4篇，排除最新6篇中已展示的）
       (async () => {
-        // 先获取最新6篇文章的cid（用于排除）
-        const recentContents = await prisma.contents.findMany({
-          where: {
-            type: 0,
-            status: 1,
-            ...(photoCategoryMid && {
-              contentrelations: {
-                none: { mid: photoCategoryMid },
-              },
-            }),
-          },
-          take: 6,
-          orderBy: { create_time: "desc" },
-          select: { cid: true },
-        });
-        const excludeCids = recentContents.map(p => p.cid);
+        // 复用第2分支已取的最新6篇 cid（不再重复 findMany），与区间的排除语义保持一致
+        const excludeCids = (await recentContentsPromise).map(p => p.cid);
 
         const categories = await prisma.metas.findMany({
           where: {

@@ -12,14 +12,17 @@ const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
 
 // 获取协议页面数据
-const { data, pending, error } = await useFetch("/api/page/agreement", {
+const { data, pending, error, refresh } = await useFetch("/api/page/agreement", {
   headers: getInternalRequestHeaders(),
 });
 
 const page = computed(() => data.value?.data);
 
-// 判断页面是否存在
-const isNotFound = computed(() => !pending.value && (!page.value || error.value));
+// 仅当真实 404（页面不存在）才算未找到，避免瞬时 500/超时被 SSR 固化成 404、误显示「页面未找到」。
+// 对照 category/[slug].vue：用 error.statusCode===404 判别，其余错误走 isError 呈现可重试态。
+const isNotFound = computed(() => !pending.value && !page.value && (error.value?.statusCode === 404 || error.value?.status === 404));
+// 非 404 的加载错误（瞬时 DB 抖动/网络/超时）：保留标题并给重试，不触发 setResponseStatus(404)
+const isError = computed(() => !pending.value && !!error.value && !isNotFound.value);
 
 // 协议页不存在时让 SSR 返回 404（后端 API 已抛 404，但页面需显式设置状态码，否则 SSR 返 200 形成 soft-404）
 if (import.meta.server) {
@@ -229,6 +232,18 @@ onUnmounted(() => {
         <NuxtLink to="/" class="text-blue-600 hover:underline font-medium"> 返回首页 </NuxtLink>
         。
       </p>
+    </div>
+
+    <!-- 非 404 加载错误：给重试，避免瞬时故障被渲染成 NotFound/被 SSR 写成 404 -->
+    <div v-else-if="isError" class="text-center py-24">
+      <p class="text-lg text-slate-600 dark:text-slate-400 mb-6">加载失败，请稍后重试</p>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 cursor-pointer"
+        @click="refresh()">
+        <Icon name="lucide:refresh-cw" class="size-4" />
+        重试
+      </button>
     </div>
 
     <!-- 页面内容 -->

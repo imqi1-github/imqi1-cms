@@ -95,34 +95,52 @@ export default defineEventHandler(async event => {
   }
 
   // 创建文章 + （无 slug 时）回填 slug=cid 需原子：否则 create 成功而 update 失败会留下 slug 为空的记录
-  const contentRecord = await prisma.$transaction(async tx => {
-    const created = await tx.contents.create({
-      data: {
-        title,
-        desc,
-        slug: slug || undefined, // 如果没有提供 slug，设为 undefined 让数据库使用默认值
-        content,
-        status: statusNum,
-        type: typeNum,
-        many_covers: manyCovers,
-        covers,
-        show_toc: showToc,
-        create_time: createTime,
-        update_time: new Date(),
-        uid: user.uid, // 设置文章作者为当前登录用户
-      },
-    });
+  let contentRecord: { cid: number };
+  try {
+    contentRecord = await prisma.$transaction(async tx => {
+      const created = await tx.contents.create({
+        data: {
+          title,
+          desc,
+          slug: slug || undefined, // 如果没有提供 slug，设为 undefined 让数据库使用默认值
+          content,
+          status: statusNum,
+          type: typeNum,
+          many_covers: manyCovers,
+          covers,
+          show_toc: showToc,
+          create_time: createTime,
+          update_time: new Date(),
+          uid: user.uid, // 设置文章作者为当前登录用户
+        },
+      });
 
-    // 如果没有提供 slug，使用 cid 作为 slug
-    if (!slug) {
-      await tx.contents.update({
-        where: { cid: created.cid },
-        data: { slug: String(created.cid) },
+      // 如果没有提供 slug，使用 cid 作为 slug
+      if (!slug) {
+        await tx.contents.update({
+          where: { cid: created.cid },
+          data: { slug: String(created.cid) },
+        });
+      }
+
+      return created;
+    });
+  } catch (error) {
+    // 已带 statusCode 的错误（400/403/401 等）原样抛，不吞
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    // 并发同 slug 创建：预检（上方 findFirst）与 create 之间存在 TOCTOU 窗口，
+    // 后提交者触发 P2002（唯一约束）——映射为 400 而非 500，与 categories/create 一致
+    if (error instanceof Error && "code" in error && error.code === "P2002") {
+      throw createError({
+        statusCode: 400,
+        message: `Slug "${slug}" 已被其他文章使用，请使用不同的 slug`,
       });
     }
-
-    return created;
-  });
+    console.error(error);
+    throw createError({ statusCode: 500, message: "创建文章失败" });
+  }
 
   // 前端保存后只需 cid（跳转/关联），不再回查全字段（含正文）。
   return {

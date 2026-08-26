@@ -17,10 +17,13 @@
  *   - 接口：POST /mod/nodejs/com/set_project_status
  */
 import crypto from 'node:crypto'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import dotenv from 'dotenv'
 
-dotenv.config()
+// 加载环境变量（锚定仓库根 .env，勿依赖调用 cwd——脚本可能从任意目录运行）
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env') })
 
 const BT_PANEL_URL = process.env.BT_PANEL_URL
 const BT_API_KEY = process.env.BT_API_KEY

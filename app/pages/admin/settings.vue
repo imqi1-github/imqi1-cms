@@ -142,6 +142,10 @@ async function onImportFile(event: Event) {
 
 // 确认后执行导入（清空后完整还原）
 async function confirmImport() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   const confirmed = await confirm({
     title: "导入所有数据",
     description: `即将从 ${pendingImportFileName.value || "备份文件"} 还原数据。此操作会清空并覆盖现有的文章、评论、分类、友链等全部业务数据，且不可撤销。确定继续吗？`,
@@ -176,6 +180,10 @@ async function confirmImport() {
 }
 
 async function testEmail() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   testingEmail.value = true;
   try {
     const result = await $fetch("/api/admin/mail/test", {
@@ -273,6 +281,10 @@ async function loadSettings() {
 
 // 保存设置
 async function saveSettings() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (saving.value) return;
   saving.value = true;
   try {
@@ -310,6 +322,10 @@ async function confirmReset() {
 }
 
 async function resetToDefaults() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   // messageContentId 在本页无 UI、是"指向留言板文章"的内容引用而非可重置的默认值，
   // 重置时保留原值，避免静默清空留言板配置。
   const preservedMessageContentId = settings.value.messageContentId;
@@ -336,6 +352,10 @@ async function resetToDefaults() {
 
 // 初始化缺失的配置项
 async function initializeMissingSettings() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   initializing.value = true;
   try {
     const result = await $fetch("/api/admin/settings/init", {

@@ -222,6 +222,10 @@ async function saveAttachment() {
 }
 
 async function deleteAttachment() {
+  if (!csrfToken.value) {
+    toast.error({ message: '会话已失效，请刷新页面后重试' })
+    return
+  }
   const confirmed = await confirm({
     title: '删除附件',
     description: '确定要删除这个附件吗？此操作不可恢复！',

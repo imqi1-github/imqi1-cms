@@ -167,6 +167,15 @@ export default defineEventHandler(async event => {
       });
     }
 
+    // 先验文件大小：file.size 是元数据，无需读入内存即可拒绝超限文件，避免超限文件被整读入 buffer 再 reject
+    const maxFileSize = isLivePhoto ? MAX_LIVE_PHOTO_SIZE : MAX_FILE_SIZE;
+    if (file.size > maxFileSize) {
+      throw createError({
+        statusCode: 400,
+        message: `文件大小超过限制 (最大 ${maxFileSize / 1024 / 1024}MB)`,
+      });
+    }
+
     // 读取文件内容（用于魔数验证）
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -176,15 +185,6 @@ export default defineEventHandler(async event => {
       throw createError({
         statusCode: 400,
         message: `文件内容与声明的类型不匹配，可能是恶意文件`,
-      });
-    }
-
-    // 验证文件大小
-    const maxFileSize = isLivePhoto ? MAX_LIVE_PHOTO_SIZE : MAX_FILE_SIZE;
-    if (file.size > maxFileSize) {
-      throw createError({
-        statusCode: 400,
-        message: `文件大小超过限制 (最大 ${maxFileSize / 1024 / 1024}MB)`,
       });
     }
 

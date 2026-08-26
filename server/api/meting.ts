@@ -37,14 +37,15 @@ export default defineEventHandler(async event => {
 
   // 获取查询参数
   const type = (query.type as string) || "playlist";
-  const id = query.id as string;
-  const server = query.server as string;
+  const id = query.id;
+  const server = query.server;
 
   const format = query.format as string;
   const callback = query.callback as string;
 
-  // 验证必要参数
-  if (!id || !server) {
+  // h3 getQuery 对重复参数（?id=a&id=b）会返回数组而非字符串；`as string` 只是编译期声明，运行时不生效。
+  // 先做标量收窄，避免数组（truthy）绕过必填检查、以 json/“a,b” 形态流入上游 meting 请求 → 500。
+  if (typeof id !== "string" || typeof server !== "string" || !id || !server) {
     throw createError({
       statusCode: 400,
       message: "Missing required parameters: id and server",

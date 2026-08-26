@@ -17,12 +17,7 @@ import { fileURLToPath } from "node:url";
 import { escapeAttribute, escapeHtml } from "~~/lib/html";
 import { EMOJI_CATEGORIES, stripEmojiPrefix } from "~~/shared/emoji-categories";
 import { getPublicDir } from "#server/utils/attachment-file";
-import type { MailEmojiAttachment } from "#server/types/utils/emoji-mail";
-
-interface EmojiEntry {
-  path: string;
-  name: string;
-}
+import type { EmojiEntry, MailEmojiAttachment } from "#server/types/utils/emoji-mail";
 
 // 表情 key -> {png 绝对路径, 显示名}，首次使用时从 emojis.json 构建（进程缓存，publicDir 启动后稳定）。
 let emojiKeyMap: Map<string, EmojiEntry> | null = null;

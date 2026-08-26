@@ -92,6 +92,10 @@ async function addSubscribe() {
 }
 
 async function deleteSubscribe(id: number) {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   const confirmed = await confirm({
     title: "删除订阅",
     description: "确定要删除这个订阅源吗？其关联的文章将一并移除，且不可恢复。",

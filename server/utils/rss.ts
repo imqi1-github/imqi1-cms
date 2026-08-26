@@ -3,8 +3,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
 import { prisma } from "./prisma";
 
-import { assertPublicHttpUrl } from "#server/utils/urlGuard";
-
+import { fetchPublicUrl } from "#server/utils/safe-fetch";
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "_",
@@ -26,46 +25,23 @@ function truncateWithEllipsis(text: string | undefined, maxLength: number): stri
   return text.substring(0, maxLength) + "...";
 }
 
-// 带超时的fetch
-async function fetchWithTimeout(url: string, timeout = 30000): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; RSS Reader)",
-      },
-      // 不跟随重定向：assertPublicHttpUrl 只校验初始主机，302 到内网/环回会绕过 SSRF 白名单
-      redirect: "error",
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    console.error(error);
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
-
 // 获取单个订阅源的文章
 async function fetchSubscribePosts(subscribeId: number, url: string) {
   console.log(`[订阅更新] 开始获取订阅 ${subscribeId}: ${url}`);
   try {
-    // 订阅源 URL 做 SSRF 防护：仅允许公网 http(s)，封内部/环路/云元数据地址（防订阅源指向内网）
-    const safeUrl = await assertPublicHttpUrl(url).catch(() => null);
-    if (!safeUrl) {
-      throw new Error("订阅源 URL 不合法（仅允许公网 http/https）");
-    }
+    // 安全外联：校验公网 + 钉定已校验 IP（封 DNS rebinding），统一 redirect:"error" 与 30s 超时
+    const xmlText = await fetchPublicUrl(
+      url,
+      async response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.text();
+      },
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS Reader)" } },
+      30000,
+    );
 
-    const response = await fetchWithTimeout(url, 30000);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const xmlText = await response.text();
     console.log(`[订阅更新] 订阅 ${subscribeId} XML 内容长度: ${xmlText.length}`);
     const feed = parser.parse(xmlText);
 

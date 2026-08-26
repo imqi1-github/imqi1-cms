@@ -185,31 +185,37 @@ export default defineTypedApiHandler(
       // 净化评论内容，防止 XSS 攻击
       const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG) as string;
 
-      const comment = await prisma.comments.create({
-        data: {
-          cid,
-          content: sanitizedContent,
-          name,
-          mail: mail || null,
-          link: link || null,
-          parent_id: parent_id || null,
-          status: commentStatus,
-          agent: agentValue,
-          ip: clientIP,
-        },
-      });
-
-      // 更新文章的评论计数（仅统计已发布的评论）
-      if (commentStatus === 1) {
-        await prisma.contents.update({
-          where: { cid },
+      // 评论写入与评论数累加必须原子（对齐 mini/comments.post）：若 create 后、update 前目标被并发
+      // 删除/下架，update 抛 P2025，整笔回滚，避免留下计数不同步的孤儿评论。
+      const comment = await prisma.$transaction(async tx => {
+        const created = await tx.comments.create({
           data: {
-            comment_num: {
-              increment: 1,
-            },
+            cid,
+            content: sanitizedContent,
+            name,
+            mail: mail || null,
+            link: link || null,
+            parent_id: parent_id || null,
+            status: commentStatus,
+            agent: agentValue,
+            ip: clientIP,
           },
         });
-      }
+
+        // 更新文章的评论计数（仅统计已发布的评论）
+        if (commentStatus === 1) {
+          await tx.contents.update({
+            where: { cid },
+            data: {
+              comment_num: {
+                increment: 1,
+              },
+            },
+          });
+        }
+
+        return created;
+      });
 
       // ========== 邮件通知逻辑 ==========
 

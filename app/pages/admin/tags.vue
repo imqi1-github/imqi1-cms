@@ -36,6 +36,10 @@ async function fetchTags() {
 }
 
 async function addTag() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (submitting.value) return;
   submitting.value = true;
   try {
@@ -107,6 +111,10 @@ function handleEditModalOpenChange(open: boolean) {
 }
 
 async function updateTag() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
   if (!editingTag.value) return;
   if (submitting.value) return;
   submitting.value = true;
