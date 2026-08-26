@@ -24,14 +24,14 @@
     "get:ip": "cd scripts && bunx tsx get-ip.ts",
     "check:update": "node scripts/check-updates.mjs",
     "nginx:generate": "node scripts/generate-nginx-conf.mjs",
-    "mini:dev:h5": "bun --cwd mini run dev:h5",
-    "mini:dev:mp-weixin": "bun --cwd mini run dev:mp-weixin",
-    "mini:dev:mp-alipay": "bun --cwd mini run dev:mp-alipay",
-    "mini:build:h5": "bun --cwd mini run build:h5",
-    "mini:build:mp-weixin": "bun --cwd mini run build:mp-weixin",
-    "mini:build:mp-alipay": "bun --cwd mini run build:mp-alipay",
-    "mini:type-check": "bun --cwd mini run type-check",
-    "mini:lint": "bun --cwd mini run lint"
+    "mini:dev:h5": "cd mini && bun run dev:h5",
+    "mini:dev:mp-weixin": "cd mini && bun run dev:mp-weixin",
+    "mini:dev:mp-alipay": "cd mini && bun run dev:mp-alipay",
+    "mini:build:h5": "cd mini && bun run build:h5",
+    "mini:build:mp-weixin": "cd mini && bun run build:mp-weixin",
+    "mini:build:mp-alipay": "cd mini && bun run build:mp-alipay",
+    "mini:type-check": "cd mini && bun run type-check",
+    "mini:lint": "cd mini && bun run lint"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",

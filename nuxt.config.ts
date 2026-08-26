@@ -183,6 +183,11 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
+      // 显式限定 precache 资源类型：覆盖 @vite-pwa 为 Nuxt builds/ 自动加的 glob，
+      // 消除 workbox 对 .output/public/builds/** 匹配不到文件的警告。
+      // builds/ 下的懒加载元数据（latest.json / meta/*.json）不参与 precache。
+      globPatterns: ["**/*.{js,css,html,ico,png,svg,ttf,woff,woff2,webmanifest}"],
+      globIgnores: ["**/node_modules/**/*", "sw.js", "builds/**"],
       // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
       navigateFallback: null,
       // 把 workbox 运行时内联进 sw.js，避免其被 app.cdnURL 改写到 CDN
