@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type {AttachmentDetail, AttachmentDetailResponse, AttachmentUpdateResponse, ImageDimension} from "~/types/apis/admin/attachments";
-import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
-import type { AdminContent, AdminContentListResponse } from "~/types/apis/admin/contents";
+import type { PageItem } from "~/types/apis/admin/pages";
+import type { AdminContent } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type {ApiError} from "~/types/error";
+import { fetchAllAdminContents, fetchAllAdminPages } from "~/utils/admin-picker";
 
 const route = useRoute()
 const toast = useToast()
@@ -130,12 +131,12 @@ async function fetchAttachment(keepFormInput = false) {
 
 async function fetchRelationTargets() {
   try {
-    const [contentsRes, pagesRes] = await Promise.all([
-      $fetch<AdminContentListResponse>("/api/admin/contents?pageSize=999"),
-      $fetch<PageListResponse>("/api/admin/pages?pageSize=999"),
+    const [contents, pages] = await Promise.all([
+      fetchAllAdminContents(),
+      fetchAllAdminPages(),
     ])
-    uploadContents.value = contentsRes.data || []
-    uploadPages.value = pagesRes.data || []
+    uploadContents.value = contents
+    uploadPages.value = pages
   } catch (error) {
     console.error('获取关联目标失败:', error)
   }

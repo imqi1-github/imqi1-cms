@@ -171,6 +171,10 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "code" in error && error.code === "P2025") {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
+    // 并发把 slug 改成已占用值：唯一约束 P2002（预检与 update 间存在 TOCTOU 窗口）→ 400，与 contents.post 对齐
+    if (error instanceof Error && "code" in error && error.code === "P2002") {
+      throw createError({ statusCode: 400, message: "slug 已被其他文章使用，请使用不同的 slug" });
+    }
     console.error(error);
     throw createError({ statusCode: 500, message: "更新文章失败" });
   }

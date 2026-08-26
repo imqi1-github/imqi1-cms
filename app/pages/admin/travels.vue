@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {ContentListItem, TravelItem} from "~/types/components/map";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import { fetchAllAdminContents } from "~/utils/admin-picker";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -76,8 +77,7 @@ async function fetchTravels() {
 
 async function fetchContents() {
   try {
-    const res = await $fetch<{ data: ContentListItem[] }>("/api/admin/contents?pageSize=999");
-    contents.value = res?.data ?? [];
+    contents.value = await fetchAllAdminContents()
   } catch (error) {
     console.error("获取文章列表失败:", error);
     contents.value = [];
