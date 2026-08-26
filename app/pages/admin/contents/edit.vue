@@ -31,8 +31,9 @@ watch(() => route.query.cid, (newCid) => {
 }, { immediate: true });
 
 const activeTab = ref("content");
-// 编辑模式下初始 loading 为 true，避免先显示编辑器再显示骨架屏
-const loading = ref(!!route.query.cid);
+// 编辑模式下初始 loading 为 false，仅在真正 fetch 到有效 contentId 时才置 true，
+// 避免非法 ?cid（Number() 为 NaN）令 fetchContent 早退后骨架屏永久停留。
+const loading = ref(false);
 
 // 跟踪是否有未保存的更改
 const hasUnsavedChanges = ref(false);
@@ -120,28 +121,22 @@ const fetchContentTags = async () => {
 const saveContentCategories = async () => {
   if (!contentId.value) return;
 
-  try {
-    await $fetch(`/api/admin/content-categories/${contentId.value}`, {
-      method: "PUT",
-      body: { categoryIds: selectedCategoryIds.value, csrfToken: csrfToken.value },
-    });
-  } catch (error) {
-    console.error("保存分类失败:", error);
-  }
+  // 不吞异常：由 saveContent 统一处理，失败须保留未保存状态并提示（见 saveContent 内注释）
+  await $fetch(`/api/admin/content-categories/${contentId.value}`, {
+    method: "PUT",
+    body: { categoryIds: selectedCategoryIds.value, csrfToken: csrfToken.value },
+  });
 };
 
 // 保存文章标签
 const saveContentTags = async () => {
   if (!contentId.value) return;
 
-  try {
-    await $fetch(`/api/admin/content-tags/${contentId.value}`, {
-      method: "PUT",
-      body: { tagIds: selectedTagIds.value, csrfToken: csrfToken.value },
-    });
-  } catch (error) {
-    console.error("保存标签失败:", error);
-  }
+  // 不吞异常：由 saveContent 统一处理，失败须保留未保存状态并提示（见 saveContent 内注释）
+  await $fetch(`/api/admin/content-tags/${contentId.value}`, {
+    method: "PUT",
+    body: { tagIds: selectedTagIds.value, csrfToken: csrfToken.value },
+  });
 };
 
 // 切换分类选择
@@ -682,14 +677,28 @@ const saveContent = async () => {
         await router.push(`/admin/contents/edit?cid=${newCid}`);
       }
 
-      // 保存分类
-      await saveContentCategories();
-      // 保存标签
-      await saveContentTags();
+      // 保存分类/标签 —— 失败不吞：分类/标签是文章之外的独立提交，失败须保留未保存状态并明确提示，
+      // 而非静默吞掉，否则下面 saveInitialContent() 会把 hasUnsavedChanges 重置为 false（用户误以为全部已保存）
+      let relationSaveOk = true;
+      try {
+        await saveContentCategories();
+        await saveContentTags();
+      } catch (relationError) {
+        relationSaveOk = false;
+        const msg = relationError && typeof relationError === "object" && "data" in relationError && relationError.data && typeof relationError.data === "object" && "message" in relationError.data
+          ? String(relationError.data.message)
+          : (relationError instanceof Error ? relationError.message : "请稍后重试");
+        toast.error({
+          message: "文章已保存，但分类/标签保存失败，请重试",
+          description: msg,
+        });
+      }
 
-      // 更新初始内容（保存成功后）
+      // 仅当分类/标签也保存成功时才更新初始内容（重置未保存标记）
       await nextTick();
-      saveInitialContent();
+      if (relationSaveOk) {
+        saveInitialContent();
+      }
     }
   } catch (e: unknown) {
     const msg = e && typeof e === "object" && "data" in e && e.data && typeof e.data === "object" && "message" in e.data
@@ -761,7 +770,7 @@ onMounted(async () => {
   fetchCategories();
   fetchTags();
   fetchTravels();
-  if (isEdit.value) {
+  if (isEdit.value && contentId.value) {
     fetchContent();
   } else {
     // 新建文章时，自动填充当前时间（使用本地时间，而非 UTC）

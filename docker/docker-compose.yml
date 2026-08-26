@@ -43,7 +43,7 @@ services:
     environment:
       # root 与 nodejs 普通用户密码都用 DB_PASSWORD；应用与 healthcheck 只用 nodejs。
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-imqi1}
+      MYSQL_DATABASE: ${DB_NAME:-imqi1-cms}
       # ⚠️ 不能设为 root（MYSQL_USER 只用于创建普通用户，root 会报错起不来）
       MYSQL_USER: ${DB_USER:-nodejs}
       MYSQL_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}

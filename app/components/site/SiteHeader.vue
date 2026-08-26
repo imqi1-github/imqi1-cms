@@ -7,6 +7,7 @@ const route = useRoute();
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
+const siteDesc = computed(() => siteSettings.value?.siteDesc || siteConfig.seo.description);
 
 // 获取页面标题（从页面组件设置）
 const { getPageTitle, getPageIcon, getPageCategory } = usePageTitle();
@@ -189,9 +190,9 @@ const currentPageTitle = computed(() => {
   const lastItem = breadcrumbs.value[breadcrumbs.value.length - 1];
   const pageName = lastItem?.name || "";
 
-  // 如果是主页，显示"站点名称 - 记录生活，分享技术"
+  // 如果是主页，显示"站点名称 - 站点描述"（描述读运行时 siteDesc，缺省回落静态 seo.description）
   if (route.path === "/") {
-    return `${siteName.value} - 记录生活，分享技术`;
+    return `${siteName.value} - ${siteDesc.value}`;
   }
 
   // 其他页面显示"页名称 - 站点名称"

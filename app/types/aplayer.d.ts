@@ -94,6 +94,12 @@ export type DragEvent = MouseEvent | TouchEvent;
 
 export type EventHandler = (data?: unknown) => void;
 
+/** audio 事件 handler 引用 —— destroy 时逐个 removeEventListener */
+export interface APlayerAudioHandler {
+  name: string;
+  handler: (e: Event) => void;
+}
+
 /** 解析后的歌词行:[时间秒, 文本] */
 export type LrcLine = [number, string];
 

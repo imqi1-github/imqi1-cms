@@ -602,7 +602,7 @@ function createCluster(points: MapPoint[]) {
       const place = findPlace(data[0]);
       if (place) {
         // 我的足迹单点已改为蓝色圆点，偏移与访客分布一致
-        openInfo(buildInfoContent(place), data[0]!.lnglat, hasReaders ? INFO_OFFSET_VISITOR_Y : INFO_OFFSET_VISITOR_Y);
+        openInfo(buildInfoContent(place), data[0]!.lnglat, INFO_OFFSET_VISITOR_Y);
       }
       return;
     }

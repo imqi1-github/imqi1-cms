@@ -67,9 +67,10 @@ export default defineEventHandler(async () => {
       }
     }
 
-    const categoriesWithContents = categories.map(category => ({
+    // mid 仅用于内部归组，不随公开响应返回（字段白名单，见 categories.get.ts 注释）
+    const categoriesWithContents = categories.map(({ mid, ...category }) => ({
       ...category,
-      contents: contentsByMid.get(category.mid) ?? [],
+      contents: contentsByMid.get(mid) ?? [],
     }));
 
     return {

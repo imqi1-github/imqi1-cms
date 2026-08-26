@@ -11,4 +11,4 @@ metadata:
 
 首次 `--fix` 已把 26k 问题压到 583（572 错 + 11 警），后经多轮死代码/`any` 清理，**2026-07-19 复验 `bunx eslint .` 已 exit 0（零残留）**。**刻意保持严格模式**——**不要为求 lint 通过把规则降级为 warn**（尤其 `no-explicit-any`，与 [[api-types-nitro-internal]] 的降 any 方向一致）；历史残留分布（`no-explicit-any`/`no-unused-vars`/`vue/no-v-html`/`vue/no-mutating-props`）现已清零，新增代码须维持 exit 0，别回退引入新 `any`/未用变量/v-html。
 
-**How to apply:** 写新代码须过 `bunx eslint .`；改存量 `any` 时优先用真实类型/zod，而非加 `// eslint-disable`。`eslint.config.mjs` 的 `ignores` 实际是 `["scripts","node_modules","mini"]`（非 `.output/.nuxt/dist/.data`）。
+**How to apply:** 写新代码须过 `bunx eslint .`；改存量 `any` 时优先用真实类型/zod，而非加 `// eslint-disable`。`eslint.config.mjs` 的 `ignores` 现为 `["node_modules","mini"]`（scripts 已纳入 lint，非 `.output/.nuxt/dist/.data`）。

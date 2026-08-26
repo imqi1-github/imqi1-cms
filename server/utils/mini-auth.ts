@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import type { H3Event } from "h3";
 
+import type { MiniAuthResult } from "#server/types/utils/mini-auth";
+
 /**
  * 小程序 API 的 HMAC-SHA256 签名校验。
  *
@@ -26,12 +28,6 @@ import type { H3Event } from "h3";
 
 /** 允许的时间戳偏差（秒）。请求捕获后仅能在此窗口内被重放。 */
 const MAX_SKEW_SECONDS = 300;
-
-export interface MiniAuthResult {
-  ok: boolean;
-  /** 校验失败原因，仅用于服务端日志，不回传给客户端。 */
-  reason?: string;
-}
 
 /**
  * 读取当前环境配置的小程序密钥。

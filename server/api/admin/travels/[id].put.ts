@@ -94,12 +94,14 @@ export default defineEventHandler(async event => {
         where: { id },
         data: {
           name: name.trim(),
-          desc: typeof desc === 'string' ? desc.trim() : null,
-          cover: typeof cover === 'string' ? cover.trim() : null,
+          // 部分更新：desc/cover/enabled 仅当请求显式携带时才写，避免只想改 name 时把已有简介/封面清空、
+          // 或把已停用的地点意外翻回启用（创建走 create，此接口是 update）
+          ...(desc !== undefined ? { desc: typeof desc === 'string' ? desc.trim() : null } : {}),
+          ...(cover !== undefined ? { cover: typeof cover === 'string' ? cover.trim() : null } : {}),
           longitude: lng,
           latitude: lat,
           sort: sortValue,
-          enabled: enabled !== false,
+          ...(enabled !== undefined ? { enabled } : {}),
         },
       });
 

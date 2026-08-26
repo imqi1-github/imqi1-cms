@@ -945,7 +945,6 @@ onMounted(async () => {
         overflow: hidden;
         border-radius: 8px;
         background: rgb(243 244 246);
-        dark:background: rgb(31 41 55);
       }
 
       .markdown-waterfall .waterfall-img {

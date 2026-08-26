@@ -197,8 +197,8 @@ usePageSeo({
         </div>
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div
-            v-for="category in sitemapData.categories"
-            :key="category.mid"
+            v-for="(category, index) in sitemapData.categories"
+            :key="category.slug || 'category-' + index"
             class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/40 p-5 transition-colors duration-300">
             <!-- 分类标题 -->
             <div class="mb-4">

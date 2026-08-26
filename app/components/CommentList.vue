@@ -80,7 +80,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
   error.value = "";
 
   try {
-    const response = await fetch(`/api/comments?cid=${props.contentId}&page=${page}&pageSize=${pageSize.value}`);
+    const response = await fetch(`/api/comments?cid=${props.contentId}&page=${page}&pageSize=${props.loadAllComments ? 10000 : pageSize.value}`);
     const data: CommentsApiResponse = await response.json();
 
     if (seq !== fetchSeq) return;
@@ -170,18 +170,24 @@ onMounted(async () => {
 
   // 如果需要加载所有评论，使用大 pageSize
   if (props.loadAllComments) {
-    const actualPageSize = 10000;
-    const response = await fetch(`/api/comments?cid=${props.contentId}&page=1&pageSize=${actualPageSize}`);
-    const data: CommentsApiResponse = await response.json();
-    if (data.code === 200) {
-      comments.value = data.data;
-      // 使用 totalAllComments 显示所有评论总数（包括子评论）
-      totalComments.value = data.pagination.totalAllComments;
-      hasMore.value = data.pagination.hasMore;
-    } else {
-      error.value = data.message || "获取评论失败";
+    try {
+      const actualPageSize = 10000;
+      const response = await fetch(`/api/comments?cid=${props.contentId}&page=1&pageSize=${actualPageSize}`);
+      const data: CommentsApiResponse = await response.json();
+      if (data.code === 200) {
+        comments.value = data.data;
+        // 使用 totalAllComments 显示所有评论总数（包括子评论）
+        totalComments.value = data.pagination.totalAllComments;
+        hasMore.value = data.pagination.hasMore;
+      } else {
+        error.value = data.message || "获取评论失败";
+      }
+    } catch {
+      // 网络错/非法 JSON：置错误态，避免 loading 永 true 卡死评论区
+      error.value = "获取评论失败";
+    } finally {
+      loading.value = false;
     }
-    loading.value = false;
   } else {
     fetchComments();
   }

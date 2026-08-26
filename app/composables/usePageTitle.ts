@@ -9,9 +9,8 @@ export function usePageTitle() {
   // 设置页面标题
   function setPageTitle(title: string, icon?: string) {
     currentPageTitle.value = title;
-    if (icon) {
-      currentPageIcon.value = icon;
-    }
+    // 缺省 icon 时清空，避免 SPA 切换后残留上一页图标
+    currentPageIcon.value = icon ?? null;
   }
 
   // 获取页面标题

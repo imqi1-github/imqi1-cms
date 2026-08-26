@@ -3,6 +3,7 @@ import { createVNode, render, type Component } from "vue";
 import LivePhoto from "~/components/LivePhoto.vue";
 import type { MarkdownImageMountOptions } from "~/types/composables/markdown-images";
 import type { NuxtVueApp } from "~/types/nuxt";
+import { escapeHtmlAttr } from "~/utils/markdownWidgets";
 
 /**
  * Markdown 图片增强
@@ -21,12 +22,6 @@ import type { NuxtVueApp } from "~/types/nuxt";
 export const useMarkdownImages = () => {
   // 记录所有动态挂载的容器，用于卸载时清理
   let mountedContainers: HTMLElement[] = [];
-
-  const escapeHtmlAttr = (value: string) => value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 
   /**
    * 获取当前 Nuxt 应用的 appContext，用于动态挂载时共享全局组件

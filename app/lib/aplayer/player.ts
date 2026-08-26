@@ -11,7 +11,7 @@ import Template from './template';
 import Timer from './timer';
 import utils from './utils';
 
-import type { APlayerAudio, APlayerOptions, HlsInstance, ResolvedAPlayerOptions } from '~/types/aplayer';
+import type { APlayerAudio, APlayerAudioHandler, APlayerOptions, HlsInstance, ResolvedAPlayerOptions } from '~/types/aplayer';
 
 const instances: APlayer[] = [];
 
@@ -56,7 +56,7 @@ class APlayer {
     skipTime?: ReturnType<typeof setTimeout>;
 
     // audio 事件绑定的 handler 引用 —— destroy 时逐个 removeEventListener（原实现只 add 不 remove，依赖 audio 被 GC）
-    private audioHandlers: { name: string; handler: (e: Event) => void }[] = [];
+    private audioHandlers: APlayerAudioHandler[] = [];
 
     /**
      * APlayer constructor function

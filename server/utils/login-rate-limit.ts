@@ -7,21 +7,7 @@
  * （单用户博客通常单实例，可接受；若将来多实例可改造为复用 session-store 后端）。
  */
 
-interface AttemptRecord {
-  /** 当前统计窗口内的失败次数 */
-  failures: number;
-  /** 当前统计窗口起点（ms 时间戳） */
-  windowStart: number;
-  /** 锁定截止时间（ms 时间戳），0 表示未锁定 */
-  lockedUntil: number;
-}
-
-export interface RateLimitResult {
-  /** 是否处于锁定状态 */
-  locked: boolean;
-  /** 剩余锁定时长（ms），未锁定时为 0 */
-  retryAfter: number;
-}
+import type { AttemptRecord, RateLimitResult } from "#server/types/utils/login-rate-limit";
 
 const MAX_ATTEMPTS = 5; // 窗口内允许失败次数上限
 const WINDOW_MS = 15 * 60 * 1000; // 15 分钟统计窗口

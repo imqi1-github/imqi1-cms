@@ -67,7 +67,17 @@ export default defineEventHandler(async event => {
     },
     include: {
       content: {
-        include: {
+        // 显式白名单：只取列表页消费的列，避免把 LongText content 全文连同 status/type/uid/toc 一起拖出
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          desc: true,
+          create_time: true,
+          update_time: true,
+          comment_num: true,
+          many_covers: true,
+          covers: true,
           contentrelations: {
             select: {
               cid: true,

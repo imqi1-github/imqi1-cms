@@ -340,6 +340,7 @@ function getCommentFrontendUrl(comment: CommentItem) {
   if (!content?.slug) return null;
   if (content.slug === "messages") return `/messages#comment-${comment.coid}`;
 
+  // 内容集合已在服务端按 metas.type==='category' 过滤（take:1），取首条即为分类 slug
   const categorySlug = content.contentrelations?.[0]?.metas?.slug;
   if (!categorySlug) return null;
   return `/content/${categorySlug}/${content.slug}#comment-${comment.coid}`;

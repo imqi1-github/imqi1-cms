@@ -1,4 +1,4 @@
-import type { HandledError } from "~/types/error";
+import type { ErrorShape, HandledError } from "~/types/error";
 /**
  * 全局错误处理插件
  * 自动捕获未被 try-catch 处理的错误并显示 toast 提示
@@ -33,14 +33,7 @@ export default defineNuxtPlugin(nuxtApp => {
       message = handled;
     } else if (handled && typeof handled === "object") {
       // 处理 Nuxt createError / h3 错误 / Fetch 错误
-      const err = handled as {
-        message?: string;
-        statusMessage?: string;
-        statusCode?: number;
-        status?: number;
-        data?: { message?: string };
-        response?: { _data?: { message?: string } };
-      };
+      const err = handled as ErrorShape;
       message =
         err.message || err.data?.message || err.response?._data?.message || err.statusMessage || `请求失败: ${err.statusCode || err.status || 500}`;
     }
