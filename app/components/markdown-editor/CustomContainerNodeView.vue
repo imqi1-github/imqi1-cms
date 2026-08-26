@@ -144,3 +144,14 @@ function saveEdit() {
     </Dialog>
   </NodeViewWrapper>
 </template>
+
+<style>
+/* JetBrains Mono 的程序连字（calt）会把 "::" / "//" 渲染成单个字形，
+   在容器源码对话框里看着像"冒号变少/双斜杠变单斜杠"（数据其实完整）。
+   容器源码是 markdown 语法字面量，必须按字面显示 → 禁用连字。
+   （shadcn Textarea 组件自带 scope，故此处用全局选择器才能命中 teleport 后的对话框 textarea。） */
+[role="dialog"] textarea {
+  font-variant-ligatures: none !important;
+  font-feature-settings: "liga" 0, "calt" 0, "clig" 0, "dlig" 0 !important;
+}
+</style>

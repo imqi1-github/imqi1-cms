@@ -883,6 +883,11 @@ const actions = {
 }
 
 .markdown-editor :deep(.tiptap-content.ProseMirror) {
+  /* JetBrains Mono 程序连字会把 ":::" / "//" 渲染成合成字形（看着像少字符）。
+     markdown 语法里的冒号/斜杠必须按字面显示，禁用连字。 */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0, "clig" 0, "dlig" 0;
+
   min-height: 400px;
   padding: 1rem 1.25rem;
   outline: none;
