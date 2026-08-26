@@ -24,8 +24,15 @@ onMounted(() => {
       spaceBetween: 20,
       loop: false,
       mousewheel: { forceToAxis: true, sensitivity: 1, releaseOnEdges: false },
-      navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" },
-      pagination: { el: ".swiper-pagination", clickable: true },
+      // 用 rootEl 作用域内的元素，避免多个轮播图时全局 class 选择器把按钮/分页绑到第一个实例
+      navigation: {
+        nextEl: rootEl.value.querySelector(".swiper-button-next"),
+        prevEl: rootEl.value.querySelector(".swiper-button-prev"),
+      },
+      pagination: {
+        el: rootEl.value.querySelector(".swiper-pagination"),
+        clickable: true,
+      },
       freeMode: false,
       touchRatio: 1,
       resistance: true,
