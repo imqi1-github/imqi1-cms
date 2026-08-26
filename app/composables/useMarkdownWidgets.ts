@@ -42,6 +42,20 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
     mounted.push(container);
   }
 
+  // innerHTML 类 widget（details/video/callout/card/...）：原版用 replaceWith 把服务端占位 wrapper
+  // （.markdown-*-wrapper，带 min-height/灰底加载态）替换成组件根节点。这里渲染到临时 holder、
+  // 再用组件根 replaceWith wrapper，使 wrapper 灰框占位随水合消失（与原版一致）。holder 每次新建。
+  function mountReplace(Component: Component, props: Record<string, unknown>, wrapper: HTMLElement) {
+    const holder = document.createElement("div");
+    const vnode = createVNode(Component, props);
+    vnode.appContext = appContext as never;
+    render(vnode, holder);
+    const root = holder.firstElementChild as HTMLElement | null;
+    if (root) wrapper.replaceWith(root);
+    else wrapper.remove();
+    mounted.push(holder);
+  }
+
   function mountLivePhoto(container: HTMLElement, props: Record<string, unknown>) {
     mount(LivePhoto, props, container);
   }
@@ -71,23 +85,23 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
   document.querySelectorAll<HTMLElement>(".markdown-details-wrapper").forEach(wrapper => {
     const summary = wrapper.getAttribute("data-summary") || "展开";
     const content = wrapper.innerHTML;
-    mount(MarkdownDetails, { summary, content }, wrapper);
+    mountReplace(MarkdownDetails, { summary, content }, wrapper);
   });
 
   // —— 视频 ——
   document.querySelectorAll<HTMLElement>(".markdown-video-wrapper").forEach(wrapper => {
-    mount(MarkdownVideo, { url: wrapper.getAttribute("data-url") || "" }, wrapper);
+    mountReplace(MarkdownVideo, { url: wrapper.getAttribute("data-url") || "" }, wrapper);
   });
 
   // —— 提示框 ——
   document.querySelectorAll<HTMLElement>(".markdown-callout-wrapper").forEach(wrapper => {
-    mount(MarkdownCallout, { type: wrapper.getAttribute("data-type") || "info", content: wrapper.innerHTML }, wrapper);
+    mountReplace(MarkdownCallout, { type: wrapper.getAttribute("data-type") || "info", content: wrapper.innerHTML }, wrapper);
   });
 
   // —— 外链卡片 ——
   document.querySelectorAll<HTMLElement>(".markdown-card-wrapper").forEach(wrapper => {
     const parts = safeDecodeURIComponent(wrapper.getAttribute("data-params") || "").split("|").map(p => p.trim());
-    mount(
+    mountReplace(
       MarkdownCard,
       { url: parts[0] || "", title: parts[1] || "标题", description: parts[2] || "", image: parts[3] || "" },
       wrapper,
@@ -97,7 +111,7 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
   // —— 简单外链卡片 ——
   document.querySelectorAll<HTMLElement>(".markdown-simple-card-wrapper").forEach(wrapper => {
     const parts = safeDecodeURIComponent(wrapper.getAttribute("data-params") || "").split("|").map(p => p.trim());
-    mount(MarkdownSimpleCard, { url: parts[0] || "", title: parts[1] || "链接标题" }, wrapper);
+    mountReplace(MarkdownSimpleCard, { url: parts[0] || "", title: parts[1] || "链接标题" }, wrapper);
   });
 
   // —— 轮播图（内部含 .markdown-live-photo-mount，稍后统一 hydrate）——
@@ -115,12 +129,12 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
       wrapper.remove();
       return;
     }
-    mount(MarkdownSwiper, { slides, wrapClass: `markdown-swiper-instance-${i}` }, wrapper);
+    mountReplace(MarkdownSwiper, { slides, wrapClass: `markdown-swiper-instance-${i}` }, wrapper);
   });
 
   // —— 仓库卡片 ——
   document.querySelectorAll<HTMLElement>(".markdown-repo-wrapper").forEach(wrapper => {
-    mount(MarkdownRepo, { url: wrapper.getAttribute("data-url") || "" }, wrapper);
+    mountReplace(MarkdownRepo, { url: wrapper.getAttribute("data-url") || "" }, wrapper);
   });
 
   // —— 瀑布流（内部含 .markdown-live-photo-mount，稍后统一 hydrate）——
@@ -138,7 +152,7 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
       wrapper.remove();
       return;
     }
-    mount(MarkdownWaterfall, { images }, wrapper);
+    mountReplace(MarkdownWaterfall, { images }, wrapper);
   });
 
   // —— 音乐播放器 ——
@@ -185,7 +199,7 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
         id = parts[2]!;
       }
     }
-    mount(MarkdownMusic, { server, type, id }, wrapper);
+    mountReplace(MarkdownMusic, { server, type, id }, wrapper);
   });
 
   // —— 轮播/瀑布流/独立图片里的 .markdown-live-photo-mount 统一 hydrate（须在上述 widget 挂载之后）——
