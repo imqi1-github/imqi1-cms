@@ -1,5 +1,6 @@
 # Memory Index
 
+- [死代码扫描:自动导入前缀盲区](dead-code-scan-autolimport-prefix.md) — 扫未用 Vue 组件时,组件可能被 Nuxt 自动导入的目录前缀/`Lazy`前缀引用(`<AdminTravelCoordinatePicker>`/`<SiteActivityHeatmap>`/`<LazyContextMenu>`),只看无前缀名会误判活组件为死(ContextMenu 曾被误删靠 git 恢复);eslint 抓不到(自动导入无 import);全局 grep 组件名或 knip
 - [markdown 行内链接域名图标](markdown-link-chip-display.md) — 已知域名(GitHub/Gitee/百度/谷歌/腾讯QQ/微信/Mozilla-MDN/npm)行内链接在 link_open 文本前插入空 `<span class="markdown-link-icon markdown-link-icon--<slug>">`(图标 CSS mask+currentColor);链接不加 class 保持普通超链接外观;样式在 [slug].vue 与 agreement.vue 各一份 scoped;`:::repo` 仓库卡片走 Vue 组件不受影响;**扩展 LINK_CHIP_DOMAINS 须具体子域排父域前**(weixin.qq.com/wx.qq.com 先于 qq.com,否则 mp.weixin.qq.com 因 endsWith(".qq.com") 错配成 tencent)
 - [Nuxt SSR/API 双 bundle 单例坑](nuxt-ssr-api-bundle-singleton-memory-session.md) — server util 模块级单例被 app/nitro 两个 bundle 各内联一份,memory session 互不可见→/admin 整页进入 302 跳登录又自动回;file/database 走共享存储不受影响;修复=单例挂 globalThis;curl 对比 /admin(302) vs verify(valid) 即暴露
 - [Redis 构建期烘焙+Docker 拆两套显式版本](redis-build-baked-docker-ondemand.md) — Redis 只读构建期 env(shared/redis-config)→烘焙 runtimeConfig.redis(nitro ISR 共用),运行时零 Redis 环境变量;Docker 拆 docker/ 两套显式版本(带/不带 Redis),无 COMPOSE_PROFILES,运行统一 `--env-file .env -f docker/...`;.dockerignore 锚定 /Dockerfile 防误排子目录;env_file 惰性注入 REDIS_* 无害
