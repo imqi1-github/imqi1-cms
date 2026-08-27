@@ -31,7 +31,6 @@ const _isProduction = process.env.NODE_ENV === "production";
 // 静态资源 CDN 前缀：生产环境带 CDN 根（不带构建 hash），开发环境为空走本地 public
 const _assetPrefix = _isProduction ? _cdnUrl : "";
 
-
 /**
  * 全站静态配置实例
  *
@@ -66,25 +65,25 @@ export const siteConfig = defineSiteConfig({
       name: "邮箱",
       icon: "ri:mail-fill",
       link: "mailto:imqi1@qq.com",
-      target: true
+      target: true,
     },
     {
       name: "Github",
       icon: "ri:github-fill",
       link: "https://github.com/imqi1-github",
-      target: true
+      target: true,
     },
     {
       name: "X",
       icon: "ri:twitter-x-fill",
       link: "https://x.com/imqi1_X",
-      target: true
+      target: true,
     },
     {
       name: "个人网站",
       icon: "ri:home-fill",
       link: "https://qi1.website",
-      target: true
+      target: true,
     },
     {
       name: "小程序",
@@ -102,7 +101,7 @@ export const siteConfig = defineSiteConfig({
       icon: "ri:earth-fill",
       link: "https://foreverblog.cn/go.html",
       target: true,
-    }
+    },
   ],
 
   manifest: {
