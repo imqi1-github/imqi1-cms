@@ -1608,6 +1608,52 @@ onUnmounted(() => {
   color: rgb(96 165 250);
 }
 
+/* 已知域名行内链接的左侧域名图标：空 span + mask + currentColor，随文字色自适应深浅色。
+   链接本身不加 class、保持普通超链接外观（含 hover 下划线），只额外渲染这个图标。 */
+.markdown-body :deep(.markdown-link-icon) {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: none;
+  margin-inline-end: 0.1em;
+  vertical-align: -0.15em;
+  background-color: currentColor;
+  -webkit-mask: var(--mk-icon) no-repeat center / contain;
+  mask: var(--mk-icon) no-repeat center / contain;
+}
+
+.markdown-body :deep(.markdown-link-icon--github) {
+  --mk-icon: url("/icons/github.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--gitee) {
+  --mk-icon: url("/icons/gitee.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--baidu) {
+  --mk-icon: url("/icons/baidu.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--google) {
+  --mk-icon: url("/icons/google.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--tencent) {
+  --mk-icon: url("/icons/tencent.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--wechat) {
+  --mk-icon: url("/icons/wechat.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--mozilla) {
+  --mk-icon: url("/icons/mozilla.svg");
+}
+
+.markdown-body :deep(.markdown-link-icon--npm) {
+  --mk-icon: url("/icons/npm.svg");
+}
+
 .markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul):not(.aplayer-list ul),
 .markdown-body :deep(ol):not(.markdown-callout ol):not(.markdown-card ol):not(.markdown-repo ol):not(.aplayer-list ol) {
   padding-left: 2em;

@@ -69,6 +69,47 @@ const supportedLanguages = new Set([
   "ps1",
 ]);
 
+// 行内链接小卡片：已知域名的 markdown 行内链接渲染成带品牌图标的徽章样式。
+// 首版收录 GitHub / Gitee / 百度 / 谷歌 / 腾讯 / 微信；同 slug 可配多 host（如腾讯、微信各有两个主域名）。
+const LINK_CHIP_DOMAINS: Array<{ slug: string; host: string }> = [
+  { slug: "github", host: "github.com" },
+  { slug: "gitee", host: "gitee.com" },
+  { slug: "baidu", host: "baidu.com" },
+  { slug: "google", host: "google.com" },
+  // 更具体的子域名必须排在父域名之前：weixin.qq.com / wx.qq.com 若排在 qq.com 后面，
+  // 会被 `.qq.com` 后缀匹配先吞掉，导致微信链接拿到腾讯图标。
+  { slug: "wechat", host: "weixin.qq.com" },
+  { slug: "wechat", host: "wx.qq.com" },
+  { slug: "tencent", host: "qq.com" },
+  { slug: "tencent", host: "tencent.com" },
+  // mozilla.org 后缀匹配自动覆盖 developer.mozilla.org(MDN) / www.mozilla.org；
+  // npmjs.com 覆盖 docs.npmjs.com / www.npmjs.com，npmjs.org 兼容旧 registry 链接。
+  { slug: "mozilla", host: "mozilla.org" },
+  { slug: "npm", host: "npmjs.com" },
+  { slug: "npm", host: "npmjs.org" },
+];
+
+// 根据链接 href 判断是否命中已知域名卡片，命中返回其 slug（如 "github"），否则返回 null。
+// 仅接受 http/https 外链，主机名精确匹配或以 ".域名" 结尾匹配（gist.github.com → github、mp.weixin.qq.com → wechat）。
+function getLinkChipDomain(href: string): { slug: string } | null {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return null;
+  }
+  const host = url.hostname.toLowerCase();
+  for (const domain of LINK_CHIP_DOMAINS) {
+    if (host === domain.host || host.endsWith(`.${domain.host}`)) {
+      return { slug: domain.slug };
+    }
+  }
+  return null;
+}
+
 const simpleMd = new MarkdownIt({
   html: false,
   linkify: false,
@@ -117,7 +158,13 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     if (relIndex < 0) {
       token.attrPush(["rel", "noopener noreferrer"]);
     }
-    return self.renderToken(tokens, idx, options);
+    // 已知域名的行内链接在文本前插入一个空 <span class="markdown-link-icon markdown-link-icon--<slug>">。
+    // 链接本身不额外加 class、保持普通超链接外观（含 hover 下划线）；图标由 CSS mask 绘制
+    // （iconify 类在本仓库不生效，见正文页 .markdown-link-icon），只呈现不变样式。
+    const href = token.attrGet("href");
+    const chipDomain = href ? getLinkChipDomain(href) : null;
+    const rendered = self.renderToken(tokens, idx, options);
+    return chipDomain ? `${rendered}<span class="markdown-link-icon markdown-link-icon--${chipDomain.slug}" aria-hidden="true"></span>` : rendered;
   };
 
   // 自定义图片渲染规则（包装成 figure 并添加标题）
