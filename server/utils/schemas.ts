@@ -5,44 +5,6 @@
 
 import { z } from "zod";
 
-// ============= 通用响应 Schema =============
-
-export const SuccessResponseSchema = z.object({
-  success: z.literal(true),
-  message: z.string().optional(),
-});
-
-export const ErrorResponseSchema = z.object({
-  success: z.literal(false),
-  message: z.string(),
-  code: z.number().optional(),
-});
-
-export const StandardResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
-  z.object({
-    code: z.number().default(200),
-    message: z.string(),
-    data: dataSchema,
-  });
-
-// ============= 分页 Schema =============
-
-export const PaginationQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(10),
-});
-
-export const PaginationResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
-  z.object({
-    items: z.array(itemSchema),
-    total: z.number(),
-    page: z.number(),
-    pageSize: z.number(),
-    totalPages: z.number(),
-  });
-
-// ============= 搜索 Schema =============
-
 // 搜索类别：文章 / 订阅和友链 / 评论 / 订阅文章
 export const SearchTypeSchema = z.enum(["content", "subscribe", "comment", "subscribepost"]);
 
@@ -103,9 +65,7 @@ export const SubscribePostSearchItemSchema = z.object({
 });
 
 export const SearchResponseSchema = z.object({
-  results: z.array(
-    z.union([SearchResultItemSchema, SubscribeSearchItemSchema, CommentSearchItemSchema, SubscribePostSearchItemSchema]),
-  ),
+  results: z.array(z.union([SearchResultItemSchema, SubscribeSearchItemSchema, CommentSearchItemSchema, SubscribePostSearchItemSchema])),
   total: z.number(),
   query: z.string(),
   type: SearchTypeSchema,
@@ -118,8 +78,16 @@ export const CommentCreateSchema = z.object({
   cid: z.coerce.number().int().positive(),
   content: z.string().min(1).max(5000),
   name: z.string().min(1).max(50),
-  mail: z.string().optional().nullable().transform(v => (v === "" ? null : v)),
-  link: z.string().optional().nullable().transform(v => (v === "" ? null : v)),
+  mail: z
+    .string()
+    .optional()
+    .nullable()
+    .transform(v => (v === "" ? null : v)),
+  link: z
+    .string()
+    .optional()
+    .nullable()
+    .transform(v => (v === "" ? null : v)),
   parent_id: z.coerce.number().int().optional().nullable(),
   website: z.string().optional(), // 蜜罐字段：人类不会填写，机器人会自动填充
   captcha: z.string().optional(), // 图形验证码（未登录用户必填，登录用户可不带）
@@ -128,11 +96,6 @@ export const CommentCreateSchema = z.object({
 // 提交评论后仅回传新评论的 coid，不下发 mail/ip/agent 等隐私字段
 export const CommentItemSchema = z.object({
   coid: z.number(),
-});
-
-export const CommentListQuerySchema = z.object({
-  cid: z.coerce.number().int().positive(),
-  page: z.coerce.number().int().min(1).default(1),
 });
 
 // ============= 站点设置 Schema =============
@@ -160,149 +123,4 @@ export const SiteSettingsSchema = z.object({
 export const SiteSettingsResponseSchema = z.object({
   success: z.boolean(),
   data: SiteSettingsSchema,
-});
-
-// ============= 文章 Schema =============
-
-export const ContentItemSchema = z.object({
-  cid: z.number(),
-  title: z.string(),
-  slug: z.string(),
-  desc: z.string().nullable(),
-  content: z.string().optional(),
-  create_time: z.date().or(z.string()),
-  update_time: z.date().or(z.string()).nullable(),
-  status: z.number(),
-  type: z.number(),
-  comment_num: z.number().optional(),
-});
-
-export const ContentDetailSchema = ContentItemSchema.extend({
-  content: z.string(),
-  category: z
-    .object({
-      mid: z.number(),
-      name: z.string(),
-      slug: z.string(),
-    })
-    .nullable(),
-  tags: z.array(
-    z.object({
-      mid: z.number(),
-      name: z.string(),
-      slug: z.string(),
-    }),
-  ),
-});
-
-// ============= 分类 Schema =============
-
-export const CategorySchema = z.object({
-  mid: z.number(),
-  name: z.string(),
-  slug: z.string(),
-  description: z.string().nullable(),
-  count: z.number().optional(),
-});
-
-export const CategoryListSchema = z.array(CategorySchema);
-
-// ============= 标签 Schema =============
-
-export const TagSchema = z.object({
-  mid: z.number(),
-  name: z.string(),
-  slug: z.string(),
-  count: z.number().optional(),
-});
-
-export const TagListSchema = z.array(TagSchema);
-
-// ============= 友情链接 Schema =============
-
-export const LinkCreateSchema = z.object({
-  name: z.string().min(1).max(50),
-  link: z.string().url(),
-  desc: z.string().max(200).optional(),
-  avatar: z.string().url().optional(),
-});
-
-export const LinkItemSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  link: z.string(),
-  desc: z.string().nullable(),
-  avatar: z.string().nullable(),
-});
-
-// ============= 归档 Schema =============
-
-export const ArchiveYearSchema = z.object({
-  year: z.number(),
-  count: z.number(),
-  months: z.array(
-    z.object({
-      month: z.number(),
-      count: z.number(),
-      contents: z.array(
-        z.object({
-          cid: z.number(),
-          title: z.string(),
-          slug: z.string(),
-          day: z.number(),
-        }),
-      ),
-    }),
-  ),
-});
-
-export const ArchivingResponseSchema = z.object({
-  archives: z.array(ArchiveYearSchema),
-  total: z.number(),
-});
-
-// ============= 首页数据 Schema =============
-
-export const HomeDataSchema = z.object({
-  featuredContents: z.array(ContentItemSchema).optional(),
-  recentContents: z.array(ContentItemSchema),
-  categories: z.array(CategorySchema),
-  stats: z.object({
-    contentsCount: z.number(),
-    commentsCount: z.number(),
-    tagsCount: z.number(),
-    categoriesCount: z.number(),
-  }),
-});
-
-// ============= 随机文章 Schema =============
-
-export const RandomContentSchema = z.object({
-  cid: z.number(),
-  title: z.string(),
-  slug: z.string(),
-});
-
-export const RandomContentsResponseSchema = z.array(RandomContentSchema);
-
-// ============= 相关文章 Schema =============
-
-export const RelatedContentsResponseSchema = z.array(
-  z.object({
-    cid: z.number(),
-    title: z.string(),
-    slug: z.string(),
-    desc: z.string().nullable(),
-  }),
-);
-
-// ============= 统计数据 Schema =============
-
-export const StatsResponseSchema = z.object({
-  contentsCount: z.number(),
-  commentsCount: z.number(),
-  tagsCount: z.number(),
-  categoriesCount: z.number(),
-  linksCount: z.number(),
-  subscribesCount: z.number(),
 });
