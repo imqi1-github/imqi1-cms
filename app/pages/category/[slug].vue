@@ -154,28 +154,6 @@ watch(pending, isLoading => {
   }
 });
 
-// 格式化日期
-function formatDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const weeks = Math.floor(days / 7);
-  const months = Math.floor(days / 30);
-  const years = Math.floor(days / 365);
-
-  if (years > 0) return `${years}年前`;
-  if (months > 0) return `${months}个月前`;
-  if (weeks > 0) return `${weeks}周前`;
-  if (days > 0) return `${days}天前`;
-  if (hours > 0) return `${hours}小时前`;
-  if (minutes > 0) return `${minutes}分钟前`;
-  return "刚刚";
-}
-
 // 翻页
 function goToPage(newPage: number) {
   // 标记为翻页操作，立即显示骨架屏
@@ -432,91 +410,12 @@ onBeforeUnmount(() => {
         <div
           v-if="contents.length > 0 && !showSkeleton"
           class="articles-grid grid grid-cols-1 md:grid-cols-2 w-full gap-5 fade-in-element opacity-0 translate-y-8 duration-600 ease-out">
-          <div
+          <ArticleCard
             v-for="content in contents"
             :key="content.cid"
-            class="relative flex flex-col h-70 max-md:h-65 overflow-hidden rounded-[15px] shadow-sm hover:shadow-md border border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-600 group transition-all duration-300">
-            <!-- 封面占满整卡 -->
-            <NuxtLink
-              v-if="content.covers.length > 0"
-              :to="`/content/${slug}/${content.slug}`"
-              class="absolute inset-0">
-              <img
-                :src="content.covers[0]?.url"
-                :alt="content.title"
-                class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-                loading="lazy" >
-              <!-- 多封面角标 -->
-              <div
-                v-if="content.many_covers && content.covers.length > 1"
-                class="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
-                <Icon name="ri-gallery-line" class="size-3.5" />
-                <span>+{{ content.covers.length - 1 }}</span>
-              </div>
-              <!-- 关联地点角标 -->
-              <div
-                v-if="content.travelCount > 0"
-                :class="content.many_covers && content.covers.length > 1 ? 'top-10' : 'top-2'"
-                class="absolute right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
-                <Icon name="ri:map-pin-line" class="size-3.5" />
-                <span>{{ content.travelCount }}</span>
-              </div>
-            </NuxtLink>
-
-            <!-- 无封面占位 -->
-            <div
-              v-else
-              class="flex-1 bg-slate-100 dark:bg-gray-800 flex items-center justify-center">
-              <span class="text-slate-400 dark:text-gray-500 text-6xl">{{ content.title[0] }}</span>
-            </div>
-
-            <!-- 文章信息（底部毛玻璃带） -->
-            <div
-              class="relative mt-auto w-full px-5 pb-2 pt-1.5"
-              :class="content.covers.length > 0 ? 'cover-backdrop text-white' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'">
-              <NuxtLink
-                :to="`/content/${slug}/${content.slug}`"
-                class="text-[1.5em] font-extrabold block transition-colors"
-                :class="content.covers.length > 0 ? 'text-white hover:text-blue-100' : 'text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-500'">
-                {{ content.title }}
-              </NuxtLink>
-
-              <div
-                class="text-[0.8em] flex flex-wrap gap-2"
-                :class="content.covers.length > 0 ? 'text-white/80' : 'text-slate-600 dark:text-slate-400'">
-                <span v-tooltip="`最后更新时间`" class="flex items-center">
-                  <Icon name="ri-time-line" class="size-4" />
-                  {{ formatDate(content.updated) }}
-                </span>
-                <span v-if="content.tags.length > 0" class="flex items-center flex-wrap">
-                  <Icon name="ri-hashtag" class="size-4" />
-                  <NuxtLink
-                    v-for="(tag, index) in content.tags"
-                    :key="index"
-                    v-tooltip="`标签`"
-                    :to="tag.slug ? `/tag/${tag.slug}` : '#'"
-                    class="mr-1 transition-colors"
-                    :class="[
-                      content.covers.length > 0 ? 'hover:text-blue-100' : 'hover:text-blue-600 dark:hover:text-blue-400',
-                      tag.slug ? 'cursor-pointer' : 'cursor-default opacity-60',
-                    ]">
-                    {{ tag.name }}
-                  </NuxtLink>
-                </span>
-                <span v-tooltip="`评论数量`" class="flex items-center">
-                  <Icon name="ri-chat-2-line" class="size-4" />
-                  {{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}
-                </span>
-              </div>
-
-              <p
-                v-if="content.desc"
-                class="text-[0.9em] overflow-wrap break-word"
-                :class="content.covers.length > 0 ? 'text-white/70' : 'text-slate-600 dark:text-slate-400'">
-                {{ content.desc }}
-              </p>
-            </div>
-          </div>
+            :content="content"
+            :link-slug="slug"
+            meta-mode="tags" />
         </div>
 
         <!-- 骨架屏 -->
