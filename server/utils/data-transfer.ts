@@ -58,7 +58,6 @@ export const SENSITIVE_INFORMATIONS_KEYS = new Set([
 	"smtpPassword",
 	"cosSecretId",
 	"cosSecretKey",
-	"baiduAppId",
 	"baiduApiKey",
 	"baiduSecretKey",
 ]);

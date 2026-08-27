@@ -9,7 +9,6 @@ const SENSITIVE_KEYS = new Set([
   "smtpPassword",
   "cosSecretId",
   "cosSecretKey",
-  "baiduAppId",
   "baiduApiKey",
   "baiduSecretKey",
 ]);
