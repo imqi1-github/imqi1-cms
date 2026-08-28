@@ -31,9 +31,10 @@ watch(() => route.query.cid, (newCid) => {
 }, { immediate: true });
 
 const activeTab = ref("content");
-// 编辑模式下初始 loading 为 false，仅在真正 fetch 到有效 contentId 时才置 true，
-// 避免非法 ?cid（Number() 为 NaN）令 fetchContent 早退后骨架屏永久停留。
-const loading = ref(false);
+// 编辑页首帧即给骨架屏：isEdit 在 SSR 时即可由 route.query.cid 判定，loading 初始即 true，
+// 避免先渲染空编辑器再切骨架再灌内容的三段式闪烁；新建页 isEdit=false → 直接显示空编辑器；
+// 非法 ?cid（Number() 为 NaN → contentId 为 null）时 loading 为 false，不会让骨架屏卡死。
+const loading = ref(isEdit.value && !!contentId.value);
 
 // 跟踪是否有未保存的更改
 const hasUnsavedChanges = ref(false);
@@ -896,11 +897,16 @@ watch(contentId, newCid => {
       <div class="flex-1 space-y-4 lg:space-y-6">
         <!-- Tabs 导航 -->
         <Tabs v-model="activeTab" default-value="content">
-          <TabsList class="grid w-full grid-cols-3">
+          <TabsList class="grid w-full grid-cols-4">
             <TabsTrigger value="content" class="text-sm">
               <Icon name="lucide:file-text" class="mr-1 sm:mr-2 size-4" />
-              <span class="hidden sm:inline">文章内容</span>
-              <span class="sm:hidden">内容</span>
+              <span class="hidden sm:inline">富文本</span>
+              <span class="sm:hidden">富文本</span>
+            </TabsTrigger>
+            <TabsTrigger value="md" class="text-sm">
+              <Icon name="lucide:code" class="mr-1 sm:mr-2 size-4" />
+              <span class="hidden sm:inline">Markdown</span>
+              <span class="sm:hidden">MD</span>
             </TabsTrigger>
             <TabsTrigger value="settings" class="text-sm">
               <Icon name="lucide:settings" class="mr-1 sm:mr-2 size-4" />
@@ -917,14 +923,19 @@ watch(contentId, newCid => {
             </TabsTrigger>
           </TabsList>
 
-          <!-- 文章内容 Tab -->
-          <TabsContent value="content" class="mt-6">
+          <!-- 富文本 / Markdown 源码：单个编辑器实例，由 activeTab（顶层 tab）驱动视图模式 -->
+          <div v-show="activeTab === 'content' || activeTab === 'md'" class="mt-6">
             <Card class="overflow-hidden p-0!">
               <CardContent class="p-0!">
-                <MarkdownEditor v-model="content" :content-id="contentId ?? undefined" @attachment-updated="fetchAttachments" />
+                <MarkdownEditor
+                  v-model="content"
+                  :content-id="contentId ?? undefined"
+                  :view-mode="activeTab === 'md' ? 'md' : 'rich'"
+                  @attachment-updated="fetchAttachments"
+                />
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
           <!-- 文章设置 Tab -->
           <TabsContent value="settings" class="mt-6 space-y-6">

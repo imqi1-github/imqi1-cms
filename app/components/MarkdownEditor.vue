@@ -25,6 +25,8 @@ import { CodeBlockLowlightWithLang } from "./markdown-editor/extensions/CodeBloc
 // 工具栏抽成子组件，顶部与底部各渲染一份（同一组 props），避免 ~340 行 markup 复制两遍
 import EditorToolbar from "./markdown-editor/EditorToolbar.vue";
 import { deriveCalloutVariant } from "./markdown-editor/containerMeta";
+// Markdown 源码 tab 的光标/选区插入原语（富文本 ⇄ 源码 视图切换用）
+import { mdInsertSnippet, mdInsertText, mdPrefixLine, mdWrap } from "./markdown-editor/mdInsert";
 
 import { deriveContainerType, splitMarkdown } from "~/utils/markdownSplit";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
@@ -32,9 +34,19 @@ import type { ToolbarActiveFlags, MarkdownStorage, LinkImagePromptState, TableCr
 
 const props = defineProps<{
   contentId?: number;
+  /** 富文本 ⇄ Markdown 源码 视图模式（由宿主页面的顶层 tab 驱动，默认富文本） */
+  viewMode?: "rich" | "md";
 }>();
 
 const model = defineModel<string>({ default: "" });
+
+// 视图模式由宿主页面通过 prop 传入（顶层 tab 富文本/Markdown 已上提到页面层）。
+// "rich" 为 WYSIWYG(EditorContent)，"md" 为原始 markdown 源码 textarea；两者共用同一个 model
+// (markdown 字符串)，切换靠 watch(viewMode) 做「编辑器→源码 冲刷」与「源码→编辑器 重载」。
+const viewMode = computed<string>(() => props.viewMode ?? "rich");
+const mdTextareaRef = ref<HTMLTextAreaElement | null>(null);
+// 富文本内容区（相对定位容器内的绝对滚动层），用于跨视图切换时保留滚动位置
+const richScrollRef = ref<HTMLElement | null>(null);
 
 const emit = defineEmits<{
   "attachment-updated": [];
@@ -105,9 +117,19 @@ onBeforeUnmount(() => {
   }
 });
 
-// 工具栏态：撤销/重做可用性 + 当前激活的格式（用于按钮高亮），随事务刷新
-const canUndo = ref(false);
-const canRedo = ref(false);
+// —— 富文本 ⇄ Markdown 统一撤销/重做:单一 markdown 快照栈(两模式共用同一内容历史)——
+/** 撤销快照上限,防止长时间编辑/自动重复输入导致内存膨胀(超出后丢弃最旧条目)。 */
+const HISTORY_LIMIT = 200;
+const contentHistory = ref<string[]>([]);
+const contentPointer = ref(-1);
+
+// 工具栏态：撤销/重做可用性(md→快照栈指针;rich→ProseMirror can undo/redo) + 当前激活格式(按钮高亮)
+const canUndo = computed(() =>
+  viewMode.value === "md" ? contentPointer.value > 0 : (editor.value?.can().undo() ?? false),
+);
+const canRedo = computed(() =>
+  viewMode.value === "md" ? contentPointer.value < contentHistory.value.length - 1 : (editor.value?.can().redo() ?? false),
+);
 const activeFlags = ref<Partial<ToolbarActiveFlags>>({});
 // 表格合并/拆分是否可用（需选区跨多格 / 光标在已合并格）
 const canMergeCells = ref(false);
@@ -227,15 +249,11 @@ function activeContainerButtonKey(ed: Editor): string | null {
 function syncState() {
   const ed = editor.value;
   if (!ed) {
-    canUndo.value = false;
-    canRedo.value = false;
     canMergeCells.value = false;
     canSplitCell.value = false;
     activeFlags.value = {};
     return;
   }
-  canUndo.value = ed.can().undo();
-  canRedo.value = ed.can().redo();
   canMergeCells.value = ed.can().mergeCells();
   canSplitCell.value = ed.can().splitCell();
   const containerKey = activeContainerButtonKey(ed);
@@ -279,6 +297,17 @@ function syncState() {
 
 /** 插入一个自定义容器占位块。 */
 function insertContainer(template: string) {
+  // 源码模式：把 `:::` 模板当文字插入光标处；否则走富文本自定义容器节点。
+  if (viewMode.value === "md") {
+    const ta = mdTextareaRef.value;
+    if (ta) {
+      // 仅在光标后仍有内容时补尾换行（避免文末插入产生多余空段落）；
+      // 前导换行恒加 —— 自定义容器是块级元素，须另起一行。
+      const trailing = ta.value.slice(ta.selectionEnd).trim().length > 0 ? "\n" : "";
+      mdInsertText(ta, model, "\n" + template + trailing);
+    }
+    return;
+  }
   const ed = editor.value;
   if (!ed) return;
   ed.chain()
@@ -323,9 +352,18 @@ watch(
 );
 
 function promptLink() {
-  const ed = editor.value;
   let url = "";
   let text = "";
+  // 源码模式：链接文字取自 textarea 当前选区（与富文本一致：选中文本则为它上链接）
+  if (viewMode.value === "md") {
+    const ta = mdTextareaRef.value;
+    if (ta && ta.selectionStart !== ta.selectionEnd) {
+      text = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+    }
+    promptState.value = { open: true, mode: "link", url, text, alt: "" };
+    return;
+  }
+  const ed = editor.value;
   if (ed) {
     if (ed.isActive("link")) {
       // 光标在已有链接内：扩展选区包住整个链接，预填其地址与文字，方便两者都改
@@ -357,8 +395,26 @@ function confirmPrompt() {
   const url = promptState.value.url.trim();
   const alt = promptState.value.alt.trim();
   const mode = promptState.value.mode;
-  const hadSelection = mode === "link" && !ed?.state.selection.empty;
+  const text = promptState.value.text.trim();
   promptState.value.open = false;
+
+  // 源码模式：链接/图片拼成 markdown 插到光标处（复用同一弹窗与 URL 校验语义）。
+  if (viewMode.value === "md") {
+    if (mode === "link") {
+      // 留空移除链接：源码里由用户手动删，这里视为取消
+      if (!url) return;
+      mdInsertText(mdTextareaRef.value, model, `[${text || url}](${url})`);
+    } else {
+      if (!url) {
+        toast.error({ message: "请输入图片地址" });
+        return;
+      }
+      mdInsertText(mdTextareaRef.value, model, `![${alt}](${url})`);
+    }
+    return;
+  }
+
+  const hadSelection = mode === "link" && !ed?.state.selection.empty;
   if (!ed) return;
 
   if (mode === "link") {
@@ -415,13 +471,25 @@ function promptTable() {
 }
 
 function confirmTableCreate() {
-  const ed = editor.value;
   const { rows, cols, withHeaderRow } = tableCreateState.value;
   tableCreateState.value.open = false;
-  if (!ed) return;
   // 钳制到合理区间，防 NaN / 负数 / 超大
   const r = Math.max(1, Math.min(50, Math.trunc(Number(rows) || 3)));
   const c = Math.max(1, Math.min(20, Math.trunc(Number(cols) || 3)));
+
+  // 源码模式：拼一个 markdown 表格插入光标处（表格首行恒作表头）
+  if (viewMode.value === "md") {
+    const cells = Array.from({ length: c }, (_, i) => `列${i + 1}`);
+    const headerRow = `| ${cells.join(" | ")} |`;
+    const sepRow = `| ${cells.map(() => "---").join(" | ")} |`;
+    const body = Array.from({ length: Math.max(0, r - 1) }, () => `| ${cells.map(() => "").join(" | ")} |`).join("\n");
+    const table = `\n${headerRow}\n${sepRow}\n${body}${body ? "\n" : ""}`;
+    mdInsertText(mdTextareaRef.value, model, table);
+    return;
+  }
+
+  const ed = editor.value;
+  if (!ed) return;
   ed.chain().focus().insertTable({ rows: r, cols: c, withHeaderRow }).run();
 }
 
@@ -572,18 +640,97 @@ function handleClickOn(
 }
 
 /**
- * Ctrl/Cmd-K：插入 / 编辑链接（写作工具的肌肉记忆，工具栏按钮之外的快捷入口）。
- * 返回 true 拦截浏览器默认行为（部分浏览器 Ctrl-K 会聚焦地址栏 / 搜索栏）。
- * 仅响应 k（含 Shift/CapsLock 大写），IME 组词期 event.key 为 "Process" 自然不匹配。
+ * 富文本模式快捷键：Ctrl/Cmd-K 链接、Ctrl/Cmd+Z/Y 撤销/重做（统一走共享快照栈）。
+ * 返回 true 拦截浏览器默认行为；IME 组词期跳过（e.code 在组词时可能仍为按键，须排除）。
  */
 function handleKeyDown(_view: EditorView, event: KeyboardEvent): boolean {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+  if (event.isComposing) return false;
+  const combo = mtCombo(event);
+  if (combo === "mod-z") {
+    event.preventDefault();
+    // 富文本:ProseMirror 细粒度撤销(保光标/逐事务),不走快照栈
+    editor.value?.commands.undo();
+    return true;
+  }
+  if (combo === "mod-y" || combo === "mod-shift-z") {
+    event.preventDefault();
+    editor.value?.commands.redo();
+    return true;
+  }
+  if (combo === "mod-k") {
     event.preventDefault();
     promptLink();
     return true;
   }
   return false;
 }
+
+// —— Markdown 源码模式：与富文本编辑器的粘贴上传 / Ctrl-K 快捷键对等 ——
+// 富文本把 handlePaste/handleKeyDown 注册在 ProseMirror 上，md 模式是裸 textarea，
+// 因此这里用原生 @paste / @keydown 补齐图像粘贴上传与链接快捷键，保持一致体验。
+
+/** 源码模式快捷键：与富文本编辑器(Tiptap keymap)对等，落到 markdown 插入原语；IME 组词期跳过。 */
+function handleMdKeydown(event: KeyboardEvent): boolean {
+  if (event.isComposing) return false;
+  const action = mdKeyMap[mtCombo(event)];
+  if (action) {
+    event.preventDefault();
+    action();
+    return true;
+  }
+  return false;
+}
+
+/** 源码模式粘贴：仅拦图像剪贴板上传，其余放行默认文本粘贴。 */
+function handleMdPaste(event: ClipboardEvent): void {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  const imageItems = Array.from(items).filter((it) => it.type.startsWith("image/"));
+  if (imageItems.length === 0) return;
+  event.preventDefault();
+  void uploadPastedImagesToMarkdown(imageItems);
+}
+
+/** 源码模式：逐张上传粘贴的图像，把 `![alt](url)` markdown 插入光标处（与富文本上传后插 <img> 对等）。 */
+async function uploadPastedImagesToMarkdown(imageItems: DataTransferItem[]) {
+  if (!props.contentId) {
+    toast.error({
+      message: "请先保存文章",
+      description: "需要先保存文章后才能粘贴上传图片",
+    });
+    return;
+  }
+  uploading.value = true;
+  const csrfToken = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrf_token="))
+    ?.split("=")[1];
+  try {
+    for (const item of imageItems) {
+      const file = item.getAsFile();
+      if (!file) continue;
+      const formData = new FormData();
+      formData.append("file", file);
+      if (csrfToken) formData.append("csrfToken", csrfToken);
+      try {
+        const res = await $fetch<PublicAttachmentUploadResponse>(
+          `/api/attachments/upload?cid=${props.contentId}`,
+          { method: "POST", body: formData },
+        );
+        if (res?.success) {
+          mdInsertText(mdTextareaRef.value, model, `\n![${res.data.name}](${res.data.url})\n`);
+          emit("attachment-updated");
+          toast.success({ message: "图片上传成功", description: file.name });
+        }
+      } catch {
+        toast.error({ message: "图片上传失败", description: file.name });
+      }
+    }
+  } finally {
+    uploading.value = false;
+  }
+}
+
 
 // —— 编辑器实例 ——
 const editor = useEditor({
@@ -595,6 +742,8 @@ const editor = useEditor({
       codeBlock: false,
       // 关掉 StarterKit 内置 Link，改用下方扩展的自定义变体（inclusive: false）
       link: false,
+      // 保留 UndoRedo：富文本撤销/重做走 ProseMirror 细粒度(快、保光标)；md 走共享快照栈。
+      // 共享栈仍由 watch(model) 记录两侧变更 → md 可跨模式撤富文本的改动。
     }),
     // Link 的 inclusive 是 schema 级静态字段（@tiptap/core 在 schemaField 里
     // 经 getExtensionField(extension, "inclusive") 一次性读取），而 Link 扩展的
@@ -641,7 +790,12 @@ const editor = useEditor({
   },
   onCreate: ({ editor: ed }) => {
     loadMarkdown(ed, model.value);
-    lastEmitted.value = model.value;
+    // 用编辑器重序列化后的正文作撤销基线(而非输入原文):避免随后 debounced writeMarkdownOut
+    // 对规范化敏感内容(表格空白/代码围栏)再记一条,导致"未编辑就被 phantom 快照启用撤销按钮"
+    const settled = getMarkdownStorage(ed).getMarkdown();
+    lastEmitted.value = settled;
+    contentHistory.value = [settled];
+    contentPointer.value = 0;
     syncState();
   },
   onUpdate: () => {
@@ -652,38 +806,224 @@ const editor = useEditor({
   },
 });
 
-// 外部 model 变化（父组件加载新文章 / SPA 导航）：聚焦中或与最近回写一致时跳过，防回环
+// —— 富文本 ⇄ Markdown 光标跟随:把 markdown 按当前 doc 顶级块的文本长度比例分布,
+//    得到 { mdStart, pmPos, pmEnd }(markdown 起始偏移 ↔ PM 块起止位置)映射,用于切换时定位光标。
+//    这是"块级近似":光标落在对应段落/标题/容器段,同段内不精确到字符(因 markdown 有 ** # ::: 等标记符)。
+type TopBlockMd = { mdStart: number; pmPos: number; pmEnd: number };
+function topBlockMdMap(ed: Editor, md: string): TopBlockMd[] {
+  const doc = ed.state.doc;
+  const nodeInfos: { node: ProseMirrorNode; pos: number }[] = [];
+  const texts: number[] = [];
+  doc.forEach((node, pos) => {
+    nodeInfos.push({ node, pos });
+    // 容器(atom)的 textContent 很短/空,必须用 raw 原文长度估计,否则被严重低估→其后块全部往前挤(漂移)
+    const len = node.type.name === "customContainer" ? ((node.attrs.raw as string) ?? "").length : Math.max(1, node.textContent.length);
+    texts.push(len);
+  });
+  const total = texts.reduce((a, b) => a + b, 0) || 1;
+  const mdLen = md.length;
+  let acc = 0;
+  return nodeInfos.map((info, i) => {
+    const mdStart = acc;
+    acc += Math.round(mdLen * texts[i]! / total);
+    const pmPos = info.pos;
+    return { mdStart, pmPos, pmEnd: pmPos + info.node.nodeSize - 1 };
+  });
+}
+
+/** 富文本 PM 光标位置 → markdown 字符偏移:块内偏移用 textBetween(块内纯文本长度,比 PM 字符差更接近 markdown)。 */
+function richCursorToMdCursor(ed: Editor, md: string): number {
+  const pmPos = ed.state.selection.from;
+  const map = topBlockMdMap(ed, md);
+  if (map.length === 0) return 0;
+  let best = map[0]!;
+  for (const m of map) {
+    if (m.pmPos <= pmPos) best = m;
+    else break;
+  }
+  const within = pmPos >= best.pmPos ? ed.state.doc.textBetween(best.pmPos, pmPos, "\n").length : 0;
+  return Math.max(0, Math.min(md.length, best.mdStart + within));
+}
+
+/** markdown 字符偏移 → 富文本 PM 位置(顶级块级近似,块内按字符增量钳制)。 */
+function mdCursorToPmPos(ed: Editor, md: string, caret: number): number {
+  const map = topBlockMdMap(ed, md);
+  if (map.length === 0) return 1;
+  let best = map[0]!;
+  for (const m of map) {
+    if (m.mdStart <= caret) best = m;
+    else break;
+  }
+  const within = Math.max(0, caret - best.mdStart);
+  return Math.min(best.pmEnd, best.pmPos + within);
+}
+
+// 外部 model 变化（父组件加载新文章 / SPA 导航 / 编辑器或 textarea 回写）：都记入统一快照栈
 watch(model, (val) => {
-  const ed = editor.value;
-  if (!ed) return;
-  if (ed.isFocused) return;
-  if (val === lastEmitted.value) return;
-  loadMarkdown(ed, val);
-  lastEmitted.value = val;
+  // 1) 记录快照（undo/redo 自身设值已被 pointer guard 挡住）
+  if (val !== contentHistory.value[contentPointer.value]) {
+    contentHistory.value = contentHistory.value.slice(0, contentPointer.value + 1);
+    contentHistory.value.push(val);
+    contentPointer.value = contentHistory.value.length - 1;
+    // 超上限丢弃最旧条目(指针随之前移),避免长时间编辑内存膨胀
+    if (contentHistory.value.length > HISTORY_LIMIT) {
+      const overflow = contentHistory.value.length - HISTORY_LIMIT;
+      contentHistory.value.splice(0, overflow);
+      contentPointer.value -= overflow;
+    }
+  }
+  // 2) 富文本模式且非聚焦、非最近回写（即外部加载新文档）时重载编辑器，并把撤销基线重置为该内容
+  if (viewMode.value === "rich") {
+    const ed = editor.value;
+    if (!ed) return;
+    if (ed.isFocused) return;
+    if (val === lastEmitted.value) return;
+    loadMarkdown(ed, val);
+    lastEmitted.value = val;
+    contentHistory.value = [val];
+    contentPointer.value = 0;
+  }
+});
+
+// 切换富文本 ⇄ 源码：先保证 model 与任一视图的 markdown 同步，做到零丢失，并保留各自滚动位置
+watch(viewMode, (mode) => {
+  if (mode === "md") {
+    // 冲刷 150ms 防抖里可能未落库的编辑器改动到 model，再让 textarea 显示
+    if (!suppressEmit.value) writeMarkdownOut();
+    // 源码模式无「当前激活格式/表格选区」语义，全部清空避免按钮误导
+    activeFlags.value = {};
+    canMergeCells.value = false;
+    canSplitCell.value = false;
+    // 光标跟随:把富文本 PM 光标映射成 markdown 偏移(顶级块近似),切源码时光标落在对应段落/标题/容器段
+    const ed = editor.value;
+    const mdLen = model.value.length;
+    const mdCaret = ed ? richCursorToMdCursor(ed, model.value) : 0;
+    nextTick(() => {
+      const ta = mdTextareaRef.value;
+      if (ta) {
+        // 光标跟随滚动:先把光标设到对应偏移,再把 textarea 滚动到该处(否则光标在屏外"不出现")
+        ta.focus();
+        ta.setSelectionRange(mdCaret, mdCaret);
+        const max = ta.scrollHeight - ta.clientHeight;
+        ta.scrollTop = (mdCaret / Math.max(1, mdLen)) * (max > 0 ? max : 0);
+      }
+    });
+  } else {
+    // 把当前 model（textarea 或父级改动）重载进富文本编辑器；写回哨兵避免 watch(model) 二次加载
+    const ed = editor.value;
+    if (ed) {
+      loadMarkdown(ed, model.value);
+      lastEmitted.value = model.value;
+      syncState();
+      // 光标跟随:markdown 偏移 → PM 位置(顶级块近似),切回富文本时光标落在对应块并滚动到可视
+      const mdCaret = mdTextareaRef.value?.selectionStart ?? 0;
+      const target = mdCursorToPmPos(ed, model.value, mdCaret);
+      ed.chain().focus().setTextSelection(target).run();
+      ed.chain().focus().scrollIntoView().run();
+    }
+  }
 });
 
 // —— 工具栏动作 ——
+// 富文本 ⇄ 源码 分流：md 模式走 markdown 光标插入，rich 模式走原编辑器命令。
+const srcWrap = (before: string, after: string) => mdWrap(mdTextareaRef.value, model, before, after);
+const srcPrefix = (prefix: string) => mdPrefixLine(mdTextareaRef.value, model, prefix);
+const srcInsert = (text: string) => mdInsertText(mdTextareaRef.value, model, text);
+const srcSnippet = (text: string, caret: number) => mdInsertSnippet(mdTextareaRef.value, model, text, caret);
+/** 源码模式：链接直接插 `[]()` 骨架（光标落 [] 内），不弹窗。 */
+const insertLinkMd = () => srcSnippet("[]()", 1);
+// 统一撤销/重做：从快照栈取回前一/后一状态，按当前视图写入（md 改 model→textarea；rich 重载编辑器 doc + 同步 model）。
+const sharedUndo = () => {
+  if (contentPointer.value <= 0) return;
+  contentPointer.value--;
+  applySnapshot(contentHistory.value[contentPointer.value]!);
+};
+const sharedRedo = () => {
+  if (contentPointer.value >= contentHistory.value.length - 1) return;
+  contentPointer.value++;
+  applySnapshot(contentHistory.value[contentPointer.value]!);
+};
+
+/** 把快照写入当前视图；「光标跳顶/整篇回退」是方案 A 的预期取舍。 */
+function applySnapshot(s: string) {
+  if (viewMode.value === "md") {
+    const ta = mdTextareaRef.value;
+    const prevScroll = ta ? ta.scrollTop : 0;
+    model.value = s;
+    nextTick(() => {
+      if (ta) {
+        // 保留撤销前的滚动位置(改为更短内容时钳制到末尾),避免跳到文末
+        const max = ta.scrollHeight - ta.clientHeight;
+        ta.scrollTop = Math.min(prevScroll, max > 0 ? max : 0);
+        ta.focus();
+      }
+    });
+  } else {
+    const ed = editor.value;
+    if (ed) {
+      loadMarkdown(ed, s);
+      lastEmitted.value = s;
+      model.value = s;
+    }
+  }
+}
+
+/** 由 KeyboardEvent 生成规范组合键（如 mod-b / mod-shift-7 / mod-alt-1），用 e.code 对数字/字母稳定。 */
+function mtCombo(e: KeyboardEvent): string {
+  const parts: string[] = [];
+  if (e.metaKey || e.ctrlKey) parts.push("mod");
+  if (e.shiftKey) parts.push("shift");
+  if (e.altKey) parts.push("alt");
+  const codeMatch = e.code.match(/^(?:Key|Digit)(.+)$/);
+  const key = codeMatch ? codeMatch[1]!.toLowerCase() : "";
+  return key ? parts.join("-") + "-" + key : "";
+}
+
+/** 源码模式快捷键：与富文本编辑器(Tiptap keymap)对等，落到 markdown 插入原语。 */
+const mdKeyMap: Record<string, () => void> = {
+  "mod-z": sharedUndo,
+  "mod-y": sharedRedo,
+  "mod-shift-z": sharedRedo,
+  "mod-b": () => srcWrap("**", "**"),
+  "mod-i": () => srcWrap("*", "*"),
+  "mod-u": () => srcWrap("<u>", "</u>"),
+  "mod-shift-s": () => srcWrap("~~", "~~"),
+  "mod-shift-7": () => srcPrefix("1. "),
+  "mod-shift-8": () => srcPrefix("- "),
+  "mod-shift-b": () => srcPrefix("> "),
+  "mod-e": () => srcWrap("`", "`"),
+  "mod-alt-c": () => srcInsert("\n```\n\n```\n"),
+  "mod-alt-1": () => srcPrefix("# "),
+  "mod-alt-2": () => srcPrefix("## "),
+  "mod-alt-3": () => srcPrefix("### "),
+  "mod-alt-4": () => srcPrefix("#### "),
+  "mod-alt-5": () => srcPrefix("##### "),
+  "mod-alt-6": () => srcPrefix("###### "),
+  "mod-k": insertLinkMd,
+};
+
 const actions = {
-  undo: () => editor.value?.commands.undo(),
-  redo: () => editor.value?.commands.redo(),
-  bold: () => editor.value?.chain().focus().toggleBold().run(),
-  italic: () => editor.value?.chain().focus().toggleItalic().run(),
-  underline: () => editor.value?.chain().focus().toggleUnderline().run(),
-  strikethrough: () => editor.value?.chain().focus().toggleStrike().run(),
-  heading1: () => editor.value?.chain().focus().toggleHeading({ level: 1 }).run(),
-  heading2: () => editor.value?.chain().focus().toggleHeading({ level: 2 }).run(),
-  heading3: () => editor.value?.chain().focus().toggleHeading({ level: 3 }).run(),
-  heading4: () => editor.value?.chain().focus().toggleHeading({ level: 4 }).run(),
-  heading5: () => editor.value?.chain().focus().toggleHeading({ level: 5 }).run(),
-  heading6: () => editor.value?.chain().focus().toggleHeading({ level: 6 }).run(),
-  quote: () => editor.value?.chain().focus().toggleBlockquote().run(),
-  code: () => editor.value?.chain().focus().toggleCode().run(),
-  codeBlock: () => editor.value?.chain().focus().toggleCodeBlock().run(),
-  link: () => promptLink(),
+  // 撤销/重做：md→共享快照栈(可跨模式撤富文本改动)；rich→ProseMirror 细粒度
+  undo: () => (viewMode.value === "md" ? sharedUndo() : editor.value?.commands.undo()),
+  redo: () => (viewMode.value === "md" ? sharedRedo() : editor.value?.commands.redo()),
+  bold: () => (viewMode.value === "md" ? srcWrap("**", "**") : editor.value?.chain().focus().toggleBold().run()),
+  italic: () => (viewMode.value === "md" ? srcWrap("*", "*") : editor.value?.chain().focus().toggleItalic().run()),
+  underline: () => (viewMode.value === "md" ? srcWrap("<u>", "</u>") : editor.value?.chain().focus().toggleUnderline().run()),
+  strikethrough: () => (viewMode.value === "md" ? srcWrap("~~", "~~") : editor.value?.chain().focus().toggleStrike().run()),
+  heading1: () => (viewMode.value === "md" ? srcPrefix("# ") : editor.value?.chain().focus().toggleHeading({ level: 1 }).run()),
+  heading2: () => (viewMode.value === "md" ? srcPrefix("## ") : editor.value?.chain().focus().toggleHeading({ level: 2 }).run()),
+  heading3: () => (viewMode.value === "md" ? srcPrefix("### ") : editor.value?.chain().focus().toggleHeading({ level: 3 }).run()),
+  heading4: () => (viewMode.value === "md" ? srcPrefix("#### ") : editor.value?.chain().focus().toggleHeading({ level: 4 }).run()),
+  heading5: () => (viewMode.value === "md" ? srcPrefix("##### ") : editor.value?.chain().focus().toggleHeading({ level: 5 }).run()),
+  heading6: () => (viewMode.value === "md" ? srcPrefix("###### ") : editor.value?.chain().focus().toggleHeading({ level: 6 }).run()),
+  quote: () => (viewMode.value === "md" ? srcPrefix("> ") : editor.value?.chain().focus().toggleBlockquote().run()),
+  code: () => (viewMode.value === "md" ? srcWrap("`", "`") : editor.value?.chain().focus().toggleCode().run()),
+  codeBlock: () => (viewMode.value === "md" ? srcInsert("\n```\n\n```\n") : editor.value?.chain().focus().toggleCodeBlock().run()),
+  link: () => (viewMode.value === "md" ? insertLinkMd() : promptLink()),
   image: () => promptImage(),
-  ul: () => editor.value?.chain().focus().toggleBulletList().run(),
-  ol: () => editor.value?.chain().focus().toggleOrderedList().run(),
-  hr: () => editor.value?.chain().focus().setHorizontalRule().run(),
+  ul: () => (viewMode.value === "md" ? srcPrefix("- ") : editor.value?.chain().focus().toggleBulletList().run()),
+  ol: () => (viewMode.value === "md" ? srcPrefix("1. ") : editor.value?.chain().focus().toggleOrderedList().run()),
+  hr: () => (viewMode.value === "md" ? srcInsert("\n---\n") : editor.value?.chain().focus().setHorizontalRule().run()),
   table: () => promptTable(),
   // 表格行列操作（光标须在表格内，由条件工具条触发）
   tableAddRowBefore: () => editor.value?.chain().focus().addRowBefore().run(),
@@ -733,28 +1073,42 @@ const actions = {
         <EditorToolbar
           side="top"
           :actions="actions"
-          :active-flags="activeFlags"
+          :active-flags="viewMode === 'md' ? {} : activeFlags"
           :can-undo="canUndo"
           :can-redo="canRedo"
-          :can-merge-cells="canMergeCells"
-          :can-split-cell="canSplitCell"
+          :can-merge-cells="viewMode === 'md' ? false : canMergeCells"
+          :can-split-cell="viewMode === 'md' ? false : canSplitCell"
           :uploading="uploading"
         />
 
-        <!-- 编辑区：固定高度下内容超出由此容器内部滚动（不撑高整页） -->
-        <div class="min-h-0 flex-1 overflow-auto bg-background">
-          <EditorContent v-if="editor" :editor="editor" />
+        <!-- 编辑区：固定高度下内容超出由各自视图容器内部滚动（不撑高整页）。
+             用 relative + absolute inset-0 让富文本/源码各自独占填充，避免 textarea 与父容器
+             同时出现滚动条（双滚动条）。 -->
+        <div class="relative min-h-0 flex-1 overflow-hidden bg-background">
+          <div v-show="viewMode === 'rich'" ref="richScrollRef" class="absolute inset-0 overflow-auto">
+            <EditorContent v-if="editor" :editor="editor" />
+          </div>
+          <textarea
+            v-show="viewMode === 'md'"
+            ref="mdTextareaRef"
+            v-model="model"
+            class="absolute inset-0 resize-none overflow-auto bg-background p-4 font-mono text-sm"
+            placeholder="开始写作…"
+            spellcheck="false"
+            @paste="handleMdPaste"
+            @keydown="handleMdKeydown"
+          />
         </div>
         <!-- 工具栏（底部）：仅编辑器足够高（≥800）时显示，默认高度下只有顶部一份 -->
         <EditorToolbar
           v-if="showBottomToolbar"
           side="bottom"
           :actions="actions"
-          :active-flags="activeFlags"
+          :active-flags="viewMode === 'md' ? {} : activeFlags"
           :can-undo="canUndo"
           :can-redo="canRedo"
-          :can-merge-cells="canMergeCells"
-          :can-split-cell="canSplitCell"
+          :can-merge-cells="viewMode === 'md' ? false : canMergeCells"
+          :can-split-cell="viewMode === 'md' ? false : canSplitCell"
           :uploading="uploading"
         />
       </div>
