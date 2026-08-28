@@ -1,6 +1,4 @@
-import { mkdirSync, writeFileSync } from "fs";
 import { randomBytes } from "crypto";
-import path from "path";
 
 import { visualizer } from "rollup-plugin-visualizer";
 
@@ -19,8 +17,7 @@ function pad2(n: number): string {
 function genBuildHash(): string {
   const d = new Date();
   const ts =
-    `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}` +
-    `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+    `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}` + `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
   return `${ts}-${randomBytes(4).toString("hex")}`;
 }
 const buildHash = genBuildHash();
@@ -512,20 +509,6 @@ export default defineNuxtConfig({
           emitFile: false,
         }),
       );
-    },
-    // 构建完成后把 hash 落盘到 .output/build-hash.json（供上传/改 SW 脚本读取）
-    "build:done"() {
-      const outputDir = path.join(process.cwd(), ".output");
-      try {
-        mkdirSync(outputDir, { recursive: true });
-        const file = path.join(outputDir, "build-hash.json");
-        // dir 存无前导斜杠的 static/<hash>（供 COS Key / CDN 拼接直接使用），
-        // 构建期用的 buildHashDir(/static/<hash>)仅用于 cdnURL 拼接,不落盘
-        writeFileSync(file, JSON.stringify({ hash: buildHash, dir: buildHashDir.replace(/^\//, "") }, null, 2), "utf-8");
-        console.log(`✓ build-hash: ${buildHashDir} → ${file}`);
-      } catch (e) {
-        console.warn(`⚠ 写入 ${path.join(outputDir, "build-hash.json")} 失败:`, e instanceof Error ? e.message : e);
-      }
     },
   },
 

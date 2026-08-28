@@ -26,13 +26,17 @@ const ROOT_DIR = path.resolve(__dirname, '..')
 const BASE_DIR = path.join(ROOT_DIR, '.output', 'public')
 
 // 读取构建 hash 目录(由 nuxt.config 的 build:done hook 写入 .output/build-hash.json,dir 形如 static/<hash>)
+// 未指定子目录时强制要求此文件，确保上传目标目录精确可控
 let buildHashPrefix = ''
+let hasBuildHashFile = false
 try {
-  const buildInfo = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, '.output', 'build-hash.json'), 'utf-8'))
+  const buildInfoPath = path.join(ROOT_DIR, '.output', 'build-hash.json')
+  const buildInfo = JSON.parse(fs.readFileSync(buildInfoPath, 'utf-8'))
   buildHashPrefix = buildInfo.dir || ''
+  hasBuildHashFile = true
   console.log(`📦 Build hash: ${buildHashPrefix}\n`)
 } catch {
-  console.warn('⚠ 未找到 .output/build-hash.json，将不使用 hash 前缀')
+  // build-hash.json 不存在，仅当指定子目录时允许（静态资源走独立路径）
 }
 
 // 从命令行参数获取子目录
@@ -311,6 +315,15 @@ async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CO
 // 主函数
 async function main() {
   console.log('🚀 开始上传文件到腾讯云 COS...\n')
+
+  // 未指定子目录时，必须有 build-hash.json（构建产物走 hash 目录，不允许裸上传 public 根目录）
+  if (!subDir && !hasBuildHashFile) {
+    console.error('❌ 未找到 .output/build-hash.json')
+    console.error('   构建产物（.js/.css）必须通过 hash 目录上传，不允许裸上传 public 根目录。')
+    console.error('   请先完成构建: bun run build')
+    rl.close()
+    process.exit(1)
+  }
 
   // 获取所有文件
   let files

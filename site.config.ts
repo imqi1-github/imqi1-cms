@@ -47,8 +47,6 @@ export const siteConfig = defineSiteConfig({
 
   security: {
     allowedRefererDomains: [_host],
-    // 是否启用 CSP。正式部署保持 true；本地用 nuxi preview 验证打包产物时建议改为 false，
-    // 避免 CSP 拦截音乐直链 / 地图第三方等，干扰功能验证。
     enableCsp: true,
   },
 
@@ -113,35 +111,23 @@ export const siteConfig = defineSiteConfig({
   },
 
   build: {
-    // 是否在构建时预压缩静态资源为 brotli（生成 .br 文件）
-    // 需 Nginx 配合 brotli_static on，或 CDN 直接发送预压缩文件
     brotliCompression: true,
-    // 是否生成 vite visualizer 体积分析（stats.html）；默认关闭，排查包体积时打开
     statsHtml: false,
   },
 
   features: {
-    // 是否启用小程序 API。关闭后 server/api/mini 不会在开发/生产环境注册，也不会打入生产包。
     miniApi: true,
-    // 是否开启小程序评论功能。关闭后小程序端不展示评论区、服务端评论接口也不受理。
     miniComment: true,
   },
 
   amap: {
-    // 生产是否通过服务端 nitro 同源代理路由 /_AMapService 加载地图（key 不下发到浏览器，由服务端注入）。
-    // 开发环境恒直连（key 直连 webapi.amap.com，运行时从环境变量读取），不走代理。
     useServerProxy: true,
-    // 是否在站点各处展示指向地图页的入口胶囊（订阅页 / 友链页 / 首页 / 留言板 / 关于页）。
-    // 注意：胶囊是否渲染只由这里控制，与 AMAP_KEY 是否已配置无关；key 未配时点进地图页会显示
-    // 「地图加载失败」。key / securityCode 运行时从环境变量读取，不打包（见 .env「高德地图」段说明）。
     entryLinks: {
       development: true,
       production: true,
     },
   },
 
-  // 页面过渡动画：app.vue 全局淡出/淡入真实时长（JS 与 CSS 共用），也是各页面等待过渡完成再启动元素动画的统一延迟；
-  // translateY 为渐出「向下移动」/ 渐入「向上移动」的位移幅度（px），首页因 hero fixed 视差不参与位移。
   pageTransition: {
     fadeDuration: 150,
     translateY: 14,

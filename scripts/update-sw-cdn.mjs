@@ -1,6 +1,25 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "fs";
 import { join } from "path";
 
+// ========== 从 nitro.mjs 读取 build-hash ==========
+// nuxt.config.ts 的 buildHash 在构建时烘焙到 .output/server/chunks/_/nitro.mjs
+// postbuild 脚本应读取它（而不是重新生成），保证 build-hash.json 和服务端 hash 一致
+let buildHash = "";
+let buildHashDir = "";
+try {
+  const nitroMjs = readFileSync(join(process.cwd(), ".output", "server", "chunks", "_", "nitro.mjs"), "utf-8");
+  const match = nitroMjs.match(/"buildHash":\s*"([^"]+)"/);
+  if (match) {
+    buildHash = match[1];
+    buildHashDir = `static/${buildHash}`;
+    mkdirSync(join(process.cwd(), ".output"), { recursive: true });
+    writeFileSync(join(process.cwd(), ".output", "build-hash.json"), JSON.stringify({ hash: buildHash, dir: buildHashDir }, null, 2), "utf-8");
+    console.log(`✓ build-hash.json 生成: ${buildHashDir}`);
+  }
+} catch (e) {
+  console.error(`✗ build-hash.json 生成失败: ${e.message}`);
+}
+
 // 从 site.config.ts 读取 CDN 配置
 function getCdnConfig() {
   try {
@@ -55,16 +74,8 @@ if (!cdnBaseURL) {
   process.exit(0);
 }
 
-// 读取构建 hash 目录(由 nuxt.config 的 build:done hook 写入 .output/build-hash.json,dir 含 static/ 前缀)
-let buildHashDir = "";
-try {
-  const buildInfo = JSON.parse(readFileSync(join(process.cwd(), ".output", "build-hash.json"), "utf-8"));
-  buildHashDir = buildInfo.dir || "";
-} catch {
-  // 未构建 / 无构建信息时回退根 CDN(忽略 hash 目录)
-}
-
-const cdnURL = buildHashDir ? `${cdnBaseURL}/${buildHashDir}` : cdnBaseURL;
+// CDN URL：使用开头生成的 hash
+const cdnURL = `${cdnBaseURL}/${buildHashDir}`;
 
 console.log("✓ CDN URL:", cdnURL);
 
