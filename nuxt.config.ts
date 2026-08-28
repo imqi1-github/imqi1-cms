@@ -1,4 +1,6 @@
-import { existsSync, readFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
+import { randomBytes } from "crypto";
+import path from "path";
 
 import { visualizer } from "rollup-plugin-visualizer";
 
@@ -6,14 +8,28 @@ import { siteConfig, fullOgImage } from "./site.config";
 import { resolveAmapRuntimeConfig } from "./shared/amap-runtime";
 import { getRedisConfig } from "./shared/redis-config";
 
-// 读取构建 hash（如果存在）
-const buildHashDir = existsSync(".build-hash-dir") ? `/${readFileSync(".build-hash-dir", "utf-8").trim()}` : "";
 const isProduction = process.env.NODE_ENV === "production";
 
-// 只有配置了有效的 CDN URL 才使用 CDN
+// —— 构建哈希:时间(YYYYMMDDHHmmss)+ 8位随机,用作 CDN 资产目录 static/<hash> ——
+// 每轮 build 模块加载时生成一次(同一构建内稳定)。不再写根目录 .build-hash 文件,
+// 改为构建完成后由 build:done hook 落盘 .output/build-hash.json 供部署脚本读取。
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+function genBuildHash(): string {
+  const d = new Date();
+  const ts =
+    `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}` +
+    `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  return `${ts}-${randomBytes(4).toString("hex")}`;
+}
+const buildHash = genBuildHash();
+// 仅生产用 hash 作 CDN 资产目录;开发模式 buildHashDir 为空(资产走本地 _nuxt/,与旧版无 hash 文件一致)
+const buildHashDir = isProduction ? `/static/${buildHash}` : "";
+
 const hasCdn = siteConfig.cdnUrl && siteConfig.cdnUrl.startsWith("http");
-const cdnURL = isProduction && hasCdn ? (buildHashDir ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl) : "";
-const publicCdnAsset = (path: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${path}` : path);
+const cdnURL = isProduction && hasCdn ? `${siteConfig.cdnUrl}${buildHashDir}` : siteConfig.cdnUrl;
+const publicCdnAsset = (p: string) => (isProduction && hasCdn ? `${siteConfig.cdnUrl}${p}` : p);
 // CSP 已改为运行时按每请求 nonce 生成、通过 HTTP 响应头投递（不再用静态 <meta>），
 // 见 server/utils/csp.ts（策略拼装）+ server/plugins/csp.ts（render:response 注入 nonce 与设头）
 const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
@@ -62,7 +78,8 @@ export default defineNuxtConfig({
     public: {
       cdnURL: cdnURL,
       cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
-      buildHashDir: buildHashDir, // 保存 hash 目录供运行时使用
+      buildHashDir: buildHashDir, // /static/<hash>，供运行时拼接 CDN 资产路径
+      buildHash: buildHash, // 原始 hash，供 <meta> / window.__BUILD_HASH__ / 页内展示
       rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
       amapUseServerProxy: amapRuntime.useProxy,
     },
@@ -480,9 +497,10 @@ export default defineNuxtConfig({
   },
 
   hooks: {
-    // 仅在 client build 时注入 visualizer，避免 server bundle 覆盖 stats.html
+    // 仅在 client build 且开启 siteConfig.build.statsHtml 时注入 visualizer
+    // （默认关闭，避免每次构建都生成 stats.html；排查包体积时打开）
     "vite:extendConfig"(config, { isClient }) {
-      if (!isClient) return;
+      if (!isClient || !siteConfig.build.statsHtml) return;
       // @ts-expect-error 手动为 config 插入 visualizer 插件
       config.plugins = config.plugins || [];
       config.plugins.push(
@@ -494,6 +512,20 @@ export default defineNuxtConfig({
           emitFile: false,
         }),
       );
+    },
+    // 构建完成后把 hash 落盘到 .output/build-hash.json（供上传/改 SW 脚本读取）
+    "build:done"() {
+      const outputDir = path.join(process.cwd(), ".output");
+      try {
+        mkdirSync(outputDir, { recursive: true });
+        const file = path.join(outputDir, "build-hash.json");
+        // dir 存无前导斜杠的 static/<hash>（供 COS Key / CDN 拼接直接使用），
+        // 构建期用的 buildHashDir(/static/<hash>)仅用于 cdnURL 拼接,不落盘
+        writeFileSync(file, JSON.stringify({ hash: buildHash, dir: buildHashDir.replace(/^\//, "") }, null, 2), "utf-8");
+        console.log(`✓ build-hash: ${buildHashDir} → ${file}`);
+      } catch (e) {
+        console.warn(`⚠ 写入 ${path.join(outputDir, "build-hash.json")} 失败:`, e instanceof Error ? e.message : e);
+      }
     },
   },
 

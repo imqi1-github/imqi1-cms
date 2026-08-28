@@ -52,8 +52,6 @@ mini/.vite
 public/uploads/*
 .sessions
 new-theme.sql
-.build-hash
-.build-hash-dir
 .system-initialized.lock
 .attachments
 .live-photos

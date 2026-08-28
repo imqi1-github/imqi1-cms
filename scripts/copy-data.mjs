@@ -1,16 +1,17 @@
 import { mkdirSync, copyFileSync, existsSync } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+// 脚本可能从任意 cwd 运行（`bun run build` 若 cd 到子目录），用 __dirname 锚定项目根
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = join(__dirname, "..");
 
 // 运行时资源统一目录：打包后复制到 .output/server/runtime-assets/，便于部署时整体拷贝/挂载。
 // 与 nuxt.config.ts 的 nitro compiled hook 同源同目标、幂等——两者清单必须保持一致。
-// - qqwry.ipdb   IP 归属地库（server/utils/qqwry.ts 读取，源在 server/runtime-assets/）
-// - DejaVuSans.ttf 验证码字体（server/utils/captcha.ts 读取，源在 server/runtime-assets/）
-// - svg2png_wasm_bg.wasm  验证码渲染 WASM（来自 svg2png-wasm 依赖，随构建复制，避免版本漂移）
-// - emojis.json  邮件 CID 表情渲染用（server/utils/emoji-mail.ts 读取，源在 app/assets/）
 console.log("Copying runtime assets to build output...");
 
-const assetsDir = join(process.cwd(), "server", "runtime-assets");
-const targetDir = join(process.cwd(), ".output", "server", "runtime-assets");
+const assetsDir = join(ROOT_DIR, "server", "runtime-assets");
+const targetDir = join(ROOT_DIR, ".output", "server", "runtime-assets");
 
 const ipdbSource = process.env.QQWRY_IPDB_PATH || join(assetsDir, "qqwry.ipdb");
 
@@ -26,12 +27,12 @@ const runtimeFiles = [
     label: "captcha font",
   },
   {
-    source: join(process.cwd(), "node_modules", "svg2png-wasm", "svg2png_wasm_bg.wasm"),
+    source: join(ROOT_DIR, "node_modules", "svg2png-wasm", "svg2png_wasm_bg.wasm"),
     target: join(targetDir, "svg2png_wasm_bg.wasm"),
     label: "svg2png WASM",
   },
   {
-    source: join(process.cwd(), "app", "assets", "emojis.json"),
+    source: join(ROOT_DIR, "app", "assets", "emojis.json"),
     target: join(targetDir, "emojis.json"),
     label: "emojis.json (mail emoji)",
   },

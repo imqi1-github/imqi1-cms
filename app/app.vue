@@ -4,6 +4,10 @@ import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
 
+// 构建哈希暴露给前端：<meta name="build-hash"> + 全局 window.__BUILD_HASH__（见 build-hash 插件）
+const buildHash = useRuntimeConfig().public.buildHash;
+useHead({ meta: [{ name: "build-hash", content: buildHash }] });
+
 // 应用滚动条主题
 useScrollbarTheme();
 

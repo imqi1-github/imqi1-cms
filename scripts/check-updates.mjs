@@ -37,9 +37,22 @@ const getOutdatedPackages = () => {
   }
 };
 
-// 解析版本号用于比较
+// 解析版本号用于比较：取 major.minor.patch，并把预发布（-rc/-beta 等）单独标记
 const parseVersion = (version) => {
-  return version.replace(/[^0-9.]/g, '').split('.').map(Number);
+  const m = (version || "").match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?/);
+  if (!m) return { nums: [0, 0, 0], pre: "" };
+  return { nums: [Number(m[1]), Number(m[2]), Number(m[3])], pre: m[4] || "" };
+};
+
+// latest 是否比 current 新（numeric 逐级比较;numeric 相等时稳定版 > 预发布）
+const isNewer = (latest, current) => {
+  for (let i = 0; i < 3; i++) {
+    const l = latest.nums[i] ?? 0;
+    const c = current.nums[i] ?? 0;
+    if (l > c) return true;
+    if (l < c) return false;
+  }
+  return !latest.pre && !!current.pre;
 };
 
 // 主函数
@@ -56,12 +69,12 @@ const main = async () => {
 
   for (const name of packageNames) {
     const info = outdated[name];
-    const currentParts = parseVersion(info.current);
-    const latestParts = parseVersion(info.latest);
+    const currentV = parseVersion(info.current);
+    const latestV = parseVersion(info.latest);
 
     let icon = '🟢';
-    if (latestParts[0] > currentParts[0]) icon = '🔴';
-    else if (latestParts[1] > currentParts[1]) icon = '🟡';
+    if (latestV.nums[0] > currentV.nums[0]) icon = '🔴';
+    else if (isNewer(latestV, currentV)) icon = '🟡';
 
     try {
       const pkgInfo = await fetchPackageInfo(name);

@@ -11,13 +11,29 @@ import * as dotenv from "dotenv";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
+const DB_HOST = process.env.DB_HOST || "localhost";
+const DB_PORT = Number(process.env.DB_PORT || 3306);
+const DB_USER = process.env.DB_USER || "root";
+const DB_PASSWORD = process.env.DB_PASSWORD;
+const DB_NAME = process.env.DB_NAME;
+
+// 缺失时给出明确提示，避免连接报错难以定位
+if (!DB_PASSWORD) {
+  console.error("❌ 缺少数据库配置 DB_PASSWORD，请检查 .env");
+  process.exit(1);
+}
+if (!DB_NAME) {
+  console.error("❌ 缺少数据库配置 DB_NAME，请检查 .env");
+  process.exit(1);
+}
+
 // 创建 Prisma 客户端（使用与项目相同的配置）
 const adapter = new PrismaMariaDb({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD!,
-  database: process.env.DB_NAME!,
+  host: DB_HOST,
+  port: DB_PORT,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
   connectionLimit: 10,
 });
 

@@ -55,13 +55,13 @@ if (!cdnBaseURL) {
   process.exit(0);
 }
 
-// 读取构建 hash
-const buildHashDirPath = join(process.cwd(), ".build-hash-dir");
+// 读取构建 hash 目录(由 nuxt.config 的 build:done hook 写入 .output/build-hash.json,dir 含 static/ 前缀)
 let buildHashDir = "";
-
-if (existsSync(buildHashDirPath)) {
-  // build-hash-dir 文件内容已经包含 "static/" 前缀，不需要再加前导斜杠
-  buildHashDir = readFileSync(buildHashDirPath, "utf-8").trim();
+try {
+  const buildInfo = JSON.parse(readFileSync(join(process.cwd(), ".output", "build-hash.json"), "utf-8"));
+  buildHashDir = buildInfo.dir || "";
+} catch {
+  // 未构建 / 无构建信息时回退根 CDN(忽略 hash 目录)
 }
 
 const cdnURL = buildHashDir ? `${cdnBaseURL}/${buildHashDir}` : cdnBaseURL;

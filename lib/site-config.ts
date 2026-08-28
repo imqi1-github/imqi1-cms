@@ -81,6 +81,8 @@ export interface SiteConfig {
   build: {
     /** 是否在构建时预压缩静态资源为 brotli（生成 .br 文件，需 Nginx brotli_static on 配合） */
     brotliCompression: boolean;
+    /** 是否生成 vite visualizer 体积分析（stats.html）—— 默认 false，仅需排查包体积时打开 */
+    statsHtml: boolean;
   };
   /** 功能开关 */
   features: {

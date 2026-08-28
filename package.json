@@ -3,7 +3,6 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "prebuild": "node scripts/generate-build-hash.mjs",
     "serve": "node scripts/file-server.mjs",
     "build": "nuxt build",
     "postbuild": "node scripts/copy-data.mjs && node scripts/update-sw-cdn.mjs",

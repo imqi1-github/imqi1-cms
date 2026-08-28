@@ -15,7 +15,7 @@
 # 输出：stdout=会话值（供 SID=$(...)，stderr=人读日志）。先播种一次，再并行跑。
 set -euo pipefail
 
-PORT="${PORT:-3001}"
+PORT="${PORT:-3000}"
 USER="${ADMIN_USER:-admin}"
 PASS="${ADMIN_PASS:-123456}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

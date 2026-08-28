@@ -25,11 +25,14 @@ const __dirname = path.dirname(__filename)
 const ROOT_DIR = path.resolve(__dirname, '..')
 const BASE_DIR = path.join(ROOT_DIR, '.output', 'public')
 
-// 读取构建 hash 目录
+// 读取构建 hash 目录(由 nuxt.config 的 build:done hook 写入 .output/build-hash.json,dir 形如 static/<hash>)
 let buildHashPrefix = ''
-if (fs.existsSync(path.join(ROOT_DIR, '.build-hash-dir'))) {
-  buildHashPrefix = fs.readFileSync(path.join(ROOT_DIR, '.build-hash-dir'), 'utf-8').trim()
+try {
+  const buildInfo = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, '.output', 'build-hash.json'), 'utf-8'))
+  buildHashPrefix = buildInfo.dir || ''
   console.log(`📦 Build hash: ${buildHashPrefix}\n`)
+} catch {
+  console.warn('⚠ 未找到 .output/build-hash.json，将不使用 hash 前缀')
 }
 
 // 从命令行参数获取子目录
@@ -144,23 +147,29 @@ async function uploadFile(localPath, remotePath, maxRetries = 3) {
   throw lastError
 }
 
-// 获取远程目录中的所有文件
+// 获取远程目录中的所有文件（自动翻页，MaxKeys=1000 一页，直到 IsTruncated=false）
 async function getRemoteFiles(prefix = '') {
-  return new Promise((resolve, reject) => {
-    cos.getBucket({
-      Bucket: cosConfig.Bucket,
-      Region: cosConfig.Region,
-      Prefix: prefix,
-      Marker: '',
-      MaxKeys: 1000
-    }, (err, data) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(data.Contents || [])
-      }
+  const all = []
+  let marker = ''
+  do {
+    const data = await new Promise((resolve, reject) => {
+      cos.getBucket({
+        Bucket: cosConfig.Bucket,
+        Region: cosConfig.Region,
+        Prefix: prefix,
+        Marker: marker,
+        MaxKeys: 1000
+      }, (err, d) => {
+        if (err) reject(err)
+        else resolve(d)
+      })
     })
-  })
+    all.push(...(data.Contents || []))
+    // 有更多页时用 NextMarker 续取
+    if (!data.IsTruncated) break
+    marker = data.NextMarker || ''
+  } while (marker)
+  return all
 }
 
 // 删除远程文件
@@ -195,6 +204,14 @@ function askQuestion(query) {
 // 清空远程目录
 async function clearRemoteDirectory() {
   try {
+    // 守卫:未确定清空范围(构建 hash 与 COS_PREFIX 都为空)时,拒绝清空整个 bucket。
+    // 否则 Prefix='' 会列出并删除全部对象(不可逆)。
+    if (!UPLOAD_PREFIX) {
+      console.error('❌ 未确定清空范围(UPLOAD_PREFIX 为空):拒绝清空整个 COS bucket。')
+      console.error('   请链接 .output/build-hash.json,或用 -- 传 COS_PREFIX 指定子前缀。')
+      return false
+    }
+
     console.log('\n🔍 正在检查远程目录...\n')
 
     const remoteFiles = await getRemoteFiles(UPLOAD_PREFIX)

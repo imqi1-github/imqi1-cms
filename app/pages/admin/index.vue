@@ -41,9 +41,11 @@ const detailedStats = ref({
   },
 })
 
+// 当前构建哈希（与 <meta name="build-hash"> / window.__BUILD_HASH__ 一致）
+const buildHash = useRuntimeConfig().public.buildHash;
+
 const systemInfo = ref({
-  nodeVersion: '',
-  platform: '',
+  nodeVersion: '',  platform: '',
   architecture: '',
   uptime: '',
   memory: { used: 0, total: 0, unit: 'MB' },
@@ -498,6 +500,16 @@ onMounted(() => {
             </div>
             <p class="text-xl sm:text-2xl font-bold">{{ systemInfo.attachments.count }}</p>
             <p class="text-xs text-muted-foreground truncate">总大小: {{ formatFileSize(systemInfo.attachments.totalSize) }}</p>
+          </div>
+
+          <!-- 构建哈希 -->
+          <div class="space-y-2 p-3 rounded-lg bg-muted/30">
+            <div class="flex items-center gap-2 text-sm font-medium">
+              <Icon name="lucide:git-commit-horizontal" class="size-4 text-muted-foreground shrink-0" />
+              <span class="truncate">构建哈希</span>
+            </div>
+            <p class="text-sm font-mono truncate" :title="buildHash">{{ buildHash }}</p>
+            <p class="text-xs text-muted-foreground">当前部署版本</p>
           </div>
         </div>
       </CardContent>

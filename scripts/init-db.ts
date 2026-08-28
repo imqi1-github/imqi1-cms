@@ -33,6 +33,13 @@ async function main() {
     return;
   }
 
+  // 库名会拼进反引号标识符，仅允许安全字符（字母数字下划线连字符），防止注入 / 非法库名
+  if (!/^[A-Za-z0-9_-]+$/.test(database)) {
+    console.error("❌ 数据库名含非法字符，仅允许字母数字下划线连字符：" + database);
+    process.exitCode = 1;
+    return;
+  }
+
   const sql = readFileSync(SQL_FILE, "utf-8");
 
   // multipleStatements: 允许一次执行 init-db.sql 中的多条语句
