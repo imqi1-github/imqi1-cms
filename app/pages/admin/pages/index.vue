@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type {AcceptableValue} from "reka-ui";
+
 import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
@@ -286,7 +288,7 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
             <ClientOnly>
-              <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: any) => filterByStatus(v ?? null)">
+              <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: AcceptableValue) => filterByStatus(v == null ? null : Number(v))">
                 <SelectTrigger class="w-35">
                   <SelectValue placeholder="全部状态" />
                 </SelectTrigger>

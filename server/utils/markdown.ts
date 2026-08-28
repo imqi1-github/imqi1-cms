@@ -151,8 +151,8 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
     if (aIndex < 0) {
       token.attrPush(["target", "_blank"]);
     } else {
-      // @ts-expect-error MarkdownIt已经确保了 attrs 存在
-      token.attrs[aIndex][1] = "_blank";
+      // attrIndex >= 0 已保证 attrs 非空且该下标存在；noUncheckedIndexedAccess 下仍需断言
+      token.attrs![aIndex]![1] = "_blank";
     }
     const relIndex = token.attrIndex("rel");
     if (relIndex < 0) {
