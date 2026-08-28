@@ -4,7 +4,7 @@
  * 此文件存放 {@link SiteConfig} 接口与 {@link defineSiteConfig} 类型守卫函数，
  * 供 `site.config.ts` 引用。将类型与实现分离，让 `site.config.ts` 只保留纯配置值。
  *
- * @module shared/site-config
+ * @module lib/site-config
  */
 
 /**
