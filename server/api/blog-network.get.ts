@@ -4,7 +4,7 @@ import { isIP } from "node:net";
 import { prisma } from "#server/utils/prisma";
 import { getIpLocation } from "#server/utils/qqwry";
 import { resolveCity } from "#server/utils/ip-location";
-import { CITY_COORDS, matchForeignCoord, type Coord } from "~~/shared/city-coords";
+import { CITY_COORDS, matchForeignCoord, type Coord } from "#shared/city-coords";
 import type { Bucket, ResolvedPoint } from "#server/types/apis/blog-network";
 
 /**

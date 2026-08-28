@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { escapeHtml } from "~~/lib/html";
+import { escapeHtml } from "#shared/html";
 import { siteConfig } from "~~/site.config";
 import type { HandledError } from "~/types/error";
 import type { ContentSearchItem, SearchInputHandle, SearchResultItem, SearchType, SearchTypeConfig } from "~/types/apis/search";

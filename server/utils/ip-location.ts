@@ -12,7 +12,7 @@
  */
 
 import { getIpLocation } from "#server/utils/qqwry";
-import { CITY_COORDS, PROVINCES } from "~~/shared/city-coords";
+import { CITY_COORDS, PROVINCES } from "#shared/city-coords";
 import type { CityInfo } from "#server/types/utils/ip-location";
 
 // 行政区划后缀，城市/省份名去掉后与内置坐标表 key 对齐

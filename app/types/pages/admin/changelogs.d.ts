@@ -1,4 +1,4 @@
-import type { ChangelogType } from "~~/shared/changelog";
+import type { ChangelogType } from "#shared/changelog";
 
 /**
  * 带渲染结果的更新日志条目（前台/admin 列表用）。

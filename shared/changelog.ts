@@ -4,8 +4,8 @@
  * 一条 changelog 记录的 content 是一个条目列表，每个条目：
  *   { type: 更新类别, value: 更新内容（字符串，渲染端走 markdown） }
  *
- * 导入方式参照 ~~/shared/city-coords：
- *   import { CHANGELOG_TYPES, CHANGELOG_META } from "~~/shared/changelog"
+ * 导入方式参照 #shared/city-coords：
+ *   import { CHANGELOG_TYPES, CHANGELOG_META } from "#shared/changelog"
  */
 
 /** 更新类别（顺序也是后台/侧栏的展示顺序） */

@@ -4,7 +4,7 @@ import * as path from "path";
 import prisma from "#server/utils/prisma";
 import { MailEmojiRenderer } from "#server/utils/emoji-mail";
 import { siteConfig } from "~~/site.config";
-import { escapeHtml } from "~~/lib/html";
+import { escapeHtml } from "#shared/html";
 import type { MailOptions } from "#server/types/utils/mail";
 
 // 邮件里放进 href 的 URL 仅允许 http(s)：拒绝 javascript:/data: 等（防邮件里注入脚本链接）

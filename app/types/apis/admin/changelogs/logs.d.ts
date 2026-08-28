@@ -1,5 +1,5 @@
 import type { RenderedChangelogEntry } from "~/types/pages/admin/changelogs";
-import type { ChangelogType } from "~~/shared/changelog";
+import type { ChangelogType } from "#shared/changelog";
 
 export interface ChangelogItem {
   id: number;

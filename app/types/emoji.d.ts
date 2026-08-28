@@ -1,5 +1,5 @@
-// EmojiCategoryMeta 的源头在 ~~shared/emoji-categories（前端/服务端共用），此处 re-export 保持 ~/types/emoji 入口兼容。
-export type { EmojiCategoryMeta } from "~~/shared/emoji-categories";
+// EmojiCategoryMeta 的源头在 #shared/emoji-categories（前端/服务端共用），此处 re-export 保持 ~/types/emoji 入口兼容。
+export type { EmojiCategoryMeta } from "#shared/emoji-categories";
 
 // 单个分类下的 emoji 字典：emojis.json 中每条目形如 { "<emoji-key>": "<path>" }。
 // 此类型仅供 app/utils/emoji 在加载期对 JSON 做 Record 断言，避免在 utils 内联顶层 type。

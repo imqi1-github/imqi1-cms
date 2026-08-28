@@ -1,6 +1,6 @@
 // Comments API response
 
-import type { ParsedAgent } from "~~/shared/parseUserAgent";
+import type { ParsedAgent } from "#shared/parseUserAgent";
 
 /** parseUserAgent 返回结构（服务端已预解析下发）；与 shared 单一真相源一致，避免两处分叉 */
 export type CommentDevice = ParsedAgent;

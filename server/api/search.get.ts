@@ -4,7 +4,7 @@ import { getCommentAvatarService, commentAvatarUrl } from "#server/utils/comment
 import { SearchQuerySchema, SearchResponseSchema } from "#server/utils/schemas";
 import { sanitizeExternalUrl } from "#server/utils/rss";
 import { defineTypedApiHandler } from "#server/types/typedApi";
-import { escapeHtml, escapeRegExp } from "~~/lib/html";
+import { escapeHtml, escapeRegExp } from "#shared/html";
 import type {
   SearchContentItem,
   SearchBranchResult,

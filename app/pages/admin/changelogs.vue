@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta} from "~~/shared/changelog";
+import {CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta} from "#shared/changelog";
 import type {ChangelogItem, FormEntry} from "~/types/apis/admin/changelogs/logs";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 

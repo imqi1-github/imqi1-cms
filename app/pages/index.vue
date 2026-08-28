@@ -766,7 +766,7 @@ import MetingPlayer from "~/components/MetingPlayer.vue";
 import type { GridItem } from "~/types/apis";
 import type { WaterfallItem } from "~/types/components/waterfall";
 import type { ThemeCardItem } from "~/types/pages/home";
-import { getChangelogMeta } from "~~/shared/changelog";
+import { getChangelogMeta } from "#shared/changelog";
 import { siteConfig } from "~~/site.config";
 
 // 目录导航数据

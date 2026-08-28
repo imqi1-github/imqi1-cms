@@ -14,8 +14,8 @@ import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { escapeAttribute, escapeHtml } from "~~/lib/html";
-import { EMOJI_CATEGORIES, stripEmojiPrefix } from "~~/shared/emoji-categories";
+import { escapeAttribute, escapeHtml } from "#shared/html";
+import { EMOJI_CATEGORIES, stripEmojiPrefix } from "#shared/emoji-categories";
 import { getPublicDir } from "#server/utils/attachment-file";
 import type { EmojiEntry, MailEmojiAttachment } from "#server/types/utils/emoji-mail";
 

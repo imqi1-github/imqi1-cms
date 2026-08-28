@@ -28,7 +28,7 @@ import jsx from "@shikijs/langs/jsx";
 import ini from "@shikijs/langs/ini";
 import powershell from "@shikijs/langs/powershell";
 
-import { escapeAttribute, escapeHtml, sanitizeHtml } from "~~/lib/html";
+import { escapeAttribute, escapeHtml, sanitizeHtml } from "#shared/html";
 import islandLightTheme from "@/shiki/island_light";
 import islandDarkTheme from "@/shiki/island_dark";
 import type { RenderRule, MusicPlatform } from "#server/types/utils/markdown";

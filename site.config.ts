@@ -14,7 +14,7 @@
  * ```
  */
 
-import { defineSiteConfig } from "./lib/site-config";
+import { defineSiteConfig } from "./shared/site-config";
 
 // 原始字面量值（修改这些即可，下方派生字段自动更新）
 const _name = "ImQi1";

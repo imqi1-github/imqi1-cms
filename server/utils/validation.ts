@@ -3,7 +3,7 @@
  * 根据 Prisma schema 中定义的字段长度限制进行验证
  */
 
-import { isChangelogType } from "~~/shared/changelog";
+import { isChangelogType } from "#shared/changelog";
 
 /**
  * 验证字符串长度

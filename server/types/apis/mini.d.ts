@@ -294,7 +294,7 @@ export interface MiniChangelogLog {
   /** 发布时间 ISO 字符串 */
   createTime: string;
   /** 变更条目（type 为「功能」「优化」等类别，value 为内容原文） */
-  entries: import("~~/shared/changelog").ChangelogEntry[];
+  entries: import("#shared/changelog").ChangelogEntry[];
 }
 
 /** 小程序更新日志：按月份分组 */

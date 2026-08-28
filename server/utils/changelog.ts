@@ -7,7 +7,7 @@
  * 对外（API 响应）的条目带 html：{ type, value, html }，html 由 renderSimpleMarkdown 渲染。
  */
 import { renderSimpleMarkdown } from "#server/utils/markdown";
-import { isChangelogType, type ChangelogEntry } from "~~/shared/changelog";
+import { isChangelogType, type ChangelogEntry } from "#shared/changelog";
 import type { RenderedChangelogEntry } from "#server/types/utils/rendered-changelog";
 
 /**

@@ -1,7 +1,7 @@
 import { commentAvatarUrl } from "#server/utils/comment-avatar";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
-import { CITY_COORDS } from "~~/shared/city-coords";
+import { CITY_COORDS } from "#shared/city-coords";
 import type { Reader } from "#server/types/apis/reader";
 import type { IdStatus } from "#server/types/apis/footprint";
 

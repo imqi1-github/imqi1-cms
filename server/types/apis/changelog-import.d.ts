@@ -1,4 +1,4 @@
-import type { ChangelogEntry } from "~~/shared/changelog";
+import type { ChangelogEntry } from "#shared/changelog";
 
 /** JSON 输入格式（支持两种形态） */
 export type ChangelogInputJson = ChangelogEntry[] | ChangelogInputRecord[] | ChangelogInputRecord;

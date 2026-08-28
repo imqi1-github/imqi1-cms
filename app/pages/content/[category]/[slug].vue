@@ -10,7 +10,7 @@ import type { RelatedContent } from "~/types/apis/content/related-contents";
 import LivePhoto from "~/components/LivePhoto.vue";
 import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
-import type { TocItem } from "~/types/apis/content";
+import type { TocItem } from "~/types/apis/toc";
 import type { MarkdownAttachmentImage, MarkdownImageDimensions } from "~/types/pages/content-detail";
 
 const route = useRoute();

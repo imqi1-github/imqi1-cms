@@ -3,7 +3,7 @@ import {computed, onMounted, onUnmounted, ref} from "vue";
 
 import {useScrollFadeMask} from "~/composables/useScrollFadeMask";
 import {siteConfig} from "~~/site.config";
-import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta, isChangelogType,} from "~~/shared/changelog";
+import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta, isChangelogType,} from "#shared/changelog";
 import type {ChangelogEntry, ChangelogGroup} from "~/types/apis/changelogs";
 
 const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {

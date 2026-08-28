@@ -5,7 +5,7 @@ import type { ContentDetailResponse } from "~/types/apis/admin/pages";
 import type { ContentSaveResponse, CoversInput } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
-import { isSpecialPageSlug, SPECIAL_PAGE_OPTIONS, type SpecialPageValue } from "~~/shared/special-pages";
+import { isSpecialPageSlug, SPECIAL_PAGE_OPTIONS, type SpecialPageValue } from "#shared/special-pages";
 
 const route = useRoute();
 const router = useRouter();

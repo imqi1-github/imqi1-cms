@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
 
-import { CITY_COORDS } from "~~/shared/city-coords";
+import { CITY_COORDS } from "#shared/city-coords";
 import { siteConfig } from "~~/site.config";
 import type { BlogNetworkData } from "~/types/apis/blog-network";
 

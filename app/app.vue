@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { printWelcomeBanner } from "../lib/welcome-banner";
-
+import { printWelcomeBanner } from "#shared/welcome-banner";
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();

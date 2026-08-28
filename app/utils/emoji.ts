@@ -8,10 +8,10 @@ import { publicAsset } from "./asset";
 
 import emojisData from "~/assets/emojis.json";
 import type { EmojiDict, EmojiItem, EmojiLookupEntry } from "~/types/emoji";
-import { escapeAttribute, escapeHtml } from "~~/lib/html";
+import { escapeAttribute, escapeHtml } from "#shared/html";
 // 表情分类配置与 stripEmojiPrefix 的源头在 ~~shared/emoji-categories（前端/服务端共用）：
 // Nitro 不打包 app/，服务端无法 import ~/utils 或 ~/types，故跨边界常量必须放 shared/。
-import { EMOJI_CATEGORIES, stripEmojiPrefix } from "~~/shared/emoji-categories";
+import { EMOJI_CATEGORIES, stripEmojiPrefix } from "#shared/emoji-categories";
 
 // 保持 ~/utils/emoji 既有导入入口兼容（CommentInput 等仍从此 import EMOJI_CATEGORIES）。
 export { EMOJI_CATEGORIES, stripEmojiPrefix };

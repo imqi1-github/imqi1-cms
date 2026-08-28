@@ -1,6 +1,6 @@
 import { prisma } from "#server/utils/prisma";
 import type { SiteSettings, SettingKey, MutableSettings, MetaItem } from "#server/types/apis/setting";
-import { sanitizeHtml } from "~~/lib/html";
+import { sanitizeHtml } from "#shared/html";
 import { siteConfig } from "~~/site.config";
 
 // 站点公共设置的强类型默认值

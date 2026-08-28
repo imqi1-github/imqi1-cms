@@ -4,7 +4,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { validateChangelogData } from "#server/utils/validation";
 import { normalizeChangelogEntries, stringifyChangelogContent } from "#server/utils/changelog";
 import type { ChangelogInputJson, ChangelogInputRecord, ParsedRecord } from "#server/types/apis/changelog-import";
-import type { ChangelogEntry } from "~~/shared/changelog";
+import type { ChangelogEntry } from "#shared/changelog";
 
 /**
  * 从 JSON 文件导入更新日志（一键导入）。
