@@ -183,12 +183,12 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
-      // 构建产物全部托管在 CDN（主域 Nitro 不提供 /static/<hash>/*），且 Workbox7 的
-      // copyRedirectedCacheableResponsesPlugin 会对「被重定向的跨域资源」调 copyResponse
-      // （仅限同源）→ precache 跨域 CDN 资源可能抛 cross-origin-copy-response。
-      // 故不再 precache 构建产物（避免跨域 precache），改由下方 runtimeCaching 的
-      // CacheFirst 按需缓存（CacheFirst 不含该插件，跨域缓存无此坑）。
-      globPatterns: [],
+      // 构建产物全部托管在 CDN（主域 Nitro 不提供 /static/<hash>/*）。precache 资源
+      // 由 update-sw-cdn.mjs 统一改写为 CDN 前缀（含 favicon.ico 等 root 资源走 cdn 根、
+      // 构建产物走 cdn/<hash>），避免 precache 里出现「同源 → 301 → 跨域 CDN」的重定向
+      // URL（Workbox7 的 copyRedirectedCacheableResponsesPlugin 会对重定向的跨域响应
+      // copyResponse → 抛 cross-origin-copy-response）。全 CDN 前缀后 SW 直接取 CDN 无重定向。
+      globPatterns: ["**/*.{js,css,html,ico,png,svg,ttf,woff,woff2,webmanifest}"],
       globIgnores: ["**/node_modules/**/*", "sw.js", "builds/**"],
       // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
       navigateFallback: null,

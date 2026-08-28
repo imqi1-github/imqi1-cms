@@ -83,7 +83,7 @@ let swContent = readFileSync(swPath, "utf-8");
 // 匹配扁平化后的构建产物 url:"entry.<hash>.js"、url:"<hash>.css"、url:"builds/*.json"、
 // url:"*.js.br"/"*.css.gz" 等，以及 url:"manifest.webmanifest"
 // 注：workbox 运行时已通过 inlineWorkboxRuntime 内联进 sw.js，无需再处理 workbox 导入
-const precacheRegex = /url:"([^"]+\.(?:js|css|json)(?:\.(?:br|gz))?|manifest\.webmanifest)"/g;
+const precacheRegex = /url:"([^"]+\.(?:js|css|html|ico|png|svg|ttf|woff|woff2|json|webmanifest)(?:\.(?:br|gz))?)"/g;
 const precacheMatches = [...swContent.matchAll(precacheRegex)];
 
 if (precacheMatches.length > 0) {
@@ -97,15 +97,21 @@ if (precacheMatches.length > 0) {
       return;
     }
 
-    // manifest.webmanifest 从 CDN 根目录加载（不带 hash），其他从 hash 目录加载
-    const cdnBase = resourcePath === "manifest.webmanifest" ? cdnBaseURL : cdnURL;
+    // root 级资源（favicon/manifest + imgs/skills/fonts 等）走 cdn 根（不带 hash），
+    // 其余（构建产物，位于 hash 目录）走 cdn/<hash>，避免「同源 URL → 301 → 跨域 CDN」
+    // 触发 Workbox7 copyRedirectedCacheableResponsesPlugin 的 cross-origin-copy-response
+    const isRootAsset =
+      resourcePath === "manifest.webmanifest" ||
+      resourcePath === "favicon.ico" ||
+      /^(imgs|skills|fonts)\//.test(resourcePath);
+    const cdnBase = isRootAsset ? cdnBaseURL : cdnURL;
     const cdnUrl = `${cdnBase}/${resourcePath}`;
     console.log(`  Replacing: ${resourcePath} -> ${cdnUrl}`);
     swContent = swContent.replace(fullMatch, `url:"${cdnUrl}"`);
   });
 } else {
-  // 构建产物已不走 precache（nuxt.config workbox globPatterns: []），无跨域 CDN 条目可改写
-  console.log("ℹ 无 precache 资源（已禁用跨域 CDN 预缓存），跳过 CDN 路径改写");
+  // 理论不会发生（globPatterns 已恢复，precache 应有资源）；兜底提示
+  console.log("ℹ 未发现 precache 资源（可能是 globPatterns 为空），跳过 CDN 路径改写");
 }
 
 // 写回文件
