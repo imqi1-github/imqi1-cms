@@ -103,11 +103,14 @@ if (precacheMatches.length > 0) {
     console.log(`  Replacing: ${resourcePath} -> ${cdnUrl}`);
     swContent = swContent.replace(fullMatch, `url:"${cdnUrl}"`);
   });
+} else {
+  // 构建产物已不走 precache（nuxt.config workbox globPatterns: []），无跨域 CDN 条目可改写
+  console.log("ℹ 无 precache 资源（已禁用跨域 CDN 预缓存），跳过 CDN 路径改写");
 }
 
 // 写回文件
 writeFileSync(swPath, swContent, "utf-8");
-console.log("✓ Updated sw.js with CDN paths for all static resources");
+console.log("✓ sw.js 处理完成（CDN 预备缓存已禁用，sw.js/robots.txt 照常拷到 server 根）");
 
 // 将根目录文件复制到 server 目录
 copyPublicFileToServerRoot("sw.js");

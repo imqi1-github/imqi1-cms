@@ -183,10 +183,12 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
-      // 显式限定 precache 资源类型：覆盖 @vite-pwa 为 Nuxt builds/ 自动加的 glob，
-      // 消除 workbox 对 .output/public/builds/** 匹配不到文件的警告。
-      // builds/ 下的懒加载元数据（latest.json / meta/*.json）不参与 precache。
-      globPatterns: ["**/*.{js,css,html,ico,png,svg,ttf,woff,woff2,webmanifest}"],
+      // 构建产物全部托管在 CDN（主域 Nitro 不提供 /static/<hash>/*），且 Workbox7 的
+      // copyRedirectedCacheableResponsesPlugin 会对「被重定向的跨域资源」调 copyResponse
+      // （仅限同源）→ precache 跨域 CDN 资源可能抛 cross-origin-copy-response。
+      // 故不再 precache 构建产物（避免跨域 precache），改由下方 runtimeCaching 的
+      // CacheFirst 按需缓存（CacheFirst 不含该插件，跨域缓存无此坑）。
+      globPatterns: [],
       globIgnores: ["**/node_modules/**/*", "sw.js", "builds/**"],
       // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
       navigateFallback: null,
