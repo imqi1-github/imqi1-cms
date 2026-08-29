@@ -114,7 +114,7 @@ if (precacheMatches.length > 0) {
     const isRootAsset =
       resourcePath === "manifest.webmanifest" ||
       resourcePath === "favicon.ico" ||
-      /^(imgs|skills|fonts)\//.test(resourcePath);
+      /^(imgs|icons|emojis|skills|fonts)\//.test(resourcePath);
     const cdnBase = isRootAsset ? cdnBaseURL : cdnURL;
     const cdnUrl = `${cdnBase}/${resourcePath}`;
     console.log(`  Replacing: ${resourcePath} -> ${cdnUrl}`);

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { escapeHtml } from "#shared/html";
+import { escapeHtml, escapeAttribute } from "#shared/html";
 import { siteConfig } from "~~/site.config";
+import { getEmojiByKey } from "~/utils/emoji";
+import { publicAsset } from "~/utils/asset";
 import type { HandledError } from "~/types/error";
 import type { ContentSearchItem, SearchInputHandle, SearchResultItem, SearchType, SearchTypeConfig } from "~/types/apis/search";
 
@@ -284,6 +286,35 @@ function highlightKeyword(text: string, keyword: string) {
   return out;
 }
 
+// 评论内容：同时处理表情解析与关键词高亮。
+// emoji placeholder 在原文上精确匹配，高亮在原文上求区间，两者互补不干扰。
+// 实现：先把 emoji placeholder 替换为占位符（如 __EMOJI_0__），在纯文本上高亮，再还原 img。
+function renderCommentContent(content: string, keyword: string) {
+  if (!content) return "";
+
+  // 提取所有 emoji placeholder 并替换为临时占位符
+  const emojiMap = new Map<string, string>();
+  let counter = 0;
+  const textWithoutEmoji = content.replace(/:\[([^\]]+)\]/g, (match, key) => {
+    const found = getEmojiByKey(key);
+    if (!found) return match; // 不识别的保留原文
+    const placeholder = `__EMOJI_${counter}__`;
+    emojiMap.set(placeholder, `<img src="${escapeAttribute(publicAsset(found.path))}" alt="${escapeAttribute(found.name)}" class="inline-emoji" style="width:1.6em;height:1.6em;display:inline-block;vertical-align:middle;margin:0 2px;" />`);
+    counter++;
+    return placeholder;
+  });
+
+  // 在纯文本上高亮关键词
+  let result = highlightKeyword(textWithoutEmoji, keyword);
+
+  // 还原 emoji img
+  for (const [placeholder, html] of emojiMap) {
+    result = result.split(placeholder).join(html);
+  }
+
+  return result;
+}
+
 // 提取外链域名（订阅源/友链/订阅文章结果展示用）
 function formatUrl(url: string) {
   try {
@@ -538,7 +569,7 @@ const emptyNoun = computed(() => {
                   </div>
                   <p
                     class="text-sm text-foreground mb-2 line-clamp-3 whitespace-pre-wrap"
-                    v-html="highlightKeyword(item.content, sanitizedKeyword)" />
+                    v-html="renderCommentContent(item.content, sanitizedKeyword)" />
                   <!-- 评论所在文章：有 articleUrl 才可点（留言板/已发布文章） -->
                   <div class="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
                     <Icon name="ri:article-line" class="size-3 shrink-0" />

@@ -6,6 +6,31 @@
 // 文章正文 / 独立页面正文的 markdown 渲染容器（服务端 renderMarkdown 产物）。
 // 收敛 .markdown-body 排版、富容器占位、shiki 代码样式到一处，文章页与协议页共享。
 defineProps<{ html: string }>();
+
+// 动态注入 icons CDN URL（不走 CSS url()，避免 buildAssetsDir: "/" 时被 Vite 重写成带 hash 路径）。
+// public/icons/ 是 public 静态资源，不带 hash，走 CDN 根。
+const iconUrls: Record<string, string> = {
+  github: publicAsset("/icons/github.svg"),
+  gitee: publicAsset("/icons/gitee.svg"),
+  baidu: publicAsset("/icons/baidu.svg"),
+  google: publicAsset("/icons/google.svg"),
+  tencent: publicAsset("/icons/tencent.svg"),
+  wechat: publicAsset("/icons/wechat.svg"),
+  mozilla: publicAsset("/icons/mozilla.svg"),
+  npm: publicAsset("/icons/npm.svg"),
+};
+
+onMounted(() => {
+  // 直接给每个 icon span 设 inline style.backgroundImage，彻底绕过 CSS rewrite 和 specificity 问题。
+  const el = document.querySelector(".markdown-body");
+  if (!el) return;
+  for (const [slug, url] of Object.entries(iconUrls)) {
+    el.querySelectorAll(`.markdown-link-icon--${slug}`).forEach(span => {
+      (span as HTMLElement).style.maskImage = `url("${url}")`;
+      (span as HTMLElement).style.webkitMaskImage = `url("${url}")`;
+    });
+  }
+});
 </script>
 
 <style scoped>
@@ -219,8 +244,8 @@ defineProps<{ html: string }>();
   color: rgb(96 165 250);
 }
 
-/* 已知域名行内链接的左侧域名图标：空 span + mask + currentColor，随文字色自适应深浅色。
-   链接本身不加 class、保持普通超链接外观（含 hover 下划线），只额外渲染这个图标。 */
+/* 已知域名行内链接的左侧域名图标：空 span + inline maskImage + currentColor，随文字色自适应深浅色。
+   maskImage 由 onMounted 动态设（不走 CSS url()，避免 buildAssetsDir: "/" 时被 Vite rewrite 成带 hash 路径）。 */
 .markdown-body :deep(.markdown-link-icon) {
   display: inline-block;
   width: 1em;
@@ -229,40 +254,16 @@ defineProps<{ html: string }>();
   margin-inline-end: 0.1em;
   vertical-align: -0.15em;
   background-color: currentColor;
-  -webkit-mask: var(--mk-icon) no-repeat center / contain;
-  mask: var(--mk-icon) no-repeat center / contain;
-}
-
-.markdown-body :deep(.markdown-link-icon--github) {
-  --mk-icon: url("/icons/github.svg");
-}
-
-.markdown-body :deep(.markdown-link-icon--gitee) {
-  --mk-icon: url("/icons/gitee.svg");
-}
-
-.markdown-body :deep(.markdown-link-icon--baidu) {
-  --mk-icon: url("/icons/baidu.svg");
-}
-
-.markdown-body :deep(.markdown-link-icon--google) {
-  --mk-icon: url("/icons/google.svg");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  mask-position: center;
 }
 
 .markdown-body :deep(.markdown-link-icon--tencent) {
-  --mk-icon: url("/icons/tencent.svg");
-}
-
-.markdown-body :deep(.markdown-link-icon--wechat) {
-  --mk-icon: url("/icons/wechat.svg");
-}
-
-.markdown-body :deep(.markdown-link-icon--mozilla) {
-  --mk-icon: url("/icons/mozilla.svg");
-}
-
-.markdown-body :deep(.markdown-link-icon--npm) {
-  --mk-icon: url("/icons/npm.svg");
+  --mk-icon: var(--mk-icon--tencent, url("/icons/tencent.svg"));
 }
 
 .markdown-body :deep(ul):not(.markdown-callout ul):not(.markdown-card ul):not(.markdown-repo ul):not(.aplayer-list ul),
