@@ -1239,6 +1239,44 @@ const actions = {
              用 relative + absolute inset-0 让富文本/源码各自独占填充，避免 textarea 与父容器
              同时出现滚动条（双滚动条）。 -->
         <div class="relative min-h-0 flex-1 overflow-hidden bg-background">
+          <!-- 查找和替换悬浮面板 -->
+          <div
+            v-if="findReplaceState.open"
+            class="absolute top-2 right-2 z-50 flex items-center gap-1.5 rounded-lg border bg-background p-2 shadow-lg"
+          >
+            <Input
+              v-model="findReplaceState.query"
+              placeholder="查找…"
+              class="h-8 w-40 text-sm"
+              @input="doFind(findReplaceState.query)"
+            />
+            <span class="text-xs text-muted-foreground whitespace-nowrap">
+              {{ findReplaceState.matchIndex }}/{{ findReplaceState.matchCount }}
+            </span>
+            <Button variant="ghost" size="icon" class="size-7" title="上一个" @click="findPrev">
+              <Icon name="lucide:chevron-up" class="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon" class="size-7" title="下一个" @click="findNext">
+              <Icon name="lucide:chevron-down" class="size-4" />
+            </Button>
+            <div class="mx-0.5 h-5 w-px bg-border" />
+            <Input
+              v-model="findReplaceState.replace"
+              placeholder="替换…"
+              class="h-8 w-28 text-sm"
+            />
+            <Button variant="outline" size="sm" class="h-8 text-xs" :disabled="findReplaceState.matchCount === 0" @click="replaceCurrent">
+              替换
+            </Button>
+            <Button variant="outline" size="sm" class="h-8 text-xs" :disabled="findReplaceState.matchCount === 0" @click="replaceAll">
+              全部
+            </Button>
+            <div class="mx-0.5 h-5 w-px bg-border" />
+            <Button variant="ghost" size="icon" class="size-7" title="关闭 (Esc)" @click="closeFind">
+              <Icon name="lucide:x" class="size-4" />
+            </Button>
+          </div>
+
           <div v-show="viewMode === 'rich'" ref="richScrollRef" class="absolute inset-0 overflow-auto">
             <EditorContent v-if="editor" :editor="editor" />
           </div>
@@ -1376,61 +1414,6 @@ const actions = {
         <DialogFooter>
           <Button variant="outline" @click="tableCreateState.open = false">取消</Button>
           <Button @click="confirmTableCreate">插入</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <!-- 查找和替换对话框 -->
-    <Dialog v-model:open="findReplaceState.open" @update:open="(v) => { if (!v) closeFind() }">
-      <DialogContent class="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>查找和替换</DialogTitle>
-          <DialogDescription>快捷键: Ctrl+F 打开, Enter 下一个, Shift+Enter 上一个</DialogDescription>
-        </DialogHeader>
-        <div class="space-y-4">
-          <!-- 查找输入 -->
-          <div class="space-y-2">
-            <Label for="find-query">查找</Label>
-            <div class="flex gap-2">
-              <Input
-                id="find-query"
-                v-model="findReplaceState.query"
-                placeholder="输入要查找的内容…"
-                class="flex-1"
-                @input="doFind(findReplaceState.query)"
-              />
-              <span class="flex items-center text-sm text-muted-foreground">
-                {{ findReplaceState.matchIndex }}/{{ findReplaceState.matchCount }}
-              </span>
-              <Button variant="outline" size="icon" title="上一个 (Shift+Enter)" @click="findPrev">
-                <Icon name="lucide:chevron-up" class="size-4" />
-              </Button>
-              <Button variant="outline" size="icon" title="下一个 (Enter)" @click="findNext">
-                <Icon name="lucide:chevron-down" class="size-4" />
-              </Button>
-            </div>
-          </div>
-          <!-- 替换输入 -->
-          <div class="space-y-2">
-            <Label for="find-replace">替换为</Label>
-            <div class="flex gap-2">
-              <Input
-                id="find-replace"
-                v-model="findReplaceState.replace"
-                placeholder="输入替换内容…"
-                class="flex-1"
-              />
-              <Button variant="outline" size="sm" :disabled="findReplaceState.matchCount === 0" @click="replaceCurrent">
-                替换
-              </Button>
-              <Button variant="outline" size="sm" :disabled="findReplaceState.matchCount === 0" @click="replaceAll">
-                全部替换
-              </Button>
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="closeFind">关闭</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
