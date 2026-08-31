@@ -49,6 +49,7 @@ const showToc = ref(false);
 const status = ref(1); // 0: 草稿, 1: 已发布
 const manyCovers = ref(false);
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
+const markdownEditorRef = ref<InstanceType<typeof import("~/components/MarkdownEditor.vue").default> | null>(null);
 
 // 附件相关
 const attachments = ref<PublicAttachment[]>([]);
@@ -211,6 +212,10 @@ const deleteAttachment = async (attachment: PublicAttachment) => {
   });
   if (!confirmed) return;
   if (!pageId.value) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
 
   try {
     const params = new URLSearchParams({ cid: String(pageId.value) });
@@ -357,6 +362,9 @@ const fetchPage = async () => {
 // 保存页面
 const savePage = async () => {
   if (loading.value) return;
+  // 保存前强制同步：把编辑器内容（可能还在防抖期内）冲刷到 content ref，避免输入丢失
+  // 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）
+  await markdownEditorRef.value?.flush();
   if (!title.value.trim()) {
     toast.error({
       message: "请输入页面标题",
@@ -568,6 +576,7 @@ onUnmounted(() => {
             <Card class="overflow-hidden p-0!">
               <CardContent class="p-0!">
                 <MarkdownEditor
+                  ref="markdownEditorRef"
                   v-model="content"
                   :content-id="pageId ?? undefined"
                   :view-mode="activeTab === 'md' ? 'md' : 'rich'"

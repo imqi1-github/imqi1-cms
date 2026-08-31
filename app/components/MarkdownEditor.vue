@@ -43,7 +43,7 @@ const model = defineModel<string>({ default: "" });
 // 视图模式由宿主页面通过 prop 传入（顶层 tab 富文本/Markdown 已上提到页面层）。
 // "rich" 为 WYSIWYG(EditorContent)，"md" 为原始 markdown 源码 textarea；两者共用同一个 model
 // (markdown 字符串)，切换靠 watch(viewMode) 做「编辑器→源码 冲刷」与「源码→编辑器 重载」。
-const viewMode = computed<string>(() => props.viewMode ?? "rich");
+const viewMode = computed<"rich" | "md">(() => props.viewMode ?? "rich");
 const mdTextareaRef = ref<HTMLTextAreaElement | null>(null);
 // 富文本内容区（相对定位容器内的绝对滚动层），用于跨视图切换时保留滚动位置
 const richScrollRef = ref<HTMLElement | null>(null);
@@ -56,6 +56,53 @@ const toast = useToast();
 
 const uploading = ref(false);
 
+// 上传期间挂起回写：图片粘贴会先插占位节点，若期间触发防抖回写，占位节点会被中间态写回 model
+const suppressEmit = ref(false);
+
+// 暴露同步方法给父组件：保存前调用，确保编辑器内容立即冲刷到 model
+// 注意：flush 内的函数引用使用 getter，因为在 useEditor 初始化前定义
+defineExpose({
+  /**
+   * 强制同步：把当前编辑器内容同步到 model，跳过防抖。常用于父组件保存前调用。
+   * 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）。
+   *
+   * 两种模式都需要处理：
+   *   - rich 模式：从 Tiptap 获取 markdown 同步到 model
+   *   - md 模式：从 textarea 直接读取（textarea 已 v-model 双向绑定，但仍需
+   *     确保 pending input 被消费——某些浏览器/IME 下输入事件延迟）
+   */
+  flush: async () => {
+    if (suppressEmit.value) {
+      // 正在上传：等待上传完成（finally 里 suppressEmit=false + writeMarkdownOut）
+      await new Promise<void>((resolve) => {
+        const stop = watch(suppressEmit, (val) => {
+          if (!val) {
+            stop();
+            resolve();
+          }
+        }, { immediate: true });
+      });
+    }
+    if (viewMode.value === "md") {
+      // md 模式：直接从 textarea 读取，避免 v-model 在某些场景下未及时更新
+      const ta = mdTextareaRef.value;
+      if (ta && ta.value !== model.value) {
+        model.value = ta.value;
+      }
+    } else {
+      // rich 模式：从 Tiptap 获取 markdown
+      const ed = getEditor();
+      if (ed) {
+        const out = getMarkdownStorage(ed).getMarkdown();
+        lastEmitted.value = out;
+        model.value = out;
+      }
+    }
+  },
+  /** 上传状态，用于父组件在保存前检查是否有上传正在进行 */
+  isUploading: uploading,
+});
+
 // 粘贴上传占位 image 的 src：1×1 透明 SVG。必须是真实可加载的 data URI，否则浏览器会在
 // 盒子上叠一张碎图图标。先前用 "uploading" 哨兵字符串 → 被当相对 URL 请求失败 → 碎图；
 // 这里用透明 SVG data URI 让 <img> 加载成功（渲染为透明），盒子化样式靠 alt 前缀
@@ -66,6 +113,10 @@ const PLACEHOLDER_IMG_SRC =
 
 // 防回环：记录最近一次由编辑器回写出的 markdown，watch(model) 据此跳过回灌
 const lastEmitted = ref(model.value);
+
+// 获取编辑器实例的 getter（useEditor 在此函数之后调用）
+let _getEditor: () => Editor | null | undefined = () => null;
+const getEditor = () => _getEditor();
 
 // —— 纵向可调整大小：底部拖拽手柄调整编辑器高度，持久化到 localStorage ——
 // 初始用默认值（SSR 与客户端首帧一致，避免 :style 水合 mismatch）；onMounted 再读 localStorage 覆盖。
@@ -114,9 +165,12 @@ onBeforeUnmount(() => {
   window.removeEventListener("pointermove", onResizeMove);
   window.removeEventListener("pointerup", endResize);
   window.removeEventListener("keydown", handleGlobalKeydown);
-  // 冲刷 150ms 防抖回写，避免最后一段输入在卸载时丢失
-  if (!suppressEmit.value) {
+  // 冲刷编辑器内容到 model：即使在上传期间（suppressEmit=true）也尝试同步，
+  // 可能包含占位 URL，但至少用户的最后输入不会丢失
+  try {
     writeMarkdownOut();
+  } catch {
+    // ignore errors during unmount
   }
 });
 
@@ -425,11 +479,10 @@ function loadMarkdown(editor: Editor, md: string) {
  * 若期间触发防抖回写，占位节点会被中间态写回 model（父组件恰好在窗口内保存就会落库）。
  * 上传结束后由 finally 立即同步一次最终 markdown。
  */
-const suppressEmit = ref(false);
 
 /** 立即把当前文档序列化为 markdown 写回 model（同步，供防抖回写与上传结束 flush 共用）。 */
 function writeMarkdownOut() {
-  const ed = editor.value;
+  const ed = getEditor();
   if (!ed) return;
   const out = getMarkdownStorage(ed).getMarkdown();
   lastEmitted.value = out;
@@ -986,6 +1039,8 @@ async function uploadPastedImagesToMarkdown(imageItems: DataTransferItem[]) {
     return;
   }
   uploading.value = true;
+  // 挂起防抖回写，避免上传期间的中间态（占位 URL）被写进 model
+  suppressEmit.value = true;
   const csrfToken = document.cookie
     .split("; ")
     .find((row) => row.startsWith("csrf_token="))
@@ -1013,6 +1068,9 @@ async function uploadPastedImagesToMarkdown(imageItems: DataTransferItem[]) {
     }
   } finally {
     uploading.value = false;
+    suppressEmit.value = false;
+    // 上传结束后立即同步最终 markdown，避免透明像素占位被中间态写回 model
+    writeMarkdownOut();
   }
 }
 
@@ -1089,7 +1147,14 @@ const editor = useEditor({
   onTransaction: () => {
     syncState();
   },
+  // 禁用所有 smart input rules：避免用户手动输入 *text* 时被 Tiptap 自动转为 <em>text</em>
+  // 误吃用户输入的星号（保存后丢失），格式操作改走工具栏按钮/Ctrl+I/Ctrl+B 等命令式入口
+  enableInputRules: false,
+  enablePasteRules: false,
 });
+
+// 链接 getEditor 到 useEditor 创建的实例
+_getEditor = () => editor.value;
 
 // —— 富文本 ⇄ Markdown 光标跟随:把 markdown 按当前 doc 顶级块的文本长度比例分布,
 //    得到 { mdStart, pmPos, pmEnd }(markdown 起始偏移 ↔ PM 块起止位置)映射,用于切换时定位光标。
@@ -1158,6 +1223,9 @@ watch(model, (val) => {
     }
   }
   // 2) 富文本模式且非聚焦、非最近回写（即外部加载新文档）时重载编辑器，并把撤销基线重置为该内容
+  // 逻辑：flush() 会同步更新 lastEmitted，所以保存后 val === lastEmitted → 不重载编辑器
+  //       用户正在输入时防抖已更新 lastEmitted → 不重载编辑器
+  //       外部加载新文档时 val !== lastEmitted → 重载编辑器
   if (viewMode.value === "rich") {
     const ed = editor.value;
     if (!ed) return;

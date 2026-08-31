@@ -61,6 +61,7 @@ const showToc = ref(false);
 const manyCovers = ref(false);
 const status = ref("published"); // draft | published
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
+const markdownEditorRef = ref<InstanceType<typeof import("~/components/MarkdownEditor.vue").default> | null>(null);
 
 // 分类相关
 const categories = ref<Category[]>([]);
@@ -598,6 +599,9 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
 // 保存文章
 const saveContent = async () => {
   if (!ensureCsrf()) return;
+  // 保存前强制同步：把编辑器内容（可能还在防抖期内）冲刷到 content ref，避免输入丢失
+  // 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）
+  await markdownEditorRef.value?.flush();
   if (!title.value) {
     toast.error({
       message: "标题不能为空",
@@ -928,6 +932,7 @@ watch(contentId, newCid => {
             <Card class="overflow-hidden p-0!">
               <CardContent class="p-0!">
                 <MarkdownEditor
+                  ref="markdownEditorRef"
                   v-model="content"
                   :content-id="contentId ?? undefined"
                   :view-mode="activeTab === 'md' ? 'md' : 'rich'"

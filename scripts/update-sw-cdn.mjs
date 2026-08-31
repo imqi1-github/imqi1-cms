@@ -4,7 +4,7 @@ import { join } from "path";
 // ========== 从 nitro.mjs 读取 build-hash ==========
 // nuxt.config.ts 的 buildHash 在构建时烘焙到 .output/server/chunks/_/nitro.mjs
 // postbuild 脚本应读取它（而不是重新生成），保证 build-hash.json 和服务端 hash 一致
-let buildHash = "";
+let buildHash;
 let buildHashDir = "";
 try {
   const nitroMjs = readFileSync(join(process.cwd(), ".output", "server", "chunks", "_", "nitro.mjs"), "utf-8");
