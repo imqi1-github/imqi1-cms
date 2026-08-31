@@ -1156,6 +1156,7 @@ watch(model, (val) => {
 });
 
 // 切换富文本 ⇄ 源码：先保证 model 与任一视图的 markdown 同步，做到零丢失，并保留各自滚动位置
+// 切换后若查找面板打开，需重新执行查找以刷新检测结果
 watch(viewMode, (mode) => {
   if (mode === "md") {
     // 冲刷 150ms 防抖里可能未落库的编辑器改动到 model，再让 textarea 显示
@@ -1177,6 +1178,10 @@ watch(viewMode, (mode) => {
         const max = ta.scrollHeight - ta.clientHeight;
         ta.scrollTop = (mdCaret / Math.max(1, mdLen)) * (max > 0 ? max : 0);
       }
+      // 切换到 Markdown 模式后，重新执行查找
+      if (findReplaceState.value.query) {
+        doFind(findReplaceState.value.query);
+      }
     });
   } else {
     // 把当前 model（textarea 或父级改动）重载进富文本编辑器；写回哨兵避免 watch(model) 二次加载
@@ -1190,6 +1195,10 @@ watch(viewMode, (mode) => {
       const target = mdCursorToPmPos(ed, model.value, mdCaret);
       ed.chain().focus().setTextSelection(target).run();
       ed.chain().focus().scrollIntoView().run();
+    }
+    // 切换到富文本模式后，重新执行查找
+    if (findReplaceState.value.query) {
+      nextTick(() => doFind(findReplaceState.value.query));
     }
   }
 });
