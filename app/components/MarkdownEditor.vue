@@ -106,11 +106,14 @@ function startResize(e: PointerEvent) {
 onMounted(() => {
   const saved = Number(localStorage.getItem(EDITOR_HEIGHT_KEY));
   if (saved >= EDITOR_HEIGHT_MIN && saved <= EDITOR_HEIGHT_MAX) editorHeight.value = saved;
+  // 监听全局键盘事件（Escape 关闭查找面板）
+  window.addEventListener("keydown", handleGlobalKeydown);
 });
 onBeforeUnmount(() => {
   // 拖拽进行中卸载组件时清理监听与全局样式
   window.removeEventListener("pointermove", onResizeMove);
   window.removeEventListener("pointerup", endResize);
+  window.removeEventListener("keydown", handleGlobalKeydown);
   // 冲刷 150ms 防抖回写，避免最后一段输入在卸载时丢失
   if (!suppressEmit.value) {
     writeMarkdownOut();
@@ -129,7 +132,7 @@ const findReplaceState = ref({
 /** 查找匹配的文本范围数组 */
 const findMatches = ref<Array<{ from: number; to: number }>>([]);
 
-/** 执行查找：遍历文档找出所有匹配 */
+/** 执行查找：遍历文档找出所有匹配（兼容富文本和 Markdown 模式） */
 function doFind(query: string) {
   findMatches.value = [];
   findReplaceState.value.matchIndex = 0;
@@ -137,26 +140,47 @@ function doFind(query: string) {
 
   if (!query.trim()) return;
 
+  // Markdown 源码模式：直接操作字符串
+  if (viewMode.value === "md") {
+    const text = model.value;
+    const matches: Array<{ from: number; to: number }> = [];
+    let pos = 0;
+    while (true) {
+      const idx = text.indexOf(query, pos);
+      if (idx === -1) break;
+      matches.push({ from: idx, to: idx + query.length });
+      pos = idx + 1;
+    }
+    findMatches.value = matches;
+    findReplaceState.value.matchCount = matches.length;
+    findReplaceState.value.matchIndex = matches.length > 0 ? 1 : 0;
+    highlightMdMatch();
+    return;
+  }
+
+  // 富文本模式：遍历 ProseMirror 文档的文本节点
   const ed = editor.value;
   if (!ed) return;
 
-  // 遍历文档所有文本节点，找出匹配
   const doc = ed.state.doc;
   const matches: Array<{ from: number; to: number }> = [];
 
-  doc.forEach((node, nodePos) => {
-    if (node.isText) {
-      const nodeText = node.text || "";
+  // 使用 descendants 遍历所有节点，包括嵌套的文本节点
+  doc.descendants((node, nodePos) => {
+    if (node.isText && node.text) {
+      const nodeText = node.text;
       let searchPos = 0;
       while (true) {
         const idx = nodeText.indexOf(query, searchPos);
         if (idx === -1) break;
+        // 文本节点内的位置偏移量 + 节点在文档中的绝对位置
         const from = nodePos + idx;
         const to = from + query.length;
         matches.push({ from, to });
         searchPos = idx + 1;
       }
     }
+    return true; // 继续遍历子节点
   });
 
   findMatches.value = matches;
@@ -165,16 +189,14 @@ function doFind(query: string) {
   highlightCurrentMatch();
 }
 
-/** 高亮当前匹配并滚动到位置 */
+/** 高亮当前匹配并滚动到位置（富文本模式） */
 function highlightCurrentMatch() {
   const ed = editor.value;
   if (!ed) return;
   const matches = findMatches.value;
   const idx = findReplaceState.value.matchIndex;
 
-  if (matches.length === 0 || idx === 0) {
-    return;
-  }
+  if (matches.length === 0 || idx === 0) return;
 
   const match = matches[idx - 1];
   if (match) {
@@ -183,12 +205,36 @@ function highlightCurrentMatch() {
   }
 }
 
+/** Markdown 模式高亮和滚动到匹配位置 */
+function highlightMdMatch() {
+  const ta = mdTextareaRef.value;
+  if (!ta) return;
+  const matches = findMatches.value;
+  const idx = findReplaceState.value.matchIndex;
+
+  if (matches.length === 0 || idx === 0) return;
+
+  const match = matches[idx - 1];
+  if (match) {
+    ta.focus();
+    ta.setSelectionRange(match.from, match.to);
+    // 滚动到匹配位置
+    const lineHeight = 20;
+    const lines = model.value.substring(0, match.from).split("\n").length;
+    ta.scrollTop = Math.max(0, (lines - 3) * lineHeight);
+  }
+}
+
 /** 查找下一个 */
 function findNext() {
   if (findMatches.value.length === 0) return;
   const nextIdx = findReplaceState.value.matchIndex >= findMatches.value.length ? 1 : findReplaceState.value.matchIndex + 1;
   findReplaceState.value.matchIndex = nextIdx;
-  highlightCurrentMatch();
+  if (viewMode.value === "md") {
+    highlightMdMatch();
+  } else {
+    highlightCurrentMatch();
+  }
 }
 
 /** 查找上一个 */
@@ -196,56 +242,88 @@ function findPrev() {
   if (findMatches.value.length === 0) return;
   const prevIdx = findReplaceState.value.matchIndex <= 1 ? findMatches.value.length : findReplaceState.value.matchIndex - 1;
   findReplaceState.value.matchIndex = prevIdx;
-  highlightCurrentMatch();
+  if (viewMode.value === "md") {
+    highlightMdMatch();
+  } else {
+    highlightCurrentMatch();
+  }
 }
 
 /** 替换当前匹配 */
 function replaceCurrent() {
-  const ed = editor.value;
-  if (!ed) return;
+  const query = findReplaceState.value.query;
+  const replace = findReplaceState.value.replace;
   const idx = findReplaceState.value.matchIndex;
   if (idx === 0 || idx > findMatches.value.length) return;
+
+  // Markdown 源码模式：直接替换字符串
+  if (viewMode.value === "md") {
+    const text = model.value;
+    const match = findMatches.value[idx - 1];
+    if (!match) return;
+    model.value = text.substring(0, match.from) + replace + text.substring(match.to);
+    doFind(query);
+    return;
+  }
+
+  // 富文本模式：替换选区内容
+  const ed = editor.value;
+  if (!ed) return;
 
   const match = findMatches.value[idx - 1];
   if (!match) return;
 
-  const replace = findReplaceState.value.replace;
   ed.chain().focus().setTextSelection({ from: match.from, to: match.to }).run();
   ed.chain().focus().insertContent(replace).run();
 
-  // 重新查找
-  doFind(findReplaceState.value.query);
+  doFind(query);
 }
 
 /** 替换所有匹配 */
 function replaceAll() {
-  const ed = editor.value;
-  if (!ed) return;
   const query = findReplaceState.value.query;
   const replace = findReplaceState.value.replace;
   if (!query.trim()) return;
 
-  // 遍历文档替换
+  // Markdown 源码模式：直接替换字符串
+  if (viewMode.value === "md") {
+    model.value = model.value.split(query).join(replace);
+    doFind(query);
+    return;
+  }
+
+  // 富文本模式：遍历所有文本节点替换
+  const ed = editor.value;
+  if (!ed) return;
+
   const doc = ed.state.doc;
   let tr = ed.state.tr;
-  let offset = 0;
 
-  doc.forEach((node, nodePos) => {
-    if (node.isText) {
-      const nodeText = node.text || "";
+  // 从后往前替换，避免位置偏移问题
+  const allMatches: Array<{ from: number; to: number; text: string }> = [];
+  doc.descendants((node, nodePos) => {
+    if (node.isText && node.text) {
+      const nodeText = node.text;
       let searchPos = 0;
       while (true) {
         const idx = nodeText.indexOf(query, searchPos);
         if (idx === -1) break;
-        const from = nodePos + idx + offset;
-        const to = from + query.length;
-        tr = tr.insertText(replace, from, to);
-        offset += replace.length - query.length;
-        searchPos = idx + query.length;
+        allMatches.push({
+          from: nodePos + idx,
+          to: nodePos + idx + query.length,
+          text: nodeText,
+        });
+        searchPos = idx + 1;
       }
     }
+    return true;
   });
 
+  // 从后往前替换，保持位置正确
+  allMatches.sort((a, b) => b.from - a.from);
+  for (const m of allMatches) {
+    tr = tr.insertText(replace, m.from, m.to);
+  }
   ed.view.dispatch(tr);
   doFind(query);
 }
@@ -261,6 +339,22 @@ function openFind() {
 /** 关闭查找对话框 */
 function closeFind() {
   findReplaceState.value.open = false;
+}
+
+/** 全局键盘事件：处理查找面板的 Escape 和 Enter 键 */
+function handleGlobalKeydown(event: KeyboardEvent) {
+  // Escape 关闭查找面板
+  if (event.key === "Escape" && findReplaceState.value.open) {
+    closeFind();
+    return;
+  }
+
+  // Ctrl+F 打开查找
+  if ((event.ctrlKey || event.metaKey) && event.key === "f") {
+    event.preventDefault();
+    openFind();
+    return;
+  }
 }
 
 // —— 富文本 ⇄ Markdown 统一撤销/重做:单一 markdown 快照栈(两模式共用同一内容历史)——
@@ -792,6 +886,14 @@ function handleClickOn(
 function handleKeyDown(_view: EditorView, event: KeyboardEvent): boolean {
   if (event.isComposing) return false;
   const combo = mtCombo(event);
+
+  // Tab 键插入 2 个空格
+  if (event.key === "Tab") {
+    event.preventDefault();
+    editor.value?.chain().focus().insertContent("  ").run();
+    return true;
+  }
+
   if (combo === "mod-z") {
     event.preventDefault();
     // 富文本:ProseMirror 细粒度撤销(保光标/逐事务),不走快照栈
@@ -824,6 +926,22 @@ function handleKeyDown(_view: EditorView, event: KeyboardEvent): boolean {
 /** 源码模式快捷键：与富文本编辑器(Tiptap keymap)对等，落到 markdown 插入原语；IME 组词期跳过。 */
 function handleMdKeydown(event: KeyboardEvent): boolean {
   if (event.isComposing) return false;
+
+  // Tab 键插入 2 个空格
+  if (event.key === "Tab") {
+    event.preventDefault();
+    const ta = mdTextareaRef.value;
+    if (ta) {
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const value = ta.value;
+      ta.value = value.substring(0, start) + "  " + value.substring(end);
+      ta.selectionStart = ta.selectionEnd = start + 2;
+      model.value = ta.value;
+    }
+    return true;
+  }
+
   const action = mdKeyMap[mtCombo(event)];
   if (action) {
     event.preventDefault();
