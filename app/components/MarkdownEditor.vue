@@ -887,10 +887,25 @@ function handleKeyDown(_view: EditorView, event: KeyboardEvent): boolean {
   if (event.isComposing) return false;
   const combo = mtCombo(event);
 
-  // Tab 键插入 2 个空格
+  // Tab 键插入 2 个空格（如果选中了 atom 节点如占位卡片，则忽略避免被清除）
   if (event.key === "Tab") {
     event.preventDefault();
-    editor.value?.chain().focus().insertContent("  ").run();
+    const { state, dispatch } = _view;
+    const { selection } = state;
+
+    // 如果选区包含 atom 节点（如占位卡片），忽略 Tab 键
+    let hasAtom = false;
+    if (selection.from !== selection.to) {
+      state.doc.nodesBetween(selection.from, selection.to, (node) => {
+        if (node.isBlock && node.isAtom) hasAtom = true;
+      });
+    }
+    if (hasAtom) {
+      return true; // 已处理但不插入空格
+    }
+
+    const tr = state.tr.insertText("  ", selection.from, selection.to);
+    dispatch(tr);
     return true;
   }
 
