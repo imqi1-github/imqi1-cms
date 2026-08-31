@@ -122,6 +122,17 @@ const rootClass = computed(() => [
     <Separator orientation="vertical" class="mx-1 h-6" />
 
     <Button
+      variant="ghost"
+      size="icon-sm"
+      title="查找和替换 (Ctrl+F)"
+      @click="actions.find?.()"
+    >
+      <Icon name="lucide:search" class="size-4" />
+    </Button>
+
+    <Separator orientation="vertical" class="mx-1 h-6" />
+
+    <Button
       :variant="activeFlags.bold ? 'default' : 'ghost'"
       size="icon-sm"
       title="粗体 (Ctrl+B)"

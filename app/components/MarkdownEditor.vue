@@ -117,6 +117,152 @@ onBeforeUnmount(() => {
   }
 });
 
+// —— 查找和替换 ——
+const findReplaceState = ref({
+  open: false,
+  query: "",
+  replace: "",
+  matchIndex: 0,
+  matchCount: 0,
+});
+
+/** 查找匹配的文本范围数组 */
+const findMatches = ref<Array<{ from: number; to: number }>>([]);
+
+/** 执行查找：遍历文档找出所有匹配 */
+function doFind(query: string) {
+  findMatches.value = [];
+  findReplaceState.value.matchIndex = 0;
+  findReplaceState.value.matchCount = 0;
+
+  if (!query.trim()) return;
+
+  const ed = editor.value;
+  if (!ed) return;
+
+  // 遍历文档所有文本节点，找出匹配
+  const doc = ed.state.doc;
+  const matches: Array<{ from: number; to: number }> = [];
+
+  doc.forEach((node, nodePos) => {
+    if (node.isText) {
+      const nodeText = node.text || "";
+      let searchPos = 0;
+      while (true) {
+        const idx = nodeText.indexOf(query, searchPos);
+        if (idx === -1) break;
+        const from = nodePos + idx;
+        const to = from + query.length;
+        matches.push({ from, to });
+        searchPos = idx + 1;
+      }
+    }
+  });
+
+  findMatches.value = matches;
+  findReplaceState.value.matchCount = matches.length;
+  findReplaceState.value.matchIndex = matches.length > 0 ? 1 : 0;
+  highlightCurrentMatch();
+}
+
+/** 高亮当前匹配并滚动到位置 */
+function highlightCurrentMatch() {
+  const ed = editor.value;
+  if (!ed) return;
+  const matches = findMatches.value;
+  const idx = findReplaceState.value.matchIndex;
+
+  if (matches.length === 0 || idx === 0) {
+    return;
+  }
+
+  const match = matches[idx - 1];
+  if (match) {
+    ed.chain().focus().setTextSelection({ from: match.from, to: match.to }).run();
+    ed.commands.scrollIntoView();
+  }
+}
+
+/** 查找下一个 */
+function findNext() {
+  if (findMatches.value.length === 0) return;
+  const nextIdx = findReplaceState.value.matchIndex >= findMatches.value.length ? 1 : findReplaceState.value.matchIndex + 1;
+  findReplaceState.value.matchIndex = nextIdx;
+  highlightCurrentMatch();
+}
+
+/** 查找上一个 */
+function findPrev() {
+  if (findMatches.value.length === 0) return;
+  const prevIdx = findReplaceState.value.matchIndex <= 1 ? findMatches.value.length : findReplaceState.value.matchIndex - 1;
+  findReplaceState.value.matchIndex = prevIdx;
+  highlightCurrentMatch();
+}
+
+/** 替换当前匹配 */
+function replaceCurrent() {
+  const ed = editor.value;
+  if (!ed) return;
+  const idx = findReplaceState.value.matchIndex;
+  if (idx === 0 || idx > findMatches.value.length) return;
+
+  const match = findMatches.value[idx - 1];
+  if (!match) return;
+
+  const replace = findReplaceState.value.replace;
+  ed.chain().focus().setTextSelection({ from: match.from, to: match.to }).run();
+  ed.chain().focus().insertContent(replace).run();
+
+  // 重新查找
+  doFind(findReplaceState.value.query);
+}
+
+/** 替换所有匹配 */
+function replaceAll() {
+  const ed = editor.value;
+  if (!ed) return;
+  const query = findReplaceState.value.query;
+  const replace = findReplaceState.value.replace;
+  if (!query.trim()) return;
+
+  // 遍历文档替换
+  const doc = ed.state.doc;
+  let tr = ed.state.tr;
+  let offset = 0;
+
+  doc.forEach((node, nodePos) => {
+    if (node.isText) {
+      const nodeText = node.text || "";
+      let searchPos = 0;
+      while (true) {
+        const idx = nodeText.indexOf(query, searchPos);
+        if (idx === -1) break;
+        const from = nodePos + idx + offset;
+        const to = from + query.length;
+        tr = tr.insertText(replace, from, to);
+        offset += replace.length - query.length;
+        searchPos = idx + query.length;
+      }
+    }
+  });
+
+  ed.view.dispatch(tr);
+  doFind(query);
+}
+
+/** 打开查找对话框 */
+function openFind() {
+  findReplaceState.value.open = true;
+  if (findReplaceState.value.query) {
+    doFind(findReplaceState.value.query);
+  }
+}
+
+/** 关闭查找对话框 */
+function closeFind() {
+  findReplaceState.value.open = false;
+}
+
 // —— 富文本 ⇄ Markdown 统一撤销/重做:单一 markdown 快照栈(两模式共用同一内容历史)——
 /** 撤销快照上限,防止长时间编辑/自动重复输入导致内存膨胀(超出后丢弃最旧条目)。 */
 const HISTORY_LIMIT = 200;
@@ -662,6 +808,12 @@ function handleKeyDown(_view: EditorView, event: KeyboardEvent): boolean {
     promptLink();
     return true;
   }
+  // Ctrl+F 查找
+  if (combo === "mod-f") {
+    event.preventDefault();
+    openFind();
+    return true;
+  }
   return false;
 }
 
@@ -1062,6 +1214,8 @@ const actions = {
   musicAuto: () => insertContainer(":::music auto https://music.163.com/#/playlist?id=123456\n:::"),
   musicSong: () => insertContainer(":::music song netease 123456\n:::"),
   musicPlaylist: () => insertContainer(":::music playlist netease 123456\n:::"),
+  // 查找和替换
+  find: () => openFind(),
 };
 </script>
 
@@ -1222,6 +1376,61 @@ const actions = {
         <DialogFooter>
           <Button variant="outline" @click="tableCreateState.open = false">取消</Button>
           <Button @click="confirmTableCreate">插入</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 查找和替换对话框 -->
+    <Dialog v-model:open="findReplaceState.open" @update:open="(v) => { if (!v) closeFind() }">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>查找和替换</DialogTitle>
+          <DialogDescription>快捷键: Ctrl+F 打开, Enter 下一个, Shift+Enter 上一个</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4">
+          <!-- 查找输入 -->
+          <div class="space-y-2">
+            <Label for="find-query">查找</Label>
+            <div class="flex gap-2">
+              <Input
+                id="find-query"
+                v-model="findReplaceState.query"
+                placeholder="输入要查找的内容…"
+                class="flex-1"
+                @input="doFind(findReplaceState.query)"
+              />
+              <span class="flex items-center text-sm text-muted-foreground">
+                {{ findReplaceState.matchIndex }}/{{ findReplaceState.matchCount }}
+              </span>
+              <Button variant="outline" size="icon" title="上一个 (Shift+Enter)" @click="findPrev">
+                <Icon name="lucide:chevron-up" class="size-4" />
+              </Button>
+              <Button variant="outline" size="icon" title="下一个 (Enter)" @click="findNext">
+                <Icon name="lucide:chevron-down" class="size-4" />
+              </Button>
+            </div>
+          </div>
+          <!-- 替换输入 -->
+          <div class="space-y-2">
+            <Label for="find-replace">替换为</Label>
+            <div class="flex gap-2">
+              <Input
+                id="find-replace"
+                v-model="findReplaceState.replace"
+                placeholder="输入替换内容…"
+                class="flex-1"
+              />
+              <Button variant="outline" size="sm" :disabled="findReplaceState.matchCount === 0" @click="replaceCurrent">
+                替换
+              </Button>
+              <Button variant="outline" size="sm" :disabled="findReplaceState.matchCount === 0" @click="replaceAll">
+                全部替换
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="closeFind">关闭</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

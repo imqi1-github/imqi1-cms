@@ -98,6 +98,8 @@ export interface ToolbarActions {
   musicAuto(): void;
   musicSong(): void;
   musicPlaylist(): void;
+  /** 查找和替换 */
+  find?(): void;
 }
 
 /** 格式/表格工具栏的活性状态（光标所在位置的格式高亮），随父组件事务刷新。 */
