@@ -52,3 +52,4 @@
 - [markdown music matchArray 索引](markdown-music-matcharray-index.md) — transformMusicLinks 的 replace 回调 args 末 2 个是 offset/string,须 `[match, ...args.slice(0,-2)]` 恢复索引,否则四平台播放器转换整体失效
 - [noUncheckedIndexedAccess 下标坑](array-index-trim-noUncheckedIndexedAccess.md) — vue-tsc 开 noUncheckedIndexedAccess,`arr[i].trim()` 报 TS2532;eslint flat config 不查类型,`bunx nuxi typecheck` 才暴露(exit 码经 `| tail` 失真须 grep "error TS");循环下标统一 `(x[i] ?? "").trim()`
 - [站点单人运营不变式](single-user-site-invariant.md) — 单人博客,db:init 只种 admin/123456,users 无 role 列;「任意已登录用户」=站主本人,勿把无 role/归属校验当多用户漏洞;mini/links.get 公开 owner 订阅列表是用户确认的有意设计,mini/ 是空 git 子模块
+- [Markdown编辑器保存成功但界面回退](markdown-editor-save-revert-writeback.md) — MD 输入→保存→绿色成功但编辑器回编辑前内容;根因是过期 tiptap doc 经 emitMarkdown/onBeforeUnmount 的 writeMarkdownOut 回写覆盖 model;修复=editor→model 回写仅在富文本模式生效 + flush 包 try/catch;复现须全新加载页首次保存(时灵时不灵);DB MySQL LENGTH() 字节 vs JS .length 字符,别误判内容被压缩

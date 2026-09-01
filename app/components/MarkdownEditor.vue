@@ -88,6 +88,7 @@ defineExpose({
       const ta = mdTextareaRef.value;
       if (ta && ta.value !== model.value) {
         model.value = ta.value;
+        lastEmitted.value = ta.value;
       }
     } else {
       // rich 模式：从 Tiptap 获取 markdown
@@ -165,8 +166,9 @@ onBeforeUnmount(() => {
   window.removeEventListener("pointermove", onResizeMove);
   window.removeEventListener("pointerup", endResize);
   window.removeEventListener("keydown", handleGlobalKeydown);
-  // 冲刷编辑器内容到 model：即使在上传期间（suppressEmit=true）也尝试同步，
-  // 可能包含占位 URL，但至少用户的最后输入不会丢失
+  // 只在富文本模式冲刷编辑器→model：md 模式下 model 已是 textarea 当前内容，
+  // 若再用旧 tiptap doc 回写会把用户刚输入的正文覆盖回编辑前；上传期间跳过（占位 URL）。
+  if (suppressEmit.value || viewMode.value !== "rich") return;
   try {
     writeMarkdownOut();
   } catch {
@@ -489,9 +491,11 @@ function writeMarkdownOut() {
   model.value = out;
 }
 
-/** 编辑器 → model（去抖合并连续输入；上传期间挂起）。 */
+/** 编辑器 → model（去抖合并连续输入；上传期间挂起）。仅富文本模式——md 模式下 model 由 textarea 驱动，
+ *  旧 tiptap doc 是过期内容，去抖回写会把用户刚输入的正文覆盖回编辑前。 */
 const emitMarkdown = useDebounceFn(() => {
   if (suppressEmit.value) return;
+  if (viewMode.value !== "rich") return;
   writeMarkdownOut();
 }, 150);
 

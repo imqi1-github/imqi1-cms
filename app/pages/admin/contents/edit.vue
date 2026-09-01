@@ -600,8 +600,18 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
 const saveContent = async () => {
   if (!ensureCsrf()) return;
   // 保存前强制同步：把编辑器内容（可能还在防抖期内）冲刷到 content ref，避免输入丢失
-  // 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）
-  await markdownEditorRef.value?.flush();
+  // 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）。
+  // flush 必须包在 try/catch 里：它一旦抛错/挂起（编辑器未就绪或上传卡死），继续保存会用
+  // 过期 content 落库——应中止并明确提示，而不是静默吞掉。
+  try {
+    await markdownEditorRef.value?.flush();
+  } catch (error) {
+    toast.error({
+      message: "同步编辑器内容失败，未保存",
+      description: error instanceof Error ? error.message : "请检查编辑器状态后重试",
+    });
+    return;
+  }
   if (!title.value) {
     toast.error({
       message: "标题不能为空",
