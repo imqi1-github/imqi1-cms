@@ -131,7 +131,7 @@
                 <p class="mb-6 max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300 transition-colors duration-300">
                   {{ activeSkillGroup.summary }}
                 </p>
-                <div class="grid min-h-48 grid-cols-2 gap-3 lg:min-h-31 lg:grid-cols-3">
+                <div class="grid min-h-48 grid-cols-1 sm:grid-cols-2 gap-3 lg:min-h-31 lg:grid-cols-3">
                   <div
                     v-for="stack in activeSkillGroup.stacks"
                     :key="stack.label"
