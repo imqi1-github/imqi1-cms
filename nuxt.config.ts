@@ -466,21 +466,33 @@ export default defineNuxtConfig({
       target: "es2020",
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Vue 相关
-            vue: ["vue", "@vue/runtime-core", "@vue/runtime-dom"],
-            // UI 组件库
-            ui: ["reka-ui", "lucide-vue-next", "vue-sonner"],
-            // 工具库
-            utils: ["@vueuse/core", "clsx", "class-variance-authority"],
-            // 媒体相关（swiper + fancyapps）
-            media: ["swiper", "@fancyapps/ui"],
-            // 富文本编辑器（Tiptap/ProseMirror）不再设 manual chunk：
-            // object 形式会把依赖模块一并并入手动块，共享的 CJS 互操作 helper
-            // 也因此落进 tiptap 块；而 APlayer 因 import smoothscroll(CJS) 需要该
-            // helper，导致首页动态加载 APlayer 时被迫整包拉取 ~500KB 的 tiptap
-            // （首页渐入卡顿根因之一）。去掉后由 Rollup 默认算法把 helper 分到独立
-            // 小块，tiptap 代码仅随 admin 编辑器页加载。
+          // manualChunks 用函数形式（Vite 8/Rolldown 只认函数；Vite 7/Rollup 两者皆可），
+          // 按模块 id 匹配包名，等价于原对象写法 { vue: [...], ui: [...] }。
+          // 富文本编辑器（Tiptap/ProseMirror）仍不设 manual chunk：避免共享 CJS
+          // helper 被并进 tiptap 块，导致首页动态加载 APlayer 时整包拉取 ~500KB。
+          manualChunks(id) {
+            if (
+              id.includes("node_modules/vue/") ||
+              id.includes("node_modules/@vue/runtime-")
+            )
+              return "vue";
+            if (
+              id.includes("node_modules/reka-ui") ||
+              id.includes("node_modules/lucide-vue-next") ||
+              id.includes("node_modules/vue-sonner")
+            )
+              return "ui";
+            if (
+              id.includes("node_modules/@vueuse/") ||
+              id.includes("node_modules/clsx") ||
+              id.includes("node_modules/class-variance-authority")
+            )
+              return "utils";
+            if (
+              id.includes("node_modules/swiper") ||
+              id.includes("node_modules/@fancyapps/")
+            )
+              return "media";
           },
         },
         // 忽略循环依赖警告以减少日志输出

@@ -450,7 +450,7 @@
 
       <!-- 分类文章 -->
       <section v-if="categoryRecentContents.length > 0" v-scroll-reveal class="mx-auto max-w-275 pb-20">
-        <template v-for="(categoryData, index) in categoryRecentContents" :key="categoryData.category.slug">
+        <template v-for="(categoryData, index) in categoryRecentContents" :key="categoryData.category.slug ?? index">
           <!-- 分类标题 -->
           <div class="flex items-center justify-between mb-6">
             <div>
