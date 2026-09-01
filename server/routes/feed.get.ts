@@ -1,4 +1,4 @@
-import { markdownToPlainText, spaceCjkLatin } from "#server/utils/markdownToPlainText";
+import { markdownToPlainText } from "#server/utils/markdownToPlainText";
 import { parseCovers } from "#server/utils/covers";
 import { prisma } from "#server/utils/prisma";
 import { escapeXml } from "#server/utils/xml";
@@ -7,6 +7,26 @@ import { siteConfig } from "~~/site.config";
 // CDATA 内容若含 ]]> 会提前闭合，用标准拆分技巧规避（markdown 正文极少出现，兜底防御）。
 function cdata(text: string): string {
   return text.replace(/]]>/g, "]]]]><![CDATA[>");
+}
+
+// 封面 URL 扩展名 → MIME 类型（media:content type 属性），未知兜底 image/jpeg。
+function imageMimeType(url: string): string {
+  const ext = (url.split(/[?#]/)[0]?.match(/\.([a-z0-9]+)$/i)?.[1] ?? "").toLowerCase();
+  switch (ext) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    case "avif":
+      return "image/avif";
+    default:
+      return "image/jpeg";
+  }
 }
 
 export default defineEventHandler(async event => {
@@ -99,25 +119,25 @@ export default defineEventHandler(async event => {
         // 需求"只要全文、不重复"：不再做摘要截断，全文放 description。
         const fullText = markdownToPlainText(content.content || content.desc || "");
 
-        // 封面占位：<图片：标题>/<实况照片：标题>（封面标题为空则仅占位，不带标题）；
-        // 视频封面不展示图片占位。实况封面按 url 里的 #live 标记判定。
+        // 封面不再拼中文占位（RSS 描述开头不要“<图片>”文字），改走 Media RSS：
+        // 真实封面图（视频封面除外）用 <media:content medium="image"> 暴露给阅读器。
+        // 实况封面按 url 里的 #live 标记判定，但仍是静态图文件，可当封面图出。
         const covers = parseCovers(content.covers);
         const cover = covers[0];
         const isVideoCover = /\.(mp4|webm)([?#]|$)/i.test(cover?.url ?? "");
-        const isLiveCover = /#live\b/i.test(cover?.url ?? "");
         const coverTitle = cover?.desc?.trim() ?? "";
-        const coverKind = isLiveCover ? "实况照片" : "图片";
-        const coverPlaceholder = cover && !isVideoCover
-          ? (coverTitle ? `<${coverKind}：${coverTitle}>` : `<${coverKind}>`)
+        // media:content url 去掉 #live 等 mock 片段，保证给阅读器的封面地址干净、可抓取。
+        const coverUrl = (cover?.url ?? "").split("#")[0] ?? "";
+        const mediaContent = cover && !isVideoCover
+          ? `<media:content url="${escapeXml(coverUrl)}" type="${imageMimeType(coverUrl)}" medium="image" isDefault="true"${cover.width ? ` width="${cover.width}"` : ""}${cover.height ? ` height="${cover.height}"` : ""}${coverTitle ? ` title="${escapeXml(coverTitle)}"` : ""} />`
           : "";
-        // 封面占位单独补一次中英空格（正文已在 markdownToPlainText 内补过，无需再处理）
-        const descriptionText = coverPlaceholder ? `${spaceCjkLatin(coverPlaceholder)}\n${fullText}` : fullText;
 
         return `
     <item>
       <title><![CDATA[${cdata(content.title)}]]></title>
       <link>${escapeXml(contentUrl)}</link>
-      <description><![CDATA[${cdata(descriptionText)}]]></description>
+      <description><![CDATA[${cdata(fullText)}]]></description>
+      ${mediaContent}
       <author><![CDATA[${cdata(author)}]]></author>
       <guid isPermaLink="true">${escapeXml(contentUrl)}</guid>
       <pubDate>${pubDate}</pubDate>
