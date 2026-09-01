@@ -96,8 +96,7 @@ export default defineEventHandler(async event => {
     // 防 Host 注入生成任意绝对 URL 污染 feed 内 link/guid。
     let baseUrl = siteUrl;
     if (!baseUrl) {
-      const config = useRuntimeConfig();
-      const rootDomain = (config.public.rootDomain as string) || siteConfig.rootDomain || "";
+      const rootDomain = siteConfig.rootDomain || "";
       if (rootDomain) {
         const protocol = rootDomain.includes("localhost") ? "http" : "https";
         baseUrl = `${protocol}://${rootDomain}`;

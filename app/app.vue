@@ -3,10 +3,10 @@ import { printWelcomeBanner } from "#shared/welcome-banner";
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
+const { buildHash } = useSiteSettings();
 
-// 构建哈希暴露给前端：<meta name="build-hash"> + 全局 window.__BUILD_HASH__（见 build-hash 插件）
-const buildHash = useRuntimeConfig().public.buildHash;
-useHead({ meta: [{ name: "build-hash", content: buildHash }] });
+// 构建哈希：走 /api/site 下发（非 public，不进 __NUXT__ 的 runtimeConfig），SSR 插件预取，供 meta 展示。
+useHead({ meta: [{ name: "build-hash", content: computed(() => buildHash.value ?? "") }] });
 
 // 应用滚动条主题
 useScrollbarTheme();

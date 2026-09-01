@@ -1,3 +1,5 @@
+import { siteConfig } from "~~/site.config";
+
 /**
  * 防止反向代理插件
  * 仅在生产环境且配置了 rootDomain 时启用
@@ -9,8 +11,8 @@ export default defineNuxtPlugin(() => {
     return;
   }
 
-  const config = useRuntimeConfig();
-  const rootDomain = config.public.rootDomain as string;
+  // 直接读 siteConfig.rootDomain（不再经 runtimeConfig.public.rootDomain）
+  const rootDomain = siteConfig.rootDomain;
 
   // 如果未配置 rootDomain，则不启用防护
   if (!rootDomain) {

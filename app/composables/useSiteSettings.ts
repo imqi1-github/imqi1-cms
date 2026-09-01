@@ -10,6 +10,7 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
   // 站点设置存于 useState：SSR 插件预取后随 payload 传到客户端，
   // hydrate 时已有值，故首屏不闪烁、客户端也不会再发 /api/site 请求。
   const siteSettings = useState<SiteSettings | null>("site:settings", () => null);
+  const buildHash = useState<string | null>("site:buildHash", () => null);
 
   // 已有值（SSR 预取 / 之前已加载）直接返回，不发请求
   if (siteSettings.value) {
@@ -37,6 +38,7 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
       const response = await $fetch("/api/site");
       if (response.success) {
         siteSettings.value = response.data;
+        buildHash.value = response.buildHash ?? null;
         return response.data;
       } else {
         throw new Error("Invalid response format");
@@ -56,8 +58,10 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
 
 export function useSiteSettings() {
   const siteSettings = useState<SiteSettings | null>("site:settings", () => null);
+  const buildHash = useState<string | null>("site:buildHash", () => null);
   return {
     siteSettings: computed(() => siteSettings.value),
+    buildHash: readonly(buildHash),
     isLoadingSettings: readonly(isLoadingSettings),
     errorSettings: readonly(errorSettings),
     fetchSiteSettings,

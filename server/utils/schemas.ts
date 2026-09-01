@@ -123,4 +123,5 @@ export const SiteSettingsSchema = z.object({
 export const SiteSettingsResponseSchema = z.object({
   success: z.boolean(),
   data: SiteSettingsSchema,
+  buildHash: z.string(),
 });

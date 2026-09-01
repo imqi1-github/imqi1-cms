@@ -3,7 +3,6 @@ import { randomBytes } from "crypto";
 import { visualizer } from "rollup-plugin-visualizer";
 
 import { siteConfig, fullOgImage } from "./site.config";
-import { resolveAmapRuntimeConfig } from "./shared/amap-runtime";
 import { getRedisConfig } from "./shared/redis-config";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -33,10 +32,6 @@ const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 
 // 获取当前环境的 Redis 配置（逻辑在 shared/redis-config.ts，供 nitro ISR 存储与 server 缓存共用）
 const redisConfig = getRedisConfig();
-const amapRuntime = resolveAmapRuntimeConfig({
-  nodeEnv: process.env.NODE_ENV,
-  useServerProxy: siteConfig.amap.useServerProxy,
-});
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -72,14 +67,13 @@ export default defineNuxtConfig({
     // server/utils/redis.ts 的 redisConfig.host 判定（空 host 视为关闭），
     // 而上方 storage/routeRules 的启停仍直接用 getRedisConfig() 的原生 null。
     redis: redisConfig ?? { host: "", port: 0, password: undefined, db: 0, lazyConnect: false },
-    public: {
-      cdnURL: cdnURL,
-      cdnBase: siteConfig.cdnUrl, // 不带 hash 的 CDN 根，用于 imgs/skills/icons/emojis 等静态资源
-      buildHashDir: buildHashDir, // /static/<hash>，供运行时拼接 CDN 资产路径
-      buildHash: buildHash, // 原始 hash，供 <meta> / window.__BUILD_HASH__ / 页内展示
-      rootDomain: siteConfig.rootDomain, // 防止反向代理的根域名
-      amapUseServerProxy: amapRuntime.useProxy,
-    },
+    // 非 public：仅服务端可读，不进 __NUXT__（浏览器拿不到）。高德是否走服务端代理，
+    // 仅生产且站点开启代理时为 true；服务端 _AMapService / amap/config 据此放行。
+    amapUseServerProxy: isProduction && siteConfig.amap.useServerProxy,
+    // 非 public 构建哈希：仅服务端 / 部署脚本可读，不进 __NUXT__；
+    // 由 /api/site 下发，前端 useSiteSettings 内 getBuildHash 缓存供 meta/页脚/后台展示。
+    buildHash: buildHash,
+    public: {},
   },
 
   modules: ["shadcn-nuxt", "@nuxt/icon", "@nuxtjs/color-mode", "@vite-pwa/nuxt", "@nuxt/eslint"],

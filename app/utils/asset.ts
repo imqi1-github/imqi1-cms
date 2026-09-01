@@ -10,6 +10,7 @@
 // - 业务路由（/about、/api/...）不会被前缀。
 // - 绝对资源 URL（http/https/blob/data:image）直接返回。
 
+import { siteConfig } from "~~/site.config";
 import type { PublicAssetOptions } from "~/types/asset";
 
 const STATIC_ASSET_RE = /^\/(imgs|skills|icons|fonts|emojis|uploads)\//;
@@ -34,14 +35,9 @@ export function publicAsset(input?: string | null, options: PublicAssetOptions =
   const isStatic = STATIC_ASSET_RE.test(input) || STATIC_ASSET_FILE_RE.test(input);
   if (!isStatic) return input;
 
-  let cdnBase: string;
-  try {
-    const config = useRuntimeConfig();
-    cdnBase = (config.public.cdnBase as string | undefined) || "";
-  } catch {
-    // 在无法访问 Nuxt 运行时上下文的位置调用时，回退到原路径。
-    return input;
-  }
+  // 直接读 siteConfig.cdnUrl（不再经 runtimeConfig.public.cdnBase）。
+  // CDN 根与 nuxt.config 的 cdnBase 同值；|| "" 兜底保持「未配置 CDN」时返回原路径。
+  const cdnBase = siteConfig.cdnUrl || "";
 
   if (!cdnBase) return input;
   if (!import.meta.env?.PROD) return input;

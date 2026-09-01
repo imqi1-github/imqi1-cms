@@ -12,7 +12,7 @@ const AMAP_ALLOWED_HOSTS = new Set(["restapi.amap.com", "webapi.amap.com"]);
 export default defineEventHandler(event => {
   const config = useRuntimeConfig();
 
-  if (!config.public.amapUseServerProxy) {
+  if (!config.amapUseServerProxy) {
     throw createError({
       statusCode: 404,
       message: "AMap proxy is disabled.",

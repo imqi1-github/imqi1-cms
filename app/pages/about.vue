@@ -533,8 +533,8 @@
 
     <div class="my-24 mx-4 w-px"/>
 
-    <!-- 构建哈希（供开发/运维查看） -->
-    <div class="pb-6 text-center text-xs text-slate-400 dark:text-slate-500">
+    <!-- 构建哈希（走 /api/site 下发，非 public） -->
+    <div v-if="buildHash" class="pb-6 text-center text-xs text-slate-400 dark:text-slate-500">
       构建哈希：<code class="font-mono">{{ buildHash }}</code>
     </div>
   </div>
@@ -547,11 +547,8 @@ import type { ProfileTag, SkillGroup } from "~/types/pages/about";
 import { siteConfig } from "~~/site.config";
 
 // 使用全局站点设置
-const { siteSettings } = useSiteSettings();
+const { siteSettings, buildHash } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.siteName);
-
-// 当前构建哈希（见 <meta name="build-hash"> 与 window.__BUILD_HASH__）
-const buildHash = useRuntimeConfig().public.buildHash;
 
 // 十年之约入口链接（取自 site.config.ts 的 blogOrganizations，避免硬编码）
 const tenYearPledgeUrl = computed(() => siteConfig.links.blogOrganizations.find(o => o.name === "十年之约")?.url || "https://www.foreverblog.cn/");

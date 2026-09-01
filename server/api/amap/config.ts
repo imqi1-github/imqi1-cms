@@ -8,7 +8,7 @@ export default defineEventHandler(event => {
   // 禁止代理/CDN 缓存，避免把该密钥落到任何共享缓存层（对齐 verify/captcha 的 no-store 约定）。
   setResponseHeader(event, "Cache-Control", "no-store, no-cache, must-revalidate");
 
-  const useProxy = useRuntimeConfig().public.amapUseServerProxy;
+  const useProxy = useRuntimeConfig().amapUseServerProxy;
   if (useProxy) {
     return { key: "", securityCode: "" };
   }

@@ -1,5 +1,5 @@
 import { buildAmapDirectScriptUrl, buildAmapProxyScriptUrl, buildAmapServiceHost } from "#shared/amap-proxy";
-import { useRuntimeConfig } from "#imports";
+import { siteConfig } from "~~/site.config";
 import type { AmapClientConfig, LoadAmapOptions, AmapWindow } from "~/types/utils/amap";
 
 // 高德 script 加载回调的全局 key。代理/直连两种模式共用同一回调名（见 buildAmapProxyScriptUrl /
@@ -51,8 +51,9 @@ async function loadMissingPlugins(_AMap: typeof AMap, plugins: string[]) {
 // 运行时解析高德客户端配置：key/securityCode 不烘焙进包，直连模式从 /api/amap/config 获取
 //（服务端读 process.env）；代理模式浏览器不持 key，返回空串。
 export async function resolveAmapClientConfig(): Promise<AmapClientConfig> {
-  const config = useRuntimeConfig();
-  const useProxy = Boolean(config.public.amapUseServerProxy);
+  // 不再经 runtimeConfig.public.amapUseServerProxy：客户端等价判定 = 生产 && 站点开启服务端代理。
+  // 与 shared/amap-runtime.ts 的 resolveAmapUseProxy(nodeEnv!=="production"→false) 语义一致。
+  const useProxy = Boolean(import.meta.env?.PROD && siteConfig.amap.useServerProxy);
   if (useProxy) {
     return { useProxy, key: "", securityJsCode: "" };
   }

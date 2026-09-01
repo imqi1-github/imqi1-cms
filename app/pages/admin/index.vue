@@ -41,8 +41,7 @@ const detailedStats = ref({
   },
 })
 
-// 当前构建哈希（与 <meta name="build-hash"> / window.__BUILD_HASH__ 一致）
-const buildHash = useRuntimeConfig().public.buildHash;
+const { buildHash } = useSiteSettings();
 
 const systemInfo = ref({
   nodeVersion: '',  platform: '',
@@ -508,7 +507,7 @@ onMounted(() => {
               <Icon name="lucide:git-commit-horizontal" class="size-4 text-muted-foreground shrink-0" />
               <span class="truncate">构建哈希</span>
             </div>
-            <p class="text-sm font-mono truncate" :title="buildHash">{{ buildHash }}</p>
+            <p class="text-sm font-mono truncate" :title="buildHash ?? ''">{{ buildHash ?? '' }}</p>
             <p class="text-xs text-muted-foreground">当前部署版本</p>
           </div>
         </div>
