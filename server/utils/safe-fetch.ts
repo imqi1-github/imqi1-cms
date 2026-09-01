@@ -1,7 +1,8 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
-import { Agent } from "undici";
+import { Agent, fetch } from "undici";
+import type { RequestInit as UndiciRequestInit, Response as UndiciResponse } from "undici";
 
 import { assertPublicHttpUrl, isPrivateIp } from "#server/utils/urlGuard";
 
@@ -16,6 +17,10 @@ import { assertPublicHttpUrl, isPrivateIp } from "#server/utils/urlGuard";
  * 随后 `Agent.connect.lookup` 固定返回这些 IP，fetch 不再对主机名做二次解析，从而封掉该窗口。
  * 同时统一 `redirect:"error"`、可配 timeout，落地即覆盖 rss.ts / check-link.get.ts / links.post.ts 三个消费方
  * （对照 .claude/memory/ssrf-ipv6-urlguard.md 的「共用同一 fetch 封装」建议）。
+ *
+ * 注意：`fetch` 必须从 `undici` 包导入（而非全局 fetch）。全局 fetch 由 Node 内置的**另一份** undici 提供，
+ * 把本包 `Agent` 实例当 dispatcher 传给它会抛 `UND_ERR_INVALID_ARG: invalid onRequestStart method`
+ * （两份 undici 互不兼容），导致所有服务端外联（友链检测/RSS 抓取等）全量失败。
  */
 
 /** 解析 hostname，返回全部公网 IP（IP 字面量直接返回；无公网地址抛 400）。 */
@@ -62,8 +67,8 @@ export async function createPinnedPublicDispatcher(rawUrl: string): Promise<{ ag
  */
 export async function fetchPublicUrl<T>(
   rawUrl: string,
-  process: (response: Response) => Promise<T>,
-  init: RequestInit = {},
+  process: (response: UndiciResponse) => Promise<T>,
+  init: UndiciRequestInit = {},
   timeoutMs = 10000,
 ): Promise<T> {
   const { agent, url } = await createPinnedPublicDispatcher(rawUrl);
@@ -74,9 +79,8 @@ export async function fetchPublicUrl<T>(
       ...init,
       redirect: "error",
       signal: controller.signal,
-      // undici 全局 fetch 支持 dispatcher（Node 运行时用），但 DOM RequestInit 类型无此字段，故断言掉多余属性
       dispatcher: agent,
-    } as RequestInit);
+    });
     return await process(response);
   } finally {
     clearTimeout(timeoutId);
