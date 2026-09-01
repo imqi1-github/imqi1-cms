@@ -1,20 +1,73 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync } from "fs";
 import { join } from "path";
 
-// ========== 从 nitro.mjs 读取 build-hash ==========
-// nuxt.config.ts 的 buildHash 在构建时烘焙到 .output/server/chunks/_/nitro.mjs
-// postbuild 脚本应读取它（而不是重新生成），保证 build-hash.json 和服务端 hash 一致
+// ========== 从 nitro 产物读取 build-hash ==========
+// nuxt.config.ts 的 buildHash 在构建时烘焙进 nitro 的服务端产物（键形如 "buildHash":"<ts>-<hex>"）。
+// 该文件路径随 Nuxt/Nitro 版本变化（早前为 chunks/_/nitro.mjs，Nitro 2.13+ 为 chunks/nitro/nitro.mjs），
+// 故不硬编码某个子路径：先按已知候选路径尝试，找不到再递归扫描 chunks 目录兜底。
+// postbuild 脚本应读取它（而不是重新生成），保证 build-hash.json 和服务端 hash 一致。
 let buildHash;
 let buildHashDir = "";
+
+// 递归扫描 dir，返回第一个内容命中 regex 的 .mjs 文件（{ file, match }），找不到返回 null。
+function findFileWithRegex(dir, regex) {
+  const stack = [dir];
+  while (stack.length) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const p = join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(p);
+      } else if (entry.isFile() && entry.name.endsWith(".mjs")) {
+        try {
+          const match = readFileSync(p, "utf-8").match(regex);
+          if (match) return { file: p, match };
+        } catch {
+          // 单个文件读取失败不影响其它候选
+        }
+      }
+    }
+  }
+  return null;
+}
+
 try {
-  const nitroMjs = readFileSync(join(process.cwd(), ".output", "server", "chunks", "_", "nitro.mjs"), "utf-8");
-  const match = nitroMjs.match(/"buildHash":\s*"([^"]+)"/);
-  if (match) {
-    buildHash = match[1];
+  const chunksDir = join(process.cwd(), ".output", "server", "chunks");
+  // 先尝试已知的 nitro 产物路径，避免无谓的整目录扫描
+  const hashRegex = /"buildHash":\s*"([^"]+)"/;
+  const knownCandidates = [
+    join(chunksDir, "nitro", "nitro.mjs"), // Nitro 2.13+ (nuxt 4.4.8)
+    join(chunksDir, "_", "nitro.mjs"), // 旧版路径
+  ];
+  let nitroFile = null;
+  for (const candidate of knownCandidates) {
+    try {
+      const match = readFileSync(candidate, "utf-8").match(hashRegex);
+      if (match) {
+        nitroFile = { file: candidate, match };
+        break;
+      }
+    } catch {
+      // 候选路径不存在，继续下一个
+    }
+  }
+  // 兜底：路径变化时递归扫描
+  if (!nitroFile) nitroFile = findFileWithRegex(chunksDir, hashRegex);
+
+  if (nitroFile) {
+    buildHash = nitroFile.match[1];
     buildHashDir = `static/${buildHash}`;
     mkdirSync(join(process.cwd(), ".output"), { recursive: true });
     writeFileSync(join(process.cwd(), ".output", "build-hash.json"), JSON.stringify({ hash: buildHash, dir: buildHashDir }, null, 2), "utf-8");
-    console.log(`✓ build-hash.json 生成: ${buildHashDir}`);
+    console.log(`✓ build-hash.json 生成 (${nitroFile.file}): ${buildHashDir}`);
+  } else {
+    console.error("✗ 未在 .output/server/chunks 下找到含 buildHash 的 nitro 产物，请确认 .output 已生成");
   }
 } catch (e) {
   console.error(`✗ build-hash.json 生成失败: ${e.message}`);
