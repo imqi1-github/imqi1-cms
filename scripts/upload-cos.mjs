@@ -6,6 +6,8 @@ import readline from 'readline'
 
 import dotenv from 'dotenv'
 
+import { ProgressConsole, progressText } from './lib/progress.mjs'
+
 // 使用 createRequire 来导入 CommonJS 模块
 const require = createRequire(import.meta.url)
 const COS = require('cos-nodejs-sdk-v5')
@@ -274,6 +276,8 @@ async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CO
   }
 
   const executing = []
+  const pc = new ProgressConsole()
+  const total = files.length
 
   for (const file of files) {
     const promise = (async () => {
@@ -283,12 +287,12 @@ async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CO
 
       try {
         await uploadFile(file, remotePath)
-        console.log(`✓ ${relativePath}`)
         results.success++
+        pc.update({ top: `✓ ${relativePath}`, bottom: progressText(results.success, results.failed, total) })
       } catch (error) {
-        console.log(`✗ ${relativePath}`)
         results.failed++
         results.errors.push({ file: relativePath, error: error.message })
+        pc.update({ top: `✗ ${relativePath}`, bottom: progressText(results.success, results.failed, total) })
       }
     })()
 
