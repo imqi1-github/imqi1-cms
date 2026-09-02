@@ -5,7 +5,9 @@
 # ISR 走文件系统缓存、搜索缓存关闭。生产容器内运行时无 Redis 环境变量。
 
 # ---- Stage 1: 依赖安装 + 构建 ----
-FROM oven/bun:1.3.10 AS builder
+# 匹配 package.json packageManager="bun@1.4.0",与本地开发环境一致,
+# 避免 bun 1.3 vs 1.4 解析 lockfile 不一致导致 --frozen-lockfile 失败。
+FROM oven/bun:1.4 AS builder
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile --ignore-scripts
