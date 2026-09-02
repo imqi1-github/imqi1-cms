@@ -121,13 +121,16 @@ export default defineEventHandler(async event => {
       }
 
       // 可选 createTime：非法日期时回退为默认（now）
+      // 强制 UTC：PG TIMESTAMP(3) 字面值按 session TZ 解析，若服务器 TZ 非 UTC，
+      // 纯日期 '2026-06-22' 会被解读为本地 00:00，存进 DB 后与 ISO UTC 写入存在时区差，
+      // 导致 changelogs 时间显示/排序错位。统一转 UTC ISO 再交给 Prisma。
       const payload: { content: string; create_time?: Date } = {
         content: serialized,
       };
       if (rec.createTime) {
         const d = new Date(rec.createTime);
         if (!Number.isNaN(d.getTime())) {
-          payload.create_time = d;
+          payload.create_time = new Date(d.toISOString());
         }
       }
 

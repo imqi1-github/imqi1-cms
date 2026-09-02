@@ -3,10 +3,9 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
 import pg from "pg";
+import * as dotenv from "dotenv";
 
 const { Client } = pg;
-
-import * as dotenv from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SQL_FILE = join(__dirname, "init-db.sql");
@@ -51,8 +50,12 @@ async function main() {
   await adminClient.connect();
   const exists = await adminClient.query("SELECT 1 FROM pg_database WHERE datname = $1", [database]);
   if ((exists.rowCount ?? 0) === 0) {
-    // 库名已在上方校验为安全字符（字母数字下划线连字符），引号包裹防大小写/连字符问题
-    await adminClient.query(`CREATE DATABASE "${database}"`);
+    // 库名已在上方校验为安全字符（字母数字下划线连字符），引号包裹防大小写/连字符问题。
+    // 显式 ENCODING/LOCALE/TEMPLATE：避免依赖 PG 服务器 default，保证中文 + UTF8 + C collation 一致，
+    // 后续 varchar 排序/索引与服务器 TZ/locale 设置解耦。
+    await adminClient.query(
+      `CREATE DATABASE "${database}" OWNER "${user}" ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0`,
+    );
   }
   await adminClient.end();
 
@@ -62,8 +65,16 @@ async function main() {
 
   try {
     console.log(`→ 连接数据库 ${user}@${host}:${port}/${database}`);
-    console.log("→ 执行 init-db.sql（建表 + 默认设置 + 示例数据）...");
 
+    // 强制该库默认 timezone 为 UTC：避免服务器时区（如东八区）与 Prisma 写入的 UTC Date 字面值混用，
+    // 导致 CREATE TABLE ... DEFAULT CURRENT_TIMESTAMP 与 create_time 写入存在时区差，
+    // 进而让归档分组（archiving.get.ts 用 getUTC*）与按时间排序的搜索结果跨区错位。
+    // ALTER DATABASE ... SET 影响该库后续新建会话；本连接也立即 SET timezone='UTC' 兜底当前会话。
+    // PG 不允许 ALTER DATABASE 后跟函数（库名需字面量），这里用插值；库名已在上方白名单校验。
+    await client.query(`ALTER DATABASE "${database}" SET timezone = 'UTC'`);
+    await client.query("SET timezone = 'UTC'");
+
+    console.log("→ 执行 init-db.sql（建表 + 默认设置 + 示例数据）...");
     await client.query(sql);
 
     console.log("\n✅ 初始化完成！");

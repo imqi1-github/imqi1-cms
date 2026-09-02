@@ -8,10 +8,10 @@ import type { DataTransferPayload } from "#server/types/apis/data-transfer";
  * 导入全站数据（后台「数据备份与恢复」）。
  *
  * 策略：清空后完整还原。整个过程包裹在事务中：
- *   1. 关闭外键检查（允许乱序清空/插入，且允许 contents.uid 指向未被还原的 users）
- *   2. 逆序 DELETE 清空各表（用 DELETE 而非 TRUNCATE —— TRUNCATE 在 MySQL 会隐式提交，破坏事务；PG 虽为事务性，仍统一用 DELETE）
- *   3. 顺序 createMany 写入备份数据
- *   4. finally 恢复外键检查
+ *   1. TRUNCATE ... CASCADE 一把清空全部业务表 —— PG 中 CASCADE 沿外键反向级联，
+ *      无需关闭 FK 检查，也避开了 SET session_replication_role 必须是 superuser 的限制。
+ *      TRUNCATE 在 PG 是事务安全的（不像 MySQL 会隐式提交）。
+ *   2. 顺序 createMany 写入备份数据。
  * 任一步失败则整体回滚，不会留下半还原的脏数据。
  *
  * 数据范围排除 users 与 sessions，因此当前管理员登录态在导入后依然有效。
@@ -84,43 +84,37 @@ export default defineEventHandler(async event => {
 				// 与 users / sessions 被排除的考量一致（保证导入后登录态与会话存储行为不变）。
 				const sessionStore = await tx.informations.findUnique({ where: { key: "sessionStoreType" } });
 
-				// 关闭外键检查（PG 无 FOREIGN_KEY_CHECKS，用 session_replication_role 等同）
-				await tx.$executeRawUnsafe("SET session_replication_role = replica");
+				// PG TRUNCATE ... CASCADE 沿外键反向级联清空,无需关 FK 检查,
+				// 也避开了 SET session_replication_role 必须是 superuser 的限制。
+				// 不加 RESTART IDENTITY —— 保留 SERIAL 当前序列值,避免与外部引用错乱。
+				await tx.$executeRawUnsafe(
+					`TRUNCATE TABLE ${DATA_TABLES.map(s => `"${s.model}"`).join(", ")} CASCADE`,
+				);
 
-				try {
-					// 逆序清空（父表在后），配合关检查确保干净
-					for (const spec of [...DATA_TABLES].reverse()) {
-						await tx.$executeRawUnsafe(`DELETE FROM "${spec.model}"`);
+				// 顺序写入
+				for (const spec of DATA_TABLES) {
+					let rows = payload.tables[spec.model];
+					// informations 表：仅剔除备份中的 sessionStoreType（保留本机原值，见下方补回）；密钥不再掩码、原样恢复。
+					if (spec.model === "informations" && Array.isArray(rows)) {
+						rows = rows.filter(row => row?.key !== "sessionStoreType");
+					}
+					if (!Array.isArray(rows) || rows.length === 0) {
+						counts[spec.model] = 0;
+						continue;
 					}
 
-					// 顺序写入
-					for (const spec of DATA_TABLES) {
-						let rows = payload.tables[spec.model];
-						// informations 表：仅剔除备份中的 sessionStoreType（保留本机原值，见下方补回）；密钥不再掩码、原样恢复。
-						if (spec.model === "informations" && Array.isArray(rows)) {
-							rows = rows.filter(row => row?.key !== "sessionStoreType");
-						}
-						if (!Array.isArray(rows) || rows.length === 0) {
-							counts[spec.model] = 0;
-							continue;
-						}
-
-						const delegate = getDelegate(spec.model, tx);
-						if (!delegate || typeof delegate.createMany !== "function") {
-							throw createError({ statusCode: 500, message: `未知的数据表：${spec.model}` });
-						}
-						const data = reviveRowsForImport(rows, spec.dateFields);
-						const result = await delegate.createMany({ data });
-						counts[spec.model] = result.count;
+					const delegate = getDelegate(spec.model, tx);
+					if (!delegate || typeof delegate.createMany !== "function") {
+						throw createError({ statusCode: 500, message: `未知的数据表：${spec.model}` });
 					}
+					const data = reviveRowsForImport(rows, spec.dateFields);
+					const result = await delegate.createMany({ data });
+					counts[spec.model] = result.count;
+				}
 
-					// 补回导入前的 Session 存储方式（不受备份文件影响）
-					if (sessionStore) {
-						await tx.informations.create({ data: { key: "sessionStoreType", value: sessionStore.value } });
-					}
-				} finally {
-					// 无论成功与否都恢复外键检查（同一连接上的会话变量）
-					await tx.$executeRawUnsafe("SET session_replication_role = default");
+				// 补回导入前的 Session 存储方式（不受备份文件影响）
+				if (sessionStore) {
+					await tx.informations.create({ data: { key: "sessionStoreType", value: sessionStore.value } });
 				}
 
 				return counts;
