@@ -119,9 +119,3 @@ export const SiteSettingsSchema = z.object({
   linkAutoApprove: z.boolean(),
   musicPlaylistId: z.string(),
 });
-
-export const SiteSettingsResponseSchema = z.object({
-  success: z.boolean(),
-  data: SiteSettingsSchema,
-  buildHash: z.string(),
-});

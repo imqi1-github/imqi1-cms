@@ -1,6 +1,7 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { redis } from "#server/utils/redis";
+import { deleteSearchIndex } from "#server/utils/search-index";
 import type { CacheClearBody, CacheClearResponse } from "#server/types/apis/cache";
 
 // SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis
@@ -52,6 +53,22 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // 索引清除走 DB（不依赖 Redis），放在 Redis 判断之前
+  if (action === "index") {
+    try {
+      const removed = await deleteSearchIndex();
+      return {
+        success: true,
+        matched: removed,
+        cleared: removed,
+        note: removed === 0 ? "搜索索引为空" : undefined,
+      } satisfies CacheClearResponse;
+    } catch (error) {
+      console.error("[清除搜索索引失败]", error);
+      throw createError({ statusCode: 500, message: "清除搜索索引失败" });
+    }
+  }
+
   // Redis 未配置
   if (!redis) {
     return {
@@ -82,6 +99,17 @@ export default defineEventHandler(async event => {
         matched: total,
         cleared: total,
         note: total === 0 ? "没有匹配的搜索缓存键" : undefined,
+      } satisfies CacheClearResponse;
+    }
+
+    // 自定义缓存：足迹地理位置等（footprint.get.ts 写入 custom:* 前缀，非 ISR）
+    if (action === "footprint") {
+      const total = await scanAndUnlink("custom:footprint");
+      return {
+        success: true,
+        matched: total,
+        cleared: total,
+        note: total === 0 ? "没有匹配的足迹缓存键" : undefined,
       } satisfies CacheClearResponse;
     }
 

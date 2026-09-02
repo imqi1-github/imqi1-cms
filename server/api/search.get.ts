@@ -1,10 +1,11 @@
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
 import { getCommentAvatarService, commentAvatarUrl } from "#server/utils/comment-avatar";
-import { SearchQuerySchema, SearchResponseSchema } from "#server/utils/schemas";
+import { SearchQuerySchema } from "#server/utils/schemas";
 import { sanitizeExternalUrl } from "#server/utils/rss";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { escapeHtml, escapeRegExp } from "#shared/html";
+import { isIndexReady, searchIndex } from "#server/utils/search-index";
 import type {
   SearchContentItem,
   SearchBranchResult,
@@ -402,10 +403,17 @@ async function searchSubscribeposts(q: string): Promise<SearchBranchResult> {
   return { results, total: results.length };
 }
 
+// 逐分支 DB 查询（搜索索引未就绪/异常时的回退路径，与原实现一致）
+async function pathSearch(q: string, type: string): Promise<SearchBranchResult> {
+  if (type === "subscribe") return searchSubscribes(q);
+  if (type === "comment") return searchComments(q);
+  if (type === "subscribepost") return searchSubscribeposts(q);
+  return searchContents(q);
+}
+
 export default defineTypedApiHandler(
   {
     query: SearchQuerySchema,
-    response: SearchResponseSchema,
     description: "搜索接口（文章/订阅和友链/评论/订阅文章）",
   },
   async (event, { query }) => {
@@ -451,14 +459,18 @@ export default defineTypedApiHandler(
 
       // ========== 数据库搜索（按类型分支）==========
       let searchResult: SearchBranchResult;
-      if (type === "subscribe") {
-        searchResult = await searchSubscribes(q);
-      } else if (type === "comment") {
-        searchResult = await searchComments(q);
-      } else if (type === "subscribepost") {
-        searchResult = await searchSubscribeposts(q);
-      } else {
-        searchResult = await searchContents(q);
+
+      // 优先使用构建好的搜索索引（自定义缓存，非 ISR）：命中列 search_text + meta 路由，
+      // total 用独立 count()（不再被 take:50 封顶）。未就绪/索引路径异常则回退逐分支查询，保证搜索不挂。
+      try {
+        if (await isIndexReady()) {
+          searchResult = await searchIndex(q, type);
+        } else {
+          searchResult = await pathSearch(q, type);
+        }
+      } catch (error) {
+        console.error("[搜索] 索引检索失败，回退分支查询", error);
+        searchResult = await pathSearch(q, type);
       }
 
       const { results, total } = searchResult;

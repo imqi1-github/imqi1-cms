@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { siteConfig } from "~~/site.config";
 import type { AdminSettings } from "~/types/apis/admin/settings";
+import type { SearchIndexBuildResponse } from "~/types/apis/search-index";
 
 const loading = ref(true);
 const activeTab = ref("basic");
@@ -57,6 +58,11 @@ const settings = ref<AdminSettings>({
   linkAutoApprove: false,
   searchCacheEnabled: false,
   searchCacheExpire: 300,
+  searchIndexEnabled: false,
+  searchIndexExpire: 604800,
+  searchIndexBuiltAt: "",
+  searchIndexCount: 0,
+  searchIndexStatus: "",
 });
 
 const avatarServices = [
@@ -259,6 +265,11 @@ const defaultSettings: AdminSettings = {
   linkAutoApprove: false,
   searchCacheEnabled: false,
   searchCacheExpire: 300,
+  searchIndexEnabled: false,
+  searchIndexExpire: 604800,
+  searchIndexBuiltAt: "",
+  searchIndexCount: 0,
+  searchIndexStatus: "",
 };
 
 // 加载设置
@@ -307,6 +318,47 @@ async function saveSettings() {
     saving.value = false;
   }
 }
+
+// 建立/更新搜索索引（自定义缓存，非 ISR）
+const buildingIndex = ref(false);
+async function handleBuildSearchIndex() {
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+  if (buildingIndex.value) return;
+  buildingIndex.value = true;
+  try {
+    const res = await $fetch<SearchIndexBuildResponse>("/api/admin/search-index/build", {
+      method: "POST",
+      body: { csrfToken: csrfToken.value },
+    });
+    if (!res.success) {
+      toast.warning({ message: "构建中", description: res.message || "索引正在后台构建" });
+    } else {
+      toast.success({ message: "索引已更新", description: res.message || `共 ${res.count} 条` });
+      await loadSettings();
+    }
+  } catch (error) {
+    console.error("构建索引失败:", error);
+    toast.error({ message: "构建失败", description: "请稍后重试" });
+  } finally {
+    buildingIndex.value = false;
+  }
+}
+
+const indexStatusLabel = computed(() => {
+  const s = settings.value.searchIndexStatus;
+  if (!s) return "未构建";
+  if (s === "building") return "构建中";
+  if (s === "ok") return "正常";
+  return s;
+});
+const indexBuiltAtLabel = computed(() => {
+  const t = settings.value.searchIndexBuiltAt;
+  if (!t) return "—";
+  return new Date(t).toLocaleString();
+});
 
 // 重置为默认值（确认后执行）
 async function confirmReset() {
@@ -1071,6 +1123,55 @@ onMounted(() => {
                         <li>首次搜索后，相同关键词将直接返回缓存结果</li>
                         <li>需要配置 Redis 才能使用此功能</li>
                       </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 搜索索引（自定义缓存，非 ISR） -->
+                <div class="space-y-3 border-t pt-6">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                      <Label for="searchIndexEnabled">启用倒排索引</Label>
+                      <p class="text-sm text-muted-foreground">
+                        开启后前台搜索命中 Redis 倒排索引（jieba 分词预筛 + 子串复核）；未开启/未构建时自动回退为逐分支数据库查询。关闭不占内存。
+                      </p>
+                    </div>
+                    <Switch id="searchIndexEnabled" v-model="settings.searchIndexEnabled" />
+                  </div>
+
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                      <label class="text-sm font-medium">重建索引</label>
+                      <p class="text-sm text-muted-foreground">
+                        当前共 {{ settings.searchIndexCount }} 条；删除入口在「缓存管理 → 自定义缓存」。
+                      </p>
+                    </div>
+                    <Button :disabled="buildingIndex" @click="handleBuildSearchIndex">
+                      <Icon
+                        :name="buildingIndex ? 'lucide:loader-2' : 'lucide:database'"
+                        :class="{ 'animate-spin': buildingIndex }"
+                        class="mr-2 size-4"
+                      />
+                      {{ buildingIndex ? "构建中..." : "建立/更新索引" }}
+                    </Button>
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label for="searchIndexExpire">索引过期时间（秒）</Label>
+                      <Input
+                        id="searchIndexExpire"
+                        v-model.number="settings.searchIndexExpire"
+                        type="number"
+                        min="300"
+                        placeholder="604800"
+                        class="mt-1"
+                      />
+                      <p class="text-xs text-muted-foreground mt-1">默认 604800（7 天）。过期后首次搜索自动重建。</p>
+                    </div>
+                    <div class="space-y-1 text-sm">
+                      <p><span class="text-muted-foreground">状态：</span>{{ indexStatusLabel }}</p>
+                      <p><span class="text-muted-foreground">行数：</span>{{ settings.searchIndexCount }}</p>
+                      <p><span class="text-muted-foreground">构建时间：</span>{{ indexBuiltAtLabel }}</p>
                     </div>
                   </div>
                 </div>

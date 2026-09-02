@@ -5,6 +5,8 @@ import type { SitemapPageItem } from "~/types/pages/sitemap";
 // 顶层 await useFetch：数据在挂载前（旧页面渐出期间）就绪，配合 Suspense 让旧页面完整渐出，
 // 渐入时直接带数据。服务端渲染时通过内部请求 header 放行 referer-check（与其它页面一致）。
 const ssrHeaders = { headers: getInternalRequestHeaders() };
+// 离场淡出：旧页在新页数据就绪前完整淡出（Suspense 挂起时长覆盖 fadeDuration），SSR/水合为 no-op
+await useFadeOutOnNavigate();
 // 四个请求彼此无数据依赖，串行会叠加每个 handler 的延迟放大 TTFB / SPA 等待；改 Promise.all 并行
 const [sitemapFetch, commentsFetch, tagsFetch, statsFetch] = await Promise.all([
   useFetch("/api/sitemap", ssrHeaders),

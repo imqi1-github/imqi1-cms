@@ -8,6 +8,7 @@
         "@amap/amap-jsapi-loader": "^1.0.1",
         "@fancyapps/ui": "^6.1.14",
         "@meting/core": "^1.6.1",
+        "@node-rs/jieba": "^2.0.2",
         "@nuxtjs/color-mode": "^4.0.1",
         "@prisma/adapter-mariadb": "^7.8.0",
         "@prisma/client": "^7.8.0",
@@ -477,6 +478,34 @@
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.3", "https://registry.npmmirror.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.2.3.tgz", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4", "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4" } }, "sha512-UMduMbqO5s5zF2NkNacMT/yK5Y5QiKvWr2+50bzIIxFDwVJ2h49b+oyjaCGPhJxd2/gC2x39EHv/gHVuu36x2Q=="],
 
     "@nodable/entities": ["@nodable/entities@3.0.0", "https://registry.npmmirror.com/@nodable/entities/-/entities-3.0.0.tgz", {}, "sha512-8L9xFeTYKhm49xfIypoe2W5wV1m/3Z58kT+7kR9A8OyFxcPduI4VmxaUMQyKYrRjUoLLSXv6EKKID5Tvj9cUVw=="],
+
+    "@node-rs/jieba": ["@node-rs/jieba@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba/-/jieba-2.0.2.tgz", { "optionalDependencies": { "@node-rs/jieba-android-arm-eabi": "2.0.2", "@node-rs/jieba-android-arm64": "2.0.2", "@node-rs/jieba-darwin-arm64": "2.0.2", "@node-rs/jieba-darwin-x64": "2.0.2", "@node-rs/jieba-freebsd-x64": "2.0.2", "@node-rs/jieba-linux-arm-gnueabihf": "2.0.2", "@node-rs/jieba-linux-arm64-gnu": "2.0.2", "@node-rs/jieba-linux-arm64-musl": "2.0.2", "@node-rs/jieba-linux-x64-gnu": "2.0.2", "@node-rs/jieba-linux-x64-musl": "2.0.2", "@node-rs/jieba-win32-arm64-msvc": "2.0.2", "@node-rs/jieba-win32-ia32-msvc": "2.0.2", "@node-rs/jieba-win32-x64-msvc": "2.0.2" } }, "sha512-aONN6nwpbwHKenEzCcYUbm6ZFHWEs7N5eas7zwWFs3c4MmEdN79m9Si4PvOxCp285I2M+g4MfLyUm9WcYaQi7Q=="],
+
+    "@node-rs/jieba-android-arm-eabi": ["@node-rs/jieba-android-arm-eabi@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-android-arm-eabi/-/jieba-android-arm-eabi-2.0.2.tgz", { "os": "android", "cpu": "arm" }, "sha512-5w+349/6X+0MkW0DMCLmtmjbCx9YXKMqMzSGH9A/XMP3sSy+MgzgMQ5UwEteu2YFnRve8V0mJzKQpG0R7TmT7A=="],
+
+    "@node-rs/jieba-android-arm64": ["@node-rs/jieba-android-arm64@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-android-arm64/-/jieba-android-arm64-2.0.2.tgz", { "os": "android", "cpu": "arm64" }, "sha512-tqNVsZ6VVzkbwWZAQ7zcOwJLtRKANW+Oa+uj8R+PWQSVXjy8Xs6KzfpDC5r+euFdNOiSjKPuZv4VbYSSTXed8g=="],
+
+    "@node-rs/jieba-darwin-arm64": ["@node-rs/jieba-darwin-arm64@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-darwin-arm64/-/jieba-darwin-arm64-2.0.2.tgz", { "os": "darwin", "cpu": "arm64" }, "sha512-JIpC+9p3E67OPzvvLcxI9TUHfQL6Xuti+e4zbio8Kc7gUZ3EYJ+USRHGS6EixhsWDDZKFhNThl3ztTk9ZqBjzg=="],
+
+    "@node-rs/jieba-darwin-x64": ["@node-rs/jieba-darwin-x64@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-darwin-x64/-/jieba-darwin-x64-2.0.2.tgz", { "os": "darwin", "cpu": "x64" }, "sha512-E7xPjd3L4oSPl9VSZJC6yN8niFYYL9NmmxKRHW14kAoa9TOr07xeiXtfRWajq95bgfvxHB9ymMkYKHCzGlTR4Q=="],
+
+    "@node-rs/jieba-freebsd-x64": ["@node-rs/jieba-freebsd-x64@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-freebsd-x64/-/jieba-freebsd-x64-2.0.2.tgz", { "os": "freebsd", "cpu": "x64" }, "sha512-FHfveI/E/uLNgVGWLobFhWLrh09+DM2g3UBq8YuDJ22tnBefjGaakoTIjd9NHQ03sxAAkhlucR8QLTrFN6cMUg=="],
+
+    "@node-rs/jieba-linux-arm-gnueabihf": ["@node-rs/jieba-linux-arm-gnueabihf@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-linux-arm-gnueabihf/-/jieba-linux-arm-gnueabihf-2.0.2.tgz", { "os": "linux", "cpu": "arm" }, "sha512-Hl2+3GOff5WmUkialLs0HXwUycacxIJlygMTvGnl3au6UnAxdj9KyF9+n+HQpRRLZqE0aExPQEBxvnshlwl/mg=="],
+
+    "@node-rs/jieba-linux-arm64-gnu": ["@node-rs/jieba-linux-arm64-gnu@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-linux-arm64-gnu/-/jieba-linux-arm64-gnu-2.0.2.tgz", { "os": "linux", "cpu": "arm64" }, "sha512-tM0Gdh37ZhHpol8O3REGaWILdPYYoXfDuw+XfXhq1ppNbfwG5fm+DmoW7n4qg4nQM7jGM2t67BbmlENwxiAlCQ=="],
+
+    "@node-rs/jieba-linux-arm64-musl": ["@node-rs/jieba-linux-arm64-musl@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-linux-arm64-musl/-/jieba-linux-arm64-musl-2.0.2.tgz", { "os": "linux", "cpu": "arm64" }, "sha512-7BrJjtsiuHdKzaVedWusiMzS9dUJXPTZBAunuRly/dyTvQyJqRJ3/N6RdgNRXaF49zuEz8JrtA9+aCn0t+ajTg=="],
+
+    "@node-rs/jieba-linux-x64-gnu": ["@node-rs/jieba-linux-x64-gnu@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-linux-x64-gnu/-/jieba-linux-x64-gnu-2.0.2.tgz", { "os": "linux", "cpu": "x64" }, "sha512-514+0NFGCZp2e9lrnVRmyfe1/Cd+zUV3IUD0pWYB2gHfmowNrHPHL95WZosJMDp96C6LYbJZuNTRKifm0PyVBA=="],
+
+    "@node-rs/jieba-linux-x64-musl": ["@node-rs/jieba-linux-x64-musl@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-linux-x64-musl/-/jieba-linux-x64-musl-2.0.2.tgz", { "os": "linux", "cpu": "x64" }, "sha512-KFlbnGoGoX58qLKeWutPyupTbbYPGgC4DAGVjEu8ctYVh4UyjeRHCxlY7ipC7NIW8I3YzKQRZ/yFMzmiDYX7UQ=="],
+
+    "@node-rs/jieba-win32-arm64-msvc": ["@node-rs/jieba-win32-arm64-msvc@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-win32-arm64-msvc/-/jieba-win32-arm64-msvc-2.0.2.tgz", { "os": "win32", "cpu": "arm64" }, "sha512-EI3JLL01kf6pP3mAUoYnDrt8S+FY2W2nWpjtiK7ucs46tITLkYDx9wmAwDsOnoCkxs4CETzLytPhLZ12lzR5Qw=="],
+
+    "@node-rs/jieba-win32-ia32-msvc": ["@node-rs/jieba-win32-ia32-msvc@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-win32-ia32-msvc/-/jieba-win32-ia32-msvc-2.0.2.tgz", { "os": "win32", "cpu": "ia32" }, "sha512-FtTx1cth53zZqdZTCsTDTlg0rTGDvFZyaMCLEa3FcjrDD8DeWNavNcJbLmProS9YlZPdCvArPzH/etaoiTKimA=="],
+
+    "@node-rs/jieba-win32-x64-msvc": ["@node-rs/jieba-win32-x64-msvc@2.0.2", "https://registry.npmmirror.com/@node-rs/jieba-win32-x64-msvc/-/jieba-win32-x64-msvc-2.0.2.tgz", { "os": "win32", "cpu": "x64" }, "sha512-9c08mSvOoluteKy0AiyAy+x4uvWB45Q3fheg51gcIxYGxl+Lk0+Xq8JnQxs/f6nLH+mNaOWAmX4DtORQMWabxA=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "https://registry.npmmirror.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 

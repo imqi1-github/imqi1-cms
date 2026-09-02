@@ -1,9 +1,15 @@
 import { commentAvatarUrl } from "#server/utils/comment-avatar";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
+import { redis } from "#server/utils/redis";
 import { CITY_COORDS } from "#shared/city-coords";
 import type { Reader } from "#server/types/apis/reader";
-import type { IdStatus } from "#server/types/apis/footprint";
+import type { IdStatus, FootprintPayload } from "#server/types/apis/footprint";
+
+// 自定义缓存（非 ISR）：整个响应聚合成一条，避免每次请求重跑全量 IP 归属地解析。
+// 键前缀 custom:* 由「缓存管理 → 自定义缓存」面板统一清理。
+const FOOTPRINT_CACHE_KEY = "custom:footprint";
+const FOOTPRINT_CACHE_TTL = 3600; // 1 小时
 
 /**
  * 读者足迹（访客分布）聚合端点
@@ -39,13 +45,25 @@ function isMeaningfulName(name: string): boolean {
 
 export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+
+  // 自定义缓存（非 ISR）命中直接返回，避免重复跑 IP 归属地解析
+  if (redis) {
+    try {
+      const cached = await redis.get(FOOTPRINT_CACHE_KEY);
+      if (cached) return JSON.parse(cached) as FootprintPayload;
+    } catch (error) {
+      console.error("[footprint] 缓存读取失败", error);
+    }
+  }
+
   const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
   const avatarService = avatarSetting?.value || "gravatar";
 
   // 取 ip + 昵称(name) + 网址(link) + 邮箱(mail，仅去重用) + coid + 正文(content) + 关联文章；
-  // 按时间倒序，使每个身份遍历时首条即其最新评论。
+  // 按时间倒序，使每个身份遍历时首条即其最新评论。take 兜底防止异常规模下全量扫描。
   const rows = await prisma.comments.findMany({
     where: { status: 1, ip: { not: null } },
+    take: 2000,
     select: {
       ip: true,
       name: true,
@@ -178,8 +196,19 @@ export default defineEventHandler(async event => {
       readers: v.readers,
     }));
 
-  return {
+  const payload: FootprintPayload = {
     success: true,
     data: { points, overseas, unknown, total: idStatus.size },
   };
+
+  // 自定义缓存（非 ISR）：下次直接复用
+  if (redis) {
+    try {
+      await redis.setex(FOOTPRINT_CACHE_KEY, FOOTPRINT_CACHE_TTL, JSON.stringify(payload));
+    } catch (error) {
+      console.error("[footprint] 缓存写入失败", error);
+    }
+  }
+
+  return payload;
 });

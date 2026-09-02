@@ -75,6 +75,12 @@ export default defineEventHandler(async event => {
       linkAutoApprove: false,
       searchCacheEnabled: false,
       searchCacheExpire: 300,
+      // 搜索索引（自定义缓存，非 ISR；enabled 为开关，builtAt/count/status 只读状态，expire 可编辑）
+      searchIndexEnabled: false,
+      searchIndexExpire: 86400,
+      searchIndexBuiltAt: "",
+      searchIndexCount: 0,
+      searchIndexStatus: "",
     };
 
     const settings: Record<string, string | number | boolean> = { ...defaults };

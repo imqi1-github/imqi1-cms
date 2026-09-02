@@ -7,7 +7,7 @@ import { getClientIp } from "#server/utils/client-ip";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
-import { CommentCreateSchema, CommentItemSchema } from "#server/utils/schemas";
+import { CommentCreateSchema } from "#server/utils/schemas";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { validateCommentData } from "#server/utils/validation";
 
@@ -31,7 +31,6 @@ const PURIFY_CONFIG = {
 export default defineTypedApiHandler(
   {
     body: CommentCreateSchema,
-    response: CommentItemSchema,
     description: "提交评论",
   },
   async (event, { body }) => {

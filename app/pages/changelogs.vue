@@ -6,6 +6,8 @@ import {siteConfig} from "~~/site.config";
 import {CHANGELOG_META, CHANGELOG_TYPES, getChangelogMeta, isChangelogType,} from "#shared/changelog";
 import type {ChangelogEntry, ChangelogGroup} from "~/types/apis/changelogs";
 
+// 离场淡出：旧页在新页数据就绪前完整淡出（Suspense 挂起时长覆盖 fadeDuration），SSR/水合为 no-op
+await useFadeOutOnNavigate();
 const { data, pending, error } = await useFetch<{ data: ChangelogGroup[] }>("/api/changelogs", {
   headers: getInternalRequestHeaders(),
 });

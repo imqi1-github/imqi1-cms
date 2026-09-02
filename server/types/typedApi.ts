@@ -3,16 +3,15 @@ import type { z, ZodType } from "zod";
 import { createError, defineEventHandler, getQuery, readBody } from "h3";
 
 /**
- * API 定义
+ * API 定义。
+ * 响应类型直接由 Nitro InternalApi 推导，不做手写校验（response 字段曾为死字段，已删）。
  */
 export interface TypedApiDefinition<
   TQuery extends ZodType | undefined = undefined,
   TBody extends ZodType | undefined = undefined,
-  TResponse extends ZodType | undefined = undefined,
 > {
   query?: TQuery;
   body?: TBody;
-  response?: TResponse;
   description?: string;
 }
 
@@ -32,10 +31,9 @@ type Validated<Q extends ZodType | undefined, B extends ZodType | undefined> = {
 export function defineTypedApiHandler<
   TQuery extends ZodType | undefined = undefined,
   TBody extends ZodType | undefined = undefined,
-  TResponse extends ZodType | undefined = undefined,
   TResult = unknown,
 >(
-  definition: TypedApiDefinition<TQuery, TBody, TResponse>,
+  definition: TypedApiDefinition<TQuery, TBody>,
   handler: (event: H3Event, validated: Validated<TQuery, TBody>) => TResult | Promise<TResult>,
 ) {
   return defineEventHandler(async (event: H3Event) => {

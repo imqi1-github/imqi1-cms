@@ -17,6 +17,9 @@ const route = useRoute();
 const categorySlug = route.params.category as string;
 const slug = route.params.slug as string;
 
+// 离场淡出：旧页在新页数据就绪前完整淡出（Suspense 挂起时长覆盖 fadeDuration），SSR/水合为 no-op
+await useFadeOutOnNavigate();
+
 // 从 URL 获取分类信息
 const { data: categoryData } = await useFetch(`/api/category/${categorySlug}`, {
   headers: getInternalRequestHeaders(),
@@ -185,22 +188,28 @@ const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value)
 const relatedContentsData = ref<{ success: boolean; data: RelatedContent[] } | null>(null);
 const relatedContentsPending = ref(false);
 
-// 监听文章数据，加载后再获取相关文章
+// 监听文章数据，加载后再获取相关文章。
+// 仅客户端：immediate 会在 SSR setup 也触发（content 已由顶层 useFetch 填充），服务端自取会被丢弃且
+// 不序列化 → 双发；此处用 import.meta.client 守卫 + 卸载守卫，避免双发与卸载后回写。
+let relatedActive = true;
+onUnmounted(() => {
+  relatedActive = false;
+});
 watch(
   () => content.value?.cid,
   async contentId => {
-    if (contentId) {
-      relatedContentsPending.value = true;
-      try {
-        relatedContentsData.value = await $fetch<{ success: boolean; data: RelatedContent[] }>(`/api/related-contents/${contentId}?limit=3`, {
-          headers: getInternalRequestHeaders(),
-        });
-      } catch (error) {
-        console.error("获取相关文章失败:", error);
-        relatedContentsData.value = { success: false, data: [] };
-      } finally {
-        relatedContentsPending.value = false;
-      }
+    if (!import.meta.client || !contentId || !relatedActive) return;
+    relatedContentsPending.value = true;
+    try {
+      const res = await $fetch<{ success: boolean; data: RelatedContent[] }>(`/api/related-contents/${contentId}?limit=3`, {
+        headers: getInternalRequestHeaders(),
+      });
+      if (relatedActive) relatedContentsData.value = res;
+    } catch (error) {
+      console.error("获取相关文章失败:", error);
+      if (relatedActive) relatedContentsData.value = { success: false, data: [] };
+    } finally {
+      if (relatedActive) relatedContentsPending.value = false;
     }
   },
   { immediate: true },
