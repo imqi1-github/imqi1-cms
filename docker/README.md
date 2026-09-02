@@ -4,8 +4,8 @@
 
 | 版本 | 文件 | 服务 | 说明 |
 | --- | --- | --- | --- |
-| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + MySQL 8 + Redis 7 | `.env` 填 `REDIS_HOST_PROD=redis` 即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
-| **不带 Redis** | `docker-compose.noredis.yml` + `Dockerfile.noredis` | 应用 + MySQL 8 | 不烘焙任何 Redis 配置：ISR 走文件系统缓存、搜索缓存关闭，无 redis 容器/卷 |
+| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + PostgreSQL 16 + Redis 7 | `.env` 填 `REDIS_HOST_PROD=redis` 即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
+| **不带 Redis** | `docker-compose.noredis.yml` + `Dockerfile.noredis` | 应用 + PostgreSQL 16 | 不烘焙任何 Redis 配置：ISR 走文件系统缓存、搜索缓存关闭，无 redis 容器/卷 |
 
 > 注意：`.env` 只保留 `REDIS_*_DEV` / `REDIS_*_PROD` 各四个环境变量即可；**不需要任何 `COMPOSE_PROFILES`**。是否启用 Redis 由「选用哪套 compose 文件」决定，而非环境变量魔法。
 
@@ -15,13 +15,13 @@
 
 | 变量 | 说明 |
 | --- | --- |
-| `DB_PASSWORD` | MySQL 密码（root 与普通用户共用），compose 用它建库 |
+| `DB_PASSWORD` | PostgreSQL 应用用户密码（compose 用它建库并传给 `POSTGRES_PASSWORD`）。PG 不像 MySQL 分 root/普通用户，单用户即超级用户 |
 | `DB_NAME` | 库名，compose 建库与导入 `init-db.sql` 都用它 |
-| `DB_USER` | 应用连接的**普通用户**。**不能设为 `root`**：MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设成 `root` 会在 entrypoint 直接报错退出、容器无限重启。root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`） |
+| `DB_USER` | 应用连接的用户。**PG 没有 root/普通用户分权**，应用用户与库所有者是同一个；设 `DB_USER=root` 是字面值能跑，但建议沿用普通用户名（如 `nodejs`、`imqi1`）保持与 MySQL 时代同样的命名习惯 |
 | `DEPLOY_PORT` | 宿主对外端口（默认 `3000`） |
 | `UPLOADS_DIR` | 本地上传目录的**宿主路径**（bind mount）。默认 `../uploads`（即项目根 `uploads/`，本地文件系统直接可见）；容器内挂载点固定为 `/app/.output/public/uploads`。裸机部署则指应用直接写入的目录。不设置即用默认 |
 
-`DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，无需填写。
+`DB_HOST` 会被 compose 自动覆盖为服务名 `postgres`，无需填写。
 
 ## 带 Redis 版本
 
@@ -60,8 +60,12 @@ docker compose --env-file .env -f docker/docker-compose.yml logs -f app
 docker compose --env-file .env -f docker/docker-compose.yml restart app
 docker compose --env-file .env -f docker/docker-compose.yml down   # 数据卷保留
 
-# 进入 MySQL 命令行（库名以 .env 中的 $DB_NAME 为准）
-docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysql -uroot -p"$DB_PASSWORD" "$DB_NAME"
+# 进入 PostgreSQL 命令行（库名以 .env 中的 $DB_NAME 为准；PG 单用户即超级用户，无 root/普通分权）
+docker compose --env-file .env -f docker/docker-compose.yml exec postgres psql -U "$DB_USER" -d "$DB_NAME"
 ```
 
 > ⚠️ `docker compose ... down -v` 会**删除数据卷、清空所有数据**，请谨慎使用。
+
+## 镜像加速
+
+如服务器在国内拉 `postgres:16-alpine` / `oven/bun:1.3.10` / `node:22-slim` 慢，可在 `~/.docker/daemon.json` 加 `registry-mirrors`（按就近原则挑选实际可达的源，本仓库验证 `https://docker.m.daocloud.io` 可用）。镜像列表见各 `Dockerfile` 的 `FROM` 行。

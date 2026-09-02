@@ -17,7 +17,7 @@
 
 ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个人博客与内容管理系统，也是个人站点 [imqi1.com](https://imqi1.com) 的完整源码。它并非通用型 CMS 模板，而是围绕「做技术的分享者、生活的摄影师、时事的评论员」这一定位打磨的一站式内容平台，覆盖从内容创作、发布、管理到多端展示的完整链路。
 
-项目采用 **SSR + ISR（增量静态再生成）** 架构：页面在服务端渲染以保证首屏与 SEO，同时借助 Redis（未配置时 ISR 自动降级到文件系统、搜索缓存关闭）缓存渲染结果，兼顾性能与实时性。数据层使用 Prisma 7 搭配 MariaDB 适配器直连 MySQL/MariaDB，前后端类型则通过 Nuxt 的 `InternalApi` 自动推断，无需额外的类型生成器。
+项目采用 **SSR + ISR（增量静态再生成）** 架构：页面在服务端渲染以保证首屏与 SEO，同时借助 Redis（未配置时 ISR 自动降级到文件系统、搜索缓存关闭）缓存渲染结果，兼顾性能与实时性。数据层使用 Prisma 7 搭配 PostgreSQL 适配器直连 PG，前后端类型则通过 Nuxt 的 `InternalApi` 自动推断，无需额外的类型生成器。
 
 除了 Web 主站，仓库还以 Git 子模块的形式包含了一个基于 **uni-app** 的小程序端（`mini/`），支持 H5 / 微信小程序 / 支付宝小程序三端，并复用主站提供的专用 API。
 
@@ -37,7 +37,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 ### 环境要求
 
 - **Node.js** ≥ 20（推荐 LTS 版本）
-- **MySQL** 或 **MariaDB**（用于存储站点数据）
+- **PostgreSQL** ≥ 14（推荐 16，与 docker 镜像版本一致；用于存储站点数据）
 - **Bun** ≥ 1.3（项目使用的包管理器与脚本运行器）
 - **Redis**（可选，用于 ISR 增量缓存与搜索缓存；未配置时 ISR 降级到文件系统、搜索缓存关闭）
 
@@ -51,13 +51,15 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
    node -v
    ```
 
-2. **安装 MySQL / MariaDB**
+2. **安装 PostgreSQL**
 
    安装数据库并创建一个供本项目使用的空数据库，例如 `imqi1`：
 
    ```sql
-   CREATE DATABASE imqi1 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE DATABASE imqi1 ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C';
    ```
+
+   > PG 默认超级用户是 `postgres`，生产建议新建应用账号单独管理（见 `.env.example` 的 `DB_USER` / `DB_PASSWORD`）。
 
 3. **安装 Bun**
 
@@ -104,7 +106,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
    cp .env.example .env
    ```
 
-   至少需要配置数据库相关变量（`DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`）：应用运行时的 MariaDB 适配器直接使用它们，需连库的 Prisma 命令（`prisma studio`、`prisma db execute` 等）也会由 `prisma.config.ts` 用这套变量自动拼接连接串，无需单独配置 `DATABASE_URL`。
+   至少需要配置数据库相关变量（`DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`）：应用运行时的 PostgreSQL 适配器直接使用它们，需连库的 Prisma 命令（`prisma studio`、`prisma db execute` 等）也会由 `prisma.config.ts` 用这套变量自动拼接连接串，无需单独配置 `DATABASE_URL`。
 
 7. **生成 Prisma Client**
 
@@ -132,7 +134,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
 
    > ⚠️ 出于安全考虑，登录后请立即在后台「账户设置」中修改密码。
    >
-   > 生产环境也可跳过此命令，直接在数据库管理工具（phpMyAdmin / Navicat / mysql cli 等）中导入 `scripts/init-db.sql` 执行，效果完全一致。
+   > 生产环境也可跳过此命令，直接在数据库管理工具（pgAdmin / DBeaver / psql 等）中导入 `scripts/init-db.sql` 执行，效果完全一致。
 
 9. **启动开发服务器**
 
@@ -258,7 +260,7 @@ bun run upload:server
 在服务器的数据库中创建一个空数据库，然后导入初始化脚本，一次性完成建表、写入默认设置并插入示例数据：
 
 ```bash
-# 在数据库管理工具（phpMyAdmin / Navicat / mysql cli）中导入
+# 在数据库管理工具（pgAdmin / DBeaver / psql）中导入
 scripts/init-db.sql
 ```
 
@@ -354,8 +356,8 @@ bun run restart:server -- start # 启动
 
 Docker 部署文件已整理进 `docker/` 子目录，提供**两套独立版本**按是否需要 Redis 二选一：
 
-- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + MySQL 8 + Redis 7。宿主 `.env` 填 `REDIS_HOST_PROD=redis` 即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
-- **不带 Redis**（`docker/docker-compose.noredis.yml` + `docker/Dockerfile.noredis`）：仅应用 + MySQL 8。ISR 走文件系统缓存、搜索缓存关闭，不创建 redis 容器/卷。
+- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + PostgreSQL 16 + Redis 7。宿主 `.env` 填 `REDIS_HOST_PROD=redis` 即烘焙 Redis 连接并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
+- **不带 Redis**（`docker/docker-compose.noredis.yml` + `docker/Dockerfile.noredis`）：仅应用 + PostgreSQL 16。ISR 走文件系统缓存、搜索缓存关闭，不创建 redis 容器/卷。
 
 不需要在 `.env` 中配置任何 `COMPOSE_PROFILES`，Redis 段只保留 `REDIS_*_DEV` / `REDIS_*_PROD` 各四个变量即可。两个版本的具体用法、启动命令与运维命令见 **[`docker/README.md`](docker/README.md)**。
 
@@ -377,9 +379,9 @@ cp .env.example .env
 编辑 `.env`，至少修改以下几项（`UPLOADS_DIR` 等其余均为可选，留空用默认）：
 
 ```bash
-DB_PASSWORD="改成强密码"          # MySQL 密码（root 与普通用户共用），compose 用它建库
+DB_PASSWORD="改成强密码"          # PostgreSQL 应用用户密码（compose 用它建库并传给 POSTGRES_PASSWORD）
 DB_NAME="imqi1-cms"           # 库名，可自定义；compose 建库与导入 SQL 都用它
-DB_USER="nodejs"                 # 应用连接的普通用户；⚠️ 不能设为 root，见下
+DB_USER="nodejs"                 # 应用连接用户；PG 单用户即超级用户，建议沿用非 postgres 的命名
 DEPLOY_PORT=3000                   # 宿主对外端口，按需修改
 ```
 
@@ -397,9 +399,9 @@ SSR_INTERNAL_REQUEST_SECRET="" # SSR 内部请求密钥（建议随机长串）
 MINI_API_SECRET=""             # 小程序 API 签名密钥
 ```
 
-> `DB_HOST` 会被 compose 自动覆盖为服务名 `mysql`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本（`docker-compose.yml`），并在 `.env` 填 `REDIS_HOST_PROD=redis`；不需要就选不带 Redis 的版本。其它 COS 等按需填写，完整变量见 `.env.example`。
+> `DB_HOST` 会被 compose 自动覆盖为服务名 `postgres`，**无需手动填写容器名**。Redis：需要就用带 Redis 的版本（`docker-compose.yml`），并在 `.env` 填 `REDIS_HOST_PROD=redis`；不需要就选不带 Redis 的版本。其它 COS 等按需填写，完整变量见 `.env.example`。
 >
-> ⚠️ **`DB_USER` 不能设为 `root`**：compose 会把它映射成 MySQL 镜像的 `MYSQL_USER`，而 MySQL 官方镜像的 `MYSQL_USER` 只用于创建普通用户，设为 `root` 会在 entrypoint 阶段直接报错退出、容器无限重启。请使用普通用户名（如 `nodejs`），root 密码由 `DB_PASSWORD` 单独管理（映射 `MYSQL_ROOT_PASSWORD`），应用与 healthcheck 全程只使用 `DB_USER` 这个普通用户。
+> ⚠️ **PG 单用户即超级用户**，不像 MySQL 区分 `root` / `MYSQL_USER`；`DB_USER` 设成 `postgres` 也能跑，但建议沿用普通用户名（如 `nodejs`）保持历史命名习惯。`DB_PASSWORD` 会作为 `POSTGRES_PASSWORD` 直接传给镜像，应用与 healthcheck 全程只使用这个用户。
 
 改动 site.config.ts 的配置，改成你自己的，比如 CDN 路径。
 
@@ -408,24 +410,24 @@ MINI_API_SECRET=""             # 小程序 API 签名密钥
 从项目根目录运行（注意命令带 `--env-file .env` 和 `-f docker/...`，详见 `docker/README.md`）：
 
 ```bash
-# 带 Redis：构建镜像 + 后台启动 app / mysql / redis
+# 带 Redis：构建镜像 + 后台启动 app / postgres / redis
 docker compose --env-file .env -f docker/docker-compose.yml up -d --build
 
-# 不带 Redis：仅 app / mysql
+# 不带 Redis：仅 app / postgres
 docker compose --env-file .env -f docker/docker-compose.noredis.yml up -d --build
 ```
 
-首次启动时，MySQL 会自动创建空库（`DB_NAME`）并**自动执行数据库初始化**：`scripts/init-db.sql` 已挂载到 MySQL 官方镜像的 `/docker-entrypoint-initdb.d/` 目录，容器首次启动（数据卷为空）时会自动导入——建全部表 + 写入默认设置 + 插入示例数据，并创建默认管理员：
+首次启动时，PostgreSQL 会自动创建空库（`DB_NAME`）并**自动执行数据库初始化**：`scripts/init-db.sql` 已挂载到 PostgreSQL 官方镜像的 `/docker-entrypoint-initdb.d/` 目录，容器首次启动（数据卷为空）时会自动导入——建全部表 + 写入默认设置 + 插入示例数据，并创建默认管理员：
 
 - 用户名：`admin`
 - 密码：`123456`（登录后请立即在后台「账户设置」修改）
 
-> 该自动初始化**仅在 `mysql-data` 数据卷为空时执行一次**（即首次部署）。之后重新 `up`/重建不会再次执行，也**不会覆盖或清空已有数据**。因此无需再手动运行任何初始化命令。
+> 该自动初始化**仅在 `pg-data` 数据卷为空时执行一次**（即首次部署）。之后重新 `up`/重建不会再次执行，也**不会覆盖或清空已有数据**。因此无需再手动运行任何初始化命令。
 
 ### 3. 验证
 
 ```bash
-# 查看 app/mysql（+ redis，若用带 Redis 版本）状态（healthy/up）
+# 查看 app/postgres（+ redis，若用带 Redis 版本）状态（healthy/up）
 docker compose --env-file .env -f docker/docker-compose.yml ps
 docker compose --env-file .env -f docker/docker-compose.yml logs -f app   # 查看应用日志
 curl http://localhost:3000       # 或浏览器访问 服务器IP:3000
@@ -445,18 +447,18 @@ docker compose --env-file .env -f docker/docker-compose.yml restart app
 docker compose --env-file .env -f docker/docker-compose.yml down   # 停止并删除容器（数据卷保留）
 
 # 查看日志
-docker compose --env-file .env -f docker/docker-compose.yml logs -f mysql
+docker compose --env-file .env -f docker/docker-compose.yml logs -f postgres
 
-# 进入 MySQL 命令行（库名以 .env 中的 $DB_NAME 为准）
-docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysql -uroot -p"$DB_PASSWORD" "$DB_NAME"
+# 进入 PostgreSQL 命令行（库名以 .env 中的 $DB_NAME 为准）
+docker compose --env-file .env -f docker/docker-compose.yml exec postgres psql -U "$DB_USER" -d "$DB_NAME"
 
 # 数据备份
-docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysqldump -uroot -p"$DB_PASSWORD" "$DB_NAME" > backup.sql
+docker compose --env-file .env -f docker/docker-compose.yml exec postgres pg_dump -U "$DB_USER" "$DB_NAME" > backup.sql
 ```
 
 > ⚠️ **重新构建/升级前，请先在后台备份数据**
 >
-> 常规的 `docker compose ... up -d --build` 只重建应用镜像，**不会**动 MySQL 数据卷，数据是安全的。但在以下场景数据可能丢失或不兼容，务必先备份：
+> 常规的 `docker compose ... up -d --build` 只重建应用镜像，**不会**动 PostgreSQL 数据卷，数据是安全的。但在以下场景数据可能丢失或不兼容，务必先备份：
 >
 > - 需要执行 `docker compose ... down -v`（会**删除数据卷、清空所有数据**）；
 > - 迁移服务器、更换数据库；
@@ -464,14 +466,14 @@ docker compose --env-file .env -f docker/docker-compose.yml exec mysql mysqldump
 >
 > **备份方式（推荐）**：登录后台 →「数据备份与恢复」→「导出数据」，下载全站数据 JSON 备份；升级完成后在同一页面「导入数据」即可恢复。（该功能不含 `users`/`sessions` 表，登录态与管理员账户不受影响。）
 >
-> 也可用上面的 `mysqldump` 命令做整库 SQL 级备份。
+> 也可用上面的 `pg_dump` 命令做整库 SQL 级备份。
 
 ### 5. 反向代理与 HTTPS
 
 容器仅对外暴露 `${DEPLOY_PORT}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。
 
 > ⚠️ **数据持久化与安全**
-> - MySQL 数据存于 `mysql-data` 卷、带 Redis 版本下 Redis 数据存于 `redis-data` 卷。
+> - PostgreSQL 数据存于 `pg-data` 卷、带 Redis 版本下 Redis 数据存于 `redis-data` 卷。
 > - 用户上传目录是 **bind mount**：宿主目录 `UPLOADS_DIR`（默认项目根 `uploads/`，本地文件系统直接可见）挂载到容器内固定路径 `/app/.output/public/uploads`。重建镜像不丢失，上传文件在宿主机即可直接访问/备份。Linux 上若容器内 `node` 用户写不进去（EACCES），需自行 `chown` 该宿主目录。
 > - `docker compose down` **不会**删除数据卷；仅 `docker compose down -v` 会清空所有数据，请谨慎使用。
 > - 首次 `up -d --build` 会执行 Bun 构建，耗时较长，属正常现象。
@@ -515,7 +517,7 @@ const _cdnUrl = "https://cdn.imqi1.com"; // CDN 根地址（未用 CDN 可与站
 
 项目的常用命令都收敛在根目录 `package.json` 的 `scripts` 中，下面按用途分组说明。带 `pre` / `post` 前缀的钩子（`prebuild`、`postbuild`、`postinstall`）由 Bun 在对应主命令前后自动执行，一般无需手动调用。
 
-> **运维脚本的独立依赖**：部分脚本（`upload:cos`、`upload:server`、`compress:livephoto`、`db:init` 等）依赖较重的包（`ffmpeg-static` 约 80M、`cos-nodejs-sdk-v5`、`ssh2-sftp-client`、`mysql2`、`tsx`）。这些包已从根 `package.json` 移到 `scripts/package.json` 单独管理，**不参与主项目 `bun install` 与 Docker 构建**，以加快日常安装。首次运行这些脚本前，先执行一次 `bun run scripts:install`（即 `bun install --cwd scripts`）安装脚本依赖。脚本中共享的轻量依赖（如 `dotenv`、`bcryptjs`、`ipdb`）仍由根 `node_modules` 提供，无需重复安装。
+> **运维脚本的独立依赖**：部分脚本（`upload:cos`、`upload:server`、`compress:livephoto`、`db:init` 等）依赖较重的包（`ffmpeg-static` 约 80M、`cos-nodejs-sdk-v5`、`ssh2-sftp-client`、`pg`、`tsx`）。这些包已从根 `package.json` 移到 `scripts/package.json` 单独管理，**不参与主项目 `bun install` 与 Docker 构建**，以加快日常安装。首次运行这些脚本前，先执行一次 `bun run scripts:install`（即 `bun install --cwd scripts`）安装脚本依赖。脚本中共享的轻量依赖（如 `dotenv`、`bcryptjs`、`ipdb`）仍由根 `node_modules` 提供，无需重复安装。
 
 ### 开发与构建
 
@@ -675,8 +677,8 @@ type ChangelogItem = {
 | 启动报 Prisma 相关错误、查询报模型 / 字段不存在 | 忘记执行 `bun prisma generate`，或修改 `schema.prisma` 后未重新生成 Client。 |
 | 重新打包后 `uploads/` 下之前上传的文件全部消失 | 裸机部署未设置 `UPLOADS_DIR`，`bun run build` 会重建 `.output/`。把 `UPLOADS_DIR` 指向 `.output` 之外的独立目录；Docker 部署已用 bind mount（`UPLOADS_DIR` 默认项目根 `uploads/`）持久化，无此问题。 |
 | 本地 `bun run preview` 时页脚音乐、高德地图等被拦截 | CSP 仅在生产构建注入，会拦第三方直链 / 脚本。把 `site.config.ts` 的 `security.enableCsp` 临时改 `false`，验证完改回 `true`。 |
-| Bun 相关命令异常 | 项目要求 Bun ≥ 1.3（`packageManager` 锁定 `bun@1.3.10`），版本过低请升级。 |
+| Bun 相关命令异常 | 项目要求 Bun ≥ 1.3（`packageManager` 锁定 `bun@1.4.0`），版本过低请升级。 |
 | 小程序请求 `/api/mini/*` 返回 401 / 签名校验失败 | 主站 `MINI_API_SECRET` 与小程序 `VITE_MINI_API_SECRET` 必须完全一致；其中一端留空时另一端也必须留空。 |
-| 改了 `DB_NAME` 后 Docker 节里的 `mysql` / `mysqldump` 命令连不上 | 这些命令请用 `"$DB_NAME"` 而非硬编码库名，详见 [「使用 Docker 部署」](#使用-docker-部署)。 |
+| 改了 `DB_NAME` 后 Docker 节里的 `psql` / `pg_dump` 命令连不上 | 这些命令请用 `"$DB_NAME"` 而非硬编码库名，详见 [「使用 Docker 部署」](#使用-docker-部署)。 |
 | Firefox 下实况照片无法播放 | 多为 HEVC 编码，Firefox 暂不支持，会自动降级为静态图；如需播放需服务端转码。 |
-| Docker 部署时 `imqi1-mysql` 容器无限重启，日志报 `MYSQL_USER="root" ... cannot be used for the root user` | `.env` 的 `DB_USER` 误设为 `root`。改为普通用户名（如 `nodejs`）后重新 `docker compose ... up -d`；若数据卷从未成功初始化，mysql 会全新建库并自动导入 `init-db.sql`。 |
+| Docker 构建报 `lockfile had changes, but lockfile is frozen` | 镜像 `oven/bun` 与本地 bun 大版本不一致。本仓库 `package.json` 锁定 `bun@1.4.0`，`docker/Dockerfile*` 的 builder 阶段已统一改为 `oven/bun:1.4`；若你 fork 后改回 1.3.x 会触发此错。 |
