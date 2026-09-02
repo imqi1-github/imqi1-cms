@@ -1,5 +1,3 @@
-import { Jieba } from "@node-rs/jieba";
-
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
 import { getCommentAvatarService, commentAvatarUrl } from "#server/utils/comment-avatar";
@@ -14,11 +12,12 @@ import type {
   SubscribePostSearchResult,
 } from "#server/types/apis/search";
 
-// @node-rs/jieba 是原生模块，惰性加载字典（首用才加载，约 5MB），平时零开销
-let jiebaInstance: Jieba | null = null;
-function getJieba(): Jieba {
-  if (!jiebaInstance) jiebaInstance = new Jieba();
-  return jiebaInstance;
+// 中文分词改用 Node 内置 Intl.Segmenter（零依赖、架构无关）。
+// 原 @node-rs/jieba 原生模块会在 aarch64 构建产物里钉死 arm64 二进制，导致 x86_64 服务器安装报 EBADPLATFORM。
+let zhSegmenter: Intl.Segmenter | null = null;
+function getSegmenter(): Intl.Segmenter {
+  if (!zhSegmenter) zhSegmenter = new Intl.Segmenter("zh", { granularity: "word" });
+  return zhSegmenter;
 }
 
 // ============ 索引元数据（informations 键值） ============
@@ -121,12 +120,12 @@ function highlightKeyword(text: string, keyword: string, maxLength = 200): strin
   return snippet;
 }
 
-/** 分词（jieba 搜索模式）：去纯空白/单字，控倒排体积；build 与 query 共用保持一致 */
+/** 分词（Intl.Segmenter 逐词切分）：去标点/空白/单字，控倒排体积；build 与 query 共用保持一致 */
 function tokenize(text: string): string[] {
-  return getJieba()
-    .cutForSearch(text, true)
-    .map((s) => s.trim())
-    .filter((s) => s.length >= 2); // 丢弃空白 + 单字（高频、体积大）
+  return Array.from(getSegmenter().segment(text))
+    .filter((s) => s.isWordLike) // 丢弃标点/空白
+    .map((s) => s.segment.trim())
+    .filter((s) => s.length >= 2); // 丢弃单字（高频、体积大）
 }
 
 async function resolveGuestbookCid(): Promise<number | null> {
