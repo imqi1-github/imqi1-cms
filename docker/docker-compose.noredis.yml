@@ -1,4 +1,4 @@
-# 不带 Redis 版本：应用 + MySQL 8，ISR 走文件系统缓存、搜索缓存关闭，无 redis 容器/卷。
+# 不带 Redis 版本：应用 + PostgreSQL，ISR 走文件系统缓存、搜索缓存关闭，无 redis 容器/卷。
 # 运行：项目根目录执行 docker compose --env-file .env -f docker/docker-compose.noredis.yml up -d --build
 
 # 固定项目名（默认取配置文件所在目录名），决定卷名前缀，两套文件保持一致。
@@ -15,8 +15,8 @@ services:
     ports:
       - "${DEPLOY_PORT:-3000}:3000"
     environment:
-      DB_HOST: mysql
-      DB_PORT: "3306"
+      DB_HOST: postgres
+      DB_PORT: "5432"
       # 容器内上传目录固定；UPLOADS_DIR（.env）表示宿主演路径，见下方 volumes。
       UPLOADS_DIR: /app/.output/public/uploads
     env_file:
@@ -25,33 +25,28 @@ services:
       # 本地上传目录 bind mount：宿主 UPLOADS_DIR（默认项目根/uploads）→ 容器内 /app/.output/public/uploads
       - ${UPLOADS_DIR:-../uploads}:/app/.output/public/uploads
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
-  mysql:
-    image: mysql:8.4
-    container_name: imqi1-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: imqi1-postgres
     restart: unless-stopped
     environment:
-      # root 与 nodejs 普通用户密码都用 DB_PASSWORD；应用与 healthcheck 只用 nodejs。
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-imqi1-cms}
-      # ⚠️ 不能设为 root（MYSQL_USER 只用于创建普通用户，root 会报错起不来）
-      MYSQL_USER: ${DB_USER:-nodejs}
-      MYSQL_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+      # 单用户即超级用户；应用与 healthcheck 均用 DB_USER（PG 无 MySQL 的 root/普通用户分权）。
+      POSTGRES_USER: ${DB_USER:-imqi1}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-imqi1-cms}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - pg-data:/var/lib/postgresql/data
       # 卷为空时首次启动自动执行 init-db.sql（建表 + 默认数据）；卷已有数据则跳过。
       - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      # 用应用账户探活，nodejs 就绪后才启动 app，避免启动初期 Access denied。
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-nodejs}", "-p${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}"]
+      # pg_isready 无需密码，仅探测服务可接受连接；就绪后才启动 app。
+      test: ["CMD", "pg_isready", "-U", "${DB_USER:-imqi1}"]
       interval: 10s
       timeout: 5s
       retries: 10
 
 volumes:
-  mysql-data:
+  pg-data:

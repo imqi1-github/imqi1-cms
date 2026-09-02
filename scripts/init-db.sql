@@ -1,234 +1,218 @@
 -- ============================================================
--- ImQi1 CMS 数据库初始化脚本（开发 / 生产通用）
+-- ImQi1 CMS 数据库初始化脚本（PostgreSQL，开发 / 生产通用）
+-- 列类型以 prisma migrate diff 生成的 PG DDL 为准：
+--   普通 String → TEXT；@db.VarChar(n) → VARCHAR(n)；自增 → SERIAL；
+--   DateTime → TIMESTAMP(3)（无时区）；Boolean → BOOLEAN；Json → JSONB；Float → DOUBLE PRECISION。
 -- ============================================================
--- 作用：
---   1. 创建全部数据表（结构与 prisma/schema.prisma 保持一致）
---   2. 写入全部站点设置项的默认值
---   3. 插入一份示例数据：1 个管理员、1 个分类、1 篇文章、1 条评论
---
--- 默认管理员账户：
---   用户名: admin
---   密码:   123456
---   邮箱:   example@example.com
---   昵称:   默认管理员
---   ⚠️ 登录后请立即在后台「账户设置」中修改密码。
---
--- 使用方式：
---   - 开发环境：bun run db:init（脚本会自动读取本文件并执行）
---   - 生产环境：在数据库管理工具（phpMyAdmin / Navicat / mysql cli 等）中
---                直接导入本文件执行。
---
 -- 幂等性：
---   - 所有建表使用 CREATE TABLE IF NOT EXISTS，外键内联在建表语句中，
---     重复执行不会报「表已存在」或「约束已存在」。
---   - 所有种子数据使用 ON DUPLICATE KEY UPDATE，重复执行不会产生重复行，
---     也不会覆盖你后续在后台修改过的值（包括管理员密码）。
+--   建表 CREATE TABLE IF NOT EXISTS；外键内联（父表优先，目标表先建），
+--   索引 IF NOT EXISTS；种子 INSERT ... ON CONFLICT DO NOTHING（不覆盖后台改过的值）。
+--   标识符一律双引号保留 camelCase 列名（与 Prisma 生成库一致）。
 -- ============================================================
 
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
 -- ============================================================
--- 一、数据表结构
+-- 一、数据表结构（父表在前，FK 内联）
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS `users` (
-  `uid` INTEGER NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(191) NOT NULL,
-  `nickname` VARCHAR(191) NULL,
-  `avatar` VARCHAR(191) NULL,
-  `mail` VARCHAR(191) NOT NULL,
-  `password` VARCHAR(191) NOT NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  `auth_code` VARCHAR(191) NULL,
-  UNIQUE INDEX `Users_name_key`(`name`),
-  UNIQUE INDEX `Users_mail_key`(`mail`),
-  PRIMARY KEY (`uid`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "users" (
+  "uid" SERIAL NOT NULL,
+  "name" TEXT NOT NULL,
+  "nickname" TEXT,
+  "avatar" TEXT,
+  "mail" TEXT NOT NULL,
+  "password" TEXT NOT NULL,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "auth_code" TEXT,
+  PRIMARY KEY ("uid")
+);
 
-CREATE TABLE IF NOT EXISTS `attachments` (
-  `aid` INTEGER NOT NULL AUTO_INCREMENT,
-  `type` VARCHAR(191) NOT NULL,
-  `title` VARCHAR(191) NOT NULL,
-  `url` VARCHAR(191) NOT NULL,
-  `storage` VARCHAR(191) NOT NULL DEFAULT 'local',
-  `metadata` JSON NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  PRIMARY KEY (`aid`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "attachments" (
+  "aid" SERIAL NOT NULL,
+  "type" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "url" TEXT NOT NULL,
+  "storage" TEXT NOT NULL DEFAULT 'local',
+  "metadata" JSONB,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("aid")
+);
 
-CREATE TABLE IF NOT EXISTS `metas` (
-  `mid` INTEGER NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(191) NOT NULL,
-  `slug` VARCHAR(191) NULL,
-  `desc` VARCHAR(191) NULL,
-  `type` VARCHAR(191) NOT NULL DEFAULT 'category',
-  UNIQUE INDEX `Metas_name_key`(`name`),
-  UNIQUE INDEX `Metas_slug_key`(`slug`),
-  INDEX `Metas_mid_type_idx`(`mid`, `type`),
-  PRIMARY KEY (`mid`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "metas" (
+  "mid" SERIAL NOT NULL,
+  "name" TEXT NOT NULL,
+  "slug" TEXT,
+  "desc" TEXT,
+  "type" TEXT NOT NULL DEFAULT 'category',
+  PRIMARY KEY ("mid")
+);
 
-CREATE TABLE IF NOT EXISTS `changelogs` (
-  `id` INTEGER NOT NULL AUTO_INCREMENT,
-  `content` TEXT NOT NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX `Changelogs_create_time_idx`(`create_time`),
-  PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "changelogs" (
+  "id" SERIAL NOT NULL,
+  "content" TEXT NOT NULL,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("id")
+);
 
-CREATE TABLE IF NOT EXISTS `links` (
-  `id` INTEGER NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(191) NOT NULL,
-  `desc` VARCHAR(191) NULL,
-  `link` VARCHAR(191) NOT NULL,
-  `avatar` VARCHAR(191) NULL,
-  `enabled` BOOLEAN NOT NULL DEFAULT true,
-  `originalLinkId` INTEGER NULL,
-  `isModification` BOOLEAN NOT NULL DEFAULT false,
-  `modificationStatus` VARCHAR(191) NULL DEFAULT 'pending',
-  PRIMARY KEY (`id`),
-  INDEX `links_originalLinkId_fkey`(`originalLinkId`),
-  CONSTRAINT `links_originalLinkId_fkey` FOREIGN KEY (`originalLinkId`) REFERENCES `links`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "links" (
+  "id" SERIAL NOT NULL,
+  "name" TEXT NOT NULL,
+  "desc" TEXT,
+  "link" TEXT NOT NULL,
+  "avatar" TEXT,
+  "enabled" BOOLEAN NOT NULL DEFAULT true,
+  "originalLinkId" INTEGER,
+  "isModification" BOOLEAN NOT NULL DEFAULT false,
+  "modificationStatus" TEXT DEFAULT 'pending',
+  PRIMARY KEY ("id"),
+  CONSTRAINT "links_originalLinkId_fkey" FOREIGN KEY ("originalLinkId") REFERENCES "links"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS `informations` (
-  `id` INTEGER NOT NULL AUTO_INCREMENT,
-  `key` VARCHAR(191) NOT NULL,
-  `value` VARCHAR(191) NOT NULL,
-  UNIQUE INDEX `Informations_key_key`(`key`),
-  PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "informations" (
+  "id" SERIAL NOT NULL,
+  "key" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  PRIMARY KEY ("id")
+);
 
-CREATE TABLE IF NOT EXISTS `travels` (
-  `id` INTEGER NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(255) NOT NULL,
-  `desc` TEXT NULL,
-  `cover` VARCHAR(500) NULL,
-  `longitude` DOUBLE NOT NULL,
-  `latitude` DOUBLE NOT NULL,
-  `sort` INTEGER NOT NULL DEFAULT 0,
-  `enabled` BOOLEAN NOT NULL DEFAULT true,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX `Travels_sort_idx`(`sort`),
-  PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "travels" (
+  "id" SERIAL NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "desc" TEXT,
+  "cover" VARCHAR(500),
+  "longitude" DOUBLE PRECISION NOT NULL,
+  "latitude" DOUBLE PRECISION NOT NULL,
+  "sort" INTEGER NOT NULL DEFAULT 0,
+  "enabled" BOOLEAN NOT NULL DEFAULT true,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("id")
+);
 
-CREATE TABLE IF NOT EXISTS `subscribes` (
-  `id` INTEGER NOT NULL AUTO_INCREMENT,
-  `url` VARCHAR(191) NOT NULL,
-  `name` VARCHAR(191) NOT NULL,
-  `avatar` VARCHAR(191) NULL,
-  `lastUpdated` DATETIME(3) NULL,
-  PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "subscribes" (
+  "id" SERIAL NOT NULL,
+  "url" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "avatar" TEXT,
+  "lastUpdated" TIMESTAMP(3),
+  PRIMARY KEY ("id")
+);
 
-CREATE TABLE IF NOT EXISTS `contents` (
-  `cid` INTEGER NOT NULL AUTO_INCREMENT,
-  `title` VARCHAR(255) NOT NULL,
-  `slug` VARCHAR(255) NULL,
-  `desc` TEXT NULL,
-  `content` LONGTEXT NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  `update_time` DATETIME(3) NOT NULL,
-  `status` INTEGER NOT NULL DEFAULT 1,
-  `comment_num` INTEGER NOT NULL DEFAULT 0,
-  `many_covers` BOOLEAN NOT NULL DEFAULT false,
-  `covers` TEXT NULL,
-  `show_toc` BOOLEAN NOT NULL DEFAULT false,
-  `tags` VARCHAR(500) NULL,
-  `type` INTEGER NOT NULL DEFAULT 0,
-  `uid` INTEGER NOT NULL DEFAULT 1,
-  INDEX `Contents_status_type_create_time_idx`(`status`, `type`, `create_time`),
-  INDEX `Contents_uid_fkey`(`uid`),
-  UNIQUE INDEX `Contents_slug_type_key`(`slug`, `type`),
-  PRIMARY KEY (`cid`),
-  CONSTRAINT `Contents_uid_fkey` FOREIGN KEY (`uid`) REFERENCES `users`(`uid`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "contents" (
+  "cid" SERIAL NOT NULL,
+  "title" VARCHAR(255) NOT NULL,
+  "slug" VARCHAR(255),
+  "desc" TEXT,
+  "content" TEXT,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "update_time" TIMESTAMP(3) NOT NULL,
+  "status" INTEGER NOT NULL DEFAULT 1,
+  "comment_num" INTEGER NOT NULL DEFAULT 0,
+  "many_covers" BOOLEAN NOT NULL DEFAULT false,
+  "covers" TEXT,
+  "show_toc" BOOLEAN NOT NULL DEFAULT false,
+  "tags" VARCHAR(500),
+  "type" INTEGER NOT NULL DEFAULT 0,
+  "uid" INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY ("cid"),
+  CONSTRAINT "Contents_uid_fkey" FOREIGN KEY ("uid") REFERENCES "users"("uid") ON DELETE RESTRICT ON UPDATE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS `comments` (
-  `coid` INTEGER NOT NULL AUTO_INCREMENT,
-  `cid` INTEGER NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `mail` VARCHAR(255) NULL,
-  `link` VARCHAR(500) NULL,
-  `content` TEXT NOT NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  `status` INTEGER NOT NULL DEFAULT 0,
-  `parent_id` INTEGER NULL,
-  `agent` VARCHAR(500) NULL,
-  `ip` VARCHAR(45) NULL,
-  INDEX `Comments_cid_fkey`(`cid`),
-  PRIMARY KEY (`coid`),
-  CONSTRAINT `Comments_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "comments" (
+  "coid" SERIAL NOT NULL,
+  "cid" INTEGER NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "mail" VARCHAR(255),
+  "link" VARCHAR(500),
+  "content" TEXT NOT NULL,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "status" INTEGER NOT NULL DEFAULT 0,
+  "parent_id" INTEGER,
+  "agent" VARCHAR(500),
+  "ip" VARCHAR(45),
+  PRIMARY KEY ("coid"),
+  CONSTRAINT "Comments_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS `contentrelations` (
-  `cid` INTEGER NOT NULL,
-  `mid` INTEGER NOT NULL,
-  INDEX `ContentRelation_mid_cid_idx`(`mid`, `cid`),
-  INDEX `ContentRelation_cid_fkey`(`cid`),
-  PRIMARY KEY (`mid`, `cid`),
-  CONSTRAINT `ContentRelation_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `ContentRelation_mid_fkey` FOREIGN KEY (`mid`) REFERENCES `metas`(`mid`) ON DELETE CASCADE ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "contentrelations" (
+  "cid" INTEGER NOT NULL,
+  "mid" INTEGER NOT NULL,
+  PRIMARY KEY ("mid", "cid"),
+  CONSTRAINT "ContentRelation_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ContentRelation_mid_fkey" FOREIGN KEY ("mid") REFERENCES "metas"("mid") ON DELETE CASCADE ON UPDATE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS `contentattachments` (
-  `aid` INTEGER NOT NULL,
-  `cid` INTEGER NOT NULL,
-  INDEX `ContentAttachments_aid_fkey`(`aid`),
-  INDEX `ContentAttachments_cid_fkey`(`cid`),
-  PRIMARY KEY (`aid`, `cid`),
-  CONSTRAINT `ContentAttachments_aid_fkey` FOREIGN KEY (`aid`) REFERENCES `attachments`(`aid`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `ContentAttachments_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "contentattachments" (
+  "aid" INTEGER NOT NULL,
+  "cid" INTEGER NOT NULL,
+  PRIMARY KEY ("aid", "cid"),
+  CONSTRAINT "ContentAttachments_aid_fkey" FOREIGN KEY ("aid") REFERENCES "attachments"("aid") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ContentAttachments_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS `subscribeposts` (
-  `id` INTEGER NOT NULL AUTO_INCREMENT,
-  `subscribeId` INTEGER NOT NULL,
-  `title` VARCHAR(500) NOT NULL,
-  `link` VARCHAR(500) NOT NULL,
-  `description` TEXT NULL,
-  `content` LONGTEXT NULL,
-  `author` VARCHAR(255) NULL,
-  `pubDate` DATETIME(3) NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  UNIQUE INDEX `SubscribePost_link_key`(`link`),
-  INDEX `SubscribePost_subscribeId_fkey`(`subscribeId`),
-  PRIMARY KEY (`id`),
-  CONSTRAINT `SubscribePost_subscribeId_fkey` FOREIGN KEY (`subscribeId`) REFERENCES `subscribes`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "subscribeposts" (
+  "id" SERIAL NOT NULL,
+  "subscribeId" INTEGER NOT NULL,
+  "title" VARCHAR(500) NOT NULL,
+  "link" VARCHAR(500) NOT NULL,
+  "description" TEXT,
+  "content" TEXT,
+  "author" VARCHAR(255),
+  "pubDate" TIMESTAMP(3),
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "SubscribePost_subscribeId_fkey" FOREIGN KEY ("subscribeId") REFERENCES "subscribes"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS `sessions` (
-  `id` VARCHAR(191) NOT NULL,
-  `userId` INTEGER NOT NULL,
-  `authCode` VARCHAR(191) NOT NULL,
-  `expires` DATETIME(3) NOT NULL,
-  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  `data` VARCHAR(191) NULL,
-  INDEX `Sessions_expires_idx`(`expires`),
-  INDEX `Sessions_userId_idx`(`userId`),
-  PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "sessions" (
+  "id" TEXT NOT NULL,
+  "userId" INTEGER NOT NULL,
+  "authCode" TEXT NOT NULL,
+  "expires" TIMESTAMP(3) NOT NULL,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "data" TEXT,
+  PRIMARY KEY ("id")
+);
 
-CREATE TABLE IF NOT EXISTS `contenttravels` (
-  `travel_id` INTEGER NOT NULL,
-  `cid` INTEGER NOT NULL,
-  INDEX `ContentTravels_travel_id_fkey`(`travel_id`),
-  INDEX `ContentTravels_cid_fkey`(`cid`),
-  PRIMARY KEY (`travel_id`, `cid`),
-  CONSTRAINT `ContentTravels_travel_id_fkey` FOREIGN KEY (`travel_id`) REFERENCES `travels`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `ContentTravels_cid_fkey` FOREIGN KEY (`cid`) REFERENCES `contents`(`cid`) ON DELETE CASCADE ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS "contenttravels" (
+  "travel_id" INTEGER NOT NULL,
+  "cid" INTEGER NOT NULL,
+  PRIMARY KEY ("travel_id", "cid"),
+  CONSTRAINT "ContentTravels_travel_id_fkey" FOREIGN KEY ("travel_id") REFERENCES "travels"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ContentTravels_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
+);
 
 -- ============================================================
--- 二、站点设置项默认值（informations 表）
+-- 二、索引（PG 索引不能内联在 CREATE TABLE 中，单独 CREATE；名与 Prisma 生成一致）
+--     FK 列索引用 `_idx` 后缀，避免与 FK 约束名（`_fkey`）在 PG schema 命名空间冲突。
+-- ============================================================
+CREATE UNIQUE INDEX IF NOT EXISTS "Users_name_key" ON "users"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Users_mail_key" ON "users"("mail");
+CREATE UNIQUE INDEX IF NOT EXISTS "Metas_name_key" ON "metas"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Metas_slug_key" ON "metas"("slug");
+CREATE INDEX IF NOT EXISTS "Metas_mid_type_idx" ON "metas"("mid", "type");
+CREATE INDEX IF NOT EXISTS "Changelogs_create_time_idx" ON "changelogs"("create_time");
+CREATE UNIQUE INDEX IF NOT EXISTS "Informations_key_key" ON "informations"("key");
+CREATE INDEX IF NOT EXISTS "links_originalLinkId_idx" ON "links"("originalLinkId");
+CREATE INDEX IF NOT EXISTS "Travels_sort_idx" ON "travels"("sort");
+CREATE INDEX IF NOT EXISTS "Contents_status_type_create_time_idx" ON "contents"("status", "type", "create_time");
+CREATE UNIQUE INDEX IF NOT EXISTS "Contents_slug_type_key" ON "contents"("slug", "type");
+CREATE INDEX IF NOT EXISTS "Contents_uid_idx" ON "contents"("uid");
+CREATE INDEX IF NOT EXISTS "Comments_cid_idx" ON "comments"("cid");
+CREATE INDEX IF NOT EXISTS "ContentRelation_mid_cid_idx" ON "contentrelations"("mid", "cid");
+CREATE INDEX IF NOT EXISTS "ContentRelation_cid_idx" ON "contentrelations"("cid");
+CREATE INDEX IF NOT EXISTS "ContentAttachments_aid_idx" ON "contentattachments"("aid");
+CREATE INDEX IF NOT EXISTS "ContentAttachments_cid_idx" ON "contentattachments"("cid");
+CREATE UNIQUE INDEX IF NOT EXISTS "SubscribePost_link_key" ON "subscribeposts"("link");
+CREATE INDEX IF NOT EXISTS "SubscribePost_subscribeId_idx" ON "subscribeposts"("subscribeId");
+CREATE INDEX IF NOT EXISTS "Sessions_expires_idx" ON "sessions"("expires");
+CREATE INDEX IF NOT EXISTS "Sessions_userId_idx" ON "sessions"("userId");
+CREATE INDEX IF NOT EXISTS "ContentTravels_travel_id_idx" ON "contenttravels"("travel_id");
+CREATE INDEX IF NOT EXISTS "ContentTravels_cid_idx" ON "contenttravels"("cid");
+
+-- ============================================================
+-- 三、站点设置项默认值（informations 表）
 -- value 列为字符串，布尔值以 'true' / 'false' 存储，数字以字符串存储。
 -- ============================================================
-
-INSERT INTO `informations` (`key`, `value`) VALUES
+INSERT INTO "informations" ("key", "value") VALUES
   ('siteName', 'ImQi1'),
   ('siteUrl', 'https://imqi1.com'),
   ('siteDesc', '做技术的分享者、生活的摄影师、时事的评论员。'),
@@ -275,38 +259,62 @@ INSERT INTO `informations` (`key`, `value`) VALUES
   ('linkAutoApprove', 'false'),
   ('searchCacheEnabled', 'false'),
   ('searchCacheExpire', '300')
-ON DUPLICATE KEY UPDATE `key` = `key`;
+ON CONFLICT ("key") DO NOTHING;
 
 -- ============================================================
--- 三、示例数据
--- 使用显式主键，配合 ON DUPLICATE KEY UPDATE 保证幂等：
--- 重复执行不会新增重复行，也不会覆盖你修改过的内容（含管理员密码）。
+-- 四、示例数据（仅在空库时插入；已有数据的库跳过，不产生脏示例行）
 -- ============================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM "contents") THEN
+    -- 4.1 默认管理员（admin / 123456 / example@example.com / 默认管理员）
+    -- 密码为 bcrypt('123456') 的哈希；登录后请尽快修改。
+    INSERT INTO "users" ("uid", "name", "nickname", "mail", "password", "create_time") VALUES
+      (1, 'admin', '默认管理员', 'example@example.com', '$2b$10$hpAJTTHU9sKV0reiQL8FWun.6gR6RDlotAfbCZyGJZbUyozeS6ON6', now())
+    ON CONFLICT ("uid") DO NOTHING;
 
--- 3.1 默认管理员（admin / 123456 / example@example.com / 默认管理员）
--- 密码为 bcrypt('123456') 的哈希；登录后请尽快修改。
-INSERT INTO `users` (`uid`, `name`, `nickname`, `mail`, `password`, `create_time`) VALUES
-  (1, 'admin', '默认管理员', 'example@example.com', '$2b$10$hpAJTTHU9sKV0reiQL8FWun.6gR6RDlotAfbCZyGJZbUyozeS6ON6', NOW(3))
-ON DUPLICATE KEY UPDATE `uid` = `uid`;
+    -- 4.2 默认分类
+    INSERT INTO "metas" ("mid", "name", "slug", "desc", "type") VALUES
+      (1, '默认分类', 'default', '默认文章分类', 'category')
+    ON CONFLICT ("mid") DO NOTHING;
 
--- 3.2 默认分类
-INSERT INTO `metas` (`mid`, `name`, `slug`, `desc`, `type`) VALUES
-  (1, '默认分类', 'default', '默认文章分类', 'category')
-ON DUPLICATE KEY UPDATE `mid` = `mid`;
+    -- 4.3 示例文章（type=0 文章，status=1 已发布）
+    INSERT INTO "contents" ("cid", "title", "slug", "desc", "content", "create_time", "update_time", "status", "comment_num", "type", "uid") VALUES
+      (1, '你好，世界', 'hello-world', '这是一篇示例文章，用于演示站点的文章展示效果。',
+       E'# 你好，世界\n\n欢迎使用 **ImQi1 CMS**！这是一篇自动生成的示例文章。\n\n你可以在后台「文章管理」中编辑或删除它，然后开始创作属于你自己的内容。\n\n## Markdown 支持\n\n- 标题、段落、列表\n- **加粗**、*斜体*、`行内代码`\n- 代码块（基于 Shiki 高亮）\n- 图片、链接、引用等\n\n```js\nconsole.log("Hello, ImQi1 CMS!");\n```\n',
+       now(), now(), 1, 1, 0, 1)
+    ON CONFLICT ("cid") DO NOTHING;
 
--- 3.3 示例文章（type=0 文章，status=1 已发布）
-INSERT INTO `contents` (`cid`, `title`, `slug`, `desc`, `content`, `create_time`, `update_time`, `status`, `comment_num`, `type`, `uid`) VALUES
-  (1, '你好，世界', 'hello-world', '这是一篇示例文章，用于演示站点的文章展示效果。',
-   '# 你好，世界\n\n欢迎使用 **ImQi1 CMS**！这是一篇自动生成的示例文章。\n\n你可以在后台「文章管理」中编辑或删除它，然后开始创作属于你自己的内容。\n\n## Markdown 支持\n\n- 标题、段落、列表\n- **加粗**、*斜体*、`行内代码`\n- 代码块（基于 Shiki 高亮）\n- 图片、链接、引用等\n\n```js\nconsole.log("Hello, ImQi1 CMS!");\n```\n',
-   NOW(3), NOW(3), 1, 1, 0, 1)
-ON DUPLICATE KEY UPDATE `cid` = `cid`;
+    -- 4.4 文章 ↔ 分类 关联
+    INSERT INTO "contentrelations" ("cid", "mid") VALUES
+      (1, 1)
+    ON CONFLICT ("mid", "cid") DO NOTHING;
 
--- 3.4 文章 ↔ 分类 关联
-INSERT INTO `contentrelations` (`cid`, `mid`) VALUES
-  (1, 1)
-ON DUPLICATE KEY UPDATE `cid` = `cid`;
+    -- 4.5 示例评论（status=1 已通过审核，前台可见）
+    INSERT INTO "comments" ("coid", "cid", "name", "mail", "content", "create_time", "status") VALUES
+      (1, 1, '访客', 'guest@example.com', '这是一条示例评论，欢迎在留言板或文章下方参与讨论！', now(), 1)
+    ON CONFLICT ("coid") DO NOTHING;
+  END IF;
+END
+$$;
 
--- 3.5 示例评论（status=1 已通过审核，前台可见）
-INSERT INTO `comments` (`coid`, `cid`, `name`, `mail`, `content`, `create_time`, `status`) VALUES
-  (1, 1, '访客', 'guest@example.com', '这是一条示例评论，欢迎在留言板或文章下方参与讨论！', NOW(3), 1)
-ON DUPLICATE KEY UPDATE `coid` = `coid`;
+-- ============================================================
+-- 五、pg_trgm 子串搜索索引（让 LIKE '%q%' 走 GIN 索引，召回 100% 且有索引）
+-- 需要 superuser 权限创建扩展；应用账号若无，可单独用 psql 以 superuser 执行本段。
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS "contents_title_trgm" ON "contents" USING GIN ("title" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "contents_desc_trgm" ON "contents" USING GIN ("desc" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "contents_content_trgm" ON "contents" USING GIN ("content" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "comments_content_trgm" ON "comments" USING GIN ("content" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "comments_name_trgm" ON "comments" USING GIN ("name" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "subscribes_name_trgm" ON "subscribes" USING GIN ("name" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "subscribes_url_trgm" ON "subscribes" USING GIN ("url" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "links_name_trgm" ON "links" USING GIN ("name" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "links_link_trgm" ON "links" USING GIN ("link" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "links_desc_trgm" ON "links" USING GIN ("desc" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "subscribeposts_title_trgm" ON "subscribeposts" USING GIN ("title" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "subscribeposts_description_trgm" ON "subscribeposts" USING GIN ("description" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "subscribeposts_content_trgm" ON "subscribeposts" USING GIN ("content" gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "subscribeposts_author_trgm" ON "subscribeposts" USING GIN ("author" gin_trgm_ops);

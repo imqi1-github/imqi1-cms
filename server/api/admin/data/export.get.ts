@@ -5,8 +5,6 @@ import {
   DATA_TABLES,
   DATA_TRANSFER_VERSION,
   getDelegate,
-  SENSITIVE_INFORMATIONS_KEYS,
-  SENSITIVE_MASK,
 } from "#server/utils/data-transfer";
 
 /** 每块读取的表行数：分块把单批进内存的行数/大小封顶，内存恒定、与全库规模无关 */
@@ -75,11 +73,8 @@ export default defineEventHandler(async event => {
             : { skip: offset, take: EXPORT_CHUNK_SIZE },
         )) as Record<string, unknown>[];
         for (const row of rows) {
-          // informations：敏感配置掩码后导出（同原实现，密钥不随备份明文落盘）
-          const out =
-            spec.model === "informations"
-              ? { ...row, value: SENSITIVE_INFORMATIONS_KEYS.has(String(row.key)) ? SENSITIVE_MASK : row.value }
-              : row;
+          // 密钥不掩码：完整备份/迁移需要真实值随备份落盘（仅管理员可导出；请妥善保管备份文件）
+          const out = row;
           yield (firstRow ? "" : ",") + JSON.stringify(out);
           firstRow = false;
         }

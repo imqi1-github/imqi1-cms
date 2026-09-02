@@ -12,7 +12,7 @@ export const DATA_TRANSFER_VERSION = 1;
  *   - sessions：临时登录会话，无需备份
  *
  * 注意：contents.uid 外键指向 users，因导入不还原 users，
- * 导入时会临时关闭 FOREIGN_KEY_CHECKS，允许 uid 指向现有用户表。
+ * 导入时会临时关闭外键检查（PG 用 session_replication_role），允许 uid 指向现有用户表。
  *
  * 兼容性：model 同时作为 Prisma 委托名与原始 SQL 表名使用。contents→contents
  * 重命名后，旧版备份（键名为 contents/contentrelations/...）导入时会匹配不到新表

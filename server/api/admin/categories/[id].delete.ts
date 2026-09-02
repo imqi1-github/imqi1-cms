@@ -41,9 +41,9 @@ export default defineEventHandler(async event => {
   try {
     // 整个迁移+删除序列包进事务：中途任何一步失败可回滚，避免「部分文章已迁到目标分类、主类却没删」不一致
     await prisma.$transaction(async tx => {
-      // 串行化并发删除：先对全部分类行加排他锁（MySQL SELECT ... FOR UPDATE），
+      // 串行化并发删除：先对全部分类行加排他锁（SELECT ... FOR UPDATE），
       // 把「至少保留一个分类」的计数与删除放进同一临界区，杜绝两个并发删除把分类删到 0。
-      await tx.$queryRaw`SELECT mid FROM \`metas\` WHERE type = 'category' FOR UPDATE`;
+      await tx.$queryRaw`SELECT mid FROM "metas" WHERE type = 'category' FOR UPDATE`;
 
       // 检查分类总数，至少保留一个分类（在事务锁内判定，避免 TOCTOU）
       const categoryCount = await tx.metas.count({ where: { type: "category" } });

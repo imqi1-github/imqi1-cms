@@ -1,18 +1,13 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaMariaDb({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD!,
-  database: process.env.DB_NAME!,
-  connectionLimit: 10,
-  // MySQL 8+ 默认 caching_sha2_password 认证插件：非 TLS 连接下，
-  // 驱动需要向服务端拉取 RSA 公钥完成密码交换，否则报
-  // “RSA public key is not available client side”，连接池取不到连接 → pool timeout。
-  allowPublicKeyRetrieval: true,
-});
+// 运行时用拆分的 DB_* 变量拼 PG 连接串（与 prisma.config.ts 保持一致，避免单独维护 DATABASE_URL）。
+// 云托管 PG 若走 SSL，可在 DB_* 之外设 DATABASE_URL 或拼接 ?sslmode=require。
+const connectionString = `postgresql://${encodeURIComponent(process.env.DB_USER || "postgres")}:${encodeURIComponent(
+  process.env.DB_PASSWORD ?? "",
+)}@${process.env.DB_HOST || "localhost"}:${Number(process.env.DB_PORT || 5432)}/${process.env.DB_NAME || ""}`;
+
+const adapter = new PrismaPg({ connectionString });
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

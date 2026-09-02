@@ -1,14 +1,7 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
-import {
-	DATA_TABLES,
-	DATA_TRANSFER_VERSION,
-	getDelegate,
-	reviveRowsForImport,
-	SENSITIVE_INFORMATIONS_KEYS,
-	SENSITIVE_MASK,
-} from "#server/utils/data-transfer";
+import { DATA_TABLES, DATA_TRANSFER_VERSION, getDelegate, reviveRowsForImport } from "#server/utils/data-transfer";
 import type { DataTransferPayload } from "#server/types/apis/data-transfer";
 
 /**
@@ -16,7 +9,7 @@ import type { DataTransferPayload } from "#server/types/apis/data-transfer";
  *
  * 策略：清空后完整还原。整个过程包裹在事务中：
  *   1. 关闭外键检查（允许乱序清空/插入，且允许 contents.uid 指向未被还原的 users）
- *   2. 逆序 DELETE 清空各表（用 DELETE 而非 TRUNCATE —— TRUNCATE 在 MySQL 会隐式提交，破坏事务）
+ *   2. 逆序 DELETE 清空各表（用 DELETE 而非 TRUNCATE —— TRUNCATE 在 MySQL 会隐式提交，破坏事务；PG 虽为事务性，仍统一用 DELETE）
  *   3. 顺序 createMany 写入备份数据
  *   4. finally 恢复外键检查
  * 任一步失败则整体回滚，不会留下半还原的脏数据。
@@ -90,32 +83,22 @@ export default defineEventHandler(async event => {
 				// 记住当前的 Session 存储方式：该配置属于本机部署环境，不应被外来备份覆盖，
 				// 与 users / sessions 被排除的考量一致（保证导入后登录态与会话存储行为不变）。
 				const sessionStore = await tx.informations.findUnique({ where: { key: "sessionStoreType" } });
-				// 记住当前敏感配置（SMTP/COS/百度密钥）的原始值：备份文件中这些值是掩码，
-				// 不能用 "********" 覆盖真实密钥，恢复后需回填原值。
-				const sensitiveBefore = await tx.informations.findMany({
-					where: { key: { in: [...SENSITIVE_INFORMATIONS_KEYS] } },
-				});
 
-				// 关闭外键检查
-				await tx.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 0");
+				// 关闭外键检查（PG 无 FOREIGN_KEY_CHECKS，用 session_replication_role 等同）
+				await tx.$executeRawUnsafe("SET session_replication_role = replica");
 
 				try {
 					// 逆序清空（父表在后），配合关检查确保干净
 					for (const spec of [...DATA_TABLES].reverse()) {
-						await tx.$executeRawUnsafe(`DELETE FROM \`${spec.model}\``);
+						await tx.$executeRawUnsafe(`DELETE FROM "${spec.model}"`);
 					}
 
 					// 顺序写入
 					for (const spec of DATA_TABLES) {
 						let rows = payload.tables[spec.model];
-						// informations 表：剔除备份中的 sessionStoreType（保留本机原值，见下方补回），
-						// 并剔除被掩码的敏感配置（value === SENSITIVE_MASK），避免覆盖真实密钥（见下方回填）。
+						// informations 表：仅剔除备份中的 sessionStoreType（保留本机原值，见下方补回）；密钥不再掩码、原样恢复。
 						if (spec.model === "informations" && Array.isArray(rows)) {
-							rows = rows.filter(
-								row =>
-									row?.key !== "sessionStoreType" &&
-									!(SENSITIVE_INFORMATIONS_KEYS.has(String(row?.key)) && row?.value === SENSITIVE_MASK),
-							);
+							rows = rows.filter(row => row?.key !== "sessionStoreType");
 						}
 						if (!Array.isArray(rows) || rows.length === 0) {
 							counts[spec.model] = 0;
@@ -135,17 +118,9 @@ export default defineEventHandler(async event => {
 					if (sessionStore) {
 						await tx.informations.create({ data: { key: "sessionStoreType", value: sessionStore.value } });
 					}
-					// 回填导入前的敏感配置（备份掩码的密钥不能用 "********" 覆盖，须保留本机真实值）
-					for (const row of sensitiveBefore) {
-						await tx.informations.upsert({
-							where: { key: row.key },
-							update: { value: row.value },
-							create: { key: row.key, value: row.value },
-						});
-					}
 				} finally {
 					// 无论成功与否都恢复外键检查（同一连接上的会话变量）
-					await tx.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 1");
+					await tx.$executeRawUnsafe("SET session_replication_role = default");
 				}
 
 				return counts;

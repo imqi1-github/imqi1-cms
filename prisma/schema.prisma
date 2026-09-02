@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
 
 model attachments {
@@ -50,7 +50,7 @@ model comments {
   ip          String?  @db.VarChar(45)
   content_ref contents @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Comments_cid_fkey")
 
-  @@index([cid], map: "Comments_cid_fkey")
+  @@index([cid], map: "Comments_cid_idx")
 }
 
 model links {
@@ -82,7 +82,7 @@ model contents {
   title            String               @db.VarChar(255)
   slug             String?              @db.VarChar(255)
   desc             String?              @db.Text
-  content          String?              @db.LongText
+  content          String?              @db.Text
   create_time      DateTime             @default(now())
   update_time      DateTime
   status           Int                  @default(1)
@@ -101,7 +101,7 @@ model contents {
 
   @@unique([slug, type], map: "Contents_slug_type_key")
   @@index([status, type, create_time], map: "Contents_status_type_create_time_idx")
-  @@index([uid], map: "Contents_uid_fkey")
+  @@index([uid], map: "Contents_uid_idx")
 }
 
 model contentrelations {
@@ -112,7 +112,7 @@ model contentrelations {
 
   @@id([mid, cid])
   @@index([mid, cid], map: "ContentRelation_mid_cid_idx")
-  @@index([cid], map: "ContentRelation_cid_fkey")
+  @@index([cid], map: "ContentRelation_cid_idx")
 }
 
 model contentattachments {
@@ -122,8 +122,8 @@ model contentattachments {
   content    contents    @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "ContentAttachments_cid_fkey")
 
   @@id([aid, cid])
-  @@index([aid], map: "ContentAttachments_aid_fkey")
-  @@index([cid], map: "ContentAttachments_cid_fkey")
+  @@index([aid], map: "ContentAttachments_aid_idx")
+  @@index([cid], map: "ContentAttachments_cid_idx")
 }
 
 model sessions {
@@ -153,13 +153,13 @@ model subscribeposts {
   title       String     @db.VarChar(500)
   link        String     @unique(map: "SubscribePost_link_key") @db.VarChar(500)
   description String?    @db.Text
-  content     String?    @db.LongText
+  content     String?    @db.Text
   author      String?    @db.VarChar(255)
   pubDate     DateTime?
   create_time DateTime   @default(now())
   subscribe   subscribes @relation(fields: [subscribeId], references: [id], onDelete: Cascade, map: "SubscribePost_subscribeId_fkey")
 
-  @@index([subscribeId], map: "SubscribePost_subscribeId_fkey")
+  @@index([subscribeId], map: "SubscribePost_subscribeId_idx")
 }
 
 model users {
@@ -198,6 +198,6 @@ model contenttravels {
   content   contents @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "ContentTravels_cid_fkey")
 
   @@id([travel_id, cid])
-  @@index([travel_id], map: "ContentTravels_travel_id_fkey")
-  @@index([cid], map: "ContentTravels_cid_fkey")
+  @@index([travel_id], map: "ContentTravels_travel_id_idx")
+  @@index([cid], map: "ContentTravels_cid_idx")
 }

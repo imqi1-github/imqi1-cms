@@ -15,7 +15,7 @@ export default defineEventHandler(async event => {
 
   try {
     // 数据库版本：$queryRaw 行形状用局部类型收窄（避免内联 as Array<{version}> 违反约定4）
-    const dbVersionRows = await prisma.$queryRaw<{ version: string }[]>`SELECT VERSION() as version`;
+    const dbVersionRows = await prisma.$queryRaw<{ version: string }[]>`SELECT version() as version`;
     const dbVersion = dbVersionRows[0]?.version || 'Unknown';
 
     // 附件统计：count() 计数 + 只拉 metadata 求和（避免全量 findMany 载入所有行）

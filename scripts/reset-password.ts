@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
 import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 import * as dotenv from "dotenv";
 
@@ -12,8 +12,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
 const DB_HOST = process.env.DB_HOST || "localhost";
-const DB_PORT = Number(process.env.DB_PORT || 3306);
-const DB_USER = process.env.DB_USER || "root";
+const DB_PORT = Number(process.env.DB_PORT || 5432);
+const DB_USER = process.env.DB_USER || "postgres";
 const DB_PASSWORD = process.env.DB_PASSWORD;
 const DB_NAME = process.env.DB_NAME;
 
@@ -27,15 +27,9 @@ if (!DB_NAME) {
   process.exit(1);
 }
 
-// 创建 Prisma 客户端（使用与项目相同的配置）
-const adapter = new PrismaMariaDb({
-  host: DB_HOST,
-  port: DB_PORT,
-  user: DB_USER,
-  password: DB_PASSWORD,
-  database: DB_NAME,
-  connectionLimit: 10,
-});
+// 创建 Prisma 客户端（使用与项目相同的配置，PG 连接串走拆分 DB_* 变量）
+const connectionString = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+const adapter = new PrismaPg({ connectionString });
 
 const prisma = new PrismaClient({
   adapter,

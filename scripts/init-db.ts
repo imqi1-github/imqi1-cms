@@ -2,7 +2,10 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
-import mysql from "mysql2/promise";
+import pg from "pg";
+
+const { Client } = pg;
+
 import * as dotenv from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -22,8 +25,8 @@ async function main() {
   console.log("\n=== ImQi1 CMS 数据库初始化 ===\n");
 
   const host = process.env.DB_HOST || "localhost";
-  const port = Number(process.env.DB_PORT || 3306);
-  const user = process.env.DB_USER || "root";
+  const port = Number(process.env.DB_PORT || 5432);
+  const user = process.env.DB_USER || "postgres";
   const password = process.env.DB_PASSWORD;
   const database = process.env.DB_NAME;
 
@@ -42,23 +45,26 @@ async function main() {
 
   const sql = readFileSync(SQL_FILE, "utf-8");
 
-  // multipleStatements: 允许一次执行 init-db.sql 中的多条语句
-  const connection = await mysql.createConnection({
-    host,
-    port,
-    user,
-    password,
-    multipleStatements: true,
-  });
-  // 目标库可能尚未创建：先建库再切库（全新 MySQL 上连接带 database 会抛 ER_BAD_DB_ERROR Unknown database）
-  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-  await connection.changeUser({ database });
+  // pg 的 Client.query 对无参数 SQL 走简单查询协议，可一次执行多语句（init-db.sql 含多条 DDL）
+  // PG 无 `CREATE DATABASE IF NOT EXISTS`：先连默认 postgres 库探测，缺失再建。
+  const adminClient = new Client({ host, port, user, password, database: "postgres" });
+  await adminClient.connect();
+  const exists = await adminClient.query("SELECT 1 FROM pg_database WHERE datname = $1", [database]);
+  if ((exists.rowCount ?? 0) === 0) {
+    // 库名已在上方校验为安全字符（字母数字下划线连字符），引号包裹防大小写/连字符问题
+    await adminClient.query(`CREATE DATABASE "${database}"`);
+  }
+  await adminClient.end();
+
+  // 目标库连接执行 SQL
+  const client = new Client({ host, port, user, password, database });
+  await client.connect();
 
   try {
     console.log(`→ 连接数据库 ${user}@${host}:${port}/${database}`);
     console.log("→ 执行 init-db.sql（建表 + 默认设置 + 示例数据）...");
 
-    await connection.query(sql);
+    await client.query(sql);
 
     console.log("\n✅ 初始化完成！");
     console.log("   已创建全部数据表与站点默认设置。");
@@ -72,7 +78,7 @@ async function main() {
     console.error("\n❌ 初始化失败:", error);
     process.exitCode = 1;
   } finally {
-    await connection.end();
+    await client.end();
   }
 }
 

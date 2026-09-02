@@ -488,7 +488,7 @@ onMounted(() => {
               <span class="truncate">数据库版本</span>
             </div>
             <p class="text-lg sm:text-xl font-bold truncate">{{ systemInfo.database.version }}</p>
-            <p class="text-xs text-muted-foreground">MySQL / MariaDB</p>
+            <p class="text-xs text-muted-foreground">PostgreSQL</p>
           </div>
 
           <!-- 附件信息 -->
