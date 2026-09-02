@@ -220,7 +220,7 @@ export class DatabaseSessionStore implements SessionStore {
 // 会各自内联一份本模块，模块级变量会被打包成多份独立实例。memory 存储是纯内存
 // 单例，多份实例互不可见 → 登录写进 API 那份、SSR 中间件读 app 那份为空，
 // 导致 /admin 每次整页进入都被判 session 无效、302 跳登录（见 auth 中间件）。
-// file/database 走文件系统/MySQL 天然跨 bundle 共享，故只有 memory 受影响。
+// file/database 走文件系统/数据库（PG sessions 表）天然跨 bundle 共享，故只有 memory 受影响。
 // node-server preset 为单进程，globalThis 在同一进程内跨模块图共享。
 interface GlobalSessionStore {
   __imqiSessionStore?: SessionStore;
@@ -229,7 +229,7 @@ interface GlobalSessionStore {
 const globalStore = globalThis as GlobalSessionStore;
 
 // 周期清理过期 session：三处 cleanup() 原本都是死代码（过期项只在再次 get() 时懒清），
-// 长期运行会导致 memory Map/.sessions 目录/MySQL sessions 表无限增长。这里按固定间隔触发一次，
+// 长期运行会导致 memory Map/.sessions 目录/PG sessions 表无限增长。这里按固定间隔触发一次，
 // 异步 fire-and-forget，不阻塞鉴权路径。
 let lastCleanupAt = 0;
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 分钟

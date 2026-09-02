@@ -7,7 +7,7 @@
 
 /** 单张表的备份规格：表名、导入顺序、需要在导入时还原为 Date 的字段。 */
 export interface DataTableSpec {
-	/** Prisma 模型名，同时也是 MySQL 物理表名（schema 未使用 @@map）。 */
+	/** Prisma 模型名，同时也是数据库物理表名（schema 未使用 @@map）。 */
 	model: string;
 	/** 需在导入时由 ISO 字符串还原为 Date 的字段。 */
 	dateFields: string[];

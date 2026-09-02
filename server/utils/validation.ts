@@ -64,7 +64,7 @@ export function validateUserData(data: {
   nickname?: string | null;
   avatar?: string | null;
 }): void {
-  // Prisma MySQL 默认 String = VARCHAR(191)：校验上限须 ≤ 列长，否则超过 191 会在写入时 DB 溢出 500
+  // Prisma String 在 PG 默认 TEXT（无 191 上限）；校验上限保守取小于列长，避免超长写入时 DB 报错
   if (data.name) {
     validateMaxLength(data.name, 100, "用户名");
   }

@@ -625,7 +625,7 @@ const skillGroups: SkillGroup[] = [
       { label: "Flask", icon: "/skills/flask.svg" },
       { label: "Django", icon: "/skills/django.svg" },
       { label: "SQLAlchemy", icon: "/skills/sqlalchemy.svg" },
-      { label: "MySQL", icon: "/skills/mysql.svg" },
+      { label: "PostgreSQL", icon: "/skills/postgresql.svg" },
     ],
   },
   {

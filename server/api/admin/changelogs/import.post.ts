@@ -111,7 +111,7 @@ export default defineEventHandler(async event => {
       const entries = normalizeChangelogEntries(rec.entries);
       validateChangelogData(entries);
 
-      // 序列化后的 content 存在 MySQL TEXT 上限（65535 字节）；单条超限要提前拦成 400，避免过了校验却 DB 溢出 500
+      // 序列化后的 content 在 PG 为 TEXT（无 65535 上限），仍保留保守护栏防单条超大内容；单条超限提前拦成 400，避免过了校验却 DB 报错
       const serialized = stringifyChangelogContent(entries);
       if (Buffer.byteLength(serialized, "utf8") > 65535) {
         throw createError({

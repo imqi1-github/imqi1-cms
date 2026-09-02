@@ -92,7 +92,7 @@ export default defineNuxtConfig({
     // 被生产 CSP connect-src 拦截。ri/lucide 集合本地已安装，公网回退纯多余。
     fallbackToApi: false,
     // 本地自定义图标集合：app/assets/icons/*.svg → <Icon name="app:文件名" />
-    // 用于承接品牌 logo（Nuxt/Prisma/MySQL/Google 等），SSR 本地渲染，
+    // 用于承接品牌 logo（Nuxt/Prisma/PostgreSQL/Google 等），SSR 本地渲染，
     // 不再回退 api.iconify.design（生产环境 CSP 已拦截该域名）。
     customCollections: [
       {
@@ -114,12 +114,11 @@ export default defineNuxtConfig({
         // 内联进 client bundle 避免逐个回退 /api/_nuxt_icon 请求与闪烁。
         "app:nuxt",
         "app:prisma",
-        "app:mysql",
+        "app:postgresql",
         // 首页技术栈大字标（客户端路由切换进入首页时无 SSR payload）。
         "app:nuxt-wordmark",
         "app:prisma-wordmark",
-        "app:mysql-wordmark",
-        // 首页架构图中心 hub 图标 + 新增节点品牌图标（节点 app:nuxt/prisma/mysql 已在上方内联）。
+        // 首页架构图中心 hub 图标 + 新增节点品牌图标（节点 app:nuxt/prisma/postgresql 已在上方内联）。
         "ri:stack-line",
         "app:tailwind",
         "app:typescript",

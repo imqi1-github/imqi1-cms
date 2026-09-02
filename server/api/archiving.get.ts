@@ -28,7 +28,7 @@ export default defineEventHandler(async () => {
             },
           },
           take: 1,
-          // 多分类文章取"第一个分类"：无 orderBy 时 MySQL LIMIT 1 为任意行，
+          // 多分类文章取"第一个分类"：无 orderBy 时 LIMIT 1 为任意行，
           // 会让 /content/{categorySlug}/{slug} 链接跨请求不稳定。按 metas.mid 升序固定首分类。
           orderBy: {
             metas: { mid: "asc" },

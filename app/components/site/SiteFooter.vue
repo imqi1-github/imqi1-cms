@@ -44,10 +44,10 @@ const blogStackIcons: FooterIcon[] = [
     target: "_blank",
   },
   {
-    name: "MySQL",
-    icon: "app:mysql",
-    href: "https://www.mysql.com/",
-    title: "MySQL",
+    name: "PostgreSQL",
+    icon: "app:postgresql",
+    href: "https://www.postgresql.org/",
+    title: "PostgreSQL",
     target: "_blank",
   },
 ];
