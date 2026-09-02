@@ -4,15 +4,10 @@ export function getInternalRequestHeaders(): Record<string, string> {
   }
 
   // 应用层环境变量直接读 process.env，不经 Nuxt runtimeConfig 注入。
-  const secret = process.env.SSR_INTERNAL_REQUEST_SECRET || "";
-
-  // 生产缺失 secret 时不再回退为可伪造的 "true"（见 referer-check 端 fail-closed）。
-  // 未配置时留空：referer-check 在 production 下会按「无内部头 + 无 referer」正常校验，
-  // 迫使运维配置随机 secret，而非暴露一个可被任意外部调用方伪造的放行标记。
-  if (!secret) {
-    console.warn("[internal-request] SSR_INTERNAL_REQUEST_SECRET 未配置，内部请求将不带校验头");
-    return {};
-  }
+  // 未配置环境变量时回落固定默认值（与 server/middleware/referer-check.ts 保持一致），
+  // 确保 SSR 内部请求在缺配环境下仍携带校验头通过 referer 门禁，而非被 403 拦截。
+  // 运维可通过设置 SSR_INTERNAL_REQUEST_SECRET 覆盖默认值，换成随机长串以增强安全性。
+  const secret = process.env.SSR_INTERNAL_REQUEST_SECRET || "imqi1-cms-ssr-internal-request";
 
   return {
     "x-ssr-internal-request": secret,
