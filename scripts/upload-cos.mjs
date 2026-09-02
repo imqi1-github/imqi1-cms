@@ -312,6 +312,7 @@ async function concurrentUpload(files, concurrency = parseInt(process.env.COS_CO
 
   // 等待所有剩余任务完成
   await Promise.all(executing)
+  pc.end() // 结束并清掉贴底进度块，让结尾统计滚到其上方，避免残留
 
   return results
 }

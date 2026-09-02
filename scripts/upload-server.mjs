@@ -153,6 +153,7 @@ async function concurrentUpload(sftp, files) {
   }
 
   await Promise.all(executing)
+  pc.end() // 结束并清掉贴底进度块，让结尾统计滚到其上方，避免残留
   return results
 }
 
