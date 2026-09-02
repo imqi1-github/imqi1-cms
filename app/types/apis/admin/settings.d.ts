@@ -51,10 +51,4 @@ export interface AdminSettings {
 	linkAutoApprove: boolean;
 	searchCacheEnabled: boolean;
 	searchCacheExpire: number;
-	// 搜索索引（自定义缓存，非 ISR；enabled 为开关，builtAt/count/status 只读展示，expire 可编辑）
-	searchIndexEnabled: boolean;
-	searchIndexExpire: number;
-	searchIndexBuiltAt: string;
-	searchIndexCount: number;
-	searchIndexStatus: string;
 }

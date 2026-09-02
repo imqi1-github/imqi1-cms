@@ -1,4 +1,4 @@
-export type CacheClearAction = "all" | "preset" | "keyword" | "search" | "footprint" | "index";
+export type CacheClearAction = "all" | "preset" | "keyword" | "search" | "footprint";
 
 export interface CacheClearBody {
   csrfToken: string;

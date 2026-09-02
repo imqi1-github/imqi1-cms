@@ -5,7 +5,6 @@ import { SearchQuerySchema } from "#server/utils/schemas";
 import { sanitizeExternalUrl } from "#server/utils/rss";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { escapeHtml, escapeRegExp } from "#shared/html";
-import { isIndexReady, searchIndex } from "#server/utils/search-index";
 import type {
   SearchContentItem,
   SearchBranchResult,
@@ -458,20 +457,7 @@ export default defineTypedApiHandler(
       }
 
       // ========== 数据库搜索（按类型分支）==========
-      let searchResult: SearchBranchResult;
-
-      // 优先使用构建好的搜索索引（自定义缓存，非 ISR）：命中列 search_text + meta 路由，
-      // total 用独立 count()（不再被 take:50 封顶）。未就绪/索引路径异常则回退逐分支查询，保证搜索不挂。
-      try {
-        if (await isIndexReady()) {
-          searchResult = await searchIndex(q, type);
-        } else {
-          searchResult = await pathSearch(q, type);
-        }
-      } catch (error) {
-        console.error("[搜索] 索引检索失败，回退分支查询", error);
-        searchResult = await pathSearch(q, type);
-      }
+      const searchResult: SearchBranchResult = await pathSearch(q, type);
 
       const { results, total } = searchResult;
 

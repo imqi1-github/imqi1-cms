@@ -52,8 +52,6 @@ export default defineEventHandler(async event => {
       }
       filteredBody[key] = v;
     } else {
-      // 搜索索引状态只读：回显值不应被保存覆盖（由 build/delete 端点管理）；enabled/expire 可编辑
-      if (key === "searchIndexBuiltAt" || key === "searchIndexCount" || key === "searchIndexStatus") continue;
       // 非敏感字段：null/undefined 保留（让下方 `?? default` 生效）；非标量对象/数组直接拒 400，标量统一 String() 化
       if (v === undefined || v === null) {
         filteredBody[key] = v;
@@ -118,8 +116,6 @@ export default defineEventHandler(async event => {
       { key: "linkAutoApprove", value: String(settingsData.linkAutoApprove ?? false) },
       { key: "searchCacheEnabled", value: String(settingsData.searchCacheEnabled ?? false) },
       { key: "searchCacheExpire", value: String(settingsData.searchCacheExpire ?? 300) },
-      { key: "searchIndexEnabled", value: String(settingsData.searchIndexEnabled ?? false) },
-      { key: "searchIndexExpire", value: String(settingsData.searchIndexExpire ?? 86400) },
     ];
 
     // 整批 upsert 包事务：中途失败整体回滚，避免保存半套不一致设置

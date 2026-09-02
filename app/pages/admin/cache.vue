@@ -31,7 +31,6 @@ const clearingAll = ref(false);
 const clearingPreset = ref<string | null>(null);
 const clearingSearch = ref(false);
 const clearingKeyword = ref(false);
-const clearingIndex = ref(false);
 const clearingFootprint = ref(false);
 const customKeyword = ref("");
 const showAllDialog = ref(false);
@@ -110,22 +109,6 @@ async function clearSearchCache() {
     toast.error({ message: "清理失败", description: error?.data?.message || "请稍后重试" });
   } finally {
     clearingSearch.value = false;
-  }
-}
-
-async function clearIndex() {
-  if (!csrfToken.value) {
-    toast.error({ message: "会话已失效，请刷新页面后重试" });
-    return;
-  }
-  clearingIndex.value = true;
-  try {
-    await postClear({ csrfToken: csrfToken.value, action: "index" }, "已清除搜索索引");
-  } catch (rawError: unknown) {
-    const error = rawError as ApiError;
-    toast.error({ message: "清理失败", description: error?.data?.message || "请稍后重试" });
-  } finally {
-    clearingIndex.value = false;
   }
 }
 
@@ -209,7 +192,7 @@ onMounted(() => {
       <Card>
         <CardHeader>
           <CardTitle>自定义缓存（非 ISR）</CardTitle>
-          <CardDescription>前台各接口自己写入、非 Nuxt 页面缓存的缓存：搜索关键词结果、搜索索引、足迹地理位置</CardDescription>
+          <CardDescription>前台各接口自己写入、非 Nuxt 页面缓存的缓存：搜索关键词结果、足迹地理位置</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <!-- 搜索关键词结果缓存 -->
@@ -227,24 +210,6 @@ onMounted(() => {
                 class="mr-2 size-4"
               />
               {{ clearingSearch ? "清除中..." : "清除" }}
-            </Button>
-          </div>
-
-          <!-- 搜索索引 -->
-          <div class="flex items-center justify-between gap-4">
-            <div class="space-y-0.5">
-              <p class="font-medium">搜索索引</p>
-              <p class="text-sm text-muted-foreground">
-                搜索索引（Redis 倒排索引，jieba 分词，<code>idx:*</code> 键），清除后搜索自动回退为逐分支查询
-              </p>
-            </div>
-            <Button variant="outline" :disabled="clearingIndex" @click="clearIndex">
-              <Icon
-                :name="clearingIndex ? 'lucide:loader-2' : 'lucide:database'"
-                :class="{ 'animate-spin': clearingIndex }"
-                class="mr-2 size-4"
-              />
-              {{ clearingIndex ? "清除中..." : "清除" }}
             </Button>
           </div>
 

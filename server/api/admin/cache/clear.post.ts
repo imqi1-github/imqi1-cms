@@ -1,7 +1,6 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { redis } from "#server/utils/redis";
-import { deleteSearchIndex } from "#server/utils/search-index";
 import type { CacheClearBody, CacheClearResponse } from "#server/types/apis/cache";
 
 // SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis
@@ -51,22 +50,6 @@ export default defineEventHandler(async event => {
       statusCode: 401,
       message: "请先登录",
     });
-  }
-
-  // 索引清除走 DB（不依赖 Redis），放在 Redis 判断之前
-  if (action === "index") {
-    try {
-      const removed = await deleteSearchIndex();
-      return {
-        success: true,
-        matched: removed,
-        cleared: removed,
-        note: removed === 0 ? "搜索索引为空" : undefined,
-      } satisfies CacheClearResponse;
-    } catch (error) {
-      console.error("[清除搜索索引失败]", error);
-      throw createError({ statusCode: 500, message: "清除搜索索引失败" });
-    }
   }
 
   // Redis 未配置

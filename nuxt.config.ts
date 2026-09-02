@@ -522,12 +522,6 @@ export default defineNuxtConfig({
     // 明确指定 preset，避免自动检测消耗
     preset: "node-server",
 
-    // @node-rs/jieba 是原生模块（含 .node 二进制），rollup 无法打包，必须保持外部引用。
-    // 否则构建会把指向 node_modules 的 require 试图内联而失败。
-    externals: {
-      external: ["@node-rs/jieba"],
-    },
-
     // 资源预压缩：由 site.config.ts 的 build.brotliCompression 控制
     // 开启后同时生成 .br 和 .gz，需 Nginx 配合 brotli_static/gzip_static 或 CDN 直接发送
     compressPublicAssets: siteConfig.build.brotliCompression,
