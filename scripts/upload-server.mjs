@@ -5,7 +5,7 @@ import { createRequire } from 'module'
 
 import dotenv from 'dotenv'
 
-import { ProgressConsole, progressText } from './lib/progress.mjs'
+import { ProgressConsole } from './lib/progress.mjs'
 
 const require = createRequire(import.meta.url)
 const SftpClient = require('ssh2-sftp-client')
@@ -134,11 +134,11 @@ async function concurrentUpload(sftp, files) {
 
         await uploadFile(sftp, file, remotePath)
         results.success++
-        pc.update({ top: `✓ ${relativePath}`, bottom: progressText(results.success, results.failed, total) })
+        pc.update({ top: `✓ ${relativePath}`, bar: { success: results.success, failed: results.failed, total } })
       } catch (error) {
         results.failed++
         results.errors.push({ file: relativePath, error: error.message })
-        pc.update({ top: `✗ ${relativePath}`, bottom: progressText(results.success, results.failed, total) })
+        pc.update({ top: `✗ ${relativePath}`, bar: { success: results.success, failed: results.failed, total } })
       }
     })()
 
