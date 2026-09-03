@@ -28,10 +28,6 @@ CREATE TABLE IF NOT EXISTS "users" (
   PRIMARY KEY ("uid")
 );
 
--- 幂等迁移：给已存在的 users 表补 2FA 列（新建库上面已含，此处为旧库 ALTER，无副作用）
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_secret" TEXT;
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_enabled" BOOLEAN NOT NULL DEFAULT false;
-
 -- 已信任设备（2FA 「信任此设备」的管理/撤回）：
 CREATE TABLE IF NOT EXISTS "trusted_devices" (
   "id" SERIAL NOT NULL,
