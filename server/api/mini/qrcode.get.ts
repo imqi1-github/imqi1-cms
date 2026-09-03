@@ -13,7 +13,8 @@ export default defineEventHandler(async event => {
   try {
     // scene 仅支持数字/字母/下划线等(微信限制≤32字符)，用纯 cid 字符串
     const png = await generateMiniProgramCode(String(cid), "pages/content/detail");
-    setHeader(event, "Content-Type", "image/png");
+    // getwxacodeunlimit 实际返回 JPEG 字节（ffd8…），按 JPEG 标注
+    setHeader(event, "Content-Type", "image/jpeg");
     setHeader(event, "Cache-Control", "public, max-age=600");
     return png;
   } catch (error) {

@@ -410,6 +410,11 @@ useHead(() => seoMeta.value);
 // 文章手机端扫码查看：复用 /api/qr 通用接口，QR 内容为规范 URL
 const articleQr = computed(() => `/api/qr?text=${encodeURIComponent(`${siteConfig.siteUrl}${route.path}`)}`);
 
+// 小程序码（「文章小程序端看」）：懒加载，避免每篇文章都调微信 API；出错自动隐藏
+const showMiniQr = ref(false)
+const miniQrFailed = ref(false)
+const miniQrUrl = computed(() => `/api/mini/qrcode?cid=${content.value?.cid ?? ''}`)
+
 // 监听文章数据变化，触发渐入动画
 watch(
   () => content.value,
@@ -842,13 +847,34 @@ onUnmounted(() => {
       <!-- 扫码在手机端查看 -->
       <div class="article-constrained flex flex-col items-center gap-2 py-6 text-center opacity-0 translate-y-8 duration-300 ease-out animate-fade-in">
         <p class="text-sm text-muted-foreground">扫码在手机端查看本文</p>
-        <img
-          :src="articleQr"
-          alt="文章二维码"
-          class="size-32 rounded-md border p-1"
-          loading="lazy"
-          decoding="async"
-        >
+        <div class="flex justify-center gap-4">
+          <img
+            :src="articleQr"
+            alt="文章二维码"
+            class="size-32 rounded-md border p-1"
+            loading="lazy"
+            decoding="async"
+          >
+          <!-- 小程序码：懒加载，避免每篇都打微信 API；出错自动隐藏 -->
+          <div v-if="showMiniQr" class="flex flex-col items-center gap-1">
+            <img
+              v-if="!miniQrFailed"
+              :src="miniQrUrl"
+              alt="小程序码"
+              class="size-32 rounded-md border p-1"
+              loading="lazy"
+              decoding="async"
+              @error="miniQrFailed = true"
+            >
+            <span v-else class="text-xs text-muted-foreground">小程序码不可用</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="text-xs text-muted-foreground hover:text-blue-600 cursor-pointer"
+          @click="showMiniQr = !showMiniQr">
+          {{ showMiniQr ? '收起小程序码' : '小程序看' }}
+        </button>
       </div>
     </article>
   </div>
