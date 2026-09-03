@@ -242,6 +242,19 @@ function blogMarkerElement(place: Place) {
   return markerElement(key, avatarMarkerHtml(place));
 }
 
+// 我的足迹单点：有封面的地点用"圆形照片标记"（白边 + object-fit cover，加载失败降级首字母），
+// 而不是默认蓝点；无封面时在 renderMarker 里回退 singleDotHtml()。
+const TRAVEL_MARKER_SIZE = 32;
+function travelMarkerHtml(place: Place) {
+  return `<div style="position:relative;width:${TRAVEL_MARKER_SIZE}px;height:${TRAVEL_MARKER_SIZE}px;">
+    ${avatarCircleHtml(place.cover, place.name, TRAVEL_MARKER_SIZE)}
+  </div>`;
+}
+function travelMarkerElement(place: Place) {
+  const key = `travel:${place.id}:${place.cover || ""}:${place.name || "?"}`;
+  return markerElement(key, travelMarkerHtml(place));
+}
+
 // 内联图标（InfoWindow 是原生 HTML，Icon 组件不编译）
 const ARTICLE_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" style="width:14px;height:14px;flex-shrink:0;"><path fill="currentColor" d="m21 6.757l-2 2V4h-9v5H5v11h14v-2.757l2-2v5.765a.993.993 0 0 1-.993.992H3.993A1 1 0 0 1 3 20.993V8l6.003-6h10.995C20.55 2 21 2.455 21 2.992zm.778 2.05l1.414 1.415L15.414 18l-1.416-.002l.002-1.412z"/></svg>';
@@ -376,11 +389,22 @@ function buildInfoContent(place: Place) {
   const closeOnCover = Boolean(place.cover);
   const bodyPadding = closeOnCover ? "10px 12px" : "10px 12px 10px 38px";
 
+  // 扫码在高德打开（仅该地点有坐标时；InfoWindow 为原生 HTML，直接内联 <img>/icon）
+  const qrHtml =
+    place.longitude != null && place.latitude != null
+      ? `<div style="margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:6px;">
+          <img src="/api/qr?text=${encodeURIComponent(
+            `https://uri.amap.com/marker?position=${place.longitude},${place.latitude}&name=${encodeURIComponent(place.name || "")}&src=imqi1&coordinate=gcj02&callnative=1`,
+          )}" alt="扫码在高德打开" style="width:104px;height:104px;border:1px solid rgba(148,163,184,.4);border-radius:8px;" />
+          <span class="travel-info-desc" style="font-size:11px;">扫码在高德打开</span>
+        </div>`
+      : "";
+
   return `<div class="travel-info" style="position:relative;min-width:260px;max-width:360px;border-radius:12px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.2)">
     ${coverHtml}
     <div style="padding:${bodyPadding};">
       <h3 class="travel-info-title" style="margin:0;font-size:14px;font-weight:700;">${escapeHtml(place.name)}</h3>
-      ${descHtml}${contentsHtml}${readersHtml}
+      ${descHtml}${contentsHtml}${readersHtml}${qrHtml}
     </div>
     <!-- 关闭按钮（左上角）：深色半透圆盘 + 白字，封面图与卡片底色上都醒目 -->
     <div onclick="window.__closeTravelInfo&amp;&amp;window.__closeTravelInfo()" class="travel-info-close" style="position:absolute;top:8px;left:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:9999px;cursor:pointer;">${CLOSE_ICON}</div>
@@ -558,9 +582,14 @@ function createCluster(points: MapPoint[]) {
         applyMarkerElement(context.marker, markerElement.key, markerElement.element, new amap.Pixel(-AVATAR_SIZE / 2, -AVATAR_SIZE / 2));
         return;
       }
-      // 我的足迹：单点用蓝色圆点（与访客分布单读者同款）
+      // 我的足迹：单点有封面用圆形照片标记，无封面用蓝色圆点
       if (!hasReaders) {
-        applyMarker(context.marker, singleDotHtml(), new amap.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
+        if (place0?.cover) {
+          const markerElement = travelMarkerElement(place0);
+          applyMarkerElement(context.marker, markerElement.key, markerElement.element, new amap.Pixel(-TRAVEL_MARKER_SIZE / 2, -TRAVEL_MARKER_SIZE / 2));
+        } else {
+          applyMarker(context.marker, singleDotHtml(), new amap.Pixel(-SINGLE_DOT_SIZE / 2, -SINGLE_DOT_SIZE / 2));
+        }
         return;
       }
       // 访客分布单点：按 id 优先反查该城市读者数（规避高德对 place.readers 的克隆裁剪）

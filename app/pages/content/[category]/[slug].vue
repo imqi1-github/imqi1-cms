@@ -410,10 +410,28 @@ useHead(() => seoMeta.value);
 // 文章手机端扫码查看：复用 /api/qr 通用接口，QR 内容为规范 URL
 const articleQr = computed(() => `/api/qr?text=${encodeURIComponent(`${siteConfig.siteUrl}${route.path}`)}`);
 
-// 小程序码（「文章小程序端看」）：懒加载，避免每篇文章都调微信 API；出错自动隐藏
-const showMiniQr = ref(false)
-const miniQrFailed = ref(false)
+// 小程序码（「文章小程序端看」）：懒加载，避免每篇都调微信 API；出错自动隐藏
 const miniQrUrl = computed(() => `/api/mini/qrcode?cid=${content.value?.cid ?? ''}`)
+const miniQrFailed = ref(false)
+// CC 栏入口：悬浮显示对应码；小程序在 site.config 开启且运行时配了凭据才显示
+const hoverQr = ref<'mobile' | 'mini' | null>(null)
+const { miniQrEnabled } = useSiteSettings()
+const mobileQrEnabled = siteConfig.features.mobileQr
+const miniQrShown = computed(() => siteConfig.features.miniQr && miniQrEnabled.value && !miniQrFailed.value)
+
+// 悬浮出码：离开胶囊/码后延迟关闭，给「从胶囊移到码」留时间；码用绝对定位避免挤占布局
+let qrHideTimer: ReturnType<typeof setTimeout> | null = null
+function showQr(v: 'mobile' | 'mini') {
+  if (qrHideTimer) { clearTimeout(qrHideTimer); qrHideTimer = null }
+  hoverQr.value = v
+}
+function keepQr() {
+  if (qrHideTimer) { clearTimeout(qrHideTimer); qrHideTimer = null }
+}
+function hideQrSoon() {
+  if (qrHideTimer) clearTimeout(qrHideTimer)
+  qrHideTimer = setTimeout(() => { hoverQr.value = null }, 180)
+}
 
 // 监听文章数据变化，触发渐入动画
 watch(
@@ -774,6 +792,54 @@ onUnmounted(() => {
               协议授权。
             </p>
           </div>
+
+          <!-- 手机端 / 小程序 查看入口（一行文案 + 胶囊，悬浮显示码；小程序不可用只显示手机端） -->
+          <div v-if="mobileQrEnabled || miniQrShown" class="mt-3 text-xs text-slate-600 dark:text-slate-400">
+            <div class="flex flex-wrap items-center gap-1">
+              <Icon mode="svg" name="ri:qr-code-line" class="size-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
+              你也可以在
+              <span
+                v-if="mobileQrEnabled"
+                class="relative inline-flex"
+                @mouseenter="showQr('mobile')"
+                @mouseleave="hideQrSoon()">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100 dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 cursor-pointer">
+                  <Icon mode="svg" name="ri:smartphone-line" class="size-3" />
+                  手机浏览器
+                </button>
+                <div
+                  v-if="hoverQr === 'mobile'"
+                  class="absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-lg border border-gray-200 bg-white/95 p-1.5 shadow-md dark:border-gray-800 dark:bg-black/85"
+                  @mouseenter="keepQr()"
+                  @mouseleave="hideQrSoon()">
+                  <img :src="articleQr" alt="手机端查看二维码" class="block size-28 max-w-none object-contain rounded-md" loading="lazy" decoding="async">
+                </div>
+              </span>
+              <template v-if="mobileQrEnabled && miniQrShown">或</template>
+              <span
+                v-if="miniQrShown"
+                class="relative inline-flex"
+                @mouseenter="showQr('mini')"
+                @mouseleave="hideQrSoon()">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100 dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 cursor-pointer">
+                  <img :src="publicAsset('/icons/wechat.svg')" class="size-3 shrink-0" alt="微信小程序">
+                  微信小程序
+                </button>
+                <div
+                  v-if="hoverQr === 'mini' && miniQrShown"
+                  class="absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-lg border border-gray-200 bg-white/95 p-1.5 shadow-md dark:border-gray-800 dark:bg-black/85"
+                  @mouseenter="keepQr()"
+                  @mouseleave="hideQrSoon()">
+                  <img :src="miniQrUrl" alt="小程序码" class="block size-28 max-w-none object-contain rounded-md" loading="lazy" decoding="async" @error="miniQrFailed = true">
+                </div>
+              </span>
+              中查看此内容
+            </div>
+          </div>
         </div>
 
         <!-- 相关地点：逐地点渲染胶囊，点击跳转到地图足迹视图并聚焦该地点 -->
@@ -843,39 +909,6 @@ onUnmounted(() => {
       <section v-if="commentEnabled" class="w-full opacity-0 translate-y-8 duration-300 ease-out animate-fade-in article-constrained comment-section">
         <CommentList :content-id="content.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
-
-      <!-- 扫码在手机端查看 -->
-      <div class="article-constrained flex flex-col items-center gap-2 py-6 text-center opacity-0 translate-y-8 duration-300 ease-out animate-fade-in">
-        <p class="text-sm text-muted-foreground">扫码在手机端查看本文</p>
-        <div class="flex justify-center gap-4">
-          <img
-            :src="articleQr"
-            alt="文章二维码"
-            class="size-32 rounded-md border p-1"
-            loading="lazy"
-            decoding="async"
-          >
-          <!-- 小程序码：懒加载，避免每篇都打微信 API；出错自动隐藏 -->
-          <div v-if="showMiniQr" class="flex flex-col items-center gap-1">
-            <img
-              v-if="!miniQrFailed"
-              :src="miniQrUrl"
-              alt="小程序码"
-              class="size-32 rounded-md border p-1"
-              loading="lazy"
-              decoding="async"
-              @error="miniQrFailed = true"
-            >
-            <span v-else class="text-xs text-muted-foreground">小程序码不可用</span>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="text-xs text-muted-foreground hover:text-blue-600 cursor-pointer"
-          @click="showMiniQr = !showMiniQr">
-          {{ showMiniQr ? '收起小程序码' : '小程序看' }}
-        </button>
-      </div>
     </article>
   </div>
 </template>

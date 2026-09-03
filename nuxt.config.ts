@@ -452,6 +452,7 @@ export default defineNuxtConfig({
         "@tiptap/core",
         "@tiptap/starter-kit",
         "tiptap-markdown",
+        "ogl",
       ],
     },
     build: {
@@ -467,28 +468,12 @@ export default defineNuxtConfig({
           // 富文本编辑器（Tiptap/ProseMirror）仍不设 manual chunk：避免共享 CJS
           // helper 被并进 tiptap 块，导致首页动态加载 APlayer 时整包拉取 ~500KB。
           manualChunks(id) {
-            if (
-              id.includes("node_modules/vue/") ||
-              id.includes("node_modules/@vue/runtime-")
-            )
-              return "vue";
-            if (
-              id.includes("node_modules/reka-ui") ||
-              id.includes("node_modules/lucide-vue-next") ||
-              id.includes("node_modules/vue-sonner")
-            )
+            if (id.includes("node_modules/vue/") || id.includes("node_modules/@vue/runtime-")) return "vue";
+            if (id.includes("node_modules/reka-ui") || id.includes("node_modules/lucide-vue-next") || id.includes("node_modules/vue-sonner"))
               return "ui";
-            if (
-              id.includes("node_modules/@vueuse/") ||
-              id.includes("node_modules/clsx") ||
-              id.includes("node_modules/class-variance-authority")
-            )
+            if (id.includes("node_modules/@vueuse/") || id.includes("node_modules/clsx") || id.includes("node_modules/class-variance-authority"))
               return "utils";
-            if (
-              id.includes("node_modules/swiper") ||
-              id.includes("node_modules/@fancyapps/")
-            )
-              return "media";
+            if (id.includes("node_modules/swiper") || id.includes("node_modules/@fancyapps/")) return "media";
           },
         },
         // 忽略循环依赖警告以减少日志输出

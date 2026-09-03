@@ -118,6 +118,8 @@ export const siteConfig = defineSiteConfig({
   features: {
     miniApi: true,
     miniComment: true,
+    mobileQr: true,
+    miniQr: true,
   },
 
   amap: {

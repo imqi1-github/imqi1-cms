@@ -11,6 +11,7 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
   // hydrate 时已有值，故首屏不闪烁、客户端也不会再发 /api/site 请求。
   const siteSettings = useState<SiteSettings | null>("site:settings", () => null);
   const buildHash = useState<string | null>("site:buildHash", () => null);
+  const miniQrEnabled = useState<boolean>("site:miniQrEnabled", () => false);
 
   // 已有值（SSR 预取 / 之前已加载）直接返回，不发请求
   if (siteSettings.value) {
@@ -39,6 +40,7 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
       if (response.success) {
         siteSettings.value = response.data;
         buildHash.value = response.buildHash ?? null;
+        miniQrEnabled.value = response.miniQrEnabled ?? false;
         return response.data;
       } else {
         throw new Error("Invalid response format");
@@ -59,9 +61,11 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
 export function useSiteSettings() {
   const siteSettings = useState<SiteSettings | null>("site:settings", () => null);
   const buildHash = useState<string | null>("site:buildHash", () => null);
+  const miniQrEnabled = useState<boolean>("site:miniQrEnabled", () => false);
   return {
     siteSettings: computed(() => siteSettings.value),
     buildHash: readonly(buildHash),
+    miniQrEnabled: readonly(miniQrEnabled),
     isLoadingSettings: readonly(isLoadingSettings),
     errorSettings: readonly(errorSettings),
     fetchSiteSettings,
