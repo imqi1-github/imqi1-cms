@@ -1,12 +1,21 @@
+import { getCookie } from "h3";
+
 import { setSession, verifyPassword } from "#server/lib/auth";
 import { getClientIp } from "#server/utils/client-ip";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { verifyCaptcha } from "#server/utils/captcha";
 import {
   checkLoginRateLimit,
   recordLoginFailure,
   resetLoginAttempts,
+  hasRecentFailures,
 } from "#server/utils/login-rate-limit";
+import {
+  makeLoginChallenge,
+  verifyTrustedDevice,
+  TRUSTED_DEVICE_COOKIE,
+} from "#server/utils/security-token";
 
 // 登录请求入参的最大长度，避免超长输入造成不必要的 bcrypt/DB 开销
 const MAX_USERNAME_LEN = 64;
@@ -25,7 +34,7 @@ async function getDummyHash(): Promise<string> {
 
 export default defineEventHandler(async event => {
   const body = await readBody(event);
-  const { csrfToken, username, password } = body ?? {};
+  const { csrfToken, username, password, captcha } = body ?? {};
 
   // 入参基础校验（shape + 长度），避免异常输入击穿到 Prisma/校验链路
   if (
@@ -45,7 +54,7 @@ export default defineEventHandler(async event => {
 
   // 限流：按 IP 拦截暴力破解（在 CSRF 之前，让锁定中的洪水请求最早被拒）
   const ip = getClientIp(event);
-  const limit = checkLoginRateLimit(ip);
+  const limit = await checkLoginRateLimit(ip);
   if (limit.locked) {
     const retryAfterSec = Math.ceil(limit.retryAfter / 1000);
     setResponseHeader(event, "Retry-After", retryAfterSec);
@@ -55,7 +64,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // CSRF 验证
+  // CSRF 验证（先于验证码：CSRF 失败不改动一次性验证码，避免误伤）
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -63,8 +72,21 @@ export default defineEventHandler(async event => {
     });
   }
 
+  // 自适应图形验证码：该 IP 在窗口内已有失败才要求（平时零摩擦，一旦被撞过就上验证码）。
+  // 须先于 bcrypt，挡住脚本对昂贵哈希的洪峰；captcha 为可选字符串（未要求时不校验）。
+  const requireCaptcha = await hasRecentFailures(ip);
+  if (requireCaptcha) {
+    if (typeof captcha !== "string" || !verifyCaptcha(event, captcha)) {
+      throw createError({
+        statusCode: 400,
+        message: "请输入正确的验证码",
+        data: { captchaRequired: true },
+      });
+    }
+  }
+
   try {
-    // 查找用户：只取登录/建会话所需的列，auth_code（单端登录令牌）与 create_time 无需进内存
+    // 查找用户：2FA 需 totp_secret/totp_enabled，auth_code 无需进内存
     const user = await prisma.users.findUnique({
       where: { name: username },
       select: {
@@ -74,13 +96,25 @@ export default defineEventHandler(async event => {
         mail: true,
         avatar: true,
         password: true,
+        totp_secret: true,
+        totp_enabled: true,
       },
     });
+
+    const userSafe = user
+      ? {
+          uid: user.uid,
+          name: user.name,
+          nickname: user.nickname,
+          mail: user.mail,
+          avatar: user.avatar,
+        }
+      : null;
 
     if (!user) {
       // 用户不存在：跑一次 bcrypt 拉平时延，避免基于响应时间区分用户名是否存在
       await verifyPassword(password, await getDummyHash());
-      recordLoginFailure(ip);
+      await recordLoginFailure(ip);
       throw createError({
         statusCode: 401,
         message: "用户名或密码错误",
@@ -91,36 +125,33 @@ export default defineEventHandler(async event => {
     const isValid = await verifyPassword(password, user.password);
 
     if (!isValid) {
-      recordLoginFailure(ip);
+      await recordLoginFailure(ip);
       throw createError({
         statusCode: 401,
         message: "用户名或密码错误",
       });
     }
 
-    // 登录成功，重置该 IP 的失败计数
-    resetLoginAttempts(ip);
+    // 密码正确：清该 IP 失败计数（后续步骤若失败再由 2FA 层另行计数）
+    await resetLoginAttempts(ip);
 
-    // 设置 session（生成新的 authCode 实现单端登录）
-    const sessionUser = await setSession(event, {
-      uid: user.uid,
-      name: user.name,
-      nickname: user.nickname,
-      mail: user.mail,
-      avatar: user.avatar,
-    });
+    // 已启用 2FA：若「信任此设备」cookie 有效，则免第二因素直接放行；否则下发一次性 challenge
+    if (user.totp_enabled) {
+      const trusted = getCookie(event, TRUSTED_DEVICE_COOKIE);
+      if (trusted && verifyTrustedDevice(trusted, user.uid)) {
+        await setSession(event, userSafe!);
+        return { success: true, user: userSafe! };
+      }
+      return {
+        success: false,
+        pending2FA: true,
+        challenge: makeLoginChallenge(user.uid),
+      };
+    }
 
-    // 仅返回前端需要的字段；authCode 是单端登录内部标记，不暴露给浏览器
-    return {
-      success: true,
-      user: {
-        uid: sessionUser.uid,
-        name: sessionUser.name,
-        nickname: sessionUser.nickname,
-        mail: sessionUser.mail,
-        avatar: sessionUser.avatar,
-      },
-    };
+    // 未启用 2FA：直接建会话
+    await setSession(event, userSafe!);
+    return { success: true, user: userSafe! };
   } catch (error) {
     // 已构造的业务错误（带 statusCode）原样抛出，避免被下面的 500 吞掉
     if (error && typeof error === "object" && "statusCode" in error) {

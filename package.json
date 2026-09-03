@@ -19,6 +19,7 @@
     "clear:redis": "node scripts/clear-redis.mjs",
     "scripts:install": "bun install --cwd scripts",
     "reset:password": "cd scripts && bunx tsx reset-password.ts",
+    "reset:2fa": "cd scripts && bunx tsx reset-2fa.ts",
     "db:init": "cd scripts && bunx tsx init-db.ts",
     "get:ip": "cd scripts && bunx tsx get-ip.ts",
     "check:update": "node scripts/check-updates.mjs",

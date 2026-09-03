@@ -14,6 +14,9 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 function genBuildHash(): string {
+  // 开发环境没有真正的构建产物版本号：资产走本地 _nuxt/、无 CDN hash 目录（见 buildHashDir），
+  // 别展示虚假的"时间戳-随机串"，统一显示"开发版"；生产环境才生成真实 hash。
+  if (!isProduction) return "开发版";
   const d = new Date();
   const ts =
     `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}` + `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;

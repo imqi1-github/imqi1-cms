@@ -468,6 +468,25 @@ docker compose --env-file .env -f docker/docker-compose.yml exec postgres pg_dum
 >
 > 也可用上面的 `pg_dump` 命令做整库 SQL 级备份。
 
+#### 两步验证（2FA）锁定重置
+
+> 若开启了两步验证后**丢失认证器**（无法生成动态码），会被锁在登录"输动态码"这一步。此时清除该用户的 2FA 后即可用密码登录，再在后台「账户设置 → 两步验证」重新启用。
+
+对数据库执行一句 SQL 即可（**无需安装任何额外依赖**，容器 / psql / 宝塔数据库管理任选其一）：
+
+```bash
+# Docker（服务名 postgres；库名/账号以 .env 的 $DB_NAME/$DB_USER 为准）
+docker compose --env-file .env -f docker/docker-compose.yml exec postgres \
+  psql -U "$DB_USER" -d "$DB_NAME" \
+  -c "UPDATE users SET totp_enabled = false, totp_secret = NULL;"
+
+# 或直连 psql： psql "<连接串>" -c "UPDATE users SET totp_enabled=false, totp_secret=NULL;"
+```
+
+> 只动 `totp_enabled` / `totp_secret` 两列，不影响密码、会话与 `auth_code`（登录态不失效）。单用户博客即清除当前管理员。执行后可用账号 + 密码登录。
+>
+> 开发环境 / 有 node_modules 的构建机不想手写 SQL 时，可跑 `bun run reset:2fa`（`scripts/reset-2fa.ts`；bun 原生编译 TS 无需 tsx，依赖 `@prisma/client`、`@prisma/adapter-pg` 均为**根依赖**，非 scripts 专属）。
+
 ### 5. 反向代理与 HTTPS
 
 容器仅对外暴露 `${DEPLOY_PORT}`（默认 `3000`，HTTP）。生产环境建议在宿主机再挂一层 Nginx，将 `80/443` 反代到 `127.0.0.1:3000` 并配置 TLS。可用 `scripts/generate-nginx-conf.mjs` 生成 Nginx 配置模板。

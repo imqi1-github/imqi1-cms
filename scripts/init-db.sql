@@ -23,8 +23,14 @@ CREATE TABLE IF NOT EXISTS "users" (
   "password" TEXT NOT NULL,
   "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "auth_code" TEXT,
+  "totp_secret" TEXT,
+  "totp_enabled" BOOLEAN NOT NULL DEFAULT false,
   PRIMARY KEY ("uid")
 );
+
+-- 幂等迁移：给已存在的 users 表补 2FA 列（新建库上面已含，此处为旧库 ALTER，无副作用）
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_secret" TEXT;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_enabled" BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS "attachments" (
   "aid" SERIAL NOT NULL,

@@ -171,6 +171,11 @@ model users {
   password    String
   create_time DateTime @default(now())
   auth_code   String?
+
+  // 两步验证（TOTP）：totp_secret 为 base32 密钥，启用后登录需第二因素
+  totp_secret  String?
+  totp_enabled Boolean @default(false)
+
   contents    contents[]
 }
 
