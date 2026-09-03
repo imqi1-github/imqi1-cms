@@ -11,11 +11,8 @@ import {
   resetLoginAttempts,
   hasRecentFailures,
 } from "#server/utils/login-rate-limit";
-import {
-  makeLoginChallenge,
-  verifyTrustedDevice,
-  TRUSTED_DEVICE_COOKIE,
-} from "#server/utils/security-token";
+import { makeLoginChallenge, TRUSTED_DEVICE_COOKIE } from "#server/utils/security-token";
+import { verifyTrustedDevice } from "#server/utils/trusted-device";
 
 // 登录请求入参的最大长度，避免超长输入造成不必要的 bcrypt/DB 开销
 const MAX_USERNAME_LEN = 64;
@@ -138,7 +135,7 @@ export default defineEventHandler(async event => {
     // 已启用 2FA：若「信任此设备」cookie 有效，则免第二因素直接放行；否则下发一次性 challenge
     if (user.totp_enabled) {
       const trusted = getCookie(event, TRUSTED_DEVICE_COOKIE);
-      if (trusted && verifyTrustedDevice(trusted, user.uid)) {
+      if (trusted && await verifyTrustedDevice(trusted, user.uid)) {
         await setSession(event, userSafe!);
         return { success: true, user: userSafe! };
       }

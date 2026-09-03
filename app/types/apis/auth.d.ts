@@ -49,3 +49,18 @@ export interface TwoFactorSetupResponse {
   qrDataUrl: string;
 }
 
+/** 后台已信任设备（/api/admin/2fa/devices GET） */
+export interface TrustedDevice {
+  id: number;
+  deviceId: string;
+  userAgent: string | null;
+  ip: string | null;
+  lastUsedAt: string;
+  expiresAt: string;
+  create_time: string;
+}
+
+export interface TrustedDevicesResponse {
+  devices: TrustedDevice[];
+}
+

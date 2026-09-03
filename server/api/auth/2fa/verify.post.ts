@@ -1,4 +1,4 @@
-import { setCookie } from "h3";
+import { getHeader, setCookie } from "h3";
 
 import { setSession } from "#server/lib/auth";
 import { getClientIp } from "#server/utils/client-ip";
@@ -9,11 +9,8 @@ import {
   recordLoginFailure,
   resetLoginAttempts,
 } from "#server/utils/login-rate-limit";
-import {
-  verifyLoginChallenge,
-  makeTrustedDevice,
-  TRUSTED_DEVICE_COOKIE,
-} from "#server/utils/security-token";
+import { verifyLoginChallenge, TRUSTED_DEVICE_COOKIE } from "#server/utils/security-token";
+import { createTrustedDevice, generateDeviceId } from "#server/utils/trusted-device";
 
 /**
  * 登录第二因素（TOTP）校验：密码已通过、登录返回 pending2FA + challenge 后调用。
@@ -73,7 +70,15 @@ export default defineEventHandler(async event => {
   // TOTP 通过：清失败计数，可选写「信任此设备」cookie
   await resetLoginAttempts(ip);
   if (rememberDevice) {
-    setCookie(event, TRUSTED_DEVICE_COOKIE, makeTrustedDevice(user.uid), {
+    // 把「信任此设备」记录到库，cookie 只存 deviceId（DB 为准，可后台撤回/过期）
+    const deviceId = generateDeviceId();
+    await createTrustedDevice({
+      userId: user.uid,
+      deviceId,
+      userAgent: getHeader(event, "user-agent") ?? null,
+      ip,
+    });
+    setCookie(event, TRUSTED_DEVICE_COOKIE, deviceId, {
       httpOnly: true,
       secure: import.meta.env.PROD,
       sameSite: import.meta.env.PROD ? "strict" : "lax",

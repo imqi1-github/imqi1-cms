@@ -4,6 +4,8 @@ import type {ApiError} from "~/types/error";
 import type {
   TwoFactorStatusResponse,
   TwoFactorSetupResponse,
+  TrustedDevicesResponse,
+  TrustedDevice,
 } from "~/types/apis/auth";
 
 const toast = useToast()
@@ -19,6 +21,10 @@ const twoFactor = ref<TwoFactorStatusResponse>({ enabled: false, pendingSetup: f
 const twoFASetup = reactive({ secret: '', otpauthUrl: '', qrDataUrl: '' })
 const twoFACode = ref('')
 const twoFABusy = ref(false)
+
+// 已信任设备（后台可列/撤）
+const trustedDevices = ref<TrustedDevice[]>([])
+const devicesBusy = ref<number | null>(null)
 
 // 表单数据
 const formData = ref({
@@ -197,9 +203,42 @@ function copyText(text: string) {
   )
 }
 
+// ===== 已信任设备管理 =====
+async function fetchTrustedDevices() {
+  try {
+    const res = await $fetch<TrustedDevicesResponse>('/api/admin/2fa/devices')
+    trustedDevices.value = res.devices
+  } catch {
+    // 失败不阻断页面
+  }
+}
+
+async function revokeDevice(id: number) {
+  if (devicesBusy.value != null) return
+  devicesBusy.value = id
+  try {
+    await $fetch(`/api/admin/2fa/devices/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-csrf-token': csrfToken.value },
+    })
+    toast.success({ message: '已撤回该设备' })
+    await fetchTrustedDevices()
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: '撤回失败', description: error?.data?.message || '请稍后重试' })
+  } finally {
+    devicesBusy.value = null
+  }
+}
+
+function fmtDeviceTime(iso: string) {
+  return new Date(iso).toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
 onMounted(() => {
   fetchUser()
   fetchTwoFactorStatus()
+  fetchTrustedDevices()
 })
 </script>
 
@@ -391,6 +430,34 @@ onMounted(() => {
             </div>
           </template>
         </div>
+      </div>
+    </Card>
+
+    <!-- 已信任设备 -->
+    <Card v-if="!loading && user" class="mt-6">
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <Icon name="lucide:smartphone" class="size-5 text-primary" />
+          <div>
+            <h3 class="text-lg font-semibold">已信任设备</h3>
+            <p class="text-sm text-muted-foreground">勾选「信任此设备」登录的设备；撤回后需重新输动态码</p>
+          </div>
+        </div>
+        <Separator />
+        <p v-if="trustedDevices.length === 0" class="text-sm text-muted-foreground">暂无已信任的设备</p>
+        <ul v-else class="space-y-3">
+          <li v-for="d in trustedDevices" :key="d.id" class="flex items-center justify-between gap-4 rounded-md border p-3">
+            <div class="min-w-0 space-y-0.5">
+              <p class="truncate text-sm font-medium" :title="d.userAgent || ''">{{ d.userAgent || '未知设备' }}</p>
+              <p class="text-xs text-muted-foreground">
+                IP {{ d.ip || '-' }} · 最近登录 {{ fmtDeviceTime(d.lastUsedAt) }} · 到期 {{ fmtDeviceTime(d.expiresAt) }}
+              </p>
+            </div>
+            <Button size="sm" variant="destructive" :disabled="devicesBusy != null" @click="revokeDevice(d.id)">
+              {{ devicesBusy === d.id ? '撤回中...' : '撤回' }}
+            </Button>
+          </li>
+        </ul>
       </div>
     </Card>
   </AdminLayout>

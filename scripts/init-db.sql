@@ -32,6 +32,22 @@ CREATE TABLE IF NOT EXISTS "users" (
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_secret" TEXT;
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "totp_enabled" BOOLEAN NOT NULL DEFAULT false;
 
+-- 已信任设备（2FA 「信任此设备」的管理/撤回）：
+CREATE TABLE IF NOT EXISTS "trusted_devices" (
+  "id" SERIAL NOT NULL,
+  "userId" INTEGER NOT NULL,
+  "deviceId" TEXT NOT NULL,
+  "userAgent" TEXT,
+  "ip" TEXT,
+  "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "expiresAt" TIMESTAMP(3) NOT NULL,
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "TrustedDevices_deviceId_key" UNIQUE ("deviceId"),
+  CONSTRAINT "TrustedDevices_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("uid") ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "TrustedDevices_userId_idx" ON "trusted_devices"("userId");
+
 CREATE TABLE IF NOT EXISTS "attachments" (
   "aid" SERIAL NOT NULL,
   "type" TEXT NOT NULL,

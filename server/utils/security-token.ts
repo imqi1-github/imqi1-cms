@@ -53,7 +53,6 @@ function decodeValidToken(token: string, now: number): { uid: number; exp: numbe
 }
 
 const CHALLENGE_TTL = 5 * 60 * 1000; // 5 分钟
-const TRUSTED_DEVICE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 天
 
 /** 「信任此设备」cookie 名（login 读取、verify 设置，两端共用） */
 export const TRUSTED_DEVICE_COOKIE = "trusted_device";
@@ -67,14 +66,4 @@ export function makeLoginChallenge(uid: number): string {
 export function verifyLoginChallenge(token: string): number | null {
   const obj = decodeValidToken(token, Date.now());
   return obj ? obj.uid : null;
-}
-
-/** 签发「信任此设备」令牌 */
-export function makeTrustedDevice(uid: number): string {
-  return makeToken({ uid, exp: Date.now() + TRUSTED_DEVICE_TTL });
-}
-
-export function verifyTrustedDevice(token: string, uid: number): boolean {
-  const obj = decodeValidToken(token, Date.now());
-  return obj !== null && obj.uid === uid;
 }

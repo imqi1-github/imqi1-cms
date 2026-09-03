@@ -176,7 +176,23 @@ model users {
   totp_secret  String?
   totp_enabled Boolean @default(false)
 
-  contents    contents[]
+  contents        contents[]
+  trusted_devices trusted_devices[]
+}
+
+model trusted_devices {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  deviceId   String   @unique
+  userAgent  String?
+  ip         String?
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+  create_time DateTime @default(now())
+
+  user users @relation(fields: [userId], references: [uid], onDelete: Cascade)
+
+  @@index([userId], map: "TrustedDevices_userId_idx")
 }
 
 model travels {
