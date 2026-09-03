@@ -237,6 +237,20 @@ const shouldShowMap = computed(() => mapEverShown.value || places.value.length >
 // ?place 聚焦仅对「我的足迹」有意义
 const focusId = computed(() => (view.value === "travels" ? (route.query.place as string) || null : null));
 
+// 角落「扫码在高德打开」：取当前聚焦（?place）或首个足迹地点，生成 AMap marker URI 的二维码
+const mapAmapPlace = computed(() => {
+  if (view.value !== "travels") return null;
+  const places = travelPlaces.value;
+  if (!places.length) return null;
+  return places.find(p => String(p.id) === String(focusId.value)) || places[0];
+});
+const mapAmapQr = computed(() => {
+  const p = mapAmapPlace.value;
+  if (!p || p.longitude == null || p.latitude == null) return "";
+  const uri = `https://uri.amap.com/marker?position=${p.longitude},${p.latitude}&name=${encodeURIComponent(p.name || "")}&src=imqi1&coordinate=gcj02&callnative=1`;
+  return `/api/qr?text=${encodeURIComponent(uri)}`;
+});
+
 function setView(v: string) {
   // place 仅「我的足迹」视图用（见下方 focusId）；切 tab 时丢弃，避免 URL 残留 / 切回 travels 时误聚焦。
   const { place: _place, ...rest } = route.query;
@@ -378,6 +392,15 @@ onUnmounted(() => {
         地图加载失败，点击重试
       </button>
       <span v-else-if="statusText">{{ statusText }}</span>
+    </div>
+
+    <!-- 角落：扫码在高德打开当前/首个足迹地点 -->
+    <div
+      v-if="view === 'travels' && mapAmapQr"
+      class="pointer-events-none absolute right-2 z-10 flex flex-col items-center gap-1 rounded-lg bg-white/85 p-2 shadow backdrop-blur-sm dark:bg-black/60"
+      :style="{ bottom: `${footerH + 28}px` }">
+      <img :src="mapAmapQr" alt="在高德打开" class="size-20 rounded-md" loading="lazy" decoding="async">
+      <span class="text-[10px] leading-none text-slate-600 dark:text-slate-300">扫码在高德打开</span>
     </div>
   </section>
 </template>

@@ -45,5 +45,7 @@ export interface TwoFactorSetupResponse {
   enabled: false;
   secret: string;
   otpauthUrl: string;
+  /** 二维码 PNG dataURL（扫码录入，亦可手动复制 secret） */
+  qrDataUrl: string;
 }
 

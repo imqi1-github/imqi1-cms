@@ -16,7 +16,7 @@ const csrfToken = ref('')
 
 // 两步验证
 const twoFactor = ref<TwoFactorStatusResponse>({ enabled: false, pendingSetup: false })
-const twoFASetup = reactive({ secret: '', otpauthUrl: '' })
+const twoFASetup = reactive({ secret: '', otpauthUrl: '', qrDataUrl: '' })
 const twoFACode = ref('')
 const twoFABusy = ref(false)
 
@@ -112,6 +112,7 @@ async function fetchTwoFactorStatus() {
       // 无启用中的密钥，重置已展示的 setup 状态
       twoFASetup.secret = ''
       twoFASetup.otpauthUrl = ''
+      twoFASetup.qrDataUrl = ''
     }
   } catch {
     // 状态获取失败不阻断页面
@@ -132,6 +133,7 @@ async function enable2FA() {
     })
     twoFASetup.secret = res.secret
     twoFASetup.otpauthUrl = res.otpauthUrl
+    twoFASetup.qrDataUrl = res.qrDataUrl
     twoFactor.value = { enabled: false, pendingSetup: true }
     twoFACode.value = ''
   } catch (rawError: unknown) {
@@ -360,9 +362,17 @@ onMounted(() => {
           <!-- 已生成密钥：引导录入并确认 -->
           <template v-else>
             <div class="space-y-2 text-sm">
-              <p>1. 在认证器 App（Google Authenticator / Authy / 1Password）添加此账户：手动输入密钥，或打开链接。</p>
+              <p>1. 用认证器 App（Google Authenticator / Authy / 1Password）扫码添加，或手动输入下方密钥。</p>
+              <div class="flex justify-center py-1">
+                <img
+                  v-if="twoFASetup.qrDataUrl"
+                  :src="twoFASetup.qrDataUrl"
+                  alt="两步验证二维码"
+                  class="size-44 rounded-md border bg-white p-1"
+                >
+              </div>
               <div class="space-y-1.5 rounded-md border bg-muted/40 p-3">
-                <p class="text-xs text-muted-foreground">密钥</p>
+                <p class="text-xs text-muted-foreground">密钥（手动输入）</p>
                 <div class="flex items-center gap-2">
                   <code class="font-mono text-sm break-all">{{ twoFASetup.secret }}</code>
                   <Button variant="ghost" size="sm" @click="copyText(twoFASetup.secret)">复制</Button>

@@ -407,6 +407,9 @@ const seoMeta = computed(() => {
 
 useHead(() => seoMeta.value);
 
+// 文章手机端扫码查看：复用 /api/qr 通用接口，QR 内容为规范 URL
+const articleQr = computed(() => `/api/qr?text=${encodeURIComponent(`${siteConfig.siteUrl}${route.path}`)}`);
+
 // 监听文章数据变化，触发渐入动画
 watch(
   () => content.value,
@@ -835,6 +838,18 @@ onUnmounted(() => {
       <section v-if="commentEnabled" class="w-full opacity-0 translate-y-8 duration-300 ease-out animate-fade-in article-constrained comment-section">
         <CommentList :content-id="content.cid" :load-all-comments="!!route.hash && route.hash.startsWith('#comment-')" />
       </section>
+
+      <!-- 扫码在手机端查看 -->
+      <div class="article-constrained flex flex-col items-center gap-2 py-6 text-center opacity-0 translate-y-8 duration-300 ease-out animate-fade-in">
+        <p class="text-sm text-muted-foreground">扫码在手机端查看本文</p>
+        <img
+          :src="articleQr"
+          alt="文章二维码"
+          class="size-32 rounded-md border p-1"
+          loading="lazy"
+          decoding="async"
+        >
+      </div>
     </article>
   </div>
 </template>
