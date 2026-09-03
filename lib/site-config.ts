@@ -90,6 +90,10 @@ export interface SiteConfig {
     miniApi: boolean;
     /** 是否开启小程序评论功能；关闭后小程序端不展示评论区、服务端评论接口也不受理 */
     miniComment: boolean;
+    /** 文章页「本文可在【手机】上看」入口开关 */
+    mobileQr: boolean;
+    /** 文章页「本文可在【小程序】上看」入口开关（还需运行时配置 WECHAT_MINI_* 才显示） */
+    miniQr: boolean;
   };
   /** 高德地图接入配置 */
   amap: {

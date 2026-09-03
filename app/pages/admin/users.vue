@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type {CurrentUser, UserDetail} from "~/types/apis/admin/users";
 import type {ApiError} from "~/types/error";
+import type {
+  TwoFactorStatusResponse,
+  TwoFactorSetupResponse,
+  TrustedDevicesResponse,
+  TrustedDevice,
+} from "~/types/apis/auth";
 
 const toast = useToast()
 
@@ -9,6 +15,16 @@ const loadError = ref('')
 const saving = ref(false)
 const user = ref<UserDetail | null>(null)
 const csrfToken = ref('')
+
+// 两步验证
+const twoFactor = ref<TwoFactorStatusResponse>({ enabled: false, pendingSetup: false })
+const twoFASetup = reactive({ secret: '', otpauthUrl: '', qrDataUrl: '' })
+const twoFACode = ref('')
+const twoFABusy = ref(false)
+
+// 已信任设备（后台可列/撤）
+const trustedDevices = ref<TrustedDevice[]>([])
+const devicesBusy = ref<number | null>(null)
 
 // 表单数据
 const formData = ref({
@@ -93,8 +109,136 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 
+// ===== 两步验证 =====
+async function fetchTwoFactorStatus() {
+  try {
+    const res = await $fetch<TwoFactorStatusResponse>('/api/auth/2fa/status')
+    twoFactor.value = res
+    if (!res.enabled) {
+      // 无启用中的密钥，重置已展示的 setup 状态
+      twoFASetup.secret = ''
+      twoFASetup.otpauthUrl = ''
+      twoFASetup.qrDataUrl = ''
+    }
+  } catch {
+    // 状态获取失败不阻断页面
+  }
+}
+
+// 开始启用：生成密钥，展示 secret + otpauth 串
+async function enable2FA() {
+  if (!csrfToken.value) {
+    toast.error({ message: '会话已失效，请刷新页面后重试' })
+    return
+  }
+  twoFABusy.value = true
+  try {
+    const res = await $fetch<TwoFactorSetupResponse>('/api/auth/2fa/setup', {
+      method: 'POST',
+      body: { csrfToken: csrfToken.value },
+    })
+    twoFASetup.secret = res.secret
+    twoFASetup.otpauthUrl = res.otpauthUrl
+    twoFASetup.qrDataUrl = res.qrDataUrl
+    twoFactor.value = { enabled: false, pendingSetup: true }
+    twoFACode.value = ''
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: '启用失败', description: error?.data?.message || '请稍后重试' })
+  } finally {
+    twoFABusy.value = false
+  }
+}
+
+// 确认启用：用当前动态码验证
+async function confirmEnable() {
+  if (!/^\d{6}$/.test(twoFACode.value.trim())) {
+    toast.error({ message: '请输入 6 位动态验证码' })
+    return
+  }
+  twoFABusy.value = true
+  try {
+    await $fetch('/api/auth/2fa/enable', {
+      method: 'POST',
+      body: { csrfToken: csrfToken.value, code: twoFACode.value.trim() },
+    })
+    toast.success({ message: '两步验证已启用' })
+    twoFACode.value = ''
+    await fetchTwoFactorStatus()
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: '确认失败', description: error?.data?.message || '请重新输入' })
+  } finally {
+    twoFABusy.value = false
+  }
+}
+
+// 停用：需当前动态码（服务端亦接受账户密码回退）
+async function disable2FA() {
+  if (!/^\d{6}$/.test(twoFACode.value.trim())) {
+    toast.error({ message: '请输入 6 位动态验证码' })
+    return
+  }
+  twoFABusy.value = true
+  try {
+    await $fetch('/api/auth/2fa/disable', {
+      method: 'POST',
+      body: { csrfToken: csrfToken.value, code: twoFACode.value.trim() },
+    })
+    toast.success({ message: '两步验证已停用' })
+    twoFACode.value = ''
+    await fetchTwoFactorStatus()
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: '停用失败', description: error?.data?.message || '请重新输入' })
+  } finally {
+    twoFABusy.value = false
+  }
+}
+
+function copyText(text: string) {
+  navigator.clipboard?.writeText(text).then(
+    () => toast.success({ message: '已复制' }),
+    () => toast.error({ message: '复制失败' }),
+  )
+}
+
+// ===== 已信任设备管理 =====
+async function fetchTrustedDevices() {
+  try {
+    const res = await $fetch<TrustedDevicesResponse>('/api/admin/2fa/devices')
+    trustedDevices.value = res.devices
+  } catch {
+    // 失败不阻断页面
+  }
+}
+
+async function revokeDevice(id: number) {
+  if (devicesBusy.value != null) return
+  devicesBusy.value = id
+  try {
+    await $fetch(`/api/admin/2fa/devices/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-csrf-token': csrfToken.value },
+    })
+    toast.success({ message: '已撤回该设备' })
+    await fetchTrustedDevices()
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: '撤回失败', description: error?.data?.message || '请稍后重试' })
+  } finally {
+    devicesBusy.value = null
+  }
+}
+
+function fmtDeviceTime(iso: string) {
+  return new Date(iso).toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
 onMounted(() => {
   fetchUser()
+  fetchTwoFactorStatus()
+  fetchTrustedDevices()
 })
 </script>
 
@@ -215,6 +359,105 @@ onMounted(() => {
       <div v-else class="flex flex-col items-center justify-center gap-4">
         <div class="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         <p class="text-muted-foreground">加载中...</p>
+      </div>
+    </Card>
+
+    <!-- 两步验证 -->
+    <Card v-if="!loading && user" class="mt-6">
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <Icon name="lucide:shield-check" class="size-5 text-primary" />
+          <div>
+            <h3 class="text-lg font-semibold">两步验证</h3>
+            <p class="text-sm text-muted-foreground">用认证器 App 为登录额外加一层保障</p>
+          </div>
+        </div>
+
+        <Separator />
+
+        <!-- 已启用 -->
+        <div v-if="twoFactor.enabled" class="space-y-4">
+          <div class="flex items-center gap-2 text-sm">
+            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">已启用</span>
+            <span class="text-muted-foreground">登录时除密码外还需认证器动态码</span>
+          </div>
+          <div class="flex items-end gap-2 max-w-sm">
+            <Input v-model="twoFACode" inputmode="numeric" maxlength="6" placeholder="输入动态码以停用" class="flex-1" />
+            <Button variant="destructive" :disabled="twoFABusy" @click="disable2FA">停用</Button>
+          </div>
+          <p class="text-xs text-muted-foreground">若认证器不可用，可改用账户密码停用（服务端支持密码回退）。</p>
+        </div>
+
+        <!-- 未启用 -->
+        <div v-else class="space-y-4">
+          <template v-if="!twoFASetup.secret">
+            <p class="text-sm text-muted-foreground">启用后登录需输入认证器 App 的 6 位动态码，可防密码泄露被登入。</p>
+            <Button :disabled="twoFABusy" @click="enable2FA">
+              <Icon v-if="twoFABusy" name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
+              启用两步验证
+            </Button>
+          </template>
+
+          <!-- 已生成密钥：引导录入并确认 -->
+          <template v-else>
+            <div class="space-y-2 text-sm">
+              <p>1. 用认证器 App（Google Authenticator / Authy / 1Password）扫码添加，或手动输入下方密钥。</p>
+              <div class="flex justify-center py-1">
+                <img
+                  v-if="twoFASetup.qrDataUrl"
+                  :src="twoFASetup.qrDataUrl"
+                  alt="两步验证二维码"
+                  class="size-44 rounded-md border bg-white p-1"
+                >
+              </div>
+              <div class="space-y-1.5 rounded-md border bg-muted/40 p-3">
+                <p class="text-xs text-muted-foreground">密钥（手动输入）</p>
+                <div class="flex items-center gap-2">
+                  <code class="font-mono text-sm break-all">{{ twoFASetup.secret }}</code>
+                  <Button variant="ghost" size="sm" @click="copyText(twoFASetup.secret)">复制</Button>
+                </div>
+                <p class="text-xs text-muted-foreground pt-1">或打开链接自动添加：</p>
+                <div class="flex items-center gap-2">
+                  <code class="font-mono text-xs break-all text-muted-foreground max-w-[90%]">{{ twoFASetup.otpauthUrl }}</code>
+                  <Button variant="ghost" size="sm" @click="copyText(twoFASetup.otpauthUrl)">复制</Button>
+                </div>
+              </div>
+              <p class="pt-1">2. 输入 App 显示的当前动态码，确认后即启用。</p>
+              <div class="flex items-end gap-2 max-w-sm">
+                <Input v-model="twoFACode" inputmode="numeric" maxlength="6" placeholder="6 位动态码" class="flex-1" />
+                <Button :disabled="twoFABusy" @click="confirmEnable">确认启用</Button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </Card>
+
+    <!-- 已信任设备 -->
+    <Card v-if="!loading && user" class="mt-6">
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <Icon name="lucide:smartphone" class="size-5 text-primary" />
+          <div>
+            <h3 class="text-lg font-semibold">已信任设备</h3>
+            <p class="text-sm text-muted-foreground">勾选「信任此设备」登录的设备；撤回后需重新输动态码</p>
+          </div>
+        </div>
+        <Separator />
+        <p v-if="trustedDevices.length === 0" class="text-sm text-muted-foreground">暂无已信任的设备</p>
+        <ul v-else class="space-y-3">
+          <li v-for="d in trustedDevices" :key="d.id" class="flex items-center justify-between gap-4 rounded-md border p-3">
+            <div class="min-w-0 space-y-0.5">
+              <p class="truncate text-sm font-medium" :title="d.userAgent || ''">{{ d.userAgent || '未知设备' }}</p>
+              <p class="text-xs text-muted-foreground">
+                IP {{ d.ip || '-' }} · 最近登录 {{ fmtDeviceTime(d.lastUsedAt) }} · 到期 {{ fmtDeviceTime(d.expiresAt) }}
+              </p>
+            </div>
+            <Button size="sm" variant="destructive" :disabled="devicesBusy != null" @click="revokeDevice(d.id)">
+              {{ devicesBusy === d.id ? '撤回中...' : '撤回' }}
+            </Button>
+          </li>
+        </ul>
       </div>
     </Card>
   </AdminLayout>

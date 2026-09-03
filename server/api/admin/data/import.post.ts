@@ -112,6 +112,27 @@ export default defineEventHandler(async event => {
 					counts[spec.model] = result.count;
 				}
 
+				// 备份用显式 id 写回，SERIAL 序列不会自动推进（nextval 只在默认值触发）。
+				// 若不重置，后续 insert（含下方补回 sessionStoreType 的自增 id）会与已经导入的
+				// 自增主键撞车（informations_pkey 之类）。对每张单列自增主键表把序列重置到 MAX(id)+1。
+				// 复合主键表（contentrelations/contentattachments/contenttravels）无序列，跳过。
+				for (const [table, col] of [
+					["attachments", "aid"],
+					["metas", "mid"],
+					["changelogs", "id"],
+					["informations", "id"],
+					["links", "id"],
+					["travels", "id"],
+					["contents", "cid"],
+					["comments", "coid"],
+					["subscribes", "id"],
+					["subscribeposts", "id"],
+				] as const) {
+					await tx.$executeRawUnsafe(
+						`SELECT setval(pg_get_serial_sequence('${table}', '${col}'), COALESCE((SELECT MAX(${col}) FROM "${table}"), 0) + 1, false)`,
+					);
+				}
+
 				// 补回导入前的 Session 存储方式（不受备份文件影响）
 				if (sessionStore) {
 					await tx.informations.create({ data: { key: "sessionStoreType", value: sessionStore.value } });

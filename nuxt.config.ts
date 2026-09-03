@@ -14,6 +14,9 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 function genBuildHash(): string {
+  // 开发环境没有真正的构建产物版本号：资产走本地 _nuxt/、无 CDN hash 目录（见 buildHashDir），
+  // 别展示虚假的"时间戳-随机串"，统一显示"开发版"；生产环境才生成真实 hash。
+  if (!isProduction) return "开发版";
   const d = new Date();
   const ts =
     `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}` + `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
@@ -449,6 +452,7 @@ export default defineNuxtConfig({
         "@tiptap/core",
         "@tiptap/starter-kit",
         "tiptap-markdown",
+        "ogl",
       ],
     },
     build: {
@@ -464,28 +468,12 @@ export default defineNuxtConfig({
           // 富文本编辑器（Tiptap/ProseMirror）仍不设 manual chunk：避免共享 CJS
           // helper 被并进 tiptap 块，导致首页动态加载 APlayer 时整包拉取 ~500KB。
           manualChunks(id) {
-            if (
-              id.includes("node_modules/vue/") ||
-              id.includes("node_modules/@vue/runtime-")
-            )
-              return "vue";
-            if (
-              id.includes("node_modules/reka-ui") ||
-              id.includes("node_modules/lucide-vue-next") ||
-              id.includes("node_modules/vue-sonner")
-            )
+            if (id.includes("node_modules/vue/") || id.includes("node_modules/@vue/runtime-")) return "vue";
+            if (id.includes("node_modules/reka-ui") || id.includes("node_modules/lucide-vue-next") || id.includes("node_modules/vue-sonner"))
               return "ui";
-            if (
-              id.includes("node_modules/@vueuse/") ||
-              id.includes("node_modules/clsx") ||
-              id.includes("node_modules/class-variance-authority")
-            )
+            if (id.includes("node_modules/@vueuse/") || id.includes("node_modules/clsx") || id.includes("node_modules/class-variance-authority"))
               return "utils";
-            if (
-              id.includes("node_modules/swiper") ||
-              id.includes("node_modules/@fancyapps/")
-            )
-              return "media";
+            if (id.includes("node_modules/swiper") || id.includes("node_modules/@fancyapps/")) return "media";
           },
         },
         // 忽略循环依赖警告以减少日志输出

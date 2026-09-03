@@ -16,10 +16,12 @@ import type { SiteSettings } from "~/types/composables/setting";
 export default defineNuxtPlugin(async () => {
   const siteSettings = useState<SiteSettings | null>("site:settings", () => null);
   const buildHash = useState<string | null>("site:buildHash", () => null);
+  const miniQrEnabled = useState<boolean>("site:miniQrEnabled", () => false);
 
   // 构建哈希：非 public（不进 __NUXT__ 的 runtimeConfig），服务端直读，随 payload 下发。
   if (import.meta.server) {
     buildHash.value = useRuntimeConfig().buildHash ?? null;
+    miniQrEnabled.value = Boolean(process.env.WECHAT_MINI_APPID && process.env.WECHAT_MINI_SECRET);
   }
 
   if (siteSettings.value) {
