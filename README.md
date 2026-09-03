@@ -12,6 +12,8 @@
 - [更新日志格式](#更新日志格式)
 - [辅助功能](#辅助功能)
 - [故障排查](#故障排查)
+- [服务器管理 PostgreSQL 数据库](#服务器管理-postgresql-数据库)
+- [服务器管理 PostgreSQL 数据库（pgweb · 推荐）](#服务器管理-postgresql-数据库pgweb--推荐)
 
 ## 项目介绍
 
@@ -701,3 +703,13 @@ type ChangelogItem = {
 | 改了 `DB_NAME` 后 Docker 节里的 `psql` / `pg_dump` 命令连不上 | 这些命令请用 `"$DB_NAME"` 而非硬编码库名，详见 [「使用 Docker 部署」](#使用-docker-部署)。 |
 | Firefox 下实况照片无法播放 | 多为 HEVC 编码，Firefox 暂不支持，会自动降级为静态图；如需播放需服务端转码。 |
 | Docker 构建报 `lockfile had changes, but lockfile is frozen` | 镜像 `oven/bun` 与本地 bun 大版本不一致。本仓库 `package.json` 锁定 `bun@1.4.0`，`docker/Dockerfile*` 的 builder 阶段已统一改为 `oven/bun:1.4`；若你 fork 后改回 1.3.x 会触发此错。 |
+
+## 服务器管理 PostgreSQL 数据库
+
+宝塔面板没有提供 PostgreSQL 数据库的管理器，没有类似 phpMyAdmin 的界面，所以我们需要手动安装，并在宝塔面板中配置入口。
+
+> 💡 **更推荐的方式**：直接用 [pgweb](#服务器管理-postgresql-数据库pgweb--推荐)——单容器、单端口，零账号体系、无 hash 兼容坑，5 分钟搞定。下方 pgadmin 章节保留作为历史备选，新部署不必再看。
+
+示例机器：Ubuntu 24.04。
+
+在宝塔中安装 Docker，然后在应用搜 “pgadmin”，配置好相关信息，安装完成就可以使用了。
