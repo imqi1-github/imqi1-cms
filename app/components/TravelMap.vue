@@ -392,11 +392,11 @@ function buildInfoContent(place: Place) {
   // 扫码在高德打开（仅该地点有坐标时；InfoWindow 为原生 HTML，直接内联 <img>/icon）
   const qrHtml =
     place.longitude != null && place.latitude != null
-      ? `<div style="margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:6px;">
+      ? `<div style="margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:6px;margin-right:13px;">
           <img src="/api/qr?text=${encodeURIComponent(
             `https://uri.amap.com/marker?position=${place.longitude},${place.latitude}&name=${encodeURIComponent(place.name || "")}&src=imqi1&coordinate=gcj02&callnative=1`,
-          )}" alt="扫码在高德打开" style="width:104px;height:104px;border:1px solid rgba(148,163,184,.4);border-radius:8px;" />
-          <span class="travel-info-desc" style="font-size:11px;">扫码在高德打开</span>
+          )}" alt="在高德地图查看此位置" style="width:104px;height:104px" />
+          <span class="travel-info-desc" style="font-size:11px;">在高德地图查看</span>
         </div>`
       : "";
 

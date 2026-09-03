@@ -31,25 +31,9 @@
 
       <!-- 联系链接 -->
       <div v-scroll-reveal class="will-change-[opacity,transform] flex mt-3 self-start max-md:mx-auto max-md:flex-wrap max-md:justify-center">
-        <template v-for="(link, index) in contactLinks" :key="index">
-          <!-- 二维码项：悬浮展示二维码图片 -->
-          <button
-            v-if="link.qrcode"
-            class="group relative flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-            :class="{ 'bg-slate-100 dark:bg-gray-800 text-slate-900 dark:text-white': activeQrcodeIndex === index }"
-            :aria-label="link.name"
-            :aria-expanded="activeQrcodeIndex === index"
-            @click.stop="toggleQrcode(index)">
-            <Icon :name="link.icon" aria-hidden="true" class="size-5" mode="svg" />
-            <div
-              class="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 z-30 w-max opacity-0 scale-95 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0"
-              :class="{ 'opacity-100! scale-100! translate-y-0!': activeQrcodeIndex === index }">
-              <div class="rounded-lg bg-white dark:bg-[#1e1e1e] p-2 shadow-[0_6px_30px_#0000001a] border border-slate-200 dark:border-gray-700">
-                <img :src="publicAsset(link.qrcode)" :alt="link.name" width="144" height="144" class="block w-36 h-36 max-w-none rounded-full object-cover" >
-                <p class="mt-1 text-center text-xs text-slate-600 dark:text-gray-400">{{ link.name }}</p>
-              </div>
-            </div>
-          </button>
+        <template v-for="link in contactLinks" :key="link.name">
+          <!-- 二维码项：抽出为 SiteQrcodeButton 组件,封装弹层状态/点外部关闭/Esc 关闭/a11y -->
+          <SiteQrcodeButton v-if="link.qrcode" :link="link" />
           <!-- 普通链接项 -->
           <NuxtLink
             v-else
@@ -975,13 +959,8 @@ const homeAnnounce = computed(() => siteSettings.value?.homeCustomText || siteCo
 const photoCategorySlug = computed(() => homeData.value?.data?.site?.photoCategorySlug || "shot");
 
 // 联系链接配置
-const contactLinks = ref(siteConfig.social);
-
-// 当前展开的二维码索引（移动端点击切换显示/隐藏；-1 表示全部收起）
-const activeQrcodeIndex = ref(-1);
-const toggleQrcode = (index: number) => {
-  activeQrcodeIndex.value = activeQrcodeIndex.value === index ? -1 : index;
-};
+// siteConfig.social 是模块级常量,不会响应式变化,无需 ref 包装。
+const contactLinks = siteConfig.social;
 
 const themeItems = computed<ThemeCardItem[]>(() => [
   {
@@ -1174,11 +1153,6 @@ onMounted(() => {
 
   // 唯一 scroll 监听（passive：handler 不调 preventDefault，允许浏览器并行滚动）
   useEventListener(window, "scroll", onScroll, { passive: true });
-
-  // 点击页面其他区域时收起已展开的二维码
-  useEventListener(document, "click", () => {
-    if (activeQrcodeIndex.value !== -1) activeQrcodeIndex.value = -1;
-  });
 
   // offsetTop 缓存失效：resize（防抖）+ 字体加载 + 兜底定时器
   useEventListener(window, "resize", useDebounceFn(invalidateOffsets, 200), { passive: true });

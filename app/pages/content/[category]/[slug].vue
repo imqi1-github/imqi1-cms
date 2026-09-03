@@ -411,26 +411,34 @@ useHead(() => seoMeta.value);
 const articleQr = computed(() => `/api/qr?text=${encodeURIComponent(`${siteConfig.siteUrl}${route.path}`)}`);
 
 // 小程序码（「文章小程序端看」）：懒加载，避免每篇都调微信 API；出错自动隐藏
-const miniQrUrl = computed(() => `/api/mini/qrcode?cid=${content.value?.cid ?? ''}`)
-const miniQrFailed = ref(false)
+const miniQrUrl = computed(() => `/api/mini/qrcode?cid=${content.value?.cid ?? ""}`);
+const miniQrFailed = ref(false);
 // CC 栏入口：悬浮显示对应码；小程序在 site.config 开启且运行时配了凭据才显示
-const hoverQr = ref<'mobile' | 'mini' | null>(null)
-const { miniQrEnabled } = useSiteSettings()
-const mobileQrEnabled = siteConfig.features.mobileQr
-const miniQrShown = computed(() => siteConfig.features.miniQr && miniQrEnabled.value && !miniQrFailed.value)
+const hoverQr = ref<"mobile" | "mini" | null>(null);
+const { miniQrEnabled } = useSiteSettings();
+const mobileQrEnabled = siteConfig.features.mobileQr;
+const miniQrShown = computed(() => siteConfig.features.miniQr && miniQrEnabled.value && !miniQrFailed.value);
 
 // 悬浮出码：离开胶囊/码后延迟关闭，给「从胶囊移到码」留时间；码用绝对定位避免挤占布局
-let qrHideTimer: ReturnType<typeof setTimeout> | null = null
-function showQr(v: 'mobile' | 'mini') {
-  if (qrHideTimer) { clearTimeout(qrHideTimer); qrHideTimer = null }
-  hoverQr.value = v
+let qrHideTimer: ReturnType<typeof setTimeout> | null = null;
+function showQr(v: "mobile" | "mini") {
+  if (qrHideTimer) {
+    clearTimeout(qrHideTimer);
+    qrHideTimer = null;
+  }
+  hoverQr.value = v;
 }
 function keepQr() {
-  if (qrHideTimer) { clearTimeout(qrHideTimer); qrHideTimer = null }
+  if (qrHideTimer) {
+    clearTimeout(qrHideTimer);
+    qrHideTimer = null;
+  }
 }
 function hideQrSoon() {
-  if (qrHideTimer) clearTimeout(qrHideTimer)
-  qrHideTimer = setTimeout(() => { hoverQr.value = null }, 180)
+  if (qrHideTimer) clearTimeout(qrHideTimer);
+  qrHideTimer = setTimeout(() => {
+    hoverQr.value = null;
+  }, 180);
 }
 
 // 监听文章数据变化，触发渐入动画
@@ -613,7 +621,6 @@ onMounted(async () => {
         window.addEventListener("scroll", handleTocScroll);
       });
     });
-
   } catch (error) {
     console.error("页面功能初始化失败:", error);
   }
@@ -730,9 +737,7 @@ onUnmounted(() => {
         </aside>
 
         <!-- 文章正文 -->
-        <MarkdownBody
-          :html="content.renderedContent"
-          class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out" />
+        <MarkdownBody :html="content.renderedContent" class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out" />
       </div>
 
       <!-- 元信息盒子和 CC 授权 -->
@@ -798,11 +803,7 @@ onUnmounted(() => {
             <div class="flex flex-wrap items-center gap-1">
               <Icon mode="svg" name="ri:qr-code-line" class="size-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
               你也可以在
-              <span
-                v-if="mobileQrEnabled"
-                class="relative inline-flex"
-                @mouseenter="showQr('mobile')"
-                @mouseleave="hideQrSoon()">
+              <span v-if="mobileQrEnabled" class="relative inline-flex" @mouseenter="showQr('mobile')" @mouseleave="hideQrSoon()">
                 <button
                   type="button"
                   class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100 dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 cursor-pointer">
@@ -814,19 +815,20 @@ onUnmounted(() => {
                   class="absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-lg border border-gray-200 bg-white/95 p-1.5 shadow-md dark:border-gray-800 dark:bg-black/85"
                   @mouseenter="keepQr()"
                   @mouseleave="hideQrSoon()">
-                  <img :src="articleQr" alt="手机端查看二维码" class="block size-28 max-w-none object-contain rounded-md" loading="lazy" decoding="async">
+                  <img
+                    :src="articleQr"
+                    alt="手机端查看二维码"
+                    class="block size-28 max-w-none object-contain rounded-md"
+                    loading="lazy"
+                    decoding="async" />
                 </div>
               </span>
               <template v-if="mobileQrEnabled && miniQrShown">或</template>
-              <span
-                v-if="miniQrShown"
-                class="relative inline-flex"
-                @mouseenter="showQr('mini')"
-                @mouseleave="hideQrSoon()">
+              <span v-if="miniQrShown" class="relative inline-flex" @mouseenter="showQr('mini')" @mouseleave="hideQrSoon()">
                 <button
                   type="button"
                   class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100 dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 cursor-pointer">
-                  <img :src="publicAsset('/icons/wechat.svg')" class="size-3 shrink-0" alt="微信小程序">
+                  <img :src="publicAsset('/icons/wechat.svg')" class="size-3 shrink-0" alt="微信小程序" />
                   微信小程序
                 </button>
                 <div
@@ -834,21 +836,27 @@ onUnmounted(() => {
                   class="absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-lg border border-gray-200 bg-white/95 p-1.5 shadow-md dark:border-gray-800 dark:bg-black/85"
                   @mouseenter="keepQr()"
                   @mouseleave="hideQrSoon()">
-                  <img :src="miniQrUrl" alt="小程序码" class="block size-28 max-w-none object-contain rounded-md" loading="lazy" decoding="async" @error="miniQrFailed = true">
+                  <img
+                    :src="miniQrUrl"
+                    alt="小程序码"
+                    class="block size-28 max-w-none object-contain rounded-md"
+                    loading="lazy"
+                    decoding="async"
+                    @error="miniQrFailed = true">
                 </div>
               </span>
               中查看此内容
             </div>
           </div>
-        </div>
 
-        <!-- 相关地点：逐地点渲染胶囊，点击跳转到地图足迹视图并聚焦该地点 -->
-        <MapEntryLinks
-          v-if="content.travels?.length"
-          :places="(content.travels ?? []).map(t => ({ id: t.id, name: t.name }))"
-          place-icon="ri:map-pin-line"
-          title="作者在撰写此篇文章前，曾去过"
-          class="mt-4" />
+          <!-- 相关地点：逐地点渲染胶囊，点击跳转到地图足迹视图并聚焦该地点 -->
+          <MapEntryLinks
+            v-if="content.travels?.length"
+            :places="(content.travels ?? []).map(t => ({ id: t.id, name: t.name }))"
+            place-icon="ri:map-pin-line"
+            title="作者在撰写此篇文章前，曾去过"
+            class="mt-3" />
+        </div>
       </div>
 
       <!-- 相关文章 -->
@@ -856,7 +864,9 @@ onUnmounted(() => {
         <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
         <span class="text-sm">加载相关文章...</span>
       </div>
-      <section v-if="relatedContents.length > 0" class="related-contents-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
+      <section
+        v-if="relatedContents.length > 0"
+        class="related-contents-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
           <div
@@ -872,10 +882,12 @@ onUnmounted(() => {
                   :alt="relatedContent.title"
                   class="object-cover group-hover:scale-[1.03] transition-transform duration-300 size-full"
                   loading="lazy"
-                  decoding="async">
+                  decoding="async" />
               </div>
               <div v-else class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
-                <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{ relatedContent.title ? relatedContent.title.charAt(0) : "?" }}</span>
+                <span class="text-4xl font-bold text-gray-400 dark:text-gray-600">{{
+                  relatedContent.title ? relatedContent.title.charAt(0) : "?"
+                }}</span>
               </div>
               <div
                 class="w-full px-4 py-2"
