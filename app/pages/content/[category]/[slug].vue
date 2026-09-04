@@ -411,7 +411,8 @@ useHead(() => seoMeta.value);
 const articleQr = computed(() => `/api/qr?text=${encodeURIComponent(`${siteConfig.siteUrl}${route.path}`)}`);
 
 // 小程序码（「文章小程序端看」）：懒加载，避免每篇都调微信 API；出错自动隐藏
-const miniQrUrl = computed(() => `/api/mini/qrcode?cid=${content.value?.cid ?? ""}`);
+// 注意走公开 /api/qrcode（/api/mini/* 在会签 HMAC 鉴权，主站 <img> 无签名会 401）
+const miniQrUrl = computed(() => `/api/qrcode?cid=${content.value?.cid ?? ""}`);
 const miniQrFailed = ref(false);
 // CC 栏入口：悬浮显示对应码；小程序在 site.config 开启且运行时配了凭据才显示
 const hoverQr = ref<"mobile" | "mini" | null>(null);

@@ -2,7 +2,7 @@
  * 微信小程序码服务端封装（`文章小程序端看`）。
  *
  * 依赖 .env 的 WECHAT_MINI_APPID / WECHAT_MINI_SECRET；未配置时 generateMiniProgramCode 抛错，
- * 由 /api/mini/qrcode 转为 404（前端据此自动隐藏入口）。access_token 内存缓存（微信 7200s 有效期）。
+ * 由 /api/qrcode 转为 404（前端据此自动隐藏入口）。access_token 内存缓存（微信 7200s 有效期）。
  * 只做服务端外联，token/secret 不外泄。
  */
 

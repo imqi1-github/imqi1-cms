@@ -2,6 +2,7 @@ import { generateMiniProgramCode } from "#server/utils/wechat-mini";
 
 /**
  * 文章小程序码（GET ?cid=<内容id>）：调微信 getwxacodeunlimit 返回小程序码 PNG。
+ * 由主站「文章小程序端看」入口使用，故放在公开 /api/*（非 /api/mini/*）。
  * 未配置 WECHAT_MINI_* 时返回 404（前端据此隐藏「小程序看」入口）。
  */
 export default defineEventHandler(async event => {
@@ -22,7 +23,7 @@ export default defineEventHandler(async event => {
     if (msg.includes("未配置")) {
       throw createError({ statusCode: 404, message: "未配置微信小程序凭据" });
     }
-    console.error("[mini/qrcode]", msg);
+    console.error("[qrcode]", msg);
     throw createError({ statusCode: 502, message: "小程序码生成失败" });
   }
 });

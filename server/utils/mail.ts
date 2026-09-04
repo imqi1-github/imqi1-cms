@@ -226,7 +226,8 @@ async function getSiteInfo() {
 
   return {
     name: get("siteName") || siteConfig.siteName,
-    url: get("siteUrl") || siteConfig.siteUrl,
+    // 去掉尾部斜杠，避免拼出 /content/... 前多一个 '/'（如 siteUrl 写成 https://x.com/）
+    url: (get("siteUrl") || siteConfig.siteUrl).replace(/\/+$/, ""),
   };
 }
 
@@ -274,12 +275,15 @@ async function getContentUrl(cid: number, commentId?: number): Promise<string> {
   const siteInfo = await getSiteInfo();
   const content = await prisma.contents.findUnique({
     where: { cid },
-    select: { slug: true },
+    select: { slug: true, type: true },
   });
 
   let url: string;
-  if (content?.slug) {
-    // 优先使用 slug
+  if (content?.type === 1 && content.slug) {
+    // 独立页面（type=1，如留言板 /messages）：走 /<slug> 路由，而非文章的 /content/<category>/<slug>。
+    url = `${siteInfo.url}/${content.slug}`;
+  } else if (content?.slug) {
+    // 文章（type=0）优先使用 slug
     const category = await prisma.contentrelations.findFirst({
       // contentrelations 同时承接 tag 与 category，缺 type 过滤时 findFirst 可能取到标签，
       // 使邮件链接指向 tag 路由而 404；orderBy 保证取第一个分类的确定性。
@@ -293,7 +297,9 @@ async function getContentUrl(cid: number, commentId?: number): Promise<string> {
         },
       },
     });
-    const categorySlug = category?.metas?.slug || "contents";
+    // 无分类文章走 uncategorized 兜底分类（与前台 archiving/search/sitemap 一致），
+    // 而非 "contents"（会生成 /content/contents/<slug> → 文章 API 404）。
+    const categorySlug = category?.metas?.slug || "uncategorized";
     url = `${siteInfo.url}/content/${categorySlug}/${content.slug}`;
   } else {
     url = `${siteInfo.url}/content/contents/${cid}`;
