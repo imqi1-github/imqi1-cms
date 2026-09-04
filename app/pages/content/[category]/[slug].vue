@@ -189,31 +189,38 @@ const relatedContentsData = ref<{ success: boolean; data: RelatedContent[] } | n
 const relatedContentsPending = ref(false);
 
 // 监听文章数据，加载后再获取相关文章。
-// 仅客户端：immediate 会在 SSR setup 也触发（content 已由顶层 useFetch 填充），服务端自取会被丢弃且
-// 不序列化 → 双发；此处用 import.meta.client 守卫 + 卸载守卫，避免双发与卸载后回写。
+// 仅客户端：服务端不取相关文章（避免双发与卸载后回写），用 import.meta.client + 卸载守卫。
+// 关键：首帧不置 relatedContentsPending，改为 onMounted 后再触发加载。若在 setup 同步置 true，
+// 客户端首帧会渲染「加载相关文章」div，而 SSR 该处为注释（服务端被守卫挡回 → 不渲染），
+// 造成 hydration node mismatch（comment↔div）。onMounted 触发后首帧 SSR/客户端均无加载态，结构一致。
 let relatedActive = true;
 onUnmounted(() => {
   relatedActive = false;
 });
+const loadRelatedContents = async (contentId?: number) => {
+  if (!import.meta.client || !contentId || !relatedActive) return;
+  relatedContentsPending.value = true;
+  try {
+    const res = await $fetch<{ success: boolean; data: RelatedContent[] }>(`/api/related-contents/${contentId}?limit=3`, {
+      headers: getInternalRequestHeaders(),
+    });
+    if (relatedActive) relatedContentsData.value = res;
+  } catch (error) {
+    console.error("获取相关文章失败:", error);
+    if (relatedActive) relatedContentsData.value = { success: false, data: [] };
+  } finally {
+    if (relatedActive) relatedContentsPending.value = false;
+  }
+};
 watch(
   () => content.value?.cid,
   async contentId => {
-    if (!import.meta.client || !contentId || !relatedActive) return;
-    relatedContentsPending.value = true;
-    try {
-      const res = await $fetch<{ success: boolean; data: RelatedContent[] }>(`/api/related-contents/${contentId}?limit=3`, {
-        headers: getInternalRequestHeaders(),
-      });
-      if (relatedActive) relatedContentsData.value = res;
-    } catch (error) {
-      console.error("获取相关文章失败:", error);
-      if (relatedActive) relatedContentsData.value = { success: false, data: [] };
-    } finally {
-      if (relatedActive) relatedContentsPending.value = false;
-    }
+    await loadRelatedContents(contentId);
   },
-  { immediate: true },
 );
+onMounted(() => {
+  loadRelatedContents(content.value?.cid);
+});
 
 const relatedContents = computed(() => {
   if (!relatedContentsData.value?.success || !content.value) return [];
