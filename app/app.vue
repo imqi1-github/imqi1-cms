@@ -279,7 +279,7 @@ onMounted(() => {
 
         <!-- 自定义扫描进度条：彗星拖尾从左掠过 -->
         <div class="relative h-1 w-52 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800/80 max-md:w-44">
-          <div class="loading-comet absolute inset-y-0 left-0 w-2/5 rounded-full bg-gradient-to-r from-transparent via-blue-500 to-violet-500 shadow-[0_0_10px_rgba(59,130,246,0.65)]" />
+          <div class="loading-comet absolute inset-y-0 left-0 w-2/5 rounded-full bg-linear-to-r from-transparent via-blue-500 to-violet-500 shadow-[0_0_10px_rgba(59,130,246,0.65)]" />
         </div>
 
         <!-- 文字提示（省略号循环） -->

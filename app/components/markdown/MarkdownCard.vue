@@ -23,12 +23,12 @@ defineProps<{ url: string; title: string; description: string; image: string }>(
         </div>
         <div class="min-w-0 flex-1 p-5 flex flex-col justify-center">
           <div class="flex min-w-0 items-start justify-between gap-3 mb-2">
-            <div class="min-w-0 text-[18px] leading-snug font-bold text-slate-900 dark:text-slate-100 line-clamp-2 break-words">
+            <div class="min-w-0 text-[18px] leading-snug font-bold text-slate-900 dark:text-slate-100 line-clamp-2 wrap-break-word">
               {{ title }}
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           </div>
-          <p v-if="description" class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed break-words">
+          <p v-if="description" class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed wrap-break-word">
             {{ description }}
           </p>
           <div class="mt-3 flex min-w-0 items-center gap-2 text-xs text-slate-500 dark:text-slate-500">

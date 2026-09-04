@@ -78,7 +78,7 @@
             </div>
           </div>
           <!-- 架构图：ImQi1-CMS 为中心，左右各两节点（Nuxt / Prisma | TypeScript / Tailwind），由动画光束（AnimatedBeam）连接 -->
-          <div ref="beamContainerRef" class="relative mx-auto h-[22rem] w-full max-w-2xl sm:h-[24rem]">
+          <div ref="beamContainerRef" class="relative mx-auto h-88 w-full max-w-2xl sm:h-96">
             <ClientOnly>
               <AnimatedBeam :container-ref="beamContainerRef" :from-ref="hubRef" :to-ref="nuxtNodeRef" :duration="3.5" />
               <AnimatedBeam :container-ref="beamContainerRef" :from-ref="hubRef" :to-ref="prismaNodeRef" :duration="4" />
@@ -88,7 +88,7 @@
 
             <!-- 中心：ImQi1-CMS -->
             <div class="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
-              <div ref="hubRef" class="flex size-24 items-center justify-center rounded-3xl border border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-md dark:border-blue-800 dark:from-blue-950 dark:to-gray-900 md:size-28">
+              <div ref="hubRef" class="flex size-24 items-center justify-center rounded-3xl border border-blue-300 bg-linear-to-br from-blue-50 to-white shadow-md dark:border-blue-800 dark:from-blue-950 dark:to-gray-900 md:size-28">
                 <Icon name="ri:stack-line" class="size-11 text-blue-600 dark:text-blue-400 md:size-12" mode="svg" />
               </div>
               <span class="text-sm font-semibold text-slate-700 dark:text-gray-300">ImQi1-CMS</span>
