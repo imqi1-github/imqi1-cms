@@ -247,6 +247,7 @@ async function saveRename() {
   if (renamingId.value == null) return
   if (devicesBusy.value != null) return
   const id = renamingId.value
+  const newName = editingName.value.trim() || null
   devicesBusy.value = id
   try {
     await $fetch(`/api/admin/2fa/devices/${id}`, {
@@ -256,6 +257,9 @@ async function saveRename() {
     toast.success({ message: '设备名称已更新' })
     renamingId.value = null
     editingName.value = ''
+    // 本地先回填新名，避免 refetch 回来前旧名闪现
+    const target = trustedDevices.value.find(d => d.id === id)
+    if (target) target.name = newName
     await fetchTrustedDevices()
   } catch (rawError: unknown) {
     const error = rawError as ApiError
