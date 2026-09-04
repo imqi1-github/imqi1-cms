@@ -89,6 +89,16 @@
             <Label for="rememberDevice" class="cursor-pointer">信任此设备 30 天</Label>
           </div>
 
+          <div v-if="rememberDevice" class="space-y-2">
+            <Label for="deviceName">设备名称（可选）</Label>
+            <Input
+              id="deviceName"
+              v-model="deviceName"
+              maxlength="100"
+              placeholder="如：我的台式机"
+            />
+          </div>
+
           <Button class="w-full" :disabled="loading2FA" @click="handleVerify2FA">
             {{ loading2FA ? '验证中...' : '确认登录' }}
           </Button>
@@ -143,6 +153,7 @@ const captchaUrl = ref('')
 const challenge = ref('')
 const totpCode = ref('')
 const rememberDevice = ref(false)
+const deviceName = ref('')
 const loading2FA = ref(false)
 
 async function loadCaptcha() {
@@ -224,6 +235,7 @@ const handleLogin = async () => {
       challenge.value = res.challenge
       totpCode.value = ''
       rememberDevice.value = false
+      deviceName.value = ''
       return
     }
 
@@ -278,6 +290,7 @@ const handleVerify2FA = async () => {
         challenge: challenge.value,
         code: totpCode.value.trim(),
         rememberDevice: rememberDevice.value,
+        name: rememberDevice.value ? deviceName.value.trim() : undefined,
       },
     })
 

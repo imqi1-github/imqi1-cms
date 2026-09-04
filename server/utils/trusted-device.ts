@@ -14,14 +14,14 @@ export function generateDeviceId(): string {
 export async function createTrustedDevice(input: {
   userId: number;
   deviceId: string;
-  userAgent: string | null;
+  name: string | null;
   ip: string | null;
 }): Promise<void> {
   const expiresAt = new Date(Date.now() + TRUST_DAYS * 24 * 60 * 60 * 1000);
   await prisma.trusted_devices.upsert({
     where: { deviceId: input.deviceId },
     create: { ...input, expiresAt, lastUsedAt: new Date() },
-    update: { userAgent: input.userAgent, ip: input.ip, expiresAt, lastUsedAt: new Date() },
+    update: { name: input.name, ip: input.ip, expiresAt, lastUsedAt: new Date() },
   });
 }
 
@@ -46,7 +46,7 @@ export async function listTrustedDevices(userId: number) {
     select: {
       id: true,
       deviceId: true,
-      userAgent: true,
+      name: true,
       ip: true,
       lastUsedAt: true,
       expiresAt: true,
@@ -58,5 +58,14 @@ export async function listTrustedDevices(userId: number) {
 /** 撤回一台已信任设备（仅限本人） */
 export async function revokeTrustedDevice(id: number, userId: number): Promise<number> {
   const { count } = await prisma.trusted_devices.deleteMany({ where: { id, userId } });
+  return count;
+}
+
+/** 重命名一台已信任设备（仅限本人；name 为 null 则清空，后台显示「未知设备」） */
+export async function renameTrustedDevice(id: number, userId: number, name: string | null): Promise<number> {
+  const { count } = await prisma.trusted_devices.updateMany({
+    where: { id, userId },
+    data: { name },
+  });
   return count;
 }

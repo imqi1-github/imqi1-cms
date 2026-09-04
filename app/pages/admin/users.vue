@@ -22,9 +22,11 @@ const twoFASetup = reactive({ secret: '', otpauthUrl: '', qrDataUrl: '' })
 const twoFACode = ref('')
 const twoFABusy = ref(false)
 
-// 已信任设备（后台可列/撤）
+// 已信任设备（后台可列/撤/改名）
 const trustedDevices = ref<TrustedDevice[]>([])
 const devicesBusy = ref<number | null>(null)
+const renamingId = ref<number | null>(null)
+const editingName = ref('')
 
 // 表单数据
 const formData = ref({
@@ -226,6 +228,38 @@ async function revokeDevice(id: number) {
   } catch (rawError: unknown) {
     const error = rawError as ApiError
     toast.error({ message: '撤回失败', description: error?.data?.message || '请稍后重试' })
+  } finally {
+    devicesBusy.value = null
+  }
+}
+
+function startRename(d: TrustedDevice) {
+  editingName.value = d.name || ''
+  renamingId.value = d.id
+}
+
+function cancelRename() {
+  renamingId.value = null
+  editingName.value = ''
+}
+
+async function saveRename() {
+  if (renamingId.value == null) return
+  if (devicesBusy.value != null) return
+  const id = renamingId.value
+  devicesBusy.value = id
+  try {
+    await $fetch(`/api/admin/2fa/devices/${id}`, {
+      method: 'PUT',
+      body: { csrfToken: csrfToken.value, name: editingName.value.trim() },
+    })
+    toast.success({ message: '设备名称已更新' })
+    renamingId.value = null
+    editingName.value = ''
+    await fetchTrustedDevices()
+  } catch (rawError: unknown) {
+    const error = rawError as ApiError
+    toast.error({ message: '重命名失败', description: error?.data?.message || '请稍后重试' })
   } finally {
     devicesBusy.value = null
   }
@@ -448,7 +482,38 @@ onMounted(() => {
         <ul v-else class="space-y-3">
           <li v-for="d in trustedDevices" :key="d.id" class="flex items-center justify-between gap-4 rounded-md border p-3">
             <div class="min-w-0 space-y-0.5">
-              <p class="truncate text-sm font-medium" :title="d.userAgent || ''">{{ d.userAgent || '未知设备' }}</p>
+              <template v-if="renamingId === d.id">
+                <div class="flex items-center gap-2">
+                  <Input
+                    v-model="editingName"
+                    maxlength="100"
+                    placeholder="设备名称"
+                    class="h-8 flex-1"
+                    @keyup.enter="saveRename"
+                  />
+                  <Button size="sm" :disabled="devicesBusy != null" @click="saveRename">
+                    {{ devicesBusy === d.id ? '保存中...' : '保存' }}
+                  </Button>
+                  <Button size="sm" variant="ghost" :disabled="devicesBusy != null" @click="cancelRename">
+                    取消
+                  </Button>
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex items-center gap-1.5">
+                  <p class="truncate text-sm font-medium" :title="d.name || ''">{{ d.name || '未知设备' }}</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    class="h-6 px-2 text-muted-foreground"
+                    :disabled="devicesBusy != null"
+                    title="重命名"
+                    @click="startRename(d)"
+                  >
+                    <Icon name="lucide:pencil" class="size-3.5" />
+                  </Button>
+                </div>
+              </template>
               <p class="text-xs text-muted-foreground">
                 IP {{ d.ip || '-' }} · 最近登录 {{ fmtDeviceTime(d.lastUsedAt) }} · 到期 {{ fmtDeviceTime(d.expiresAt) }}
               </p>

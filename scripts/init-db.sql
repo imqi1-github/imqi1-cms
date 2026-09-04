@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS "trusted_devices" (
   "id" SERIAL NOT NULL,
   "userId" INTEGER NOT NULL,
   "deviceId" TEXT NOT NULL,
-  "userAgent" TEXT,
+  "name" TEXT,
   "ip" TEXT,
   "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "expiresAt" TIMESTAMP(3) NOT NULL,

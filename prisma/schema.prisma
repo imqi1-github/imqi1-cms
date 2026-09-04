@@ -184,7 +184,7 @@ model trusted_devices {
   id         Int      @id @default(autoincrement())
   userId     Int
   deviceId   String   @unique
-  userAgent  String?
+  name       String?
   ip         String?
   lastUsedAt DateTime @default(now())
   expiresAt  DateTime

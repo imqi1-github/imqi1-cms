@@ -1,4 +1,4 @@
-import { getHeader, setCookie } from "h3";
+import { setCookie } from "h3";
 
 import { setSession } from "#server/lib/auth";
 import { getClientIp } from "#server/utils/client-ip";
@@ -18,7 +18,7 @@ import { createTrustedDevice, generateDeviceId } from "#server/utils/trusted-dev
  */
 export default defineEventHandler(async event => {
   const body = await readBody(event);
-  const { challenge, code, rememberDevice } = body ?? {};
+  const { challenge, code, rememberDevice, name: rawDeviceName } = body ?? {};
 
   if (
     typeof challenge !== "string" ||
@@ -72,10 +72,13 @@ export default defineEventHandler(async event => {
   if (rememberDevice) {
     // 把「信任此设备」记录到库，cookie 只存 deviceId（DB 为准，可后台撤回/过期）
     const deviceId = generateDeviceId();
+    // 设备名取登录表单的自定义名称（可选）；未填则 null → 后台显示「未知设备」
+    const customName =
+      typeof rawDeviceName === "string" ? rawDeviceName.trim().slice(0, 100) : "";
     await createTrustedDevice({
       userId: user.uid,
       deviceId,
-      userAgent: getHeader(event, "user-agent") ?? null,
+      name: customName || null,
       ip,
     });
     setCookie(event, TRUSTED_DEVICE_COOKIE, deviceId, {

@@ -53,7 +53,7 @@ export interface TwoFactorSetupResponse {
 export interface TrustedDevice {
   id: number;
   deviceId: string;
-  userAgent: string | null;
+  name: string | null;
   ip: string | null;
   lastUsedAt: string;
   expiresAt: string;
