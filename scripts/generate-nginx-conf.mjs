@@ -28,15 +28,49 @@ const cdnDomain = requireEnv('DEPLOY_CDN_DOMAIN');
 const siteDomain = requireEnv('DEPLOY_SITE_DOMAIN');
 const enableCdnRedirect = requireEnv('DEPLOY_ENABLE_CDN_REDIRECT') === 'true';
 
+// ============================================================
+// 恢复真实客户端 IP（provider 无关，适配任意 CDN/云接入/负载均衡）
+// ============================================================
+// 当源站前还有一层接入层时，nginx 的 $remote_addr 是「回源节点 IP」而非访客 IP，
+// 会导致评论入库 IP / 足迹去重 / 限流键全部塌缩成接入层节点 IP。
+// 这里用 real_ip 模块从上游转发头里恢复真实客户端：
+//   - DEPLOY_TRUSTED_PROXY：前端接入层的「回源 IP 段」，逗号分隔（支持单个 IP 或 CIDR）。
+//       填信任谁，必然要知道谁——任意家的接入层填各自回源段即可；若源站防火墙只对
+//       接入层开放（外部无法直连源站），可填 0.0.0.0/0（信任所有转发头，安全前提是直连被阻断）。
+//   - DEPLOY_REAL_IP_HEADER：上游把真实客户端写在哪个头（默认 X-Forwarded-For，几乎全行业通用；
+//       Cloudflare 用 CF-Connecting-IP 等可覆盖）。
+const trustedProxy = (process.env.DEPLOY_TRUSTED_PROXY || '').trim();
+const realIpHeader = (process.env.DEPLOY_REAL_IP_HEADER || 'X-Forwarded-For').trim();
+
 console.log('📝 生成 Nginx 配置...');
 console.log(`  站点域名: ${siteDomain}`);
 console.log(`  CDN 域名: ${cdnDomain}`);
 console.log(`  Node 端口: ${portProd}`);
 console.log(`  项目根目录: ${serverRoot}`);
-console.log(`  CDN 重定向: ${enableCdnRedirect ? '启用' : '禁用'}\n`);
+console.log(`  CDN 重定向: ${enableCdnRedirect ? '启用' : '禁用'}`);
+console.log(`  真实IP恢复: ${trustedProxy ? `启用（头=${realIpHeader}，回源段=${trustedProxy}）` : '未启用（DEPLOY_TRUSTED_PROXY 为空）'}\n`);
+
+// 恢复真实客户端 IP 的指令块（仅在配置了回源段时输出；valid 于 server context）
+const realIpBlock = trustedProxy
+  ? `# ============================================
+# 恢复真实客户端 IP（源站前有 CDN/云接入/负载均衡时启用）
+#   real_ip_recursive on：从下发头最右往回走，跳过 DEPLOY_TRUSTED_PROXY 里的可信回源段，
+#   落在「第一个非回源 IP」即真实客户端。之后 $remote_addr 即为真实客户端，
+#   下方 X-Real-IP / X-Forwarded-For 会正确携带真实 IP，评论入库/足迹/限流即正确。
+# ============================================
+${trustedProxy.split(',').map((ip) => `set_real_ip_from ${ip.trim()};`).filter(Boolean).join('\n')}
+real_ip_header ${realIpHeader};
+real_ip_recursive on;
+
+`
+  : `# DEPLOY_TRUSTED_PROXY 为空：未恢复真实客户端 IP。
+# 若源站前有 CDN/接入层，评论/足迹/限流会记录成接入层节点 IP。请在 .env 填写回源段后重新生成。
+#   - 列出接入层回源 IP 段（逗号分隔）；或源站只对接入层开放时填 0.0.0.0/0。
+
+`;
 
 // Nginx 配置片段（适用于宝塔面板，已在面板配置好 server 块，只需添加以下内容）
-const nginxConf = `# Service Worker（必须从主域名提供，不允许 CDN 跨域）
+const nginxConf = `${realIpBlock}# Service Worker（必须从主域名提供，不允许 CDN 跨域）
 location = /sw.js {
     root ${serverRoot};
     add_header Cache-Control "no-cache" always;
