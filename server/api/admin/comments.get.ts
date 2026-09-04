@@ -109,6 +109,7 @@ export default defineEventHandler(async event => {
               cid: true,
               title: true,
               slug: true,
+              status: true,
               contentrelations: {
                 where: { metas: { type: "category" } },
                 select: { metas: { select: { slug: true } } },

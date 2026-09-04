@@ -65,6 +65,7 @@ export interface CommentItem {
 		cid: number;
 		title: string;
 		slug: string | null;
+		status: number;
 		contentrelations: Array<{
 			metas: {
 				slug: string | null;

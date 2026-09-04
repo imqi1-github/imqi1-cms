@@ -347,6 +347,12 @@ function getCommentFrontendUrl(comment: CommentItem) {
 }
 
 function openFrontendComment(comment: CommentItem) {
+  const content = comment.contents;
+  // 草稿文章未发布到前台，直接打开会 404，先拦截并明确提示。
+  if (content && content.status !== 1) {
+    toast.warning({ message: "该评论关联的文章为草稿，暂无法在前台查看" });
+    return;
+  }
   const url = getCommentFrontendUrl(comment);
   if (!url) {
     toast.error({ message: "无法定位前台评论" });
