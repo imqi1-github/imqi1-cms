@@ -261,7 +261,7 @@
                         <!-- 封面 -->
                         <div
                           v-if="randomContent.covers && randomContent.covers.length > 0"
-                          class="relative mb-3 rounded-lg overflow-hidden h-40 border-px border-solid border-slate-200 dark:border-gray-700">
+                          class="relative mb-3 rounded-lg overflow-hidden h-40 border border-solid border-slate-200 dark:border-gray-700">
                           <img
                             :src="randomContent.covers[0]?.url || ''"
                             :alt="randomContent.title"
@@ -566,7 +566,7 @@
 
       <!-- 目录 -->
       <div
-        class="max-sm:hidden flex -mt-20 w-fit sticky bottom-2 border border-blue-400 dark:border-blue-180 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
+        class="max-sm:hidden flex -mt-20 w-fit sticky bottom-2 border border-blue-400 bg-gray-50 shadow-xs dark:bg-slate-800 text-gray-700 dark:text-gray-100 rounded-full mx-auto text-sm dark:border-blue-700">
         <!-- 滑动指示框：跟随激活节点在 4 个目录项之间移动（节点等宽，故按槽位 25% 等分用 calc 定位 + 滑动） -->
         <!-- 四周内缩 + 微投影，呈内嵌药丸质感：上下 top-1/bottom-1，左右用 calc(left/width) 留出 4px 真实间隙；
              不用「透明 border + bg-clip-padding」方案，避免边框渲染出深色伪影 -->
