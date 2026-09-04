@@ -49,12 +49,16 @@ export interface TwoFactorSetupResponse {
   qrDataUrl: string;
 }
 
-/** 后台已信任设备（/api/admin/2fa/devices GET） */
+/** 后台已信任设备（/api/admin/2fa/devices GET；IP 归属地由服务端 qqwry.ipdb 解析后下发） */
 export interface TrustedDevice {
   id: number;
   deviceId: string;
   name: string | null;
   ip: string | null;
+  /** 形如「中国-广东-深圳」；空字符串表示解析失败（如局域网 IP / IPDB 未命中） */
+  location: string;
+  /** 运营商；空字符串同上 */
+  isp: string;
   lastUsedAt: string;
   expiresAt: string;
   create_time: string;

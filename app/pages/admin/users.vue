@@ -519,7 +519,7 @@ onMounted(() => {
                 </div>
               </template>
               <p class="text-xs text-muted-foreground">
-                IP {{ d.ip || '-' }} · 最近登录 {{ fmtDeviceTime(d.lastUsedAt) }} · 到期 {{ fmtDeviceTime(d.expiresAt) }}
+                IP {{ d.ip || '-' }}<template v-if="d.location"> · {{ d.location }}</template><template v-if="d.isp"> · {{ d.isp }}</template> · 最近登录 {{ fmtDeviceTime(d.lastUsedAt) }} · 到期 {{ fmtDeviceTime(d.expiresAt) }}
               </p>
             </div>
             <Button size="sm" variant="destructive" :disabled="devicesBusy != null" @click="revokeDevice(d.id)">

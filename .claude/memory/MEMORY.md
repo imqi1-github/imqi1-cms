@@ -1,5 +1,6 @@
 # Memory Index
 
+- [每次改动跑 lint 三件套](post-change-lint-chain.md) — 用户强原则(2026-09-04):每次代码改动后必跑 `bunx eslint .` + `bunx nuxi typecheck` + `bun run tailwindcss:lint`,三件套并列、不是提交前才跑;tailwindcss:lint 与 eslint/typecheck 一组
 - [dev server 3000 勿杀](dev-server-3000-dont-kill.md) — 用户可能自起 dev server 在 3000,**绝不 kill/占用已在跑的端口**;要自起用别的端口(如 3001,先 netstat 确认);测试直接访问用户已跑的那个。呼应 audit-skill 的 dev server 记录
 - [死代码扫描:自动导入前缀盲区](dead-code-scan-autolimport-prefix.md) — 扫未用 Vue 组件时,组件可能被 Nuxt 自动导入的目录前缀/`Lazy`前缀引用(`<AdminTravelCoordinatePicker>`/`<SiteActivityHeatmap>`/`<LazyContextMenu>`),只看无前缀名会误判活组件为死(ContextMenu 曾被误删靠 git 恢复);eslint 抓不到(自动导入无 import);全局 grep 组件名或 knip
 - [markdown 行内链接域名图标](markdown-link-chip-display.md) — 已知域名(GitHub/Gitee/百度/谷歌/腾讯QQ/微信/Mozilla-MDN/npm)行内链接在 link_open 文本前插入空 `<span class="markdown-link-icon markdown-link-icon--<slug>">`(图标 CSS mask+currentColor);链接不加 class 保持普通超链接外观;样式在 [slug].vue 与 agreement.vue 各一份 scoped;`:::repo` 仓库卡片走 Vue 组件不受影响;**扩展 LINK_CHIP_DOMAINS 须具体子域排父域前**(weixin.qq.com/wx.qq.com 先于 qq.com,否则 mp.weixin.qq.com 因 endsWith(".qq.com") 错配成 tencent)
