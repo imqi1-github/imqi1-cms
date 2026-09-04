@@ -9,6 +9,7 @@
 
 const CSI = '\x1b['
 const up = (n) => `${CSI}${n}A`       // 上移 n 行
+const down = (n) => `${CSI}${n}B`     // 下移 n 行
 const clearLine = `${CSI}2K`          // 清整行
 const CR = '\r'                       // 光标归列 0
 
@@ -152,10 +153,17 @@ export class ProgressConsole {
   // 结束并清掉进度块，供结尾统计干净打印在其上方。
   end() {
     if (!this.enabled) return
-    if (this.#shown) {
-      this.#stream.write(up(this.#lines - 1) + CR)
-      this.#stream.write((clearLine + CR + up(1)).repeat(this.#lines))
+    if (!this.#shown) return
+    const s = this.#stream
+    // 光标停在块底行行首：先上移到块顶行行首，再从顶向下逐行清，最后回到块顶行行首。
+    // 原实现用 (clearLine + CR + up(1)).repeat(lines) **往上**清：清的是块上方的日志行、
+    // 漏掉块底进度条行，且把光标抬到块上方——导致结尾统计打在错误区域、进度条残留占屏。
+    s.write(up(this.#lines - 1) + CR)             // 到块顶行行首
+    s.write(clearLine)                            // 清块顶行
+    if (this.#lines > 1) {
+      s.write((down(1) + CR + clearLine).repeat(this.#lines - 1)) // 自顶向下逐行清
     }
+    s.write(up(this.#lines - 1) + CR)             // 光标回到块顶行行首，待后续输出干净覆盖
     this.#shown = false
   }
 }
