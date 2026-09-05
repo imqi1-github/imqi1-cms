@@ -224,10 +224,13 @@ const handleLogout = async () => {
         </ScrollArea>
       </aside>
 
-      <!-- 主内容区 -->
-      <div class="flex-1 lg:ml-48">
+      <!-- 主内容区：
+           加 min-w-0：aside 是 fixed 不占文档流，flex-1 又用 lg:ml-48 让位。
+           若不设 min-w-0，flex 默认 min-width:auto 会让该子元素按内容自然宽度收缩，
+           内容（如横向富文本编辑器/长表格）把宽度顶出视口，产生横向滚动条。 -->
+      <div class="flex-1 min-w-0 lg:ml-48">
         <!-- 顶部栏 -->
-        <header class="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <header class="sticky top-0 z-100 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
           <div class="flex h-14 items-center gap-4 px-4 lg:px-6">
             <!-- 汉堡菜单按钮（仅移动端显示） -->
             <Button

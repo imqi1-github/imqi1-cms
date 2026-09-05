@@ -22,6 +22,8 @@ import { CustomContainer } from "./markdown-editor/extensions/CustomContainer";
 // StarterKit 自带 CodeBlock 保留 language 但无修改入口；换成 CodeBlockLowlight 变体：
 // 既叠加语言输入框 NodeView，又用 lowlight 给编辑态代码块上关键字高亮（往返零差异）
 import { CodeBlockLowlightWithLang } from "./markdown-editor/extensions/CodeBlockLowlightWithLang";
+// 查找替换匹配高亮：ProseMirror Decoration 视觉标记，不动 selection/focus（详见该文件）
+import { FindHighlight } from "./markdown-editor/extensions/FindHighlight";
 // 工具栏抽成子组件，顶部与底部各渲染一份（同一组 props），避免 ~340 行 markup 复制两遍
 import EditorToolbar from "./markdown-editor/EditorToolbar.vue";
 import { deriveCalloutVariant } from "./markdown-editor/containerMeta";
@@ -47,6 +49,8 @@ const viewMode = computed<"rich" | "md">(() => props.viewMode ?? "rich");
 const mdTextareaRef = ref<HTMLTextAreaElement | null>(null);
 // 富文本内容区（相对定位容器内的绝对滚动层），用于跨视图切换时保留滚动位置
 const richScrollRef = ref<HTMLElement | null>(null);
+// 编辑区外层相对定位容器（同时是查找弹窗的定位上下文 + 拖拽边界）
+const editorAreaRef = ref<HTMLElement | null>(null);
 
 const emit = defineEmits<{
   "attachment-updated": [];
@@ -160,6 +164,8 @@ onMounted(() => {
   if (saved >= EDITOR_HEIGHT_MIN && saved <= EDITOR_HEIGHT_MAX) editorHeight.value = saved;
   // 监听全局键盘事件（Escape 关闭查找面板）
   window.addEventListener("keydown", handleGlobalKeydown);
+  // 恢复查找弹窗拖拽位置
+  loadFindPanelPos();
 });
 onBeforeUnmount(() => {
   // 拖拽进行中卸载组件时清理监听与全局样式
@@ -188,7 +194,150 @@ const findReplaceState = ref({
 /** 查找匹配的文本范围数组 */
 const findMatches = ref<Array<{ from: number; to: number }>>([]);
 
-/** 执行查找：遍历文档找出所有匹配（兼容富文本和 Markdown 模式） */
+// —— 查找弹窗拖拽：相对编辑区外层容器的局部坐标（px）。
+// localStorage 持久化（key 与 MarkdownEditor 高度 key 同前缀），首次打开落在右上角 8/8。
+// 拖拽时把全局 pointermove 距离折算成容器内偏移；pointerup 时 clamp 到容器内并落盘。
+const FIND_PANEL_POS_KEY = "markdown-editor:find-panel-pos";
+const FIND_PANEL_DEFAULT_POS = { left: 0, top: 0 }; // 0/0 = 走 CSS 默认（top-2 right-2 = 8/8）
+const findPanelPos = ref<{ left: number; top: number }>({ ...FIND_PANEL_DEFAULT_POS });
+/** 是否用户拖拽过：false 时让 CSS 默认值生效（不写 left/top），避免首次出现位置闪一下 */
+const findPanelPosInitialized = ref(false);
+const findPanelRef = ref<HTMLElement | null>(null);
+
+// 拖拽过程态
+let dragStartX = 0;
+let dragStartY = 0;
+let dragOriginLeft = 0;
+let dragOriginTop = 0;
+let dragMoved = false;
+const DRAG_THRESHOLD = 3; // 移动 >3px 才算拖拽，避免与 click 冲突
+
+function loadFindPanelPos() {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(FIND_PANEL_POS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed?.left === "number"
+      && typeof parsed?.top === "number"
+      && Number.isFinite(parsed.left)
+      && Number.isFinite(parsed.top)
+    ) {
+      findPanelPos.value = { left: parsed.left, top: parsed.top };
+      findPanelPosInitialized.value = true;
+    }
+  } catch {
+    // ignore parse errors
+  }
+}
+
+/** 把弹窗坐标 clamp 到编辑区外层容器内，确保拖到底也不会超出。 */
+function clampFindPanelPos(left: number, top: number) {
+  const container = editorAreaRef.value;
+  const panel = findPanelRef.value;
+  if (!container || !panel) return { left, top };
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  const pw = panel.offsetWidth;
+  const ph = panel.offsetHeight;
+  const minLeft = 0;
+  const minTop = 0;
+  const maxLeft = Math.max(0, cw - pw);
+  const maxTop = Math.max(0, ch - ph);
+  return {
+    left: Math.min(maxLeft, Math.max(minLeft, left)),
+    top: Math.min(maxTop, Math.max(minTop, top)),
+  };
+}
+
+function onFindPanelPointerDown(event: PointerEvent) {
+  // 仅左键 + 仅响应拖拽柄（[data-find-panel-drag-handle]）上的 pointerdown
+  if (event.button !== 0) return;
+  const target = event.target as HTMLElement | null;
+  if (!target?.closest("[data-find-panel-drag-handle]")) return;
+  event.preventDefault();
+  dragStartX = event.clientX;
+  dragStartY = event.clientY;
+  dragOriginLeft = findPanelPos.value.left;
+  dragOriginTop = findPanelPos.value.top;
+  dragMoved = false;
+  // capture 到弹窗，确保即使鼠标移出弹窗也持续接收 pointermove
+  const handle = target.closest("[data-find-panel-drag-handle]") as HTMLElement | null;
+  handle?.setPointerCapture(event.pointerId);
+}
+
+function onFindPanelPointerMove(event: PointerEvent) {
+  if (!(event.buttons & 1)) return; // 左键未按下，忽略（防止 capture 丢失后乱跳）
+  const dx = event.clientX - dragStartX;
+  const dy = event.clientY - dragStartY;
+  if (!dragMoved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+  dragMoved = true;
+  // 初次拖拽前若没初始化（CSS 默认位置），把当前 DOM 位置快照为起点，
+  // 避免第一次移动时相对 [0,0] 跳到屏幕中央
+  if (!findPanelPosInitialized.value) {
+    const panel = findPanelRef.value;
+    const container = editorAreaRef.value;
+    if (panel && container) {
+      const cRect = container.getBoundingClientRect();
+      const pRect = panel.getBoundingClientRect();
+      findPanelPos.value = clampFindPanelPos(
+        pRect.left - cRect.left,
+        pRect.top - cRect.top,
+      );
+      dragOriginLeft = findPanelPos.value.left;
+      dragOriginTop = findPanelPos.value.top;
+    }
+    findPanelPosInitialized.value = true;
+  }
+  findPanelPos.value = clampFindPanelPos(dragOriginLeft + dx, dragOriginTop + dy);
+}
+
+function onFindPanelPointerUp(event: PointerEvent) {
+  if (!dragMoved) return;
+  const handle = (event.target as HTMLElement | null)?.closest(
+    "[data-find-panel-drag-handle]",
+  ) as HTMLElement | null;
+  handle?.releasePointerCapture?.(event.pointerId);
+  // 落盘到 localStorage
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(
+        FIND_PANEL_POS_KEY,
+        JSON.stringify(findPanelPos.value),
+      );
+    } catch {
+      // ignore quota errors
+    }
+  }
+  dragMoved = false;
+}
+
+/** 触发 FindHighlight extension 重算装饰（仅富文本模式有效）。
+ *
+ * manual update 模式下，matches/currentIndex 通过 closure getter 实时读取——只要强制重算，
+ * 装饰就会用最新值。无 docChanged / selection 变化，**不会动用户的 selection 与 focus**。
+ *
+ * 调用方在以下时机调一次：
+ *   - doFind 后（matches 列表 / matchIndex 变化）
+ *   - findNext / findPrev 后（matchIndex 变化）
+ *   - replaceCurrent / replaceAll 后（matches 列表变化）
+ *   - 视图切换后（doFind 会顺带调，装饰基于新 doc 重建）
+ *
+ * 失败静默：editor 未挂载或查询为空时 updateDecorations 是 no-op，无需特判。 */
+function refreshFindDecorations() {
+  const ed = editor.value;
+  if (!ed) return;
+  // updateDecorations 内部走 setMeta(force) 路径，无 doc change，纯重画视图。
+  ed.commands.updateDecorations("findHighlight");
+}
+
+/** 执行查找：遍历文档找出所有匹配（兼容富文本和 Markdown 模式）。
+ *
+ * 仅收集 matches 列表与计数，**不动 selection、不动 focus、不动滚动**——
+ * 用户输入查询时焦点与光标留在原位，避免每次输入都把光标拽到第一个匹配。
+ * 当前匹配的可视化交给 ProseMirror Decoration（编辑态）和 textarea selectionStart/End（md），
+ * 滚动由「上一个/下一个」按钮 + 替换前的两处主动触发。 */
 function doFind(query: string) {
   findMatches.value = [];
   findReplaceState.value.matchIndex = 0;
@@ -210,7 +359,7 @@ function doFind(query: string) {
     findMatches.value = matches;
     findReplaceState.value.matchCount = matches.length;
     findReplaceState.value.matchIndex = matches.length > 0 ? 1 : 0;
-    highlightMdMatch();
+    // md 模式不走 PM 装饰，无需刷新；只在富文本模式刷
     return;
   }
 
@@ -242,43 +391,43 @@ function doFind(query: string) {
   findMatches.value = matches;
   findReplaceState.value.matchCount = matches.length;
   findReplaceState.value.matchIndex = matches.length > 0 ? 1 : 0;
-  highlightCurrentMatch();
+  refreshFindDecorations();
 }
 
-/** 高亮当前匹配并滚动到位置（富文本模式） */
-function highlightCurrentMatch() {
+/** 仅滚动编辑区视口到当前匹配（富文本模式）：不改 selection、不抢焦点。
+ *
+ * 触发器（输入框/上下按钮）保持原焦点——这是查找替换不打断用户编辑的关键。
+ * 编辑区滚动容器是 .overflow-auto（见 <template>），其内是 ProseMirror dom。
+ *
+ * 用 view.coordsAtPos 取目标纵向位置，自己算 scrollTop；内置的 `tr.scrollIntoView()`
+ * 默认会把目标贴顶，与右上角查找弹窗冲突且贴顶看着突兀。这里强制把匹配放
+ * 视口中部偏上——避开顶部弹窗遮挡，视觉上也更稳。 */
+function scrollToCurrentMatch() {
   const ed = editor.value;
   if (!ed) return;
   const matches = findMatches.value;
   const idx = findReplaceState.value.matchIndex;
-
   if (matches.length === 0 || idx === 0) return;
-
   const match = matches[idx - 1];
-  if (match) {
-    ed.chain().focus().setTextSelection({ from: match.from, to: match.to }).run();
-    ed.commands.scrollIntoView();
-  }
-}
+  if (!match) return;
 
-/** Markdown 模式高亮和滚动到匹配位置 */
-function highlightMdMatch() {
-  const ta = mdTextareaRef.value;
-  if (!ta) return;
-  const matches = findMatches.value;
-  const idx = findReplaceState.value.matchIndex;
+  const view = ed.view;
+  const scrollEl = view.dom.closest<HTMLElement>(".overflow-auto") ?? view.dom.parentElement;
+  if (!scrollEl) return;
 
-  if (matches.length === 0 || idx === 0) return;
-
-  const match = matches[idx - 1];
-  if (match) {
-    ta.focus();
-    ta.setSelectionRange(match.from, match.to);
-    // 滚动到匹配位置
-    const lineHeight = 20;
-    const lines = model.value.substring(0, match.from).split("\n").length;
-    ta.scrollTop = Math.max(0, (lines - 3) * lineHeight);
-  }
+  const coords = view.coordsAtPos(match.from);
+  const visibleTop = scrollEl.getBoundingClientRect().top;
+  // 目标位置相对滚动容器顶的纵向偏移
+  const targetOffset = coords.top - visibleTop + scrollEl.scrollTop;
+  // 留出顶部 margin 避开查找弹窗（约 56px）+ 底部 margin 留工具栏缓冲；
+  // 把匹配落在「margin 与 clientHeight-margin」的中点（即视口中部偏上）
+  const margin = 56;
+  const desired = targetOffset - (scrollEl.clientHeight - margin * 2) / 2;
+  const max = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
+  scrollEl.scrollTo({
+    top: Math.min(max, Math.max(0, desired)),
+    behavior: "smooth",
+  });
 }
 
 /** 查找下一个 */
@@ -286,10 +435,11 @@ function findNext() {
   if (findMatches.value.length === 0) return;
   const nextIdx = findReplaceState.value.matchIndex >= findMatches.value.length ? 1 : findReplaceState.value.matchIndex + 1;
   findReplaceState.value.matchIndex = nextIdx;
+  refreshFindDecorations();
   if (viewMode.value === "md") {
-    highlightMdMatch();
+    scrollMdToMatch();
   } else {
-    highlightCurrentMatch();
+    scrollToCurrentMatch();
   }
 }
 
@@ -298,14 +448,50 @@ function findPrev() {
   if (findMatches.value.length === 0) return;
   const prevIdx = findReplaceState.value.matchIndex <= 1 ? findMatches.value.length : findReplaceState.value.matchIndex - 1;
   findReplaceState.value.matchIndex = prevIdx;
+  refreshFindDecorations();
   if (viewMode.value === "md") {
-    highlightMdMatch();
+    scrollMdToMatch();
   } else {
-    highlightCurrentMatch();
+    scrollToCurrentMatch();
   }
 }
 
-/** 替换当前匹配 */
+/** 滚动 textarea 视口到当前匹配位置（Markdown 模式）：不抢焦点、不改 selectionStart/End。
+ *
+ * textarea 在失焦状态下 setSelectionRange 不会绘制选区高亮（浏览器只对焦点元素画 caret），
+ * 故不调 focus——用户的真实 caret 仍在原位，输入查询时不被挪走。
+ *
+ * 当前匹配位置靠「行数 × 行高」估算并设 scrollTop：把目标行放到视口中部偏上（避开顶部弹窗）。 */
+function scrollMdToMatch() {
+  const ta = mdTextareaRef.value;
+  if (!ta) return;
+  const matches = findMatches.value;
+  const idx = findReplaceState.value.matchIndex;
+  if (matches.length === 0 || idx === 0) return;
+  const match = matches[idx - 1];
+  if (!match) return;
+
+  // 估算行高：textarea 默认 font-size 14px + line-height 取 1.5 ≈ 21px；这里取 20 与原实现一致
+  const lineHeight = 20;
+  // 把目标行的纵向像素位置算出来；目标偏移 - (可视高 - 上下 margin) / 2 = 滚动位置
+  const targetLine = model.value.substring(0, match.from).split("\n").length;
+  const targetOffset = targetLine * lineHeight;
+  const margin = 56;
+  const desired = targetOffset - (ta.clientHeight - margin * 2) / 2;
+  const max = Math.max(0, ta.scrollHeight - ta.clientHeight);
+  ta.scrollTo({
+    top: Math.min(max, Math.max(0, desired)),
+    behavior: "smooth",
+  });
+}
+
+/** 替换当前匹配
+ *
+ * 副作用：替换时必须把编辑器选区移到当前 match（insertContent 才能命中正确位置），
+ * 故不可避免地改 selection；替换完成后**显式把 selection/focus 还原到用户原位**，避免
+ * 每次点「替换」后焦点/光标留在被替换处打断连续编辑。
+ *
+ * md 模式：直接拼接字符串改 model.value（v-model 双向绑定到 textarea），不需 caret 操作。 */
 function replaceCurrent() {
   const query = findReplaceState.value.query;
   const replace = findReplaceState.value.replace;
@@ -329,8 +515,22 @@ function replaceCurrent() {
   const match = findMatches.value[idx - 1];
   if (!match) return;
 
-  ed.chain().focus().setTextSelection({ from: match.from, to: match.to }).run();
-  ed.chain().focus().insertContent(replace).run();
+  // 记一下用户原来焦点状态：决定替换后要不要把焦点拉回编辑器（用户可能在外）
+  const wasFocused = ed.isFocused;
+
+  ed.chain()
+    .setTextSelection({ from: match.from, to: match.to })
+    .insertContent(replace)
+    .run();
+
+  // 把光标移到被替换内容之后（原来 match.to 的位置 = now match.from + replace.length），
+  // 让用户连续按 Enter「替换」时，光标跟着前进到下一处匹配附近，编辑节奏自然
+  const afterPos = match.from + replace.length;
+  if (wasFocused) {
+    ed.chain().focus().setTextSelection(afterPos).run();
+  } else {
+    ed.commands.setTextSelection(afterPos);
+  }
 
   doFind(query);
 }
@@ -1116,6 +1316,12 @@ const editor = useEditor({
     TableCell,
     TableHeader,
     CustomContainer,
+    // 查找替换匹配高亮：通过 extension options 注入 Reactivity getter，
+    // create() 读 closure 取当前 matches/currentIndex——不参与文档、不动 selection/focus。
+    FindHighlight.configure({
+      getMatches: () => findMatches.value,
+      getCurrentIndex: () => findReplaceState.value.matchIndex,
+    }),
     // 选项与服务端 markdown-it({html,linkify,breaks}) 对齐，保证标准部分往返保真
     Markdown.configure({
       html: true,
@@ -1452,43 +1658,97 @@ const actions = {
         <!-- 编辑区：固定高度下内容超出由各自视图容器内部滚动（不撑高整页）。
              用 relative + absolute inset-0 让富文本/源码各自独占填充，避免 textarea 与父容器
              同时出现滚动条（双滚动条）。 -->
-        <div class="relative min-h-0 flex-1 overflow-hidden bg-background">
-          <!-- 查找和替换悬浮面板 -->
+        <div ref="editorAreaRef" class="@container relative min-h-0 flex-1 overflow-hidden bg-background">
+          <!-- 查找和替换悬浮面板：右上角初始位置 + 可拖拽。
+               默认落点 top-2 right-2 = 8/8 偏移；拖拽后坐标写到 inline style（左/上）。
+               拖拽柄：弹窗左侧 GripVertical 图标 + 全弹窗头部拖拽区。
+               inline style 只在 findPanelPosInitialized=true 时写，避免首次水合时 left=0 跳到左上角。 -->
           <div
             v-if="findReplaceState.open"
-            class="absolute top-2 right-2 z-50 flex items-center gap-1.5 rounded-lg border bg-background p-2 shadow-lg"
+            ref="findPanelRef"
+            class="find-panel z-50 flex flex-col items-stretch gap-1 rounded-md border bg-background p-1 text-xs shadow-lg @md:flex-row @md:items-center @md:gap-1.5 @md:rounded-lg @md:p-2 @md:text-sm"
+            :style="findPanelPosInitialized ? { '--find-panel-left': `${findPanelPos.left}px`, '--find-panel-top': `${findPanelPos.top}px` } : {}"
+            @pointerdown="onFindPanelPointerDown"
+            @pointermove="onFindPanelPointerMove"
+            @pointerup="onFindPanelPointerUp"
           >
-            <Input
-              v-model="findReplaceState.query"
-              placeholder="查找…"
-              class="h-8 w-40 text-sm"
-              @input="doFind(findReplaceState.query)"
-            />
-            <span class="text-xs text-muted-foreground whitespace-nowrap">
-              {{ findReplaceState.matchIndex }}/{{ findReplaceState.matchCount }}
-            </span>
-            <Button variant="ghost" size="icon" class="size-7" title="上一个" @click="findPrev">
-              <Icon name="lucide:chevron-up" class="size-4" />
-            </Button>
-            <Button variant="ghost" size="icon" class="size-7" title="下一个" @click="findNext">
-              <Icon name="lucide:chevron-down" class="size-4" />
-            </Button>
-            <div class="mx-0.5 h-5 w-px bg-border" />
-            <Input
-              v-model="findReplaceState.replace"
-              placeholder="替换…"
-              class="h-8 w-28 text-sm"
-            />
-            <Button variant="outline" size="sm" class="h-8 text-xs" :disabled="findReplaceState.matchCount === 0" @click="replaceCurrent">
-              替换
-            </Button>
-            <Button variant="outline" size="sm" class="h-8 text-xs" :disabled="findReplaceState.matchCount === 0" @click="replaceAll">
-              全部
-            </Button>
-            <div class="mx-0.5 h-5 w-px bg-border" />
-            <Button variant="ghost" size="icon" class="size-7" title="关闭 (Esc)" @click="closeFind">
-              <Icon name="lucide:x" class="size-4" />
-            </Button>
+            <!-- Row 1: 拖拽柄 + 查找 input + 桌面分隔条
+                 移动端 Row 1 是「查找」一行；桌面端是横向布局的第一段。
+                 桌面分隔条放 Row 1 末尾 → 桌面端视觉上分隔查找组与替换组。 -->
+            <div class="flex items-center gap-1 @md:gap-1.5">
+              <button
+                type="button"
+                data-find-panel-drag-handle
+                class="flex h-7 w-3.5 shrink-0 cursor-move items-center justify-center rounded text-muted-foreground hover:bg-muted @md:h-8 @md:w-4"
+                title="拖动面板"
+                aria-label="拖动面板"
+                tabindex="-1"
+                @click.stop.prevent
+              >
+                <Icon name="lucide:grip-vertical" class="size-3 @md:size-3.5" />
+              </button>
+              <Input
+                v-model="findReplaceState.query"
+                placeholder="查找…"
+                class="h-7 flex-1 text-xs @md:h-8 @md:flex-none @md:w-40 @md:text-sm"
+                @input="doFind(findReplaceState.query)"
+              />
+              <div class="mx-0.5 hidden h-4 w-px bg-border @md:block @md:h-5" />
+            </div>
+            <!-- Row 2: 移动端第一个元素是与拖拽柄同宽的占位，让替换 input 左边对齐查找 input 左边（垂直方向"上下一个位置"）；
+                 占位只移动端显示，桌面端隐藏（桌面端 Row 1 已自带拖拽柄宽度，无需重复占位）。 -->
+            <div class="flex items-center gap-1 @md:gap-1.5">
+              <!-- 移动端占位：与拖拽柄同尺寸（h-7 w-3.5），透明不可见 -->
+              <div class="h-7 w-3.5 shrink-0 @md:hidden" aria-hidden="true" />
+              <Input
+                v-model="findReplaceState.replace"
+                placeholder="替换…"
+                class="h-7 flex-1 text-xs @md:h-8 @md:flex-none @md:w-40 @md:text-sm"
+              />
+            </div>
+            <!-- Row 3: 计数 + 上/下 + 替换 + 全部 + 关闭（移动端独占一行；桌面端是最右段）。
+                 移动端第一个元素是与拖拽柄同宽的占位，让「计数」左边对齐查找/替换 input 左边。
+                 移动端按钮 flex-1 等宽铺满；桌面端按钮自然尺寸 + 关闭 ml-auto 推到弹窗右端。 -->
+            <div class="flex items-center gap-1 @md:gap-1.5">
+              <!-- 移动端占位：与拖拽柄同尺寸（h-7 w-3.5），桌面端隐藏 -->
+              <div class="h-7 w-7 shrink-0 @md:hidden" aria-hidden="true" />
+              <span class="whitespace-nowrap text-muted-foreground text-[11px] @md:text-xs">
+                {{ findReplaceState.matchIndex }}/{{ findReplaceState.matchCount }}
+              </span>
+              <Button variant="ghost" size="icon" class="size-7 @md:size-7" title="上一个" @click="findPrev">
+                <Icon name="lucide:chevron-up" class="size-3.5 @md:size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-7 @md:size-7" title="下一个" @click="findNext">
+                <Icon name="lucide:chevron-down" class="size-3.5 @md:size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-7 flex-1 text-[11px] @md:flex-none @md:text-xs"
+                :disabled="findReplaceState.matchCount === 0"
+                @click="replaceCurrent"
+              >
+                替换
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-7 flex-1 text-[11px] @md:flex-none @md:text-xs"
+                :disabled="findReplaceState.matchCount === 0"
+                @click="replaceAll"
+              >
+                全部
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 ml-auto @md:ml-0"
+                title="关闭 (Esc)"
+                @click="closeFind"
+              >
+                <Icon name="lucide:x" class="size-3.5 @md:size-4" />
+              </Button>
+            </div>
           </div>
 
           <div v-show="viewMode === 'rich'" ref="richScrollRef" class="absolute inset-0 overflow-auto">
@@ -1671,6 +1931,50 @@ const actions = {
 /* 兄弟块级元素之间留一行间距（复刻前台 .markdown-body 的间距节奏） */
 .markdown-editor :deep(.ProseMirror > * + *) {
   margin-top: 1em;
+}
+
+/* 查找替换弹窗定位：absolute 相对 .relative 编辑区容器。
+   - 默认（无拖拽）：right: 0.5rem + left: auto + top: 0.5rem，弹窗贴右上角（top-2 right-2）。
+   - 用户拖拽后：JS 把 right 设为 auto + left 设变量值，弹窗按 left 定位；
+     left/top 通过 CSS 变量传入（--find-panel-left / --find-panel-top）。
+   - 桌面 + 移动 都支持拖拽（移动端弹窗整体缩小，手指拖到不挡正文的位置）。 */
+.markdown-editor .find-panel {
+  position: absolute;
+  top: var(--find-panel-top, 0.5rem);
+  right: 0.5rem;
+  left: auto;
+  bottom: auto;
+}
+.markdown-editor .find-panel[style*="--find-panel-left"] {
+  /* 一旦拖拽过（JS 设置了 --find-panel-left 变量），切换到 left 定位模式 */
+  right: auto;
+  left: var(--find-panel-left, 0.5rem);
+  top: var(--find-panel-top, 0.5rem);
+  bottom: auto;
+}
+
+/* 查找替换匹配高亮：FindHighlight extension 通过 ProseMirror Decoration.inline
+   给每个匹配文本节点挂 class，CSS 只画背景不改文档。
+   - .find-match：所有匹配（淡黄），用户一眼看出有几处、分布在哪
+   - .find-match-current：当前匹配（深黄 + 圆角 + 微 inset），与计数器同步高亮
+   两套颜色在亮/暗主题下都用主题友好的半透明色，不挡底层文字颜色。 */
+.markdown-editor :deep(.ProseMirror .find-match) {
+  background-color: rgba(250, 204, 21, 0.35);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(202, 138, 4, 0.35);
+}
+.dark .markdown-editor :deep(.ProseMirror .find-match) {
+  background-color: rgba(250, 204, 21, 0.22);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35);
+}
+.markdown-editor :deep(.ProseMirror .find-match-current) {
+  background-color: rgba(250, 204, 21, 0.65);
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px rgba(202, 138, 4, 0.6);
+}
+.dark .markdown-editor :deep(.ProseMirror .find-match-current) {
+  background-color: rgba(250, 204, 21, 0.45);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.6);
 }
 
 /* 标题：忠于前台字号层级 */
