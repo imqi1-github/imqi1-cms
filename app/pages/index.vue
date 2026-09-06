@@ -313,7 +313,7 @@
 
       <!-- 最新文章 -->
       <section ref="sectionContent" v-scroll-reveal class="mx-auto max-w-275 pb-20" aria-labelledby="index-recent-contents-title">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between mb-6 gap-2">
           <div>
             <h2 id="index-recent-contents-title" class="text-blue-700 dark:text-blue-500 text-sm">文章内容</h2>
             <div class="text-slate-800 dark:text-white text-[1.6em] font-bold my-1">最新发布的内容</div>
@@ -436,7 +436,7 @@
       <section v-if="categoryRecentContents.length > 0" v-scroll-reveal class="mx-auto max-w-275 pb-20">
         <template v-for="(categoryData, index) in categoryRecentContents" :key="categoryData.category.slug ?? index">
           <!-- 分类标题 -->
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center justify-between mb-6 gap-3">
             <div>
               <h2 class="text-blue-700 dark:text-blue-500 text-sm">{{ categoryData.category.name }}</h2>
               <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">{{ categoryData.category.desc }}</div>
@@ -638,7 +638,7 @@
 
     <!-- 订阅文章 -->
     <section v-if="subscribePosts.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-subscribe-contents-title">
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between mb-6 gap-3">
         <div class="flex gap-6 max-sm:flex-col max-sm:gap-1">
           <div>
             <h2 id="index-subscribe-contents-title" class="text-blue-700 dark:text-blue-500 text-sm">订阅文章</h2>
@@ -661,16 +661,18 @@
           target="_blank"
           rel="noopener noreferrer"
           class="block border rounded-lg p-4 hover:shadow-sm hover:border-blue-500 dark:hover:border-blue-600 transition-all no-underline group">
-          <div class="flex items-start gap-3">
-            <!-- 订阅源头像 -->
-            <Avatar class="size-10 shrink-0">
+          <!-- 极窄屏（< 350px）：把头像从左侧移到标题/描述下方一行横排，并缩小头像 -->
+          <div class="flex items-start gap-3 max-xs:flex-col max-xs:gap-1">
+            <!-- 宽屏专用头像：左侧 size-10；max-xs 隐藏（挪到下方横排） -->
+            <Avatar class="size-10 shrink-0 max-xs:hidden">
               <AvatarImage v-if="content.subscribeAvatar" :src="content.subscribeAvatar" :alt="content.subscribeName" />
               <AvatarFallback>{{ content.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
             </Avatar>
 
-            <!-- 文章内容 -->
+            <!-- 文章内容：宽屏作为中间列；max-xs 为第一行（标题/描述） -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
+              <!-- 宽屏专属：昵称+时间行；max-xs 隐藏（挪到下方横排） -->
+              <div class="flex items-center gap-2 mb-1 max-xs:hidden">
                 <span class="text-sm text-muted-foreground">{{ content.subscribeName }}</span>
                 <span v-if="content.pubDate" class="text-xs text-muted-foreground">
                   {{ formatDate(content.pubDate) }}
@@ -679,16 +681,34 @@
               <h3 class="text-base font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                 {{ content.title }}
               </h3>
-              <p v-if="content.description" class="text-sm text-muted-foreground mt-1 line-clamp-2">
+              <p v-if="content.description" class="text-sm text-muted-foreground mt-1 line-clamp-2 break-all">
                 {{ content.description }}
               </p>
             </div>
 
-            <!-- 外部链接图标 -->
+            <!-- 宽屏专用外部链接图标：右侧 size-5；max-xs 隐藏（挪到下方横排） -->
             <Icon
               name="lucide:external-link"
               aria-hidden="true"
-              class="size-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              class="size-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors max-xs:hidden!" />
+
+            <!-- max-xs 专属：头像+昵称+时间+外部链接 一行横排，紧贴标题/描述正下方；
+                 ≥ 350px hidden。头像/链接 shrink-0 保持原大小，昵称+时间 flex-1 占剩余空间。 -->
+            <div class="hidden max-xs:flex items-center gap-1.5 mt-1">
+              <Avatar class="size-5! shrink-0">
+                <AvatarImage v-if="content.subscribeAvatar" :src="content.subscribeAvatar" :alt="content.subscribeName" />
+                <AvatarFallback>{{ content.subscribeName?.charAt(0) || "?" }}</AvatarFallback>
+              </Avatar>
+              <div class="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 flex-1">
+                <span class="truncate">{{ content.subscribeName }}</span>
+                <span v-if="content.pubDate" class="shrink-0">·</span>
+                <span v-if="content.pubDate" class="shrink-0">{{ formatDate(content.pubDate) }}</span>
+              </div>
+              <Icon
+                name="lucide:external-link"
+                aria-hidden="true"
+                class="size-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
           </div>
         </a>
       </div>
@@ -699,7 +719,7 @@
 
     <!-- 更新日志 -->
     <section v-if="recentChangelogs.length > 0" v-scroll-reveal class="mx-auto max-w-275" aria-labelledby="index-changelogs-title">
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between mb-6 gap-3">
         <div>
           <h2 id="index-changelogs-title" class="text-blue-700 dark:text-blue-500 text-sm">更新日志</h2>
           <div class="text-slate-800 dark:text-white text-lg font-bold mt-1">站点最新更新</div>
@@ -720,14 +740,16 @@
             <span class="text-sm text-muted-foreground">{{ formatChangelogDate(log.create_time) }}</span>
           </div>
           <div class="space-y-2">
-            <div v-for="(entry, i) in log.content" :key="i" class="flex items-start gap-3">
-              <!-- 类型徽标 -->
-              <div :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 flex items-center gap-1 ${getChangelogMeta(entry.type).color}`">
+            <div v-for="(entry, i) in log.content" :key="i" class="flex items-start gap-3 max-sm:flex-col max-sm:gap-1">
+              <!-- 类型徽标：DOM 顺序在前 → 宽屏横排为左侧列；max-sm 下用 max-sm:order-2
+                   调到 markdown 文本下方（flex-col 下 order 大的在后） -->
+              <div :class="`px-3 py-1 rounded-full text-xs font-medium shrink-0 flex items-center gap-1 max-sm:self-start max-sm:order-2 ${getChangelogMeta(entry.type).color}`">
                 <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
                 {{ getChangelogMeta(entry.type).label }}
               </div>
 
-              <!-- 条目内容 -->
+              <!-- 条目内容：DOM 顺序在后 → 宽屏横排为右侧列；max-sm 下默认 order-0
+                   显示在徽标上方（紧贴 markdown 文本最下方一行） -->
               <div
                 class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content flex-1 min-w-0"
                 v-html="entry.html" />

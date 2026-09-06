@@ -142,7 +142,7 @@ aria-hidden="true"
 
   <!-- 移动端侧边栏菜单 -->
   <Sheet :open="isMobileMenuOpen" @update:open="isMobileMenuOpen = $event">
-    <SheetContent id="mobile-menu" side="right" class="w-80 font-serif font-[450]">
+    <SheetContent id="mobile-menu" side="right" class="w-full max-w-80 font-serif font-[450]">
       <SheetHeader>
         <SheetTitle>菜单</SheetTitle>
         <SheetDescription class="sr-only"> 网站导航菜单，包含搜索、分类和其他页面链接 </SheetDescription>

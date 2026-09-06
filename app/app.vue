@@ -315,7 +315,7 @@ onMounted(() => {
           // 位移为 0 时不渲染 transform（避免稳态 translateY(0) 创建包含块破坏后代 fixed 定位）
           transform: mainTranslateY ? `translateY(${mainTranslateY}px)` : undefined,
         }">
-        <NuxtPage class="font-serif font-[450] grow" />
+        <NuxtPage class="font-serif font-[450] grow min-w-0" />
       </main>
       <SiteFooter class="font-serif font-[450]" />
     </div>

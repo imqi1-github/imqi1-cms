@@ -187,33 +187,53 @@ usePageSeo({
     </div>
 
     <!-- 主内容区 -->
-    <div v-else-if="data?.data && data.data.length > 0" class="flex gap-6">
-      <!-- 左侧分类筛选 -->
-      <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
-        <div
-          ref="sidebarRef"
-          class="sidebar-fade sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-fit pr-1 scrollbar-hide"
-          :class="{ 'fade-top': !atTop, 'fade-bottom': !atBottom }"
+    <div v-else-if="data?.data && data.data.length > 0">
+      <!-- 窄屏专属筛选：标题下方、首个日志上方，正常流式排版（≥md 用左侧栏） -->
+      <div class="md:hidden mb-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="更新日志筛选">
+        <button
+          v-for="classType in classTypes"
+          :key="classType.label"
+          v-tooltip="classType.label"
+          :class="[
+            'inline-flex items-center gap-1.5 px-3 h-10 rounded-xl text-sm font-medium transition-all duration-300 border-2 cursor-pointer',
+            (selectedType === null && classType.type === null) || selectedType === classType.type
+              ? 'bg-blue-600 text-white shadow shadow-blue-600/30 border-blue-400'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+          ]"
+          @click="classType.type === null ? clearFilter() : selectType(classType.type)"
         >
-          <button
-            v-for="classType in classTypes"
-            :key="classType.label"
-            v-tooltip.right="classType.label"
-            :class="[
-              'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 cursor-pointer',
-              (selectedType === null && classType.type === null) || selectedType === classType.type
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
-                : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
-            ]"
-            @click="classType.type === null ? clearFilter() : selectType(classType.type)"
-          >
-            <Icon :name="classType.icon" class="size-4 lg:size-5" />
-          </button>
-        </div>
-      </aside>
+          <Icon :name="classType.icon" class="size-4" />
+          {{ classType.label }}
+        </button>
+      </div>
 
-      <!-- 右侧日志列表 -->
-      <main class="flex-1 min-w-0">
+      <div class="flex gap-6">
+        <!-- 左侧分类筛选 -->
+        <aside v-scroll-reveal class="hidden md:block w-12 lg:w-16 shrink-0">
+          <div
+            ref="sidebarRef"
+            class="sidebar-fade sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-fit pr-1 scrollbar-hide"
+            :class="{ 'fade-top': !atTop, 'fade-bottom': !atBottom }"
+          >
+            <button
+              v-for="classType in classTypes"
+              :key="classType.label"
+              v-tooltip.right="classType.label"
+              :class="[
+                'flex items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 cursor-pointer',
+                (selectedType === null && classType.type === null) || selectedType === classType.type
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border-blue-400'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+              ]"
+              @click="classType.type === null ? clearFilter() : selectType(classType.type)"
+            >
+              <Icon :name="classType.icon" class="size-4 lg:size-5" />
+            </button>
+          </div>
+        </aside>
+
+        <!-- 右侧日志列表 -->
+        <main class="flex-1 min-w-0">
         <div :key="animationKey" class="space-y-8">
           <section
             v-for="group in filteredData"
@@ -226,16 +246,16 @@ usePageSeo({
               {{ group.year }}年{{ group.month }}月
             </h2>
 
-            <!-- 时间线 -->
-            <div class="relative border-l-2 border-slate-200 dark:border-slate-700 pl-6 space-y-3">
+            <!-- 日志列表（桌面版含左侧时间线；窄屏去时间线、条目标题下不挤徽标） -->
+            <div class="relative md:border-l-2 md:border-slate-200 dark:border-slate-700 md:pl-6 space-y-3">
               <!-- 每条日志 -->
               <div
                 v-for="log in group.logs"
                 :key="log.id"
                 class="relative group"
               >
-                <!-- 时间线节点 -->
-                <div class="absolute -left-8.25 top-4.5 size-4 rounded-full bg-blue-600 dark:bg-blue-400 border-4 border-white dark:border-slate-900 group-hover:scale-125 transition-transform" />
+                <!-- 时间线节点（仅桌面 ≥ md） -->
+                <div class="hidden md:block absolute -left-8.25 top-4.5 size-4 rounded-full bg-blue-600 dark:bg-blue-400 border-4 border-white dark:border-slate-900 group-hover:scale-125 transition-transform" />
 
                 <!-- 日志内容卡片 -->
                 <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-sm transition-all">
@@ -247,24 +267,23 @@ usePageSeo({
                   </div>
 
                   <!-- 条目列表（一条记录可含多个更新条目；筛选时只显示命中类型） -->
-                  <div class="space-y-2">
-                    <div v-for="(entry, i) in visibleEntries(log.content)" :key="i" class="flex items-baseline gap-2">
-                      <!-- 类型徽标 -->
+                  <div class="space-y-4">
+                    <div v-for="(entry, i) in visibleEntries(log.content)" :key="i">
+                      <!-- 条目内容 -->
+                      <div
+                        class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content"
+                        v-html="entry.html"
+                      />
+                      <!-- 该条目的类型徽标：置于本条内容下方 -->
                       <span
                         :class="[
-                          'shrink-0 px-2 py-0.5 rounded-md text-xs font-medium flex items-center gap-1',
+                          'inline-flex mt-2 px-2 py-0.5 rounded-md text-xs font-medium items-center gap-1',
                           getChangelogMeta(entry.type).color,
                         ]"
                       >
                         <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
                         {{ getChangelogMeta(entry.type).label }}
                       </span>
-
-                      <!-- 条目内容 -->
-                      <div
-                        class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content flex-1 min-w-0"
-                        v-html="entry.html"
-                      />
                     </div>
                   </div>
                 </div>
@@ -279,6 +298,7 @@ usePageSeo({
           </div>
         </div>
       </main>
+      </div>
     </div>
 
     <!-- 空状态 -->

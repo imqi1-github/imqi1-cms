@@ -418,7 +418,7 @@ onBeforeUnmount(() => {
             meta-mode="tags" />
         </div>
 
-        <!-- 骨架屏 -->
+        <!-- 骨架屏：只留一个大的卡片轮廓 -->
         <div v-else-if="showSkeleton" class="grid grid-cols-1 md:grid-cols-2 w-full gap-5">
           <div
             v-for="i in skeletonCount"
@@ -426,22 +426,6 @@ onBeforeUnmount(() => {
             class="relative flex flex-col h-70 max-md:h-65 overflow-hidden rounded-[15px] bg-slate-100 dark:bg-gray-800 animate-pulse shadow-sm">
             <!-- 封面骨架（占满整卡） -->
             <div class="absolute inset-0 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30"/>
-
-            <!-- 文章信息骨架 -->
-            <div class="relative mt-auto w-full px-5 pb-2 pt-1.5">
-              <!-- 标题骨架 -->
-              <div class="h-6 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse my-1"/>
-
-              <!-- 信息骨架 -->
-              <div class="flex items-center flex-wrap gap-2 my-1">
-                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
-                <div class="h-3 w-20 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
-                <div class="h-3 w-16 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse"/>
-              </div>
-
-              <!-- 描述骨架 -->
-              <div class="h-3.5 bg-slate-100 dark:bg-slate-700/30 rounded animate-pulse overflow-wrap break-word"/>
-            </div>
           </div>
         </div>
 

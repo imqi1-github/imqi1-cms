@@ -242,3 +242,10 @@
 .v-popper__arrow-inner {
   display: none;
 }
+
+/* 移动端(<768px)不显示 tooltip：触屏无 hover，避免误触/遮挡；仅作用于 tooltip 主题，dropdown 不受影响 */
+@media (max-width: 767.98px) {
+  .v-popper--theme-tooltip {
+    display: none !important;
+  }
+}

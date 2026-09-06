@@ -32,11 +32,9 @@ span.iconify {
 
 @theme {
   --font-serif: "Noto Serif SC", serif;
-  /* family 名必须是无空格的 "JetBrainsMono"，对齐 public/fonts/font.css 里 @font-face
-     注册的名字（分 ASCII/Symbols/Rest 三片按 unicode-range 加载，Rest 片含 Nerd Font
-     图标 PUA 字形）。先前写成 "JetBrains Mono"（带空格）匹配不上 @font-face → 整条
-     mono 栈失效，代码块回退非等宽 + 图标显示为豆腐块。回退用真等宽链兜底。 */
   --font-mono: "JetBrainsMono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+
+  --breakpoint-xs: 21.875rem;
 }
 
 @layer base {
@@ -310,8 +308,6 @@ html.theme-tooltip-suppress .v-popper__popper {
   }
   body {
     @apply bg-background text-foreground;
-    /* 移除过渡，避免与 View Transition API 冲突 */
-    /* View Transition 会处理动画，不需要额外的 CSS 过渡 */
   }
 }
 

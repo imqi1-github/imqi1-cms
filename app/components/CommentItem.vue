@@ -72,8 +72,8 @@ function handleCommentSubmitted() {
 <template>
   <li :id="`comment-${comment.coid}`">
     <div class="flex gap-3">
-      <!-- 头像区域 -->
-      <div class="relative w-10 h-10 shrink-0">
+      <!-- 头像区域（独立列，≥350px；极窄屏挪到元信息行首，见元信息处复刻） -->
+      <div class="relative w-10 h-10 shrink-0 max-xs:hidden">
         <button
           v-if="canReply"
           v-tooltip="'回复'"
@@ -98,6 +98,27 @@ function handleCommentSubmitted() {
       <div class="flex-1 min-w-0">
         <!-- 元信息 -->
         <div class="flex items-center gap-2 flex-wrap">
+          <!-- 极窄屏专属：头像复刻到本行行首，与昵称/网址同排一盒（宽屏仍用上方独立列） -->
+          <div class="hidden max-xs:block relative shrink-0">
+            <button
+              v-if="canReply"
+              v-tooltip="'回复'"
+              class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110 z-2"
+              @click="startReply(comment)">
+              <Icon name="ri-reply-fill" class="size-4" />
+            </button>
+            <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              :alt="comment.name"
+              class="w-10 h-10 rounded-full shrink-0 object-cover bg-slate-100 dark:bg-slate-700"
+              loading="lazy" >
+            <div
+              v-else
+              class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-semibold text-lg text-slate-700 dark:text-slate-300 shrink-0">
+              <span>{{ getAvatarLetter(comment.name) }}</span>
+            </div>
+          </div>
           <span class="font-semibold text-slate-900 dark:text-slate-100">{{ comment.name }}</span>
           <span v-if="comment.parent_name" class="text-sm text-slate-500 dark:text-slate-400">
             回复 <span class="text-blue-600 dark:text-blue-400">{{ comment.parent_name }}</span>
@@ -119,7 +140,7 @@ function handleCommentSubmitted() {
         </div>
 
         <!-- 底部信息 -->
-        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-300">
+        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-full text-xs text-slate-700 dark:text-slate-300 flex-wrap">
           <span v-tooltip="'评论时间'" class="flex items-center gap-1">
             <Icon name="ri-time-fill" class="size-4" />
             {{ formatDate(comment.create_time) }}
