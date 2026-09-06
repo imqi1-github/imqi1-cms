@@ -1,6 +1,7 @@
 import type { MarkdownContentOptions } from "~/types/composables/markdown-content";
 import { useMarkdownWidgets } from "~/composables/useMarkdownWidgets";
 import { useMarkdownImages } from "~/composables/useMarkdownImages";
+import { useMarkdownTableTranspose } from "~/composables/useMarkdownTableTranspose";
 
 /**
  * markdown 正文的客户端增强（文章详情页与协议页共用）。
@@ -437,6 +438,9 @@ export function useMarkdownContent(opts: MarkdownContentOptions) {
     cleanupWidgets = useMarkdownWidgets(document.body, {
       findImageDimensions: opts.findImageDimensions,
     }).cleanup;
+
+    // —— 表格窄屏转置 + 横向滚动羽化 ——
+    useMarkdownTableTranspose().mount(document);
   }
 
   function cleanup() {
@@ -444,6 +448,9 @@ export function useMarkdownContent(opts: MarkdownContentOptions) {
 
     // 卸载所有动态挂载的 LivePhoto 组件（触发其 onUnmounted 清理 Blob URL、定时器）
     unmountMarkdownImages();
+
+    // 还原所有被转置的表格,清理监听器
+    useMarkdownTableTranspose().cleanup();
 
     // 清理所有代码块的复制按钮 / 折叠 / 实况照片监听器
     document.querySelectorAll(".copy-button").forEach(button => {

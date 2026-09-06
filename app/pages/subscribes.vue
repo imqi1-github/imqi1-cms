@@ -265,7 +265,7 @@ function clearFilter() {
     <!-- 主内容区 -->
     <div v-if="isLoaded && contents.length > 0" class="flex gap-6">
       <!-- 左侧订阅源列表 -->
-      <aside v-scroll-reveal class="w-12 lg:w-16 shrink-0">
+      <aside v-scroll-reveal class="hidden md:block w-12 lg:w-16 shrink-0">
         <div
           ref="sidebarRef"
           class="sidebar-fade sticky top-22 flex flex-col gap-2 overflow-y-auto overflow-x-hidden h-fit max-h-[calc(100vh-8rem)] pr-1 scrollbar-hide"
@@ -350,10 +350,10 @@ function clearFilter() {
             v-scroll-reveal
             class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500 transition-all bg-white dark:bg-slate-800/50"
           >
-            <div class="flex items-start gap-4">
-              <!-- 订阅源头像 -->
+            <div class="flex items-start gap-4 md:gap-3">
+              <!-- 订阅源头像（桌面 ≥ md：左侧列；窄屏移到正文摘要下方） -->
               <button
-                class="shrink-0"
+                class="shrink-0 hidden md:block"
                 :title="content.subscribeName"
                 @click="selectSubscribe(content.subscribeId)"
               >
@@ -365,7 +365,8 @@ function clearFilter() {
 
               <!-- 文章内容 -->
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                <!-- 桌面专属：昵称+时间行；窄屏隐藏（挪到摘要下方） -->
+                <div class="hidden items-center gap-2 mb-1.5 flex-wrap md:flex">
                   <span class="text-sm text-slate-600 dark:text-slate-400">{{ content.subscribeName }}</span>
                   <span v-if="content.pubDate" class="text-xs text-slate-500 dark:text-slate-500">
                     {{ formatDate(content.pubDate) }}
@@ -387,14 +388,37 @@ function clearFilter() {
                 >
                   {{ truncateDescription(content.description) }}
                 </p>
+
+                <!-- 窄屏专属：头像+昵称+时间（+外链）一行，置于正文摘要下方；桌面 ≥ md 隐藏 -->
+                <div class="flex items-center gap-2 mt-3 md:hidden">
+                  <button class="shrink-0" :title="content.subscribeName" @click="selectSubscribe(content.subscribeId)">
+                    <Avatar class="size-5!">
+                      <AvatarImage v-if="content.subscribeAvatar" :src="content.subscribeAvatar" />
+                      <AvatarFallback>{{ content.subscribeName?.charAt(0) || '?' }}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                  <span class="text-xs text-slate-600 dark:text-slate-400 min-w-0 truncate">{{ content.subscribeName }}</span>
+                  <span v-if="content.pubDate" class="shrink-0 text-xs text-slate-500 dark:text-slate-500">
+                    {{ formatDate(content.pubDate) }}
+                  </span>
+                  <a
+                    :href="content.link || undefined"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="shrink-0 ml-auto text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    :title="content.title"
+                  >
+                    <Icon name="lucide:external-link" class="size-4" />
+                  </a>
+                </div>
               </div>
 
-              <!-- 外部链接图标 -->
+              <!-- 外部链接图标（桌面 ≥ md：右侧列；窄屏挪到下方 meta 行，上方已隐藏） -->
               <a
                 :href="content.link || undefined"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
+                class="shrink-0 text-slate-500 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1 hidden md:block"
                 :title="content.title"
               >
                 <Icon name="lucide:external-link" class="size-5" />
@@ -492,19 +516,5 @@ aside div::-webkit-scrollbar-thumb:hover {
 
 .dark aside div::-webkit-scrollbar-thumb:hover {
   background-color: rgb(75 85 99);
-}
-
-/* 小屏幕优化 */
-@media (max-width: 640px) {
-  /* 在小屏幕上调整边栏宽度 */
-  aside {
-    width: 2.75rem !important;
-  }
-
-  /* 小屏幕上订阅源按钮尺寸 */
-  aside button {
-    width: 2.25rem !important;
-    height: 2.25rem !important;
-  }
 }
 </style>

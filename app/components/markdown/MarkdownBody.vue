@@ -5,7 +5,19 @@
 <script setup lang="ts">
 // 文章正文 / 独立页面正文的 markdown 渲染容器（服务端 renderMarkdown 产物）。
 // 收敛 .markdown-body 排版、富容器占位、shiki 代码样式到一处，文章页与协议页共享。
-defineProps<{ html: string }>();
+//
+// 客户端增强（代码块复制/折叠、表格转置、横向滚动羽化、图片富组件、LivePhoto 等）
+// 由 useMarkdownContent 统一接管。组件内 onMounted 自动 mount、onUnmounted 自动 cleanup，
+// 页面使用方无需手动调用。
+const props = defineProps<{
+  html: string;
+  /** 图片尺寸解析（文章页用 markdown 附件宽度，独立页可传常量/null） */
+  findImageDimensions?: (src: string) => { width: number | null; height: number | null };
+}>();
+
+const markdownContent = useMarkdownContent({
+  findImageDimensions: props.findImageDimensions ?? (() => ({ width: null, height: null })),
+});
 
 // 动态注入 icons CDN URL（不走 CSS url()，避免 buildAssetsDir: "/" 时被 Vite 重写成带 hash 路径）。
 // public/icons/ 是 public 静态资源，不带 hash，走 CDN 根。
@@ -23,13 +35,21 @@ const iconUrls: Record<string, string> = {
 onMounted(() => {
   // 直接给每个 icon span 设 inline style.backgroundImage，彻底绕过 CSS rewrite 和 specificity 问题。
   const el = document.querySelector(".markdown-body");
-  if (!el) return;
-  for (const [slug, url] of Object.entries(iconUrls)) {
-    el.querySelectorAll(`.markdown-link-icon--${slug}`).forEach(span => {
-      (span as HTMLElement).style.maskImage = `url("${url}")`;
-      (span as HTMLElement).style.webkitMaskImage = `url("${url}")`;
-    });
+  if (el) {
+    for (const [slug, url] of Object.entries(iconUrls)) {
+      el.querySelectorAll(`.markdown-link-icon--${slug}`).forEach(span => {
+        (span as HTMLElement).style.maskImage = `url("${url}")`;
+        (span as HTMLElement).style.webkitMaskImage = `url("${url}")`;
+      });
+    }
   }
+
+  // 代码块增强 + 表格转置 + 横向滚动羽化 + 富组件
+  markdownContent.mount();
+});
+
+onUnmounted(() => {
+  markdownContent.cleanup();
 });
 </script>
 
@@ -88,9 +108,12 @@ onMounted(() => {
 .markdown-body :deep(.markdown-waterfall-wrapper),
 .markdown-body :deep(.markdown-live-photo-wrapper) {
   display: block;
-  min-height: min(60vh, 22rem);
   border-radius: 0.5rem;
   background: rgb(243 244 246);
+}
+
+.markdown-body :deep(.markdown-waterfall-wrapper) {
+  min-height: min(60vh, 22rem);
 }
 
 .dark .markdown-body :deep(.markdown-waterfall-wrapper),
@@ -103,8 +126,7 @@ onMounted(() => {
     min-height: 17.625rem;
   }
 
-  .markdown-body :deep(.markdown-waterfall-wrapper),
-  .markdown-body :deep(.markdown-live-photo-wrapper) {
+  .markdown-body :deep(.markdown-waterfall-wrapper) {
     min-height: min(60vh, 18rem);
   }
 }
@@ -443,6 +465,12 @@ onMounted(() => {
   min-height: 22.4px;
 }
 
+@media screen and (max-width: 350px) {
+  .markdown-body :deep(pre.shiki code .line) {
+    padding-left: 0;
+  }
+}
+
 .markdown-body :deep(pre.shiki code .line::before) {
   counter-increment: line;
   content: counter(line);
@@ -452,10 +480,15 @@ onMounted(() => {
   text-align: right;
   color: rgb(156 163 175);
   opacity: 0.5;
-  /* font-size: 0.85em; */
   user-select: none;
   position: absolute;
   left: -1px;
+}
+
+@media screen and (max-width: 350px) {
+  .markdown-body :deep(pre.shiki code .line::before) {
+    display: none;
+  }
 }
 
 .dark .markdown-body :deep(pre.shiki code .line::before) {
@@ -691,6 +724,96 @@ onMounted(() => {
   background: rgb(31 41 55);
 }
 
+/* 注册 <length> 才能让 CSS 变量参与 transition */
+@property --fade-left {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-right {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.markdown-body :deep(.markdown-table-wrap) {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  --fade-left: 0px;
+  --fade-right: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent 100%);
+  transition:
+    --fade-left 0.25s ease,
+    --fade-right 0.25s ease;
+}
+
+@media (min-width: 768px) {
+  .markdown-body :deep(.markdown-table-wrap) {
+    max-width: 75rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .markdown-body :deep(.markdown-table-wrap) {
+    max-width: 1200px;
+  }
+}
+
+.markdown-body :deep(.markdown-table-wrap[data-at-left="false"]) {
+  --fade-left: 1.5rem;
+}
+
+.markdown-body :deep(.markdown-table-wrap[data-at-right="false"]) {
+  --fade-right: 1.5rem;
+}
+
+.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar {
+  height: 4px;
+}
+.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-track {
+  background: transparent;
+}
+.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 2px;
+}
+.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb:hover {
+  background: rgb(156 163 175);
+}
+.dark .markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105);
+}
+.dark .markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 130);
+}
+
+/* wrapper 内表格:列宽由内容决定(mac-content),不被父容器挤压;
+   max-width:100% 兜底,保证窄表不会超出 wrapper。 */
+.markdown-body :deep(.markdown-table-wrap > table) {
+  width: max-content;
+  max-width: 100%;
+}
+
+@media (max-width: 350px) {
+  .markdown-body :deep(.markdown-table-wrap > table) {
+    max-width: calc(200% + 30rem)
+  }
+}
+
+/* 窄屏(<768px)表格:宽度按内容撑开,这样 composable 才能从 scrollWidth 看到"真实内容宽度"
+   来正确判断"原表超宽" -> 触发转置;max-width:100% 兜底防溢出。
+   桌面保留 width:100%(拉满容器,这是 markdown 正文表格的常规表现)。 */
+@media (max-width: 767.98px) {
+  .markdown-body :deep(table) {
+    width: max-content;
+    max-width: 100%;
+  }
+}
+
 .markdown-body :deep(hr) {
   margin: 2em 0;
   border: none;
@@ -699,5 +822,52 @@ onMounted(() => {
 
 .dark .markdown-body :deep(hr) {
   border-top-color: rgb(55 65 81);
+}
+
+/* 表格转置提示气泡:首次(本地持久化)被转置时,挂在被转置表的首个单元格的右上角。
+   3 秒后由 composable 加 .markdown-table-transpose-hint--leaving 类淡出。
+   深色主题单独配色。 */
+.markdown-body :deep(.markdown-table-transpose-hint) {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 1;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  background: oklch(0.55 0.18 250 / 0.92);
+  color: white;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  animation: markdown-table-transpose-hint-in 0.25s ease forwards;
+}
+
+.markdown-body :deep(.markdown-table-transpose-hint--leaving) {
+  animation: markdown-table-transpose-hint-out 0.3s ease forwards;
+}
+
+@keyframes markdown-table-transpose-hint-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes markdown-table-transpose-hint-out {
+  to {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+
+/* 首屏闪变过渡:转置后的表挂上 .markdown-table-just-transposed 后从 opacity:0 fade-in 到 1,
+   避免 SSR 原表 → 突变转置表的硬切;CSS transition 由 composable 在下一帧清掉该 class 触发。 */
+.markdown-body :deep(.markdown-table-just-transposed) {
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 </style>

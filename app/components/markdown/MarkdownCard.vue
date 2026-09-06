@@ -12,7 +12,7 @@ defineProps<{ url: string; title: string; description: string; image: string }>(
       class="block group border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-300 bg-white dark:bg-slate-800"
     >
       <div class="flex min-w-0">
-        <div v-if="image" class="w-36 h-36 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900">
+        <div v-if="image" class="w-36 h-36 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900 max-xs:hidden">
           <img
             :src="image"
             :alt="title"

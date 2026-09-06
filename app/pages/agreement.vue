@@ -191,12 +191,12 @@ watch(
   },
 );
 
-// markdown 正文客户端增强（代码复制/展开/标签 + 富组件/图片水合），与文章页共用同一份逻辑
-const markdownContent = useMarkdownContent({ findImageDimensions: () => ({ width: null, height: null }) });
+// markdown 正文客户端增强（代码块复制/折叠、表格转置、横向滚动羽化、富组件、图片水合等）
+// 统一由 MarkdownBody 内部 onMounted/onUnmounted 调用,本页无需再手动 mount/cleanup。
+// 目录提取与 hash 滚动是页面级关注点,留在本页 onMounted。
 
 // 初始化目录与 hash 滚动
 onMounted(() => {
-  markdownContent.mount();
   nextTick(async () => {
     extractToc();
     window.addEventListener("scroll", handleTocScroll);
@@ -209,7 +209,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  markdownContent.cleanup();
   window.removeEventListener("scroll", handleTocScroll);
 });
 </script>

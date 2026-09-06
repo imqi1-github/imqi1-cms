@@ -568,9 +568,6 @@ watch(
 const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
 let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 
-// markdown 正文客户端增强（代码复制/展开/标签 + 富组件/图片水合），由 useMarkdownContent 统一挂载与清理
-const markdownContent = useMarkdownContent({ findImageDimensions: findMarkdownImageDimensions });
-
 // 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
 const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
 
@@ -618,8 +615,9 @@ onMounted(async () => {
       }),
     );
 
-    // markdown 正文增强（代码复制/展开/标签 + 富组件/图片水合），逻辑见 composables/useMarkdownContent.ts
-    markdownContent.mount();
+    // markdown 正文增强（代码块复制/折叠、表格转置、横向滚动羽化、富组件、图片水合）
+    // 由 MarkdownBody 组件内部 onMounted 自动调用,本页不再手动 mount。
+    // 下面只负责目录构建与滚动监听(页面级关注点)。
 
     // 初始化目录
     nextTick(() => {
@@ -640,9 +638,6 @@ onUnmounted(() => {
     FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
   }
   window.removeEventListener("scroll", handleTocScroll);
-
-  // markdown 正文增强的清理（动态组件卸载 + 监听器剥离），逻辑见 composables/useMarkdownContent.ts
-  markdownContent.cleanup();
 });
 </script>
 
@@ -745,7 +740,7 @@ onUnmounted(() => {
         </aside>
 
         <!-- 文章正文 -->
-        <MarkdownBody :html="content.renderedContent" class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out" />
+        <MarkdownBody :html="content.renderedContent" :find-image-dimensions="findMarkdownImageDimensions" class="min-w-0 w-full opacity-0 translate-y-8 duration-300 ease-out" />
       </div>
 
       <!-- 元信息盒子和 CC 授权 -->
