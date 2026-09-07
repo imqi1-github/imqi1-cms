@@ -8,7 +8,6 @@ const subscribes = ref<SubscribeItem[]>([]);
 const loading = ref(true);
 const hasLoadedSubscribes = ref(false);
 const showAddForm = ref(false);
-const showEditForm = ref(false);
 const submitting = ref(false); // 添加订阅表单提交中
 const taskSubmitting = ref(false); // 提交更新订阅任务中
 const refreshing = ref(false); // 刷新订阅列表中
@@ -178,7 +177,6 @@ function openEditForm(subscribe: SubscribeItem) {
     url: subscribe.url,
     avatar: subscribe.avatar || "",
   };
-  showEditForm.value = true;
 }
 
 async function updateSubscribe() {
@@ -200,7 +198,6 @@ async function updateSubscribe() {
         csrfToken: csrfToken.value,
       },
     });
-    showEditForm.value = false;
     editingSubscribe.value = { id: null, name: "", url: "", avatar: "" };
     toast.success({
       message: "修改成功",
@@ -218,7 +215,6 @@ async function updateSubscribe() {
 
 function cancelEdit() {
   editingSubscribe.value = { id: null, name: "", url: "", avatar: "" };
-  showEditForm.value = false;
 }
 
 function formatDate(date: Date | string | null) {
@@ -281,7 +277,7 @@ onMounted(() => {
             <CardTitle>订阅源</CardTitle>
             <CardDescription>管理和配置 RSS 订阅源</CardDescription>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 max-xs:flex-col">
             <Button variant="outline" :disabled="taskSubmitting" @click="submitUpdateTask">
               <Icon :name="taskSubmitting ? 'lucide:loader-2' : 'lucide:play'" :class="{ 'animate-spin': taskSubmitting }" class="mr-2 size-4" />
               {{ taskSubmitting ? "提交中..." : "提交更新订阅" }}
@@ -312,19 +308,7 @@ onMounted(() => {
           </form>
         </div>
 
-        <!-- 编辑表单 -->
-        <div v-if="showEditForm" class="mb-6 p-4 border rounded-lg bg-primary/5 border-primary/50">
-          <h4 class="font-medium mb-4">编辑订阅</h4>
-          <form class="grid grid-cols-1 md:grid-cols-4 gap-4" @submit.prevent="updateSubscribe">
-            <Input v-model="editingSubscribe.name" placeholder="订阅名称" required />
-            <Input v-model="editingSubscribe.url" type="url" placeholder="RSS URL" required />
-            <Input v-model="editingSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />
-            <div class="flex gap-2">
-              <Button type="submit" :disabled="saveUpdating">保存</Button>
-              <Button type="button" variant="outline" @click="cancelEdit">取消</Button>
-            </div>
-          </form>
-        </div>
+        <!-- 编辑表单：内联在被编辑的原始行位置 -->
 
         <!-- 订阅列表 -->
         <!-- 加载状态 - 桌面端表格 -->
@@ -372,48 +356,64 @@ onMounted(() => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow v-for="sub in subscribes" :key="sub.id">
-              <TableCell>
-                <div class="flex items-center gap-3">
-                  <Avatar class="size-8">
-                    <AvatarImage v-if="sub.avatar" :src="sub.avatar" class="no-img-loading" />
-                    <AvatarFallback>{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
-                  </Avatar>
-                  <span class="font-medium">{{ sub.name }}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <a :href="sub.url" target="_blank" class="text-primary hover:underline truncate block max-w-75">
-                  {{ sub.url }}
-                </a>
-              </TableCell>
-              <TableCell>
-                <!-- 最近一次更新状态：成功=文章数+最新标题，失败=报错信息，无记录=— -->
-                <span v-if="sub.lastUpdateStatus" class="text-xs">
-                  <template v-if="sub.lastUpdateStatus.success">
-                    <span class="text-green-600 dark:text-green-400">{{ sub.lastUpdateStatus.message }}</span>
-                    <span v-if="sub.lastUpdateStatus.latestTitle" class="text-muted-foreground block truncate max-w-60 mt-0.5">
-                      最新：{{ sub.lastUpdateStatus.latestTitle }}
-                    </span>
-                  </template>
-                  <span v-else class="text-destructive">{{ sub.lastUpdateStatus.message }}</span>
-                </span>
-                <span v-else class="text-xs text-muted-foreground">—</span>
-              </TableCell>
-              <TableCell class="text-muted-foreground text-sm">
-                {{ formatDate(sub.lastUpdated) }}
-              </TableCell>
-              <TableCell class="text-right">
-                <div class="flex justify-end gap-1">
-                  <Button variant="ghost" size="icon" class="size-8" @click="openEditForm(sub)">
-                    <Icon name="lucide:pencil" class="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
-                    <Icon name="lucide:trash-2" class="size-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
+            <template v-for="sub in subscribes" :key="sub.id">
+              <!-- 编辑行：内联替换被编辑的原始行 -->
+              <TableRow v-if="editingSubscribe.id === sub.id" class="bg-primary/5">
+                <TableCell :colspan="5">
+                  <form class="grid grid-cols-1 md:grid-cols-4 gap-4 py-2" @submit.prevent="updateSubscribe">
+                    <Input v-model="editingSubscribe.name" placeholder="订阅名称" required />
+                    <Input v-model="editingSubscribe.url" type="url" placeholder="RSS URL" required />
+                    <Input v-model="editingSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />
+                    <div class="flex gap-2">
+                      <Button type="submit" :disabled="saveUpdating">保存</Button>
+                      <Button type="button" variant="outline" @click="cancelEdit">取消</Button>
+                    </div>
+                  </form>
+                </TableCell>
+              </TableRow>
+              <TableRow v-else>
+                <TableCell>
+                  <div class="flex items-center gap-3">
+                    <Avatar class="size-8">
+                      <AvatarImage v-if="sub.avatar" :src="sub.avatar" class="no-img-loading" />
+                      <AvatarFallback>{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
+                    </Avatar>
+                    <span class="font-medium">{{ sub.name }}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <a :href="sub.url" target="_blank" class="text-primary hover:underline truncate block max-w-75">
+                    {{ sub.url }}
+                  </a>
+                </TableCell>
+                <TableCell>
+                  <!-- 最近一次更新状态：成功=文章数+最新标题，失败=报错信息，无记录=— -->
+                  <span v-if="sub.lastUpdateStatus" class="text-xs">
+                    <template v-if="sub.lastUpdateStatus.success">
+                      <span class="text-green-600 dark:text-green-400">{{ sub.lastUpdateStatus.message }}</span>
+                      <span v-if="sub.lastUpdateStatus.latestTitle" class="text-muted-foreground block truncate max-w-60 mt-0.5">
+                        最新：{{ sub.lastUpdateStatus.latestTitle }}
+                      </span>
+                    </template>
+                    <span v-else class="text-destructive">{{ sub.lastUpdateStatus.message }}</span>
+                  </span>
+                  <span v-else class="text-xs text-muted-foreground">—</span>
+                </TableCell>
+                <TableCell class="text-muted-foreground text-sm">
+                  {{ formatDate(sub.lastUpdated) }}
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" class="size-8" @click="openEditForm(sub)">
+                      <Icon name="lucide:pencil" class="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
+                      <Icon name="lucide:trash-2" class="size-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </template>
           </TableBody>
         </Table>
 
@@ -432,40 +432,54 @@ onMounted(() => {
 
         <!-- 数据列表 - 移动端卡片 -->
         <div v-else-if="hasLoadedSubscribes && subscribes.length > 0" class="lg:hidden space-y-4">
-          <div v-for="sub in subscribes" :key="sub.id" class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-            <Avatar class="size-12">
-              <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
-              <AvatarFallback class="text-sm">{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
-            </Avatar>
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-base">{{ sub.name }}</p>
-              <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
-                {{ sub.url }}
-              </a>
-              <!-- 最近一次更新状态 -->
-              <p class="text-xs mt-1 truncate">
-                <template v-if="sub.lastUpdateStatus">
-                  <template v-if="sub.lastUpdateStatus.success">
-                    <span class="text-green-600 dark:text-green-400">{{ sub.lastUpdateStatus.message }}</span>
-                    <span v-if="sub.lastUpdateStatus.latestTitle" class="text-muted-foreground"> · 最新：{{ sub.lastUpdateStatus.latestTitle }}</span>
-                  </template>
-                  <span v-else class="text-destructive">{{ sub.lastUpdateStatus.message }}</span>
-                </template>
-                <span v-else class="text-muted-foreground">—</span>
-              </p>
+          <template v-for="sub in subscribes" :key="sub.id">
+            <!-- 编辑卡片：内联替换被编辑的原始卡片 -->
+            <div v-if="editingSubscribe.id === sub.id" class="p-4 border rounded-lg bg-primary/5 border-primary/50">
+              <form class="grid grid-cols-1 gap-4" @submit.prevent="updateSubscribe">
+                <Input v-model="editingSubscribe.name" placeholder="订阅名称" required />
+                <Input v-model="editingSubscribe.url" type="url" placeholder="RSS URL" required />
+                <Input v-model="editingSubscribe.avatar" type="url" placeholder="头像 URL（可选）" />
+                <div class="flex gap-2">
+                  <Button type="submit" :disabled="saveUpdating">保存</Button>
+                  <Button type="button" variant="outline" @click="cancelEdit">取消</Button>
+                </div>
+              </form>
             </div>
-            <div class="flex flex-col items-end gap-2">
-              <span class="text-xs text-muted-foreground">{{ formatDate(sub.lastUpdated) }}</span>
-              <div class="flex gap-1">
-                <Button variant="ghost" size="icon" class="size-8" @click="openEditForm(sub)">
-                  <Icon name="lucide:pencil" class="size-4" />
-                </Button>
-                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
-                  <Icon name="lucide:trash-2" class="size-4" />
-                </Button>
+            <div v-else class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+              <Avatar class="size-12">
+                <AvatarImage v-if="sub.avatar" :src="sub.avatar" />
+                <AvatarFallback class="text-sm">{{ sub.name?.charAt(0) || "?" }}</AvatarFallback>
+              </Avatar>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-base">{{ sub.name }}</p>
+                <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
+                  {{ sub.url }}
+                </a>
+                <!-- 最近一次更新状态 -->
+                <p class="text-xs mt-1 truncate">
+                  <template v-if="sub.lastUpdateStatus">
+                    <template v-if="sub.lastUpdateStatus.success">
+                      <span class="text-green-600 dark:text-green-400">{{ sub.lastUpdateStatus.message }}</span>
+                      <span v-if="sub.lastUpdateStatus.latestTitle" class="text-muted-foreground"> · 最新：{{ sub.lastUpdateStatus.latestTitle }}</span>
+                    </template>
+                    <span v-else class="text-destructive">{{ sub.lastUpdateStatus.message }}</span>
+                  </template>
+                  <span v-else class="text-muted-foreground">—</span>
+                </p>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                <span class="text-xs text-muted-foreground">{{ formatDate(sub.lastUpdated) }}</span>
+                <div class="flex gap-1">
+                  <Button variant="ghost" size="icon" class="size-8" @click="openEditForm(sub)">
+                    <Icon name="lucide:pencil" class="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="deleteSubscribe(sub.id)">
+                    <Icon name="lucide:trash-2" class="size-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <!-- 空状态 -->

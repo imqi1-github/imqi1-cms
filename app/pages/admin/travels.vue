@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type {ContentListItem, TravelItem} from "~/types/components/map";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import type { ContentListItem, TravelItem } from "~/types/components/map";
 import { fetchAllAdminContents } from "~/utils/admin-picker";
 
 const toast = useToast();
@@ -77,7 +77,7 @@ async function fetchTravels() {
 
 async function fetchContents() {
   try {
-    contents.value = await fetchAllAdminContents()
+    contents.value = await fetchAllAdminContents();
   } catch (error) {
     console.error("获取文章列表失败:", error);
     contents.value = [];
@@ -378,7 +378,7 @@ onMounted(() => {
       </Table>
 
       <!-- 加载状态 - 移动端卡片 -->
-      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+      <div v-if="loading" class="lg:hidden space-y-4">
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="h-4 bg-muted rounded w-24 animate-pulse" />
           <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
@@ -390,7 +390,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 移动端卡片 -->
-      <div v-else class="p-4 lg:hidden space-y-4">
+      <div v-else class="lg:hidden space-y-4">
         <div v-for="travel in travels" :key="travel.id" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <div class="size-8 rounded-md bg-muted overflow-hidden shrink-0 flex items-center justify-center">
@@ -446,7 +446,7 @@ onMounted(() => {
               <Label for="travelName">名称</Label>
               <Input id="travelName" v-model="newTravel.name" placeholder="如：沈阳故宫" required />
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 max-xs:grid-cols-1">
               <div class="space-y-2">
                 <Label for="travelLng">经度</Label>
                 <Input id="travelLng" v-model="newTravel.longitude" type="number" step="0.000001" placeholder="116.3974" required />
@@ -479,8 +479,8 @@ onMounted(() => {
                       <Checkbox
                         :id="`add-travel-content-${p.cid}`"
                         :model-value="newTravel.cids.includes(String(p.cid))"
-                        @update:model-value="(checked) => toggleCid(newTravel.cids, String(p.cid), !!checked)" />
-                      <Label :for="`add-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
+                        @update:model-value="checked => toggleCid(newTravel.cids, String(p.cid), !!checked)" />
+                      <Label :for="`add-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0">
                         {{ p.title }}
                       </Label>
                     </div>
@@ -493,7 +493,7 @@ onMounted(() => {
               <Label for="travelDesc">描述</Label>
               <Textarea id="travelDesc" v-model="newTravel.desc" placeholder="关于这个地方的只言片语" rows="3" />
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 max-xs:grid-cols-1">
               <div class="space-y-2">
                 <Label for="travelCover">封面图 URL</Label>
                 <Input id="travelCover" v-model="newTravel.cover" type="url" placeholder="https://example.com/cover.jpg" />
@@ -525,7 +525,7 @@ onMounted(() => {
               <Label for="editTravelName">名称</Label>
               <Input id="editTravelName" v-model="editTravelForm.name" placeholder="如：沈阳故宫" required />
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 max-xs:grid-cols-1">
               <div class="space-y-2">
                 <Label for="editTravelLng">经度</Label>
                 <Input id="editTravelLng" v-model="editTravelForm.longitude" type="number" step="0.000001" placeholder="116.3974" required />
@@ -558,8 +558,8 @@ onMounted(() => {
                       <Checkbox
                         :id="`edit-travel-content-${p.cid}`"
                         :model-value="editTravelForm.cids.includes(String(p.cid))"
-                        @update:model-value="(checked) => toggleCid(editTravelForm.cids, String(p.cid), !!checked)" />
-                      <Label :for="`edit-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0 truncate">
+                        @update:model-value="checked => toggleCid(editTravelForm.cids, String(p.cid), !!checked)" />
+                      <Label :for="`edit-travel-content-${p.cid}`" class="text-sm font-normal cursor-pointer flex-1 min-w-0">
                         {{ p.title }}
                       </Label>
                     </div>
@@ -572,7 +572,7 @@ onMounted(() => {
               <Label for="editTravelDesc">描述</Label>
               <Textarea id="editTravelDesc" v-model="editTravelForm.desc" placeholder="关于这个地方的只言片语" rows="3" />
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 max-xs:grid-cols-1">
               <div class="space-y-2">
                 <Label for="editTravelCover">封面图 URL</Label>
                 <Input id="editTravelCover" v-model="editTravelForm.cover" type="url" placeholder="https://example.com/cover.jpg" />

@@ -398,7 +398,7 @@ onMounted(() => {
         <h2 class="text-2xl font-bold">系统设置</h2>
         <p class="text-sm text-muted-foreground mt-1">管理系统配置和参数</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 max-xs:flex-col">
         <Button
           variant="outline"
           :disabled="initializing"
@@ -513,7 +513,7 @@ onMounted(() => {
         </div>
 
         <!-- 桌面端：标签栏 -->
-        <TabsList class="hidden sm:grid w-full max-w-3xl grid-cols-6">
+        <TabsList class="hidden xs:grid w-full max-w-3xl grid-cols-6">
           <TabsTrigger value="basic">
             <Icon name="lucide:settings" class="mr-2 size-4" />
             基本信息
@@ -948,7 +948,7 @@ onMounted(() => {
 
               <!-- SMTP 配置 -->
               <div v-if="settings.emailPushType === 'smtp'" class="space-y-4">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-2">
                   <h4 class="text-sm font-medium">SMTP 服务器配置</h4>
                   <Button variant="outline" size="sm" :disabled="testingEmail" @click="testEmail">
                     <Icon name="lucide:send" class="mr-2 size-4" />

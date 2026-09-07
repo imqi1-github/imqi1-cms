@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type {AcceptableValue} from "reka-ui";
+import type { AcceptableValue } from "reka-ui";
 
-import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
 
 const router = useRouter();
 const route = useRoute();
@@ -288,7 +288,10 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <Label for="status-filter">状态:</Label>
             <ClientOnly>
-              <Select id="status-filter" v-model="selectedStatus" @update:model-value="(v: AcceptableValue) => filterByStatus(v == null ? null : Number(v))">
+              <Select
+                id="status-filter"
+                v-model="selectedStatus"
+                @update:model-value="(v: AcceptableValue) => filterByStatus(v == null ? null : Number(v))">
                 <SelectTrigger class="w-35">
                   <SelectValue placeholder="全部状态" />
                 </SelectTrigger>
@@ -314,7 +317,7 @@ onMounted(() => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12"/>
+              <TableHead class="w-12" />
               <TableHead>标题</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>状态</TableHead>
@@ -402,7 +405,7 @@ onMounted(() => {
       </Table>
 
       <!-- 加载状态 - 移动端卡片 -->
-      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+      <div v-if="loading" class="lg:hidden space-y-4">
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-start gap-3">
             <div class="size-4 bg-muted rounded animate-pulse mt-1" />
@@ -419,7 +422,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 移动端卡片 -->
-      <div v-else class="p-4 lg:hidden space-y-4">
+      <div v-else class="lg:hidden space-y-4">
         <!-- 全选和批量操作 -->
         <div v-if="pages.length > 0" class="flex items-center gap-2 pb-2 border-b">
           <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />

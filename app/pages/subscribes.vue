@@ -330,7 +330,7 @@ function clearFilter() {
             v-else-if="remainingCount > 0"
             key="collapse-subscribes"
             v-tooltip.right="collapseTooltip"
-            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden"
+            class="flex shrink-0 items-center justify-center w-10 h-10 aspect-square lg:w-11 lg:h-11 rounded-lg transition-all duration-300 border-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative overflow-hidden cursor-pointer"
             @click="toggleExpanded($event)"
           >
             <span class="font-semibold text-xs lg:text-sm text-red-500 dark:text-red-400">

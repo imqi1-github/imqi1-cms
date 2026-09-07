@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta} from "#shared/changelog";
-import type {ChangelogItem, FormEntry} from "~/types/apis/admin/changelogs/logs";
+import { CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta } from "#shared/changelog";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import type { ChangelogItem, FormEntry } from "~/types/apis/admin/changelogs/logs";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -74,10 +74,7 @@ function resetForm() {
 function startEdit(log: ChangelogItem) {
   editingId.value = log.id;
   const src = Array.isArray(log?.content) ? log.content : [];
-  editForm.entries =
-    src.length > 0
-      ? src.map(c => makeEntry(c.type ?? "新增", c.value ?? ""))
-      : [makeEntry()];
+  editForm.entries = src.length > 0 ? src.map(c => makeEntry(c.type ?? "新增", c.value ?? "")) : [makeEntry()];
 }
 
 // 取消编辑
@@ -127,13 +124,15 @@ async function save() {
 
 // 删除
 async function deleteLog(id: number) {
-  if (!await confirm({
-    title: "删除更新日志",
-    description: "确定要删除这条更新日志吗？",
-    variant: "destructive",
-    confirmText: "确认删除",
-    icon: "lucide:trash-2",
-  })) {
+  if (
+    !(await confirm({
+      title: "删除更新日志",
+      description: "确定要删除这条更新日志吗？",
+      variant: "destructive",
+      confirmText: "确认删除",
+      icon: "lucide:trash-2",
+    }))
+  ) {
     return;
   }
 
@@ -185,9 +184,10 @@ async function onImportFile(event: Event) {
   } catch (err: unknown) {
     console.error("导入失败:", err);
     const data = err && typeof err === "object" && "data" in err ? (err as { data?: unknown }).data : undefined;
-    const msg = data && typeof data === "object" && "message" in data && typeof (data as { message: unknown }).message === "string"
-      ? (data as { message: string }).message
-      : "导入失败，请检查 JSON 格式";
+    const msg =
+      data && typeof data === "object" && "message" in data && typeof (data as { message: unknown }).message === "string"
+        ? (data as { message: string }).message
+        : "导入失败，请检查 JSON 格式";
     toast.error({ message: msg });
   } finally {
     importing.value = false;
@@ -229,8 +229,8 @@ onMounted(() => {
         <form class="space-y-3" @submit.prevent="save">
           <!-- 条目编辑器：可重复行 -->
           <div class="space-y-2">
-            <div v-for="(entry, index) in editForm.entries" :key="entry._key" class="rounded-lg border p-3">
-              <div class="flex items-start gap-2">
+            <template v-for="(entry, index) in editForm.entries" :key="entry._key">
+              <div class="flex flex-wrap items-start gap-2 max-md:justify-between max-md:items-center">
                 <div class="w-28 shrink-0">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
                   <ClientOnly>
@@ -249,7 +249,7 @@ onMounted(() => {
                     </template>
                   </ClientOnly>
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 max-md:order-last max-md:basis-full">
                   <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>
                   <Textarea v-model="entry.value" placeholder="输入更新内容，支持 Markdown 格式" rows="2" />
                 </div>
@@ -257,13 +257,13 @@ onMounted(() => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  class="mt-6 size-8 shrink-0"
+                  class="max-xs:ml-auto mt-6 size-8 shrink-0 max-xs:mt-0"
                   :disabled="editForm.entries.length <= 1"
                   @click="removeEntry(index)">
                   <Icon name="lucide:x" class="size-4" />
                 </Button>
               </div>
-            </div>
+            </template>
           </div>
           <div class="flex justify-between">
             <Button type="button" variant="outline" size="sm" @click="addEntry">
@@ -280,7 +280,7 @@ onMounted(() => {
 
       <!-- 加载状态 -->
       <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"/>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
 
       <!-- 日志列表 -->
@@ -290,7 +290,7 @@ onMounted(() => {
           <form v-if="editingId === log.id" class="space-y-3" @submit.prevent="save">
             <div class="space-y-2">
               <div v-for="(entry, index) in editForm.entries" :key="entry._key" class="rounded-lg border p-3">
-                <div class="flex items-start gap-2">
+                <div class="flex flex-wrap items-start gap-2 max-md:justify-between max-md:items-center">
                   <div class="w-28 shrink-0">
                     <label class="block text-xs font-medium mb-1 text-muted-foreground">类型</label>
                     <Select v-model="entry.type">
@@ -304,7 +304,7 @@ onMounted(() => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div class="flex-1 min-w-0">
+                  <div class="flex-1 min-w-0 max-md:order-last max-md:basis-full">
                     <label class="block text-xs font-medium mb-1 text-muted-foreground">内容</label>
                     <Textarea v-model="entry.value" placeholder="输入更新内容，支持 Markdown 格式" rows="2" />
                   </div>
@@ -312,7 +312,7 @@ onMounted(() => {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    class="mt-6 size-8 shrink-0"
+                    class="max-xs:ml-auto mt-6 size-8 shrink-0 max-xs:mt-0"
                     :disabled="editForm.entries.length <= 1"
                     @click="removeEntry(index)">
                     <Icon name="lucide:x" class="size-4" />
@@ -336,28 +336,31 @@ onMounted(() => {
           </form>
 
           <!-- 显示模式 -->
-          <div v-else class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0 space-y-1.5">
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-muted-foreground">
-                  {{ formatDate(log.createTime) }}
-                </span>
+          <div v-else class="space-y-2">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs text-muted-foreground">
+                {{ formatDate(log.createTime) }}
+              </span>
+              <div class="flex gap-1 shrink-0">
+                <Button variant="ghost" size="icon" class="size-8" @click="startEdit(log)">
+                  <Icon name="lucide:pencil" class="size-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" class="size-8" @click="deleteLog(log.id)">
+                  <Icon name="lucide:trash-2" class="size-3.5 text-destructive" />
+                </Button>
               </div>
-              <div v-for="(entry, i) in log.content" :key="i" class="flex items-baseline gap-2">
-                <span :class="['shrink-0 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1', getChangelogMeta(entry.type).color]">
+            </div>
+            <div class="space-y-2">
+              <div v-for="(entry, i) in log.content" :key="i" class="flex flex-col-reverse items-start gap-1 sm:flex-row sm:items-baseline sm:gap-2">
+                <span
+                  :class="['shrink-0 px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1', getChangelogMeta(entry.type).color]">
                   <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
                   {{ getChangelogMeta(entry.type).label }}
                 </span>
-                <div class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content flex-1 min-w-0" v-html="entry.html" />
+                <div
+                  class="prose prose-slate dark:prose-invert max-w-none prose-p:text-xs markdown-content w-full min-w-0 sm:flex-1"
+                  v-html="entry.html" />
               </div>
-            </div>
-            <div class="flex gap-1 shrink-0">
-              <Button variant="ghost" size="icon" class="size-8" @click="startEdit(log)">
-                <Icon name="lucide:pencil" class="size-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" class="size-8" @click="deleteLog(log.id)">
-                <Icon name="lucide:trash-2" class="size-3.5 text-destructive" />
-              </Button>
             </div>
           </div>
         </Card>

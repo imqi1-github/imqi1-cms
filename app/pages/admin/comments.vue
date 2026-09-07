@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {parseUserAgent} from "~/utils/parseUserAgent";
-import type {CommentItem, CommentListResponse} from "~/types/apis/admin/comments";
-import type {CsrfResponse} from "~/types/apis/admin/categories";
+import type { CsrfResponse } from "~/types/apis/admin/categories";
+import type { CommentItem, CommentListResponse } from "~/types/apis/admin/comments";
+import { parseUserAgent } from "~/utils/parseUserAgent";
 
 const route = useRoute();
 const router = useRouter();
@@ -413,7 +413,7 @@ onMounted(() => {
       <div>
         <h2 class="text-2xl font-bold">评论管理</h2>
         <p class="text-sm text-muted-foreground mt-1">
-          {{ filterCid ? `筛选文章: ${comments[0]?.contents?.title || ''}` : '审核和管理用户评论' }}
+          {{ filterCid ? `筛选文章: ${comments[0]?.contents?.title || ""}` : "审核和管理用户评论" }}
         </p>
       </div>
       <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -431,9 +431,7 @@ onMounted(() => {
     <!-- 状态筛选 -->
     <Tabs v-model="activeStatusTab" class="mb-4">
       <TabsList class="overflow-x-auto">
-        <TabsTrigger value="all">
-          全部
-        </TabsTrigger>
+        <TabsTrigger value="all"> 全部 </TabsTrigger>
         <TabsTrigger v-for="option in statusOptions" :key="option.value" :value="String(option.value)">
           {{ option.label }}
         </TabsTrigger>
@@ -448,7 +446,7 @@ onMounted(() => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead class="w-12"/>
+                <TableHead class="w-12" />
                 <TableHead>评论者</TableHead>
                 <TableHead>内容</TableHead>
                 <TableHead>文章</TableHead>
@@ -514,11 +512,7 @@ onMounted(() => {
               <TableCell>
                 <div class="flex items-center gap-3">
                   <Avatar class="size-8">
-                    <AvatarImage
-                      v-if="comment.avatarUrl"
-                      :src="comment.avatarUrl"
-                      :alt="comment.name"
-                    />
+                    <AvatarImage v-if="comment.avatarUrl" :src="comment.avatarUrl" :alt="comment.name" />
                     <AvatarFallback>{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -595,7 +589,7 @@ onMounted(() => {
       <!-- 中屏到大屏卡片视图 (1024px - 1649px / lg - custom) -->
       <div class="hidden max-[1650px]:lg:block min-[1650px]:hidden">
         <!-- 加载状态 -->
-        <div v-if="loading" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div v-for="i in 4" :key="i" class="border rounded-lg p-4 space-y-3">
             <div class="flex items-center gap-3">
               <div class="size-8 bg-muted rounded-full animate-pulse" />
@@ -614,7 +608,7 @@ onMounted(() => {
         </div>
 
         <!-- 数据列表 - 网格布局 -->
-        <div v-else class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div
             v-for="comment in comments"
             :key="comment.coid"
@@ -622,15 +616,9 @@ onMounted(() => {
             :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
             <!-- 头部 -->
             <div class="flex items-start gap-3">
-              <Checkbox
-                :model-value="selectedIds.includes(comment.coid)"
-                class="mt-1"
-                @update:model-value="toggleSelect(comment.coid)" />
+              <Checkbox :model-value="selectedIds.includes(comment.coid)" class="mt-1" @update:model-value="toggleSelect(comment.coid)" />
               <Avatar class="size-10">
-                <AvatarImage
-                  v-if="comment.avatarUrl"
-                  :src="comment.avatarUrl"
-                  :alt="comment.name" />
+                <AvatarImage v-if="comment.avatarUrl" :src="comment.avatarUrl" :alt="comment.name" />
                 <AvatarFallback>{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
               </Avatar>
               <div class="flex-1 min-w-0">
@@ -699,7 +687,7 @@ onMounted(() => {
       </div>
 
       <!-- 小屏卡片视图 (<1024px) -->
-      <div class="lg:hidden p-3 sm:p-4 space-y-3 sm:space-y-4">
+      <div class="lg:hidden space-y-3 sm:space-y-4">
         <!-- 移动端加载状态 -->
         <div v-if="loading" class="space-y-3 sm:space-y-4">
           <div v-for="i in 3" :key="i" class="border rounded-lg p-3 sm:p-4 space-y-3">
@@ -728,15 +716,9 @@ onMounted(() => {
             :class="{ 'bg-muted/50': selectedIds.includes(comment.coid) }">
             <!-- 头部：选择框、头像、信息、状态 -->
             <div class="flex items-start gap-2 sm:gap-3">
-              <Checkbox
-                :model-value="selectedIds.includes(comment.coid)"
-                class="mt-1"
-                @update:model-value="toggleSelect(comment.coid)" />
+              <Checkbox :model-value="selectedIds.includes(comment.coid)" class="mt-1" @update:model-value="toggleSelect(comment.coid)" />
               <Avatar class="size-8 sm:size-10">
-                <AvatarImage
-                  v-if="comment.avatarUrl"
-                  :src="comment.avatarUrl"
-                  :alt="comment.name" />
+                <AvatarImage v-if="comment.avatarUrl" :src="comment.avatarUrl" :alt="comment.name" />
                 <AvatarFallback class="text-xs sm:text-sm">{{ comment.name?.charAt(0) || "?" }}</AvatarFallback>
               </Avatar>
               <div class="flex-1 min-w-0">
@@ -753,7 +735,7 @@ onMounted(() => {
             <!-- 评论内容 -->
             <div class="pl-7 sm:pl-9 space-y-2">
               <p class="text-sm line-clamp-4 whitespace-pre-wrap wrap-break-word"><EmojiParser :content="comment.content" size="sm" /></p>
-              <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground items-center">
+              <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground items-center overflow-hidden">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -805,7 +787,9 @@ onMounted(() => {
       </div>
 
       <!-- 分页 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 pb-2 border-t px-3 sm:px-4">
+      <div
+        v-if="!loading && pagination.totalPages > 1"
+        class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 pb-2 border-t px-3 sm:px-4">
         <p class="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
           共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
         </p>
@@ -826,7 +810,12 @@ onMounted(() => {
               {{ page }}
             </Button>
           </div>
-          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" class="h-8 px-2" @click="goToPage(pagination.page + 1)">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="pagination.page >= pagination.totalPages"
+            class="h-8 px-2"
+            @click="goToPage(pagination.page + 1)">
             <span class="hidden sm:inline mr-1">下一页</span>
             <Icon name="lucide:chevron-right" class="size-4" />
           </Button>

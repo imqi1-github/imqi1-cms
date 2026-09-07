@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { TagItem } from "~/types/apis/admin/tags";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import type { TagItem } from "~/types/apis/admin/tags";
 import type { ApiError } from "~/types/error";
 
 const router = useRouter();
@@ -281,7 +281,7 @@ onMounted(() => {
       </Table>
 
       <!-- 加载状态 - 移动端卡片 -->
-      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+      <div v-if="loading" class="lg:hidden space-y-4">
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="space-y-2">
             <div class="h-5 bg-muted rounded w-20 animate-pulse" />
@@ -296,7 +296,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 移动端卡片 -->
-      <div v-else class="p-4 lg:hidden space-y-4">
+      <div v-else class="lg:hidden space-y-4">
         <div v-for="tag in tags" :key="tag.mid" class="border rounded-lg p-4 space-y-3">
           <div>
             <h3 class="font-medium text-base">{{ tag.name }}</h3>

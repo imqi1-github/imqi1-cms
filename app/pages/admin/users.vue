@@ -289,7 +289,7 @@ onMounted(() => {
 
     <Card v-if="!loading && user">
       <form @submit.prevent="saveUser">
-        <div class="space-y-6 p-6">
+        <div class="space-y-6">
           <!-- 头像区域 -->
           <div class="flex items-center gap-6">
             <Avatar class="size-20">
@@ -402,7 +402,7 @@ onMounted(() => {
 
     <!-- 两步验证 -->
     <Card v-if="!loading && user" class="mt-6">
-      <div class="p-6 space-y-4">
+      <div class="space-y-4">
         <div class="flex items-center gap-3">
           <Icon name="lucide:shield-check" class="size-5 text-primary" />
           <div>
@@ -473,7 +473,7 @@ onMounted(() => {
 
     <!-- 已信任设备 -->
     <Card v-if="!loading && user" class="mt-6">
-      <div class="p-6 space-y-4">
+      <div class="space-y-4">
         <div class="flex items-center gap-3">
           <Icon name="lucide:smartphone" class="size-5 text-primary" />
           <div>

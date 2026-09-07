@@ -293,7 +293,7 @@ onMounted(() => {
           <p class="text-sm text-muted-foreground mt-1">查看和编辑附件信息</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 max-xs:flex-col">
         <Button variant="outline" @click="deleteAttachment">
           <Icon name="lucide:trash-2" class="mr-2 size-4" />
           删除

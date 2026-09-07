@@ -530,7 +530,7 @@ onMounted(() => {
       </Table>
 
       <!-- 加载状态 - 移动端卡片 -->
-      <div v-if="loading" class="p-4 min-[1175px]:hidden space-y-4">
+      <div v-if="loading" class="min-[1175px]:hidden space-y-4">
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="space-y-2">
             <div class="h-5 bg-muted rounded w-3/4 animate-pulse" />
@@ -544,7 +544,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 移动端卡片 -->
-      <div v-else class="p-4 min-[1175px]:hidden space-y-4">
+      <div v-else class="min-[1175px]:hidden space-y-4">
         <div v-for="content in contents" :key="content.cid" class="border rounded-lg p-4 space-y-3">
           <div>
             <h3 class="font-medium text-base">{{ content.title }}</h3>
