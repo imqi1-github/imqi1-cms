@@ -175,14 +175,14 @@ const handleLogout = async () => {
       <Transition name="fade">
         <div
           v-if="mobileSidebarOpen"
-          class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          class="fixed inset-0 z-150 bg-black/50 lg:hidden"
           @click="closeMobileSidebar"
         />
       </Transition>
 
       <!-- 侧边栏 -->
       <aside
-        class="fixed inset-y-0 left-0 z-50 w-48 border-r bg-card transition-transform duration-300 ease-in-out lg:z-10"
+        class="fixed inset-y-0 left-0 z-150 w-48 border-r bg-card transition-transform duration-300 ease-in-out lg:z-10"
         :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
       >
         <ScrollArea class="h-full py-4">

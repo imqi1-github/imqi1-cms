@@ -330,7 +330,7 @@ onMounted(() => {
       </Table>
 
       <!-- 加载状态 - 移动端卡片 -->
-      <div v-if="loading" class="p-4 lg:hidden space-y-4">
+      <div v-if="loading" class="lg:hidden space-y-4">
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <div class="size-8 bg-muted rounded-full animate-pulse" />
@@ -348,7 +348,7 @@ onMounted(() => {
       </div>
 
       <!-- 数据列表 - 移动端卡片 -->
-      <div v-else class="p-4 lg:hidden space-y-4">
+      <div v-else class="lg:hidden space-y-4">
         <div
           v-for="link in links"
           :key="link.id"

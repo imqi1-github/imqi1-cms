@@ -23,7 +23,6 @@ const attachmentTypes = [
   { value: "video", label: "视频" },
 ];
 
-
 // 分页（页码从 URL query 读取，从详情页返回时仍停留在原页）
 const page = ref(Math.max(1, Number(route.query.page) || 1));
 const pageSize = ref(20);
@@ -270,7 +269,7 @@ async function deleteAttachment(item: AttachmentItem) {
 // 复制链接
 const copyLink = async (url: string) => {
   // 判断是否已经是完整的 URL（云存储）
-  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  const isFullUrl = url.startsWith("http://") || url.startsWith("https://");
   const fullUrl = isFullUrl ? url : `${window.location.origin}${url}`;
 
   try {
@@ -325,7 +324,7 @@ onMounted(async () => {
     <ClientOnly>
       <!-- 筛选栏 -->
       <Card class="mb-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <div class="flex items-center gap-2 w-full sm:w-auto">
             <Label for="typeFilter" class="whitespace-nowrap">类型:</Label>
             <Select id="typeFilter" v-model="selectedType">
@@ -352,7 +351,7 @@ onMounted(async () => {
       <Card>
         <!-- 加载状态 -->
         <div v-if="loading" class="p-4">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             <div v-for="i in 10" :key="i" class="space-y-2">
               <div class="aspect-square bg-muted rounded-lg animate-pulse" />
               <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
@@ -373,9 +372,12 @@ onMounted(async () => {
         </div>
 
         <!-- 附件网格 -->
-        <div v-else class="p-4">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <div v-for="item in attachments" :key="item.id" class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+        <div v-else>
+          <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div
+              v-for="item in attachments"
+              :key="item.id"
+              class="group relative border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
               <!-- 预览图 -->
               <NuxtLink :to="detailRoute(item.id)" class="block">
                 <div class="aspect-square bg-muted flex items-center justify-center overflow-hidden">
@@ -383,7 +385,7 @@ onMounted(async () => {
                     v-if="item.type === 'image'"
                     :src="item.url"
                     :alt="item.name"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform" >
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform">
                   <div v-else class="flex flex-col items-center text-muted-foreground">
                     <Icon :name="getTypeIcon(item.type)" class="size-12 mb-2" />
                     <span class="text-xs">视频预览</span>
@@ -422,13 +424,10 @@ onMounted(async () => {
                     v-for="content in displayedContents(item)"
                     :key="content.cid"
                     :to="`/admin/contents/edit?cid=${content.cid}`"
-                    class="max-w-full truncate text-xs text-muted-foreground hover:text-foreground"
-                  >
+                    class="max-w-full truncate text-xs text-muted-foreground hover:text-foreground">
                     {{ content.title }}
                   </NuxtLink>
-                  <span v-if="hiddenContentCount(item)" class="text-xs text-muted-foreground">
-                    +{{ hiddenContentCount(item) }}
-                  </span>
+                  <span v-if="hiddenContentCount(item)" class="text-xs text-muted-foreground"> +{{ hiddenContentCount(item) }} </span>
                 </div>
               </div>
             </div>
@@ -445,7 +444,7 @@ onMounted(async () => {
 
       <template #fallback>
         <Card class="mb-4">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div class="flex items-center gap-2 w-full sm:w-auto">
               <Label class="whitespace-nowrap">类型:</Label>
               <div class="h-9 w-full rounded-md border bg-muted/50 sm:w-30" />
@@ -459,7 +458,7 @@ onMounted(async () => {
 
         <Card>
           <div class="p-4">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               <div v-for="i in 10" :key="i" class="space-y-2">
                 <div class="aspect-square bg-muted rounded-lg animate-pulse" />
                 <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />

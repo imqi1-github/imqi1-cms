@@ -76,7 +76,7 @@ function insertEmoji(key: string) {
       leave-to-class="opacity-0 -translate-y-2">
       <div
         v-if="showEmoji"
-        class="absolute right-0 bottom-[calc(100%+8px)] z-100 w-80 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+        class="absolute right-0 bottom-[calc(100%+8px)] z-100 w-80 max-xs:w-[calc(100vw-3rem)] rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
         <!-- 分类标签 -->
         <div class="mb-2 flex gap-1">
           <button
