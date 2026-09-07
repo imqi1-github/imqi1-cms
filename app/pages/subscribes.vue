@@ -468,7 +468,7 @@ function clearFilter() {
     #000 calc(100% - var(--fade-bottom)),
     transparent 100%
   );
-  transition: --fade-top 0.25s ease, --fade-bottom 0.25s ease;
+  transition: --fade-top 0s ease, --fade-bottom 0s ease;
 }
 
 .sidebar-fade.fade-top {

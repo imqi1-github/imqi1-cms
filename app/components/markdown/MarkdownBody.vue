@@ -747,8 +747,8 @@ onUnmounted(() => {
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent 100%);
   transition:
-    --fade-left 0.25s ease,
-    --fade-right 0.25s ease;
+    --fade-left 0s ease,
+    --fade-right 0s ease;
 }
 
 @media (min-width: 768px) {
