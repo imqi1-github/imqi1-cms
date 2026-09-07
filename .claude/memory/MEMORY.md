@@ -1,5 +1,7 @@
 # Memory Index
 
+- [后台编辑器自动保存+CSRF防丢](admin-editor-autosave-csrf.md) — useEditorAutosave 统一 Ctrl+S/2s 自动保存/过期防丢；CSRF token 1h 过期(csrf_token maxAge 3600)是长编辑保存 403 主因,根治=每次保存前调 /api/csrf/token 刷新;自动保存仅已有内容(cid),新建手动;401/403→localStorage 备份+提示重登+回编辑页恢复(recoveryKey 用函数随 cid 变);saveContent/savePage 已改 (source)=>SaveResult 控制 toast
+
 - [每次改动跑 lint 三件套](post-change-lint-chain.md) — 用户强原则(2026-09-04):每次代码改动后必跑 `bunx eslint .` + `bunx nuxi typecheck` + `bun run tailwindcss:lint`,三件套并列、不是提交前才跑;tailwindcss:lint 与 eslint/typecheck 一组
 - [dev server 3000 勿杀](dev-server-3000-dont-kill.md) — 用户可能自起 dev server 在 3000,**绝不 kill/占用已在跑的端口**;要自起用别的端口(如 3001,先 netstat 确认);测试直接访问用户已跑的那个。呼应 audit-skill 的 dev server 记录
 - [死代码扫描:自动导入前缀盲区](dead-code-scan-autolimport-prefix.md) — 扫未用 Vue 组件时,组件可能被 Nuxt 自动导入的目录前缀/`Lazy`前缀引用(`<AdminTravelCoordinatePicker>`/`<SiteActivityHeatmap>`/`<LazyContextMenu>`),只看无前缀名会误判活组件为死(ContextMenu 曾被误删靠 git 恢复);eslint 抓不到(自动导入无 import);全局 grep 组件名或 knip

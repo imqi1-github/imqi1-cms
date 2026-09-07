@@ -4,6 +4,7 @@ import type {AcceptableValue} from "reka-ui";
 import type {Attachment, Category, ContentMeta, ContentSaveResponse, CoversInput, Tag, Travel, ContentApiResponse} from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
+import type { SaveResult } from "~/types/composables/editor-autosave";
 
 const route = useRoute();
 const router = useRouter();
@@ -35,6 +36,9 @@ const activeTab = ref("content");
 // 避免先渲染空编辑器再切骨架再灌内容的三段式闪烁；新建页 isEdit=false → 直接显示空编辑器；
 // 非法 ?cid（Number() 为 NaN → contentId 为 null）时 loading 为 false，不会让骨架屏卡死。
 const loading = ref(isEdit.value && !!contentId.value);
+// 保存进行中状态（独立于 loading）：loading 仅反映首次加载（骨架屏）；保存不再置 loading，
+// 否则保存期间骨架屏 v-if 成立 → 编辑器卸载重挂 → 闪烁 + 光标丢失。
+const saving = ref(false);
 
 // 跟踪是否有未保存的更改
 const hasUnsavedChanges = ref(false);
@@ -570,6 +574,57 @@ const checkUnsavedChanges = () => {
   );
 };
 
+// —— Ctrl+S + 自动保存 + 会话/CSRF 过期防丢 ——
+const {
+  saveStatus,
+  lastSavedAt,
+  saveNow,
+  markChanged,
+  checkRecovery,
+} = useEditorAutosave({
+  kind: "content",
+  recoveryKey: () => `imqi1-draft:content:${contentId.value ?? "new"}`,
+  hasUnsaved: hasUnsavedChanges,
+  csrfToken,
+  save: saveContent,
+  canAutosave: () => !!contentId.value,
+  isPublishable: () => !!title.value.trim() && selectedCategoryIds.value.length > 0,
+  serialize: () => ({
+    title: title.value,
+    desc: description.value,
+    slug: slug.value,
+    content: content.value,
+    manyCovers: manyCovers.value,
+    showToc: showToc.value,
+    status: status.value,
+    publishDate: publishDate.value,
+    coversInput: coversInput.value,
+    categoryIds: [...selectedCategoryIds.value],
+    tagIds: [...selectedTagIds.value],
+  }),
+  applyRecovered: fields => {
+    const f = fields as Record<string, unknown>;
+    title.value = String(f.title ?? "");
+    description.value = String(f.desc ?? "");
+    slug.value = String(f.slug ?? "");
+    content.value = String(f.content ?? "");
+    manyCovers.value = Boolean(f.manyCovers);
+    showToc.value = Boolean(f.showToc);
+    status.value = String(f.status ?? "published");
+    publishDate.value = String(f.publishDate ?? "");
+    coversInput.value = String(f.coversInput ?? "");
+    selectedCategoryIds.value = Array.isArray(f.categoryIds) ? (f.categoryIds as number[]) : [];
+    selectedTagIds.value = Array.isArray(f.tagIds) ? (f.tagIds as number[]) : [];
+  },
+});
+
+/** 已自动保存时间戳 → HH:MM */
+function formatSavedTime(ts: number | null): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 // 监听所有字段变化
 watch([
   content,
@@ -585,6 +640,7 @@ watch([
   selectedTagIds,
 ], () => {
   hasUnsavedChanges.value = checkUnsavedChanges();
+  if (hasUnsavedChanges.value) markChanged();
 }, { deep: true });
 
 // beforeunload 事件处理
@@ -596,9 +652,14 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
   }
 };
 
-// 保存文章
-const saveContent = async () => {
-  if (!ensureCsrf()) return;
+// 保存文章。source 区分手动/自动：手动才弹 toast；自动保存校验失败返回 skipped（静默）。
+async function saveContent(source: "manual" | "autosave"): Promise<SaveResult> {
+  // 进行中守卫：避免 Ctrl+S 与自动保存/按钮保存并发；首次加载(loading)期间也拦截
+  if (loading.value || saving.value) return { status: "skipped" };
+  if (!csrfToken.value) {
+    if (source === "manual") toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return { status: "skipped" };
+  }
   // 保存前强制同步：把编辑器内容（可能还在防抖期内）冲刷到 content ref，避免输入丢失
   // 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）。
   // flush 必须包在 try/catch 里：它一旦抛错/挂起（编辑器未就绪或上传卡死），继续保存会用
@@ -606,28 +667,26 @@ const saveContent = async () => {
   try {
     await markdownEditorRef.value?.flush();
   } catch (error) {
-    toast.error({
-      message: "同步编辑器内容失败，未保存",
-      description: error instanceof Error ? error.message : "请检查编辑器状态后重试",
-    });
-    return;
+    if (source === "manual") {
+      toast.error({
+        message: "同步编辑器内容失败，未保存",
+        description: error instanceof Error ? error.message : "请检查编辑器状态后重试",
+      });
+    }
+    return { status: "error", message: error instanceof Error ? error.message : "同步编辑器内容失败" };
   }
   if (!title.value) {
-    toast.error({
-      message: "标题不能为空",
-    });
-    return;
+    if (source === "manual") toast.error({ message: "标题不能为空" });
+    return { status: "skipped" };
   }
 
   // 检查是否至少选择了一个分类
   if (selectedCategoryIds.value.length === 0) {
-    toast.error({
-      message: "至少需要选择一个分类",
-    });
-    return;
+    if (source === "manual") toast.error({ message: "至少需要选择一个分类" });
+    return { status: "skipped" };
   }
 
-  loading.value = true;
+  saving.value = true;
 
   try {
     // 处理封面数据：从输入框格式转为 JSON
@@ -679,9 +738,11 @@ const saveContent = async () => {
     }
 
     if (res?.success) {
-      toast.success({
-        message: isEdit.value ? "文章更新成功" : "文章创建成功",
-      });
+      if (source === "manual") {
+        toast.success({
+          message: isEdit.value ? "文章更新成功" : "文章创建成功",
+        });
+      }
 
       // 如果是新建，跳转到编辑页面
       if (!isEdit.value) {
@@ -700,13 +761,15 @@ const saveContent = async () => {
         await saveContentTags();
       } catch (relationError) {
         relationSaveOk = false;
-        const msg = relationError && typeof relationError === "object" && "data" in relationError && relationError.data && typeof relationError.data === "object" && "message" in relationError.data
-          ? String(relationError.data.message)
-          : (relationError instanceof Error ? relationError.message : "请稍后重试");
-        toast.error({
-          message: "文章已保存，但分类/标签保存失败，请重试",
-          description: msg,
-        });
+        if (source === "manual") {
+          const msg = relationError && typeof relationError === "object" && "data" in relationError && relationError.data && typeof relationError.data === "object" && "message" in relationError.data
+            ? String(relationError.data.message)
+            : (relationError instanceof Error ? relationError.message : "请稍后重试");
+          toast.error({
+            message: "文章已保存，但分类/标签保存失败，请重试",
+            description: msg,
+          });
+        }
       }
 
       // 仅当分类/标签也保存成功时才更新初始内容（重置未保存标记）
@@ -714,19 +777,33 @@ const saveContent = async () => {
       if (relationSaveOk) {
         saveInitialContent();
       }
+      return { status: "saved" };
     }
+    // res?.success 为假：按一般错误处理
+    return { status: "error" };
   } catch (e: unknown) {
+    const statusCode =
+      e && typeof e === "object" && "statusCode" in e && typeof (e as { statusCode?: unknown }).statusCode === "number"
+        ? (e as { statusCode: number }).statusCode
+        : (e && typeof e === "object" && "response" in e ? (e as { response?: { status?: number } }).response?.status : 0) ?? 0;
+    // 401/403：会话或 CSRF token 过期 → 交给自动保存组合去备份/提示重新登录
+    if (statusCode === 401 || statusCode === 403) {
+      return { status: "expired" };
+    }
     const msg = e && typeof e === "object" && "data" in e && e.data && typeof e.data === "object" && "message" in e.data
       ? String(e.data.message)
       : (e instanceof Error ? e.message : "请稍后重试");
-    toast.error({
-      message: "保存失败",
-      description: msg,
-    });
+    if (source === "manual") {
+      toast.error({
+        message: "保存失败",
+        description: msg,
+      });
+    }
+    return { status: "error", message: msg };
   } finally {
-    loading.value = false;
+    saving.value = false;
   }
-};
+}
 
 // 打开文章查看页面
 const openContent = () => {
@@ -786,7 +863,9 @@ onMounted(async () => {
   fetchTags();
   fetchTravels();
   if (isEdit.value && contentId.value) {
-    fetchContent();
+    await fetchContent();
+    // 内容加载完成后检测本地过期草稿（若存在则提示恢复）
+    await checkRecovery();
   } else {
     // 新建文章时，自动填充当前时间（使用本地时间，而非 UTC）
     const now = new Date();
@@ -798,8 +877,10 @@ onMounted(async () => {
     publishDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
     // 新建文章时也保存初始内容
-    nextTick(() => {
+    nextTick(async () => {
       saveInitialContent();
+      // 新建场景也可能存在上次手动保存遇过期留下的本地备份，检测并提示恢复
+      await checkRecovery();
     });
   }
 
@@ -1317,10 +1398,23 @@ watch(contentId, newCid => {
         <!-- 操作按钮 -->
         <Card>
           <CardContent class="pt-6 space-y-2">
-            <Button class="w-full" size="lg" :disabled="loading" @click="saveContent">
+            <Button class="w-full" size="lg" :disabled="loading || saving" @click="saveNow('manual')">
               <Icon name="lucide:save" class="mr-2 size-4" />
-              {{ loading ? "保存中..." : "保存文章" }}
+              {{ saving ? "保存中..." : "保存文章" }}
             </Button>
+            <!-- 自动保存/会话过期内联状态（非 toast） -->
+            <div class="space-y-1 text-xs">
+              <p v-if="saveStatus === 'saving'" class="flex items-center gap-1.5 text-muted-foreground">
+                <Icon name="lucide:loader-2" class="size-3.5 animate-spin" /> 保存中…
+              </p>
+              <p v-else-if="saveStatus === 'saved'" class="text-emerald-600">已保存 {{ formatSavedTime(lastSavedAt) }}</p>
+              <p v-else-if="saveStatus === 'unsaved'" class="text-amber-600">有未保存的更改，停笔后将自动保存</p>
+              <p v-else-if="saveStatus === 'error'" class="text-destructive">保存失败，请重试</p>
+              <div v-else-if="saveStatus === 'expired'" class="flex items-center justify-between gap-2 text-destructive">
+                <span>登录已过期，内容已暂存本地</span>
+                <Button variant="outline" size="sm" class="h-6 text-xs" @click="saveNow('manual')">重试</Button>
+              </div>
+            </div>
             <Button variant="outline" class="w-full" size="lg" :disabled="!contentId" @click="openContent">
               <Icon name="lucide:eye" class="mr-2 size-4" />
               查看本文章

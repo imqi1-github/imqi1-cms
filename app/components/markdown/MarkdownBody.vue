@@ -795,7 +795,15 @@ onUnmounted(() => {
    max-width:100% 兜底,保证窄表不会超出 wrapper。 */
 .markdown-body :deep(.markdown-table-wrap > table) {
   width: max-content;
+  min-width: 100%;
   max-width: 100%;
+}
+
+/* 转置后的表:列数≈原表数据行数,窄屏下每列容易过窄、文字被压成竖条。
+   给单元格一个最小宽度下限,让表按列数自然撑宽、横向滚动,而非强行把文字挤扁。 */
+.markdown-body :deep(.markdown-table-wrap > table[data-table-transposed] th),
+.markdown-body :deep(.markdown-table-wrap > table[data-table-transposed] td) {
+  min-width: 8rem;
 }
 
 @media (max-width: 350px) {

@@ -98,9 +98,13 @@ defineExpose({
       // rich 模式：从 Tiptap 获取 markdown
       const ed = getEditor();
       if (ed) {
-        const out = getMarkdownStorage(ed).getMarkdown();
-        lastEmitted.value = out;
-        model.value = out;
+        const storage = getMarkdownStorage(ed);
+        // storage/editor 可能在卸载/重建瞬间未就绪——做空安全兜底，勿抛 "reading 'getMarkdown' of undefined"
+        if (storage) {
+          const out = storage.getMarkdown();
+          lastEmitted.value = out;
+          model.value = out;
+        }
       }
     }
   },
@@ -632,8 +636,8 @@ const canMergeCells = ref(false);
 const canSplitCell = ref(false);
 
 /** tiptap-markdown 注入到 editor.storage.markdown 的运行时对象（类型收窄，避免 unsafe 访问）。 */
-function getMarkdownStorage(editor: Editor): MarkdownStorage {
-  return (editor.storage as unknown as { markdown: MarkdownStorage }).markdown;
+function getMarkdownStorage(editor: Editor): MarkdownStorage | undefined {
+  return (editor.storage as unknown as { markdown?: MarkdownStorage }).markdown;
 }
 
 /** model(markdown 串) → ProseMirror 文档。容器段抽成 customContainer 原子节点，标准段走 markdown-it 解析。 */
@@ -649,7 +653,7 @@ function buildDoc(editor: Editor, md: string): ProseMirrorNode {
           raw: seg.raw,
         }),
       );
-    } else if (seg.text.trim()) {
+    } else if (seg.text.trim() && storage) {
       // 标准段：markdown → HTML（tiptap-markdown）→ ProseMirror 文档节点。
       // 复用 Tiptap 的 createDocument（与 setContent 同路径：elementFromString 以 text/html
       // 解析 + DOMParser.fromSchema），正确处理块级图片/表格，避免 div.innerHTML 片段解析
@@ -686,7 +690,10 @@ function loadMarkdown(editor: Editor, md: string) {
 function writeMarkdownOut() {
   const ed = getEditor();
   if (!ed) return;
-  const out = getMarkdownStorage(ed).getMarkdown();
+  const storage = getMarkdownStorage(ed);
+  // 卸载/重建瞬间 storage 可能未就绪——空安全，勿抛 "reading 'getMarkdown' of undefined"
+  if (!storage) return;
+  const out = storage.getMarkdown();
   lastEmitted.value = out;
   model.value = out;
 }
@@ -1345,10 +1352,13 @@ const editor = useEditor({
     loadMarkdown(ed, model.value);
     // 用编辑器重序列化后的正文作撤销基线(而非输入原文):避免随后 debounced writeMarkdownOut
     // 对规范化敏感内容(表格空白/代码围栏)再记一条,导致"未编辑就被 phantom 快照启用撤销按钮"
-    const settled = getMarkdownStorage(ed).getMarkdown();
-    lastEmitted.value = settled;
-    contentHistory.value = [settled];
-    contentPointer.value = 0;
+    const settled = getMarkdownStorage(ed);
+    if (settled) {
+      const md = settled.getMarkdown();
+      lastEmitted.value = md;
+      contentHistory.value = [md];
+      contentPointer.value = 0;
+    }
     syncState();
   },
   onUpdate: () => {
@@ -1460,16 +1470,27 @@ watch(viewMode, (mode) => {
     canSplitCell.value = false;
     // 光标跟随:把富文本 PM 光标映射成 markdown 偏移(顶级块近似),切源码时光标落在对应段落/标题/容器段
     const ed = editor.value;
-    const mdLen = model.value.length;
     const mdCaret = ed ? richCursorToMdCursor(ed, model.value) : 0;
     nextTick(() => {
       const ta = mdTextareaRef.value;
       if (ta) {
-        // 光标跟随滚动:先把光标设到对应偏移,再把 textarea 滚动到该处(否则光标在屏外"不出现")
-        ta.focus();
-        ta.setSelectionRange(mdCaret, mdCaret);
-        const max = ta.scrollHeight - ta.clientHeight;
-        ta.scrollTop = (mdCaret / Math.max(1, mdLen)) * (max > 0 ? max : 0);
+        // 以 textarea 实际值钳制 caret（model 可能刚被 writeMarkdownOut 重写）
+        const caret = Math.max(0, Math.min(ta.value.length, mdCaret));
+        const place = () => {
+          // 光标跟随滚动:先把光标设到对应偏移,再把 textarea 滚动到该处(否则光标在屏外"不出现")
+          ta.focus();
+          ta.setSelectionRange(caret, caret);
+          const max = ta.scrollHeight - ta.clientHeight;
+          ta.scrollTop = (caret / Math.max(1, ta.value.length)) * (max > 0 ? max : 0);
+        };
+        place();
+        // 顶层 tab（reka-ui）点击可能在稍后把焦点夺到触发器；在宏任务里再断言一次，
+        // 确保光标真正落在 textarea 内（光标消失的根因多为焦点被夺、而非 caret 算错）。
+        setTimeout(() => {
+          if (document.activeElement !== ta) {
+            place();
+          }
+        }, 0);
       }
       // 切换到 Markdown 模式后，重新执行查找
       if (findReplaceState.value.query) {
@@ -1666,7 +1687,7 @@ const actions = {
           <div
             v-if="findReplaceState.open"
             ref="findPanelRef"
-            class="find-panel z-50 flex flex-col items-stretch gap-1 rounded-md border bg-background p-1 text-xs shadow-lg @md:flex-row @md:items-center @md:gap-1.5 @md:rounded-lg @md:p-2 @md:text-sm"
+            class="find-panel z-50 flex flex-col items-stretch gap-1 rounded-md border bg-background p-1 text-xs shadow-lg @2xl:flex-row @2xl:items-center @2xl:gap-1.5 @2xl:rounded-lg @2xl:p-2 @2xl:text-sm"
             :style="findPanelPosInitialized ? { '--find-panel-left': `${findPanelPos.left}px`, '--find-panel-top': `${findPanelPos.top}px` } : {}"
             @pointerdown="onFindPanelPointerDown"
             @pointermove="onFindPanelPointerMove"
@@ -1675,56 +1696,56 @@ const actions = {
             <!-- Row 1: 拖拽柄 + 查找 input + 桌面分隔条
                  移动端 Row 1 是「查找」一行；桌面端是横向布局的第一段。
                  桌面分隔条放 Row 1 末尾 → 桌面端视觉上分隔查找组与替换组。 -->
-            <div class="flex items-center gap-1 @md:gap-1.5">
+            <div class="flex items-center gap-1 @2xl:gap-1.5">
               <button
                 type="button"
                 data-find-panel-drag-handle
-                class="flex h-7 w-3.5 shrink-0 cursor-move items-center justify-center rounded text-muted-foreground hover:bg-muted @md:h-8 @md:w-4"
+                class="flex h-7 w-3.5 shrink-0 cursor-move items-center justify-center rounded text-muted-foreground hover:bg-muted @2xl:h-8 @2xl:w-4"
                 title="拖动面板"
                 aria-label="拖动面板"
                 tabindex="-1"
                 @click.stop.prevent
               >
-                <Icon name="lucide:grip-vertical" class="size-3 @md:size-3.5" />
+                <Icon name="lucide:grip-vertical" class="size-3 @2xl:size-3.5" />
               </button>
               <Input
                 v-model="findReplaceState.query"
                 placeholder="查找…"
-                class="h-7 flex-1 text-xs @md:h-8 @md:flex-none @md:w-40 @md:text-sm"
+                class="h-7 flex-1 text-xs @2xl:h-8 @2xl:flex-none @2xl:w-40 @2xl:text-sm"
                 @input="doFind(findReplaceState.query)"
               />
-              <div class="mx-0.5 hidden h-4 w-px bg-border @md:block @md:h-5" />
+              <div class="mx-0.5 hidden h-4 w-px bg-border @2xl:block @2xl:h-5" />
             </div>
             <!-- Row 2: 移动端第一个元素是与拖拽柄同宽的占位，让替换 input 左边对齐查找 input 左边（垂直方向"上下一个位置"）；
                  占位只移动端显示，桌面端隐藏（桌面端 Row 1 已自带拖拽柄宽度，无需重复占位）。 -->
-            <div class="flex items-center gap-1 @md:gap-1.5">
+            <div class="flex items-center gap-1 @2xl:gap-1.5">
               <!-- 移动端占位：与拖拽柄同尺寸（h-7 w-3.5），透明不可见 -->
-              <div class="h-7 w-3.5 shrink-0 @md:hidden" aria-hidden="true" />
+              <div class="h-7 w-3.5 shrink-0 @2xl:hidden" aria-hidden="true" />
               <Input
                 v-model="findReplaceState.replace"
                 placeholder="替换…"
-                class="h-7 flex-1 text-xs @md:h-8 @md:flex-none @md:w-40 @md:text-sm"
+                class="h-7 flex-1 text-xs @2xl:h-8 @2xl:flex-none @2xl:w-40 @2xl:text-sm"
               />
             </div>
             <!-- Row 3: 计数 + 上/下 + 替换 + 全部 + 关闭（移动端独占一行；桌面端是最右段）。
                  移动端第一个元素是与拖拽柄同宽的占位，让「计数」左边对齐查找/替换 input 左边。
                  移动端按钮 flex-1 等宽铺满；桌面端按钮自然尺寸 + 关闭 ml-auto 推到弹窗右端。 -->
-            <div class="flex items-center gap-1 @md:gap-1.5">
+            <div class="flex items-center gap-1 @2xl:gap-1.5">
               <!-- 移动端占位：与拖拽柄同尺寸（h-7 w-3.5），桌面端隐藏 -->
-              <div class="h-7 w-7 shrink-0 @md:hidden" aria-hidden="true" />
-              <span class="whitespace-nowrap text-muted-foreground text-[11px] @md:text-xs">
+              <div class="h-7 w-7 shrink-0 @2xl:hidden" aria-hidden="true" />
+              <span class="whitespace-nowrap text-muted-foreground text-[11px] @2xl:text-xs">
                 {{ findReplaceState.matchIndex }}/{{ findReplaceState.matchCount }}
               </span>
-              <Button variant="ghost" size="icon" class="size-7 @md:size-7" title="上一个" @click="findPrev">
-                <Icon name="lucide:chevron-up" class="size-3.5 @md:size-4" />
+              <Button variant="ghost" size="icon" class="size-7 @2xl:size-7" title="上一个" @click="findPrev">
+                <Icon name="lucide:chevron-up" class="size-3.5 @2xl:size-4" />
               </Button>
-              <Button variant="ghost" size="icon" class="size-7 @md:size-7" title="下一个" @click="findNext">
-                <Icon name="lucide:chevron-down" class="size-3.5 @md:size-4" />
+              <Button variant="ghost" size="icon" class="size-7 @2xl:size-7" title="下一个" @click="findNext">
+                <Icon name="lucide:chevron-down" class="size-3.5 @2xl:size-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                class="h-7 flex-1 text-[11px] @md:flex-none @md:text-xs"
+                class="h-7 flex-1 text-[11px] @2xl:flex-none @2xl:text-xs"
                 :disabled="findReplaceState.matchCount === 0"
                 @click="replaceCurrent"
               >
@@ -1733,7 +1754,7 @@ const actions = {
               <Button
                 variant="outline"
                 size="sm"
-                class="h-7 flex-1 text-[11px] @md:flex-none @md:text-xs"
+                class="h-7 flex-1 text-[11px] @2xl:flex-none @2xl:text-xs"
                 :disabled="findReplaceState.matchCount === 0"
                 @click="replaceAll"
               >
@@ -1742,11 +1763,11 @@ const actions = {
               <Button
                 variant="ghost"
                 size="icon"
-                class="size-7 ml-auto @md:ml-0"
+                class="size-7 ml-auto @2xl:ml-0"
                 title="关闭 (Esc)"
                 @click="closeFind"
               >
-                <Icon name="lucide:x" class="size-3.5 @md:size-4" />
+                <Icon name="lucide:x" class="size-3.5 @2xl:size-4" />
               </Button>
             </div>
           </div>

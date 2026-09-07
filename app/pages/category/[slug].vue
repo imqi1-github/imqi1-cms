@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
             v-for="content in contents"
             :key="content.cid"
             :content="content"
-            :link-slug="slug"
+            :link-slug="apiSlug"
             meta-mode="tags" />
         </div>
 

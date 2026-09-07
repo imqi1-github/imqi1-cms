@@ -3,6 +3,8 @@
  *
  * 设计：
  * - 滚动容器是 wrapper(<div class="markdown-table-wrap">),<table> 保留原生 display:table。
+ *   恒定包装:所有表都套 wrapper;窄表经 > table {max-content;min-width:100%} 铺满容器,
+ *   宽表按内容自然撑开、由 wrapper overflow-x 横向滚动(转置仍仅窄屏,见 allowTranspose)。
  * - mount 走 rAF 节流;同一帧内多次 mount 不重复调度。
  * - 同断点内只同步 data-at-left/right,不重建 DOM。
  * - 跨断点(matchMedia change)才走 restoreAll + rebuild。
@@ -68,7 +70,7 @@ function attachTransposeHint(table: HTMLTableElement) {
   }, 3000);
 }
 
-type Cell = { text: string; isHeader: boolean };
+type Cell = { text: string };
 
 type Entry = {
   wrap: HTMLElement; // 当前 DOM 中的 wrapper(若是原表未转置则 wrap === table)
@@ -108,7 +110,6 @@ function readTable(table: HTMLTableElement): { rows: Cell[][]; hasComplexSpan: b
       if (el.hasAttribute("colspan") || el.hasAttribute("rowspan")) hasComplexSpan = true;
       row.push({
         text: (el.textContent || "").trim(),
-        isHeader: el.tagName.toLowerCase() === "th",
       });
     });
     if (row.length > 0) rows.push(row);
@@ -120,11 +121,10 @@ function buildTransposed(rows: Cell[][]): HTMLTableElement {
   const headerRow = rows[0] ?? [];
   const dataRows = rows.slice(1);
 
-  const rowNames: string[] = dataRows.map((r, i) => {
-    const first = r[0];
-    if (first && first.isHeader) return first.text || `行 ${i + 1}`;
-    return first?.text || `行 ${i + 1}`;
-  });
+  // markdown-it 的表体单元格一律是 <td>(isHeader 恒为 false),原"首格为 th 才当行名"的
+  // 分支在 markdown 表格里永远走不到、且与兜底分支完全相同,故删去。设计上统一把原表
+  // 第 0 列视作"行标签列",其文本用作转置后表头(rowNames)。
+  const rowNames: string[] = dataRows.map((r, i) => r[0]?.text || `行 ${i + 1}`);
 
   const table = document.createElement("table");
   table.setAttribute("data-table-transposed", "true");
@@ -134,7 +134,8 @@ function buildTransposed(rows: Cell[][]): HTMLTableElement {
   const thead = document.createElement("thead");
   const headTr = document.createElement("tr");
   const cornerTh = document.createElement("th");
-  cornerTh.textContent = "";
+  // 角顶沿用原表表头第 0 格(行标签列表头),无角顶(空白)则留空。
+  cornerTh.textContent = headerRow[0]?.text || "";
   headTr.appendChild(cornerTh);
   rowNames.forEach(name => {
     const th = document.createElement("th");
@@ -145,7 +146,10 @@ function buildTransposed(rows: Cell[][]): HTMLTableElement {
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
-  for (let i = 0; i < headerRow.length; i++) {
+  // 原表第 0 列已用作转置后表头(rowNames),表体须从第 1 列开始;
+  // 否则行标签列会被同时写进 thead 与首个 tbody 行,重复。对无行标签列的纯数据表
+  // (表头第 0 格为真实标签),其结果恰好等价于矩阵转置。
+  for (let i = 1; i < headerRow.length; i++) {
     const tr = document.createElement("tr");
     const headTh = document.createElement("th");
     headTh.textContent = headerRow[i]?.text || "";
@@ -247,8 +251,10 @@ function makeWrap(currentInstanceId: number): HTMLElement {
   return wrap;
 }
 
-/** 处理一张原表:决定转置 + 用 wrapper 包起来(或裸放)。 */
-function processTable(table: HTMLTableElement, currentInstanceId: number) {
+/** 处理一张原表:决定转置 + 用 wrapper 包起来(或裸放)。
+ * @param allowTranspose 是否允许宽表转置为纵向。仅窄屏为 true;桌面端纯包装(overflow 兜底),
+ *   不做转置,避免横向滚动被换成纵向换行。 */
+function processTable(table: HTMLTableElement, currentInstanceId: number, allowTranspose: boolean) {
   // 已 handled(同断点内重复进入 rebuild)→ 跳过
   if (table.closest(".markdown-table-wrap")) return;
   if (table.dataset.handled) return;
@@ -261,18 +267,21 @@ function processTable(table: HTMLTableElement, currentInstanceId: number) {
   // 真实判断 = 表格的"内容宽" > 父容器宽。这里通过 cloneNode 临时脱离父容器测真实内容宽。
   const parent = table.parentElement;
   if (!parent) return;
-  const isOverflowing = isTableWiderThanParent(table, parent);
+  // isOverflowing 只用于决定"是否转置";桌面端(allowTranspose=false)只做包装,不必克隆测量真实内容宽。
+  const isOverflowing = allowTranspose && isTableWiderThanParent(table, parent);
 
   const colCount = rows[0]?.length ?? 0;
   const rowCount = rows.length;
   // 转置触发条件(任一):
-  //   1) 原表内容超宽(列向) — 标准窄屏响应式;
+  //   1) 原表内容超宽(列向) — 标准响应式换向;
   //   2) 行数过多(≥ ROW_HEAVY_THRESHOLD),即使列向不超宽也转置,
   //      把"纵向滚动 → 横向滚动"的体验翻过来,让 30 行 × 4 列这种表不会占满屏高。
-  // 限制:必须有 ≥ 2 行 ≥ 2 列(否则转置没意义);不能含 colspan/rowspan(降级为横滑)。
+  // 限制:必须有 ≥ 2 行 ≥ 2 列(否则转置没意义);不能含 colspan/rowspan(降级为横滑);
+  //       且仅 allowTranspose(窄屏)才转置,桌面端只做 overflow 包装、不转置。
   const ROW_HEAVY_THRESHOLD = 10;
   const isRowHeavy = rowCount >= ROW_HEAVY_THRESHOLD;
-  const canTranspose = !hasComplexSpan && rowCount >= 2 && colCount >= 2 && (isOverflowing || isRowHeavy);
+  const canTranspose =
+    allowTranspose && !hasComplexSpan && rowCount >= 2 && colCount >= 2 && (isOverflowing || isRowHeavy);
 
   let current: HTMLElement = table;
   if (canTranspose) {
@@ -294,27 +303,15 @@ function processTable(table: HTMLTableElement, currentInstanceId: number) {
     attachTransposeHint(transposed);
   }
 
-  // 试 wrap:把 current 装进 wrapper,看 wrapper.scrollWidth 是否 > wrapper.clientWidth
+  // 恒定包装:所有表都套 .markdown-table-wrap,不再按 scrollWidth 决定是否保留。
+  // 嵌套后 CSS(.markdown-table-wrap > table)的 width:max-content + min-width:100%
+  // 让窄表铺满容器、宽表按内容自然撑开,由外层 overflow-x:auto 处理横向滚动。
   // 顺序很关键:必须先 insertBefore(wrap, current.nextSibling)把 wrap 挂到 current 的原 parent,
   // 再 wrap.appendChild(current)。如果先 appendChild,current 会被搬走、parentElement 变成 wrap 自己,
   // 后续 insertBefore(wrap, ...) 就变成 "把 wrap 插到 wrap 里",抛 HierarchyRequestError。
   const probe = makeWrap(currentInstanceId);
   parent.insertBefore(probe, current.nextSibling);
   probe.appendChild(current);
-  const needsScroll = probe.scrollWidth > probe.clientWidth + 1;
-
-  if (!needsScroll) {
-    // 不超宽:wrapper 是冗余的,把 inner 搬出来、删 probe
-    const inner = probe.firstElementChild as HTMLElement;
-    parent.insertBefore(inner, probe);
-    probe.remove();
-    inner.dataset.handled = "true";
-    inner.dataset.instance = String(currentInstanceId);
-    entries.push({ wrap: inner, original, cleanup: () => {} });
-    return;
-  }
-
-  // 超宽:probe 留下,挂监听
   syncScrollAttrs(probe);
   entries.push({
     wrap: probe,
@@ -325,11 +322,11 @@ function processTable(table: HTMLTableElement, currentInstanceId: number) {
 
 /** 扫描 root 内的原表(未被 wrap / 未 handled),逐张 process。 */
 function rebuild(root: ParentNode, currentInstanceId: number) {
-  // 兜底:非窄屏就直接返回。正常情况下 scheduleRebuild 已校验,但防止任何直达调用。
-  if (!isNarrow()) return;
+  // 跨断点都处理:转置与否由 processTable 的 allowTranspose(窄屏)决定,桌面端也要做包装兜底。
+  const allowTranspose = isNarrow();
 
   root.querySelectorAll<HTMLTableElement>(".markdown-body table").forEach(table => {
-    processTable(table, currentInstanceId);
+    processTable(table, currentInstanceId, allowTranspose);
   });
   // 同一断点内再次进入 rebuild:已 handled 的 wrapper 跳过 processTable;
   // 但仍然需要 syncScrollAttrs 一次(可能 wrapper 宽度变化了)。
@@ -346,10 +343,8 @@ function scheduleRebuild(root: ParentNode, currentInstanceId: number) {
   const token = buildToken;
   requestAnimationFrame(() => {
     rafScheduled = false;
-    // 令牌已变(期间 restoreAll/cleanup)→ 这批处理过期,丢弃,避免宽屏下误跑 rebuild。
+    // 令牌已变(期间 restoreAll/cleanup)→ 这批处理过期,丢弃,避免还原后的批重跑。
     if (token !== buildToken) return;
-    // 已切回宽屏 → 不需要 rebuild(还原工作已由 restoreAll 完成)。
-    if (!isNarrow()) return;
     rebuild(root, currentInstanceId);
   });
 }
@@ -447,8 +442,7 @@ export const useMarkdownTableTranspose = () => {
     lastIsNarrow = isNarrow();
     window.addEventListener("resize", onWindowResize, { passive: true });
 
-    if (!isNarrow()) return;
-
+    // 跨断点都做首次重建:桌面端也要给宽表套 wrapper(横向滚动兜底),转置由 processTable 按窄屏决定。
     scheduleRebuild(root, myId);
   }
 
@@ -466,5 +460,6 @@ function applyBreakpoint(root: ParentNode, currentInstanceId: number) {
   if (lastIsNarrow !== null && current === lastIsNarrow) return;
   lastIsNarrow = current;
   restoreAll();
-  if (current) scheduleRebuild(root, currentInstanceId);
+  // 还原后按当前断点重建:窄屏转置、桌面包装,均需重跑。
+  scheduleRebuild(root, currentInstanceId);
 };

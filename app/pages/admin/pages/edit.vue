@@ -5,6 +5,7 @@ import type { ContentDetailResponse } from "~/types/apis/admin/pages";
 import type { ContentSaveResponse, CoversInput } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ApiError } from "~/types/error";
+import type { SaveResult } from "~/types/composables/editor-autosave";
 import { isSpecialPageSlug, SPECIAL_PAGE_OPTIONS, type SpecialPageValue } from "#shared/special-pages";
 
 const route = useRoute();
@@ -25,6 +26,9 @@ const activeTab = ref("content");
 // 编辑页首帧即给骨架屏：isEdit 在 SSR 时即可由 route.query.cid 判定，loading 初始即 true，
 // 避免先渲染空编辑器再切骨架再灌内容的三段式闪烁；新建页 isEdit=false → 直接显示空编辑器
 const loading = ref(isEdit.value && !!pageId.value);
+// 保存进行中状态（独立于 loading）：loading 仅反映首次加载（骨架屏）；保存不再置 loading，
+// 否则保存期间骨架屏 v-if 成立 → 编辑器卸载重挂 → 闪烁 + 光标丢失。
+const saving = ref(false);
 const csrfToken = ref("");
 
 // 跟踪是否有未保存的更改
@@ -280,6 +284,53 @@ const checkUnsavedChanges = () => (
   coversInput.value !== initialCoversInput.value
 );
 
+// —— Ctrl+S + 自动保存 + 会话/CSRF 过期防丢 ——
+const {
+  saveStatus,
+  lastSavedAt,
+  saveNow,
+  markChanged,
+  checkRecovery,
+} = useEditorAutosave({
+  kind: "page",
+  recoveryKey: () => `imqi1-draft:page:${pageId.value ?? "new"}`,
+  hasUnsaved: hasUnsavedChanges,
+  csrfToken,
+  save: savePage,
+  canAutosave: () => !!pageId.value,
+  isPublishable: () => !!title.value.trim(),
+  serialize: () => ({
+    title: title.value,
+    pageType: pageType.value,
+    customSlug: customSlug.value,
+    content: content.value,
+    desc: desc.value,
+    showToc: showToc.value,
+    status: status.value,
+    manyCovers: manyCovers.value,
+    coversInput: coversInput.value,
+  }),
+  applyRecovered: fields => {
+    const f = fields as Record<string, unknown>;
+    title.value = String(f.title ?? "");
+    pageType.value = (f.pageType as typeof pageType.value) ?? "messages";
+    customSlug.value = String(f.customSlug ?? "");
+    content.value = String(f.content ?? "");
+    desc.value = String(f.desc ?? "");
+    showToc.value = Boolean(f.showToc);
+    status.value = Number(f.status) === 0 ? 0 : 1;
+    manyCovers.value = Boolean(f.manyCovers);
+    coversInput.value = String(f.coversInput ?? "");
+  },
+});
+
+/** 已自动保存时间戳 → HH:MM */
+function formatSavedTime(ts: number | null): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 // 监听所有字段变化
 watch([
   title,
@@ -292,6 +343,7 @@ watch([
   coversInput,
 ], () => {
   hasUnsavedChanges.value = checkUnsavedChanges();
+  if (hasUnsavedChanges.value) markChanged();
 }, { deep: true });
 
 // beforeunload 事件处理
@@ -359,9 +411,14 @@ const fetchPage = async () => {
   }
 };
 
-// 保存页面
-const savePage = async () => {
-  if (loading.value) return;
+// 保存页面。source 区分手动/自动：手动才弹 toast；自动保存校验失败返回 skipped（静默）。
+async function savePage(source: "manual" | "autosave"): Promise<SaveResult> {
+  // 进行中守卫：避免 Ctrl+S 与自动保存/按钮保存并发；首次加载(loading)期间也拦截
+  if (loading.value || saving.value) return { status: "skipped" };
+  if (!csrfToken.value) {
+    if (source === "manual") toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return { status: "skipped" };
+  }
   // 保存前强制同步：把编辑器内容（可能还在防抖期内）冲刷到 content ref，避免输入丢失
   // 如果正在上传图片，会等待上传完成后再同步（避免占位 URL 落库）。
   // flush 必须包在 try/catch 里：它一旦抛错/挂起（编辑器未就绪或上传卡死），继续保存会用
@@ -369,20 +426,20 @@ const savePage = async () => {
   try {
     await markdownEditorRef.value?.flush();
   } catch (error) {
-    toast.error({
-      message: "同步编辑器内容失败，未保存",
-      description: error instanceof Error ? error.message : "请检查编辑器状态后重试",
-    });
-    return;
+    if (source === "manual") {
+      toast.error({
+        message: "同步编辑器内容失败，未保存",
+        description: error instanceof Error ? error.message : "请检查编辑器状态后重试",
+      });
+    }
+    return { status: "error", message: error instanceof Error ? error.message : "同步编辑器内容失败" };
   }
   if (!title.value.trim()) {
-    toast.error({
-      message: "请输入页面标题",
-    });
-    return;
+    if (source === "manual") toast.error({ message: "请输入页面标题" });
+    return { status: "skipped" };
   }
 
-  loading.value = true;
+  saving.value = true;
   try {
     // 处理封面数据：从输入框格式转为 JSON
     let coversValue = null;
@@ -432,9 +489,11 @@ const savePage = async () => {
     }
 
     if (res) {
-      toast.success({
-        message: isEdit.value ? "页面已更新" : "页面已创建",
-      });
+      if (source === "manual") {
+        toast.success({
+          message: isEdit.value ? "页面已更新" : "页面已创建",
+        });
+      }
 
       // 如果是新建且成功，跳转到编辑页面
       if (!isEdit.value && res.data?.cid) {
@@ -447,30 +506,29 @@ const savePage = async () => {
       // 保存成功后更新基线
       await nextTick();
       saveInitialContent();
+      return { status: "saved" };
     }
+    return { status: "error" };
   } catch (rawError: unknown) {
-    const error = rawError as ApiError;
+    const error = rawError as ApiError & { response?: { status?: number } };
+    const statusCode = typeof error?.statusCode === "number" ? error.statusCode : (error?.response?.status ?? 0);
+    // 401/403：会话或 CSRF token 过期 → 交给自动保存组合去备份/提示重新登录
+    if (statusCode === 401 || statusCode === 403) {
+      return { status: "expired" };
+    }
     const message = error?.data?.message || error?.message || "保存失败";
-    toast.error({
-      message,
-    });
+    if (source === "manual") {
+      toast.error({ message });
+    }
+    return { status: "error", message };
   } finally {
-    loading.value = false;
+    saving.value = false;
   }
-};
+}
 
 // 取消
 const cancel = () => {
   router.push("/admin/pages");
-};
-
-// 快捷键
-const handleKeydown = (event: KeyboardEvent) => {
-  // Ctrl/Cmd + S 保存
-  if ((event.ctrlKey || event.metaKey) && event.key === "s") {
-    event.preventDefault();
-    savePage();
-  }
 };
 
 onMounted(async () => {
@@ -483,14 +541,18 @@ onMounted(async () => {
   }
 
   if (isEdit.value) {
-    fetchPage();
+    await fetchPage();
+    // 内容加载完成后检测本地过期草稿（若存在则提示恢复）
+    await checkRecovery();
+  } else {
+    // 新建页面：手动保存遇过期也可能留下本地备份，检测并提示恢复
+    await checkRecovery();
   }
-  window.addEventListener("keydown", handleKeydown);
+  // Ctrl+S / 自动保存由 useEditorAutosave 内部统一绑定
   window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("keydown", handleKeydown);
   window.removeEventListener("beforeunload", handleBeforeUnload);
 });
 </script>
@@ -839,10 +901,23 @@ onUnmounted(() => {
         <!-- 操作按钮 -->
         <Card>
           <CardContent class="pt-6 space-y-2">
-            <Button class="w-full" size="lg" :disabled="loading" @click="savePage">
+            <Button class="w-full" size="lg" :disabled="loading || saving" @click="saveNow('manual')">
               <Icon name="lucide:save" class="mr-2 size-4" />
-              {{ loading ? "保存中..." : "保存页面" }}
+              {{ saving ? "保存中..." : "保存页面" }}
             </Button>
+            <!-- 自动保存/会话过期内联状态（非 toast） -->
+            <div class="space-y-1 text-xs">
+              <p v-if="saveStatus === 'saving'" class="flex items-center gap-1.5 text-muted-foreground">
+                <Icon name="lucide:loader-2" class="size-3.5 animate-spin" /> 保存中…
+              </p>
+              <p v-else-if="saveStatus === 'saved'" class="text-emerald-600">已保存 {{ formatSavedTime(lastSavedAt) }}</p>
+              <p v-else-if="saveStatus === 'unsaved'" class="text-amber-600">有未保存的更改，停笔后将自动保存</p>
+              <p v-else-if="saveStatus === 'error'" class="text-destructive">保存失败，请重试</p>
+              <div v-else-if="saveStatus === 'expired'" class="flex items-center justify-between gap-2 text-destructive">
+                <span>登录已过期，内容已暂存本地</span>
+                <Button variant="outline" size="sm" class="h-6 text-xs" @click="saveNow('manual')">重试</Button>
+              </div>
+            </div>
             <Button variant="outline" class="w-full" size="lg" @click="cancel">
               <Icon name="lucide:x" class="mr-2 size-4" />
               取消
