@@ -25,8 +25,13 @@ function truncateWithEllipsis(text: string | undefined, maxLength: number): stri
   return text.substring(0, maxLength) + "...";
 }
 
+// fetchSubscribePosts 的判别联合返回类型：让调用方能按 success 字面量收窄（否则 success 扩成 boolean 无法收窄 count/error）
+type FetchPostsResult =
+  | { success: true; count: number; latestTitle: string | null }
+  | { success: false; error: string };
+
 // 获取单个订阅源的文章
-async function fetchSubscribePosts(subscribeId: number, url: string) {
+async function fetchSubscribePosts(subscribeId: number, url: string): Promise<FetchPostsResult> {
   console.log(`[订阅更新] 开始获取订阅 ${subscribeId}: ${url}`);
   try {
     // 安全外联：校验公网 + 钉定已校验 IP（封 DNS rebinding），统一 redirect:"error" 与 30s 超时
@@ -170,15 +175,75 @@ async function fetchSubscribePosts(subscribeId: number, url: string) {
       data: { lastUpdated: new Date() },
     });
 
+    // 最新文章标题：取 pubDate 最大那篇（无日期用首个），供表格状态列展示
+    let latest: (typeof items)[number] | null = null;
+    for (const it of items) {
+      if (!latest || (it.pubDate?.getTime() ?? 0) > (latest.pubDate?.getTime() ?? 0)) latest = it;
+    }
+    const latestTitle = latest?.title ?? items[0]?.title ?? null;
+
     console.log(`[订阅更新] 订阅 ${subscribeId} 更新成功，获取了 ${contentsToSave.length} 篇文章`);
-    return { success: true, count: contentsToSave.length };
+    return { success: true, count: contentsToSave.length, latestTitle };
   } catch (error) {
     console.error(error);
     return { success: false, error: (error as Error).message };
   }
 }
 
-// 更新所有订阅
+// 并发抓取上限：订阅源多了若逐个 await，总耗时≈各源耗时之和，极易超出请求超时。
+// 并行 + 固定并发上限既压到约「单源最慢 × 批次」，又不无限打爆外联连接/惹源站点限流。
+const FETCH_CONCURRENCY = 5;
+
+// 以固定并发上限运行 worker；完成顺序不定，仅保证每个任务都会执行（用于并行抓取订阅源）。
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      await worker(items[i]!);
+    }
+  });
+  await Promise.all(workers);
+}
+
+// 会话内（内存）订阅更新统计：重启自动归零，不做持久化（单实例站点足够，跨实例共享需另接持久层）。
+// updateCount 为累计更新次数；lastRunAt 为最近一次完成时间；成功/失败只留最近一次的值（每次覆盖）。
+const subscriptionStats = {
+  updateCount: 0,
+  lastRunAt: null as number | null,
+  successCount: 0,
+  failureCount: 0,
+};
+
+export function getSubscriptionStats() {
+  return {
+    updateCount: subscriptionStats.updateCount,
+    lastRunAt: subscriptionStats.lastRunAt,
+    successCount: subscriptionStats.successCount,
+    failureCount: subscriptionStats.failureCount,
+  };
+}
+
+// 每个订阅源「最近一次更新」的状态（键为 subscribeId）：刷新时在表格状态列展示。重启归零，不持久化。
+type SubscribeRunStatus = {
+  success: boolean;
+  message: string;
+  articleCount: number;
+  latestTitle: string | null;
+  updatedAt: number;
+};
+const lastRunSourceStatus = new Map<number, SubscribeRunStatus>();
+
+export function getSourceStatus(subscribeId: number): SubscribeRunStatus | null {
+  return lastRunSourceStatus.get(subscribeId) ?? null;
+}
+
+// 更新所有订阅（并行抓取，固定并发上限）
 export async function updateAllSubscribes() {
   console.log("[订阅更新] 开始更新所有订阅");
   const subscribes = await prisma.subscribes.findMany();
@@ -191,7 +256,10 @@ export async function updateAllSubscribes() {
     details: [] as Array<{ name: string; success: boolean; message?: string }>,
   };
 
-  for (const subscribe of subscribes) {
+  // 成功/失败用计数器累加（JS 单线程，await 之间同步自增无竞态）；details 按完成顺序追加，汇总只用前面的总数。
+  let succeeded = 0;
+
+  await runWithConcurrency(subscribes, FETCH_CONCURRENCY, async subscribe => {
     console.log(`[订阅更新] 正在处理: ${subscribe.name}`);
     const result = await fetchSubscribePosts(subscribe.id, subscribe.url);
     results.details.push({
@@ -199,13 +267,25 @@ export async function updateAllSubscribes() {
       success: result.success,
       message: result.success ? `获取 ${result.count} 篇文章` : result.error,
     });
+    // 记录最近一次状态（覆盖）：成功带文章数+最新标题，失败带错误信息
+    lastRunSourceStatus.set(subscribe.id, {
+      success: result.success,
+      message: result.success ? `获取 ${result.count} 篇文章` : (result.error ?? "未知错误"),
+      articleCount: result.success ? result.count : 0,
+      latestTitle: result.success ? (result.latestTitle ?? null) : null,
+      updatedAt: Date.now(),
+    });
+    if (result.success) succeeded++;
+  });
 
-    if (result.success) {
-      results.success++;
-    } else {
-      results.failed++;
-    }
-  }
+  results.success = succeeded;
+  results.failed = results.total - results.success;
+
+  // 会话内统计：次数累计；成功/失败只留最近一次（覆盖）
+  subscriptionStats.updateCount += 1;
+  subscriptionStats.lastRunAt = Date.now();
+  subscriptionStats.successCount = results.success;
+  subscriptionStats.failureCount = results.failed;
 
   console.log(`[订阅更新] 更新完成: 成功 ${results.success}/${results.total}，失败 ${results.failed}`);
   return results;

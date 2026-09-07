@@ -20,21 +20,14 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 403, message: 'CSRF token 验证失败，请刷新页面重试' });
   }
 
-  try {
-    const result = await updateAllSubscribes();
-    return {
-      success: true,
-      data: result,
-    };
-  } catch (error) {
-    // 已带 statusCode 的错误（400/403）原样抛出，避免被统一吞成 500
-    if (error && typeof error === "object" && "statusCode" in error) {
-      throw error;
-    }
-    console.error(error);
-    throw createError({
-      statusCode: 500,
-      message: '更新订阅失败',
-    });
-  }
+  // 提交后台更新任务：不等抓取完成，立即返回（发起一次定时任务等价操作，更新所有订阅文章）。
+  // 失败仅记录日志，不阻塞/报错本次请求；前端无需拿结果，改由「刷新订阅状态」重新拉取列表。
+  void updateAllSubscribes().catch(error => {
+    console.error("[订阅更新] 后台更新任务异常:", error);
+  });
+
+  return {
+    success: true,
+    data: { started: true },
+  };
 });

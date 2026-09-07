@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {SubscribeItem, SubscribesUpdateResponse} from "~/types/apis/admin/subscribe";
+import type {SubscribeItem, SubscribesUpdateResponse, SubscriptionStats} from "~/types/apis/admin/subscribe";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const toast = useToast();
@@ -9,14 +9,14 @@ const loading = ref(true);
 const hasLoadedSubscribes = ref(false);
 const showAddForm = ref(false);
 const showEditForm = ref(false);
-const updating = ref(false);
-const submitting = ref(false);
-const saveUpdating = ref(false);
-const updateResult = ref<SubscribesUpdateResponse['data'] | null>(null);
-let updateResultTimer: ReturnType<typeof setTimeout> | null = null;
+const submitting = ref(false); // 添加订阅表单提交中
+const taskSubmitting = ref(false); // 提交更新订阅任务中
+const refreshing = ref(false); // 刷新订阅列表中
+const saveUpdating = ref(false); // 编辑订阅保存中
 const feedCacheInterval = ref(8); // 默认8小时
 const csrfToken = ref("");
 const loadSeq = ref(0);
+const subscriptionStats = ref<SubscriptionStats>({ updateCount: 0, lastRunAt: null, successCount: 0, failureCount: 0 });
 
 const newSubscribe = ref({ name: "", url: "", avatar: "" });
 const editingSubscribe = ref<{ id: number | null; name: string; url: string; avatar: string }>({
@@ -38,20 +38,26 @@ async function loadSettings() {
   }
 }
 
-// 加载订阅列表
-async function loadSubscribes() {
-  loading.value = true;
+// 加载订阅列表。showSkeleton=true 走骨架屏（首载/变更后），false 用于「刷新订阅状态」按钮，不闪骨架。
+async function loadSubscribes(showSkeleton = true): Promise<boolean> {
+  if (showSkeleton) loading.value = true;
   const seq = ++loadSeq.value;
   try {
     const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
-    const data = await $fetch<SubscribeItem[]>("/api/admin/subscribes");
-    if (seq !== loadSeq.value) return;
+    const [data, stats] = await Promise.all([
+      $fetch<SubscribeItem[]>("/api/admin/subscribes"),
+      $fetch<SubscriptionStats>("/api/admin/subscribes/stats").catch(() => null),
+    ]);
+    if (seq !== loadSeq.value) return false;
     subscribes.value = data;
+    if (stats) subscriptionStats.value = stats;
+    return true;
   } catch (error) {
     console.error("获取订阅失败:", error);
-    if (seq !== loadSeq.value) return;
+    if (seq !== loadSeq.value) return false;
     subscribes.value = [];
+    return false;
   } finally {
     if (seq === loadSeq.value) {
       hasLoadedSubscribes.value = true;
@@ -121,40 +127,42 @@ async function deleteSubscribe(id: number) {
   }
 }
 
-async function updateSubscribes() {
+// 提交更新订阅任务：不等后台抓取完成，立即响应；后台跑一次定时任务的等价操作（更新所有订阅文章）。
+async function submitUpdateTask() {
+  if (taskSubmitting.value) return;
   if (!csrfToken.value) {
     toast.error({ message: "会话已失效，请刷新页面后重试" });
     return;
   }
-  // 清除上一次的复位定时器，避免它提前清掉本次新结果
-  if (updateResultTimer) {
-    clearTimeout(updateResultTimer);
-    updateResultTimer = null;
-  }
-  updating.value = true;
-  updateResult.value = null;
+  taskSubmitting.value = true;
   try {
-    const response = await $fetch<SubscribesUpdateResponse>("/api/admin/subscribes/update", {
+    const res = await $fetch<SubscribesUpdateResponse>("/api/admin/subscribes/update", {
       method: "POST",
       body: { csrfToken: csrfToken.value },
     });
-    updateResult.value = response.data;
-    toast.success({
-      message: "更新完成",
-      description: `成功 ${response.data.success}/${response.data.total} 个订阅源${response.data.failed > 0 ? `，失败 ${response.data.failed} 个` : ""}`,
-    });
-    await loadSubscribes();
+    if (!res?.success) throw new Error("提交失败");
+    toast.success({ message: "更新订阅任务已提交", description: "后台正在更新全部订阅，稍后点「刷新订阅状态」获取最新结果" });
   } catch (error) {
-    console.error("更新失败:", error);
-    toast.error({
-      message: "更新失败",
-    });
+    console.error("提交更新订阅任务失败:", error);
+    toast.error({ message: "提交更新订阅任务失败" });
   } finally {
-    updating.value = false;
-    updateResultTimer = setTimeout(() => {
-      updateResult.value = null;
-      updateResultTimer = null;
-    }, 5000);
+    taskSubmitting.value = false;
+  }
+}
+
+// 不刷新页面、仅重新拉取订阅列表状态（更新任务完成后的 lastUpdated 变更在此体现）
+async function refreshData() {
+  if (refreshing.value) return;
+  refreshing.value = true;
+  try {
+    const ok = await loadSubscribes(false);
+    if (!ok) {
+      toast.error({ message: "刷新失败，请稍后重试" });
+      return;
+    }
+    toast.success({ message: "刷新成功" });
+  } finally {
+    refreshing.value = false;
   }
 }
 
@@ -236,6 +244,20 @@ function formatDate(date: Date | string | null) {
   }
 }
 
+// 订阅更新统计的「上次刷新」相对时间：无记录显示 —
+function formatStatsTime(ts: number | null | undefined) {
+  if (!ts) return "—";
+  const diff = Date.now() - ts;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes}分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}小时前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}天前`;
+  return new Date(ts).toLocaleDateString("zh-CN");
+}
+
 onMounted(() => {
   loadSettings();
   loadSubscribes();
@@ -246,22 +268,11 @@ onMounted(() => {
   <AdminLayout>
     <div class="mb-6">
       <h2 class="text-2xl font-bold">订阅列表</h2>
-      <p class="text-sm text-muted-foreground mt-1">管理 RSS 订阅源，每{{ feedCacheInterval }}小时自动更新</p>
+      <p class="text-sm text-muted-foreground mt-1">管理 RSS 订阅源，每{{ feedCacheInterval }}小时自动更新。提交更新订阅=立刻跑一次自动更新；刷新订阅状态=仅重新拉取列表</p>
+      <p class="text-xs text-muted-foreground mt-2">
+        已更新 {{ subscriptionStats.updateCount }} 次 · 上次刷新 {{ formatStatsTime(subscriptionStats.lastRunAt) }} · 成功 {{ subscriptionStats.successCount }} · 失败 {{ subscriptionStats.failureCount }}
+      </p>
     </div>
-
-    <!-- 更新结果提示 -->
-    <Card v-if="updateResult" class="mb-6 border-primary/50 bg-primary/5">
-      <CardContent class="p-4">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:check-circle" class="size-5 text-primary" />
-          <span class="font-medium">更新完成</span>
-          <span class="text-muted-foreground">
-            成功 {{ updateResult.success }}/{{ updateResult.total }} 个订阅源
-            <span v-if="updateResult.failed > 0">，失败 {{ updateResult.failed }} 个</span>
-          </span>
-        </div>
-      </CardContent>
-    </Card>
 
     <Card>
       <CardHeader>
@@ -271,9 +282,13 @@ onMounted(() => {
             <CardDescription>管理和配置 RSS 订阅源</CardDescription>
           </div>
           <div class="flex gap-2">
-            <Button variant="outline" :disabled="updating" @click="updateSubscribes">
-              <Icon :name="updating ? 'lucide:loader-2' : 'lucide:refresh-cw'" :class="{ 'animate-spin': updating }" class="mr-2 size-4" />
-              {{ updating ? "更新中..." : "手动更新" }}
+            <Button variant="outline" :disabled="taskSubmitting" @click="submitUpdateTask">
+              <Icon :name="taskSubmitting ? 'lucide:loader-2' : 'lucide:play'" :class="{ 'animate-spin': taskSubmitting }" class="mr-2 size-4" />
+              {{ taskSubmitting ? "提交中..." : "提交更新订阅" }}
+            </Button>
+            <Button variant="outline" :disabled="refreshing" @click="refreshData">
+              <Icon :name="refreshing ? 'lucide:loader-2' : 'lucide:refresh-cw'" :class="{ 'animate-spin': refreshing }" class="mr-2 size-4" />
+              {{ refreshing ? "刷新中..." : "刷新订阅状态" }}
             </Button>
             <Button @click="showAddForm = true">
               <Icon name="lucide:plus" class="mr-2 size-4" />
@@ -351,6 +366,7 @@ onMounted(() => {
             <TableRow>
               <TableHead>名称</TableHead>
               <TableHead>订阅源</TableHead>
+              <TableHead>更新状态</TableHead>
               <TableHead>最后更新</TableHead>
               <TableHead class="text-right">操作</TableHead>
             </TableRow>
@@ -370,6 +386,19 @@ onMounted(() => {
                 <a :href="sub.url" target="_blank" class="text-primary hover:underline truncate block max-w-75">
                   {{ sub.url }}
                 </a>
+              </TableCell>
+              <TableCell>
+                <!-- 最近一次更新状态：成功=文章数+最新标题，失败=报错信息，无记录=— -->
+                <span v-if="sub.lastUpdateStatus" class="text-xs">
+                  <template v-if="sub.lastUpdateStatus.success">
+                    <span class="text-green-600 dark:text-green-400">{{ sub.lastUpdateStatus.message }}</span>
+                    <span v-if="sub.lastUpdateStatus.latestTitle" class="text-muted-foreground block truncate max-w-60 mt-0.5">
+                      最新：{{ sub.lastUpdateStatus.latestTitle }}
+                    </span>
+                  </template>
+                  <span v-else class="text-destructive">{{ sub.lastUpdateStatus.message }}</span>
+                </span>
+                <span v-else class="text-xs text-muted-foreground">—</span>
               </TableCell>
               <TableCell class="text-muted-foreground text-sm">
                 {{ formatDate(sub.lastUpdated) }}
@@ -413,6 +442,17 @@ onMounted(() => {
               <a :href="sub.url" target="_blank" class="text-sm text-primary hover:underline truncate block">
                 {{ sub.url }}
               </a>
+              <!-- 最近一次更新状态 -->
+              <p class="text-xs mt-1 truncate">
+                <template v-if="sub.lastUpdateStatus">
+                  <template v-if="sub.lastUpdateStatus.success">
+                    <span class="text-green-600 dark:text-green-400">{{ sub.lastUpdateStatus.message }}</span>
+                    <span v-if="sub.lastUpdateStatus.latestTitle" class="text-muted-foreground"> · 最新：{{ sub.lastUpdateStatus.latestTitle }}</span>
+                  </template>
+                  <span v-else class="text-destructive">{{ sub.lastUpdateStatus.message }}</span>
+                </template>
+                <span v-else class="text-muted-foreground">—</span>
+              </p>
             </div>
             <div class="flex flex-col items-end gap-2">
               <span class="text-xs text-muted-foreground">{{ formatDate(sub.lastUpdated) }}</span>
