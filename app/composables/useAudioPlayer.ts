@@ -20,12 +20,12 @@ const playerId = `footer-${Date.now()}-${Math.random()}`;
 
 // 歌单 API 拉取闸门失败计数（内存、非持久）：只在 initPlayer 的 meting 请求失败时累加、成功即清零。
 // 不写 localStorage——瞬时失败不再永久弃用播放器，刷新页面自动重试（自动复位）。
-// 单首播放卡顿/失败走独立的会话内计数 playbackFailureCount（见 handleSongProblem），两者完全隔离。
-const MAX_FAILURE_COUNT = 3;
+// 单首播放失败/网络卡顿走独立的会话内计数 playbackFailureCount（见 handleSongProblem），两者完全隔离。
+const METING_MAX_FAILURE_COUNT = 3;
 let metingFailureCount = 0;
 
-// 单首播放失败的会话内计数（内存、非持久）：达到上限停用整个播放器；成功播放即清零，刷新自动重试。
-let playbackFailureCount = 0;
+// 单首播放失败/卡顿的会话内计数上限：达到后停用整个播放器（隐藏胶囊）；成功播放即清零，刷新自动重试。
+const PLAYBACK_MAX_FAILURE_COUNT = 5;
 
 // 获取失败次数
 function getFailureCount(): number {
@@ -65,6 +65,8 @@ export function useAudioPlayer() {
   const progress = useState<number>("audio:progress", () => 0);
   const shouldAutoPlay = useState<boolean>("audio:shouldAutoPlay", () => false);
   const playedIndices = useState<number[]>("audio:playedIndices", () => []);
+  // 会话内播放失败/卡顿计数（响应式，供胶囊 UI 展示「重试 X/5」）：成功播放清零，达到上限停用播放器。
+  const playbackFailureCount = useState<number>("audio:playbackFailureCount", () => 0);
 
   // 获取下一首未播放的歌曲
   function getNextSong(): Song | null {
@@ -110,7 +112,7 @@ export function useAudioPlayer() {
       audio.removeEventListener("canplay", playWhenReady);
       audio = null; // 释放单例引用，避免已停用实例仍挂事件/被 `canplay` 残留回调复活
     }
-    playbackFailureCount = 0; // 会话内计数归零；刷新页面即自动重试（见文件头注释）
+    playbackFailureCount.value = 0; // 会话内计数归零；刷新页面即自动重试（见文件头注释）
   }
 
   const handleSongEnd = () => {
@@ -118,12 +120,14 @@ export function useAudioPlayer() {
     playNext();
   };
 
-  // error 与 stalled 处理逻辑一致，仅文案不同，合并为单一实现避免重复维护
+  // error 与 stalled 处理逻辑一致，仅文案不同，合并为单一实现避免重复维护。
+  // 两者都累加会话内计数 playbackFailureCount：达到 PLAYBACK_MAX_FAILURE_COUNT 即停用（隐藏胶囊）。
   function handleSongProblem(reason: string, disableReason: string) {
     console.warn(reason);
-    playbackFailureCount += 1;
-    if (playbackFailureCount >= MAX_FAILURE_COUNT) {
-      disablePlayer(`${disableReason} ${playbackFailureCount} 次`);
+    playbackFailureCount.value += 1;
+    console.warn(`第 ${playbackFailureCount.value}/${PLAYBACK_MAX_FAILURE_COUNT} 次失败`);
+    if (playbackFailureCount.value >= PLAYBACK_MAX_FAILURE_COUNT) {
+      disablePlayer(`${disableReason} ${playbackFailureCount.value} 次`);
       return;
     }
     shouldAutoPlay.value = isPlaying.value;
@@ -131,13 +135,9 @@ export function useAudioPlayer() {
   }
 
   const handleSongError = () => handleSongProblem("歌曲加载失败，切换下一首", "歌曲连续加载失败");
-  // stalled 是瞬时网络缓冲（seek/起播/弱网），不是硬失败：成功播放会清零 playbackFailureCount，
-  // 这里只轻量切到下一首继续、不累加也不触发停用——否则一场连环卡顿会冤枉禁用整个播放器。
-  const handleSongStalled = () => {
-    console.warn("网络卡顿，切换下一首");
-    shouldAutoPlay.value = isPlaying.value;
-    playNext();
-  };
+  // stalled 是瞬时网络缓冲（seek/起播/弱网）：虽非硬失败，但连环卡顿同样意味着播放不畅，
+  // 故同样累加计数、达到上限停用，不再无限切下一首（原先只轻量切歌、无次数上限）。
+  const handleSongStalled = () => handleSongProblem("网络卡顿，切换下一首", "网络连续卡顿");
 
   const handleCanPlayThrough = () => {
     if (shouldAutoPlay.value && audio) {
@@ -152,7 +152,7 @@ export function useAudioPlayer() {
     shouldAutoPlay.value = false;
 
     // 成功播放，清零会话内播放失败计数；不动歌单 API 闸门，偶发卡顿不冤枉累积
-    playbackFailureCount = 0;
+    playbackFailureCount.value = 0;
 
     // 通知播放器管理器，暂停其他所有播放器
     const manager = getPlayerManager();
@@ -220,7 +220,7 @@ export function useAudioPlayer() {
 
     // 检查失败次数，如果超过最大次数则不初始化播放器
     const failureCount = getFailureCount();
-    if (failureCount >= MAX_FAILURE_COUNT) {
+    if (failureCount >= METING_MAX_FAILURE_COUNT) {
       isDisabled.value = true;
       console.warn(`Meting API 已连续失败 ${failureCount} 次，本次会话不再加载音乐播放器；刷新页面自动重试`);
       return;
@@ -263,12 +263,12 @@ export function useAudioPlayer() {
       console.error("加载音乐列表失败:", error);
       // 增加失败计数
       const newCount = incrementFailureCount();
-      console.warn(`Meting API 失败次数: ${newCount}/${MAX_FAILURE_COUNT}`);
+      console.warn(`Meting API 失败次数: ${newCount}/${METING_MAX_FAILURE_COUNT}`);
 
       // 如果达到最大失败次数，不显示播放器
-      if (newCount >= MAX_FAILURE_COUNT) {
+      if (newCount >= METING_MAX_FAILURE_COUNT) {
         isDisabled.value = true;
-        console.warn(`Meting API 已连续失败 ${MAX_FAILURE_COUNT} 次，音乐播放器已禁用`);
+        console.warn(`Meting API 已连续失败 ${METING_MAX_FAILURE_COUNT} 次，音乐播放器已禁用`);
       }
     }
   }
@@ -344,6 +344,8 @@ export function useAudioPlayer() {
     isLoaded,
     isDisabled,
     progress,
+    playbackFailureCount,
+    maxFailureCount: PLAYBACK_MAX_FAILURE_COUNT,
     initPlayer,
     togglePlay,
     playNext,

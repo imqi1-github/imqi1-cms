@@ -22,7 +22,7 @@ const playlistConfig = computed(() => {
 });
 
 // 使用全局音频播放器状态
-const { currentSong, isPlaying, isLoaded, isDisabled, progress, initPlayer, togglePlay, cleanup } = useAudioPlayer();
+const { currentSong, isPlaying, isLoaded, isDisabled, progress, initPlayer, togglePlay, cleanup, playbackFailureCount, maxFailureCount } = useAudioPlayer();
 
 // 初始化播放器（只执行一次）：延迟到空闲时段，不抢首页加载关键路径。
 // 先用 setTimeout 让出英雄区渐入/字体稳定窗口，再交给 requestIdleCallback 等空闲
@@ -60,6 +60,13 @@ onBeforeUnmount(() => {
         <span class="block text-xs font-medium text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis dark:text-gray-100">
           {{ currentSong.name }}
         </span>
+      </span>
+
+      <!-- 重试失败徽标：显示最近连续失败次数（达到上限时整颗胶囊会被隐藏） -->
+      <span
+        v-if="playbackFailureCount > 0"
+        class="relative z-1 shrink-0 whitespace-nowrap rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none font-medium text-white">
+        重试 {{ playbackFailureCount }}/{{ maxFailureCount }}
       </span>
 
       <!-- 封面图（播放时旋转） -->
