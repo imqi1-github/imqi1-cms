@@ -771,24 +771,13 @@ onUnmounted(() => {
   --fade-right: 1.5rem;
 }
 
+/* 表格横向滚动条完全隐藏(含悬停)。左右羽化渐隐已提示边缘还有内容,无需常驻滚动条。 */
+.markdown-body :deep(.markdown-table-wrap) {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
 .markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar {
-  height: 4px;
-}
-.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-track {
-  background: transparent;
-}
-.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb {
-  background: rgb(203 213 225);
-  border-radius: 2px;
-}
-.markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb:hover {
-  background: rgb(156 163 175);
-}
-.dark .markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb {
-  background: rgb(71 85 105);
-}
-.dark .markdown-body :deep(.markdown-table-wrap)::-webkit-scrollbar-thumb:hover {
-  background: rgb(107 114 130);
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* wrapper 内表格:列宽由内容决定(mac-content),不被父容器挤压;

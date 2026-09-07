@@ -175,7 +175,10 @@ function syncScrollAttrs(wrap: HTMLElement) {
     wrap.removeAttribute("data-at-right");
     return;
   }
-  const overflow = inner.scrollWidth > inner.clientWidth + 1;
+  // 溢出与否以**滚动容器 wrapper 自身**为准(wrap.scrollWidth > wrap.clientWidth)。
+  // 不能测内层 table:转置后单元格有 min-width:8rem,表格填满自身盒(scrollWidth≈clientWidth),
+  // 永远判不出"溢出";转置表/宽表的真正横向溢出发生在 wrapper 的 overflow-x:auto 上。
+  const overflow = wrap.scrollWidth > wrap.clientWidth + 1;
   if (!overflow) {
     wrap.removeAttribute("data-table-scrollable");
     wrap.removeAttribute("data-at-left");
