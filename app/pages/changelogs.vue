@@ -189,7 +189,7 @@ usePageSeo({
     <!-- 主内容区 -->
     <div v-else-if="data?.data && data.data.length > 0">
       <!-- 窄屏专属筛选：标题下方、首个日志上方，正常流式排版（≥md 用左侧栏） -->
-      <div class="md:hidden mb-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="更新日志筛选">
+      <div v-scroll-reveal class="md:hidden mb-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="更新日志筛选">
         <button
           v-for="classType in classTypes"
           :key="classType.label"
