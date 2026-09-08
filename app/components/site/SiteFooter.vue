@@ -216,7 +216,7 @@ onMounted(() => {
       <div v-if="!isTravelPage" class="flex items-center gap-2">
         <span>{{ currentYear }} &copy; {{ siteName }}</span>
         <span class="max-md:hidden"
-          >· <NuxtLink aria-label="本主题已开源于 GitHub" to="https://github.com/imqi1-github/imqi1-cms" target="_blank">主题</NuxtLink></span
+          >· <NuxtLink aria-label="本主题已开源于 GitHub" to="https://github.com/imqi1-github/imqi1-cms" target="_blank" class="hover:underline">主题</NuxtLink></span
         >
         <span v-if="siteIcp && isHomePage" class="max-md:hidden"
           >│ <NuxtLink class="hover:underline" to="https://beian.miit.gov.cn/" target="_blank">{{ siteIcp }}</NuxtLink></span
