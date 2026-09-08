@@ -1,0 +1,86 @@
+name: 🐛 Bug 反馈
+description: 报告一个可复现的问题，帮助改进
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提交 Bug！请尽量按模板填写，信息越全越容易复现。
+        **请勿在此粘贴任何 API 密钥 / 数据库密码 / 服务器地址等敏感信息**——CMS 涉及鉴权与私有数据，必要时请脱敏。
+
+  - type: textarea
+    id: describe
+    attributes:
+      label: 问题描述
+      description: 发生了什么？与你的预期有何不符？
+      placeholder: 清晰、简洁地描述
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 一步步说明如何复现
+      placeholder: |
+        1. 进入「…」
+        2. 点击「…」
+        3. 出现「…」
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      description: 你希望正常时应如何表现
+      placeholder: 应显示…，实际却…
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 尽量填写完整，便于定位
+      value: |
+        - Node / bun 版本:
+        - 部署方式: 本地 dev / Docker / 宝塔 (PM2)
+        - 数据库: PostgreSQL 版本 / Redis（是否启用）
+        - 浏览器及版本（前端问题）:
+        - 访问端: Web / 小程序（微信 / 支付宝）
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 截图
+      description: 报错日志、控制台输出或截图（请脱敏：隐藏 token、IP、主机名）
+      placeholder: 可直接拖拽粘贴截图，或粘贴报错堆栈
+      render: shell
+
+  - type: checkboxes
+    id: module
+    attributes:
+      label: 涉及模块
+      description: 该问题属于哪个模块？（可多选）
+      options:
+        - label: 内容创作 / Markdown 编辑
+        - label: 评论 / 留言 / 审核
+        - label: 后台管理（/admin）
+        - label: 旅行足迹 / 地图
+        - label: 音乐播放器
+        - label: 小程序端（mini）
+        - label: 部署 / 运维（Docker / 上传 / Nginx）
+        - label: 其他
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 我已按模板填写，并确认可复现
+          required: true

@@ -1,0 +1,11 @@
+# 关闭空白 issue 入口（允许直接发空白 issue）
+blank_issues_enabled: true
+
+# 在 New Issue 页面提供额外链接
+contact_links:
+  - name: 📖 项目介绍
+    url: https://github.com/imqi1-github/imqi1-cms#readme
+    about: 查看 README——环境搭建、部署、功能说明
+  - name: 🌐 线上站点 imqi1.com
+    url: https://imqi1.com
+    about: 查看在线演示与真实使用效果
