@@ -19,7 +19,6 @@
 - [辅助功能](#辅助功能)
 - [故障排查](#故障排查)
 - [服务器管理 PostgreSQL 数据库](#服务器管理-postgresql-数据库)
-- [服务器管理 PostgreSQL 数据库（pgweb · 推荐）](#服务器管理-postgresql-数据库pgweb--推荐)
 - [参与贡献](#参与贡献)
 
 ## 项目介绍
@@ -714,8 +713,6 @@ type ChangelogItem = {
 ## 服务器管理 PostgreSQL 数据库
 
 宝塔面板没有提供 PostgreSQL 数据库的管理器，没有类似 phpMyAdmin 的界面，所以我们需要手动安装，并在宝塔面板中配置入口。
-
-> 💡 **更推荐的方式**：直接用 [pgweb](#服务器管理-postgresql-数据库pgweb--推荐)——单容器、单端口，零账号体系、无 hash 兼容坑，5 分钟搞定。下方 pgadmin 章节保留作为历史备选，新部署不必再看。
 
 示例机器：Ubuntu 24.04。
 
