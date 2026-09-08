@@ -1,5 +1,11 @@
 # ImQi1 CMS
 
+[![license](https://img.shields.io/github/license/imqi1-github/imqi1-cms.svg?label=License&color=blue)](LICENSE)
+[![Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt&logoColor=white)](https://nuxt.com)
+[![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL-2d3748?logo=prisma&logoColor=white)](https://www.prisma.io)
+[![bun](https://img.shields.io/badge/bun-1.4-f472b6?logo=bun&logoColor=white)](https://bun.sh)
+[![uni-app](https://img.shields.io/badge/uni--app-H5%2FWeChat%2FAlipay-1685a5?logo=vuedotjs&logoColor=white)](mini)
+
 ## 目录
 
 - [项目介绍](#项目介绍)
@@ -14,6 +20,7 @@
 - [故障排查](#故障排查)
 - [服务器管理 PostgreSQL 数据库](#服务器管理-postgresql-数据库)
 - [服务器管理 PostgreSQL 数据库（pgweb · 推荐）](#服务器管理-postgresql-数据库pgweb--推荐)
+- [参与贡献](#参与贡献)
 
 ## 项目介绍
 
@@ -713,3 +720,13 @@ type ChangelogItem = {
 示例机器：Ubuntu 24.04。
 
 在宝塔中安装 Docker，然后在应用搜 “pgadmin”，配置好相关信息，安装完成就可以使用了。
+
+## 参与贡献
+
+欢迎参与！无论是提 Issue、提交代码，还是反馈使用问题，都很有价值。请先看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解环境与约定。
+
+- **报告 Bug / 提需求**：使用 [Issue 模板](https://github.com/imqi1-github/imqi1-cms/issues/new/choose) 提交。
+- **提交代码**：从 `master` 拉分支，自测通过（`bunx eslint .` / `bunx nuxi typecheck` / `bun run tailwindcss:lint`）后提 PR。
+- **安全相关**：疑似漏洞请**私密**报告（仓库 → Security → Report a vulnerability），别在公开 Issue 披露——见 [SECURITY.md](SECURITY.md)。
+
+项目采用 [GPL-3.0](LICENSE) 开源许可。

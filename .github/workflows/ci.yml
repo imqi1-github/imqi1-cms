@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        # postinstall 触发 `nuxt prepare`，生成 .nuxt（eslint config / tsconfig 依赖它）
+        run: bun install --frozen-lockfile
+
+      - name: ESLint
+        run: bunx eslint .
+
+      - name: Tailwind lint
+        run: bun run tailwindcss:lint
+
+      - name: Nuxt typecheck
+        run: bunx nuxi typecheck

@@ -1,0 +1,19 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# 中文 Markdown 允许行尾有空格以方便换行（可改为 false 强制清理）
+trim_trailing_whitespace = true
+
+[*.{js,ts,vue,mjs,cjs}]
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_size = 2
