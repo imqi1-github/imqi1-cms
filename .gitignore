@@ -32,6 +32,7 @@ pids
 
 # Bundle analysis
 stats.html
+stats-*.html
 
 # Playwright (MCP snapshot/console artifacts)
 .playwright-mcp

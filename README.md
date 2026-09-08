@@ -84,7 +84,7 @@ ImQi1 CMS 是一套基于 **Nuxt 4 + Prisma + TailwindCSS** 构建的全栈个�
    项目包含 `mini/` 小程序子模块，克隆时建议一并拉取：
 
    ```bash
-   git clone --recurse-submodules https://gitee.com/imqi1-gitee/imqi1-cms.git
+   git clone --recurse-submodules https://github.com/imqi1-github/imqi1-cms.git
    cd imqi1-cms
    ```
 
@@ -190,12 +190,12 @@ SERVER_HOST="你的服务器 IP"        # 旧名 SERVER_IP 仍兼容
 SERVER_PORT="22"
 SERVER_USER="root"                 # 旧名 SERVER_USERNAME 仍兼容
 SERVER_PASSWORD="你的服务器密码"
-SERVER_UPLOAD_DIR="/www/wwwroot/glass"
+SERVER_UPLOAD_DIR="/www/wwwroot/your-site"
 SERVER_UPLOAD_CONCURRENCY="8"      # 上传并发数（可选）
 
 # 生成 Nginx 配置所需
 DEPLOY_PORT=3000
-DEPLOY_PROJECT_ROOT_DIR=/www/wwwroot/glass
+DEPLOY_PROJECT_ROOT_DIR=/www/wwwroot/your-site
 DEPLOY_SITE_DOMAIN=your-domain.com
 DEPLOY_CDN_DOMAIN=cdn.your-domain.com
 DEPLOY_ENABLE_CDN_REDIRECT=true
@@ -231,7 +231,7 @@ bun run build
 
 产物位于 `.output/` 目录。`prebuild` 钩子生成构建 hash，`postbuild` 钩子拷贝 `data/` 数据并更新 Service Worker 的 CDN 引用；此外 Nitro 会在构建收尾时通过钩子把运行时资源（`qqwry.ipdb` IP 库、验证码字体、svg2png WASM）拷贝到 `.output/server/runtime-assets/`。
 
-> ⚠️ **本地上传目录建议设置 `UPLOADS_DIR`**。附件若使用「本地上传」（非 COS），默认写入 `.output/public/uploads`；而 `bun run build` 会删除并重建整个 `.output`，**重新打包后已上传的文件会全部丢失**。请在运行环境变量中把 `UPLOADS_DIR` 指向 `.output` 之外的独立绝对路径（如 `/www/wwwroot/glass/uploads`）持久保存，详见下文第 8 节。使用腾讯云 COS 存储的用户不受影响。
+> ⚠️ **本地上传目录建议设置 `UPLOADS_DIR`**。附件若使用「本地上传」（非 COS），默认写入 `.output/public/uploads`；而 `bun run build` 会删除并重建整个 `.output`，**重新打包后已上传的文件会全部丢失**。请在运行环境变量中把 `UPLOADS_DIR` 指向 `.output` 之外的独立绝对路径（如 `/www/wwwroot/your-site/uploads`）持久保存，详见下文第 8 节。使用腾讯云 COS 存储的用户不受影响。
 
 > **本地用 `nuxi preview` 验证打包产物时，建议先把 `site.config.ts` 的 `security.enableCsp` 改为 `false`**。CSP 仅在生产构建注入，会拦截音乐直链、地图第三方脚本等，干扰本地功能验证；确认功能正常后改回 `true` 再打正式包。
 
@@ -282,7 +282,7 @@ DB_NAME="nodejs"
 
 # 运行环境
 PORT=3000
-NODE_PROJECT_NAME="glass"
+NODE_PROJECT_NAME="your-project-name"
 # 必须为完整单词 production（写 prod / 留空会按非生产处理）：构建与启动都需要。
 # 非 production 时 referer / 小程序签名校验会跳过、上传目录解析错误、CDN / ISR / cookie secure 不生效。
 NODE_ENV="production"
@@ -291,7 +291,7 @@ UV_THREADPOOL_SIZE=64
 # 本地上传目录（强烈建议设置为 .output 之外的绝对路径）
 # 不设时默认写入 .output/public/uploads，而每次重新打包 `bun run build` 会
 # 删除并重建整个 .output，导致已上传的用户文件全部丢失。设为独立目录即可持久保留。
-UPLOADS_DIR="/www/wwwroot/glass/uploads"
+UPLOADS_DIR="/www/wwwroot/your-site/uploads"
 
 # Redis 无需在此配置：Redis 是构建期配置，打包时烘焙进产物，生产运行时不再读取
 # Redis 环境变量（见上文「生产环境搭建」第 2 节）。
@@ -329,7 +329,7 @@ BT_PANEL_URL="http://your-server-ip:8888"
 # 宝塔接口密钥（面板 → 设置 → API 接口 → 获取密钥）
 BT_API_KEY="your_bt_api_key"
 # 宝塔「Node 项目管理器」中的项目名称
-BT_PROJECT_NAME="glass"
+BT_PROJECT_NAME="your-project-name"
 ```
 
 > 需在宝塔面板「API 接口」中**开启 API**，并将本地公网 IP 加入 **IP 白名单**，否则请求会被拒绝。
