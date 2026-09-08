@@ -269,21 +269,27 @@ usePageSeo({
                   <!-- 条目列表（一条记录可含多个更新条目；筛选时只显示命中类型） -->
                   <div class="space-y-4">
                     <div v-for="(entry, i) in visibleEntries(log.content)" :key="i">
-                      <!-- 条目内容 -->
-                      <div
-                        class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content"
-                        v-html="entry.html"
-                      />
-                      <!-- 该条目的类型徽标：置于本条内容下方 -->
-                      <span
-                        :class="[
-                          'inline-flex mt-2 px-2 py-0.5 rounded-md text-xs font-medium items-center gap-1',
-                          getChangelogMeta(entry.type).color,
-                        ]"
-                      >
-                        <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
-                        {{ getChangelogMeta(entry.type).label }}
-                      </span>
+                      <!-- 类型徽标：宽屏与首页一致——徽标居左、与文本第一行对齐；
+                           窄屏保留原状——徽标下移到文本下方（max-sm:flex-col + order-2）。
+                           items-baseline 让徽标 inline-flow baseline 与 prose 第一行 baseline 对齐，
+                           抵消徽标 py-1 vs prose 行高差导致的视觉偏移 -->
+                      <div class="flex items-baseline gap-3 max-sm:flex-col max-sm:items-start max-sm:gap-1">
+                        <div
+                          :class="[
+                            // 徽标：宽屏胶囊样式（对齐首页）/ 窄屏保留圆角方块（原状）
+                            'shrink-0 inline-flex items-center gap-1 text-xs font-medium max-sm:self-start max-sm:order-2',
+                            'px-3 py-1 rounded-full max-sm:rounded-md max-sm:px-2 max-sm:py-0.5',
+                            getChangelogMeta(entry.type).color,
+                          ]">
+                          <Icon :name="getChangelogMeta(entry.type).icon" class="size-3" />
+                          {{ getChangelogMeta(entry.type).label }}
+                        </div>
+                        <!-- 条目内容：max-sm 默认 order-0（在上）；宽屏 flex-1 占右列 -->
+                        <div
+                          class="prose prose-slate dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed markdown-content flex-1 min-w-0"
+                          v-html="entry.html"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
