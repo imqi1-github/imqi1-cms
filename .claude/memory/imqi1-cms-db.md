@@ -1,6 +1,6 @@
 ---
 name: imqi1-cms-db
-description: "库名 imqi1-cms(与目录/包名一致);本地已装 MySQL 8.4.9 便携版,DB_* 由 .env 提供,开机自启在 Startup"
+description: "库名 imqi1-cms(与目录/包名一致);数据层 PostgreSQL(@prisma/adapter-pg),DB_* 由 .env 提供,db:init 幂等建 16 表+种子"
 metadata:
   node_type: memory
   type: project
@@ -9,6 +9,6 @@ metadata:
 
 项目库名是 **imqi1-cms**(与项目目录、package.json 名一致)。旧名 `imqi1-nodejs` / `nodejs-imqi1` 已于 2026-08-24 统一改掉。
 
-**连接机制**:应用运行时用 @prisma/adapter-mariadb 读拆分的 DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME;Prisma CLI(studio / db execute)由 prisma.config.ts 把这套变量拼成 mysql:// 串。schema.prisma 的 datasource 不写 url,靠 prisma.config.ts 注入。
+**数据层**:Prisma `datasource db { provider = "postgresql" }`;应用运行时用 `@prisma/adapter-pg` 读拆分 DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME,Prisma CLI(studio / db execute)由 prisma.config.ts 把这套变量拼成 `postgresql://` 串;schema.prisma 的 datasource 不写 url,靠 prisma.config.ts 注入。⚠️ 早先记忆(2026-08-24)写的「MySQL 8.4.9 便携版 + @prisma/adapter-mariadb」是**迁移到 PostgreSQL 前**的状态,已作废。
 
-**本地环境(本机,2026-08-24 起)**:已装便携版 MySQL 8.4.9(非服务、无需提权;**路径随机器**,本机为 `C:\mysql-8.4\mysql-8.4.9-winx64`),`.env` 已设 DB_*(DB_NAME=imqi1-cms)。本机开机自启:Startup 文件夹的 `start-mysql.vbs`。初始化:先起 mysqld,再 `bun run prisma:generate` + `bun run db:init`(幂等,建 15 表 + 种子,管理员 admin/123456)。相关:[[db-migration-disconnected]]。
+**初始化**:`bun run db:init`(→ scripts/init-db.ts → scripts/init-db.sql)幂等,建 **16 张表** + 写站点默认设置 + 插入示例数据(管理员 admin/123456,登录后速改)。先 `bun run prisma:generate` 再 `db:init`。相关:[[db-migration-disconnected]]。
