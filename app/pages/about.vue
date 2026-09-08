@@ -525,7 +525,13 @@
             <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
               这款主题从 2026 年 4 月 1 日开始制作，保留了之前 Typecho 版本的绝大多数功能，可以让我在更改技术栈的同时，继续使用之前的功能。
             </p>
-            <p class="text-slate-700 dark:text-slate-300 transition-colors duration-300">本主题不开源。</p>
+            <p class="mb-4 text-slate-700 dark:text-slate-300 transition-colors duration-300">
+              现在这套 CMS（Web 主站）与其配套的小程序端都已开源于 GitHub，欢迎 Star、Fork 或到仓库里交流。
+            </p>
+            <div class="space-y-4">
+              <MarkdownRepo url="https://github.com/imqi1-github/imqi1-cms" />
+              <MarkdownRepo url="https://github.com/imqi1-github/imqi1-mini" />
+            </div>
           </div>
         </div>
       </div>
