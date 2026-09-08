@@ -261,6 +261,12 @@ bun run upload:server -- --dry-run
 bun run upload:server
 ```
 
+> 默认**跳过** `node_modules` 与 `runtime-assets/`（内含 `qqwry.ipdb` IP 库、验证码字体 `DejaVuSans.ttf`、`svg2png_wasm_bg.wasm`、`emojis.json`——大且几乎不变，重复上传浪费）。**首次部署新服务器或这些资源更新时，务必加 `--node-modules` 一并上传**，否则验证码与 IP 归属地查询会失效：
+
+```bash
+bun run upload:server -- --node-modules
+```
+
 > 也可以手动将 `.output/server` 目录上传到服务器，或在服务器上直接 `git clone` 后打包，方式不限。
 
 ### 7. 在服务器初始化数据库
@@ -570,7 +576,7 @@ const _cdnUrl = "https://cdn.imqi1.com"; // CDN 根地址（未用 CDN 可与站
 | 命令                     | 说明                                                                                          |
 |--------------------------|-----------------------------------------------------------------------------------------------|
 | `bun run upload:cos`     | 将 `public/` 静态资源上传到腾讯云 COS（需配置 `.env` 中的 `COS_*`）。                         |
-| `bun run upload:server`  | 通过 SFTP 将 `.output/server` 上传到服务器（需配置 `SERVER_*`）；支持 `-- --dry-run` 预览。   |
+| `bun run upload:server`  | 通过 SFTP 将 `.output/server` 上传到服务器（需配置 `SERVER_*`）；支持 `-- --dry-run` 预览；默认跳过 `node_modules` 与 `runtime-assets/`，加 `--node-modules` 一并上传（首次部署/资源更新时用）。   |
 | `bun run restart:server` | 通过宝塔面板 API 远程重启服务器上的 Node 项目；支持 `-- start` / `-- stop`（需配置 `BT_*`）。 |
 | `bun run nginx:generate` | 根据 `.env` 中的 `*_PROD` 变量生成参考 Nginx 配置，填写到宝塔面板 node 管理器中的伪静态中。   |
 | `bun run clear:redis`    | 通过宝塔面板 API 远程清空 Redis 中的 ISR / 搜索缓存。                                         |

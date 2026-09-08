@@ -19,7 +19,7 @@ const ROOT_DIR = path.resolve(__dirname, '..')
 const SOURCE_DIR = path.join(ROOT_DIR, '.output', 'server')
 const args = process.argv.slice(2)
 const isDryRun = args.includes('--dry-run')
-// 默认不上传 node_modules；加 --node-modules 才上传
+// 默认不上传 node_modules 与 runtime-assets；加 --node-modules 才一并上传
 const includeNodeModules = args.includes('--node-modules')
 
 const config = {
@@ -54,8 +54,8 @@ function getAllFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir)
 
   for (const file of files) {
-    // 默认跳过 node_modules 目录（任意层级）
-    if (!includeNodeModules && file === 'node_modules') continue
+    // 默认跳过 node_modules（任意层级）与 runtime-assets；加 --node-modules 才一并上传
+    if (!includeNodeModules && (file === 'node_modules' || file === 'runtime-assets')) continue
 
     const filePath = path.join(dir, file)
     const stat = fs.statSync(filePath)
@@ -70,7 +70,7 @@ function getAllFiles(dir, fileList = []) {
   return fileList
 }
 
-// 统计目录内文件数量（用于提示被跳过的 node_modules 文件数）
+// 统计目录内文件数量与体积（用于提示被跳过的 node_modules / runtime-assets）
 function countDirFiles(dir) {
   let count = 0
   const files = fs.readdirSync(dir)
@@ -80,6 +80,23 @@ function countDirFiles(dir) {
     else count++
   }
   return count
+}
+
+function dirSize(dir) {
+  let total = 0
+  if (!fs.existsSync(dir)) return 0
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, entry.name)
+    if (entry.isDirectory()) total += dirSize(p)
+    else total += fs.statSync(p).size
+  }
+  return total
+}
+
+function fmtBytes(n) {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / 1024 / 1024).toFixed(1)} MB`
 }
 
 function toRemotePath(...parts) {
@@ -166,17 +183,27 @@ async function main() {
     return
   }
 
-  // 默认不上传 node_modules，统计被跳过的文件数用于提示
+  // 默认不上传 node_modules / runtime-assets，统计被跳过的文件数与体积用于提示
   let skippedNodeModules = 0
   if (!includeNodeModules) {
     const nmDir = path.join(SOURCE_DIR, 'node_modules')
     if (fs.existsSync(nmDir)) skippedNodeModules = countDirFiles(nmDir)
+  }
+  let skippedAssets = { count: 0, size: 0 }
+  if (!includeNodeModules) {
+    const assetsDir = path.join(SOURCE_DIR, 'runtime-assets')
+    if (fs.existsSync(assetsDir)) {
+      skippedAssets = { count: countDirFiles(assetsDir), size: dirSize(assetsDir) }
+    }
   }
 
   console.log('🚀 开始上传 .output/server 到服务器...\n')
   console.log(`📦 文件数量: ${files.length}`)
   if (skippedNodeModules > 0) {
     console.log(`⊘ 跳过 node_modules: ${skippedNodeModules} 个文件（加 --node-modules 可一并上传）`)
+  }
+  if (skippedAssets.count > 0) {
+    console.log(`⊘ 跳过 runtime-assets: ${skippedAssets.count} 个文件 / ${fmtBytes(skippedAssets.size)}（加 --node-modules 可一并上传）`)
   }
   console.log(`📂 本地目录: ${SOURCE_DIR}`)
   console.log(`🌐 服务器: ${config.host}:${config.port}`)
