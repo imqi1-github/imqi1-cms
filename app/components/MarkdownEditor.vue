@@ -1305,11 +1305,22 @@ const editor = useEditor({
     // inclusive:true 会让光标停在链接末尾时，其后输入的字符自动继承 link mark，
     // 表现为「建好链接后再输入，新文字永远是链接的一部分，无法切回普通文本」。
     // extend 覆盖 inclusive 字段返回 false，链接 mark 不再向后延续，输入流自然回到普通文本。
+    // 用户强原则：链接 mark 只能显式创建（工具栏/快捷键/弹窗）+ 显式书写（markdown
+    // [t](u) / 源代码），不靠任何「自动」规则补全。所以 Link 扩展的所有 input/paste
+    // rules（autolink / linkOnPaste / markdownLinks）全部关掉；markdown-it 的 linkify
+    // （裸 URL 转链）也在下方 Markdown.configure({linkify:false}) 一并关。
     Link.extend({
       inclusive: () => false,
     }).configure({
       openOnClick: false,
       HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
+      // 关掉 input rule：输入 https:// / www. / a.com 等不再自动套 link mark
+      autolink: false,
+      // 关掉 paste rule：粘贴纯 URL 不再自动转链
+      linkOnPaste: false,
+      // 关掉 markdown 语法 input rule：输入 [t](u) 不再自动转链；
+      // markdown→富文本的转换仍由下方 Markdown.setContent 走 markdown-it 完成（双向保真）。
+      markdownLinks: false,
     }),
     CodeBlockLowlightWithLang,
     // inline:true 让图片作为行内节点落在段落里（与服务端 markdown-it 把独立 ![img](url)
@@ -1330,11 +1341,20 @@ const editor = useEditor({
       getCurrentIndex: () => findReplaceState.value.matchIndex,
     }),
     // 选项与服务端 markdown-it({html,linkify,breaks}) 对齐，保证标准部分往返保真
+    // 2026-09-08：linkify / transformPastedText 关掉——用户在富文本里 unsetLink 后，
+    // 切回 markdown 模式时文本里残留的裸 URL（如 https://baidu.com）会被 linkify
+    // 自动识别为链接，再切回富文本就出现「链接回来了」的假象；粘贴纯文本时被当 markdown
+    // 解析也会带进链接 / 其他 mark。两个关掉后：
+    //   - 显式 markdown [t](u) ↔ 富文本 <a href> 双向转换仍正常（markdown-it link rule 处理）
+    //   - 裸 URL / 输入的 https:// / www. / 粘贴纯文本 全部当纯文本，
+    //     需用工具栏「插入链接」显式建链
+    // transformCopiedText 保留：从富文本复制走 markdown 序列化，方便贴到外部 markdown
+    // 编辑器；这是用户的「显式复制」而非「自动加 mark」。
     Markdown.configure({
       html: true,
-      linkify: true,
+      linkify: false,
       breaks: true,
-      transformPastedText: true,
+      transformPastedText: false,
       transformCopiedText: true,
     }),
   ],
