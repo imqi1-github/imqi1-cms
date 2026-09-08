@@ -267,7 +267,7 @@ usePageSeo({
                   </div>
 
                   <!-- 条目列表（一条记录可含多个更新条目；筛选时只显示命中类型） -->
-                  <div class="space-y-4">
+                  <div class="space-y-2">
                     <div v-for="(entry, i) in visibleEntries(log.content)" :key="i">
                       <!-- 类型徽标：宽屏与首页一致——徽标居左、与文本第一行对齐；
                            窄屏保留原状——徽标下移到文本下方（max-sm:flex-col + order-2）。
