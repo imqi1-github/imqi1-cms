@@ -732,4 +732,4 @@ type ChangelogItem = {
 - **提交代码**：从 `master` 拉分支，自测通过（`bunx eslint .` / `bunx nuxi typecheck` / `bun run tailwindcss:lint`）后提 PR。
 - **安全相关**：疑似漏洞请**私密**报告（仓库 → Security → Report a vulnerability），别在公开 Issue 披露——见 [SECURITY.md](SECURITY.md)。
 
-项目采用 [GPL-3.0](LICENSE) 开源许可。
+项目采用 [AGPL-3.0](LICENSE) 开源许可。
