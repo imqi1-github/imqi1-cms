@@ -23,7 +23,7 @@ function avatarUrl(mail: string | null, service: string): string {
 }
 
 export default defineEventHandler(async event => {
-  setHeader(event, "Cache-Control", "public, max-age=60, s-maxage=60");
+  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
   // 评论功能总开关：关闭时返回空列表并标记 commentEnabled=false，端上据此整个评论区（含输入框）不渲染。
   if (!siteConfig.features.miniComment) {

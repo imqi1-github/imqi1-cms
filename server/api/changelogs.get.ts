@@ -15,7 +15,7 @@ export default defineEventHandler(async event => {
     const simple = query.simple === "true"; // 是否返回简化格式（不分组）
 
     // 设置缓存头：CDN和浏览器缓存30分钟
-    setHeader(event, "Cache-Control", "public, max-age=1800, s-maxage=1800");
+    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
     // 获取更新日志，按时间倒序（公开接口只取前台渲染所需字段）
     const changelogs = await prisma.changelogs.findMany({

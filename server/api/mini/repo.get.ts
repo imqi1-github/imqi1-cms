@@ -4,7 +4,7 @@
 import type { MiniRepo, MiniRepoResponse, RepoApiData } from "#server/types/apis/mini";
 
 export default defineEventHandler(async event => {
-  setHeader(event, "Cache-Control", "public, max-age=600, s-maxage=600");
+  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
 
   const query = getQuery(event);
 

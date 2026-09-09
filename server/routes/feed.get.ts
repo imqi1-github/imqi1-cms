@@ -163,7 +163,7 @@ export default defineEventHandler(async event => {
 
     // 设置响应头
     setHeader(event, "Content-Type", "application/rss+xml; charset=utf-8");
-    setHeader(event, "Cache-Control", "public, max-age=3600"); // 缓存1小时
+    setHeader(event, "Cache-Control", "public, max-age=300"); // 缓存5分钟
 
     return rssXml;
   } catch (error) {

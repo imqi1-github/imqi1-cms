@@ -249,7 +249,7 @@ ${urls.join("\n")}
 
     // 设置响应头
     setHeader(event, "Content-Type", "application/xml; charset=utf-8");
-    setHeader(event, "Cache-Control", "public, max-age=3600"); // 缓存1小时
+    setHeader(event, "Cache-Control", "public, max-age=300"); // 缓存5分钟
 
     return xml;
   } catch (error) {

@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
     const png = await generateMiniProgramCode(String(cid), "pages/content/detail");
     // getwxacodeunlimit 实际返回 JPEG 字节（ffd8…），按 JPEG 标注
     setHeader(event, "Content-Type", "image/jpeg");
-    setHeader(event, "Cache-Control", "public, max-age=600");
+    setHeader(event, "Cache-Control", "public, max-age=300");
     return png;
   } catch (error) {
     const msg = error instanceof Error ? error.message : "";

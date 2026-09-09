@@ -36,6 +36,10 @@ const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 // 获取当前环境的 Redis 配置（逻辑在 shared/redis-config.ts，供 nitro ISR 存储与 server 缓存共用）
 const redisConfig = getRedisConfig();
 
+// ISR 全局缓存 TTL：统一 30 分钟（routeRules 各路由的 isr 与 cache.maxAge 共用这一值）。
+// 旧配置曾按路由区分（1h / 12h / 10min / 永久），现已全部统一；后续调整缓存时长只改这里。
+const ISR_CACHE_SECONDS = 60 * 30;
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
@@ -144,8 +148,7 @@ export default defineNuxtConfig({
   },
 
   pwa: {
-    registerType: "autoUpdate",
-    // 开发环境也启用 PWA（用于测试）
+    registerType: "prompt",
     devOptions: {
       enabled: false,
     },
@@ -193,12 +196,7 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
-      // 构建产物全部托管在 CDN（主域 Nitro 不提供 /static/<hash>/*）。precache 资源
-      // 由 update-sw-cdn.mjs 统一改写为 CDN 前缀（含 favicon.ico 等 root 资源走 cdn 根、
-      // 构建产物走 cdn/<hash>），避免 precache 里出现「同源 → 301 → 跨域 CDN」的重定向
-      // URL（Workbox7 的 copyRedirectedCacheableResponsesPlugin 会对重定向的跨域响应
-      // copyResponse → 抛 cross-origin-copy-response）。全 CDN 前缀后 SW 直接取 CDN 无重定向。
-      globPatterns: ["**/*.{js,css,html,ico,png,svg,ttf,woff,woff2,webmanifest}"],
+      globPatterns: ["manifest.webmanifest", "favicon.ico", "fonts/font.css"],
       globIgnores: ["**/node_modules/**/*", "sw.js", "builds/**"],
       // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
       navigateFallback: null,
@@ -611,154 +609,155 @@ export default defineNuxtConfig({
     // 注意：ISR在开发环境可能不稳定，建议生产环境启用
     ...(isProduction
       ? {
-          // 首页：每1小时重新生成一次（推荐）
+          // 各路由缓存统一为 ISR_CACHE_SECONDS（30 分钟）：改动内容最迟 30 分钟内全站可见。
+          // 首页
           "/": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             // 显式指定使用 Redis 缓存存储（如果配置了 Redis）
             ...(redisConfig
               ? {
                   cache: {
-                    maxAge: 3600,
+                    maxAge: ISR_CACHE_SECONDS,
                     base: "redis",
                   },
                 }
               : {}),
           },
 
-          // 文章归档：每12小时重新生成
+          // 文章归档
           "/archiving": {
-            isr: 43200,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 43200, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 分类页：每1小时重新生成
+          // 分类页
           "/category/**": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 3600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 文章详情：完全静态（发布后内容不变，永久缓存）
+          // 文章详情（原"完全静态/永久缓存"，统一为30分钟：新发布文章最迟30分钟内可见）
           "/content/**": {
-            isr: true,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 标签页：每1小时重新生成
+          // 标签页
           "/tag/**": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 3600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 订阅页：每1小时重新生成
+          // 订阅页
           "/subscribes": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 3600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 更新日志：每1小时重新生成
+          // 更新日志
           "/changelogs": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 3600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 协议页面：完全静态
+          // 协议页面（原"完全静态"，统一为30分钟）
           "/agreement": {
-            isr: true,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 站点地图：每小时重新生成
+          // 站点地图
           "/sitemap": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 3600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
           "/sitemap.xml": {
-            isr: 3600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 3600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 关于页：静态内容，每10分钟重新生成
+          // 关于页
           "/about": {
-            isr: 600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 旅行地图：静态内容，每10分钟重新生成
+          // 旅行地图
           "/map": {
-            isr: 600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 友链页：静态内容，每10分钟重新生成
+          // 友链页
           "/links": {
-            isr: 600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 留言板：动态内容，每10分钟重新生成
+          // 留言板
           "/messages": {
-            isr: 600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
 
-          // 搜索页：每10分钟重新生成
+          // 搜索页
           "/search": {
-            isr: 600,
+            isr: ISR_CACHE_SECONDS,
             ...(redisConfig
               ? {
-                  cache: { maxAge: 600, base: "redis" },
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 }
               : {}),
           },
@@ -767,66 +766,66 @@ export default defineNuxtConfig({
           // 开发环境：如果配置了Redis则启用ISR，否则使用普通SSR
           ...(redisConfig
             ? {
-                // 有Redis时启用ISR
+                // 有Redis时启用ISR（统一30分钟，与生产一致）
                 "/": {
-                  isr: 30, // 30秒
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/archiving": {
-                  isr: 30, // 30秒
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/category/**": {
-                  isr: 30,
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/content/**": {
-                  isr: 30,
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/tag/**": {
-                  isr: 30, // 30秒
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/subscribes": {
-                  isr: 30,
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/changelogs": {
-                  isr: 30, // 30秒
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/agreement": {
-                  isr: 30,
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/sitemap": {
-                  isr: 30, // 30秒
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/sitemap.xml": {
-                  isr: 30,
-                  cache: { maxAge: 30, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/about": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/map": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/links": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/messages": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
                 "/search": {
-                  isr: 600,
-                  cache: { maxAge: 600, base: "redis" },
+                  isr: ISR_CACHE_SECONDS,
+                  cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
                 },
               }
             : {
