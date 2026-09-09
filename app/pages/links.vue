@@ -41,6 +41,8 @@ const csrfToken = ref("");
 const isCheckingLinks = ref(false);
 const linkStatuses = ref<Record<string, LinkStatus>>({});
 const lastCheckTime = ref<number>(0);
+// 上次批量检测是否被中断（页面切走等）。中断则下次进页需续检，避免新鲜的时间戳挡住自动续检。
+const linkCheckInterrupted = ref(false);
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
 
 // 检测中断控制
@@ -57,8 +59,13 @@ const loadLinkStatuses = () => {
       }
       const storedLastCheck = localStorage.getItem("lastLinkCheck");
       if (storedLastCheck) {
-        lastCheckTime.value = parseInt(storedLastCheck, 10);
+        const parsed = parseInt(storedLastCheck, 10);
+        // 非数字/脏值 → NaN：不写入，保持 0，让 24h 自动检测仍能触发，避免永久失效
+        if (Number.isFinite(parsed)) {
+          lastCheckTime.value = parsed;
+        }
       }
+      linkCheckInterrupted.value = localStorage.getItem("linkCheckInterrupted") === "true";
     } catch (err) {
       console.error("加载友链状态失败:", err);
     }
@@ -71,6 +78,7 @@ const saveLinkStatuses = () => {
     try {
       localStorage.setItem("linkStatuses", JSON.stringify(linkStatuses.value));
       localStorage.setItem("lastLinkCheck", lastCheckTime.value.toString());
+      localStorage.setItem("linkCheckInterrupted", linkCheckInterrupted.value ? "true" : "false");
     } catch (err) {
       console.error("保存友链状态失败:", err);
     }
@@ -131,6 +139,11 @@ const checkAllLinks = async () => {
 
   isCheckingLinks.value = true;
   shouldStopChecking.value = false;
+  // 进入运行态即标「可能未完成」并持久化，跑完才清成 false。若开头就清 false，
+  // 一次 fetch 失败（空列表）的「续检」会把之前的中断标记一并抹掉 → 又是"检测一半切走不续检"；
+  // 同时硬刷新时 localStorage 里已是 true，也能保留续检。
+  linkCheckInterrupted.value = true;
+  saveLinkStatuses();
   let hasCheckedAnyLink = false; // 标记是否真正检测了任何友链
 
   try {
@@ -161,15 +174,28 @@ const checkAllLinks = async () => {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // 无论正常完成还是中断，都更新最后检测时间
-    lastCheckTime.value = Date.now();
-    saveLinkStatuses();
-
-    // 只有正常完成且真正检测了友链时，才显示提示
-    if (!shouldStopChecking.value && hasCheckedAnyLink) {
-      success("友链检测完成");
+    // 收敛 resume 状态：中断则保留 linkCheckInterrupted（运行开始时已置 true 并持久化，故中断/硬刷新都保留）；
+    // 仅「站里有友链且未被中断」才视为跑完，刷新时间戳并清掉中断标记。中断若也刷新时间戳，
+    // 回来时 `now - lastCheckTime` 变"刚刚"，24h 自动检测窗口被截断，剩下的没检友链就再也不续检
+    // ——正是"检测一半切走再回来就不继续"的根因。
+    if (shouldStopChecking.value) {
+      linkCheckInterrupted.value = true;
+    } else if (links.value.length > 0) {
+      // 只在「站里有友链」时才视为跑完：若 links 为空（可能是本次 fetch 失败/临时空表），
+      // 不清中断标记、不刷新时间戳，下次进页仍会继续续检，避免把剩下的未检友链丢掉。
+      lastCheckTime.value = Date.now();
+      linkCheckInterrupted.value = false;
+      if (hasCheckedAnyLink) {
+        success("友链检测完成");
+      }
     }
+    saveLinkStatuses();
   } catch {
+    // 异常路径同样收敛 resume 状态：被中断则保留续检标记，已算出的结果照常保存
+    if (shouldStopChecking.value) {
+      linkCheckInterrupted.value = true;
+    }
+    saveLinkStatuses();
     if (!shouldStopChecking.value) {
       showError("检测友链失败");
     }
@@ -179,10 +205,10 @@ const checkAllLinks = async () => {
   }
 };
 
-// 检查是否需要自动检测
+// 检查是否需要自动检测（上次被中断或有未完成的批量检测 → 必须续检）
 const checkIfNeedAutoCheck = () => {
   const now = Date.now();
-  if (now - lastCheckTime.value >= CHECK_INTERVAL) {
+  if (linkCheckInterrupted.value || now - lastCheckTime.value >= CHECK_INTERVAL) {
     checkAllLinks();
   }
 };
