@@ -22,3 +22,19 @@ metadata:
 5. 发 Release（**只 GitHub**）：`gh release create vX.Y.Z --repo imqi1-github/imqi1-cms --title "vX.Y.Z-主题更新" --notes-file ...`。
 
 **别搞混**：Gitee 是最早的数据源（写得早、最有），GitHub 是**对外发布面**（一版本一 release）。`git push` 默认只推当前分支到当前上游，须**分别对 `origin` 和 `github` 各 push 一次**；tag 默认不自动同步 Gitee，别指望一条命令把它带过去。
+
+## 实际 git remote 配置（与上面 SOP 的差异）
+
+仓库实际 `.git/config` 是**单 origin + 双 pushurl** 而非双 remote 名：
+
+```ini
+[remote "origin"]
+    url = https://github.com/imqi1-github/imqi1-cms.git
+    url = https://gitee.com/imqi1-gitee/imqi1-cms.git
+    pushurl = https://github.com/imqi1-github/imqi1-cms.git
+    pushurl = https://gitee.com/imqi1-gitee/imqi1-cms.git
+```
+
+效果：`git push origin master` 一次命令**同时推到两边**，等价于 SOP 的「分两次 push」。`git ls-remote` 校验两边 master tip SHA 一致才算成功。
+
+**Gitee 那侧的 `remote: Powered by GITEE.COM` 不是 GitHub 镜像通知**，是 Gitee 自己的 push 成功响应；看到它不说明"已经同步"，要 `git ls-remote https://gitee.com/.../refs/heads/master` 拿 SHA 比对两边才知道是否一致。
