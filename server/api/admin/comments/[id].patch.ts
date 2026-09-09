@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateCommentData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -133,6 +134,9 @@ export default defineEventHandler(async event => {
 
       return updated;
     });
+
+    // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 评论审核失效缓存失败", err));
 
     return {
       success: true,

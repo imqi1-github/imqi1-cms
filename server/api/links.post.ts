@@ -4,6 +4,7 @@ import { validateLinkData } from "#server/utils/validation";
 import { ensureUrlProtocol } from "#server/utils/urlGuard";
 import { fetchPublicUrl } from "#server/utils/safe-fetch";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import { siteConfig } from "~~/site.config";
 
 // 检测页面是否包含指定链接
@@ -167,6 +168,11 @@ export default defineEventHandler(async event => {
         enabled: autoApproved, // 如果检测到友链则自动启用
       },
     });
+
+    // 免审核申请：检测到友链时 enabled=true（立即可见）→ 立即失效友链页 / 博客网络地图页 ISR 缓存（best-effort）
+    if (autoApproved) {
+      void invalidateContentCaches({ routes: ["/links", "/map"] }).catch(err => console.error("[cache] 友链申请失效缓存失败", err));
+    }
 
     // 友链申请通知 - 通知站长
     // 异步发送邮件，不阻塞响应

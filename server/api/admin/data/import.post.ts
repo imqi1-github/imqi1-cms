@@ -1,5 +1,6 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import { prisma } from "#server/utils/prisma";
 import { DATA_TABLES, DATA_TRANSFER_VERSION, getDelegate, reviveRowsForImport } from "#server/utils/data-transfer";
 import type { DataTransferPayload } from "#server/types/apis/data-transfer";
@@ -145,7 +146,10 @@ export default defineEventHandler(async event => {
 		);
 
 		const total = Object.values(imported).reduce((sum, n) => sum + n, 0);
-		return { success: true, total, tables: imported };
+		// 整站数据导入 → 影响所有 ISR 页面（首页/分类/标签/文章/订阅/友链/地图/更新日志/关于/站点地图…），清空全部缓存
+	void invalidateContentCaches().catch(err => console.error("[cache] 数据导入失效缓存失败", err));
+
+	return { success: true, total, tables: imported };
 	} catch (error) {
 		// 已带 statusCode 的错误（400 结构/版本校验、500 未知表）原样抛出，避免被归一为笼统 500
 		if (error && typeof error === "object" && "statusCode" in error) {

@@ -4,6 +4,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateUserData } from "#server/utils/validation";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -142,6 +143,9 @@ export default defineEventHandler(async event => {
         create_time: true,
       },
     });
+
+    // 修改昵称/头像 → 影响文章详情 /content/** 的作者展示（作者信息/评论表单），失效该模块缓存
+    void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 用户资料失效缓存失败", err));
 
     return {
       success: true,

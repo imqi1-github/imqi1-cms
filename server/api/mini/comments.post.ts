@@ -7,6 +7,7 @@ import { getClientIp } from "#server/utils/client-ip";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
 import { prisma } from "#server/utils/prisma";
 import { validateCommentData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 // HTML 净化配置：与主站 comments.post.ts 保持一致，只允许安全标签/属性。
 // 小程序端本就以纯文本展示评论，此处净化是入库前的双重兜底（防其他端复用同一数据时 XSS）。
@@ -229,6 +230,9 @@ export default defineEventHandler(async event => {
     const message = commentStatus === 0
       ? "评论提交成功，请等待审核"
       : "评论提交成功";
+
+    // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 迷你端评论失效缓存失败", err));
 
     return {
       success: true,

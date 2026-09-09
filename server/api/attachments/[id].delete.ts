@@ -3,6 +3,7 @@ import { createError, getHeader, getQuery, getRouterParam } from "h3";
 import { getUser } from "#server/lib/auth";
 import { deleteAttachmentFile } from "#server/utils/attachment-file";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import prisma from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
@@ -94,6 +95,9 @@ export default defineEventHandler(async event => {
         },
       });
 
+      // 取消某文章的附件关联 → 影响该文章详情 /content/** 渲染
+      void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 附件取消关联失效缓存失败", err));
+
       return {
         success: true,
         message: "取消关联成功",
@@ -113,6 +117,9 @@ export default defineEventHandler(async event => {
     await prisma.attachments.delete({
       where: { aid: id },
     });
+
+    // 全局删除附件（级联取消所有关联）→ 影响引用它的文章详情 /content/** 渲染
+    void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 附件删除失效缓存失败", err));
 
     return {
       success: true,

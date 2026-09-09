@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateChangelogData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import { normalizeChangelogEntries, stringifyChangelogContent } from "#server/utils/changelog";
 import type { ChangelogInputJson, ChangelogInputRecord, ParsedRecord } from "#server/types/apis/changelog-import";
 import type { ChangelogEntry } from "#shared/changelog";
@@ -139,6 +140,9 @@ export default defineEventHandler(async event => {
     }
     return out;
   });
+
+  // 更新日志变更 → 立即失效更新日志页/首页 ISR 缓存（best-effort）
+  void invalidateContentCaches({ routes: ["/", "/changelogs"] }).catch(err => console.error("[cache] 更新日志导入失效缓存失败", err));
 
   return {
     success: true,

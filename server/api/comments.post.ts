@@ -10,6 +10,7 @@ import { prisma } from "#server/utils/prisma";
 import { CommentCreateSchema } from "#server/utils/schemas";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { validateCommentData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 
 // HTML 净化配置 - 只允许安全的标签和属性
@@ -260,6 +261,9 @@ export default defineTypedApiHandler(
       } else if (commentStatus === 0) {
         message = "评论提交成功，请等待审核";
       }
+
+      // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
+      void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 评论提交失效缓存失败", err));
 
       return {
         code: 200,

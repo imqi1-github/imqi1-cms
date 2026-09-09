@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -36,6 +37,8 @@ export default defineEventHandler(async event => {
     await prisma.travels.delete({
       where: { id },
     });
+    // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/map", "/about"] }).catch(err => console.error("[cache] 旅行删除失效缓存失败", err));
     return { success: true };
   } catch (error) {
     // 删除不存在的地点（预期 404，先于 console.error，免得打印预期 4xx 堆栈）

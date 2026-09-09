@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -83,6 +84,9 @@ export default defineEventHandler(async event => {
 
     // 物理文件删除不可入 DB 事务，放到事务提交后执行
     await deleteOrphanAttachments(affectedAttachmentIds);
+
+    // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap"] }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
 
     return {
       success: true,

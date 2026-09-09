@@ -1,6 +1,7 @@
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -61,6 +62,9 @@ export default defineEventHandler(async event => {
       prisma.contentrelations.deleteMany({ where: { mid: tagId } }),
       prisma.metas.delete({ where: { mid: tagId } }),
     ]);
+
+    // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/tag/**", "/content/**", "/archiving", "/sitemap"] }).catch(err => console.error("[cache] 标签删除失效缓存失败", err));
 
     return { success: true };
   } catch (error) {

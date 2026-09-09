@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -141,6 +142,9 @@ export default defineEventHandler(async event => {
     console.error(error);
     throw createError({ statusCode: 500, message: "创建文章失败" });
   }
+
+  // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
+  void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap"] }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
 
   // 前端保存后只需 cid（跳转/关联），不再回查全字段（含正文）。
   return {

@@ -3,6 +3,7 @@ import {getUser} from "#server/lib/auth";
 import {validateLinkData} from "#server/utils/validation";
 import {validateCsrfToken} from "#server/utils/csrf";
 import {ensureUrlProtocol} from "#server/utils/urlGuard";
+import {invalidateContentCaches} from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -51,7 +52,7 @@ export default defineEventHandler(async event => {
       avatar: body.avatar,
     });
 
-    return await prisma.links.create({
+    const created = await prisma.links.create({
       data: {
         name: body.name,
         link,
@@ -68,6 +69,9 @@ export default defineEventHandler(async event => {
         enabled: true,
       },
     });
+    // 友链变更 → 立即失效相关 ISR 页面缓存（best-effort，不阻塞也失败不影响写结果）
+    void invalidateContentCaches({ routes: ["/links", "/map"] }).catch(err => console.error("[cache] 友链创建失效缓存失败", err));
+    return created;
   } catch (error) {
     // 已带 statusCode 的错误（如 validateLinkData 的 400）原样抛出，避免被统一吞成 500
     if (error && typeof error === "object" && "statusCode" in error) {

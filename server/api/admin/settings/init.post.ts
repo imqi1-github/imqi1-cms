@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import { siteConfig } from "~~/site.config";
 
 // 默认值配置
@@ -78,6 +79,9 @@ export default defineEventHandler(async event => {
         skipDuplicates: true,
       });
     }
+
+    // 站点设置初始化 → 影响全站，清空全部 ISR 页面缓存
+    void invalidateContentCaches().catch(err => console.error("[cache] 站点设置初始化失效缓存失败", err));
 
     return {
       success: true,

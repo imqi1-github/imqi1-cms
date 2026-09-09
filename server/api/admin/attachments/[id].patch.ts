@@ -1,6 +1,7 @@
 import prisma from '#server/utils/prisma'
 import { getUser } from '#server/lib/auth'
 import { validateCsrfToken } from '#server/utils/csrf'
+import { invalidateContentCaches } from '#server/utils/content-cache'
 import { validateAttachmentData } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
@@ -92,6 +93,9 @@ export default defineEventHandler(async event => {
 
       return updated
     })
+
+    // 附件标题/关联变更 → 影响相关文章详情 /content/** 渲染
+    void invalidateContentCaches({ routes: ['/content/**'] }).catch(err => console.error('[cache] 附件更新失效缓存失败', err))
 
     return {
       success: true,

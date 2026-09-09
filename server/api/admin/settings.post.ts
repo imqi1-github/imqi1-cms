@@ -2,6 +2,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
 import { validateSettingsData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import { siteConfig } from "~~/site.config";
 
 // 敏感配置项：settings.get 回显的是掩码，若原样回存会覆盖真实密钥；
@@ -128,6 +129,9 @@ export default defineEventHandler(async event => {
         });
       }
     });
+
+    // 站点设置变更 → 影响全站（header/footer/文案/链接数等），清空全部 ISR 页面缓存
+    void invalidateContentCaches().catch(err => console.error("[cache] 站点设置失效缓存失败", err));
 
     return { success: true };
   } catch (error) {

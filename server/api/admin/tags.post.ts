@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -50,6 +51,8 @@ export default defineEventHandler(async event => {
         type: "tag",
       },
     });
+    // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/tag/**", "/content/**", "/archiving", "/sitemap"] }).catch(err => console.error("[cache] 标签创建失效缓存失败", err));
     return tag;
   } catch (error) {
     // P2002 重名是预期 4xx，不打印完整堆栈

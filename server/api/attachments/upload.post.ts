@@ -8,6 +8,7 @@ import { createAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { getUploadsDir } from "#server/utils/attachment-file";
 import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import prisma from "#server/utils/prisma";
 import { validateAttachmentData } from "#server/utils/validation";
 
@@ -263,6 +264,11 @@ export default defineEventHandler(async event => {
 
       return created;
     });
+
+    // 上传时关联了文章 → 影响文章详情 /content/** 的附件渲染；未关联内容（cid 为空）则无需失效
+    if (cid !== null) {
+      void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
+    }
 
     return {
       success: true,

@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -124,6 +125,9 @@ export default defineEventHandler(async event => {
         where: { mid: categoryId },
       });
     });
+
+    // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/", "/category/**", "/content/**", "/archiving", "/sitemap"] }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
 
     return { success: true };
   } catch (error) {

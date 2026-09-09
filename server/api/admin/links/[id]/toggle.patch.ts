@@ -1,6 +1,7 @@
 import {prisma} from "#server/utils/prisma";
 import {getUser} from "#server/lib/auth";
 import {validateCsrfToken} from "#server/utils/csrf";
+import {invalidateContentCaches} from "#server/utils/content-cache";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -66,6 +67,8 @@ export default defineEventHandler(async event => {
     }
 
     // 只返回最小变更集（id/enabled），不裸返回整行内部审核字段
+    // 友链变更 → 立即失效相关 ISR 页面缓存（best-effort）
+    void invalidateContentCaches({ routes: ["/links", "/map"] }).catch(err => console.error("[cache] 友链状态切换失效缓存失败", err));
     return { id: linkId, enabled: !link.enabled };
   } catch (error) {
     // 已带 statusCode 的错误（404）原样抛出，避免被统一吞成 500
