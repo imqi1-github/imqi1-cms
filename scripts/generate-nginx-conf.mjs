@@ -98,7 +98,7 @@ location = /feed {
     # 关键：绕过缓存
     proxy_no_cache 1;
     proxy_cache_bypass 1;
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
 }
 
 # CDN 重定向规则（静态资源）
@@ -129,6 +129,35 @@ location ~ ^/(uploads)/ {
 # ============================================
 # 反向代理到 Node.js 服务
 # ============================================
+
+# 静态资源：未走上方 CDN 重定向 301 的缓存资产（如 _nuxt 构建块、CDN 关闭时的 imgs/fonts 等）一律带长缓存，
+# 避免落进下方 location / 的 no-store（浏览器重复下载）。CDN 开启时 imgs/fonts/icons/… 已在上方 301 到 CDN
+#（正则按定义顺序、首条命中优先生效），故这里只为兜底其余静态（如 /static/<hash>/、/_nuxt 构建块）。
+location ~* \\.(js|css|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|eot|mp4|webm|webmanifest)$ {
+    proxy_pass http://127.0.0.1:${portProd};
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Connection '';
+    proxy_buffering on;
+    add_header Cache-Control "public, max-age=31536000" always;
+}
+
+# API 接口：保留上游 Cache-Control（routeRules 对 /api/* 设 public, max-age=300, s-maxage=300），
+# 让 CDN/浏览器缓存。不能放进下方 location / 的 proxy_hide_header/no-store，否则会抹掉该缓存。
+location /api {
+    proxy_pass http://127.0.0.1:${portProd};
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Connection '';
+    proxy_buffering on;
+}
+
 location / {
     proxy_pass http://127.0.0.1:${portProd};
     proxy_set_header Host $host;
@@ -143,7 +172,12 @@ location / {
     proxy_busy_buffers_size 128k;
     proxy_no_cache 1;
     proxy_cache_bypass 1;
-    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    proxy_cache off;
+    # 上游（Nuxt 的 ISR routeRules）会给页面带 s-maxage，CDN 会照存 → 页面被缓成旧哈希。
+    # 这里先 proxy_hide_header 移除上游 Cache-Control，再统一设为 no-store，谨防 CDN 缓存动态页。
+    proxy_hide_header Cache-Control;
+    # always：4xx/5xx（SSR 404/500/403）也要带上 no-store，否则 CDN 会去启发式缓存这些错误页
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
 }
 `;
 
