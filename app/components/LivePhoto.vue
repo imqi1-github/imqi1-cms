@@ -37,23 +37,24 @@ const mediaAspectRatio = computed(() => {
   return width && height ? `${width} / ${height}` : undefined;
 });
 
-// 过滤出fancybox相关的属性，只传给img
-const fancyboxAttrs = computed(() => {
+// 过滤出灯箱相关属性（data-* / id / title / loading），只传给 img
+const lightboxAttrs = computed(() => {
   const result: Record<string, string> = {};
   (Object.keys(attrs) as Array<keyof typeof attrs>).forEach(key => {
     if (key.startsWith("data-") || key === "id" || key === "title" || key === "loading") {
       result[key] = attrs[key] as string;
     }
   });
-  // 标记实况照片，供 Fancybox 灯箱识别后在灯箱内提供实况视频播放
-  if (props.src.includes("#live")) {
+  // 标记实况照片，供灯箱识别后在灯箱内提供实况视频播放。
+  // 用 isLive 而非 includes("#live")：与 cleanLivePhotoUrl 统一为「末尾匹配」语义
+  if (isLive.value) {
     result["data-live-photo"] = "";
   }
   return result;
 });
 
 const imageAttrs = computed(() => ({
-  ...fancyboxAttrs.value,
+  ...lightboxAttrs.value,
 }));
 
 const { extractLivePhotoMedia, isLivePhoto, cleanLivePhotoUrl } = useLivePhoto();
@@ -578,7 +579,7 @@ onUnmounted(() => {
 
     <div
       v-if="showLiveLoadingTip"
-      class="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-xs text-white backdrop-blur-sm pointer-events-none">
+      class="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-xs text-white backdrop-blur-sm pointer-events-none font-serif">
       <Icon name="ri:loader-4-line" class="size-3.5 animate-spin" mode="svg" />
       <span>加载中</span>
     </div>
@@ -586,7 +587,7 @@ onUnmounted(() => {
     <!-- 实况照片标识 -->
     <div
       v-if="videoBlobUrl && !isPlaying"
-      class="live-photo-tip absolute top-3 left-3 text-white text-sm flex items-center gap-1 z-10 pointer-events-none">
+      class="live-photo-tip absolute top-3 left-3 text-white text-sm flex items-center gap-1 z-10 pointer-events-none font-serif">
       <Icon name="i-lucide:aperture" class="size-3.5" mode="svg" />
       <span>实况</span>
     </div>
@@ -597,6 +598,8 @@ onUnmounted(() => {
       class="absolute bottom-3 right-3 transition-opacity duration-200 z-20 bg-black/20 dark:bg-black/40 rounded-full backdrop-blur-sm border-none cursor-pointer size-8 flex items-center justify-center"
       :class="playButtonVisible ? 'opacity-100' : 'opacity-0'"
       type="button"
+      :aria-label="isPlaying ? '暂停实况照片' : '播放实况照片'"
+      :aria-pressed="isPlaying"
       @click.stop.prevent="handlePlayClick">
       <Icon v-if="!isPlaying" name="ri:play-fill" class="size-6 text-white drop-shadow-lg" />
       <Icon v-else name="ri:pause-fill" class="size-6 text-white drop-shadow-lg" />

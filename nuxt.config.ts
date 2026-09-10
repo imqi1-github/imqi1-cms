@@ -132,6 +132,21 @@ export default defineNuxtConfig({
         // 评论列表设备信息图标为动态 :name 绑定，scan 扫不到，
         // 且评论多为客户端异步加载，内联避免运行时请求。
         "app:linux",
+        // 图片灯箱工具栏：内容 v-if 到点击后才渲染，SSR 永远覆盖不到，
+        // 不内联则首次打开会逐个回退 /api/_nuxt_icon 并闪一下。
+        "lucide:zoom-in",
+        "lucide:zoom-out",
+        "lucide:maximize",
+        "lucide:rotate-ccw",
+        "lucide:rotate-cw",
+        "lucide:flip-horizontal",
+        "lucide:flip-vertical",
+        "lucide:undo-2",
+        "lucide:layout-grid",
+        "lucide:x",
+        "lucide:chevron-left",
+        "lucide:chevron-right",
+        "lucide:image-off",
       ],
     },
   },
@@ -441,7 +456,6 @@ export default defineNuxtConfig({
         "floating-vue",
         "swiper",
         "swiper/modules",
-        "@fancyapps/ui",
         "isomorphic-dompurify",
         // 富文本编辑器（ESM，预打包避免 dev 首屏重组）
         // 注：@tiptap/pm 无根导出（仅子路径如 @tiptap/pm/model），不能放进 include；
@@ -471,7 +485,7 @@ export default defineNuxtConfig({
               return "ui";
             if (id.includes("node_modules/@vueuse/") || id.includes("node_modules/clsx") || id.includes("node_modules/class-variance-authority"))
               return "utils";
-            if (id.includes("node_modules/swiper") || id.includes("node_modules/@fancyapps/")) return "media";
+            if (id.includes("node_modules/swiper")) return "media";
           },
         },
         // 忽略循环依赖警告以减少日志输出

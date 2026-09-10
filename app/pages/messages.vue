@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import "@/assets/css/fancybox.css";
-import type { FancyboxOptions } from "@fancyapps/ui";
 import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
 
 // 使用全局站点设置
@@ -74,8 +71,14 @@ usePageSeo({
   keywords: siteConfig.pageSeo.messages.keywords,
 });
 
-const fancyboxContainer = useTemplateRef("fancyboxContainer");
-let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
+const lightboxContainer = useTemplateRef<HTMLDivElement>("lightboxContainer");
+
+// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-fancybox] 收集幻灯片
+const { register, unregister } = useLightbox();
+// 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
+// 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
+// 容器会永久留在模块级 Set 里，连同整棵已分离 DOM 一起泄漏。
+let lightboxEl: HTMLElement | null = null;
 
 // 封面加载失败时回退到 nopic
 const nopicUrl = publicAsset("/imgs/nopic.png");
@@ -84,49 +87,13 @@ function handleCoverError(event: Event) {
   if (target) target.src = nopicUrl;
 }
 
-// 初始化 Fancybox
-onMounted(async () => {
-  // 动态导入 Fancybox（仅客户端）
-  FancyboxModule = await import("@fancyapps/ui");
-
-  // 初始化 Fancybox
-  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
-    l10n: zh_CN,
-    placeFocusBack: false,
-    Hash: false,
-    trapFocus: false,
-    closeExisting: false,
-    zoomEffect: true,
-    Carousel: {
-      Panzoom: {
-        maxScale: 2,
-      },
-      Toolbar: {
-        display: {
-          left: ["infobar"],
-          middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX", "flipY"],
-          right: ["thumbs", "close"],
-        },
-      },
-      Autoplay: false,
-    },
-    idle: false,
-    autoFocus: false,
-    tpl: {
-      main: `<div class="fancybox__container" role="dialog" tabindex="-1">
-  <div class="fancybox__backdrop"></div>
-  <div class="fancybox__carousel"></div>
-  <div class="fancybox__footer"></div>
-</div>`,
-    },
-  } as Partial<FancyboxOptions>);
+onMounted(() => {
+  lightboxEl = lightboxContainer.value;
+  register(lightboxEl);
 });
 
 onUnmounted(() => {
-  // Fancybox.destroy();
-  if (FancyboxModule) {
-    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
-  }
+  unregister(lightboxEl);
   // 清理 hash 滚动相关定时器（重试链 / ring 高亮），避免卸载后仍对已替换 DOM 操作
   if (hashRetryTimer) {
     clearTimeout(hashRetryTimer);
@@ -142,7 +109,7 @@ onUnmounted(() => {
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header ref="fancyboxContainer" v-scroll-reveal>
+    <header ref="lightboxContainer" v-scroll-reveal>
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"

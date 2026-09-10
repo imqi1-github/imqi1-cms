@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import "@/assets/css/fancybox.css";
-import type {FancyboxOptions} from "@fancyapps/ui";
 import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 
-import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import {siteConfig} from "~~/site.config";
 import type {LinkItem, LinkStatus, LinkFormMode} from "~/types/apis/links";
 import type {CsrfTokenResponse} from "~/types/apis/csrf";
@@ -403,11 +400,19 @@ const handleSubmit = async (forceSubmit = false) => {
   }
 };
 
-const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
+const lightboxContainer = useTemplateRef<HTMLDivElement>("lightboxContainer");
 
-// 初始化 Fancybox 与友链检测
+// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-fancybox] 收集幻灯片
+const { register, unregister } = useLightbox();
+// 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
+// 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
+// 容器会永久留在模块级 Set 里，连同整棵已分离 DOM 一起泄漏。
+let lightboxEl: HTMLElement | null = null;
+
+// 初始化灯箱容器与友链检测
 onMounted(async () => {
+  lightboxEl = lightboxContainer.value;
+  register(lightboxEl);
   // 预取 CSRF token（写接口 /api/links、/api/links/patch 需在 body 带上）。
   // 用 await 而非 fire-and-forget：token 未回填前点击提交会带空 csrfToken 被 403 拒，让访客误以为出错。
   try {
@@ -416,49 +421,10 @@ onMounted(async () => {
   } catch {
     // 预取失败不阻断初始化，提交时 isRequiredFieldsFilled（含 token 判断）会拦住空 token
   }
-  // 动态导入 Fancybox（仅客户端）
-  FancyboxModule = await import("@fancyapps/ui");
   // 加载友链状态
   loadLinkStatuses();
   // 检查是否需要自动检测
   checkIfNeedAutoCheck();
-
-  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", {
-    // === 全局选项 ===
-    l10n: zh_CN,
-    placeFocusBack: false,
-    Hash: false,
-    trapFocus: false,
-    closeExisting: false, // === v6改动：缩略图缩放动画 ===
-    zoomEffect: true, // 对应 v5 的 Images.zoom: true :contentReference[oaicite:0]{index=0}
-
-    // === Carousel 插件配置替代 v5 结构 ===
-    Carousel: {
-      // Images.zoom 和 Panzoom.maxScale
-      Panzoom: {
-        maxScale: 2,
-      }, // 工具栏结构
-      Toolbar: {
-        display: {
-          left: ["infobar"],
-          middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX", "flipY"],
-          right: ["thumbs", "close"],
-        },
-      }, // 关闭缩放缩略图中的自动播放、Hash 等
-      Autoplay: false,
-    },
-
-    // === 其他 UI 行为 ===
-    idle: false,
-    autoFocus: false,
-    tpl: {
-      main: `<div class="fancybox__container" role="dialog" tabindex="-1">
-  <div class="fancybox__backdrop"></div>
-  <div class="fancybox__carousel"></div>
-  <div class="fancybox__footer"></div>
-</div>`,
-    },
-  } as Partial<FancyboxOptions>);
 });
 
 onUnmounted(() => {
@@ -472,18 +438,15 @@ onUnmounted(() => {
     abortController = null;
   }
 
-  // 清理 Fancybox
-  // Fancybox.destroy();
-  if (FancyboxModule) {
-    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
-  }
+  // 注销画廊容器
+  unregister(lightboxEl);
 });
 </script>
 
 <template>
   <div class="max-w-225 mx-auto">
     <!-- 标题区域 -->
-    <header ref="fancyboxContainer" v-scroll-reveal>
+    <header ref="lightboxContainer" v-scroll-reveal>
       <!-- 封面图片 -->
       <img
         data-fancybox="gallery"

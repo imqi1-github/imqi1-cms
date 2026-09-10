@@ -342,6 +342,8 @@ onMounted(() => {
   <Toaster />
   <LazyContextMenu class="right-button" />
   <FrontNotification />
+  <!-- 全局图片灯箱：渲染进 <dialog> top layer，故放在 <main> 之外也无需担心祖先 transform -->
+  <Lightbox />
 </template>
 
 <style scoped>

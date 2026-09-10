@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
 
 import {siteConfig} from "~~/site.config";
 import type {TocItem} from "~/types/apis/toc";
@@ -195,8 +195,18 @@ watch(
 // 统一由 MarkdownBody 内部 onMounted/onUnmounted 调用,本页无需再手动 mount/cleanup。
 // 目录提取与 hash 滚动是页面级关注点,留在本页 onMounted。
 
+// 灯箱画廊容器：正文里的 markdown 图片点开走全局灯箱（此前该页未注册，图片点不开）
+const lightboxContainer = useTemplateRef<HTMLDivElement>("lightboxContainer");
+const { register, unregister } = useLightbox();
+// 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
+// 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
+// 容器会永久留在模块级 Set 里，连同整棵已分离 DOM 一起泄漏。
+let lightboxEl: HTMLElement | null = null;
+
 // 初始化目录与 hash 滚动
 onMounted(() => {
+  lightboxEl = lightboxContainer.value;
+  register(lightboxEl);
   nextTick(async () => {
     extractToc();
     window.addEventListener("scroll", handleTocScroll);
@@ -209,6 +219,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  unregister(lightboxEl);
   window.removeEventListener("scroll", handleTocScroll);
 });
 </script>
@@ -263,7 +274,7 @@ onUnmounted(() => {
       </header>
 
       <!-- 协议内容区域 - 带目录 -->
-      <div class="flex gap-8 relative w-full max-w-7xl mx-auto">
+      <div ref="lightboxContainer" class="flex gap-8 relative w-full max-w-7xl mx-auto">
         <!-- 目录侧边栏 - 左侧 -->
         <aside class="toc-sidebar hidden lg:block w-39 shrink-0 order-first">
           <nav class="toc-nav sticky top-12 pt-12">

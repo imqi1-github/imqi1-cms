@@ -2,11 +2,9 @@
 import {onMounted, onUnmounted, ref, useTemplateRef, watch} from "vue";
 import {Mousewheel, Navigation, Pagination} from "swiper/modules";
 
-import {zh_CN} from "@/assets/js/zh_CN.umd.js";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import "@/assets/css/fancybox.css";
 import type {Props, SwiperType} from "~/types/components/cover-swiper";
 
 // swiper 主体（Swiper 类，~156kB）懒加载，避免静态打包进共享 chunk、拖累首屏。
@@ -33,16 +31,19 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const swiperContainer = ref<HTMLElement>();
-const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
+const lightboxContainer = useTemplateRef<HTMLDivElement>("lightboxContainer");
 let swiperInstance: import("swiper").default | null = null;
-let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
 // ✅ 标记组件是否已卸载
 let isUnmounted = false;
 // 延迟初始化的 setTimeout 句柄 —— 卸载时取消，避免待执行回调在销毁后触发 initSwiper
 let initTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
-const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
+// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-fancybox] 收集幻灯片
+const { register, unregister } = useLightbox();
+// 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
+// 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
+// 容器会永久留在模块级 Set 里，连同整棵已分离 DOM 一起泄漏。
+let lightboxEl: HTMLElement | null = null;
 
 const initSwiper = async () => {
   if (!swiperContainer.value || props.covers.length === 0) return;
@@ -85,41 +86,14 @@ const initSwiper = async () => {
   });
 };
 
-onMounted(async () => {
+onMounted(() => {
+  lightboxEl = lightboxContainer.value;
+  register(lightboxEl);
+
   // 延迟初始化，确保 DOM 已渲染
   initTimer = setTimeout(() => {
     initSwiper();
   }, 100);
-
-  // 初始化 Fancybox
-  FancyboxModule = await import("@fancyapps/ui");
-
-  // ✅ 异步操作后检查组件是否已卸载
-  if (isUnmounted || !fancyboxContainer.value) {
-    return;
-  }
-
-  FancyboxModule.Fancybox.bind(fancyboxContainer.value, "[data-fancybox]", enhanceFancyboxLivePhoto({
-      l10n: zh_CN,
-      Hash: false,
-      Carousel: {
-        Zoomable: {
-          Panzoom: {
-            maxScale: 2,
-          },
-        },
-        Toolbar: {
-          display: {
-            left: ["infobar"],
-            middle: ["zoomIn", "zoomOut", "toggleZoom", "rotateCCW", "rotateCW", "flipX", "flipY"],
-            right: ["thumbs", "close"],
-          },
-        },
-        Autoplay: {
-          autoStart: false,
-        },
-      },
-    }));
 });
 
 // 合并清理逻辑
@@ -138,10 +112,8 @@ onUnmounted(() => {
     swiperInstance.destroy(true, true);
   }
 
-  // 清理 Fancybox
-  if (FancyboxModule && fancyboxContainer.value) {
-    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
-  }
+  // 注销画廊容器
+  unregister(lightboxEl);
 });
 
 // 监听 covers 变化，重新初始化
@@ -158,7 +130,7 @@ watch(
 </script>
 
 <template>
-  <div ref="fancyboxContainer">
+  <div ref="lightboxContainer">
     <div ref="swiperContainer" class="swiper-container">
     <div :class="['swiper-wrapper', !isPhotoCategory && 'noneed']">
       <div v-for="(cover, index) in covers" :key="cover.url || index" class="swiper-slide">

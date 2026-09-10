@@ -1,0 +1,563 @@
+/* ============================================================
+ * 图片灯箱（ImageLightbox）
+ *
+ * 视觉规格沿用被替换掉的 Fancybox 主题：深色模糊遮罩、顶部胶囊工具栏、
+ * 圆形按钮、底部缩略图条。仅依赖 html.dark 切换主题，无需 JS。
+ * ============================================================ */
+
+/* ---------- 滚动锁定（原 html.with-fancybox 的替代） ---------- */
+
+html.with-lightbox {
+  scrollbar-gutter: auto !important;
+}
+
+html.with-lightbox body.lb-hide-scrollbar {
+  margin-right: var(--lb-scrollbar-width, 0px) !important;
+  overflow: hidden !important;
+  overscroll-behavior-y: none;
+  touch-action: none;
+}
+
+/* ---------- 弹层骨架 ---------- */
+
+.lb-dialog {
+  /* 与原 Fancybox 实测一致：工具栏/箭头**恒用白色图标**，不随站点明暗主题切换。
+     原实现本有 [theme=light] 一套浅色变量，但调用方从未传 theme，故线上永远是这套深色呈现。 */
+  --lb-toolbar-color: #ddd;
+  --lb-toolbar-weight: 500;
+  --lb-toolbar-text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.75);
+  --lb-btn-color: #fff;
+  --lb-btn-hover-color: #fff;
+  --lb-btn-outline: hsla(0, 0%, 100%, 0.75);
+  --lb-btn-stroke: 1.75;
+  --lb-arrow-bg: rgba(0, 0, 0, 0.25);
+  --lb-arrow-color: #fff;
+  --lb-arrow-stroke: 2;
+  --lb-thumb-focus-shadow: inset 0 0 0 2px hsla(0, 0%, 100%, 0.65);
+  /* 说明/错误文字直接压在模糊遮罩上、没有自己的底色，必须随站点明暗取色：
+     恒定白色在浅色页面必然发虚，恒定深色在暗色页面又变成黑字。
+     铬件（图标/计数）有深色胶囊托底，才敢恒定白色。 */
+  --lb-text-color: #0f172a;
+  /* 图片圆角（与站内 rounded-lg 一致） */
+  --lb-radius: 8px;
+  /* 工具栏总高 = 上下 8px + 按钮 35px；图片区顶部让出这么多，避免被工具栏压住（与线上一致） */
+  --lb-toolbar-h: 50px;
+
+  background: transparent;
+  border: 0;
+  height: 100dvh;
+  inset: 0;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  outline: none;
+  overflow: hidden;
+  padding: 0;
+  position: fixed;
+  width: auto;
+}
+
+html.dark .lb-dialog {
+  --lb-text-color: #fff;
+}
+
+/* 舞台上禁止选中/原生拖图：实况照片的 img 没带 -webkit-user-drag:none，
+   鼠标拖动会被浏览器接管成原生拖拽并中断 pointermove（Firefox 靠 @dragstart.prevent 兜底） */
+html .lb-dialog img {
+  filter: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* ::backdrop 保持透明，模糊交给 .lb-backdrop，
+   这样开合动画只需过渡一个普通元素的 opacity（与 Fancybox 同款做法） */
+.lb-dialog::backdrop {
+  background: transparent;
+}
+
+.lb-root {
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+  /* 工具栏绝对定位浮在图片之上，舞台做成满幅（与线上一致），故这里不再预留顶部空间 */
+  position: fixed;
+}
+
+/* 线上遮罩是**纯模糊、无任何着色**：原 CSS 的 background 引用了从未定义的 --fancybox-bg，
+   故那只深/浅底色一直没生效。这里照实现状对齐。 */
+.lb-backdrop {
+  -webkit-backdrop-filter: blur(20px);
+  animation: lb-fade-in 0.35s ease both;
+  backdrop-filter: blur(20px);
+  background: transparent;
+  cursor: zoom-out;
+  inset: 0;
+  opacity: 0;
+  position: fixed;
+  z-index: 0;
+}
+
+/* ---------- 顶部工具栏 ---------- */
+
+.lb-toolbar {
+  color: var(--lb-toolbar-color);
+  display: grid;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--lb-toolbar-weight);
+  grid-template-columns: 1fr auto 1fr;
+  left: 0;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  text-shadow: var(--lb-toolbar-text-shadow);
+  top: 0;
+  z-index: 20;
+}
+
+.lb-pill {
+  align-items: center;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 9999px;
+  color: var(--lb-toolbar-color);
+  display: flex;
+  gap: 0;
+  /* 裁掉按钮的方形边界，让整组读作一条连续胶囊 */
+  overflow: hidden;
+}
+
+.lb-pill.is-left {
+  justify-self: start;
+}
+
+.lb-pill.is-middle {
+  justify-self: center;
+}
+
+.lb-pill.is-right {
+  justify-self: end;
+}
+
+.lb-counter {
+  color: var(--lb-btn-color);
+  font-family: var(--font-serif, "Noto Serif SC", serif);
+  line-height: 35px;
+  padding: 0 10px;
+  /* 工具栏那层 text-shadow 是给图标配的，数字上显得脏，去掉 */
+  text-shadow: none;
+}
+
+/* ---------- 按钮 ---------- */
+
+.lb-btn {
+  align-items: center;
+  /* 透明：整组由外层胶囊统一着色与磨砂，与导航栏里"链接嵌在磨砂胶囊内"同理。
+     若每个按钮各涂一层同样的半透明，会在胶囊之上叠出更不透明的圆片、露出交界。 */
+  background: transparent;
+  border: 0;
+  border-radius: 9999px;
+  color: var(--lb-btn-color);
+  cursor: pointer;
+  display: flex;
+  height: 35px;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+  width: 35px;
+}
+
+/* 悬浮/按下：主题蓝底 + 白图标（沿用原实现）。触屏无 hover，故只在可悬浮设备套用 */
+@media (hover: hover) {
+  .lb-btn:hover:not(:disabled),
+  .lb-arrow:hover,
+  .lb-dialog .live-photo-wrapper button:hover {
+    background-color: blue;
+    color: #fff;
+  }
+}
+
+.lb-btn:active:not(:disabled),
+.lb-arrow:active {
+  background-color: blue;
+  color: #fff;
+}
+
+.lb-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* 缩略图开关的「已开启」态：必须给一层可见底色。
+   它的 color 与 --lb-btn-color 相同（都是 #fff），只改 color 等于没有开关反馈。
+   hover 规则带 :not(:disabled)，特异性更高，悬浮时仍会盖成蓝色。 */
+.lb-btn.is-active {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: var(--lb-btn-hover-color);
+}
+
+.lb-btn:focus-visible,
+.lb-arrow:focus-visible {
+  outline: 2px solid var(--lb-btn-outline);
+  outline-offset: 1px;
+}
+
+.lb-btn svg {
+  height: 18px;
+  stroke-width: var(--lb-btn-stroke);
+  width: 18px;
+}
+
+/* ---------- 舞台 ---------- */
+/* 实况照片的播放/角标按钮浮在照片上，与铬件统一为同一档磨砂（Tailwind 的 backdrop-blur-sm 是 8px） */
+.lb-dialog .live-photo-wrapper button {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* ---------- 舞台 ---------- */
+
+.lb-stage {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  /* 满幅：线上图片区是 1280 宽、左右不留边距；顶部让出工具栏高度 */
+  margin: 0;
+  overflow: hidden;
+  padding-top: var(--lb-toolbar-h);
+  position: relative;
+  touch-action: none;
+  z-index: 10;
+}
+
+.lb-media-box {
+  position: relative;
+  transform-origin: center center;
+  will-change: transform, translate;
+}
+
+/* 工具栏/双击/键盘触发的缩放与旋转走过渡；滚轮与拖拽不加类，保持瞬时跟手 */
+.lb-media-box.is-animating {
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+
+.lb-error {
+  align-items: center;
+  color: var(--lb-text-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+  text-align: center;
+}
+
+.lb-error svg {
+  height: 40px;
+  width: 40px;
+  stroke-width: 1.25;
+}
+
+.lb-error span {
+  font-family: var(--font-serif, "Noto Serif SC", serif);
+}
+
+.lb-media {
+  height: 100%;
+  opacity: 0;
+  width: 100%;
+}
+
+.lb-media.is-visible {
+  opacity: 1;
+}
+
+/* 加载失败时藏掉原始 <img>：否则浏览器自带的破图占位（左上角小图标 + alt 文本）
+   会从错误提示旁边露出来 */
+.lb-media.has-error img {
+  visibility: hidden;
+}
+
+.lb-image {
+  border-radius: var(--lb-radius);
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 实况照片的内部 img/video 同样加圆角；角标与播放按钮是绝对定位的兄弟节点，不受影响 */
+.lb-media img,
+.lb-media video {
+  border-radius: var(--lb-radius);
+}
+
+/* 退出：整层界面随图片一起淡出，而不是等 dialog 关闭那一瞬直接消失。
+   时长与关闭动画（MORPH_MS 350ms）对齐，淡完刚好关闭。 */
+.lb-root.is-closing .lb-backdrop,
+.lb-root.is-closing .lb-toolbar,
+.lb-root.is-closing .lb-arrow,
+.lb-root.is-closing .lb-thumbs,
+.lb-root.is-closing .lb-caption {
+  animation: lb-fade-out 0.35s ease forwards;
+}
+
+/* 切图交叉淡化：新图淡入、旧图淡出。
+   用 animation 而非 transition——两层都是本帧新建的元素，动画插入即播，
+   不必像 transition 那样先落一帧初始状态（那需要 rAF 编排，易碎）。 */
+.lb-media-box.is-fading .lb-media {
+  animation: lb-fade-in 0.22s ease both;
+}
+
+.lb-outgoing {
+  animation: lb-fade-out 0.22s ease forwards;
+  left: 50%;
+  opacity: 1;
+  pointer-events: none;
+  position: absolute;
+  top: calc((100% + var(--lb-toolbar-h)) / 2);
+  translate: -50% -50%;
+  z-index: 1;
+}
+
+@keyframes lb-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lb-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.lb-outgoing img {
+  border-radius: var(--lb-radius);
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.lb-preload {
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+/* ---------- 箭头 ---------- */
+
+.lb-arrow {
+  align-items: center;
+  background: var(--lb-arrow-bg);
+  border: 0;
+  border-radius: 50%;
+  color: var(--lb-arrow-color);
+  cursor: pointer;
+  display: flex;
+  height: 50px;
+  justify-content: center;
+  position: absolute;
+  /* 在图片可用区内垂直居中（跳过顶部为工具栏让出的那段），放在 .lb-root 里会按整屏居中而偏低 */
+  top: calc((100% + var(--lb-toolbar-h)) / 2);
+  translate: 0 -50%;
+  width: 50px;
+  z-index: 20;
+}
+
+.lb-arrow.is-prev {
+  left: 16px;
+}
+
+.lb-arrow.is-next {
+  right: 16px;
+}
+
+.lb-arrow svg {
+  height: 24px;
+  stroke-width: var(--lb-arrow-stroke);
+  width: 24px;
+}
+
+/* 界面元素随灯箱创建即淡入（animation 插入即播，无需等一帧落盘状态） */
+.lb-toolbar,
+.lb-arrow,
+.lb-thumbs,
+.lb-caption {
+  animation: lb-fade-in 0.35s ease both;
+}
+
+/* 悬浮变蓝的过渡要显式带上 background-color */
+.lb-arrow {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ---------- 说明文字 ---------- */
+
+.lb-caption {
+  align-self: center;
+  color: var(--lb-text-color);
+  flex-shrink: 0;
+  font-family: var(--font-serif, "Noto Serif SC", serif);
+  line-height: 1.5;
+  max-height: calc(80vh - 100px);
+  max-width: 100%;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 16px 4px;
+  text-align: start;
+  z-index: 10;
+}
+
+/* ---------- 缩略图条 ---------- */
+
+.lb-thumbs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  /* 不足一屏时居中；safe 让溢出时退回 start，避免首尾缩略图滚不到 */
+  justify-content: center;
+  justify-content: safe center;
+  overflow-x: auto;
+  /* 12+76+12=100px，与线上缩略图条总高一致 */
+  padding: 12px 8px;
+  scrollbar-width: thin;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  z-index: 10;
+}
+
+.lb-thumb {
+  /* 线上 --f-thumb-bg 为 none，缩略图无底色，直接浮在模糊遮罩上 */
+  aspect-ratio: 94 / 76;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 76px;
+  /* 宽度由 aspect-ratio 推导（组件按每张图的比例下发），竖图就不会两侧留白 */
+  max-width: 160px;
+  min-width: 48px;
+  overflow: hidden;
+  padding: 0;
+  transition: all 0.2s ease;
+  width: auto;
+}
+
+/* cover 而非 contain：宽度被 min/max 夹住时裁切填满，不留白 */
+.lb-thumb img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.lb-thumb:focus-visible {
+  box-shadow: var(--lb-thumb-focus-shadow);
+  outline: none;
+}
+
+/* 选中态线上只有蓝圈（挂在 102×84 的 slide 上，比 94×76 的按钮外扩 4px），没有内嵌白圈；
+   焦点态则是内嵌白圈，两者靠源序共存 */
+.lb-thumb.is-selected {
+  outline: 2px solid blue;
+  outline-offset: 4px;
+}
+
+/* ---------- 开合变形层 ---------- */
+
+.lb-morph {
+  animation: var(--lb-morph-anim, lb-morph-open) 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  pointer-events: none;
+  position: fixed;
+  transform-origin: center center;
+  z-index: 30;
+}
+
+@keyframes lb-morph-open {
+  from {
+    transform: var(--lb-morph-away);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes lb-morph-close {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: var(--lb-morph-away);
+  }
+}
+
+.lb-morph img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+/* ---------- 无障碍 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-backdrop,
+  .lb-toolbar,
+  .lb-arrow,
+  .lb-thumbs,
+  .lb-caption,
+  .lb-morph,
+  .lb-media-box.is-fading .lb-media,
+  .lb-outgoing {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .lb-dialog {
+    --lb-toolbar-h: 44px;
+  }
+
+  .lb-toolbar {
+    font-size: 14px;
+    padding: 6px;
+  }
+
+  .lb-btn {
+    height: 32px;
+    width: 32px;
+  }
+
+  .lb-counter {
+    line-height: 32px;
+  }
+
+  .lb-arrow {
+    display: none;
+  }
+
+  .lb-thumb {
+    height: 56px;
+    max-width: 118px;
+    min-width: 36px;
+    width: auto;
+  }
+}

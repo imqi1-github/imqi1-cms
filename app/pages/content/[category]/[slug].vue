@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import "@/assets/css/fancybox.css";
-
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -8,7 +6,6 @@ import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vu
 
 import type { RelatedContent } from "~/types/apis/content/related-contents";
 import LivePhoto from "~/components/LivePhoto.vue";
-import { zh_CN } from "@/assets/js/zh_CN.umd.js";
 import { siteConfig } from "~~/site.config";
 import type { TocItem } from "~/types/apis/toc";
 import type { MarkdownAttachmentImage, MarkdownImageDimensions } from "~/types/pages/content-detail";
@@ -564,12 +561,15 @@ watch(
   { immediate: true },
 );
 
-// Fancybox 容器引用
-const fancyboxContainer = useTemplateRef<HTMLDivElement>("fancyboxContainer");
-let FancyboxModule: typeof import("@fancyapps/ui") | null = null;
+// 灯箱画廊容器引用
+const lightboxContainer = useTemplateRef<HTMLDivElement>("lightboxContainer");
 
-// 灯箱实况照片增强：在 Fancybox 灯箱中为实况照片注入视频播放能力
-const { enhanceConfig: enhanceFancyboxLivePhoto } = useFancyboxLivePhoto();
+// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-fancybox] 收集幻灯片
+const { register, unregister } = useLightbox();
+// 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
+// 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
+// 容器会永久留在模块级 Set 里，连同整棵已分离 DOM 一起泄漏。
+let lightboxEl: HTMLElement | null = null;
 
 // 将非关键初始化延后到浏览器空闲帧，避免与页面渐入抢占主线程
 const runIdle = (cb: () => void) => {
@@ -580,70 +580,36 @@ const runIdle = (cb: () => void) => {
   }
 };
 
-// 初始化 Fancybox 和其他功能
-onMounted(async () => {
+// 初始化页面功能
+onMounted(() => {
   isHydrated.value = true;
+  lightboxEl = lightboxContainer.value;
+  register(lightboxEl);
 
-  try {
-    // 动态导入 Fancybox（仅客户端）
-    FancyboxModule = await import("@fancyapps/ui");
+  // markdown 正文增强（代码块复制/折叠、表格转置、横向滚动羽化、富组件、图片水合）
+  // 由 MarkdownBody 组件内部 onMounted 自动调用,本页不再手动 mount。
+  // 下面只负责目录构建与滚动监听(页面级关注点)。
 
-    // 初始化 Fancybox（参照友情链接页面）
-    FancyboxModule.Fancybox.bind(
-      fancyboxContainer.value,
-      "[data-fancybox]",
-      enhanceFancyboxLivePhoto({
-        l10n: zh_CN,
-        Hash: false,
-        Carousel: {
-          Zoomable: {
-            Panzoom: {
-              maxScale: 2,
-            },
-          },
-          Toolbar: {
-            display: {
-              left: ["infobar"],
-              middle: ["zoomIn", "zoomOut", "toggleZoom", "rotateCCW", "rotateCW", "flipX", "flipY"],
-              right: ["thumbs", "close"],
-            },
-          },
-          Autoplay: {
-            autoStart: false,
-          },
-        },
-      }),
-    );
-
-    // markdown 正文增强（代码块复制/折叠、表格转置、横向滚动羽化、富组件、图片水合）
-    // 由 MarkdownBody 组件内部 onMounted 自动调用,本页不再手动 mount。
-    // 下面只负责目录构建与滚动监听(页面级关注点)。
-
-    // 初始化目录
-    nextTick(() => {
-      // 目录构建与滚动监听延后到 idle，避免与首屏渐入抢占主线程帧
-      runIdle(() => {
-        extractToc();
-        window.addEventListener("scroll", handleTocScroll);
-      });
+  // 初始化目录
+  nextTick(() => {
+    // 目录构建与滚动监听延后到 idle，避免与首屏渐入抢占主线程帧
+    runIdle(() => {
+      extractToc();
+      window.addEventListener("scroll", handleTocScroll);
     });
-  } catch (error) {
-    console.error("页面功能初始化失败:", error);
-  }
+  });
 });
 
-// 清理 Fancybox 和滚动监听
+// 注销画廊容器与滚动监听
 onUnmounted(() => {
-  if (FancyboxModule) {
-    FancyboxModule.Fancybox.unbind(fancyboxContainer.value);
-  }
+  unregister(lightboxEl);
   window.removeEventListener("scroll", handleTocScroll);
 });
 </script>
 
 <template>
   <div
-    ref="fancyboxContainer"
+    ref="lightboxContainer"
     :class="[
       'mx-auto w-full flex flex-col justify-center items-center',
       isPhotoCategory ? (shouldReserveToc ? 'max-w-375' : 'max-w-350') : shouldReserveToc ? 'max-w-250' : 'max-w-225',

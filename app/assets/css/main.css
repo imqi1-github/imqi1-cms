@@ -355,15 +355,7 @@ html.theme-tooltip-suppress .v-popper__popper {
   }
 }
 
-/* 当 fancybox 打开时，移除 scrollbar-gutter 以避免滚动条背景显示 */
-html.with-fancybox {
-  scrollbar-gutter: auto !important;
-}
-
-/* 当 fancybox 打开且隐藏滚动条时，补偿滚动条宽度防止页面偏移 */
-html.with-fancybox body.hide-scrollbar {
-  margin-right: 8px !important;
-}
+/* 灯箱打开时的滚动条处理见 assets/css/lightbox.css（html.with-lightbox） */
 
 /* ============================================
    图片加载骨架屏 - 全局自动生效
