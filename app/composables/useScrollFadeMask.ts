@@ -2,24 +2,26 @@ import { onMounted, ref, watch, type Ref } from "vue";
 import { tryOnScopeDispose } from "@vueuse/core";
 
 /**
- * 为可纵向滚动的容器计算"是否已到顶/到底"，用于给两端加羽化(mask)边缘。
+ * 为可滚动的容器计算"是否已到起端/末端"，用于给两端加羽化(mask)边缘。
  *
  * 约定：
- * - 顶部还有内容被滚上去 → atTop=false（该加上端羽化）；
- * - 底部还有内容没露出 → atBottom=false（该加下端羽化）；
- * - 内容高度不足、无需滚动(scrollHeight<=clientHeight) → 两端都为 true（不羽化，完整显示）。
+ * - 起端还有内容被藏起来 → atStart=false（该加起端羽化）；
+ * - 末端还有内容没露出 → atEnd=false（该加末端羽化）；
+ * - 内容不足、无需滚动 → 两端都为 true（不羽化，完整显示）。
+ *
+ * axis 决定量测轴向：'y' 走 scrollTop/scrollHeight（侧栏），'x' 走 scrollLeft/scrollWidth（横向条）。
  *
  * 监听容器自身 scroll（sticky 侧栏不随 window 滚动，不能复用 window 的 useScrollRaf），
- * scroll 只置 dirty，每帧最多算一次；ResizeObserver 覆盖内容/视口高度变化。
+ * scroll 只置 dirty，每帧最多算一次；ResizeObserver 覆盖内容/视口尺寸变化（含从 display:none 恢复）。
  * 首次计算延后到 onMounted（水合后），避免 SSR 首帧 class 不一致。仅客户端生效。
  *
  * 关键：不能只在 onMounted 一次性观察——若容器被 v-if 门控、晚于挂载才出现（如初始 fetch 失败、
  * 点「重试」成功后才渲染侧栏），onMounted 时 el 还是 null 会直接 return，此后永不注册监听。
  * 故改用 watch(el.value)：元素真正可用时再 attach，变回 null 时断开。
  */
-export function useScrollFadeMask(el: Ref<HTMLElement | null>) {
-  const atTop = ref(true);
-  const atBottom = ref(true);
+export function useScrollFadeMask(el: Readonly<Ref<HTMLElement | null>>, axis: "x" | "y" = "y") {
+  const atStart = ref(true);
+  const atEnd = ref(true);
 
   let rafPending = false;
   let resizeObserver: ResizeObserver | null = null;
@@ -29,14 +31,16 @@ export function useScrollFadeMask(el: Ref<HTMLElement | null>) {
     rafPending = false;
     const node = el.value;
     if (!node) return;
-    const { scrollTop, scrollHeight, clientHeight } = node;
-    if (scrollHeight <= clientHeight + 1) {
-      atTop.value = true;
-      atBottom.value = true;
+    const pos = axis === "y" ? node.scrollTop : node.scrollLeft;
+    const size = axis === "y" ? node.clientHeight : node.clientWidth;
+    const total = axis === "y" ? node.scrollHeight : node.scrollWidth;
+    if (total <= size + 1) {
+      atStart.value = true;
+      atEnd.value = true;
       return;
     }
-    atTop.value = scrollTop <= 1;
-    atBottom.value = scrollTop + clientHeight >= scrollHeight - 1;
+    atStart.value = pos <= 1;
+    atEnd.value = pos + size >= total - 1;
   };
 
   const schedule = () => {
@@ -75,5 +79,5 @@ export function useScrollFadeMask(el: Ref<HTMLElement | null>) {
     cleanupCurrent = null;
   });
 
-  return { atTop, atBottom };
+  return { atStart, atEnd };
 }

@@ -19,12 +19,13 @@ let triggerEl: HTMLElement | null = null;
 /** 当前画廊的触发元素，按幻灯片顺序排列：关闭要收敛回「当前这张」的原图，而非最初点开的那张 */
 let triggerEls: HTMLElement[] = [];
 
-/** 实况照片在 img 上留的标记（LivePhoto.vue 注入） */
+/** LivePhoto 留在最外层 wrapper 上的实况标记与真实地址（见 LivePhoto.vue 的 triggerAttrs） */
 const LIVE_ATTR = "data-live-photo";
+const SRC_ATTR = "data-lb-src";
 
-/** 从触发元素或其后代 img 上取实况照片的干净地址 */
-const readLiveSrc = (el: HTMLElement, img: HTMLImageElement | null): string | null =>
-  el.getAttribute("data-live-photo-src") ?? img?.getAttribute("data-live-photo-src") ?? null;
+/** 取触发元素的干净地址。地址挂外层包装上，img 尚未懒加载出来时也拿得到。 */
+const readSrc = (el: HTMLElement, img: HTMLImageElement | null): string =>
+  el.getAttribute(SRC_ATTR) ?? img?.getAttribute(SRC_ATTR) ?? img?.getAttribute("src") ?? "";
 
 const isLiveTrigger = (el: HTMLElement, img: HTMLImageElement | null): boolean =>
   el.hasAttribute(LIVE_ATTR) || (img?.hasAttribute(LIVE_ATTR) ?? false);
@@ -75,8 +76,7 @@ export const useLightbox = () => {
   const toSlide = (el: HTMLElement): LightboxSlide => {
     const img = el instanceof HTMLImageElement ? el : el.querySelector<HTMLImageElement>("img");
     const live = isLiveTrigger(el, img);
-    // LivePhoto 的 img.src 已被剥掉 #live，故从 data-live-photo-src 还原并补回标记
-    const cleanSrc = readLiveSrc(el, img) ?? img?.getAttribute("src") ?? "";
+    const cleanSrc = readSrc(el, img);
     const alt = img?.getAttribute("alt") ?? el.getAttribute("data-caption") ?? "";
     // naturalWidth 在该图已进入视口时总是可用的，比附件元数据覆盖得更全
     const width = img?.naturalWidth || null;

@@ -37,32 +37,11 @@ const mediaAspectRatio = computed(() => {
   return width && height ? `${width} / ${height}` : undefined;
 });
 
-// 过滤出灯箱相关属性（data-* / id / title / loading），只传给 img
-const lightboxAttrs = computed(() => {
-  const result: Record<string, string> = {};
-  (Object.keys(attrs) as Array<keyof typeof attrs>).forEach(key => {
-    if (key.startsWith("data-") || key === "id" || key === "title" || key === "loading") {
-      result[key] = attrs[key] as string;
-    }
-  });
-  // 标记实况照片，供灯箱识别后在灯箱内提供实况视频播放。
-  // 用 isLive 而非 includes("#live")：与 cleanLivePhotoUrl 统一为「末尾匹配」语义
-  if (isLive.value) {
-    result["data-live-photo"] = "";
-  }
-  return result;
-});
-
-const imageAttrs = computed(() => ({
-  ...lightboxAttrs.value,
-}));
-
 const { extractLivePhotoMedia, isLivePhoto, cleanLivePhotoUrl } = useLivePhoto();
 
 // 状态
 const imgRef = ref<HTMLImageElement | null>(null);
 const videoBlobUrl = ref<string | null>(null);
-const imageBlobUrl = ref<string | null>(null);
 const isPlaying = ref(false);
 const videoRef = ref<HTMLVideoElement | null>(null);
 const wrapperRef = ref<HTMLDivElement | null>(null);
@@ -94,10 +73,29 @@ const cleanSrc = computed(() => cleanLivePhotoUrl(props.src));
 // 是否为实况照片
 const isLive = computed(() => isLivePhoto(props.src));
 
-const liveImageAttrs = computed(() => ({
-  ...imageAttrs.value,
-  "data-live-photo-src": cleanSrc.value,
-}));
+/**
+ * 灯箱触发属性一律挂最外层 wrapper，不挂 <img>：非实况图在懒加载完成前 <img> 根本不在
+ * DOM（v-if="shouldLoad"），属性挂 img 上会让这些图整个漏出画廊（点不到、也进不了幻灯片列表）。
+ * 真实地址随之下放成 data-lb-src，img 缺席时 useLightbox 仍解析得出。
+ * data-live-photo 用 isLive 判定而非 includes("#live")：与 cleanLivePhotoUrl 统一为「末尾匹配」语义。
+ */
+const triggerAttrs = computed(() => {
+  const result: Record<string, string> = { "data-lb-src": cleanSrc.value };
+  (Object.keys(attrs) as Array<keyof typeof attrs>).forEach(key => {
+    if (key.startsWith("data-")) result[key] = attrs[key] as string;
+  });
+  if (isLive.value) result["data-live-photo"] = "";
+  return result;
+});
+
+/** 只能落在 <img> 上的属性 */
+const imageAttrs = computed(() => {
+  const result: Record<string, string> = {};
+  (Object.keys(attrs) as Array<keyof typeof attrs>).forEach(key => {
+    if (key === "id" || key === "title" || key === "loading") result[key] = attrs[key] as string;
+  });
+  return result;
+});
 
 // ✅ 懒加载状态：是否已经开始加载（实况照片也走视口懒加载，进视口才提取视频，避免图片页一堆视频同时 fetch+解码）
 const shouldLoad = ref<boolean>(!props.lazy);
@@ -188,23 +186,8 @@ const mediaStyle = computed<CSSProperties>(() => {
   };
 });
 
-// 释放当前实况照片 Blob URL
-const revokeLiveMedia = () => {
-  if (imageBlobUrl.value) {
-    URL.revokeObjectURL(imageBlobUrl.value);
-    imageBlobUrl.value = null;
-  }
-
-  if (videoBlobUrl.value) {
-    URL.revokeObjectURL(videoBlobUrl.value);
-    videoBlobUrl.value = null;
-  }
-};
-
 // 标记组件是否已卸载
 let isUnmounted = false;
-// ✅ 用于取消实况视频提取请求
-let extractAbortController: AbortController | null = null;
 let liveLoadingTipTimer: number | null = null;
 // 保存 observer 引用用于卸载
 let observedElement: LivePhotoElement | null = null;
@@ -288,16 +271,13 @@ onMounted(async () => {
   }
 });
 
-// 提取实况媒体：懒加载下等进入视口（shouldLoad 为真）再请求，避免图片页一堆视频同时 fetch+解码
+// 懒加载下等进入视口（shouldLoad 为真）再提取。同一 src 已被别的实例提过时（文章页 / 灯箱上一张）
+// 命中 useLivePhoto 的缓存，这里只是一次 microtask。
 watch([shouldLoad, cleanSrc], async ([ready, src]) => {
   if (!import.meta.client || !ready || !isLive.value || isUnmounted) return;
 
-  // ✅ 创建 AbortController 用于快速切页时取消请求
-  extractAbortController?.abort();
-  extractAbortController = new AbortController();
-  const currentController = extractAbortController;
-
-  revokeLiveMedia();
+  // 不清空 videoBlobUrl：新值到手再替换，<video> 的 v-if 全程为真、只换 src 属性，
+  // 避免「先卸载 → 再挂载」的黑帧。
   clearLiveLoadingTipTimer();
   isLiveMediaLoading.value = true;
   showLiveLoadingTip.value = false;
@@ -307,20 +287,15 @@ watch([shouldLoad, cleanSrc], async ([ready, src]) => {
     }
   }, 300);
 
-  const media = await extractLivePhotoMedia(src, currentController.signal);
+  const media = await extractLivePhotoMedia(src);
 
-  // ✅ 异步操作后检查
-  if (isUnmounted || currentController.signal.aborted || cleanSrc.value !== src) {
-    if (media.imageUrl) URL.revokeObjectURL(media.imageUrl);
-    if (media.videoUrl) URL.revokeObjectURL(media.videoUrl);
-    return;
-  }
+  // 切走了就丢弃结果；请求不取消——跑完会入缓存，下次轮到这张直接命中。
+  if (isUnmounted || cleanSrc.value !== src) return;
 
   stopLiveMediaLoading();
 
-  imageBlobUrl.value = media.imageUrl;
+  // 不 revoke 旧值：Blob URL 归 useLivePhoto 的缓存持有，组件只是引用方
   videoBlobUrl.value = media.videoUrl;
-  extractAbortController = null;
 }, { immediate: true });
 
 // 存储定时器 ID，用于清除
@@ -490,10 +465,8 @@ const onVideoEnded = () => {
 const onVideoError = () => {
   if (isUnmounted) return;
   console.warn("[LivePhoto] 视频解码失败，已退化为静态图（浏览器可能不支持该编码，如 HEVC）");
-  if (videoBlobUrl.value) {
-    URL.revokeObjectURL(videoBlobUrl.value);
-    videoBlobUrl.value = null; // 触发 <video> v-if 卸载，退化为静态图
-  }
+  // 不 revoke：URL 归 useLivePhoto 的缓存持有，别的实例可能指着同一个
+  videoBlobUrl.value = null; // 触发 <video> v-if 卸载，退化为静态图
   imgOpacity.value = 100;
   isPlaying.value = false;
 };
@@ -513,11 +486,6 @@ onUnmounted(() => {
   // ✅ 先标记为已卸载（防止异步回调执行）
   isUnmounted = true;
 
-  // ✅ 取消正在进行的实况视频提取请求
-  if (extractAbortController) {
-    extractAbortController.abort();
-    extractAbortController = null;
-  }
   stopLiveMediaLoading();
 
   // ✅ 清理懒加载 observer
@@ -532,8 +500,8 @@ onUnmounted(() => {
     resetTimer = null;
   }
 
-  // 释放实况照片 Blob URL
-  revokeLiveMedia();
+  // Blob URL 归 useLivePhoto 的缓存持有，此处不 revoke（可能有别的实例指着同一个）
+  videoBlobUrl.value = null;
 });
 </script>
 
@@ -545,6 +513,7 @@ onUnmounted(() => {
     class="live-photo-wrapper relative"
     :class="props.class"
     :style="wrapperStyle"
+    v-bind="triggerAttrs"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave">
     <!-- 视频层：提取完成即常驻挂载并预载解码，置于图片层之下（模板在前 + img 的 relative
@@ -567,7 +536,7 @@ onUnmounted(() => {
       ref="imgRef"
       :src="cleanSrc"
       :alt="alt"
-      v-bind="liveImageAttrs"
+      v-bind="imageAttrs"
       :loading="lazy ? 'lazy' : 'eager'"
       decoding="async"
       class="live-photo-image relative w-full h-full max-h-[inherit] transition-opacity duration-300 ease-in-out object-cover"
@@ -611,6 +580,7 @@ onUnmounted(() => {
     v-else
     ref="wrapperRef"
     :class="['live-photo-lazy-wrapper', props.class]"
+    v-bind="triggerAttrs"
     :style="{
       // 有元数据时始终使用真实比例；没有元数据时才在加载完成前用占位比例
       aspectRatio: mediaAspectRatio ?? (loaded ? 'unset' : (showPlaceholder ? '3/4' : undefined)),

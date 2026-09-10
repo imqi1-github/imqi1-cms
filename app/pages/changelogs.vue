@@ -38,7 +38,7 @@ const isHydrated = ref(false);
 const sidebarRef = ref<HTMLElement | null>(null);
 
 // 侧栏滚动时的上下羽化边缘（仅高度不足需滚动时才出现）
-const { atTop, atBottom } = useScrollFadeMask(sidebarRef);
+const { atStart, atEnd } = useScrollFadeMask(sidebarRef);
 
 // 处理左侧边栏的滚轮事件
 function handleSidebarWheel(event: WheelEvent) {
@@ -213,7 +213,7 @@ usePageSeo({
           <div
             ref="sidebarRef"
             class="sidebar-fade sticky top-24 flex flex-col gap-2 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-8rem)] h-fit pr-1 scrollbar-hide"
-            :class="{ 'fade-top': !atTop, 'fade-bottom': !atBottom }"
+            :class="{ 'fade-top': !atStart, 'fade-bottom': !atEnd }"
           >
             <button
               v-for="classType in classTypes"

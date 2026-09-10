@@ -5,6 +5,8 @@ import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 
 import { useEventListener, useMediaQuery, usePreferredReducedMotion } from "@vueuse/core";
 
 import type { LightboxSlide, LightboxState } from "~/types/composables/lightbox";
+import { clearLivePhotoVideoCache, useLivePhoto } from "~/composables/useLivePhoto";
+import { useScrollFadeMask } from "~/composables/useScrollFadeMask";
 
 /**
  * 图片灯箱（自研，替代商用许可的 Fancybox）
@@ -42,10 +44,13 @@ const SWIPE_PX = 60;
 const CLOSE_PX = 120;
 
 const { state, resolveTrigger, open, close, goTo, next, prev, getTriggerAt, release } = useLightbox();
+const { extractLivePhotoMedia } = useLivePhoto();
 
 const dialogRef = useTemplateRef<HTMLDialogElement>("dialog");
 const stageRef = useTemplateRef<HTMLDivElement>("stage");
 const stripRef = useTemplateRef<HTMLDivElement>("strip");
+// 缩略图条横向溢出时把两端羽化（滚动条已隐藏，羽化负责提示还有内容）
+const { atStart: stripAtStart, atEnd: stripAtEnd } = useScrollFadeMask(stripRef, "x");
 
 const reducedMotion = usePreferredReducedMotion();
 const isNarrow = useMediaQuery("(max-width: 640px)");
@@ -95,6 +100,11 @@ const dragOffset = ref({ x: 0, y: 0 });
 const stageBox = ref({ w: 0, h: 0 });
 /** 图片解码后才拿到的固有尺寸（触发元素上取不到时兜底） */
 const intrinsicOverride = ref<{ w: number; h: number } | null>(null);
+/**
+ * 图片固有尺寸缓存（按 cleanSrc 索引）。切图时若 slide 元数据缺失（画廊图未加载），
+ * 先查缓存再退回 16:9——窄屏快速切下一页时不再因 16:9 兜底让竖图骤缩。
+ */
+const dimensionCache = new Map<string, { w: number; h: number }>();
 
 /**
  * 当前这张对应的触发元素（原图）。开合动画与焦点归还都用它，
@@ -116,8 +126,9 @@ const contain = (inner: { w: number; h: number }, outer: { w: number; h: number 
 
 const intrinsic = computed(() => {
   const slide = current.value;
-  const w = intrinsicOverride.value?.w ?? slide?.width ?? 0;
-  const h = intrinsicOverride.value?.h ?? slide?.height ?? 0;
+  const cached = dimensionCache.get(slide?.cleanSrc ?? "");
+  const w = intrinsicOverride.value?.w ?? slide?.width ?? cached?.w ?? 0;
+  const h = intrinsicOverride.value?.h ?? slide?.height ?? cached?.h ?? 0;
   return w > 0 && h > 0 ? { w, h } : { w: 16, h: 9 };
 });
 
@@ -188,6 +199,22 @@ const preload = computed(() => {
     return true;
   });
 });
+
+/**
+ * 相邻实况照片提前提取。上面那些 <img> 只预热了 HTTP 缓存，视频段仍要等切过去才
+ * fetch + 扫 ftyp + 切 Blob——全是主线程上的大块拷贝，落在切图那一刻就是一帧卡顿。
+ * 提前跑掉，切过去只是一次缓存命中。extractLivePhotoMedia 本身是 async（fetch + blob +
+ * 扫描），不阻塞当前帧；用 setTimeout(0) 而非 requestIdleCallback，确保切图前缓存已就绪。
+ */
+watch(preload, list => {
+  if (!import.meta.client || !list.length) return;
+  const warm = () => {
+    for (const s of list) {
+      if (s.isLive) extractLivePhotoMedia(s.cleanSrc);
+    }
+  };
+  window.setTimeout(warm, 0);
+}, { immediate: true });
 
 /** 舞台顶部为工具栏让出的内边距（CSS 里的 --lb-toolbar-h） */
 const stagePadTop = (el: HTMLElement) => Number.parseFloat(getComputedStyle(el).paddingTop) || 0;
@@ -577,8 +604,10 @@ const closeSequence = async (gen: number) => {
 
   // 缩回原图片（触发元素）的当前位置；已滚出视口则退化为淡出。
   // 此刻 state 已置 null，但 display 冻结着，故 intrinsic/visual 仍然有效。
+  // 加载失败的图就别再 morph 了——morph 的 img 失败会显破图标（即便改用 background-image，
+  // 也只是不再显破图标而已，让它空收敛再淡出没意义），直接随 .lb-root 一起淡掉。
   const box = liveTriggerRect();
-  const source = box && isInViewport(box) ? triggerContentRect(box) : null;
+  const source = box && isInViewport(box) && !loadError.value ? triggerContentRect(box) : null;
   morph.value = buildMorph(source, rectFromFit(visual.value), current.value?.cleanSrc ?? "", "close");
 
   await new Promise(resolve => window.setTimeout(resolve, reducedMotion.value === "reduce" ? 0 : MORPH_MS));
@@ -648,10 +677,32 @@ const onDialogClosed = () => {
 const onMediaLoaded = (e: Event) => {
   loadError.value = false;
   const slide = current.value;
-  if (slide?.width && slide.height) return;
   const img = e.target as HTMLImageElement | null;
-  if (img?.naturalWidth && img.naturalHeight) {
-    intrinsicOverride.value = { w: img.naturalWidth, h: img.naturalHeight };
+  if (img?.naturalWidth && img?.naturalHeight) {
+    if (slide?.cleanSrc) dimensionCache.set(slide.cleanSrc, { w: img.naturalWidth, h: img.naturalHeight });
+    if (!slide?.width || !slide.height) {
+      intrinsicOverride.value = { w: img.naturalWidth, h: img.naturalHeight };
+    }
+  }
+};
+
+/** 预加载图解码后把固有尺寸入缓存，切到该图时直接命中、不落入 16:9 兜底 */
+const onPreloadLoad = (e: Event, cleanSrc: string) => {
+  const img = e.target as HTMLImageElement | null;
+  if (img?.naturalWidth && img?.naturalHeight && cleanSrc) {
+    dimensionCache.set(cleanSrc, { w: img.naturalWidth, h: img.naturalHeight });
+  }
+};
+
+/**
+ * 主图加载失败：开场的 morph 还在播，破图标会被一起收敛进灯箱（morph 用的是同一 URL）。
+ * 立即把 morph 撤掉让 .lb-error 接管，错误提示的淡入由 CSS animation 处理。
+ */
+const onMediaError = () => {
+  loadError.value = true;
+  if (morph.value) {
+    morph.value = null;
+    mediaVisible.value = true;
   }
 };
 
@@ -692,11 +743,13 @@ watch(
     if (src === prevSrc) return;
     // 切图前先把上一张记下来：此刻 current 已是新图，读不到旧尺寸了
     const prev = lastRendered;
+    // 上一张若本身就是 404，就别把它当 outgoing 淡出——cross-fade 是张 <img>，破图标会从淡出层冒出来
+    const prevWasError = loadError.value;
     resetView();
     measureStage();
     if (state.value) {
       // 画廊开着才算切图（开/关那一下不走交叉淡化）
-      if (prev && prev.cleanSrc !== src) beginCrossFade(prev);
+      if (prev && prev.cleanSrc !== src && !prevWasError) beginCrossFade(prev);
       scrollThumbIntoView();
     }
     lastRendered = current.value ? { cleanSrc: current.value.cleanSrc, aspect: { ...intrinsic.value } } : null;
@@ -773,6 +826,14 @@ useEventListener(document, "click", (e: MouseEvent) => {
   e.preventDefault();
   open(trigger);
 });
+
+/**
+ * 实况照片的视频 Blob 缓存按「页面」存活，路由切换时统一 revoke。
+ * 挂在这里是因为 Lightbox 是全局单例（app.vue 挂载一次、永不卸载），相当于应用级生命周期钩子；
+ * 同一路由内开/关灯箱不清，故文章页与灯箱之间能复用同一份提取结果。
+ */
+const route = useRoute();
+watch(() => route.fullPath, clearLivePhotoVideoCache);
 
 onBeforeUnmount(() => {
   stageObserver?.disconnect();
@@ -865,24 +926,28 @@ watch(stageRef, el => {
         @dragstart.prevent
         @dblclick="onDoubleClick">
         <div v-if="current" class="lb-media-box" :class="{ 'is-animating': zoomAnimating, 'is-fading': !!crossFade }" :style="boxStyle">
-          <div :key="`${current.src}#${index}`" class="lb-media" :style="mediaStyle" :class="{ 'is-visible': mediaVisible, 'has-error': loadError }">
+          <!-- 加载失败时整块撤掉：v-if="!loadError" 让 <img>/LivePhoto 根本不在 DOM，破图占位没载体可依附。
+               之前的 .has-error { visibility: hidden } 救不了切图瞬间——resetView 会先把 loadError 清回 false，
+               接着新图加载失败前的几十 ms 里 <img> 已是破图占位 + visibility 还是 visible。
+               不在 .lb-media / LivePhoto 上挂 :key：让 Vue 按位置/类型复用实例，
+               切图省掉 setup 重跑 + refs 重置 + IntersectionObserver 重绑那一大段——只有 src 真正变化时由组件内 watch 响应。 -->
+          <div v-if="!loadError" class="lb-media" :style="mediaStyle" :class="{ 'is-visible': mediaVisible, 'has-error': loadError }">
             <LivePhoto
               v-if="current.isLive"
-              :key="current.src"
               :src="current.src"
-              :alt="current.alt"
+              :alt="current.caption"
               :hover-play="false"
               :lazy="false"
               class="size-full" />
             <img
               v-else
-              :key="current.src"
+              :key="`img:${current.src}`"
               :src="current.src"
-              :alt="current.alt"
+              :alt="current.caption"
               class="lb-image size-full"
               decoding="async"
               @load="onMediaLoaded"
-              @error="loadError = true" >
+              @error="onMediaError" >
           </div>
 
           <div v-if="loadError" class="lb-error" role="alert">
@@ -899,7 +964,7 @@ watch(stageRef, el => {
           <img :src="crossFade.src" alt="" >
         </div>
 
-        <img v-for="item in preload" :key="item.src" :src="item.src" alt="" class="lb-preload" >
+        <img v-for="item in preload" :key="item.src" :src="item.src" alt="" class="lb-preload" @load="onPreloadLoad($event, item.cleanSrc)" >
 
         <!-- 箭头放在舞台内：top 的 100% 才对得上图片区（放在 .lb-root 会按整屏居中，偏低） -->
         <button v-if="hasMultiple" type="button" class="lb-arrow is-prev" :aria-label="LABELS.prev" @click="prev">
@@ -912,7 +977,13 @@ watch(stageRef, el => {
 
       <div v-if="current?.caption" class="lb-caption">{{ current.caption }}</div>
 
-      <div v-if="hasMultiple" v-show="thumbsVisible" ref="strip" class="lb-thumbs">
+      <div
+        v-if="hasMultiple"
+        v-show="thumbsVisible"
+        ref="strip"
+        class="lb-thumbs"
+        :data-at-left="stripAtStart"
+        :data-at-right="stripAtEnd">
         <button
           v-for="(item, i) in slides"
           :key="i"
@@ -922,15 +993,16 @@ watch(stageRef, el => {
           :class="{ 'is-selected': i === index }"
           :style="{ aspectRatio: thumbRatio(item) }"
           :tabindex="i === index ? 0 : -1"
-          :aria-label="item.caption || item.alt || `第 ${i + 1} 张`"
+          :aria-label="item.caption || item.alt"
           :aria-current="i === index"
           @click="goToIndex(i)">
-          <img :src="item.cleanSrc" :alt="item.alt" loading="lazy" >
+          <!-- caption 即图片标题（data-caption 优先，缺失则回落到 alt）；都没写就让 alt 空着，不写「第 N 张」占位 -->
+          <img :src="item.cleanSrc" :alt="item.caption" loading="lazy" >
         </button>
       </div>
 
       <div v-if="morph" class="lb-morph" :style="morphStyle">
-        <img :src="morph.src" alt="" >
+        <div class="lb-morph-bg" :style="{ backgroundImage: `url('${morph.src}')` }" />
       </div>
     </div>
   </dialog>

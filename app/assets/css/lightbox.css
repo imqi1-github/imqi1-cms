@@ -253,6 +253,8 @@ html .lb-dialog img {
   justify-content: center;
   position: absolute;
   text-align: center;
+  /* 与工具栏/说明/箭头同款：插入即淡入；关闭时随 .lb-root 一起淡出 */
+  animation: lb-fade-in 0.35s ease both;
 }
 
 .lb-error svg {
@@ -275,12 +277,6 @@ html .lb-dialog img {
   opacity: 1;
 }
 
-/* 加载失败时藏掉原始 <img>：否则浏览器自带的破图占位（左上角小图标 + alt 文本）
-   会从错误提示旁边露出来 */
-.lb-media.has-error img {
-  visibility: hidden;
-}
-
 .lb-image {
   border-radius: var(--lb-radius);
   display: block;
@@ -301,7 +297,8 @@ html .lb-dialog img {
 .lb-root.is-closing .lb-toolbar,
 .lb-root.is-closing .lb-arrow,
 .lb-root.is-closing .lb-thumbs,
-.lb-root.is-closing .lb-caption {
+.lb-root.is-closing .lb-caption,
+.lb-root.is-closing .lb-error {
   animation: lb-fade-out 0.35s ease forwards;
 }
 
@@ -426,19 +423,38 @@ html .lb-dialog img {
 /* ---------- 缩略图条 ---------- */
 
 .lb-thumbs {
+  --lb-fade-left: 0px;
+  --lb-fade-right: 0px;
   display: flex;
   flex-shrink: 0;
   gap: 8px;
   /* 不足一屏时居中；safe 让溢出时退回 start，避免首尾缩略图滚不到 */
   justify-content: center;
   justify-content: safe center;
+  /* 两端羽化只在确实溢出的一侧亮起（组件同步 data-at-*，同表格横向滚动的做法） */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--lb-fade-left), #000 calc(100% - var(--lb-fade-right)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--lb-fade-left), #000 calc(100% - var(--lb-fade-right)), transparent 100%);
+  -ms-overflow-style: none;
   overflow-x: auto;
   /* 12+76+12=100px，与线上缩略图条总高一致 */
   padding: 12px 8px;
-  scrollbar-width: thin;
+  /* 滚动条完全隐藏：羽化渐隐已提示边缘还有内容，无需常驻滚动条 */
+  scrollbar-width: none !important;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   z-index: 10;
+}
+
+.lb-thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.lb-thumbs[data-at-left="false"] {
+  --lb-fade-left: 1.5rem;
+}
+
+.lb-thumbs[data-at-right="false"] {
+  --lb-fade-right: 1.5rem;
 }
 
 .lb-thumb {
@@ -457,6 +473,7 @@ html .lb-dialog img {
   padding: 0;
   transition: all 0.2s ease;
   width: auto;
+  font-family: var(--font-serif, "Noto Serif SC", serif);
 }
 
 /* cover 而非 contain：宽度被 min/max 夹住时裁切填满，不留白 */
@@ -509,10 +526,17 @@ html .lb-dialog img {
   }
 }
 
-.lb-morph img {
-  display: block;
+/* 用 background-image 而非 <img>：图片 404 时不显示浏览器自带的破图占位。
+   background-image 加载失败时只是空着，没有任何视觉残留。
+   圆角必须与最终 .lb-image 一致：源图（触发元素）本身是圆角的，
+   收敛途中如果 morph 是直角，源图圆角处就会从直角 morph 的角里漏出来——视觉上边缘闪一下。 */
+.lb-morph-bg {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: var(--lb-radius);
   height: 100%;
-  object-fit: cover;
+  overflow: hidden;
   width: 100%;
 }
 
@@ -524,6 +548,7 @@ html .lb-dialog img {
   .lb-arrow,
   .lb-thumbs,
   .lb-caption,
+  .lb-error,
   .lb-morph,
   .lb-media-box.is-fading .lb-media,
   .lb-outgoing {
@@ -539,6 +564,8 @@ html .lb-dialog img {
   .lb-toolbar {
     font-size: 14px;
     padding: 6px;
+    display: flex;
+    justify-content: space-between;
   }
 
   .lb-btn {
@@ -559,5 +586,9 @@ html .lb-dialog img {
     max-width: 118px;
     min-width: 36px;
     width: auto;
+  }
+
+  .lb-pill.is-middle {
+    display: none;
   }
 }
