@@ -389,9 +389,10 @@ function buildInfoContent(place: Place) {
   const closeOnCover = Boolean(place.cover);
   const bodyPadding = closeOnCover ? "10px 12px" : "10px 12px 10px 38px";
 
-  // 扫码在高德打开（仅该地点有坐标时；InfoWindow 为原生 HTML，直接内联 <img>/icon）
+  // 扫码在高德打开（仅「我的足迹」地点、且该地点有坐标时；InfoWindow 为原生 HTML，直接内联 <img>/icon）。
+  // 访客分布卡片（place 带 readers）不展示二维码——该视图关注"哪些城市的读者来过"，二维码在此无意义、纯干扰。
   const qrHtml =
-    place.longitude != null && place.latitude != null
+    readers.length === 0 && place.longitude != null && place.latitude != null
       ? `<div style="margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:6px;margin-right:13px;">
           <img src="/api/qr?text=${encodeURIComponent(
             `https://uri.amap.com/marker?position=${place.longitude},${place.latitude}&name=${encodeURIComponent(place.name || "")}&src=imqi1&coordinate=gcj02&callnative=1`,
