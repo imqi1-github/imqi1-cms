@@ -564,7 +564,7 @@ watch(
 // 灯箱画廊容器引用
 const lightboxContainer = useTemplateRef<HTMLDivElement>("lightboxContainer");
 
-// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-fancybox] 收集幻灯片
+// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-lightbox] 收集幻灯片
 const { register, unregister } = useLightbox();
 // 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
 // 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
@@ -648,7 +648,7 @@ onUnmounted(() => {
           alt="封面"
           :aspect-ratio="firstCover?.width && firstCover?.height ? `${firstCover.width} / ${firstCover.height}` : undefined"
           :hover-play="false"
-          data-fancybox="gallery"
+          data-lightbox="gallery"
           :data-caption="covers[0]?.desc || '封面'"
           :class="
             [

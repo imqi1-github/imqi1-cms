@@ -1,4 +1,4 @@
-/** 灯箱幻灯片：从触发元素（`[data-fancybox]`）解析出的自包含数据 */
+/** 灯箱幻灯片：从触发元素（`[data-lightbox]`）解析出的自包含数据 */
 export interface LightboxSlide {
   /** 原图地址；实况照片带 `#live` 后缀（LivePhoto 据此识别） */
   src: string;

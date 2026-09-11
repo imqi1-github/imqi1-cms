@@ -1,6 +1,6 @@
 ---
 name: image-lightbox-top-layer-dialog
-description: "灯箱 2026-09-10 起自研 `<Lightbox>`(替代商用许可的 Fancybox):原生 <dialog>+showModal 进 top layer、useState 单例、delegation 按 data-fancybox 分组、LivePhoto 直接渲染"
+description: "灯箱 2026-09-10 起自研 `<Lightbox>`(替代商用许可的 Fancybox):原生 <dialog>+showModal 进 top layer、useState 单例、delegation 按 data-lightbox 分组、LivePhoto 直接渲染"
 metadata:
   node_type: memory
   type: project
@@ -11,8 +11,8 @@ metadata:
 **架构(改灯箱相关代码前先读)**
 - `app/components/Lightbox.vue`(全局单例,`app.vue` 里挨着 `<Toaster>` 挂一次)+ `app/composables/useLightbox.ts`(状态)+ `app/types/composables/lightbox.d.ts` + `app/assets/css/lightbox.css`。范式照抄 `useConfirm`/`ConfirmDialog`:Nuxt **`useState`** 承载共享状态,模块级 `let` 只放 DOM 引用。
 - **渲染进原生 `<dialog>` + `showModal()`**:进浏览器 top layer,**天然盖住 z-9999 的页脚悬浮按钮**,并白拿 ESC(`cancel` 事件)、焦点陷阱、背景 inert——因此完全绕开了仓库那套 z-index 分层(Dialog/Sheet 是 z-200/201)。这是 Fancybox 原本的做法(vendored CSS 里的 `.fancybox__dialog`/`::backdrop` 就是证据)。`::backdrop` 故意留透明,模糊+底色交给内部 `.lb-backdrop`,开合只过渡普通元素 opacity。
-- **触发契约仍是 `data-fancybox="gallery"`**,故意不改名:markdown 渲染是**读时**生成(`renderMarkdown` 在 GET handler 里调),但响应有 ISR 缓存,改名要等缓存失效;而标记本身只是惰性 DOM 钩子、不涉许可。
-- 页面侧只调 `register(container)` / `unregister(container)`,**不 bind**。点击走 document 委派、点击时才查 `[data-fancybox]`,故 Markdown 事后注入 DOM 的图片照样生效。`findScope` 取**最深**的已注册容器(封面轮播自己也注册),不随 onMounted 先后次序漂移。
+- **触发契约是 `data-lightbox="gallery"`**(2026-09 由 `data-fancybox` 改名)。此前一直没改是怕 markdown 读时生成 + ISR 缓存导致新旧不一致;后来加了 `server/plugins/redis-cache-reset.ts`,**服务启动时 flushdb 清空 Redis**,部署即清旧 ISR → 旧缓存不会残留 `data-fancybox`,改名才安全。改名必须**四处一致**:渲染器(`server/utils/markdown.ts`、`useMarkdownWidgets`)、净化白名单(`shared/html.ts` 的 `ADD_ATTR`)、客户端(`useMarkdownImages`)、解析器(`useLightbox` 的 `closest/getAttribute/querySelector`)。**漏掉白名单会被 sanitize 剥掉**。
+- 页面侧只调 `register(container)` / `unregister(container)`,**不 bind**。点击走 document 委派、点击时才查 `[data-lightbox]`,故 Markdown 事后注入 DOM 的图片照样生效。`findScope` 取**最深**的已注册容器(封面轮播自己也注册),不随 onMounted 先后次序漂移。
 - 实况照片:灯箱里**直接渲染 `LivePhoto.vue`**(`:hover-play="false"`),由此删掉了 400 行往 Fancybox 幻灯片里手插 DOM 的 `useFancyboxLivePhoto.ts` 与 `.flp-*` CSS。滑片识别靠 LivePhoto 注入的 `data-live-photo` 标记——**别想从 `<img src>` 反推**:live 分支的 img 渲染的是剥掉 `#live` 的干净地址。
 
 **切图过渡(2026-09-11 加:相邻滑片 / 远距交叉淡化)**

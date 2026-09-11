@@ -6,8 +6,8 @@ import type { LightboxSlide, LightboxState } from "~/types/composables/lightbox"
  * 全局单例：`useState` 承载共享状态，`<Lightbox>` 在 app.vue 挂载一次，
  * 参照 useConfirm / ConfirmDialog 的既有范式。
  *
- * 画廊按 `data-fancybox` 属性值分组，且只在**显式注册过的容器**内收集幻灯片——
- * 与旧 Fancybox.bind(container, "[data-fancybox]") 的作用域一致：
+ * 画廊按 `data-lightbox` 属性值分组，且只在**显式注册过的容器**内收集幻灯片——
+ * 作用域与旧 Fancybox.bind(container, ...) 一致（旧库用 data-fancybox，本仓库已统一为 data-lightbox）：
  * 既避免劫持 admin 预览等无关图片，又能拾取 Markdown 渲染后才注入 DOM 的图片
  * （委派监听在点击时才查询，不依赖挂载时机）。
  */
@@ -67,7 +67,7 @@ export const useLightbox = () => {
    */
   const resolveTrigger = (target: EventTarget | null): HTMLElement | null => {
     if (!(target instanceof HTMLElement)) return null;
-    const el = target.closest<HTMLElement>("[data-fancybox]");
+    const el = target.closest<HTMLElement>("[data-lightbox]");
     if (!el) return null;
     return findScope(el) ? el : null;
   };
@@ -97,8 +97,8 @@ export const useLightbox = () => {
     const scope = findScope(trigger);
     if (!scope) return;
 
-    const group = trigger.getAttribute("data-fancybox") ?? "gallery";
-    const groupTriggers = Array.from(scope.querySelectorAll<HTMLElement>(`[data-fancybox="${CSS.escape(group)}"]`));
+    const group = trigger.getAttribute("data-lightbox") ?? "gallery";
+    const groupTriggers = Array.from(scope.querySelectorAll<HTMLElement>(`[data-lightbox="${CSS.escape(group)}"]`));
     const index = groupTriggers.indexOf(trigger);
     if (index < 0) return;
 

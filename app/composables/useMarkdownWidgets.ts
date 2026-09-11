@@ -72,7 +72,7 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
       class: "markdown-live-photo w-full max-h-150 rounded-lg",
       aspectRatio,
       ...METEING_LIVE_PHOTO_PROPS,
-      "data-fancybox": "gallery",
+      "data-lightbox": "gallery",
       "data-caption": caption || "实况照片",
     });
   });
@@ -211,7 +211,7 @@ export function useMarkdownWidgets(root: HTMLElement, opts: UseMarkdownWidgetsOp
       class: className,
       aspectRatio: aspectRatio || undefined,
       ...METEING_LIVE_PHOTO_PROPS,
-      "data-fancybox": "gallery",
+      "data-lightbox": "gallery",
       "data-caption": caption || "图片",
     });
   });

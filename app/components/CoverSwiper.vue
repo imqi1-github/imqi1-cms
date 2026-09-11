@@ -38,7 +38,7 @@ let isUnmounted = false;
 // 延迟初始化的 setTimeout 句柄 —— 卸载时取消，避免待执行回调在销毁后触发 initSwiper
 let initTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-fancybox] 收集幻灯片
+// 注册画廊容器：全局灯箱在点击时才按容器内的 [data-lightbox] 收集幻灯片
 const { register, unregister } = useLightbox();
 // 模板 ref 会在子树卸载时被同步置 null（早于 onUnmounted 触发，见 runtime-core unmount），
 // 所以挂载时把元素本身留存一份；否则卸载时传进去的是 null，注销成了空操作，
@@ -140,7 +140,7 @@ watch(
           :aspect-ratio="cover.width && cover.height ? `${cover.width} / ${cover.height}` : undefined"
           :hover-play="false"
           class="swiper-img"
-          data-fancybox="gallery"
+          data-lightbox="gallery"
           :data-caption="cover.desc || '封面'"
           loading="lazy"
         />

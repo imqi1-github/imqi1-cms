@@ -187,7 +187,7 @@ async function createMarkdownInstance(): Promise<MarkdownIt> {
 
     token.attrSet("loading", "lazy");
     token.attrSet("class", "markdown-image");
-    token.attrSet("data-fancybox", "gallery");
+    token.attrSet("data-lightbox", "gallery");
     if (alt) {
       token.attrSet("data-caption", alt);
     }

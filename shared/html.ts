@@ -31,7 +31,7 @@ export function sanitizeHtml(html: string): string {
       "data-url",
       "data-type",
       "data-params",
-      "data-fancybox",
+      "data-lightbox",
       "data-caption",
     ],
   });

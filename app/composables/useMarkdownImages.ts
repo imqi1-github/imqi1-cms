@@ -65,7 +65,7 @@ export const useMarkdownImages = () => {
       const src = imgEl.src;
       const alt = imgEl.alt || "";
       const className = imgEl.className || "";
-      const dataFancybox = imgEl.getAttribute("data-fancybox");
+      const dataLightbox = imgEl.getAttribute("data-lightbox");
       const dataCaption = imgEl.getAttribute("data-caption");
       const resolvedDimensions = options.resolveDimensions?.(src);
       const width = imgEl.getAttribute("width") || resolvedDimensions?.width || null;
@@ -105,7 +105,7 @@ export const useMarkdownImages = () => {
           hoverPlay: false, // 详情页内嵌实况照片走点击播放模式
           loading: "lazy",
         };
-        if (dataFancybox) vnodeProps["data-fancybox"] = dataFancybox;
+        if (dataLightbox) vnodeProps["data-lightbox"] = dataLightbox;
         if (dataCaption) vnodeProps["data-caption"] = dataCaption;
 
         // 替换原 img
@@ -127,7 +127,7 @@ export const useMarkdownImages = () => {
               src="${escapeHtmlAttr(src)}"
               alt="${escapeHtmlAttr(alt)}"
               decoding="async"
-              ${dataFancybox ? `data-fancybox="${escapeHtmlAttr(dataFancybox)}"` : ""}
+              ${dataLightbox ? `data-lightbox="${escapeHtmlAttr(dataLightbox)}"` : ""}
               ${dataCaption ? `data-caption="${escapeHtmlAttr(dataCaption)}"` : ""}
               class="markdown-image"
             />
