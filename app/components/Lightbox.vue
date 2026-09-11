@@ -1019,7 +1019,8 @@ useEventListener(document, "click", (e: MouseEvent) => {
 });
 
 /**
- * 实况照片的视频 Blob 缓存按「页面」存活，路由切换时统一 revoke。
+ * 实况照片的视频 Blob 缓存按「页面」存活，路由切换时清理（延后一轮才 revoke，
+ * 见 useLivePhoto 的 retiredBlobUrls——避免 revoke 到过渡中/新页面仍在引用的 blob）。
  * 挂在这里是因为 Lightbox 是全局单例（app.vue 挂载一次、永不卸载），相当于应用级生命周期钩子；
  * 同一路由内开/关灯箱不清，故文章页与灯箱之间能复用同一份提取结果。
  */

@@ -18,13 +18,22 @@ const inflight = new Map<string, Promise<LivePhotoMedia>>();
  */
 let cacheEpoch = 0;
 
-/** 释放所有缓存的 Blob URL。路由切换时调用——彼时旧页面的 LivePhoto 都已卸载。 */
+/**
+ * 「上一轮退役」的 Blob URL：清理时不当场 revoke，而是先挪进这里、等下一次清理才真正释放。
+ * 路由切换时旧页面的 LivePhoto 可能仍在过渡动画里可见、并保留着这些 blob URL；新页面也可能
+ * 刚命中过同一份结果。当场 revoke 会让 <img>/<video> 指向已失效的 blob: URL，浏览器报
+ * net::ERR_FILE_NOT_FOUND（正是「从其他页切进含实况照片页面」时看到的报错）。延后一整轮清理
+ * （那时相关组件早已随页面卸载、不再引用）再 revoke，就绝不会 revoke 到还在被使用的 blob。
+ */
+let retiredBlobUrls: string[] = [];
+
+/** 清理所有缓存的 Blob URL（路由切换时调用）。本轮不当场 revoke，改挪去下一轮退役释放，见上。 */
 const clearLivePhotoMediaCache = () => {
   cacheEpoch++;
-  for (const url of videoUrlCache.values()) {
-    if (url) URL.revokeObjectURL(url);
-  }
-  for (const url of imageUrlCache.values()) URL.revokeObjectURL(url);
+  // 释放上一轮退役的（已隔了一个页面，无人再引用）
+  for (const url of retiredBlobUrls) URL.revokeObjectURL(url);
+  // 本轮缓存挪去退役，暂不 revoke——它可能仍被旧页面过渡层/刚命中的新页面引用着
+  retiredBlobUrls = [...videoUrlCache.values(), ...imageUrlCache.values()].filter((u): u is string => Boolean(u));
   videoUrlCache.clear();
   imageUrlCache.clear();
   inflight.clear();
