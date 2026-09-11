@@ -297,20 +297,62 @@ html .lb-dialog img {
 .lb-root.is-closing .lb-toolbar,
 .lb-root.is-closing .lb-arrow,
 .lb-root.is-closing .lb-thumbs,
-.lb-root.is-closing .lb-caption,
+.lb-root.is-closing .lb-caption-track,
 .lb-root.is-closing .lb-error {
   animation: lb-fade-out 0.35s ease forwards;
 }
 
-/* 切图交叉淡化：新图淡入、旧图淡出。
-   用 animation 而非 transition——两层都是本帧新建的元素，动画插入即播，
-   不必像 transition 那样先落一帧初始状态（那需要 rAF 编排，易碎）。 */
-.lb-media-box.is-fading .lb-media {
-  animation: lb-fade-in 0.22s ease both;
+/* ---------- 切图过渡 ---------- */
+
+/* 滑片轨道：铺满图片区、只当位移载体，箭头与预加载图才不跟着图片一起走。
+   pointer-events: none 把空白处的点击放回舞台（点空白关闭照旧生效）。 */
+.lb-slide-track {
+  align-items: center;
+  display: flex;
+  inset: var(--lb-toolbar-h) 0 0;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
 }
 
-.lb-outgoing {
-  animation: lb-fade-out 0.22s ease forwards;
+.lb-slide-track .lb-media-box {
+  pointer-events: auto;
+}
+
+/* 说明文字轨道：拖动时与图片同位移，两者才读作一个整体 */
+.lb-caption-track {
+  align-self: center;
+  flex-shrink: 0;
+  max-width: 100%;
+  z-index: 10;
+}
+
+/* 入场：相邻切换自另一侧滑入；远距跳转淡入（新图与出场层此消彼长）。
+   位移起止走 CSS 变量、插值走 keyframes——入场层与出场层是两个元素，
+   只共享同一组变量与同一条动画才能读作一个整体。 */
+.lb-slide-track.is-crossing,
+.lb-caption-track.is-crossing {
+  animation: lb-fade-in var(--lb-switch-ms, 220ms) ease both;
+}
+
+.lb-slide-track.is-sliding,
+.lb-caption-track.is-sliding {
+  animation: lb-slide-in var(--lb-switch-ms, 300ms) cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes lb-slide-in {
+  from {
+    transform: translate3d(var(--lb-slide-from, 0px), 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 出场层与拖动跟手预览共用一套定位：都按图片区居中，位移由 JS 写成 transform */
+.lb-outgoing,
+.lb-drag-peek {
   left: 50%;
   opacity: 1;
   pointer-events: none;
@@ -318,6 +360,88 @@ html .lb-dialog img {
   top: calc((100% + var(--lb-toolbar-h)) / 2);
   translate: -50% -50%;
   z-index: 1;
+}
+
+.lb-outgoing.is-crossing {
+  animation: lb-fade-out var(--lb-switch-ms, 220ms) ease forwards;
+}
+
+.lb-outgoing.is-sliding,
+.lb-outgoing-caption.is-sliding {
+  animation: lb-slide-out var(--lb-switch-ms, 300ms) cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* 连续两次同类过渡下类名一模一样，浏览器认为动画没变、不会重播，切图就成了瞬移
+   （连点箭头、两图之间来回切时最明显）。is-alt 是每次过渡翻转的交替位，
+   靠它选中同内容的另一份 keyframes，animation-name 一变动画必然重播。
+   只在 animation-name 上覆盖，时长/缓动继续沿用上面 shorthand 里的值。 */
+.lb-slide-track.is-alt.is-crossing,
+.lb-caption-track.is-alt.is-crossing {
+  animation-name: lb-fade-in-alt;
+}
+
+.lb-slide-track.is-alt.is-sliding,
+.lb-caption-track.is-alt.is-sliding {
+  animation-name: lb-slide-in-alt;
+}
+
+.lb-outgoing.is-alt.is-crossing {
+  animation-name: lb-fade-out-alt;
+}
+
+.lb-outgoing.is-alt.is-sliding,
+.lb-outgoing-caption.is-alt.is-sliding {
+  animation-name: lb-slide-out-alt;
+}
+
+@keyframes lb-fade-in-alt {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lb-fade-out-alt {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes lb-slide-in-alt {
+  from {
+    transform: translate3d(var(--lb-slide-from, 0px), 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes lb-slide-out-alt {
+  from {
+    transform: translate3d(var(--lb-out-from, 0px), 0, 0);
+  }
+
+  to {
+    transform: translate3d(var(--lb-out-to, 0px), 0, 0);
+  }
+}
+
+@keyframes lb-slide-out {
+  from {
+    transform: translate3d(var(--lb-out-from, 0px), 0, 0);
+  }
+
+  to {
+    transform: translate3d(var(--lb-out-to, 0px), 0, 0);
+  }
 }
 
 @keyframes lb-fade-in {
@@ -340,7 +464,8 @@ html .lb-dialog img {
   }
 }
 
-.lb-outgoing img {
+.lb-outgoing img,
+.lb-drag-peek img {
   border-radius: var(--lb-radius);
   display: block;
   height: 100%;
@@ -406,18 +531,36 @@ html .lb-dialog img {
 /* ---------- 说明文字 ---------- */
 
 .lb-caption {
-  align-self: center;
   color: var(--lb-text-color);
-  flex-shrink: 0;
   font-family: var(--font-serif, "Noto Serif SC", serif);
   line-height: 1.5;
   max-height: calc(80vh - 100px);
-  max-width: 100%;
   overflow: auto;
   overflow-wrap: anywhere;
   padding: 16px 4px;
   text-align: start;
-  z-index: 10;
+}
+
+/* 出场说明文字：与 .lb-caption 同款排版，铺在同一个底边上（底边即缩略图条顶边）。
+   fit-content + auto 外边距复刻 .lb-caption 的 align-self: center——居中不占 translate，
+   留给动画的 transform 用。 */
+.lb-outgoing-caption {
+  color: var(--lb-text-color);
+  font-family: var(--font-serif, "Noto Serif SC", serif);
+  left: 0;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-height: calc(80vh - 100px);
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  padding: 16px 4px;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  text-align: start;
+  width: fit-content;
+  z-index: 15;
 }
 
 /* ---------- 缩略图条 ---------- */
@@ -500,6 +643,8 @@ html .lb-dialog img {
 
 .lb-morph {
   animation: var(--lb-morph-anim, lb-morph-open) 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  /* 固定 8px，与原图和灯箱里的图一致 */
+  border-radius: var(--lb-radius);
   pointer-events: none;
   position: fixed;
   transform-origin: center center;
@@ -508,33 +653,37 @@ html .lb-dialog img {
 
 @keyframes lb-morph-open {
   from {
+    /* 这一端整层被缩了 scale 倍，圆角要乘回 1/scale，屏幕上才还是 --lb-radius */
+    border-radius: calc(var(--lb-radius) / var(--lb-morph-scale, 1));
     transform: var(--lb-morph-away);
   }
 
   to {
+    border-radius: var(--lb-radius);
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 @keyframes lb-morph-close {
   from {
+    border-radius: var(--lb-radius);
     transform: translate3d(0, 0, 0) scale(1);
   }
 
   to {
+    border-radius: calc(var(--lb-radius) / var(--lb-morph-scale, 1));
     transform: var(--lb-morph-away);
   }
 }
 
 /* 用 background-image 而非 <img>：图片 404 时不显示浏览器自带的破图占位。
    background-image 加载失败时只是空着，没有任何视觉残留。
-   圆角必须与最终 .lb-image 一致：源图（触发元素）本身是圆角的，
-   收敛途中如果 morph 是直角，源图圆角处就会从直角 morph 的角里漏出来——视觉上边缘闪一下。 */
+   圆角继承外层（外层的值在动画里补偿过），自己写死会卡在缩小端的直角上。 */
 .lb-morph-bg {
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
-  border-radius: var(--lb-radius);
+  border-radius: inherit;
   height: 100%;
   overflow: hidden;
   width: 100%;
@@ -547,11 +696,12 @@ html .lb-dialog img {
   .lb-toolbar,
   .lb-arrow,
   .lb-thumbs,
-  .lb-caption,
+  .lb-caption-track,
   .lb-error,
   .lb-morph,
-  .lb-media-box.is-fading .lb-media,
-  .lb-outgoing {
+  .lb-slide-track,
+  .lb-outgoing,
+  .lb-outgoing-caption {
     animation: none;
   }
 }

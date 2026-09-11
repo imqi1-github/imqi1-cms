@@ -4,8 +4,8 @@ import "@/assets/css/lightbox.css";
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 import { useEventListener, useMediaQuery, usePreferredReducedMotion } from "@vueuse/core";
 
-import type { LightboxSlide, LightboxState } from "~/types/composables/lightbox";
-import { clearLivePhotoVideoCache, useLivePhoto } from "~/composables/useLivePhoto";
+import type { LightboxSlide, LightboxState, LightboxTransition } from "~/types/composables/lightbox";
+import { clearLivePhotoMediaCache, useLivePhoto } from "~/composables/useLivePhoto";
 import { useScrollFadeMask } from "~/composables/useScrollFadeMask";
 
 /**
@@ -40,11 +40,16 @@ const LABELS = {
 const MAX_SCALE = 2;
 const MORPH_MS = 350;
 const ZOOM_ANIM_MS = 300;
-const SWIPE_PX = 60;
+const SWIPE_PX = 25;
 const CLOSE_PX = 120;
+/** 相邻两张之间的间隙：滑片与跟手预览里两张恒差「一个舞台宽 + 这点」，不贴在一起 */
+const PEER_GAP = 16;
+/** 交叉淡化时长（远距跳转）与滑片时长（相邻切换）；滑片要走满一个屏宽，得慢些 */
+const FADE_MS = 220;
+const SLIDE_MS = 300;
 
 const { state, resolveTrigger, open, close, goTo, next, prev, getTriggerAt, release } = useLightbox();
-const { extractLivePhotoMedia } = useLivePhoto();
+const { extractLivePhotoMedia, peekLivePhotoImageUrl } = useLivePhoto();
 
 const dialogRef = useTemplateRef<HTMLDialogElement>("dialog");
 const stageRef = useTemplateRef<HTMLDivElement>("stage");
@@ -64,6 +69,8 @@ const morph = ref<{
   src: string;
   /** 起点（open）或终点（close）相对目标矩形的 transform */
   away: string;
+  /** away 里的缩放系数：整层被缩放，圆角要用它反向补偿（见 lb-morph-* keyframes） */
+  scale: number;
   phase: "open" | "close";
   /** 目标矩形在创建时就固定：关闭时 current 已清空，不能再从 visual 推算 */
   rect: { left: number; top: number; width: number; height: number };
@@ -169,6 +176,16 @@ const boxStyle = computed(() => ({
   height: `${boxSize.value.h}px`,
   opacity: dragOpacity.value,
   transform: `translate3d(${tx.value + dragOffset.value.x}px, ${ty.value + dragOffset.value.y}px, 0) scale(${scale.value})`,
+}));
+
+/**
+ * 说明文字跟着图片同一个位移/透明度，拖动时两者才读作一个整体在走。
+ * 单独包一层（.lb-caption-track）而不是直接写在 .lb-caption 上：
+ * 后者带着 animation-fill-mode: both 的淡入动画，动画优先级高于行内样式，行内 opacity 会被它压住。
+ */
+const captionStyle = computed(() => ({
+  opacity: dragOpacity.value,
+  transform: `translate3d(${dragOffset.value.x}px, ${dragOffset.value.y}px, 0)`,
 }));
 
 const mediaStyle = computed(() => ({
@@ -305,6 +322,10 @@ let dragStart: { x: number; y: number; tx: number; ty: number } | null = null;
 let pinch: { prevDist: number } | null = null;
 /** 本次手势是否真的移动过（用于区分"点空白关闭"与"拖完松手"） */
 let movedThisGesture = false;
+/** 松手切图时的落点位移与方向，交接给切图过渡当动画起点（见 beginTransition） */
+let switchFromX = 0;
+/** 本次切图的入场方向；null 表示按索引差推断（点缩略图时用，滑片/箭头已自带方向） */
+let switchDir: -1 | 1 | null = null;
 /** 低于这个位移视为点击而非拖拽 */
 const DRAG_SLOP = 6;
 
@@ -404,6 +425,9 @@ const onPointerUp = (e: PointerEvent) => {
   const d = dragOffset.value;
   if (scale.value === 1) {
     if (Math.abs(d.x) > SWIPE_PX) {
+      // 把位移与方向交接给滑片动画：松手后出场层从手指离开的位置接着走，不是从静止位重来
+      switchFromX = d.x;
+      switchDir = d.x < 0 ? 1 : -1;
       if (d.x < 0) next();
       else prev();
     } else if (d.y > CLOSE_PX) {
@@ -431,6 +455,37 @@ const onDoubleClick = (e: MouseEvent) => {
     zoomAt(MAX_SCALE, e.clientX, e.clientY);
   });
 };
+
+/**
+ * 拖动跟手预览：往左拖把右边那张一起带进来，往右拖反过来。
+ * 位移和松手后的入场层是同一套坐标（相邻两张恒差一个屏宽），所以松手交接时位置严丝合缝。
+ */
+const dragPeek = computed(() => {
+  if (scale.value > 1) return null;
+  const dx = dragOffset.value.x;
+  if (Math.abs(dx) <= DRAG_SLOP) return null;
+  const total = slides.value.length;
+  if (total < 2) return null;
+  const step = dx < 0 ? 1 : -1;
+  const slide = slides.value[(index.value + step + total) % total];
+  if (!slide) return null;
+  // 尺寸未知时退回 16:9：与切图本身的兜底口径一致
+  const cached = dimensionCache.get(slide.cleanSrc);
+  const w = slide.width ?? cached?.w ?? 16;
+  const h = slide.height ?? cached?.h ?? 9;
+  return { step, dx, box: contain({ w, h }, stageBox.value), src: peekLivePhotoImageUrl(slide.cleanSrc) ?? slide.cleanSrc };
+});
+
+const dragPeekStyle = computed(() => {
+  const p = dragPeek.value;
+  if (!p) return undefined;
+  const span = (stageBox.value.w || window.innerWidth) + PEER_GAP;
+  return {
+    width: `${p.box.w}px`,
+    height: `${p.box.h}px`,
+    transform: `translate3d(${p.dx + p.step * span}px, 0, 0)`,
+  };
+});
 
 /** 舞台空白处点击关闭（图片之外的暗区，与旧灯箱一致） */
 const onStageClick = (e: MouseEvent) => {
@@ -508,6 +563,8 @@ const buildMorph = (
   return {
     src,
     away: `translate3d(${dx}px, ${dy}px, 0) scale(${s})`,
+    // 整层会被 scale 缩，圆角也跟着缩（收敛回原图时角就变尖了）。系数交给 CSS，在缩小端补回来
+    scale: s,
     phase,
     rect: { left: target.cx - target.w / 2, top: target.cy - target.h / 2, width: target.w, height: target.h },
   };
@@ -522,6 +579,7 @@ const morphStyle = computed((): Record<string, string> => {
     width: `${m.rect.width}px`,
     height: `${m.rect.height}px`,
     "--lb-morph-away": m.away,
+    "--lb-morph-scale": `${m.scale}`,
     "--lb-morph-anim": m.phase === "open" ? "lb-morph-open" : "lb-morph-close",
   };
 });
@@ -660,11 +718,9 @@ const onDialogClosed = () => {
   morph.value = null;
   mediaVisible.value = false;
   zoomAnimating.value = false;
-  crossFade.value = null;
-  if (fadeTimer) {
-    clearTimeout(fadeTimer);
-    fadeTimer = null;
-  }
+  endTransition();
+  switchFromX = 0;
+  switchDir = null;
   resetGesture();
   unlockScroll();
   // 缩略图条隐藏、没有缩略图时，焦点回到当前这张的原图
@@ -711,49 +767,167 @@ const goToIndex = (i: number) => {
   goTo(i);
 };
 
-// ---- 切图交叉淡入淡出 ----
-
-const FADE_MS = 220;
-/** 正在淡出的上一张；非空表示交叉淡化进行中 */
-const crossFade = ref<{ src: string; aspect: { w: number; h: number } } | null>(null);
-/** 淡出层按它自己的比例铺在舞台上：不能沿用新图的盒，否则横竖图互换时会缩放跳变 */
-const outgoingBox = computed(() => (crossFade.value ? contain(crossFade.value.aspect, stageBox.value) : null));
-let fadeTimer: ReturnType<typeof setTimeout> | null = null;
-/** 上一张真正显示过的图；首帧与画廊切换不参与淡化 */
-let lastRendered: { cleanSrc: string; aspect: { w: number; h: number } } | null = null;
-
-/**
- * 交叉淡化交给 CSS animation：新图与淡出层都是本帧新建的元素，
- * 动画插入即播，不必像 transition 那样先落一帧初始状态（那需要 rAF 编排，易碎）。
- * 这里只负责清理。
- */
-const beginCrossFade = (prev: { cleanSrc: string; aspect: { w: number; h: number } }) => {
-  if (fadeTimer) clearTimeout(fadeTimer);
-  crossFade.value = { src: prev.cleanSrc, aspect: prev.aspect };
-  fadeTimer = setTimeout(() => {
-    crossFade.value = null;
-    fadeTimer = null;
-  }, reducedMotion.value === "reduce" ? 0 : FADE_MS);
+// 箭头/键盘切图自带方向：两张画廊里"下一张"的前后关系靠索引差推不出来（索引差永远是 ±1），
+// 而滑片方向必须跟手势一致，否则会看着像弹回去
+const goNext = () => {
+  switchDir = 1;
+  next();
 };
 
-// 逐张重置：切图、乃至灯箱开着时换画廊，都按当前图片重新适配
+const goPrev = () => {
+  switchDir = -1;
+  prev();
+};
+
+// ---- 切图过渡：相邻切换左右滑片，远距跳转交叉淡化 ----
+
+/** 过渡进行中的出场层（上一张图 + 说明文字）；非空表示过渡中 */
+const transition = ref<LightboxTransition | null>(null);
+let switchTimer: ReturnType<typeof setTimeout> | null = null;
+/** 上一张真正显示过的图；首帧与画廊切换不参与过渡 */
+let lastRendered: { cleanSrc: string; aspect: { w: number; h: number }; index: number } | null = null;
+
+const switchMs = (t: LightboxTransition) => (t.dir === 0 ? FADE_MS : SLIDE_MS);
+
+const endTransition = () => {
+  if (switchTimer) {
+    clearTimeout(switchTimer);
+    switchTimer = null;
+  }
+  transition.value = null;
+};
+
+/** 出场层按它自己的比例铺在舞台上：不能沿用新图的盒，否则横竖图互换时会缩放跳变 */
+const outgoingBox = computed(() => (transition.value ? contain(transition.value.aspect, stageBox.value) : null));
+
+/** 入场层与出场层共用的类名：滑片 or 交叉淡化 */
+const switchClass = computed(() => {
+  const t = transition.value;
+  if (!t) return "";
+  return t.dir === 0 ? "is-crossing" : "is-sliding";
+});
+
+/** 出场图地址。实况照片优先用已提取的 blob（同一包字节，入场层也是它渲染的），
+    免得出场这张还要按原 URL 重新解码、开场空一拍；上一张本身加载失败时留空，不画出场图。 */
+const outgoingSrc = computed(() => {
+  const src = transition.value?.src;
+  if (!src) return "";
+  return peekLivePhotoImageUrl(src) ?? src;
+});
+
+/** 出场说明文字；交叉淡化时说明文字照旧随图换掉，不额外做一层 */
+const outgoingCaption = computed(() => (transition.value?.dir ? transition.value.caption : ""));
+
+/**
+ * 交替位。连续两次同类过渡下元素上的类名一模一样，浏览器认为动画没变、不会重播，
+ * 画面就成了瞬移（连点箭头、两图间快速来回时最明显）。靠它交替换一份同名 keyframes。
+ */
+const switchAlt = ref(false);
+
+/**
+ * 位移起止交给 CSS 变量、插值交给 keyframes：入场层与出场层是两个元素，
+ * 只共享同一组变量与同一条动画，才能读作「一个整体」在移动。
+ */
+const switchVars = computed<Record<string, string> | undefined>(() => {
+  const t = transition.value;
+  if (!t) return undefined;
+  return {
+    "--lb-switch-ms": `${switchMs(t)}ms`,
+    "--lb-slide-from": `${t.inFrom}px`,
+    "--lb-out-from": `${t.outFrom}px`,
+    "--lb-out-to": `${t.outTo}px`,
+  };
+});
+
+/** 说明文字容器的底边距视口底：说明文字紧挨在缩略图条上方，故取缩略图条顶边 */
+const captionBottomPx = () => {
+  const strip = stripRef.value;
+  if (!hasMultiple.value || !thumbsVisible.value || !strip) return 0;
+  const r = strip.getBoundingClientRect();
+  return r.height > 0 ? Math.max(0, window.innerHeight - r.top) : 0;
+};
+
+/** 相邻则返回步进方向，跨多张（点远端缩略图）返回 null → 该走交叉淡化 */
+const adjacentDir = (from: number, to: number): -1 | 1 | null => {
+  const total = slides.value.length;
+  if (total < 2) return null;
+  let d = to - from;
+  if (d > total / 2) d -= total;
+  else if (d < -total / 2) d += total;
+  return Math.abs(d) === 1 ? (d > 0 ? 1 : -1) : null;
+};
+
+/**
+ * 起过渡。动画全走 CSS keyframes（元素新建即播）；这里只算出两层的起止位移与清理时机。
+ * 减弱动效直接换图，不留出场层——留了也只会静止地盖在新图上闪一帧。
+ */
+const beginTransition = (
+  prev: { cleanSrc: string; aspect: { w: number; h: number }; index: number },
+  dir: -1 | 0 | 1,
+  fromX: number,
+  failed: boolean,
+) => {
+  endTransition();
+  if (reducedMotion.value === "reduce") return;
+
+  // 相邻两张恒差「一个舞台宽 + 间隙」：出场层滑到另一侧屏外，入场层从同侧屏外进来，
+  // 与跟手预览同一套坐标，松手交接才不会跳
+  const span = (stageBox.value.w || window.innerWidth) + PEER_GAP;
+  const t: LightboxTransition = {
+    // 上一张加载失败就只免掉出场图，入场层照旧滑进来——整段过渡都省掉的话新图是瞬移出现的
+    src: failed ? null : prev.cleanSrc,
+    aspect: prev.aspect,
+    caption: slides.value[prev.index]?.caption ?? "",
+    dir,
+    outFrom: dir === 0 ? 0 : fromX,
+    outTo: dir === 0 ? 0 : -dir * span,
+    inFrom: dir === 0 ? 0 : fromX + dir * span,
+    captionBottom: captionBottomPx(),
+  };
+  transition.value = t;
+  switchAlt.value = !switchAlt.value;
+  switchTimer = setTimeout(() => {
+    transition.value = null;
+    switchTimer = null;
+  }, switchMs(t));
+};
+
+/**
+ * 切图判定键：索引与地址**任一**变化都算切图。
+ * 只认地址会漏掉「同一张图在画廊里出现两次」——正文重复引用同一张图时（首尾各一次很常见），
+ * 换过去地址不变，但计数、说明文字、缩略图选中态都变了，此时整段处理被跳过、画面纹丝不动。
+ */
+const switchKey = computed(() => `${index.value}:${current.value?.cleanSrc ?? ""}`);
+
+/**
+ * 逐张重置 + 起切图过渡。用 post：过渡要按**换图后**的舞台尺寸和缩略图条位置算，
+ * pre 阶段 DOM 还是旧内容，量出来的盒会偏出一张说明文字的高度（说明文字在流内，撑得舞台变矮）。
+ */
 watch(
-  () => current.value?.cleanSrc,
-  (src, prevSrc) => {
-    if (src === prevSrc) return;
+  switchKey,
+  () => {
     // 切图前先把上一张记下来：此刻 current 已是新图，读不到旧尺寸了
     const prev = lastRendered;
-    // 上一张若本身就是 404，就别把它当 outgoing 淡出——cross-fade 是张 <img>，破图标会从淡出层冒出来
     const prevWasError = loadError.value;
+    const fromX = switchFromX;
+    const dirHint = switchDir;
+    switchFromX = 0;
+    switchDir = null;
+
     resetView();
     measureStage();
     if (state.value) {
-      // 画廊开着才算切图（开/关那一下不走交叉淡化）
-      if (prev && prev.cleanSrc !== src && !prevWasError) beginCrossFade(prev);
+      // 画廊开着才算切图（开/关那一下不走过渡）
+      if (prev && prev.index !== index.value) {
+        beginTransition(prev, dirHint ?? adjacentDir(prev.index, index.value) ?? 0, fromX, prevWasError);
+      }
       scrollThumbIntoView();
     }
-    lastRendered = current.value ? { cleanSrc: current.value.cleanSrc, aspect: { ...intrinsic.value } } : null;
+    lastRendered = current.value
+      ? { cleanSrc: current.value.cleanSrc, aspect: { ...intrinsic.value }, index: index.value }
+      : null;
   },
+  { flush: "post" },
 );
 
 const onKeydown = (e: KeyboardEvent) => {
@@ -775,10 +949,10 @@ const onKeydown = (e: KeyboardEvent) => {
 
   switch (e.key) {
     case "ArrowLeft":
-      prev();
+      goPrev();
       break;
     case "ArrowRight":
-      next();
+      goNext();
       break;
     case "ArrowUp":
       if (scale.value > 1) {
@@ -833,13 +1007,13 @@ useEventListener(document, "click", (e: MouseEvent) => {
  * 同一路由内开/关灯箱不清，故文章页与灯箱之间能复用同一份提取结果。
  */
 const route = useRoute();
-watch(() => route.fullPath, clearLivePhotoVideoCache);
+watch(() => route.fullPath, clearLivePhotoMediaCache);
 
 onBeforeUnmount(() => {
   stageObserver?.disconnect();
   stageObserver = null;
   if (zoomAnimTimer) clearTimeout(zoomAnimTimer);
-  if (fadeTimer) clearTimeout(fadeTimer);
+  if (switchTimer) clearTimeout(switchTimer);
   resetGesture();
   unlockScroll();
 });
@@ -861,7 +1035,7 @@ watch(stageRef, el => {
     :aria-label="LABELS.dialog"
     @cancel.prevent="onDialogCancel"
     @close="onDialogClosed">
-    <div v-if="visible" class="lb-root" :class="{ 'is-closing': closing }">
+    <div v-if="visible" class="lb-root" :class="{ 'is-closing': closing }" :style="switchVars">
       <div class="lb-backdrop" @click="close" />
 
       <div class="lb-toolbar">
@@ -925,57 +1099,82 @@ watch(stageRef, el => {
         @click="onStageClick"
         @dragstart.prevent
         @dblclick="onDoubleClick">
-        <div v-if="current" class="lb-media-box" :class="{ 'is-animating': zoomAnimating, 'is-fading': !!crossFade }" :style="boxStyle">
-          <!-- 加载失败时整块撤掉：v-if="!loadError" 让 <img>/LivePhoto 根本不在 DOM，破图占位没载体可依附。
-               之前的 .has-error { visibility: hidden } 救不了切图瞬间——resetView 会先把 loadError 清回 false，
-               接着新图加载失败前的几十 ms 里 <img> 已是破图占位 + visibility 还是 visible。
-               不在 .lb-media / LivePhoto 上挂 :key：让 Vue 按位置/类型复用实例，
-               切图省掉 setup 重跑 + refs 重置 + IntersectionObserver 重绑那一大段——只有 src 真正变化时由组件内 watch 响应。 -->
-          <div v-if="!loadError" class="lb-media" :style="mediaStyle" :class="{ 'is-visible': mediaVisible, 'has-error': loadError }">
-            <LivePhoto
-              v-if="current.isLive"
-              :src="current.src"
-              :alt="current.caption"
-              :hover-play="false"
-              :lazy="false"
-              class="size-full" />
-            <img
-              v-else
-              :key="`img:${current.src}`"
-              :src="current.src"
-              :alt="current.caption"
-              class="lb-image size-full"
-              decoding="async"
-              @load="onMediaLoaded"
-              @error="onMediaError" >
-          </div>
+        <!-- 滑片轨道：只当位移载体，好让箭头、预加载图不跟着图片一起走。
+             pointer-events: none 把空白处的点击放回舞台（点空白关闭照旧生效）。 -->
+        <div class="lb-slide-track" :class="[switchClass, { 'is-alt': switchAlt }]">
+          <div v-if="current" class="lb-media-box" :class="{ 'is-animating': zoomAnimating }" :style="boxStyle">
+            <!-- 加载失败时整块撤掉：v-if="!loadError" 让 <img>/LivePhoto 根本不在 DOM，破图占位没载体可依附。
+                 之前的 .has-error { visibility: hidden } 救不了切图瞬间——resetView 会先把 loadError 清回 false，
+                 接着新图加载失败前的几十 ms 里 <img> 已是破图占位 + visibility 还是 visible。
+                 不在 .lb-media / LivePhoto 上挂 :key：让 Vue 按位置/类型复用实例，
+                 切图省掉 setup 重跑 + refs 重置 + IntersectionObserver 重绑那一大段——只有 src 真正变化时由组件内 watch 响应。 -->
+            <div v-if="!loadError" class="lb-media" :style="mediaStyle" :class="{ 'is-visible': mediaVisible, 'has-error': loadError }">
+              <LivePhoto
+                v-if="current.isLive"
+                :src="current.src"
+                :alt="current.caption"
+                :hover-play="false"
+                :lazy="false"
+                class="size-full" />
+              <img
+                v-else
+                :key="`img:${current.src}`"
+                :src="current.src"
+                :alt="current.caption"
+                class="lb-image size-full"
+                decoding="async"
+                @load="onMediaLoaded"
+                @error="onMediaError" >
+            </div>
 
-          <div v-if="loadError" class="lb-error" role="alert">
-            <Icon name="lucide:image-off" mode="svg" />
-            <span>{{ LABELS.imageError }}</span>
+            <div v-if="loadError" class="lb-error" role="alert">
+              <Icon name="lucide:image-off" mode="svg" />
+              <span>{{ LABELS.imageError }}</span>
+            </div>
           </div>
         </div>
 
-        <!-- 切图交叉淡化：上一张按自身比例铺在舞台上，与新图此消彼长 -->
+        <!-- 出场层：上一张按自身比例铺在舞台上，向另一侧滑出（相邻切换）或淡出（远距跳转）。
+             上一张加载失败时只剩空盒（没图可画），但入场层照旧滑进来。 -->
         <div
-          v-if="crossFade && outgoingBox"
+          v-if="transition && outgoingBox"
           class="lb-outgoing"
+          :class="[switchClass, { 'is-alt': switchAlt }]"
           :style="{ width: `${outgoingBox.w}px`, height: `${outgoingBox.h}px` }">
-          <img :src="crossFade.src" alt="" >
+          <img v-if="outgoingSrc" :src="outgoingSrc" alt="" >
+        </div>
+
+        <!-- 拖动跟手预览：相邻那张跟着手指一起进来，松手切图时正好由入场层接住 -->
+        <div v-if="dragPeek" class="lb-drag-peek" :style="dragPeekStyle">
+          <img :src="dragPeek.src" alt="" >
         </div>
 
         <img v-for="item in preload" :key="item.src" :src="item.src" alt="" class="lb-preload" @load="onPreloadLoad($event, item.cleanSrc)" >
 
         <!-- 箭头放在舞台内：top 的 100% 才对得上图片区（放在 .lb-root 会按整屏居中，偏低） -->
-        <button v-if="hasMultiple" type="button" class="lb-arrow is-prev" :aria-label="LABELS.prev" @click="prev">
+        <button v-if="hasMultiple" type="button" class="lb-arrow is-prev" :aria-label="LABELS.prev" @click="goPrev">
           <Icon name="lucide:chevron-left" mode="svg" />
         </button>
-        <button v-if="hasMultiple" type="button" class="lb-arrow is-next" :aria-label="LABELS.next" @click="next">
+        <button v-if="hasMultiple" type="button" class="lb-arrow is-next" :aria-label="LABELS.next" @click="goNext">
           <Icon name="lucide:chevron-right" mode="svg" />
         </button>
       </div>
 
-      <div v-if="current?.caption" class="lb-caption">{{ current.caption }}</div>
+      <!-- 说明文字轨道：拖动时与图片同位移、切图时与图片同动画，两者才读作一个整体 -->
+      <div v-if="current?.caption" class="lb-caption-track" :class="[switchClass, { 'is-alt': switchAlt }]" :style="captionStyle">
+        <div class="lb-caption">{{ current.caption }}</div>
+      </div>
+
+      <!-- 出场说明文字：与出场图共用一条动画，跟着一起滑出屏幕。
+           用 fit-content + auto 外边距复刻 .lb-caption 的 align-self: center（居中不留 translate）。 -->
+      <div
+        v-if="outgoingCaption"
+        class="lb-outgoing-caption"
+        :class="[switchClass, { 'is-alt': switchAlt }]"
+        :style="{ bottom: `${transition!.captionBottom}px` }"
+        aria-hidden="true">
+        {{ outgoingCaption }}
+      </div>
 
       <div
         v-if="hasMultiple"

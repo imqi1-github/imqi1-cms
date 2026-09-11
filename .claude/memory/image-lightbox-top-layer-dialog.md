@@ -15,6 +15,14 @@ metadata:
 - 页面侧只调 `register(container)` / `unregister(container)`,**不 bind**。点击走 document 委派、点击时才查 `[data-fancybox]`,故 Markdown 事后注入 DOM 的图片照样生效。`findScope` 取**最深**的已注册容器(封面轮播自己也注册),不随 onMounted 先后次序漂移。
 - 实况照片:灯箱里**直接渲染 `LivePhoto.vue`**(`:hover-play="false"`),由此删掉了 400 行往 Fancybox 幻灯片里手插 DOM 的 `useFancyboxLivePhoto.ts` 与 `.flp-*` CSS。滑片识别靠 LivePhoto 注入的 `data-live-photo` 标记——**别想从 `<img src>` 反推**:live 分支的 img 渲染的是剥掉 `#live` 的干净地址。
 
+**切图过渡(2026-09-11 加:相邻滑片 / 远距交叉淡化)**
+- `LightboxTransition`(`app/types/composables/lightbox.d.ts`)存出场层参数;位移起止走 `.lb-root` 上的 CSS 变量(`--lb-slide-from` / `--lb-out-from` / `--lb-out-to`、`--lb-switch-ms`),插值走 keyframes。入场层 `.lb-slide-track` 与出场层 `.lb-outgoing` 的位移**恒差一个屏宽**,中途才不露底色;拖拽松手时 `switchFromX`/`switchDir` 交接给动画当起点(出场层从手指离开处接着走,不是从静止位重来)。
+- **说明文字要跟图一起动**,故多包一层 `.lb-caption-track` 承载行内位移:`.lb-caption` 自己带 `animation-fill-mode: both` 的淡入,**动画优先级高于行内样式**,行内 opacity 会被它永久压住。拖动位移与切图动画都挂 track 这一层。
+- **切图判定键必须是「索引 + 地址」**(`switchKey`):只认 `cleanSrc` 时,同一张图在画廊里出现两次(正文重复引用同一张图、首尾各一次很常见)换过去地址不变 → 整段处理被跳过,画面纹丝不动而计数/说明/缩略图选中态都变了。
+- **连点切图动画不重播**:类名没变时浏览器认为动画没变、不重放 → 看着像瞬移。故 `switchAlt` 每次过渡翻转,`is-alt` 选中同内容的另一份 keyframes(`lb-slide-in-alt` 等),只覆盖 `animation-name`(靠多一个类名把特异性顶上去)。
+- 该 watcher 用 `flush: 'post'`:过渡要按**换图后**的舞台尺寸与缩略图条位置算(说明文字在流内、会撑矮舞台),pre 阶段量到的是旧布局。
+- 实况照片播到一半切图会整块透明:灯箱按位置复用同一个 LivePhoto 实例(只换 src),故 LivePhoto 内部 `watch(cleanSrc)` 必须停播并退回静态图——否则 `isPlaying` 仍为真、图片层还停在 `opacity:0`,而下层 `<video>` 已换源不再出帧。卸载时的停播要挂 `beforeUnmount`(`onUnmounted` 里模板 ref 已置空)。
+
 **三个已踩的坑(重写时别再犯)**
 1. `goTo` 给 state 赋的是**新对象**,所以 `watch(state)` 在**切图时也会触发**。现在用一个 watcher + `opened` 标志区分「开 / 关 / 同画廊切图」:切图只同步内容,不重放开场动画(否则每切一张就白屏 350ms)。
 2. **关闭序列读不到值**:`close()` 先把 state 置 null,`index`/`current`/`intrinsic`/`visual` 立刻归零(比例退化成 16:9 兜底),计数还会跳成 `m/0`。故渲染与几何**一律读冻结快照 `display`**(ConfirmDialog 同款:打开时写入、关闭动画播完才清),`state` 只用来判断开合跳变。

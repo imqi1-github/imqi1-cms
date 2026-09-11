@@ -37,7 +37,7 @@ const mediaAspectRatio = computed(() => {
   return width && height ? `${width} / ${height}` : undefined;
 });
 
-const { extractLivePhotoMedia, isLivePhoto, cleanLivePhotoUrl } = useLivePhoto();
+const { extractLivePhotoMedia, peekLivePhotoImageUrl, isLivePhoto, cleanLivePhotoUrl } = useLivePhoto();
 
 // 状态
 const imgRef = ref<HTMLImageElement | null>(null);
@@ -123,6 +123,14 @@ const actualSrc = computed(() => {
   if (!shouldLoad.value) return '';
   return isLive.value ? cleanSrc.value : props.src;
 });
+
+/**
+ * 实况照片那张静态图的地址：已经提取过就用手上的 blob（同一包字节切出来的），否则回退原 URL。
+ * peek 是同步读、不参与响应式——只在换源那一刻取值：灯箱里的下一张通常已被提前提取，
+ * 于是图片和视频一起就位，不再有「视频先出、图还在下载」的错帧，也省掉图片那次请求；
+ * 文章页里图片与提取是并发的，取不到就照旧走原 URL，不会因为等 blob 而变慢。
+ */
+const stillSrc = computed(() => peekLivePhotoImageUrl(cleanSrc.value) ?? cleanSrc.value);
 
 // 初始化懒加载监听
 const initLazyLoading = (el: LivePhotoElement) => {
@@ -300,6 +308,27 @@ watch([shouldLoad, cleanSrc], async ([ready, src]) => {
 
 // 存储定时器 ID，用于清除
 let resetTimer: number | null = null;
+
+/**
+ * 换图即停播、退回静态图。
+ * 灯箱切图会**复用同一个 LivePhoto 实例**（组件按位置复用，只换 src 属性），
+ * 不重置的话 isPlaying 仍为真、图片层还停在 opacity:0，而下层 <video> 已换了源不再出帧，
+ * 于是整块图变成透明的空白——正是"播放中切图"看到的异常。
+ */
+const stopPlayback = () => {
+  if (resetTimer !== null) {
+    clearTimeout(resetTimer);
+    resetTimer = null;
+  }
+  imgOpacity.value = 100;
+  isPlaying.value = false;
+  if (videoRef.value) {
+    videoRef.value.pause();
+    videoRef.value.currentTime = 0;
+  }
+};
+
+watch(cleanSrc, stopPlayback);
 
 /**
  * 等视频首帧可解码显示（readyState≥2 或 loadeddata/canplay 事件）。
@@ -503,6 +532,10 @@ onUnmounted(() => {
   // Blob URL 归 useLivePhoto 的缓存持有，此处不 revoke（可能有别的实例指着同一个）
   videoBlobUrl.value = null;
 });
+
+// 元素脱离文档后浏览器不会自动停播（切到非实况图时本组件被卸载，播放中的视频会继续解码）。
+// 必须挂在 beforeUnmount：模板 ref 在 onUnmounted 里已被置空，那时取不到 <video>。
+onBeforeUnmount(() => videoRef.value?.pause());
 </script>
 
 <template>
@@ -518,11 +551,15 @@ onUnmounted(() => {
     @mouseleave="handleMouseLeave">
     <!-- 视频层：提取完成即常驻挂载并预载解码，置于图片层之下（模板在前 + img 的 relative
          压在其上）。非交互时被不透明图片完整盖住，未解码首帧层即使被浏览器合成成
-         白色矩形也不可见（规避旧方案 opacity:0 视频层在 GPU 路径下盖白屏的坑）。 -->
+         白色矩形也不可见（规避旧方案 opacity:0 视频层在 GPU 路径下盖白屏的坑）。
+         poster 就是这张静态图：视频一旦就位就开始画首帧，而首帧比照片早约 1.5s，
+         图片解码那几十毫秒里露出来的就是一张明显不对的图。按规范 poster 会一直显示到
+         真正开始播放（换 src 又重置），正好把这段空窗填成同一张照片。 -->
     <video
       v-if="videoBlobUrl"
       ref="videoRef"
       :src="videoBlobUrl"
+      :poster="stillSrc"
       muted
       playsinline
       preload="auto"
@@ -534,7 +571,7 @@ onUnmounted(() => {
     <!-- 原始图片：悬浮/点击播放时淡出（opacity 100->0）把下层已就绪的视频"露"出来 -->
     <img
       ref="imgRef"
-      :src="cleanSrc"
+      :src="stillSrc"
       :alt="alt"
       v-bind="imageAttrs"
       :loading="lazy ? 'lazy' : 'eager'"

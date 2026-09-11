@@ -1,11 +1,26 @@
 import http from 'http';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.join(__dirname, '..', '.attachments');
 const PORT = 3030;
+// 默认不传 host：Node 会监听未指定地址（IPv6 `::` 双栈，同时接 IPv4），局域网内其他设备可直接访问。
+// 只想本机用（不暴露给同网段）就 HOST=127.0.0.1 bun run serve
+const HOST = process.env.HOST || "";
+
+/** 本机可被局域网访问的 IPv4 地址（排除回环、未分配的网卡） */
+function lanAddresses() {
+  const list = [];
+  for (const infos of Object.values(os.networkInterfaces())) {
+    for (const info of infos ?? []) {
+      if (info.family === 'IPv4' && !info.internal) list.push(info.address);
+    }
+  }
+  return list;
+}
 
 // MIME 类型映射
 const MIME_TYPES = {
@@ -146,12 +161,23 @@ function serveFile(filePath, res) {
 }
 
 // 启动服务器
-server.listen(PORT, () => {
+const onListening = () => {
   console.log(`\n🚀 文件服务器已启动！`);
   console.log(`📁 根目录: ${ROOT_DIR}`);
-  console.log(`🔗 访问地址: http://localhost:${PORT}/`);
+  console.log(`🔗 本机访问: http://localhost:${PORT}/`);
+  if (!HOST || HOST === "0.0.0.0" || HOST === "::") {
+    const lan = lanAddresses();
+    // 同网段设备（手机/平板）用下面的地址访问；连不上多半是系统防火墙拦了入站，放行 node 即可
+    for (const ip of lan) console.log(`🌐 局域网访问: http://${ip}:${PORT}/`);
+    if (lan.length === 0) console.log(`ℹ️ 未发现可用网卡，当前仅本机可访问`);
+  } else {
+    console.log(`ℹ️ 已按 HOST=${HOST} 限制监听地址，局域网内其他设备访问不到`);
+  }
   console.log(`💡 提示: 将文件放到 .attachments 文件夹中\n`);
-});
+};
+
+if (HOST) server.listen(PORT, HOST, onListening);
+else server.listen(PORT, onListening);
 
 // 错误处理
 server.on('error', (err) => {
