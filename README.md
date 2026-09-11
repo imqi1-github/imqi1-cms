@@ -733,3 +733,5 @@ type ChangelogItem = {
 - **安全相关**：疑似漏洞请**私密**报告（仓库 → Security → Report a vulnerability），别在公开 Issue 披露——见 [SECURITY.md](SECURITY.md)。
 
 项目采用 [AGPL-3.0](LICENSE) 开源许可。
+
+Copyright (C) 2026 棋 (Qi1) <https://github.com/imqi1-github>
