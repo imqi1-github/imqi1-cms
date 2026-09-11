@@ -12,6 +12,10 @@ const importing = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const csrfToken = ref("");
 
+// 批量选择与删除
+const selectedIds = ref<number[]>([]);
+const deleting = ref(false);
+
 // 编辑状态：一条记录可含多个条目（type + value）
 const editingId = ref<number | null>(null);
 
@@ -35,10 +39,29 @@ async function loadLogs() {
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     // 调用管理员专用 API，无缓存，返回原始数据
     logs.value = await $fetch<ChangelogItem[]>("/api/admin/changelogs");
+    // 列表重载后清空选择：已删/已变的 id 不再残留在选中集
+    selectedIds.value = [];
   } catch (err) {
     console.error("加载失败:", err);
   } finally {
     loading.value = false;
+  }
+}
+
+// 批量选择：全选 / 单选
+const isAllSelected = computed(() => logs.value.length > 0 && selectedIds.value.length === logs.value.length);
+const isIndeterminate = computed(() => selectedIds.value.length > 0 && selectedIds.value.length < logs.value.length);
+
+function toggleSelectAll() {
+  selectedIds.value = isAllSelected.value ? [] : logs.value.map(l => l.id);
+}
+
+function toggleSelect(id: number) {
+  const index = selectedIds.value.indexOf(id);
+  if (index > -1) {
+    selectedIds.value.splice(index, 1);
+  } else {
+    selectedIds.value.push(id);
   }
 }
 
@@ -122,12 +145,13 @@ async function save() {
   }
 }
 
-// 删除
-async function deleteLog(id: number) {
+// 批量删除选中的更新日志
+async function batchDelete() {
+  if (selectedIds.value.length === 0) return;
   if (
     !(await confirm({
-      title: "删除更新日志",
-      description: "确定要删除这条更新日志吗？",
+      title: "批量删除更新日志",
+      description: `确定要删除选中的 ${selectedIds.value.length} 条更新日志吗？`,
       variant: "destructive",
       confirmText: "确认删除",
       icon: "lucide:trash-2",
@@ -141,16 +165,20 @@ async function deleteLog(id: number) {
     return;
   }
 
+  deleting.value = true;
   try {
-    await $fetch(`/api/admin/changelogs/${id}`, {
-      method: "DELETE",
-      headers: { "x-csrf-token": csrfToken.value },
+    const res = await $fetch<{ message?: string }>("/api/admin/changelogs/batch-delete", {
+      method: "POST",
+      body: { ids: selectedIds.value, csrfToken: csrfToken.value },
     });
-    toast.success({ message: "删除成功" });
+    toast.success({ message: res.message || "批量删除成功" });
+    selectedIds.value = [];
     await loadLogs();
   } catch (err) {
-    console.error("删除失败:", err);
-    toast.error({ message: "删除失败" });
+    console.error("批量删除失败:", err);
+    toast.error({ message: "批量删除失败" });
+  } finally {
+    deleting.value = false;
   }
 }
 
@@ -285,7 +313,19 @@ onMounted(() => {
 
       <!-- 日志列表 -->
       <div v-else-if="logs.length > 0" class="space-y-2">
-        <Card v-for="log in logs" :key="log.id" class="p-3" :class="{ 'ring-2 ring-primary': editingId === log.id }">
+        <!-- 工具栏：全选 + 批量删除（删除改为选中后批量进行） -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <Checkbox :model-value="isAllSelected" :indeterminate="isIndeterminate" @update:model-value="toggleSelectAll" />
+            <span class="text-sm cursor-pointer select-none" @click="toggleSelectAll">全选</span>
+          </div>
+          <Button v-if="selectedIds.length > 0" variant="destructive" size="sm" :disabled="deleting" @click="batchDelete">
+            <Icon :name="deleting ? 'lucide:loader-2' : 'lucide:trash-2'" class="mr-1 size-4" :class="deleting ? 'animate-spin' : ''" />
+            {{ deleting ? "删除中..." : `删除选中 (${selectedIds.length})` }}
+          </Button>
+        </div>
+
+        <Card v-for="log in logs" :key="log.id" class="p-3" :class="{ 'ring-2 ring-primary': editingId === log.id, 'bg-muted/50': selectedIds.includes(log.id) }">
           <!-- 编辑模式 -->
           <form v-if="editingId === log.id" class="space-y-3" @submit.prevent="save">
             <div class="space-y-2">
@@ -338,15 +378,15 @@ onMounted(() => {
           <!-- 显示模式 -->
           <div v-else class="space-y-2">
             <div class="flex items-center justify-between gap-3">
-              <span class="text-xs text-muted-foreground">
-                {{ formatDate(log.createTime) }}
-              </span>
+              <div class="flex items-center gap-2 min-w-0">
+                <Checkbox :model-value="selectedIds.includes(log.id)" @update:model-value="toggleSelect(log.id)" />
+                <span class="text-xs text-muted-foreground">
+                  {{ formatDate(log.createTime) }}
+                </span>
+              </div>
               <div class="flex gap-1 shrink-0">
                 <Button variant="ghost" size="icon" class="size-8" @click="startEdit(log)">
                   <Icon name="lucide:pencil" class="size-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" class="size-8" @click="deleteLog(log.id)">
-                  <Icon name="lucide:trash-2" class="size-3.5 text-destructive" />
                 </Button>
               </div>
             </div>
