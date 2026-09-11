@@ -306,9 +306,24 @@ onMounted(() => {
         </form>
       </Card>
 
-      <!-- 加载状态 -->
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <!-- 加载骨架屏：贴合下方日志卡片布局（卡片壳 + 日期/操作行 + 若干条目行） -->
+      <div v-if="loading" class="space-y-2">
+        <div v-for="i in 4" :key="i" class="rounded-xl border bg-card p-3 space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="h-3.5 bg-muted rounded w-40 animate-pulse" />
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <div class="h-5 w-14 shrink-0 bg-muted rounded animate-pulse" />
+              <div class="h-4 flex-1 bg-muted rounded animate-pulse" />
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-5 w-14 shrink-0 bg-muted rounded animate-pulse" />
+              <div class="h-4 w-4/5 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 日志列表 -->
