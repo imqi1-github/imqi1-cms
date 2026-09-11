@@ -2,6 +2,7 @@
   "name": "imqi1-cms",
   "type": "module",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "serve": "node scripts/file-server.mjs",
     "build": "nuxt build",
