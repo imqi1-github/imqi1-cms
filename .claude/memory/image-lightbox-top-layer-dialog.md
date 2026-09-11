@@ -17,7 +17,9 @@ metadata:
 
 **切图过渡(2026-09-11 加:相邻滑片 / 远距交叉淡化)**
 - `LightboxTransition`(`app/types/composables/lightbox.d.ts`)存出场层参数;位移起止走 `.lb-root` 上的 CSS 变量(`--lb-slide-from` / `--lb-out-from` / `--lb-out-to`、`--lb-switch-ms`),插值走 keyframes。入场层 `.lb-slide-track` 与出场层 `.lb-outgoing` 的位移**恒差一个屏宽**,中途才不露底色;拖拽松手时 `switchFromX`/`switchDir` 交接给动画当起点(出场层从手指离开处接着走,不是从静止位重来)。
-- **说明文字要跟图一起动**,故多包一层 `.lb-caption-track` 承载行内位移:`.lb-caption` 自己带 `animation-fill-mode: both` 的淡入,**动画优先级高于行内样式**,行内 opacity 会被它永久压住。拖动位移与切图动画都挂 track 这一层。
+- **说明文字要跟图一起动**,故多包一层 `.lb-caption-track` 承载行内位移:`.lb-caption` 自己带 `animation-fill-mode: both` 的淡入,**动画优先级高于行内样式**,行内 opacity 会被它永久压住。同理 **track 上的拖动位移只能用 `translate` 属性、不能用 `transform`** —— 切图动画(`is-sliding`/`is-crossing`)动的就是 `transform`,`fill-mode: both` 播完还继续压着行内值(曾导致「切图后 300ms 内再拖动」说明文字纹丝不动,而图片和跟手预览照走)。`translate` 与 `transform` 是并列属性,互不覆盖。
+- 关闭序列开头要 `endTransition()`:切完 300ms 内就关闭时,否则出场层以全不透明度继续滑,且 `is-sliding`/`is-alt` 规则的特异性会盖掉关闭淡出、说明文字还会闪一下(收掉是安全的——紧接着变形层接管整个图片区)。
+- `lastRendered.aspect` 要在 `onMediaLoaded` 里回填:切到某张的那一刻图还没加载,`intrinsicOverride` 刚被清、尺寸缓存也可能没有,记下来的会是 16:9 兜底;不回填的话下次切走时出场层按错误比例铺开,滑出去那一下肉眼可见地跳。
 - **切图判定键必须是「索引 + 地址」**(`switchKey`):只认 `cleanSrc` 时,同一张图在画廊里出现两次(正文重复引用同一张图、首尾各一次很常见)换过去地址不变 → 整段处理被跳过,画面纹丝不动而计数/说明/缩略图选中态都变了。
 - **连点切图动画不重播**:类名没变时浏览器认为动画没变、不重放 → 看着像瞬移。故 `switchAlt` 每次过渡翻转,`is-alt` 选中同内容的另一份 keyframes(`lb-slide-in-alt` 等),只覆盖 `animation-name`(靠多一个类名把特异性顶上去)。
 - 该 watcher 用 `flush: 'post'`:过渡要按**换图后**的舞台尺寸与缩略图条位置算(说明文字在流内、会撑矮舞台),pre 阶段量到的是旧布局。

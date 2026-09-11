@@ -11,9 +11,14 @@ metadata:
 
 **设计（`app/composables/useLivePhoto.ts`）**
 - 模块级 `videoUrlCache: Map<原图URL, blobUrl | null>`（`null` = 已确认无内嵌 MP4，记一笔避免反复重提）+ `imageUrlCache: Map<url, blobUrl>`（静态图段）+ `inflight: Map<url, Promise>` 做并发去重（同 src 只 fetch 一次）
-- `extractLivePhotoMedia(url)` 返回 `{ videoUrl, imageUrl }`。`imageUrl` = MP4 起点之前那段 JPEG 的 blob（同样是 `blob.slice` 惰性视图），**现在有真实读取方**（见下），别再当死代码删；切之前先确认 `start` 前 64 字节内有 JPEG 的 EOI（FFD9），免得把 JPEG 数据里凑出来的 `ftyp` 误判成视频起点、切出半张图
+- `extractLivePhotoMedia(url)` 返回 `{ videoUrl, imageUrl }`。`imageUrl` = MP4 起点之前那段 JPEG 的 blob（同样是 `blob.slice` 惰性视图），**现在有真实读取方**（见下），别再当死代码删；切法见下面那条（EOI 必须紧贴 MP4 起点）
 - `peekLivePhotoImageUrl(url)` 是**同步、非响应式**的一次缓存读，专门给「换源那一刻」取值：取到就用本地 blob，取不到退回原 URL。别改成响应式/AWAIT——文章页里图片与提取是并发的，硬等 blob 只会让首屏更慢；而且值必须在 src 赋值时就定下来，晚一步浏览器已经发起请求了
 - **`LivePhoto` 的 `<img>` 用 `stillSrc`（= peek ?? cleanSrc）**：灯箱里下一张通常已被预热提取，于是图和视频同出一份字节、一起就位——修掉「视频已就绪、图还在下载」的错帧（实况视频首帧比照片早约 1.5s，露出来就是一张明显不对的图），同时省掉图片那次请求。灯箱预热走 `extractLivePhotoMedia`，故 peek 能命中
+- **代际号（cacheEpoch）**：清理时自增。清理前启动的提取跑完时若代际已变，就把刚建的 blob 就地 revoke 并丢弃结果，不再写回 Map（否则刚 revoke 的 blob 又被塞回缓存，下次路由切换前谁也释放不掉）；`finally` 里也只在代际未变时删 `inflight`，避免误删清理后新登记的条目（会导致同一 URL 重复 fetch）
+- **静态图的切法**：`bytes[start-2]===0xFF && bytes[start-1]===0xD9`（EOI 紧贴 MP4 起点）。别放宽成扫描窗口——实测线上全部样本都是「间隔 0」，而放宽后一旦把 JPEG 数据里凑出来的 ftyp 当真，就会切出半张图并缓存进 Map 供所有消费者使用（灯箱、`peek`、跟手预览），且 live 分支的 `<img>` 没有 @error，破图会一直挂着
+- `start === -1`（标了 #live 却没内嵌 MP4）**不要**再把整包做成 blob：最坏几十 MB，收益只是把 HTTP 缓存命中换成内存命中，直接 `imageUrl: null` 即可
+- 清理触发用 **`route.path` 而不是 `fullPath`**：fullPath 含 hash，文章页点目录锚点就会清空整份缓存，而页面上的 LivePhoto 不会重新提取（提取只依赖 shouldLoad/cleanSrc），那篇的实况视频从此播不了
+- **播放路径要验身份**：换图时故意不清 `videoBlobUrl`（避免黑帧），所以新 blob 未到的窗口里 `<video>` 挂的还是上一张的 src。`handleMouseEnter`/`handlePlayClick` 的每个 await 之后都要重认一次（`el.src === videoBlobUrl`），否则会播到上一张，或把 stopPlayback 刚恢复的静态图又藏回去（isPlaying 卡在 true、按钮显示暂停、点一次没反应）
 - **不接受 AbortSignal**：同 src 的请求是共享的，一个调用方 abort 会连带掐掉别人；且缓存语义与取消冲突。调用方 await 后按自己的状态判断结果还要不要，请求让它跑完入缓存
 - **缓存独占所有权**：组件只引用、**永不 revoke**（可能有别的实例指着同一个 URL）。`clearLivePhotoMediaCache()` 在**路由切换**时统一释放（视频段与静态图段一起清）——挂在 `Lightbox.vue` 里（它是 app.vue 挂载一次的全局单例，天然的应用级钩子）。别改成「关灯箱时清」：文章页的 LivePhoto 还在用那些 URL
 

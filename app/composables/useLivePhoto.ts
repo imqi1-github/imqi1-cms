@@ -11,9 +11,16 @@ import type { LivePhotoMedia } from "~/types/composables/live-photo";
 const videoUrlCache = new Map<string, string | null>();
 const imageUrlCache = new Map<string, string>();
 const inflight = new Map<string, Promise<LivePhotoMedia>>();
+/**
+ * 代际号，清理时自增。清理前启动的提取跑完时若代际已变，就把结果就地丢弃并 revoke——
+ * 否则会把刚 revoke 的 blob 又写回 Map（下一次路由切换前谁也 revoke 不掉它），
+ * 而 `inflight.delete` 也会误删后来者的 promise，导致同一个 URL 被重复 fetch。
+ */
+let cacheEpoch = 0;
 
 /** 释放所有缓存的 Blob URL。路由切换时调用——彼时旧页面的 LivePhoto 都已卸载。 */
 const clearLivePhotoMediaCache = () => {
+  cacheEpoch++;
   for (const url of videoUrlCache.values()) {
     if (url) URL.revokeObjectURL(url);
   }
@@ -21,18 +28,6 @@ const clearLivePhotoMediaCache = () => {
   videoUrlCache.clear();
   imageUrlCache.clear();
   inflight.clear();
-};
-
-/**
- * 静态图能不能从这包字节里切：JPEG 以 FFD9 结尾、内嵌 MP4 紧跟其后。
- * 在 start 前的小窗口里找一下，找不到就当 start 是 JPEG 数据里凑出来的 ftyp（误判）——
- * 宁可退回原 URL 多一次请求，也不要切出半张图。
- */
-const hasJpegEnd = (bytes: Uint8Array, start: number): boolean => {
-  for (let i = start - 2; i >= Math.max(0, start - 64); i--) {
-    if (bytes[i] === 0xFF && bytes[i + 1] === 0xD9) return true;
-  }
-  return false;
 };
 
 // 实况照片 Composable
@@ -59,6 +54,9 @@ export const useLivePhoto = () => {
   /**
    * 提取实况照片的静态图与内嵌视频段，返回可直接喂给 `<img>` / `<video>` 的 Blob URL。
    * 两者同出一份已取回的字节，故「视频已就绪、图还在下载」的错帧不存在，也省掉图片那次请求。
+   *
+   * 注意 `imageUrl` 没有直接读取方：它只进 `imageUrlCache`，由 `peekLivePhotoImageUrl` 在
+   * 「换源那一刻」同步取用（见该函数注释）。别因为它无人解构就当死代码删掉。
    */
   const extractLivePhotoMedia = async (imgUrl: string): Promise<LivePhotoMedia> => {
     const cached = videoUrlCache.get(imgUrl);
@@ -68,6 +66,7 @@ export const useLivePhoto = () => {
     if (pending) return pending;
 
     const promise = (async (): Promise<LivePhotoMedia> => {
+      const epoch = cacheEpoch;
       try {
         const res = await fetch(imgUrl, { cache: "force-cache" });
 
@@ -81,18 +80,28 @@ export const useLivePhoto = () => {
         const bytes = new Uint8Array(await blob.arrayBuffer());
         const start = findMotionVideoStart(bytes);
         if (start === -1) {
-          // 带 #live 却没扫到内嵌 MP4：整包就是静态图。也记一笔，免得每次切到这张都重提整包
-          const wholeImage = URL.createObjectURL(blob);
-          videoUrlCache.set(imgUrl, null);
-          imageUrlCache.set(imgUrl, wholeImage);
-          return { videoUrl: null, imageUrl: wholeImage };
+          // 带 #live 却没扫到内嵌 MP4：整包就是静态图，不必再造一份等价 blob
+          // （最坏几十 MB，只是把 HTTP 缓存命中换成内存命中）。记一笔免得反复重提
+          if (epoch === cacheEpoch) videoUrlCache.set(imgUrl, null);
+          return { videoUrl: null, imageUrl: null };
         }
 
         const videoUrl = URL.createObjectURL(blob.slice(start, blob.size, "video/mp4"));
-        videoUrlCache.set(imgUrl, videoUrl);
+        // 静态图 = MP4 起点之前那一段（JPEG）。要求 EOI 紧贴在 MP4 起点之前：实测线上样本
+        // 全部是「间隔 0」，一旦放宽成扫描窗口，就可能把 JPEG 数据里凑出来的 ftyp 当真、
+        // 切出半张图并缓存进 Map，之后被所有消费者当静态图用且无从察觉
+        const imageUrl = bytes[start - 2] === 0xFF && bytes[start - 1] === 0xD9
+          ? URL.createObjectURL(blob.slice(0, start, blob.type || "image/jpeg"))
+          : null;
 
-        // 静态图 = MP4 之前那一段（JPEG）。切片是视图不是拷贝，几乎不花钱
-        const imageUrl = hasJpegEnd(bytes, start) ? URL.createObjectURL(blob.slice(0, start, blob.type || "image/jpeg")) : null;
+        if (epoch !== cacheEpoch) {
+          // 期间清过缓存：这份结果已经没人要了，就地 revoke，别再写回 Map
+          URL.revokeObjectURL(videoUrl);
+          if (imageUrl) URL.revokeObjectURL(imageUrl);
+          return { videoUrl: null, imageUrl: null };
+        }
+
+        videoUrlCache.set(imgUrl, videoUrl);
         if (imageUrl) imageUrlCache.set(imgUrl, imageUrl);
 
         return { videoUrl, imageUrl };
@@ -100,7 +109,8 @@ export const useLivePhoto = () => {
         console.error("[useLivePhoto] 提取实况媒体失败:", e);
         return { videoUrl: null, imageUrl: null };
       } finally {
-        inflight.delete(imgUrl);
+        // 只在代际未变时删：清理后可能已有新一次提取登记了同名条目，误删会让它变成重复 fetch
+        if (epoch === cacheEpoch) inflight.delete(imgUrl);
       }
     })();
 

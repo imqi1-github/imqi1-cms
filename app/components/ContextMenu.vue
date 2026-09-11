@@ -400,10 +400,19 @@ const handleCapitalize = () => {
   }
 };
 
+/**
+ * 图片的真实地址：实况照片的 <img> 命中提取缓存时用的是 blob（灯箱里，以及缓存已热的页面），
+ * 拿去「复制链接」会得到 `blob:...`（出了这个标签页就打不开）、拿去当文件名是裸 UUID。
+ * 真实地址由 LivePhoto 下放在最外层 wrapper 的 data-lb-src 上。
+ * 只用在「给人看/给人存」的地方；handleCopyImage 仍 fetch blob 本身，省一次网络往返。
+ */
+const realImageSrc = (img: HTMLImageElement) =>
+  img.closest("[data-lb-src]")?.getAttribute("data-lb-src") || img.src;
+
 // 复制图片链接到剪贴板
 const handleCopyImageLink = () => {
   if (imageTarget.value) {
-    const src = imageTarget.value.src;
+    const src = realImageSrc(imageTarget.value);
     navigator.clipboard.writeText(src);
     notify("复制图片链接成功", "success");
     closeMenu();
@@ -475,7 +484,8 @@ const handleCopyImage = async () => {
 const handleDownloadImage = async () => {
   if (imageTarget.value) {
     const src = imageTarget.value.src;
-    const filename = src.split("/").pop() || "image";
+    // 文件名取真实地址：blob URL 的尾段是没有扩展名的裸 UUID
+    const filename = realImageSrc(imageTarget.value).split("/").pop() || "image";
 
     try {
       // 尝试 fetch 获取 blob 后下载（不跳转）

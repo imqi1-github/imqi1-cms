@@ -328,7 +328,9 @@ const stopPlayback = () => {
   }
 };
 
-watch(cleanSrc, stopPlayback);
+// cleanSrc 之外还看 isLive：同一文件被「带 #live」与「不带」各引一次时 cleanSrc 不变，
+// 但 v-if 会换掉整个根节点、<video> 被卸载（不走组件卸载钩子），这里先停一次
+watch([cleanSrc, isLive], stopPlayback);
 
 /**
  * 等视频首帧可解码显示（readyState≥2 或 loadeddata/canplay 事件）。
@@ -354,6 +356,18 @@ function waitForVideoReady(video: HTMLVideoElement): Promise<void> {
   });
 }
 
+/**
+ * 取当前可用的视频元素：元素还在、且 src 与 videoBlobUrl 一致才算数。
+ * 换图时**故意不清空** videoBlobUrl（避免 <video> 卸载重建的黑帧），所以换到新图、新 blob
+ * 还没到的这段窗口里，元素上挂着的仍是上一张的 src。任何 await 之后都要重新认一次身份，
+ * 否则会播到上一张，或把 stopPlayback 刚恢复的静态图又藏回去（isPlaying 卡在 true、
+ * 按钮显示暂停，点一次还没反应）。
+ */
+const currentVideo = (): HTMLVideoElement | null => {
+  const el = videoRef.value;
+  return !isUnmounted && el && el.src === videoBlobUrl.value ? el : null;
+};
+
 // 鼠标悬浮 - 播放视频（仅悬浮播放模式）
 const handleMouseEnter = async () => {
   isHovering.value = true; // 标记悬浮状态
@@ -373,36 +387,36 @@ const handleMouseEnter = async () => {
 
   // 视频层提取完成后已常驻挂载在图片层之下；若首帧还没解码完（极少）则稍等一下，
   // 避免图片淡出后露出的还是空白、首帧再突兀弹出（readyState≥2 直接放行）
-  const videoEl = videoRef.value;
-  if (isUnmounted || !videoEl) {
+  const videoEl = currentVideo();
+  if (!videoEl) {
     return;
   }
   await waitForVideoReady(videoEl);
 
-  // ✅ 等待期间可能移出/卸载：组件已卸载、DOM 已卸载或鼠标已移开，则不再淡入
-  if (isUnmounted || !videoRef.value || !isHovering.value) {
+  // ✅ 等待期间可能移出/卸载、鼠标移开，或已换到别的实况照（此时不能拿新图的元素播旧视频）
+  const video = currentVideo();
+  if (!video || video !== videoEl || !isHovering.value) {
     return;
   }
 
   // 先设置视频到开头
-  videoRef.value.currentTime = 0;
+  video.currentTime = 0;
 
   // 交叉淡入淡出：图片淡出（100 -> 0），把下面已就绪的视频"露"出来
   imgOpacity.value = 0;
 
   // 开始播放视频
-  videoRef.value
+  video
     .play()
     .then(() => {
-      // ✅ 异步回调中也检查组件状态
-      if (!isUnmounted) {
+      // ✅ 异步回调中也要确认还是同一份媒体，否则 stopPlayback 刚恢复的静态图会被再藏回去
+      if (currentVideo() === video) {
         isPlaying.value = true;
       }
     })
     .catch(() => {
-      // ✅ 异步回调中也检查组件状态
-      if (!isUnmounted) {
-        // 播放失败时恢复显示图片
+      // 播放失败时恢复显示图片（同一份媒体才需要修，换图后 stopPlayback 已恢复过）
+      if (currentVideo() === video) {
         imgOpacity.value = 100;
         isPlaying.value = false;
       }
@@ -458,20 +472,25 @@ const handlePlayClick = async () => {
     isPlaying.value = false;
   } else {
     // 播放：视频已常驻预载，首帧未就绪则稍等（readyState≥2 直接放行）
-    await waitForVideoReady(videoRef.value);
-    if (!videoRef.value) return;
-    videoRef.value.currentTime = 0;
+    const videoEl = videoRef.value;
+    await waitForVideoReady(videoEl);
+    // 等待期间可能换图：videoBlobUrl 换图时不清，元素上还是上一张的 src，认错了就会播错视频
+    const video = currentVideo();
+    if (!video || video !== videoEl) return;
+    video.currentTime = 0;
     // 图片淡出（100 -> 0）露出下层视频
     imgOpacity.value = 0;
-    videoRef.value
+    video
       .play()
       .then(() => {
-        isPlaying.value = true;
+        if (currentVideo() === video) isPlaying.value = true;
       })
       .catch(err => {
         console.error("[LivePhoto] 视频播放失败:", err);
-        imgOpacity.value = 100;
-        isPlaying.value = false;
+        if (currentVideo() === video) {
+          imgOpacity.value = 100;
+          isPlaying.value = false;
+        }
       });
   }
 };
@@ -552,9 +571,9 @@ onBeforeUnmount(() => videoRef.value?.pause());
     <!-- 视频层：提取完成即常驻挂载并预载解码，置于图片层之下（模板在前 + img 的 relative
          压在其上）。非交互时被不透明图片完整盖住，未解码首帧层即使被浏览器合成成
          白色矩形也不可见（规避旧方案 opacity:0 视频层在 GPU 路径下盖白屏的坑）。
-         poster 就是这张静态图：视频一旦就位就开始画首帧，而首帧比照片早约 1.5s，
-         图片解码那几十毫秒里露出来的就是一张明显不对的图。按规范 poster 会一直显示到
-         真正开始播放（换 src 又重置），正好把这段空窗填成同一张照片。 -->
+         poster 就是这张静态图：视频一就位就开始画首帧，而首帧比照片早约 1.5s，直接露出来
+         就是一张明显不对的图。poster 至少盖住图片解码那段空窗，露出来的是同一张照片。
+         （各内核把 poster 换成首帧的时机不完全一致，这条只是尽量把空窗填平。） -->
     <video
       v-if="videoBlobUrl"
       ref="videoRef"

@@ -112,6 +112,11 @@ const intrinsicOverride = ref<{ w: number; h: number } | null>(null);
  * 先查缓存再退回 16:9——窄屏快速切下一页时不再因 16:9 兜底让竖图骤缩。
  */
 const dimensionCache = new Map<string, { w: number; h: number }>();
+/**
+ * 上一张真正显示过的图；首帧与画廊切换不参与过渡。
+ * 声明在尺寸计算之前：图片加载完成时要回来修正它的 `aspect`（见 onMediaLoaded）。
+ */
+let lastRendered: { cleanSrc: string; aspect: { w: number; h: number }; index: number } | null = null;
 
 /**
  * 当前这张对应的触发元素（原图）。开合动画与焦点归还都用它，
@@ -182,10 +187,14 @@ const boxStyle = computed(() => ({
  * 说明文字跟着图片同一个位移/透明度，拖动时两者才读作一个整体在走。
  * 单独包一层（.lb-caption-track）而不是直接写在 .lb-caption 上：
  * 后者带着 animation-fill-mode: both 的淡入动画，动画优先级高于行内样式，行内 opacity 会被它压住。
+ *
+ * 位移用独立的 translate 属性而不是 transform：切图动画（is-sliding/is-crossing）动的正是
+ * transform，且 fill-mode 会让它在播完后继续压着行内值——曾经因此在「切图后 300ms 内再拖动」
+ * 时说明文字纹丝不动。translate 与 transform 是并列的两个属性，互不覆盖。
  */
 const captionStyle = computed(() => ({
   opacity: dragOpacity.value,
-  transform: `translate3d(${dragOffset.value.x}px, ${dragOffset.value.y}px, 0)`,
+  translate: `${dragOffset.value.x}px ${dragOffset.value.y}px`,
 }));
 
 const mediaStyle = computed(() => ({
@@ -660,6 +669,11 @@ const closeSequence = async (gen: number) => {
   // 与下面等待的时长一致，淡完刚好关闭
   closing.value = true;
 
+  // 立刻收掉可能还在播的切图过渡（切完 300ms 内就关闭的情况）：留着的话出场层会以全不透明度
+  // 继续滑，而且 is-sliding/is-alt 规则的特异性会盖掉下面那条关闭淡出，说明文字还会闪一下。
+  // 这里收掉是安全的——关闭序列紧接着由变形层接管整个图片区。
+  endTransition();
+
   // 缩回原图片（触发元素）的当前位置；已滚出视口则退化为淡出。
   // 此刻 state 已置 null，但 display 冻结着，故 intrinsic/visual 仍然有效。
   // 加载失败的图就别再 morph 了——morph 的 img 失败会显破图标（即便改用 background-image，
@@ -736,6 +750,11 @@ const onMediaLoaded = (e: Event) => {
   const img = e.target as HTMLImageElement | null;
   if (img?.naturalWidth && img?.naturalHeight) {
     if (slide?.cleanSrc) dimensionCache.set(slide.cleanSrc, { w: img.naturalWidth, h: img.naturalHeight });
+    // 记下的上一张尺寸要跟着回来修正：切到这张的那一刻图还没加载，lastRendered 很可能落到
+    // 16:9 兜底；不修的话下次切走时出场层按错误比例铺开，滑出去的那一下会明显跳一下
+    if (lastRendered && lastRendered.cleanSrc === slide?.cleanSrc) {
+      lastRendered.aspect = { w: img.naturalWidth, h: img.naturalHeight };
+    }
     if (!slide?.width || !slide.height) {
       intrinsicOverride.value = { w: img.naturalWidth, h: img.naturalHeight };
     }
@@ -784,8 +803,6 @@ const goPrev = () => {
 /** 过渡进行中的出场层（上一张图 + 说明文字）；非空表示过渡中 */
 const transition = ref<LightboxTransition | null>(null);
 let switchTimer: ReturnType<typeof setTimeout> | null = null;
-/** 上一张真正显示过的图；首帧与画廊切换不参与过渡 */
-let lastRendered: { cleanSrc: string; aspect: { w: number; h: number }; index: number } | null = null;
 
 const switchMs = (t: LightboxTransition) => (t.dir === 0 ? FADE_MS : SLIDE_MS);
 
@@ -1007,7 +1024,9 @@ useEventListener(document, "click", (e: MouseEvent) => {
  * 同一路由内开/关灯箱不清，故文章页与灯箱之间能复用同一份提取结果。
  */
 const route = useRoute();
-watch(() => route.fullPath, clearLivePhotoMediaCache);
+// 用 path 而非 fullPath：fullPath 含 hash，文章页点一下目录锚点就会清掉整份媒体缓存，
+// 而页面上的 LivePhoto 不会重新提取（提取只依赖 shouldLoad/cleanSrc），从此播不了
+watch(() => route.path, clearLivePhotoMediaCache);
 
 onBeforeUnmount(() => {
   stageObserver?.disconnect();
