@@ -102,14 +102,6 @@ export const siteConfig = defineSiteConfig({
     },
   ],
 
-  manifest: {
-    name: _name,
-    shortName: _name,
-    description: _desc,
-    themeColor: "#f9fafb",
-    backgroundColor: "#ffffff",
-  },
-
   build: {
     brotliCompression: true,
     statsHtml: false,

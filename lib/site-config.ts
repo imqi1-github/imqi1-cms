@@ -64,19 +64,6 @@ export interface SiteConfig {
     /** 悬浮展示的二维码图片（如小程序码），设置后该项不作为链接 */
     qrcode?: string;
   }>;
-  /** PWA manifest 静态配置 */
-  manifest: {
-    /** manifest name */
-    name: string;
-    /** manifest short_name */
-    shortName: string;
-    /** manifest description */
-    description: string;
-    /** manifest theme_color */
-    themeColor: string;
-    /** manifest background_color */
-    backgroundColor: string;
-  };
   /** 构建相关静态配置（由 nuxt.config.ts 读取） */
   build: {
     /** 是否在构建时预压缩静态资源为 brotli（生成 .br 文件，需 Nginx brotli_static on 配合） */
