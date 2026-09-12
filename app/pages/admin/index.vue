@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {PopularContent, RecentComment, RecentContent} from "~/types/apis/admin";
+import type {PopularContent, RecentComment, RecentContent, SystemInfo} from "~/types/apis/admin";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 
 const router = useRouter()
@@ -41,15 +41,16 @@ const detailedStats = ref({
   },
 })
 
-const { buildHash } = useSiteSettings();
-
-const systemInfo = ref({
+const systemInfo = ref<SystemInfo>({
   nodeVersion: '',  platform: '',
   architecture: '',
   uptime: '',
   memory: { used: 0, total: 0, unit: 'MB' },
   database: { version: '' },
   attachments: { count: 0, totalSize: 0 },
+  buildHash: '',
+  isDocker: false,
+  deploymentType: 'native',
 })
 
 const recentContents = ref<RecentContent[]>([])
@@ -114,7 +115,7 @@ async function fetchData() {
     const [statsRes, detailedRes, systemRes, contentsRes, commentsRes, popularRes] = await Promise.all([
       $fetch('/api/admin/stats'),
       $fetch('/api/admin/detailed-stats'),
-      $fetch('/api/admin/system-info'),
+      $fetch<SystemInfo>('/api/admin/system-info'),
       $fetch('/api/admin/recent-contents'),
       $fetch('/api/admin/recent-comments'),
       $fetch('/api/admin/popular-contents'),
@@ -507,8 +508,25 @@ onMounted(() => {
               <Icon name="lucide:git-commit-horizontal" class="size-4 text-muted-foreground shrink-0" />
               <span class="truncate">构建哈希</span>
             </div>
-            <p class="text-sm font-mono truncate" :title="buildHash ?? ''">{{ buildHash ?? '' }}</p>
+            <p class="text-sm font-mono truncate" :title="systemInfo.buildHash">{{ systemInfo.buildHash || '未知' }}</p>
             <p class="text-xs text-muted-foreground">当前部署版本</p>
+          </div>
+
+          <!-- 部署方式 -->
+          <div class="space-y-2 p-3 rounded-lg bg-muted/30">
+            <div class="flex items-center gap-2 text-sm font-medium">
+              <Icon
+                :name="systemInfo.deploymentType === 'docker' ? 'lucide:container' : 'lucide:box'"
+                class="size-4 text-muted-foreground shrink-0"
+              />
+              <span class="truncate">部署方式</span>
+            </div>
+            <p class="text-lg sm:text-xl font-bold truncate">
+              {{ systemInfo.deploymentType === 'docker' ? 'Docker 容器' : '原生部署' }}
+            </p>
+            <p class="text-xs text-muted-foreground truncate">
+              {{ systemInfo.deploymentType === 'docker' ? '运行于容器内' : '直接运行于主机' }}
+            </p>
           </div>
         </div>
       </CardContent>

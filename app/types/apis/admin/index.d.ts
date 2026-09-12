@@ -25,3 +25,5 @@ export interface PopularContent {
 	commentsCount: number;
 	create_time: string;
 }
+
+export type { SystemInfo } from "./system-info";

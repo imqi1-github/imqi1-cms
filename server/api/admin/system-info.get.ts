@@ -1,6 +1,7 @@
 import { getUser } from "#server/lib/auth";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { prisma } from "#server/utils/prisma";
+import { detectDocker, getBuildHash } from "#server/utils/runtime-info";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -31,6 +32,8 @@ export default defineEventHandler(async event => {
     const uptimeHours = Math.floor((uptime % 86400) / 3600);
     const uptimeMinutes = Math.floor((uptime % 3600) / 60);
 
+    const isDocker = await detectDocker();
+
     return {
       nodeVersion: process.version,
       platform: process.platform,
@@ -48,6 +51,11 @@ export default defineEventHandler(async event => {
         count: attachmentCount,
         totalSize: attachmentTotalSize,
       },
+      // 部署标识(解决 docker 部署下后台不显示构建哈希的根因——admin 页不走 SSR plugin,
+      // 直接从此 admin 端点拿 buildHash,不再依赖 useSiteSettings → /api/site 那条脆弱链路)。
+      buildHash: getBuildHash(),
+      isDocker,
+      deploymentType: isDocker ? "docker" : "native",
     };
   } catch (error) {
     console.error(error);
