@@ -854,12 +854,6 @@ export default defineNuxtConfig({
           },
           // 注意：robots.txt 故意不走 CDN 重定向，作为 public/ 静态文件由
           // Nitro 直接返回——否则规则只对 CDN 子域生效，对本站失效。
-          "/sitemap.xsl": {
-            redirect: {
-              to: `${siteConfig.cdnUrl}/sitemap.xsl`,
-              statusCode: 301,
-            },
-          },
           "/imgs/**": {
             redirect: {
               to: `${siteConfig.cdnUrl}/imgs/**`,
