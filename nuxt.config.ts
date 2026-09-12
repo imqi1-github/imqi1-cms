@@ -167,49 +167,10 @@ export default defineNuxtConfig({
     devOptions: {
       enabled: false,
     },
-    // 生产环境配置
-    manifest: {
-      name: siteConfig.manifest.name,
-      short_name: siteConfig.manifest.shortName,
-      description: siteConfig.manifest.description,
-      theme_color: siteConfig.manifest.themeColor,
-      background_color: siteConfig.manifest.backgroundColor,
-      display: "fullscreen",
-      lang: "zh-CN",
-      start_url: siteConfig.siteUrl,
-      scope: siteConfig.siteUrl,
-      id: "/",
-      icons: [
-        {
-          src: publicCdnAsset("/imgs/imqi1.svg"),
-          sizes: "192x192",
-          type: "image/svg+xml",
-          purpose: "any maskable",
-        },
-        {
-          src: publicCdnAsset("/imgs/imqi1.svg"),
-          sizes: "512x512",
-          type: "image/svg+xml",
-          purpose: "any maskable",
-        },
-      ],
-      screenshots: [
-        {
-          src: publicCdnAsset("/imgs/frontend-screenshot1.png"),
-          sizes: "1280x720",
-          type: "image/png",
-          form_factor: "wide",
-          label: "桌面端界面",
-        },
-        {
-          src: publicCdnAsset("/imgs/frontend-screenshot2.png"),
-          sizes: "510x820",
-          type: "image/png",
-          form_factor: "narrow",
-          label: "移动端界面",
-        },
-      ],
-    },
+    // manifest 不在此生成：一旦给了 manifest 配置，@vite-pwa/nuxt 就会生成 /manifest.webmanifest
+    // 并在构建时覆盖 public/manifest.webmanifest（于是改 public 那份不生效）。这里改为以
+    // public/manifest.webmanifest 静态文件为唯一来源（由 CDN 回源/上传到根目录）。
+    // 故此处不设 manifest —— 模块无默认值，不生成；SW/workbox 与 <link rel=manifest>（在 app.head）不受影响。
     workbox: {
       globPatterns: ["manifest.webmanifest", "favicon.ico", "fonts/font.css"],
       globIgnores: ["**/node_modules/**/*", "sw.js", "builds/**"],
