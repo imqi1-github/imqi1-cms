@@ -172,7 +172,10 @@ export default defineNuxtConfig({
     // public/manifest.webmanifest 静态文件为唯一来源（由 CDN 回源/上传到根目录）。
     // 故此处不设 manifest —— 模块无默认值，不生成；SW/workbox 与 <link rel=manifest>（在 app.head）不受影响。
     workbox: {
-      globPatterns: ["manifest.webmanifest", "favicon.ico", "fonts/font.css"],
+      // manifest.webmanifest 走 <link rel="manifest"> 由浏览器按需 fetch，无需 SW precache；
+      // 否则 SW 同时从 globPatterns 和 vite-plugin-pwa 内部各注入一次（revision 不同），
+      // 会触发 Workbox addToCacheList 报 add-to-cache-list-conflicting-entries。
+      globPatterns: ["favicon.ico", "fonts/font.css"],
       globIgnores: ["**/node_modules/**/*", "sw.js", "builds/**"],
       // SSR 站点：禁用 SPA 导航回退，避免 precache 找不到 "/" 报 non-precached-url
       navigateFallback: null,
