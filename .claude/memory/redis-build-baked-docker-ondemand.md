@@ -25,4 +25,4 @@ Redis 配置的**默认值写在 `site.config.ts` 的 `build.redis`**（`enabled
 - `.dockerignore` 里 Dockerfile/docker-compose*.yml 模式**必须锚定根目录**（`/Dockerfile`）：docker 的 patternmatcher 按 basename 匹配任意层级，裸模式会把 docker/Dockerfile 也排除出构建上下文导致构建失败。
 - 关键理解：`.dockerignore` 排除 .env 只影响**构建上下文**（COPY . .），不影响 compose 的 `${VAR}` 插值和 `env_file` 运行时注入。所以 DB 走运行时注入（DB_* 单套变量、构建不连库），Redis 走构建期烘焙。
 - 验证不用 build：`docker compose --env-file .env -f docker/... config`（纯客户端解析，daemon 未运行也可用）；想确认烘焙出来的值就直接 `NODE_ENV=production bun -e 'console.log((await import("./shared/redis-config.ts")).getRedisConfig())'`，配 `REDIS_HOST=...` 等变量即可看到覆盖效果。
-- 相关：[[imqi1-cms-db]]（DB 运行时注入无分支）、[[post-change-lint-chain]]
+- 相关：[[post-change-lint-chain]]

@@ -6,7 +6,7 @@ metadata:
   type: project
 ---
 
-本仓库**双仓库**、**单人运营**（站主=棋，见 [[imqi1-cms-db]] / [[single-user-site-invariant]]）。这套发版 SOP **只对站主本人有效**。
+本仓库**双仓库**、**单人运营**（站主=棋，见 [[single-user-site-invariant]]）。这套发版 SOP **只对站主本人有效**。
 
 **AI 执行前先判本人**：`git ls-remote origin` 能连上 = 本人环境。`origin` 是**私有** Gitee `https://gitee.com/imqi1-gitee/imqi1-cms.git`（无 release/issues，纯源码存储）。只有本人有该凭据；他人 clone/fork 要么无此远程、要么连不上/401。连得上 → 本人，执行本 SOP；连不上 → 非本人（公开 fork），**别跑 owner-only 的写操作/发版**。
 

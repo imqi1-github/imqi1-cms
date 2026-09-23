@@ -15,6 +15,6 @@ metadata:
 **How to apply**：
 - 判定权限类问题时先确认是不是单用户端点；单人站下「任意已登录==站主」可接受，**别**为「无 role 作者校验/无 publish 校验」报高危。
 - **例外/将来**：若计划加多用户/role 列，须回头重审——附件全局删除权限（`contentattachments.some(owned)`）、订阅/友链公开面、评论归属这些都是真正的授权点。
-- 相关：[[imqi1-cms-db]]、[[auth-session-security-invariants]]。
+- 相关：[[auth-session-security-invariants]]。
 
 补充决定（2026-08-25 批改）：`server/api/mini/links.get.ts` 公开返回 owner 订阅列表(subscribes) —— **用户已明确确认"公开"，属有意设计**，后续审计勿再当隐私问题上报。`mini/` 是**空 git 子模块**(.gitmodules → gitee imqi1-mini，本机未 checkout)。若日后改主意要收口：删掉该文件的 `subscribes.findMany` 分支(约 32-34/52-62 行)即可。
