@@ -1,7 +1,7 @@
-import { siteConfig } from "~~/site.config";
 import type { MiniComment, MiniCommentsResponse } from "#server/types/apis/mini";
 import { commentAvatarUrl } from "#server/utils/comment-avatar";
 import { formatRelativeTime } from "#server/utils/mini";
+import { miniCommentsEnabled } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 import { getSiteSettings } from "#server/utils/siteSettings";
 
@@ -9,8 +9,8 @@ import { getSiteSettings } from "#server/utils/siteSettings";
 // 需在小程序合法域名白名单里加入所用镜像站域名（gravatar/cravatar/weavatar）。
 
 export default defineEventHandler(async event => {
-  // 小程序评论使用独立的构建期开关，不跟随主站后台评论开关。
-  if (!siteConfig.features.miniComment) {
+  // 小程序评论使用独立的构建期开关，不跟随主站后台评论开关；审核模式（miniFakeData）下也一并关闭。
+  if (!miniCommentsEnabled()) {
     return {
       success: true,
       data: [],

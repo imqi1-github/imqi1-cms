@@ -1,10 +1,16 @@
 import type { MiniCategoriesResponse } from "#server/types/apis/mini";
 import { parseCovers } from "#server/utils/covers";
 import { toAbsoluteUrl } from "#server/utils/mini";
+import { isMiniFakeDataEnabled, MINI_FAKE_CATEGORY_ITEM } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
+    // 审核模式：只给那一个占位分类（内含那篇占位文章）
+    if (isMiniFakeDataEnabled()) {
+      return { success: true, data: [MINI_FAKE_CATEGORY_ITEM] } satisfies MiniCategoriesResponse;
+    }
+
     const requestUrl = getRequestURL(event);
 
     const categories = await prisma.metas.findMany({

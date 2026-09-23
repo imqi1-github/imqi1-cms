@@ -1,4 +1,5 @@
 import type { MiniArchiveMonthGroup, MiniArchiveContent, MiniArchiveResponse } from "#server/types/apis/mini";
+import { isMiniFakeDataEnabled, MINI_FAKE_ARCHIVE } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 function formatMonthTitle(value: Date) {
@@ -14,6 +15,11 @@ function formatDay(value: Date) {
 
 export default defineEventHandler(async () => {
   try {
+    // 审核模式：归档只保留那一个分组、那一篇占位文章
+    if (isMiniFakeDataEnabled()) {
+      return { success: true, data: MINI_FAKE_ARCHIVE } satisfies MiniArchiveResponse;
+    }
+
     const contents = await prisma.contents.findMany({
       where: {
         type: 0,

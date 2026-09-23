@@ -1,4 +1,5 @@
 import type { MiniLinksResponse } from "#server/types/apis/mini";
+import { isMiniFakeDataEnabled } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 // 从 url 取注册域名（补协议、去端口、去 www. 前缀）作为去重键；与主站 blog-network 一致。
@@ -18,6 +19,11 @@ function domainOf(url: string): string | null {
 
 export default defineEventHandler(async () => {
   try {
+    // 审核模式：友链与订阅整体置空
+    if (isMiniFakeDataEnabled()) {
+      return { success: true, data: [] } satisfies MiniLinksResponse;
+    }
+
     const [links, subscribes] = await Promise.all([
       prisma.links.findMany({
         // 排除未审核的修改请求（与主站 links.get 保持一致）。

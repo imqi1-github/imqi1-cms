@@ -1,12 +1,20 @@
 import type { MiniMessagesConfigResponse } from "#server/types/apis/mini";
+import { isMiniFakeDataEnabled, miniCommentsEnabled } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
-import { siteConfig } from "~~/site.config";
 
 // 留言板即绑定到某篇文章的评论区，与主站 /api/messages/config 逻辑一致：
 // 优先取 informations.messageContentId，否则回退到 slug 为 "messages" 的文章。
 // 同时返回小程序评论开关，关闭时留言页与入口都不展示。
 export default defineEventHandler(async () => {
-  const commentEnabled = siteConfig.features.miniComment;
+  const commentEnabled = miniCommentsEnabled();
+
+  // 审核模式：留言页必然关闭，也就不需要解析绑定哪篇文章，直接不查库
+  if (isMiniFakeDataEnabled()) {
+    return {
+      success: true,
+      data: { contentId: null, commentEnabled },
+    } satisfies MiniMessagesConfigResponse;
+  }
 
   try {
     const messageContentIdMeta = await prisma.informations.findUnique({

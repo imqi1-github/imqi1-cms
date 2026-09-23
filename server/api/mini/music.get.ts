@@ -5,6 +5,7 @@
 import type { MetingSong } from "#server/types/apis/meting";
 import type { MiniMusic, MiniMusicResponse } from "#server/types/apis/mini";
 import { toHttps } from "#server/utils/mini";
+import { isMiniFakeDataEnabled, MINI_FAKE_MUSIC } from "#server/utils/mini-fake-data";
 
 // 允许的音乐服务域名白名单（与 /api/meting 保持一致）
 const ALLOWED_MEDIA_DOMAINS = [
@@ -99,6 +100,11 @@ export default defineEventHandler(async event => {
   const validTypes = ["playlist", "song"];
   if (!validTypes.includes(type)) {
     throw createError({ statusCode: 400, message: `不支持的音乐类型：${type}` });
+  }
+
+  // 审核模式：歌单置空（data 因响应类型非空而给全空字段占位），也不打上游 meting
+  if (isMiniFakeDataEnabled()) {
+    return { success: true, data: MINI_FAKE_MUSIC, list: [] } satisfies MiniMusicResponse;
   }
 
   try {

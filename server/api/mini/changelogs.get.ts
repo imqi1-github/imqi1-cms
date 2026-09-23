@@ -1,9 +1,15 @@
 import { prisma } from "#server/utils/prisma";
 import { parseChangelogContent } from "#server/utils/changelog";
+import { isMiniFakeDataEnabled } from "#server/utils/mini-fake-data";
 import type { MiniChangelogGroup, MiniChangelogsResponse } from "#server/types/apis/mini";
 
 export default defineEventHandler(async () => {
   try {
+    // 审核模式：更新日志整体置空
+    if (isMiniFakeDataEnabled()) {
+      return { success: true, data: [] } satisfies MiniChangelogsResponse;
+    }
+
     // 与主站 /api/changelogs 同源，按时间倒序取全部更新日志
     const changelogs = await prisma.changelogs.findMany({
       orderBy: { create_time: "desc" },

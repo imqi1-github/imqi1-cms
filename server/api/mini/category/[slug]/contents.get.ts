@@ -4,6 +4,7 @@ import type { MiniCategoryContent, MiniCategoryContentsResponse } from "#server/
 import { parseCovers } from "#server/utils/covers";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { formatRelativeTime, toAbsoluteUrl } from "#server/utils/mini";
+import { isMiniFakeDataEnabled, MINI_FAKE_CATEGORY, MINI_FAKE_CATEGORY_CONTENT } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
@@ -22,6 +23,21 @@ export default defineEventHandler(async event => {
   const skip = (page - 1) * pageSize;
 
   try {
+    // 审核模式：只认占位分类（内含那篇占位文章），其他 slug 与真实场景一样 404
+    if (isMiniFakeDataEnabled()) {
+      if (categorySlug !== MINI_FAKE_CATEGORY.slug) {
+        throw createError({ statusCode: 404, message: "分类不存在" });
+      }
+      return {
+        success: true,
+        data: {
+          category: { ...MINI_FAKE_CATEGORY },
+          contents: [MINI_FAKE_CATEGORY_CONTENT],
+          pagination: { page, pageSize, total: 1, totalPages: 1 },
+        },
+      } satisfies MiniCategoryContentsResponse;
+    }
+
     const category = await prisma.metas.findUnique({
       where: { slug: categorySlug, type: "category" },
       select: { mid: true, name: true, slug: true, desc: true },

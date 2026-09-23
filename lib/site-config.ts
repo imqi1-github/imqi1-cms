@@ -246,6 +246,12 @@ export interface SiteFeaturesConfig {
   miniApi: boolean;
   /** 是否开启小程序评论功能；关闭后小程序端不展示评论区、服务端评论接口也不受理 */
   miniComment: boolean;
+  /**
+   * 小程序审核模式：开启后 /api/mini/* 只返回一篇固定占位文章，评论一并关闭，
+   * 分类/归档只留这一篇，友链/订阅/旅行/更新日志/音乐一律空 —— 供微信审核用。
+   * 构建期开关，改动需重新 build。
+   */
+  miniFakeData: boolean;
   /** 文章页「本文可在【手机】上看」入口开关 */
   mobileQr: boolean;
   /** 文章页「本文可在【小程序】上看」入口开关（还需运行时配置 WECHAT_MINI_* 才显示） */

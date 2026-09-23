@@ -144,7 +144,7 @@ export interface MiniCommentsResponse {
   requireMail: boolean;
   /** 是否必填链接（跟随主站 commentRequireLink 设置） */
   requireLink: boolean;
-  /** 小程序评论总开关（features.miniComment），false 时端上整个评论区（含输入框）不展示 */
+  /** 小程序评论总开关（features.miniComment 为 false、或审核模式 features.miniFakeData 为 true），false 时端上整个评论区（含输入框）不展示 */
   commentEnabled: boolean;
 }
 
@@ -282,7 +282,7 @@ export interface MiniMessagesConfigResponse {
   data: {
     /** 留言板关联的文章 id，未配置时为 null */
     contentId: number | null;
-    /** 小程序评论总开关（features.miniComment），关闭时留言页与入口都不展示 */
+    /** 小程序评论总开关（features.miniComment 为 false、或审核模式 features.miniFakeData 为 true），关闭时留言页与入口都不展示 */
     commentEnabled: boolean;
   };
 }

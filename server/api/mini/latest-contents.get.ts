@@ -1,10 +1,16 @@
 import type { MiniLatestContent, MiniLatestContentsResponse } from "#server/types/apis/mini";
 import { parseCovers } from "#server/utils/covers";
 import { formatRelativeTime, getPhotoCategoryMid, toAbsoluteUrl } from "#server/utils/mini";
+import { isMiniFakeDataEnabled, MINI_FAKE_LATEST_CONTENT } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
+    // 审核模式：不查库，只给那一篇占位文章
+    if (isMiniFakeDataEnabled()) {
+      return { success: true, data: [MINI_FAKE_LATEST_CONTENT] } satisfies MiniLatestContentsResponse;
+    }
+
     const photoCategoryMid = await getPhotoCategoryMid();
     const requestUrl = getRequestURL(event);
     const contents = await prisma.contents.findMany({

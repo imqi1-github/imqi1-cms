@@ -1,6 +1,7 @@
 import type { MiniContentDetail, MiniContentDetailResponse } from "#server/types/apis/mini";
 import { parseCovers } from "#server/utils/covers";
 import { formatRelativeTime, toAbsoluteUrl } from "#server/utils/mini";
+import { isMiniFakeDataEnabled, MINI_FAKE_CONTENT, MINI_FAKE_CONTENT_ID } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
@@ -15,6 +16,14 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    // 审核模式：只认那一篇占位文章，其他 id 与真实场景一样 404
+    if (isMiniFakeDataEnabled()) {
+      if (id !== MINI_FAKE_CONTENT_ID) {
+        throw createError({ statusCode: 404, message: "文章不存在" });
+      }
+      return { success: true, data: MINI_FAKE_CONTENT } satisfies MiniContentDetailResponse;
+    }
+
     // 返回 Markdown 原文，由小程序端自行解析（前台详情页返回的是已渲染 HTML，
     // 但小程序无法使用 v-html，故此处保留原文交给端上轻量解析器）。
     const content = await prisma.contents.findFirst({

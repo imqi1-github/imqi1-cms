@@ -1,11 +1,11 @@
 import DOMPurify from "isomorphic-dompurify";
 
 import { MAX_COMMENT_LENGTH, COMMENT_CACHE_ROUTES  } from "#shared/constants";
-import { siteConfig } from "~~/site.config";
 import type { MiniCommentBody, MiniCommentCreateResponse } from "#server/types/apis/mini";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { getClientIp } from "#server/utils/client-ip";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
+import { miniCommentsEnabled } from "#server/utils/mini-fake-data";
 import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getSiteSettings } from "#server/utils/siteSettings";
 import { validateCommentData } from "#server/utils/validation";
@@ -29,8 +29,8 @@ const PURIFY_CONFIG = {
 };
 
 export default defineEventHandler(async event => {
-  // 小程序评论使用独立的构建期开关，不跟随主站后台评论开关。
-  if (!siteConfig.features.miniComment) {
+  // 小程序评论使用独立的构建期开关，不跟随主站后台评论开关；审核模式（miniFakeData）下也一并关闭。
+  if (!miniCommentsEnabled()) {
     throw createError({ statusCode: 403, message: "评论功能已关闭" });
   }
 

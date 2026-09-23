@@ -219,6 +219,11 @@ export const siteConfig = defineSiteConfig({
   features: {
     miniApi: true,
     miniComment: true,
+    // 小程序审核模式（构建期开关）：开启后 /api/mini/** 只返回一篇固定的占位文章，
+    // 评论一并关闭，分类/归档只留这一篇，友链/订阅/旅行/更新日志/音乐一律返回空 ——
+    // 供微信审核用，避免审核员看到站内真实内容被判不合规。
+    // 审核前后各构建一次（改这里必须重新 build 才生效）。
+    miniFakeData: false,
     mobileQr: true,
     miniQr: true,
     amap: {

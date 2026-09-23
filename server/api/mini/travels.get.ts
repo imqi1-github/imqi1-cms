@@ -1,9 +1,15 @@
 import type { MiniTravelsResponse } from "#server/types/apis/mini";
 import { getPhotoCategoryMid, toAbsoluteUrl } from "#server/utils/mini";
+import { isMiniFakeDataEnabled } from "#server/utils/mini-fake-data";
 import { prisma } from "#server/utils/prisma";
 
 export default defineEventHandler(async event => {
   try {
+    // 审核模式：旅行足迹整体置空
+    if (isMiniFakeDataEnabled()) {
+      return { success: true, data: [] } satisfies MiniTravelsResponse;
+    }
+
     const origin = getRequestURL(event).origin;
     const photoCategoryMid = await getPhotoCategoryMid();
 
