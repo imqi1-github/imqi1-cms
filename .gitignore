@@ -63,4 +63,4 @@ new-theme.sql
 .claude/worktrees/
 changelogs.json
 nginx.conf
-.excluded
+.excluded*.tsbuildinfo
