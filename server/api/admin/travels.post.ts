@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateTravelData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { TRAVEL_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -105,7 +106,7 @@ export default defineEventHandler(async event => {
   }
 
   // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
-  void invalidateContentCaches({ routes: ["/", "/map", "/about"] }).catch(err => console.error("[cache] 旅行创建失效缓存失败", err));
+  void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES }).catch(err => console.error("[cache] 旅行创建失效缓存失败", err));
 
   return { success: true };
 });

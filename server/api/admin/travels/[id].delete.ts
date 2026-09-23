@@ -1,7 +1,8 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CSRF_HEADER, TRAVEL_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -25,7 +26,7 @@ export default defineEventHandler(async event => {
 
   // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
   // 置于 try 之外，避免 403 被下面的 catch 吞成 500
-  const csrfToken = getHeader(event, "x-csrf-token");
+  const csrfToken = getHeader(event, CSRF_HEADER);
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -38,11 +39,11 @@ export default defineEventHandler(async event => {
       where: { id },
     });
     // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/map", "/about"] }).catch(err => console.error("[cache] 旅行删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES }).catch(err => console.error("[cache] 旅行删除失效缓存失败", err));
     return { success: true };
   } catch (error) {
     // 删除不存在的地点（预期 404，先于 console.error，免得打印预期 4xx 堆栈）
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "旅行地点不存在" });
     }
     console.error(error);

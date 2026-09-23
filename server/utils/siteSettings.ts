@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
 import type { SiteSettings, SettingKey, MutableSettings, MetaItem } from "#server/types/apis/setting";
 import { sanitizeHtml } from "#shared/html";
 import { siteConfig } from "~~/site.config";
@@ -12,14 +13,14 @@ const defaults: SiteSettings = {
   homeCustomText: siteConfig.pages.homeCustomText,
   photoCategorySlug: "",
   commentEnabled: true,
-  commentAvatarService: "gravatar",
-  commentPageSize: 10,
-  commentMaxLevel: 4,
-  commentInterval: 60,
+  commentAvatarService: DEFAULT_COMMENT_AVATAR_SERVICE,
+  commentPageSize: DEFAULT_COMMENT_PAGE_SIZE,
+  commentMaxLevel: DEFAULT_COMMENT_MAX_LEVEL,
+  commentInterval: DEFAULT_COMMENT_INTERVAL,
   commentRequireMail: true,
   commentRequireLink: false,
-  contentPageSize: 12,
-  feedCacheInterval: 8,
+  contentPageSize: CONTENT_PAGE_SIZE_DEFAULT,
+  feedCacheInterval: DEFAULT_FEED_CACHE_INTERVAL,
   linkAutoApprove: false,
   musicPlaylistId: "",
 };

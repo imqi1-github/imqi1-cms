@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { CHANGELOG_MAX_BYTES, CHANGELOG_CACHE_ROUTES  } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateChangelogData } from "#server/utils/validation";
@@ -28,9 +29,9 @@ export default defineEventHandler(async event => {
   const entries = normalizeChangelogEntries(body?.content);
   validateChangelogData(entries);
 
-  // PG TEXT 无 65535 字节上限，此处仅保留防单条超大 changelog 的保守护栏（与 import.post 一致）
+  // PG TEXT 无等效字节上限，此处仅保留防单条超大 changelog 的保守护栏（与 import.post 一致）
   const serialized = stringifyChangelogContent(entries);
-  if (Buffer.byteLength(serialized, "utf8") > 65535) {
+  if (Buffer.byteLength(serialized, "utf8") > CHANGELOG_MAX_BYTES) {
     throw createError({ statusCode: 400, message: "更新日志内容过长" });
   }
 
@@ -41,7 +42,7 @@ export default defineEventHandler(async event => {
   });
 
   // 更新日志变更 → 立即失效更新日志页/首页 ISR 缓存（best-effort）
-  void invalidateContentCaches({ routes: ["/", "/changelogs"] }).catch(err => console.error("[cache] 更新日志创建失效缓存失败", err));
+  void invalidateContentCaches({ routes: CHANGELOG_CACHE_ROUTES }).catch(err => console.error("[cache] 更新日志创建失效缓存失败", err));
 
   return { success: true };
 });

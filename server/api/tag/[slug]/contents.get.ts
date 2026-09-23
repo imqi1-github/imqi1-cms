@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { PAGE_MAX, CONTENT_PAGE_SIZE_MAX, CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
 import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
@@ -7,8 +8,8 @@ export default defineEventHandler(async event => {
     const query = getQuery(event);
 
     // 页码/分页大小必须为有限正整数，避免负数/浮点/NaN/Infinity 传入 skip/take
-    const page = Math.min(10000, Math.max(1, Math.floor(Number(query.page) || 1)));
-    const pageSize = Math.min(50, Math.max(1, Math.floor(Number(query.pageSize) || 12)));
+    const page = Math.min(PAGE_MAX, Math.max(1, Math.floor(Number(query.page) || 1)));
+    const pageSize = Math.min(CONTENT_PAGE_SIZE_MAX, Math.max(1, Math.floor(Number(query.pageSize) || CONTENT_PAGE_SIZE_DEFAULT)));
     const skip = (page - 1) * pageSize;
 
     if (!slug) {

@@ -5,6 +5,7 @@ import { prisma } from "./prisma";
 
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { fetchPublicUrl } from "#server/utils/safe-fetch";
+import { SUBSCRIBE_CACHE_ROUTES } from "#shared/constants";
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "_",
@@ -291,7 +292,7 @@ export async function updateAllSubscribes() {
   console.log(`[订阅更新] 更新完成: 成功 ${results.success}/${results.total}，失败 ${results.failed}`);
 
   // 订阅内容已更新 → 失效订阅页 / 首页(订阅文章) / 地图页(博客网络) ISR 缓存（best-effort，不阻塞也不失败）
-  await invalidateContentCaches({ routes: ["/", "/subscribes", "/map"] }).catch(err => console.error("[cache] 订阅同步失效缓存失败", err));
+  await invalidateContentCaches({ routes: SUBSCRIBE_CACHE_ROUTES }).catch(err => console.error("[cache] 订阅同步失效缓存失败", err));
 
   return results;
 }

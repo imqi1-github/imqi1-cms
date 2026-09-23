@@ -1,4 +1,5 @@
 import { getSubscribePosts } from '#server/utils/rss';
+import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
@@ -16,7 +17,7 @@ export default defineEventHandler(async event => {
     }
 
     // 设置缓存头：CDN和浏览器缓存5分钟
-    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+    setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
     const contents = await getSubscribePosts();
 

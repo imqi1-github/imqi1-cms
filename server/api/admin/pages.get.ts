@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
+import { ADMIN_PAGE_SIZE_MAX, ADMIN_PAGE_SIZE_MIN } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 
@@ -20,7 +21,7 @@ export default defineEventHandler(async event => {
     const rawPage = Number(query.page);
     const page = Number.isFinite(rawPage) ? Math.max(1, Math.floor(rawPage)) : 1;
     const rawPageSize = Number(query.pageSize);
-    const pageSize = Number.isFinite(rawPageSize) ? Math.min(100, Math.max(1, Math.floor(rawPageSize))) : 10;
+    const pageSize = Number.isFinite(rawPageSize) ? Math.min(ADMIN_PAGE_SIZE_MAX, Math.max(ADMIN_PAGE_SIZE_MIN, Math.floor(rawPageSize))) : 10;
     // status 也按有限数收窄：空串/非法值 → undefined（丢弃该筛选），避免 NaN 落到 Int where 抛错→500
     const rawStatus = query.status !== undefined ? Number(query.status) : undefined;
     const status = rawStatus !== undefined && Number.isFinite(rawStatus) ? Math.trunc(rawStatus) : undefined;

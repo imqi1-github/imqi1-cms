@@ -2,6 +2,7 @@
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { CommentItem, CommentListResponse } from "~/types/apis/admin/comments";
 import { parseUserAgent } from "#shared/parseUserAgent";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const route = useRoute();
 const router = useRouter();
@@ -16,9 +17,11 @@ const fetchSeq = ref(0);
 const csrfToken = ref("");
 const filterCid = ref<number | null>(null); // 筛选的文章ID
 const filterStatus = ref<number | null>(null); // 筛选的评论状态（null = 全部）
+// 每页条数走后台统一偏好（10/20/50 + 自定义）；pagination 里的 pageSize 只作占位，首帧响应会整体覆盖
+const { pageSize } = useAdminPageSize(20);
 const pagination = ref({
   page: 1,
-  pageSize: 20,
+  pageSize: pageSize.value,
   total: 0,
   totalPages: 0,
 });
@@ -131,13 +134,13 @@ async function fetchComments(page: number = 1, updateUrl: boolean = true) {
   selectedIds.value = [];
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }
 
     // 构建查询参数
-    let url = `/api/admin/comments?page=${page}&pageSize=20`;
+    let url = `/api/admin/comments?page=${page}&pageSize=${pageSize.value}`;
     if (filterCid.value) {
       url += `&cid=${filterCid.value}`;
     }
@@ -276,7 +279,7 @@ async function deleteComment(coid: number) {
     try {
       await $fetch(`/api/admin/comments/${coid}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       });
       await fetchComments(pagination.value.page, false);
       toast.success({
@@ -337,6 +340,11 @@ function goToPage(page: number) {
   }
 }
 
+// 每页条数变了就回第 1 页：旧页码按新条数算可能已越界
+watch(pageSize, () => {
+  fetchComments(1);
+});
+
 function getContentTitle(comment: CommentItem) {
   return comment.contents?.title || "未知";
 }
@@ -365,27 +373,6 @@ function openFrontendComment(comment: CommentItem) {
     return;
   }
   window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function formatDate(date: string) {
-  const d = new Date(date);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const weeks = Math.floor(days / 7);
-  const months = Math.floor(days / 30);
-  const years = Math.floor(days / 365);
-
-  if (years > 0) return `${years}年前`;
-  if (months > 0) return `${months}个月前`;
-  if (weeks > 0) return `${weeks}周前`;
-  if (days > 0) return `${days}天前`;
-  if (hours > 0) return `${hours}小时前`;
-  if (minutes > 0) return `${minutes}分钟前`;
-  return "刚刚";
 }
 
 function getStatusInfo(status: number) {
@@ -816,12 +803,15 @@ onMounted(() => {
 
       <!-- 分页 -->
       <div
-        v-if="!loading && pagination.totalPages > 1"
+        v-if="!loading && pagination.total > 0"
         class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 pb-2 border-t px-3 sm:px-4">
-        <p class="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
-          共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
-        </p>
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
+        <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:justify-start">
+          <p class="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+            共 {{ pagination.total }} 条评论，第 {{ pagination.page }} / {{ pagination.totalPages }} 页
+          </p>
+          <AdminPageSizeSelect v-model="pageSize" />
+        </div>
+        <div v-if="pagination.totalPages > 1" class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
           <Button variant="outline" size="sm" :disabled="pagination.page <= 1" class="h-8 px-2" @click="goToPage(pagination.page - 1)">
             <Icon name="lucide:chevron-left" class="size-4" />
             <span class="hidden sm:inline ml-1">上一页</span>

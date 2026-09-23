@@ -5,6 +5,7 @@ import {siteConfig} from "~~/site.config";
 import type {LinkItem, LinkStatus, LinkFormMode} from "~/types/apis/links";
 import type {CsrfTokenResponse} from "~/types/apis/csrf";
 import type {ApiError} from "~/types/error";
+import { CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 // 导入前台通知 composable
 const { success, error: showError, } = useFrontNotification();
@@ -416,7 +417,7 @@ onMounted(async () => {
   // 预取 CSRF token（写接口 /api/links、/api/links/patch 需在 body 带上）。
   // 用 await 而非 fire-and-forget：token 未回填前点击提交会带空 csrfToken 被 403 拒，让访客误以为出错。
   try {
-    const csrfRes = await $fetch<CsrfTokenResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfTokenResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
   } catch {
     // 预取失败不阻断初始化，提交时 isRequiredFieldsFilled（含 token 判断）会拦住空 token

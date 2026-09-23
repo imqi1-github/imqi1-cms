@@ -1,8 +1,9 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { parseCovers } from "#server/utils/covers";
+import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 export default defineEventHandler(async event => {
-  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+  setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
   try {
     const travels = await prisma.travels.findMany({
       where: { enabled: true },
@@ -77,7 +78,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "旅行地点不存在" });
     }
     console.error(error);

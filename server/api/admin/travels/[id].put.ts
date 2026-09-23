@@ -1,8 +1,9 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateTravelData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { TRAVEL_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -123,7 +124,7 @@ export default defineEventHandler(async event => {
     });
 
     // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/map", "/about"] }).catch(err => console.error("[cache] 旅行更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES }).catch(err => console.error("[cache] 旅行更新失效缓存失败", err));
 
     return { success: true };
   } catch (error) {
@@ -132,7 +133,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
     // 并发删除竞态 → update P2025 → 404
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "旅行地点不存在" });
     }
     // 传入的文章 cid 不存在 → 外键约束失败 P2003 → 400

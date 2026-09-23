@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CHANGELOG_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -56,7 +57,7 @@ export default defineEventHandler(async event => {
     });
 
     // 更新日志变更 → 立即失效更新日志页/首页 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/changelogs"] }).catch(err => console.error("[cache] 更新日志批量删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CHANGELOG_CACHE_ROUTES }).catch(err => console.error("[cache] 更新日志批量删除失效缓存失败", err));
 
     return {
       success: true,

@@ -1,5 +1,7 @@
 import QRCode from "qrcode";
 
+import { PUBLIC_CACHE_CONTROL_SHORT } from "#shared/constants";
+
 /**
  * 通用二维码生成（GET）：把 query 里的 text 渲染成 PNG 返回。
  * 前端直接 `<img :src="/api/qr?text=<encodeURIComponent(url)>">` 使用，无需 JS 再取。
@@ -18,7 +20,7 @@ function hasControlChar(s: string): boolean {
 }
 
 export default defineEventHandler(async event => {
-  setHeader(event, "Cache-Control", "public, max-age=300");
+  setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL_SHORT);
 
   const raw = getQuery(event).text;
   const text = typeof raw === "string" ? raw : undefined;

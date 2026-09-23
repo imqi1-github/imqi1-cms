@@ -2,6 +2,7 @@
 import { CHANGELOG_TYPES, type ChangelogEntry, type ChangelogType, getChangelogMeta } from "#shared/changelog";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ChangelogItem, FormEntry } from "~/types/apis/admin/changelogs/logs";
+import { CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -35,7 +36,7 @@ async function loadLogs() {
   loading.value = true;
   try {
     // 取 CSRF token（写入接口需要）
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     // 调用管理员专用 API，无缓存，返回原始数据
     logs.value = await $fetch<ChangelogItem[]>("/api/admin/changelogs");

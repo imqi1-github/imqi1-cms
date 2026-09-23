@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "#server/utils/prisma";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_UPLOAD_LOCATION } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
@@ -15,15 +16,15 @@ const defaults: Record<string, string | number | boolean> = {
   homeCustomText: siteConfig.pages.homeCustomText,
   photoCategorySlug: "",
   commentEnabled: true,
-  commentAvatarService: "gravatar",
-  commentPageSize: 10,
-  commentMaxLevel: 4,
-  commentInterval: 60,
+  commentAvatarService: DEFAULT_COMMENT_AVATAR_SERVICE,
+  commentPageSize: DEFAULT_COMMENT_PAGE_SIZE,
+  commentMaxLevel: DEFAULT_COMMENT_MAX_LEVEL,
+  commentInterval: DEFAULT_COMMENT_INTERVAL,
   commentRequireMail: true,
   commentRequireLink: false,
-  contentPageSize: 12,
-  feedCacheInterval: 8,
-  uploadLocation: "local",
+  contentPageSize: CONTENT_PAGE_SIZE_DEFAULT,
+  feedCacheInterval: DEFAULT_FEED_CACHE_INTERVAL,
+  uploadLocation: DEFAULT_UPLOAD_LOCATION,
 };
 
 export default defineEventHandler(async event => {

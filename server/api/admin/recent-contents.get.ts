@@ -1,4 +1,5 @@
 import {prisma} from "#server/utils/prisma";
+import {ADMIN_DASHBOARD_TAKE} from "#shared/constants";
 import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
@@ -16,7 +17,7 @@ export default defineEventHandler(async event => {
       where: {
         type: 0, // 0: 文章，排除页面（type=1）
       },
-      take: 5,
+      take: ADMIN_DASHBOARD_TAKE,
       orderBy: {create_time: "desc"},
       // 仪表盘「最新文章」列表只展示标题/时间/状态，按 cid 编辑/删除；无需正文等大字段
       select: {

@@ -1,4 +1,5 @@
 import {prisma} from "#server/utils/prisma";
+import {ADMIN_DASHBOARD_TAKE} from "#shared/constants";
 import {getUser} from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
@@ -14,7 +15,7 @@ export default defineEventHandler(async event => {
 
   try {
     const comments = await prisma.comments.findMany({
-      take: 5,
+      take: ADMIN_DASHBOARD_TAKE,
       orderBy: {create_time: "desc"},
       // 约定1 白名单：只取前端需要的字段，不回显 ip/agent/mail 等内部/隐私字段
       select: {

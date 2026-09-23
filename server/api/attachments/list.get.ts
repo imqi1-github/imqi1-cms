@@ -1,4 +1,4 @@
-import prisma from "#server/utils/prisma";
+import prisma, { isPrismaNotFoundError } from "#server/utils/prisma";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { getUser } from "#server/lib/auth";
 
@@ -84,7 +84,7 @@ export default defineEventHandler(async event => {
     }
 
     // Prisma 记录未找到
-    if (error && typeof error === "object" && (error as { code?: string }).code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "资源不存在",

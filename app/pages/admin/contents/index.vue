@@ -3,6 +3,7 @@ import type {AcceptableValue} from "reka-ui";
 
 import type {AdminContent, AdminContentListResponse, Category, Tag} from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const router = useRouter();
 const route = useRoute();
@@ -19,9 +20,11 @@ const selectedStatus = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const fetchSeq = ref(0);
+// 每页条数走后台统一偏好（10/20/50 + 自定义）；pagination 里的 pageSize 只作占位，首帧响应会整体覆盖
+const { pageSize } = useAdminPageSize(10);
 const pagination = ref({
   page: 1,
-  pageSize: 10,
+  pageSize: pageSize.value,
   total: 0,
   totalPages: 0,
 });
@@ -124,7 +127,7 @@ async function fetchContents(page: number = 1, updateUrl: boolean = true) {
   try {
     const params = new URLSearchParams({
       page: page.toString(),
-      pageSize: "10",
+      pageSize: pageSize.value.toString(),
     });
 
     if (selectedCategory.value) {
@@ -208,7 +211,7 @@ async function deleteContent(cid: number) {
   if (confirmed) {
     deleting.value = true;
     try {
-      await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE", headers: { "x-csrf-token": csrfToken.value } });
+      await $fetch(`/api/admin/contents/${cid}`, { method: "DELETE", headers: { [CSRF_HEADER]: csrfToken.value } });
       await fetchContents(pagination.value.page, false);
       toast.success({ message: "文章已删除" });
     } catch (error) {
@@ -307,11 +310,16 @@ function goToPage(page: number) {
   }
 }
 
+// 每页条数变了就回第 1 页：旧页码按新条数算可能已越界
+watch(pageSize, () => {
+  fetchContents(1);
+});
+
 onMounted(() => {
   // 获取 CSRF token
   (async () => {
     try {
-      const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+      const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
       if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     } catch (error) {
       console.error("获取 CSRF token 失败:", error);
@@ -616,9 +624,12 @@ onMounted(() => {
       </div>
 
       <!-- 分页 - 桌面端 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="hidden min-[1175px]:flex items-center justify-between pt-4 pb-2 border-t">
-        <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
-        <div class="flex items-center gap-2">
+      <div v-if="!loading && pagination.total > 0" class="hidden min-[1175px]:flex items-center justify-between pt-4 pb-2 border-t">
+        <div class="flex items-center gap-3">
+          <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 篇文章，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
+          <AdminPageSizeSelect v-model="pageSize" />
+        </div>
+        <div v-if="pagination.totalPages > 1" class="flex items-center gap-2">
           <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
             <Icon name="lucide:chevron-left" class="size-4" />
             上一页
@@ -644,19 +655,22 @@ onMounted(() => {
 
       <!-- 分页 - 移动端 -->
       <div
-        v-if="!loading && pagination.totalPages > 1"
-        class="min-[1175px]:hidden flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-2 border-t">
+        v-if="!loading && pagination.total > 0"
+        class="min-[1175px]:hidden flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground text-center sm:text-left">
           第 {{ pagination.page }} / {{ pagination.totalPages }} 页，共 {{ pagination.total }} 篇
         </p>
-        <div class="flex items-center gap-2">
-          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
-            <Icon name="lucide:chevron-left" class="size-4" />
-          </Button>
-          <span class="text-sm">{{ pagination.page }}</span>
-          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
-            <Icon name="lucide:chevron-right" class="size-4" />
-          </Button>
+        <div class="flex items-center gap-3">
+          <AdminPageSizeSelect v-model="pageSize" />
+          <div v-if="pagination.totalPages > 1" class="flex items-center gap-1">
+            <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
+              <Icon name="lucide:chevron-left" class="size-4" />
+            </Button>
+            <span class="text-sm">{{ pagination.page }}</span>
+            <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
+              <Icon name="lucide:chevron-right" class="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

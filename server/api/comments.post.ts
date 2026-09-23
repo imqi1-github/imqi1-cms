@@ -6,11 +6,12 @@ import { verifyCaptcha } from "#server/utils/captcha";
 import { getClientIp } from "#server/utils/client-ip";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { CommentCreateSchema } from "#server/utils/schemas";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { validateCommentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { COMMENT_CACHE_ROUTES } from "#shared/constants";
 
 
 // HTML 净化配置 - 只允许安全的标签和属性
@@ -319,7 +320,7 @@ export default defineTypedApiHandler(
       }
 
       // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-      void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 评论提交失效缓存失败", err));
+      void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 评论提交失效缓存失败", err));
 
       return {
         code: 200,
@@ -335,7 +336,7 @@ export default defineTypedApiHandler(
         throw error;
       }
       // Prisma 记录不存在（如读取目标时被并发删除）映射为 404
-      if (error && typeof error === "object" && "code" in error && (error as { code: string }).code === "P2025") {
+      if (isPrismaNotFoundError(error)) {
         throw createError({
           statusCode: 404,
           message: "评论不存在",

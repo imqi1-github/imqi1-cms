@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CONTENT_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -86,7 +87,7 @@ export default defineEventHandler(async event => {
     await deleteOrphanAttachments(affectedAttachmentIds);
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap"] }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
 
     return {
       success: true,

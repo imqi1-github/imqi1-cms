@@ -2,6 +2,7 @@ import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { TAG_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -89,7 +90,7 @@ export default defineEventHandler(async event => {
     });
 
     // 内容关联标签变更 → 立即失效首页/标签/内容 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/tag/**", "/content/**", "/sitemap"] }).catch(err => console.error("[cache] 内容标签关联失效缓存失败", err));
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES }).catch(err => console.error("[cache] 内容标签关联失效缓存失败", err));
 
     return {
       success: true,

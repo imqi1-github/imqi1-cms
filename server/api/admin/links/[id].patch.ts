@@ -1,9 +1,10 @@
-import {prisma} from "#server/utils/prisma";
+import {prisma, isPrismaNotFoundError} from "#server/utils/prisma";
 import {getUser} from "#server/lib/auth";
 import {validateLinkData} from "#server/utils/validation";
 import {validateCsrfToken} from "#server/utils/csrf";
 import {ensureUrlProtocol} from "#server/utils/urlGuard";
 import {invalidateContentCaches} from "#server/utils/content-cache";
+import { LINKS_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -107,7 +108,7 @@ export default defineEventHandler(async event => {
       },
     });
     // 友链变更 → 立即失效相关 ISR 页面缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/links", "/map"] }).catch(err => console.error("[cache] 友链更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: LINKS_CACHE_ROUTES }).catch(err => console.error("[cache] 友链更新失效缓存失败", err));
     return updated;
   } catch (error) {
     // 已带 statusCode 的错误（如 validateLinkData 的 400、链接不存在的 404）原样抛出，避免被统一吞成 500
@@ -115,7 +116,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
     // findUnique 与 update 间的并发删除竞态 → P2025 → 404
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "链接不存在" });
     }
     console.error(error);

@@ -1,8 +1,9 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CATEGORY_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -133,7 +134,7 @@ export default defineEventHandler(async event => {
     });
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/content/**", "/archiving", "/sitemap"] }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
 
     return {
       success: true,
@@ -150,7 +151,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
     // 预检（findUnique）与 update 之间存在并发窗口：记录被删时 update 抛 P2025 → 404 而非 500
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "分类不存在",

@@ -1,4 +1,5 @@
 import { buildUrlKeys, hasSharedUrlKey } from "#server/utils/cover-keys";
+import { PAGE_MAX, CONTENT_PAGE_SIZE_MAX, CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
 import type { MiniCategoryContent, MiniCategoryContentsResponse } from "#server/types/apis/mini";
 import { parseCovers } from "#server/utils/covers";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
@@ -16,8 +17,8 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const page = Math.min(10000, Math.max(1, parseInt(String(query.page), 10) || 1));
-  const pageSize = Math.max(1, Math.min(50, parseInt(String(query.pageSize), 10) || 12));
+  const page = Math.min(PAGE_MAX, Math.max(1, parseInt(String(query.page), 10) || 1));
+  const pageSize = Math.max(1, Math.min(CONTENT_PAGE_SIZE_MAX, parseInt(String(query.pageSize), 10) || CONTENT_PAGE_SIZE_DEFAULT));
   const skip = (page - 1) * pageSize;
 
   try {

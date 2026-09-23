@@ -1,7 +1,8 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CSRF_HEADER, CATEGORY_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -23,7 +24,7 @@ export default defineEventHandler(async event => {
   }
 
   // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
-  const csrfToken = getHeader(event, "x-csrf-token") as string;
+  const csrfToken = getHeader(event, CSRF_HEADER) as string;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -127,7 +128,7 @@ export default defineEventHandler(async event => {
     });
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/content/**", "/archiving", "/sitemap"] }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
 
     return { success: true };
   } catch (error) {
@@ -136,7 +137,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
     // Prisma 删除/更新单条不存在记录 → P2025，映射为 404（预检与 delete 间存在并发窗口）
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "分类不存在",

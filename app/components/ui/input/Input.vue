@@ -18,10 +18,18 @@ const modelValue = useVModel(props, "modelValue", emits, {
   passive: true,
   defaultValue: props.defaultValue,
 })
+
+const inputEl = ref<HTMLInputElement | null>(null)
+
+// 供父组件聚焦（如「每页条数」自定义档展开后自动聚焦输入框）
+defineExpose({
+  focus: () => inputEl.value?.focus(),
+})
 </script>
 
 <template>
   <input
+    ref="inputEl"
     v-model="modelValue"
     data-slot="input"
     :class="cn(

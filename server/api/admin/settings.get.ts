@@ -1,4 +1,5 @@
 import { getUser } from "#server/lib/auth";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
@@ -23,14 +24,14 @@ export default defineEventHandler(async event => {
       siteIcp: "",
       commentEnabled: true,
       commentModeration: false,
-      commentAvatarService: "gravatar",
-      commentPageSize: 10,
-      commentMaxLevel: 4,
+      commentAvatarService: DEFAULT_COMMENT_AVATAR_SERVICE,
+      commentPageSize: DEFAULT_COMMENT_PAGE_SIZE,
+      commentMaxLevel: DEFAULT_COMMENT_MAX_LEVEL,
       commentRequireMail: true,
       commentRequireLink: false,
-      commentInterval: 60,
-      contentPageSize: 12,
-      feedCacheInterval: 8,
+      commentInterval: DEFAULT_COMMENT_INTERVAL,
+      contentPageSize: CONTENT_PAGE_SIZE_DEFAULT,
+      feedCacheInterval: DEFAULT_FEED_CACHE_INTERVAL,
       homeCustomText: siteConfig.pages.homeCustomText,
       musicPlaylistId: "",
       photoCategorySlug: "",
@@ -45,11 +46,11 @@ export default defineEventHandler(async event => {
       smtpAddress: "",
       smtpPassword: "",
       smtpSecureMode: "tls",
-      smtpPort: 465,
+      smtpPort: DEFAULT_SMTP_PORT,
       smtpFromName: "",
       adminEmail: "",
       notifyAdmin: false,
-      uploadLocation: "local",
+      uploadLocation: DEFAULT_UPLOAD_LOCATION,
       cosSecretId: "",
       cosSecretKey: "",
       cosBucket: "",
@@ -57,11 +58,11 @@ export default defineEventHandler(async event => {
       cosSourceDomain: "",
       cosCdnDomain: "",
       cosImageSuffix: "",
-      sessionStoreType: "memory",
+      sessionStoreType: DEFAULT_SESSION_STORE_TYPE,
       messageContentId: "",
       linkAutoApprove: false,
       searchCacheEnabled: false,
-      searchCacheExpire: 300,
+      searchCacheExpire: DEFAULT_SEARCH_CACHE_EXPIRE,
     };
 
     const settings: Record<string, string | number | boolean> = { ...defaults };

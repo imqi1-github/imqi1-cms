@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import * as fs from "fs/promises";
 import * as path from "path";
 
+import { MAX_ATTACHMENT_BYTES, MAX_LIVE_PHOTO_BYTES, CONTENT_DETAIL_CACHE_ROUTES  } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 import type { AttachmentUploadLocation, LocalUploadResult } from "#server/types/apis/upload-strategy";
 import { createAttachmentMetadata } from "#server/utils/attachmentMetadata";
@@ -9,7 +10,7 @@ import { getUploadsDir } from "#server/utils/attachment-file";
 import { uploadToCOS } from "#server/utils/cos";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import prisma from "#server/utils/prisma";
+import prisma, { isPrismaNotFoundError } from "#server/utils/prisma";
 import { validateAttachmentData } from "#server/utils/validation";
 
 // 允许的文件类型
@@ -46,10 +47,6 @@ function validateFileMagicNumber(buffer: Buffer, mimeType: string): boolean {
   return true;
 }
 
-// 最大文件大小 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-// 实况照片保留原始 JPEG+MP4 字节，体积通常大于普通图片
-const MAX_LIVE_PHOTO_SIZE = 50 * 1024 * 1024;
 const LIVE_PHOTO_TYPES = ["image/jpeg", "image/jpg"];
 
 // 生成唯一文件名
@@ -169,7 +166,7 @@ export default defineEventHandler(async event => {
     }
 
     // 先验文件大小：file.size 是元数据，无需读入内存即可拒绝超限文件，避免超限文件被整读入 buffer 再 reject
-    const maxFileSize = isLivePhoto ? MAX_LIVE_PHOTO_SIZE : MAX_FILE_SIZE;
+    const maxFileSize = isLivePhoto ? MAX_LIVE_PHOTO_BYTES : MAX_ATTACHMENT_BYTES;
     if (file.size > maxFileSize) {
       throw createError({
         statusCode: 400,
@@ -267,7 +264,7 @@ export default defineEventHandler(async event => {
 
     // 上传时关联了文章 → 影响文章详情 /content/** 的附件渲染；未关联内容（cid 为空）则无需失效
     if (cid !== null) {
-      void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
+      void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
     }
 
     return {
@@ -293,7 +290,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
 
-    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "文章不存在",

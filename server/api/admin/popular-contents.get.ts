@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { ADMIN_DASHBOARD_TAKE } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
@@ -22,7 +23,7 @@ export default defineEventHandler(async event => {
           gt: 0, // 只显示有评论的文章
         },
       },
-      take: 5,
+      take: ADMIN_DASHBOARD_TAKE,
       orderBy: { comment_num: "desc" },
       select: {
         cid: true,

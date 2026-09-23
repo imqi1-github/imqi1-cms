@@ -1,7 +1,8 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CSRF_HEADER, COMMENT_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -31,7 +32,7 @@ export default defineEventHandler(async event => {
   }
 
   // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
-  const csrfToken = getHeader(event, "x-csrf-token") as string;
+  const csrfToken = getHeader(event, CSRF_HEADER) as string;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -71,14 +72,14 @@ export default defineEventHandler(async event => {
     });
 
     // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 评论删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 评论删除失效缓存失败", err));
 
     return { success: true };
   } catch (error) {
     if (error instanceof Error && 'statusCode' in error) throw error;
     console.error(error);
     // 计数 update 时文章已被删 → P2025 → 404（评论已回滚，语义上视同不存在）
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "评论不存在",

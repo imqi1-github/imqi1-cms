@@ -4,6 +4,7 @@ import type {
   SaveResult,
   SaveStatus,
 } from "~/types/composables/editor-autosave";
+import { CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 /**
  * 后台富文本/Markdown 编辑器：Ctrl+S 保存 + 停笔自动保存 + 会话/CSRF 过期防丢。
@@ -38,7 +39,7 @@ export function useEditorAutosave(opts: EditorAutosaveOptions) {
 
   async function refreshCsrf() {
     try {
-      const res = await $fetch<{ data?: { token?: string } }>("/api/csrf/token", { credentials: "include" });
+      const res = await $fetch<{ data?: { token?: string } }>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
       if (res?.data?.token) opts.csrfToken.value = res.data.token;
     } catch {
       // 取不到就沿用现有值，让 save 去抛错并被识别为 expired。csrf cookie 非 httpOnly，此接口始终可用。

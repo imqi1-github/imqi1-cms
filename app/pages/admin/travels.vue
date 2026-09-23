@@ -2,6 +2,7 @@
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { ContentListItem, TravelItem } from "~/types/components/map";
 import { fetchAllAdminContents } from "~/utils/admin-picker";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -61,7 +62,7 @@ async function fetchTravels() {
   loading.value = true;
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }
@@ -264,7 +265,7 @@ async function deleteTravel(id: number) {
     try {
       await $fetch(`/api/admin/travels/${id}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       });
       toast.success({ message: "删除成功" });
       await fetchTravels();

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {AcceptableValue} from "reka-ui";
 
+import { MAX_LIVE_PHOTO_BYTES, MAX_ATTACHMENT_BYTES, CSRF_TOKEN_ENDPOINT, CSRF_HEADER  } from "#shared/constants";
 import type {Attachment, Category, ContentMeta, ContentSaveResponse, CoversInput, Tag, Travel, ContentApiResponse} from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
@@ -274,18 +275,6 @@ const livePhotoInputRef = ref<HTMLInputElement | null>(null);
 const dragOver = ref(false);
 
 // 格式化文件大小
-function formatFileSize(bytes: number) {
-  if (!bytes || bytes === 0) return "-";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let i = 0;
-  let value = bytes;
-  while (value >= 1024 && i < units.length - 1) {
-    value /= 1024;
-    i++;
-  }
-  return value.toFixed(1) + " " + units[i];
-}
-
 function formatImageDimensions(item: Attachment) {
   if (!item.width || !item.height) return "-";
   return `${item.width} × ${item.height}`;
@@ -385,7 +374,7 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
       }
 
       // 验证文件大小：普通附件 10MB，实况照片 50MB
-      const maxSize = isLivePhoto ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      const maxSize = isLivePhoto ? MAX_LIVE_PHOTO_BYTES : MAX_ATTACHMENT_BYTES;
       if (file.size > maxSize) {
         toast.error({
           message: "文件过大",
@@ -449,7 +438,7 @@ const deleteAttachment = async (attachment: Attachment) => {
 
     await $fetch(`/api/attachments/${attachment.id}?${params}`, {
       method: "DELETE",
-      headers: { "x-csrf-token": csrfToken.value },
+      headers: { [CSRF_HEADER]: csrfToken.value },
     });
 
     attachments.value = attachments.value.filter(a => a.id !== attachment.id);
@@ -850,7 +839,7 @@ const openContent = () => {
 onMounted(async () => {
   // 获取 CSRF token
   try {
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
   } catch (error) {
     console.error('获取 CSRF token 失败:', error);

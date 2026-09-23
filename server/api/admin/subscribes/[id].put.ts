@@ -1,8 +1,9 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateSubscribeData } from "#server/utils/validation";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { SUBSCRIBE_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -62,7 +63,7 @@ export default defineEventHandler(async event => {
       select: { id: true, url: true, name: true, avatar: true, lastUpdated: true },
     });
     // 订阅变更 → 立即失效订阅页 / 首页(订阅文章) / 地图页(博客网络) ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/subscribes", "/map"] }).catch(err => console.error("[cache] 订阅更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: SUBSCRIBE_CACHE_ROUTES }).catch(err => console.error("[cache] 订阅更新失效缓存失败", err));
     return subscribe;
   } catch (error) {
     // 已带 statusCode 的错误（如 validateSubscribeData 的 400）原样抛出，避免被统一吞成 500
@@ -71,7 +72,7 @@ export default defineEventHandler(async event => {
     }
 
     // 更新不存在的订阅
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "订阅不存在" });
     }
     console.error(error);

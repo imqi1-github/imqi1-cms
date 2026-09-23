@@ -1,4 +1,5 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
+import { PUBLIC_LIMIT_MAX } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
@@ -6,7 +7,7 @@ export default defineEventHandler(async event => {
     // 数值参数取正整型并设上限（与评论区一致）：对负数/NaN/Infinity/重复参数回退默认，
     // 防止负数或超大值进入 take（take: limit*2）造成 SQL 报错或拖库。上限 100 为溢出保护。
     const limit = Number.isFinite(Number(query.limit))
-      ? Math.min(100, Math.max(1, Math.floor(Number(query.limit))))
+      ? Math.min(PUBLIC_LIMIT_MAX, Math.max(1, Math.floor(Number(query.limit))))
       : 20;
 
     // 解析留言板关联文章 cid：留言板是独立 /messages 路由（page 型，无分类关系），
@@ -132,7 +133,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "该评论不存在",

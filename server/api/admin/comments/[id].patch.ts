@@ -1,8 +1,9 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateCommentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { COMMENT_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -136,7 +137,7 @@ export default defineEventHandler(async event => {
     });
 
     // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 评论审核失效缓存失败", err));
+    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 评论审核失效缓存失败", err));
 
     return {
       success: true,
@@ -146,7 +147,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && 'statusCode' in error) throw error;
     console.error(error);
     // 计数 update 时文章已被删 / 评论更新竞态被删 → P2025 → 404 而非 500
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "评论不存在或已被删除",

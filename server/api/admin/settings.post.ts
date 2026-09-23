@@ -1,4 +1,5 @@
 import { getUser } from "#server/lib/auth";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
 import { validateSettingsData } from "#server/utils/validation";
@@ -52,14 +53,14 @@ export default defineEventHandler(async event => {
       { key: "siteIcp", value: settingsData.siteIcp ?? "" },
       { key: "commentEnabled", value: String(settingsData.commentEnabled ?? true) },
       { key: "commentModeration", value: String(settingsData.commentModeration ?? false) },
-      { key: "commentAvatarService", value: settingsData.commentAvatarService ?? "gravatar" },
-      { key: "commentPageSize", value: String(settingsData.commentPageSize ?? 10) },
-      { key: "commentMaxLevel", value: String(settingsData.commentMaxLevel ?? 4) },
+      { key: "commentAvatarService", value: settingsData.commentAvatarService ?? DEFAULT_COMMENT_AVATAR_SERVICE },
+      { key: "commentPageSize", value: String(settingsData.commentPageSize ?? DEFAULT_COMMENT_PAGE_SIZE) },
+      { key: "commentMaxLevel", value: String(settingsData.commentMaxLevel ?? DEFAULT_COMMENT_MAX_LEVEL) },
       { key: "commentRequireMail", value: String(settingsData.commentRequireMail ?? true) },
       { key: "commentRequireLink", value: String(settingsData.commentRequireLink ?? false) },
-      { key: "commentInterval", value: String(settingsData.commentInterval ?? 60) },
-      { key: "contentPageSize", value: String(settingsData.contentPageSize ?? 12) },
-      { key: "feedCacheInterval", value: String(settingsData.feedCacheInterval ?? 8) },
+      { key: "commentInterval", value: String(settingsData.commentInterval ?? DEFAULT_COMMENT_INTERVAL) },
+      { key: "contentPageSize", value: String(settingsData.contentPageSize ?? CONTENT_PAGE_SIZE_DEFAULT) },
+      { key: "feedCacheInterval", value: String(settingsData.feedCacheInterval ?? DEFAULT_FEED_CACHE_INTERVAL) },
       { key: "homeCustomText", value: settingsData.homeCustomText ?? siteConfig.pages.homeCustomText },
       { key: "musicPlaylistId", value: settingsData.musicPlaylistId ?? "" },
       { key: "photoCategorySlug", value: settingsData.photoCategorySlug ?? "" },
@@ -74,11 +75,11 @@ export default defineEventHandler(async event => {
       { key: "smtpAddress", value: settingsData.smtpAddress ?? "" },
       { key: "smtpPassword", value: settingsData.smtpPassword ?? "" },
       { key: "smtpSecureMode", value: settingsData.smtpSecureMode ?? "tls" },
-      { key: "smtpPort", value: String(settingsData.smtpPort ?? 465) },
+      { key: "smtpPort", value: String(settingsData.smtpPort ?? DEFAULT_SMTP_PORT) },
       { key: "smtpFromName", value: settingsData.smtpFromName ?? "" },
       { key: "adminEmail", value: settingsData.adminEmail ?? "" },
       { key: "notifyAdmin", value: String(settingsData.notifyAdmin ?? false) },
-      { key: "uploadLocation", value: settingsData.uploadLocation === "cos" ? "cos" : "local" },
+      { key: "uploadLocation", value: settingsData.uploadLocation === "cos" ? "cos" : DEFAULT_UPLOAD_LOCATION },
       { key: "cosSecretId", value: settingsData.cosSecretId ?? "" },
       { key: "cosSecretKey", value: settingsData.cosSecretKey ?? "" },
       { key: "cosBucket", value: settingsData.cosBucket ?? "" },
@@ -86,11 +87,11 @@ export default defineEventHandler(async event => {
       { key: "cosSourceDomain", value: settingsData.cosSourceDomain ?? "" },
       { key: "cosCdnDomain", value: settingsData.cosCdnDomain ?? "" },
       { key: "cosImageSuffix", value: settingsData.cosImageSuffix ?? "" },
-      { key: "sessionStoreType", value: settingsData.sessionStoreType ?? "memory" },
+      { key: "sessionStoreType", value: settingsData.sessionStoreType ?? DEFAULT_SESSION_STORE_TYPE },
       { key: "messageContentId", value: settingsData.messageContentId ?? "" },
       { key: "linkAutoApprove", value: String(settingsData.linkAutoApprove ?? false) },
       { key: "searchCacheEnabled", value: String(settingsData.searchCacheEnabled ?? false) },
-      { key: "searchCacheExpire", value: String(settingsData.searchCacheExpire ?? 300) },
+      { key: "searchCacheExpire", value: String(settingsData.searchCacheExpire ?? DEFAULT_SEARCH_CACHE_EXPIRE) },
     ];
 
     // 整批 upsert 包事务：中途失败整体回滚，避免保存半套不一致设置

@@ -4,7 +4,8 @@ import { getUser } from "#server/lib/auth";
 import { deleteAttachmentFile } from "#server/utils/attachment-file";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import prisma from "#server/utils/prisma";
+import prisma, { isPrismaNotFoundError } from "#server/utils/prisma";
+import { CSRF_HEADER, CONTENT_DETAIL_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
@@ -26,7 +27,7 @@ export default defineEventHandler(async event => {
     }
 
     // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
-    const csrfToken = getHeader(event, "x-csrf-token") as string;
+    const csrfToken = getHeader(event, CSRF_HEADER) as string;
     const query = getQuery(event);
     if (!validateCsrfToken(event, csrfToken)) {
       throw createError({
@@ -96,7 +97,7 @@ export default defineEventHandler(async event => {
       });
 
       // 取消某文章的附件关联 → 影响该文章详情 /content/** 渲染
-      void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 附件取消关联失效缓存失败", err));
+      void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error("[cache] 附件取消关联失效缓存失败", err));
 
       return {
         success: true,
@@ -119,7 +120,7 @@ export default defineEventHandler(async event => {
     });
 
     // 全局删除附件（级联取消所有关联）→ 影响引用它的文章详情 /content/** 渲染
-    void invalidateContentCaches({ routes: ["/content/**"] }).catch(err => console.error("[cache] 附件删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error("[cache] 附件删除失效缓存失败", err));
 
     return {
       success: true,
@@ -130,7 +131,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "附件不存在",

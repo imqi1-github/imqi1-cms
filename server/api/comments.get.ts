@@ -1,4 +1,5 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
+import { COMMENT_LOAD_ALL_PAGE_SIZE } from "#shared/constants";
 import { getIpLocation } from "#server/utils/qqwry";
 import { parseUserAgent } from "#shared/parseUserAgent";
 import type { CommentNode } from "#server/types/apis/comment-node";
@@ -15,7 +16,7 @@ export default defineEventHandler(async event => {
       ? Math.max(1, Math.floor(Number(query.page)))
       : 1;
     const pageSize = Number.isFinite(Number(query.pageSize))
-      ? Math.min(10000, Math.max(1, Math.floor(Number(query.pageSize))))
+      ? Math.min(COMMENT_LOAD_ALL_PAGE_SIZE, Math.max(1, Math.floor(Number(query.pageSize))))
       : 10;
 
     if (!Number.isInteger(cid) || cid <= 0) {
@@ -162,7 +163,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && 'statusCode' in error) {
       throw error;
     }
-    if (error instanceof Error && 'code' in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "评论不存在",

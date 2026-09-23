@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
+import { COMMENT_LOAD_ALL_PAGE_SIZE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL } from "#shared/constants";
 import type { CommentsApiResponse } from "~/types/apis/comments";
 import type { Comment, CommentFormData, ReplyState } from "~/types/components/comment";
 
@@ -13,13 +14,13 @@ const comments = ref<Comment[]>([]);
 const loading = ref(true);
 const refreshing = ref(false);
 const error = ref("");
-const pageSize = ref(10);
+const pageSize = ref(DEFAULT_COMMENT_PAGE_SIZE);
 const currentPage = ref(1);
 const totalComments = ref(0);
 const hasMore = ref(false);
 const loadingMore = ref(false);
-const maxLevel = ref(4);
-const commentInterval = ref(60);
+const maxLevel = ref(DEFAULT_COMMENT_MAX_LEVEL);
+const commentInterval = ref(DEFAULT_COMMENT_INTERVAL);
 const requireMail = ref(true);
 const requireLink = ref(false);
 // 请求序号守卫：静默刷新 vs 在途 loadMore 竞争时只允许最新请求写状态
@@ -80,7 +81,7 @@ const fetchComments = async (isRefresh = false, page = 1, silent = false) => {
   error.value = "";
 
   try {
-    const response = await fetch(`/api/comments?cid=${props.contentId}&page=${page}&pageSize=${props.loadAllComments ? 10000 : pageSize.value}`);
+    const response = await fetch(`/api/comments?cid=${props.contentId}&page=${page}&pageSize=${props.loadAllComments ? COMMENT_LOAD_ALL_PAGE_SIZE : pageSize.value}`);
     const data: CommentsApiResponse = await response.json();
 
     if (seq !== fetchSeq) return;
@@ -171,7 +172,7 @@ onMounted(async () => {
   // 如果需要加载所有评论，使用大 pageSize
   if (props.loadAllComments) {
     try {
-      const actualPageSize = 10000;
+      const actualPageSize = COMMENT_LOAD_ALL_PAGE_SIZE;
       const response = await fetch(`/api/comments?cid=${props.contentId}&page=1&pageSize=${actualPageSize}`);
       const data: CommentsApiResponse = await response.json();
       if (data.code === 200) {

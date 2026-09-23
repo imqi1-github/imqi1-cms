@@ -1,8 +1,9 @@
 import { prisma } from "#server/utils/prisma";
+import { PUBLIC_LIMIT_MAX, PUBLIC_CACHE_CONTROL  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 设置缓存头 - CDN 和浏览器缓存 5 分钟
-  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+  setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
   try {
     const query = getQuery(event);
@@ -10,7 +11,7 @@ export default defineEventHandler(async event => {
     // 公开分页参数：clamp 到正整 1..100，NaN/float/负/Infinity 不得直接传给 Prisma take
     const rawLimit = parseInt(String(query.limit ?? ""), 10);
     const limit = Number.isFinite(rawLimit)
-      ? Math.min(100, Math.max(1, Math.floor(rawLimit)))
+      ? Math.min(PUBLIC_LIMIT_MAX, Math.max(1, Math.floor(rawLimit)))
       : 4;
 
     const categories = await prisma.metas.findMany({

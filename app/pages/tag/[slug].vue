@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
 import { siteConfig } from "~~/site.config";
 
 const route = useRoute();
@@ -20,7 +21,7 @@ const apiSlug = ref(slug.value);
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.site.name);
-const contentPageSize = computed(() => siteSettings.value?.contentPageSize || 12);
+const contentPageSize = computed(() => siteSettings.value?.contentPageSize || CONTENT_PAGE_SIZE_DEFAULT);
 
 // 从 URL query 参数中获取页码
 const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
@@ -83,7 +84,7 @@ const skeletonCount = computed(() => {
     return contents.value.length;
   }
   // 否则使用每页显示数量
-  return contentPageSize.value || 12;
+  return contentPageSize.value || CONTENT_PAGE_SIZE_DEFAULT;
 });
 
 // 监听 pending，控制骨架屏显示

@@ -1,4 +1,5 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
+import { SEARCH_RESULT_TAKE } from "#shared/constants";
 import { redis } from "#server/utils/redis";
 import { getCommentAvatarService, commentAvatarUrl } from "#server/utils/comment-avatar";
 import { SearchQuerySchema } from "#server/utils/schemas";
@@ -163,7 +164,7 @@ async function searchContents(q: string): Promise<SearchBranchResult> {
     },
     orderBy: { create_time: "desc" },
     // 其余分支均 take:50，文章分支也加截断（否则一次搜索可返回全部命中，total 也随之封顶）
-    take: 50,
+    take: SEARCH_RESULT_TAKE,
   });
 
   return { results: formatSearchResults(contents, q), total: contents.length };
@@ -183,7 +184,7 @@ async function searchSubscribes(q: string): Promise<SearchBranchResult> {
         url: true,
         avatar: true,
       },
-      take: 50,
+      take: SEARCH_RESULT_TAKE,
     }),
     // 友链：仅已启用且通过审核的（同 links.get.ts 的过滤规则），按名称/链接/描述匹配
     prisma.links.findMany({
@@ -205,7 +206,7 @@ async function searchSubscribes(q: string): Promise<SearchBranchResult> {
         desc: true,
         avatar: true,
       },
-      take: 50,
+      take: SEARCH_RESULT_TAKE,
     }),
   ]);
 
@@ -311,7 +312,7 @@ async function searchComments(q: string): Promise<SearchBranchResult> {
     orderBy: {
       create_time: "desc",
     },
-    take: 50,
+    take: SEARCH_RESULT_TAKE,
   });
 
   const results: CommentSearchResult[] = comments.map(comment => {
@@ -382,7 +383,7 @@ async function searchSubscribeposts(q: string): Promise<SearchBranchResult> {
     orderBy: {
       pubDate: "desc",
     },
-    take: 50,
+    take: SEARCH_RESULT_TAKE,
   });
 
   const results: SubscribePostSearchResult[] = posts.map(post => ({
@@ -490,7 +491,7 @@ export default defineTypedApiHandler(
         throw error;
       }
       // Prisma 记录不存在 -> 404
-      if (typeof error === "object" && error !== null && (error as { code?: string }).code === "P2025") {
+      if (isPrismaNotFoundError(error)) {
         throw createError({ statusCode: 404, message: "资源不存在" });
       }
       throw createError({

@@ -1,7 +1,8 @@
 import { getUser } from "#server/lib/auth";
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CSRF_HEADER, TAG_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -22,7 +23,7 @@ export default defineEventHandler(async event => {
   }
 
   // CSRF 验证 - 从请求头获取（避免 token 进入 URL 被日志/Referer 记录）
-  const csrfToken = getHeader(event, "x-csrf-token") as string;
+  const csrfToken = getHeader(event, CSRF_HEADER) as string;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -64,7 +65,7 @@ export default defineEventHandler(async event => {
     ]);
 
     // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/tag/**", "/content/**", "/archiving", "/sitemap"] }).catch(err => console.error("[cache] 标签删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES }).catch(err => console.error("[cache] 标签删除失效缓存失败", err));
 
     return { success: true };
   } catch (error) {
@@ -73,7 +74,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
     // 并发删除竞态 → P2025 → 404
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "标签不存在" });
     }
     console.error(error);

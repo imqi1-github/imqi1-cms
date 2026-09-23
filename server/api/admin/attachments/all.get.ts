@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 
+import { ADMIN_PAGE_SIZE_MAX, ADMIN_PAGE_SIZE_MIN, PAGE_MAX } from '#shared/constants'
 import prisma from '#server/utils/prisma'
 import { normalizeAttachmentMetadata } from '#server/utils/attachmentMetadata'
 import { getUser } from '#server/lib/auth'
@@ -15,9 +16,9 @@ export default defineEventHandler(async event => {
     }
 
     const query = getQuery(event)
-    // page/pageSize 只钳下限不设上限：超大 pageSize 会 take 全表、超大 page 会慢 LIMIT OFFSET；加 floor + 上限
-    const page = Math.min(10000, Math.max(1, Math.floor(Number(query.page) || 1)))
-    const pageSize = Math.min(100, Math.max(1, Math.floor(Number(query.pageSize) || 20)))
+    // page/pageSize 只钳下限不设上限：超大 pageSize 会 take 全表、超大 page 会慢 LIMIT OFFSET；加 floor + 上下限
+    const page = Math.min(PAGE_MAX, Math.max(1, Math.floor(Number(query.page) || 1)))
+    const pageSize = Math.min(ADMIN_PAGE_SIZE_MAX, Math.max(ADMIN_PAGE_SIZE_MIN, Math.floor(Number(query.pageSize) || 20)))
     // query 对重复参数（?type=a&type=b）会返回数组，仅 as string 会让数组流入 Prisma where 抛错；typeof 收窄
     const type = typeof query.type === 'string' ? query.type : undefined
     const search = typeof query.search === 'string' ? query.search : undefined

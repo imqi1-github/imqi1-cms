@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { LinkItem } from "~/types/apis/admin/links";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -18,7 +19,7 @@ const togglingId = ref<number | null>(null);
 async function fetchLinks() {
   loading.value = true;
   try {
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     links.value = await $fetch<LinkItem[]>("/api/admin/links");
   } catch (error) {
@@ -144,7 +145,7 @@ async function deleteLink(id: number) {
     try {
       await $fetch(`/api/admin/links/${id}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       });
       toast.success({
         message: "删除成功",

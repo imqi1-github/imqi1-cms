@@ -1,10 +1,11 @@
 import type { Prisma } from "@prisma/client";
 
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CONTENT_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -160,7 +161,7 @@ export default defineEventHandler(async event => {
     });
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap"] }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));
 
     // 前端保存后只需 cid，不再回查全字段（含正文）。
     return {
@@ -172,7 +173,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
     // 并发把 slug 改成已占用值：唯一约束 P2002（预检与 update 间存在 TOCTOU 窗口）→ 400，与 contents.post 对齐

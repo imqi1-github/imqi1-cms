@@ -3,6 +3,7 @@ import { getHeader } from "h3";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { revokeTrustedDevice } from "#server/utils/trusted-device";
+import { CSRF_HEADER } from "#shared/constants";
 
 /** 后台：撤回一台已信任设备（DELETE，CSRF 走 x-csrf-token 头） */
 export default defineEventHandler(async event => {
@@ -10,7 +11,7 @@ export default defineEventHandler(async event => {
   if (!user) {
     throw createError({ statusCode: 401, message: "未登录" });
   }
-  if (!validateCsrfToken(event, getHeader(event, "x-csrf-token"))) {
+  if (!validateCsrfToken(event, getHeader(event, CSRF_HEADER))) {
     throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
   }
 

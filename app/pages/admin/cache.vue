@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { CacheClearBody, CacheClearResponse } from "~/types/apis/cache";
+import { CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 definePageMeta({
   title: "缓存管理",
@@ -36,7 +37,7 @@ const showAllDialog = ref(false);
 
 async function fetchCsrf() {
   try {
-    const res = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const res = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (res?.data?.token) {
       csrfToken.value = res.data.token;
     }

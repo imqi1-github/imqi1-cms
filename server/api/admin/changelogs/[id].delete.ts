@@ -1,7 +1,8 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CSRF_HEADER, CHANGELOG_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -29,7 +30,7 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const csrfToken = getHeader(event, "x-csrf-token") as string;
+  const csrfToken = getHeader(event, CSRF_HEADER) as string;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
   }
@@ -39,11 +40,11 @@ export default defineEventHandler(async event => {
       where: { id: logId },
     });
     // 更新日志变更 → 立即失效更新日志页/首页 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/changelogs"] }).catch(err => console.error("[cache] 更新日志删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CHANGELOG_CACHE_ROUTES }).catch(err => console.error("[cache] 更新日志删除失效缓存失败", err));
     return { success: true };
   } catch (error) {
     // 删除不存在的日志（预期 404，先于 console.error，免得打印预期 4xx 堆栈）
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "更新日志不存在" });
     }
     console.error(error);

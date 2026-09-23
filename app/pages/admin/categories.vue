@@ -6,6 +6,7 @@ import type {
     CategoryUpdateResponse,
     CsrfResponse,
 } from "~/types/apis/admin/categories";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const router = useRouter();
 const toast = useToast();
@@ -25,7 +26,7 @@ async function fetchCategories() {
   loading.value = true;
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }
@@ -150,7 +151,7 @@ async function deleteCategory(mid: number) {
     try {
       await $fetch<CategoryDeleteResponse>(`/api/admin/categories/${mid}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       });
       toast.success({ message: "分类删除成功" });
       await fetchCategories();

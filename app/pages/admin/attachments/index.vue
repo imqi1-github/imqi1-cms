@@ -2,6 +2,7 @@
 import type { AttachmentItem, AttachmentListResponse, ImageDimension } from "~/types/apis/admin/attachments";
 import type { PublicAttachmentUploadResponse } from "~/types/apis/attachments";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
+import { MAX_LIVE_PHOTO_BYTES, MAX_ATTACHMENT_BYTES, CSRF_TOKEN_ENDPOINT, CSRF_HEADER  } from "#shared/constants";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -23,9 +24,9 @@ const attachmentTypes = [
   { value: "video", label: "视频" },
 ];
 
-// 分页（页码从 URL query 读取，从详情页返回时仍停留在原页）
+// 分页（页码从 URL query 读取，从详情页返回时仍停留在原页）；每页条数走后台统一偏好（10/20/50 + 自定义）
 const page = ref(Math.max(1, Number(route.query.page) || 1));
-const pageSize = ref(20);
+const { pageSize } = useAdminPageSize(20);
 const total = ref(0);
 
 // 请求序号守卫：只认最后一次发起的请求，丢弃过期响应（防异步乱序覆盖新结果）
@@ -77,6 +78,16 @@ const fetchAttachments = async () => {
 watch([selectedType, page], () => {
   fetchAttachments();
   syncPageQuery();
+});
+
+// 每页条数变化：回到第 1 页（已在第 1 页时 page 不变、上面的 watch 不触发，需显式拉一次）
+watch(pageSize, () => {
+  if (page.value === 1) {
+    fetchAttachments();
+    syncPageQuery();
+  } else {
+    page.value = 1;
+  }
 });
 
 // 搜索防抖：停止输入 500ms 后才重置到第 1 页并拉取，避免每次按键都请求
@@ -178,7 +189,7 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
         continue;
       }
 
-      const maxSize = isLivePhoto ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      const maxSize = isLivePhoto ? MAX_LIVE_PHOTO_BYTES : MAX_ATTACHMENT_BYTES;
       if (file.size > maxSize) {
         toast.error({
           message: "文件过大",
@@ -225,14 +236,6 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
   }
 };
 
-const formatFileSize = (size: string | number) => {
-  if (size === "-" || !size) return "-";
-  const bytes = Number(size);
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-};
-
 const formatImageDimensions = (item: ImageDimension) => {
   if (!item.width || !item.height) return "-";
   return `${item.width} × ${item.height}`;
@@ -255,7 +258,7 @@ async function deleteAttachment(item: AttachmentItem) {
   try {
     await $fetch(`/api/attachments/${item.id}`, {
       method: "DELETE",
-      headers: { "x-csrf-token": csrfToken.value },
+      headers: { [CSRF_HEADER]: csrfToken.value },
     });
     toast.success({
       message: "删除成功",
@@ -293,7 +296,7 @@ const copyLink = async (url: string) => {
 onMounted(async () => {
   // 获取 CSRF token（写接口用；GET 列表不需要，仅拉一次）
   try {
-    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }
@@ -439,10 +442,13 @@ onMounted(async () => {
           </div>
 
           <!-- 分页 -->
-          <div v-if="total > pageSize" class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-6">
-            <Button variant="outline" size="sm" :disabled="page === 1" @click="page--"> 上一页 </Button>
-            <span class="text-sm text-muted-foreground"> 第 {{ page }} / {{ Math.ceil(total / pageSize) }} 页 </span>
-            <Button variant="outline" size="sm" :disabled="page >= Math.ceil(total / pageSize)" @click="page++"> 下一页 </Button>
+          <div v-if="total > 0" class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+            <div v-if="total > pageSize" class="flex items-center gap-3 sm:gap-4">
+              <Button variant="outline" size="sm" :disabled="page === 1" @click="page--"> 上一页 </Button>
+              <span class="text-sm text-muted-foreground"> 第 {{ page }} / {{ Math.ceil(total / pageSize) }} 页 </span>
+              <Button variant="outline" size="sm" :disabled="page >= Math.ceil(total / pageSize)" @click="page++"> 下一页 </Button>
+            </div>
+            <AdminPageSizeSelect v-model="pageSize" />
           </div>
         </div>
       </Card>

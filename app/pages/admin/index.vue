@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {PopularContent, RecentComment, RecentContent, SystemInfo} from "~/types/apis/admin";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const router = useRouter()
 const toast = useToast()
@@ -109,7 +110,7 @@ async function fetchData() {
   loading.value = true
   try {
     // 获取 CSRF token（删除文章/评论的 DELETE 请求通过 x-csrf-token 头携带）
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" })
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" })
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token
 
     const [statsRes, detailedRes, systemRes, contentsRes, commentsRes, popularRes] = await Promise.all([
@@ -149,7 +150,7 @@ async function deleteContent(cid: number) {
     try {
       await $fetch(`/api/admin/contents/${cid}`, {
         method: 'DELETE',
-        headers: { 'x-csrf-token': csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       })
       await fetchData()
       toast.success({ message: '文章已删除' })
@@ -175,7 +176,7 @@ async function deleteComment(coid: number) {
     try {
       await $fetch(`/api/admin/comments/${coid}`, {
         method: 'DELETE',
-        headers: { 'x-csrf-token': csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       })
       await fetchData()
       toast.success({ message: '评论已删除' })
@@ -199,14 +200,6 @@ function formatDate(date: string) {
 
 function formatDateTime(date: string) {
   return new Date(date).toLocaleString('zh-CN')
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
 onMounted(() => {

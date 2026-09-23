@@ -9,6 +9,7 @@ import {
 
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
+import { CSRF_HEADER } from "#shared/constants";
 
 type AdminUser = NonNullable<Awaited<ReturnType<typeof getUser>>>;
 
@@ -41,7 +42,7 @@ export function defineAdminEventHandler<T>(
     // CSRF 校验
     if (csrf) {
       const body = (await readBody(event).catch(() => ({}))) as Record<string, unknown>;
-      const csrfToken = (body?.csrfToken as string | undefined) ?? getRequestHeader(event, "x-csrf-token");
+      const csrfToken = (body?.csrfToken as string | undefined) ?? getRequestHeader(event, CSRF_HEADER);
       if (!validateCsrfToken(event, csrfToken)) {
         throw createError({ statusCode: 403, message: "CSRF token 验证失败，请刷新页面重试" });
       }

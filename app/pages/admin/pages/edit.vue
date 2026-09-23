@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PublicAttachment, PublicAttachmentListResponse, PublicAttachmentUploadResponse } from "~/types/apis/attachments";
+import { MAX_LIVE_PHOTO_BYTES, MAX_ATTACHMENT_BYTES, CSRF_TOKEN_ENDPOINT, CSRF_HEADER  } from "#shared/constants";
 import type { AttachmentUploadOptions } from "~/types/apis/attachments-upload";
 import type { ContentDetailResponse } from "~/types/apis/admin/pages";
 import type { ContentSaveResponse, CoversInput } from "~/types/apis/admin/contents";
@@ -64,13 +65,6 @@ const uploading = ref(false);
 const uploadProgress = ref(0);
 
 // 格式化文件大小
-function formatFileSize(bytes: number) {
-  if (!bytes || bytes === 0) return "-";
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-}
-
 // 获取附件列表
 const fetchAttachments = async () => {
   if (!pageId.value) return;
@@ -157,7 +151,7 @@ const uploadFiles = async (files: File[], options: AttachmentUploadOptions = {})
       }
 
       // 验证文件大小：普通附件 10MB，实况照片 50MB
-      const maxSize = isLivePhoto ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      const maxSize = isLivePhoto ? MAX_LIVE_PHOTO_BYTES : MAX_ATTACHMENT_BYTES;
       if (file.size > maxSize) {
         toast.error({
           message: "文件过大",
@@ -226,7 +220,7 @@ const deleteAttachment = async (attachment: PublicAttachment) => {
 
     await $fetch(`/api/attachments/${attachment.id}?${params}`, {
       method: "DELETE",
-      headers: { "x-csrf-token": csrfToken.value },
+      headers: { [CSRF_HEADER]: csrfToken.value },
     });
 
     attachments.value = attachments.value.filter(a => a.id !== attachment.id);
@@ -538,7 +532,7 @@ const cancel = () => {
 onMounted(async () => {
   // 获取 CSRF token（保存/删除附件写入接口需要）
   try {
-    const csrfRes = await $fetch<CsrfResponse>('/api/csrf/token', { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
   } catch (error) {
     console.error('获取 CSRF token 失败:', error);

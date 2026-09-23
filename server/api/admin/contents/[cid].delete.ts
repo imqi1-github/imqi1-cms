@@ -1,8 +1,9 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { CSRF_HEADER, CONTENT_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -16,7 +17,7 @@ export default defineEventHandler(async event => {
   }
 
   // CSRF 验证（DELETE 从 header 读取 token）
-  const csrfToken = getHeader(event, "x-csrf-token") as string;
+  const csrfToken = getHeader(event, CSRF_HEADER) as string;
   if (!validateCsrfToken(event, csrfToken)) {
     throw createError({
       statusCode: 403,
@@ -55,12 +56,12 @@ export default defineEventHandler(async event => {
     await deleteOrphanAttachments(affectedAttachments.map(attachment => attachment.aid));
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap"] }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
 
     return { success: true };
   } catch (error) {
     // 删除不存在的文章（预期 404，先于 console.error，免得打印预期 4xx 堆栈）
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
     console.error(error);

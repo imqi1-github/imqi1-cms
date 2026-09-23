@@ -116,6 +116,7 @@ import type {
   LoginResponse,
   LoginConfigResponse,
 } from "~/types/apis/auth";
+import { CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 const route = useRoute()
 const redirectTo = computed(() => {
@@ -178,7 +179,7 @@ onMounted(async () => {
 
   // 获取 CSRF token
   try {
-    const csrfRes = await $fetch('/api/csrf/token')
+    const csrfRes = await $fetch(CSRF_TOKEN_ENDPOINT)
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token
     }

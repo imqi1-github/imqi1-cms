@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AdminSettings } from "~/types/apis/admin/settings";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, DEFAULT_SEARCH_CACHE_EXPIRE, CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 const loading = ref(true);
 const activeTab = ref("basic");
@@ -16,14 +17,14 @@ const settings = ref<AdminSettings>({
   siteIcp: "",
   commentEnabled: true,
   commentModeration: false,
-  commentAvatarService: "gravatar",
-  commentPageSize: 10,
-  commentMaxLevel: 4,
+  commentAvatarService: DEFAULT_COMMENT_AVATAR_SERVICE,
+  commentPageSize: DEFAULT_COMMENT_PAGE_SIZE,
+  commentMaxLevel: DEFAULT_COMMENT_MAX_LEVEL,
   commentRequireMail: true,
   commentRequireLink: false,
-  commentInterval: 60,
-  contentPageSize: 12,
-  feedCacheInterval: 8,
+  commentInterval: DEFAULT_COMMENT_INTERVAL,
+  contentPageSize: CONTENT_PAGE_SIZE_DEFAULT,
+  feedCacheInterval: DEFAULT_FEED_CACHE_INTERVAL,
   homeCustomText: "",
   musicPlaylistId: "",
   photoCategorySlug: "",
@@ -38,11 +39,11 @@ const settings = ref<AdminSettings>({
   smtpAddress: "",
   smtpPassword: "",
   smtpSecureMode: "tls",
-  smtpPort: 465,
+  smtpPort: DEFAULT_SMTP_PORT,
   smtpFromName: "",
   adminEmail: "",
   notifyAdmin: false,
-  uploadLocation: "local",
+  uploadLocation: DEFAULT_UPLOAD_LOCATION,
   cosSecretId: "",
   cosSecretKey: "",
   cosBucket: "",
@@ -50,11 +51,11 @@ const settings = ref<AdminSettings>({
   cosSourceDomain: "",
   cosCdnDomain: "",
   cosImageSuffix: "",
-  sessionStoreType: "memory",
+  sessionStoreType: DEFAULT_SESSION_STORE_TYPE,
   messageContentId: "",
   linkAutoApprove: false,
   searchCacheEnabled: false,
-  searchCacheExpire: 300,
+  searchCacheExpire: DEFAULT_SEARCH_CACHE_EXPIRE,
 });
 
 const avatarServices = [
@@ -227,14 +228,14 @@ const defaultSettings: AdminSettings = {
   siteIcp: "",
   commentEnabled: true,
   commentModeration: false,
-  commentAvatarService: "gravatar",
-  commentPageSize: 10,
-  commentMaxLevel: 4,
+  commentAvatarService: DEFAULT_COMMENT_AVATAR_SERVICE,
+  commentPageSize: DEFAULT_COMMENT_PAGE_SIZE,
+  commentMaxLevel: DEFAULT_COMMENT_MAX_LEVEL,
   commentRequireMail: true,
   commentRequireLink: false,
-  commentInterval: 60,
-  contentPageSize: 12,
-  feedCacheInterval: 8,
+  commentInterval: DEFAULT_COMMENT_INTERVAL,
+  contentPageSize: CONTENT_PAGE_SIZE_DEFAULT,
+  feedCacheInterval: DEFAULT_FEED_CACHE_INTERVAL,
   homeCustomText: "",
   musicPlaylistId: "",
   photoCategorySlug: "",
@@ -249,11 +250,11 @@ const defaultSettings: AdminSettings = {
   smtpAddress: "",
   smtpPassword: "",
   smtpSecureMode: "tls",
-  smtpPort: 465,
+  smtpPort: DEFAULT_SMTP_PORT,
   smtpFromName: "",
   adminEmail: "",
   notifyAdmin: false,
-  uploadLocation: "local",
+  uploadLocation: DEFAULT_UPLOAD_LOCATION,
   cosSecretId: "",
   cosSecretKey: "",
   cosBucket: "",
@@ -261,11 +262,11 @@ const defaultSettings: AdminSettings = {
   cosSourceDomain: "",
   cosCdnDomain: "",
   cosImageSuffix: "",
-  sessionStoreType: "memory",
+  sessionStoreType: DEFAULT_SESSION_STORE_TYPE,
   messageContentId: "",
   linkAutoApprove: false,
   searchCacheEnabled: false,
-  searchCacheExpire: 300,
+  searchCacheExpire: DEFAULT_SEARCH_CACHE_EXPIRE,
 };
 
 // 加载设置
@@ -273,7 +274,7 @@ async function loadSettings() {
   loading.value = true;
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }

@@ -242,7 +242,7 @@ function formatDate(date: string | Date) {
   const d = typeof date === "string" ? new Date(date) : date;
   // 水合前用 UTC 绝对日期，避免 SSR 与客户端相对时间在边界处不一致
   if (!isHydrated.value) {
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    return formatAbsoluteDate(d);
   }
   const now = new Date();
   const diff = now.getTime() - d.getTime();

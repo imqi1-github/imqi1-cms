@@ -1,4 +1,5 @@
 import { commentAvatarUrl } from "#server/utils/comment-avatar";
+import { UNBOUNDED_TAKE_FALLBACK, PUBLIC_CACHE_CONTROL  } from "#shared/constants";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { redis } from "#server/utils/redis";
@@ -44,7 +45,7 @@ function isMeaningfulName(name: string): boolean {
 }
 
 export default defineEventHandler(async event => {
-  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+  setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
   // 自定义缓存（非 ISR）命中直接返回，避免重复跑 IP 归属地解析
   if (redis) {
@@ -63,7 +64,7 @@ export default defineEventHandler(async event => {
   // 按时间倒序，使每个身份遍历时首条即其最新评论。take 兜底防止异常规模下全量扫描。
   const rows = await prisma.comments.findMany({
     where: { status: 1, ip: { not: null } },
-    take: 2000,
+    take: UNBOUNDED_TAKE_FALLBACK,
     select: {
       ip: true,
       name: true,

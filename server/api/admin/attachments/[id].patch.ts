@@ -3,6 +3,7 @@ import { getUser } from '#server/lib/auth'
 import { validateCsrfToken } from '#server/utils/csrf'
 import { invalidateContentCaches } from '#server/utils/content-cache'
 import { validateAttachmentData } from '#server/utils/validation'
+import { CONTENT_DETAIL_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 鉴权与 CSRF 放在 try 块外：这两条安全不变式不应进入会吞错的 catch
@@ -95,7 +96,7 @@ export default defineEventHandler(async event => {
     })
 
     // 附件标题/关联变更 → 影响相关文章详情 /content/** 渲染
-    void invalidateContentCaches({ routes: ['/content/**'] }).catch(err => console.error('[cache] 附件更新失效缓存失败', err))
+    void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error('[cache] 附件更新失效缓存失败', err))
 
     return {
       success: true,

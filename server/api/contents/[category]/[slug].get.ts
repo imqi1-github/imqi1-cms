@@ -1,4 +1,4 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { buildUrlKeys, hasSharedUrlKey } from "#server/utils/cover-keys";
 import { renderMarkdown } from "#server/utils/markdown";
 import { parseCovers } from "#server/utils/covers";
@@ -182,7 +182,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
     console.error(error);

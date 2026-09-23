@@ -166,7 +166,7 @@ function formatDate(dateStr: string | Date | null) {
   const date = new Date(dateStr);
   // 水合前（含 SSR）不能算相对时间：now 在两端不同会导致文本 mismatch。用 UTC 绝对日期，两端一致。
   if (!isHydrated.value) {
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+    return formatAbsoluteDate(date);
   }
   const now = new Date();
   const diff = now.getTime() - date.getTime();

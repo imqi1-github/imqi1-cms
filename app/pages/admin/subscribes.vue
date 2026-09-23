@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {SubscribeItem, SubscribesUpdateResponse, SubscriptionStats} from "~/types/apis/admin/subscribe";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const toast = useToast();
 const { confirm } = useConfirm();
@@ -42,7 +43,7 @@ async function loadSubscribes(showSkeleton = true): Promise<boolean> {
   if (showSkeleton) loading.value = true;
   const seq = ++loadSeq.value;
   try {
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
     const [data, stats] = await Promise.all([
       $fetch<SubscribeItem[]>("/api/admin/subscribes"),
@@ -114,7 +115,7 @@ async function deleteSubscribe(id: number) {
   try {
     await $fetch(`/api/admin/subscribes/${id}`, {
       method: "DELETE",
-      headers: { "x-csrf-token": csrfToken.value },
+      headers: { [CSRF_HEADER]: csrfToken.value },
     });
     toast.success({
       message: "删除成功",

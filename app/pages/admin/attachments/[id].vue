@@ -4,6 +4,7 @@ import type { PageItem } from "~/types/apis/admin/pages";
 import type { AdminContent } from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import { fetchAllAdminContents, fetchAllAdminPages } from "~/utils/admin-picker";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const route = useRoute()
 const toast = useToast()
@@ -86,13 +87,6 @@ const getTypeIcon = (type: string) => {
   return map[type] || 'lucide:file'
 }
 
-const formatFileSize = (bytes: number) => {
-  if (!bytes || bytes === 0) return '-'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
-
 const formatDate = (date: string) => {
   return new Date(date).toLocaleString('zh-CN')
 }
@@ -106,7 +100,7 @@ async function fetchAttachment(keepFormInput = false) {
   loading.value = true
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" })
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" })
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token
 
     const res = await $fetch<AttachmentDetailResponse>(attachmentDetailUrl.value)
@@ -238,7 +232,7 @@ async function deleteAttachment() {
   try {
     await $fetch(`/api/attachments/${route.params.id}`, {
       method: 'DELETE',
-      headers: { 'x-csrf-token': csrfToken.value },
+      headers: { [CSRF_HEADER]: csrfToken.value },
     })
     toast.success({
       message: '删除成功',

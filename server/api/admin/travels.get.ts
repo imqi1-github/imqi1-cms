@@ -1,4 +1,5 @@
 import { prisma } from "#server/utils/prisma";
+import { UNBOUNDED_TAKE_FALLBACK } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 
 export default defineEventHandler(async event => {
@@ -15,8 +16,8 @@ export default defineEventHandler(async event => {
     const travels = await prisma.travels.findMany({
       // 足迹是天然小集合（地图点位，通常数十~数百）。保持扁平数组契约：列表页与内容编辑器
       // 的「关联地点选择器」都整取该集合（后者需全部点位供勾选）。上限仅作防无界全表兜底，
-      // 取远高于实际规模的 2000，避免 >500 时静默截断；若真到数千点应另做分页+前端配套。
-      take: 2000,
+      // 取远高于实际规模的兜底上限（见 UNBOUNDED_TAKE_FALLBACK），避免 >500 时静默截断；若真到数千点应另做分页+前端配套。
+      take: UNBOUNDED_TAKE_FALLBACK,
       orderBy: [{ sort: "asc" }, { create_time: "desc" }],
       include: {
         // contenttravels 为关联表，通过 .content 取文章

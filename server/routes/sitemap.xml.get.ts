@@ -1,6 +1,7 @@
 import { prisma } from "#server/utils/prisma";
 import { getSiteSettings } from "#server/utils/siteSettings";
 import { escapeXml } from "#server/utils/xml";
+import { PUBLIC_CACHE_CONTROL_SHORT } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
@@ -251,7 +252,7 @@ ${urls.join("\n")}
 
     // 设置响应头
     setHeader(event, "Content-Type", "application/xml; charset=utf-8");
-    setHeader(event, "Cache-Control", "public, max-age=300"); // 缓存5分钟
+    setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL_SHORT); // 缓存5分钟
 
     return xml;
   } catch (error) {

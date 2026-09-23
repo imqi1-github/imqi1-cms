@@ -919,38 +919,9 @@ const photoImages = computed(() => {
 // 避免 ISR 缓存导致的 hydration text content mismatch；onMounted 后切换为相对时间
 const isHydrated = ref(false);
 
-// 格式化为绝对日期（SSR 与客户端一致，不依赖当前时间）
-function formatAbsoluteDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-// 格式化日期：hydration 完成前返回绝对日期，完成后返回相对时间
+// 格式化日期：hydration 完成前返回绝对日期，完成后返回相对时间（实现在 utils/formatDate）
 function formatDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (!isHydrated.value) {
-    return formatAbsoluteDate(d);
-  }
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const weeks = Math.floor(days / 7);
-  const months = Math.floor(days / 30);
-  const years = Math.floor(days / 365);
-
-  if (years > 0) return `${years}年前`;
-  if (months > 0) return `${months}个月前`;
-  if (weeks > 0) return `${weeks}周前`;
-  if (days > 0) return `${days}天前`;
-  if (hours > 0) return `${hours}小时前`;
-  if (minutes > 0) return `${minutes}分钟前`;
-  return "刚刚";
+  return formatHydratedDate(date, isHydrated.value);
 }
 
 // 格式化更新日志日期：hydration 前用确定性格式，避免 Node 与浏览器 ICU 数据差异

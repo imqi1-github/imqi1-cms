@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { TagItem } from "~/types/apis/admin/tags";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const router = useRouter();
 const toast = useToast();
@@ -20,7 +21,7 @@ async function fetchTags() {
   loading.value = true;
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token;
     }
@@ -161,7 +162,7 @@ async function deleteTag(mid: number) {
     try {
       await $fetch(`/api/admin/tags/${mid}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       });
       toast.success({ message: "标签删除成功" });
       await fetchTags();

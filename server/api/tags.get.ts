@@ -1,8 +1,9 @@
 import { prisma } from "#server/utils/prisma";
+import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 公开、慢变化的标签列表与 categories.get.ts 同档，加 CDN/浏览器缓存
-  setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+  setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
   try {
     const tags = await prisma.metas.findMany({

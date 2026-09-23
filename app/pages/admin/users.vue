@@ -7,6 +7,7 @@ import type {
   TrustedDevicesResponse,
   TrustedDevice,
 } from "~/types/apis/auth";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const toast = useToast()
 
@@ -42,7 +43,7 @@ async function fetchUser() {
   loading.value = true
   try {
     // 获取 CSRF token
-    const csrfRes = await $fetch('/api/csrf/token', { credentials: 'include' })
+    const csrfRes = await $fetch(CSRF_TOKEN_ENDPOINT, { credentials: 'include' })
     if (csrfRes?.data?.token) {
       csrfToken.value = csrfRes.data.token
     }
@@ -219,7 +220,7 @@ async function revokeDevice(id: number) {
   try {
     await $fetch(`/api/admin/2fa/devices/${id}`, {
       method: 'DELETE',
-      headers: { 'x-csrf-token': csrfToken.value },
+      headers: { [CSRF_HEADER]: csrfToken.value },
     })
     toast.success({ message: '已撤回该设备' })
     await fetchTrustedDevices()

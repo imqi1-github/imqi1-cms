@@ -1,11 +1,12 @@
 import DOMPurify from "isomorphic-dompurify";
 
+import { MAX_COMMENT_LENGTH, COMMENT_CACHE_ROUTES  } from "#shared/constants";
 import { siteConfig } from "~~/site.config";
 import type { MiniCommentBody, MiniCommentCreateResponse } from "#server/types/apis/mini";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { getClientIp } from "#server/utils/client-ip";
 import { notifyAdminNewComment, notifyAdminPendingComment, notifyCommentReply } from "#server/utils/mail";
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getSiteSettings } from "#server/utils/siteSettings";
 import { validateCommentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
@@ -72,7 +73,7 @@ export default defineEventHandler(async event => {
       throw createError({ statusCode: 400, message: "缺少必填参数" });
     }
 
-    if (content.length > 5000) {
+    if (content.length > MAX_COMMENT_LENGTH) {
       throw createError({ statusCode: 400, message: "评论内容过长" });
     }
 
@@ -230,7 +231,7 @@ export default defineEventHandler(async event => {
       : "评论提交成功";
 
     // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: ["/", "/category/**", "/tag/**", "/content/**", "/archiving"] }).catch(err => console.error("[cache] 迷你端评论失效缓存失败", err));
+    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 迷你端评论失效缓存失败", err));
 
     return {
       success: true,
@@ -244,7 +245,7 @@ export default defineEventHandler(async event => {
     }
 
     // Prisma 目标记录不存在：预检后目标被并发删除 → 404 而非 500。
-    if (error instanceof Error && "code" in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
 

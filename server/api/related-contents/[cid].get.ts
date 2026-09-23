@@ -1,4 +1,5 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
+import { PUBLIC_LIMIT_MAX, PUBLIC_CACHE_CONTROL  } from "#shared/constants";
 import { parseCovers } from "#server/utils/covers";
 
 export default defineEventHandler(async event => {
@@ -10,12 +11,12 @@ export default defineEventHandler(async event => {
     const rawLimit = query.limit;
     const limit =
       typeof rawLimit === "string" && rawLimit.trim() !== ""
-        ? Math.min(100, Math.max(1, Math.floor(Number(rawLimit)) || 3))
+        ? Math.min(PUBLIC_LIMIT_MAX, Math.max(1, Math.floor(Number(rawLimit)) || 3))
         : 3;
 
     // 相关性候选池：先取出稍宽的候选集（共享标签的已发布文章），再按相关度排序并截取前 limit 条。
     // 若直接 take:limit 再排序，老但高相关的文章会被"最新 N 条"挡在外面，使"相关推荐"失去意义。
-    const candidateLimit = Math.min(100, Math.max(limit * 4, 20));
+    const candidateLimit = Math.min(PUBLIC_LIMIT_MAX, Math.max(limit * 4, 20));
 
     // 路由参数 cid 防御性校验：NaN/浮点/负数一律 400，避免把浮点整型传给 Prisma 主键过滤
     const rawContentId = Number(getRouterParam(event, "cid"));
@@ -28,7 +29,7 @@ export default defineEventHandler(async event => {
     const contentId = rawContentId;
 
     // 设置缓存头：CDN和浏览器缓存5分钟
-    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+    setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
     // 获取当前文章的标签
     const currentContent = await prisma.contents.findUnique({
@@ -178,7 +179,7 @@ export default defineEventHandler(async event => {
       throw error;
     }
     // Prisma 记录不存在 → 404
-    if (err && err.code === "P2025") {
+    if (isPrismaNotFoundError(err)) {
       throw createError({
         statusCode: 404,
         message: "文章不存在",

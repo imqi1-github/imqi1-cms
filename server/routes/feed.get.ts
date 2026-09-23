@@ -3,6 +3,7 @@ import { parseCovers } from "#server/utils/covers";
 import { prisma } from "#server/utils/prisma";
 import { escapeXml } from "#server/utils/xml";
 import { siteConfig } from "~~/site.config";
+import { PUBLIC_CACHE_CONTROL_SHORT } from "#shared/constants";
 
 // CDATA 内容若含 ]]> 会提前闭合，用标准拆分技巧规避（markdown 正文极少出现，兜底防御）。
 function cdata(text: string): string {
@@ -163,7 +164,7 @@ export default defineEventHandler(async event => {
 
     // 设置响应头
     setHeader(event, "Content-Type", "application/rss+xml; charset=utf-8");
-    setHeader(event, "Cache-Control", "public, max-age=300"); // 缓存5分钟
+    setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL_SHORT); // 缓存5分钟
 
     return rssXml;
   } catch (error) {

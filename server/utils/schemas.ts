@@ -5,6 +5,8 @@
 
 import { z } from "zod";
 
+import { MAX_COMMENT_LENGTH } from "#shared/constants";
+
 // 搜索类别：文章 / 订阅和友链 / 评论 / 订阅文章
 export const SearchTypeSchema = z.enum(["content", "subscribe", "comment", "subscribepost"]);
 
@@ -76,7 +78,7 @@ export const SearchResponseSchema = z.object({
 export const CommentCreateSchema = z.object({
   csrfToken: z.string(),
   cid: z.coerce.number().int().positive(),
-  content: z.string().min(1).max(5000),
+  content: z.string().min(1).max(MAX_COMMENT_LENGTH),
   name: z.string().min(1).max(50),
   mail: z
     .string()

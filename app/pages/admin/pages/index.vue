@@ -3,6 +3,7 @@ import type { AcceptableValue } from "reka-ui";
 
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import type { PageItem, PageListResponse } from "~/types/apis/admin/pages";
+import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
 
 const router = useRouter();
 const route = useRoute();
@@ -15,9 +16,11 @@ const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const fetchSeq = ref(0);
 const csrfToken = ref("");
+// 每页条数走后台统一偏好（10/20/50 + 自定义）；pagination 里的 pageSize 只作占位，首帧响应会整体覆盖
+const { pageSize } = useAdminPageSize(10);
 const pagination = ref({
   page: 1,
-  pageSize: 10,
+  pageSize: pageSize.value,
   total: 0,
   totalPages: 0,
 });
@@ -101,12 +104,12 @@ async function fetchPages(page: number = 1, updateUrl: boolean = true) {
   selectedIds.value = [];
   try {
     // 获取 CSRF token（删除/批量删除页面通过 x-csrf-token 头或 body 携带）
-    const csrfRes = await $fetch<CsrfResponse>("/api/csrf/token", { credentials: "include" });
+    const csrfRes = await $fetch<CsrfResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" });
     if (csrfRes?.data?.token) csrfToken.value = csrfRes.data.token;
 
     const params = new URLSearchParams({
       page: page.toString(),
-      pageSize: "10",
+      pageSize: pageSize.value.toString(),
     });
 
     if (selectedStatus.value !== null) {
@@ -164,7 +167,7 @@ async function deletePage(cid: number) {
     try {
       await $fetch(`/api/admin/contents/${cid}`, {
         method: "DELETE",
-        headers: { "x-csrf-token": csrfToken.value },
+        headers: { [CSRF_HEADER]: csrfToken.value },
       });
       await fetchPages(pagination.value.page, false);
       toast.success({ message: "页面已删除" });
@@ -242,6 +245,11 @@ function goToPage(page: number) {
     fetchPages(page);
   }
 }
+
+// 每页条数变了就回第 1 页：旧页码按新条数算可能已越界
+watch(pageSize, () => {
+  fetchPages(1);
+});
 
 function previewPage(page: PageItem) {
   // 草稿未发布到前台，直接预览会 404
@@ -490,9 +498,12 @@ onMounted(() => {
       </div>
 
       <!-- 分页 - 桌面端 -->
-      <div v-if="!loading && pagination.totalPages > 1" class="hidden lg:flex items-center justify-between pt-4 pb-2 border-t">
-        <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 个页面，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
-        <div class="flex items-center gap-2">
+      <div v-if="!loading && pagination.total > 0" class="hidden lg:flex items-center justify-between pt-4 pb-2 border-t">
+        <div class="flex items-center gap-3">
+          <p class="text-sm text-muted-foreground">共 {{ pagination.total }} 个页面，第 {{ pagination.page }} / {{ pagination.totalPages }} 页</p>
+          <AdminPageSizeSelect v-model="pageSize" />
+        </div>
+        <div v-if="pagination.totalPages > 1" class="flex items-center gap-2">
           <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
             <Icon name="lucide:chevron-left" class="size-4" />
             上一页
@@ -518,19 +529,22 @@ onMounted(() => {
 
       <!-- 分页 - 移动端 -->
       <div
-        v-if="!loading && pagination.totalPages > 1"
-        class="lg:hidden flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-2 border-t">
+        v-if="!loading && pagination.total > 0"
+        class="lg:hidden flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 pb-2 border-t">
         <p class="text-sm text-muted-foreground text-center sm:text-left">
           第 {{ pagination.page }} / {{ pagination.totalPages }} 页，共 {{ pagination.total }} 个
         </p>
-        <div class="flex items-center gap-2">
-          <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
-            <Icon name="lucide:chevron-left" class="size-4" />
-          </Button>
-          <span class="text-sm">{{ pagination.page }}</span>
-          <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
-            <Icon name="lucide:chevron-right" class="size-4" />
-          </Button>
+        <div class="flex items-center gap-3">
+          <AdminPageSizeSelect v-model="pageSize" />
+          <div v-if="pagination.totalPages > 1" class="flex items-center gap-1">
+            <Button variant="outline" size="sm" :disabled="pagination.page <= 1" @click="goToPage(pagination.page - 1)">
+              <Icon name="lucide:chevron-left" class="size-4" />
+            </Button>
+            <span class="text-sm">{{ pagination.page }}</span>
+            <Button variant="outline" size="sm" :disabled="pagination.page >= pagination.totalPages" @click="goToPage(pagination.page + 1)">
+              <Icon name="lucide:chevron-right" class="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

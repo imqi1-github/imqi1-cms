@@ -1,14 +1,15 @@
-import { prisma } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { buildUrlKeys, hasSharedUrlKey } from "#server/utils/cover-keys";
 import { getSubscribePosts } from '#server/utils/rss';
 import { parseCovers } from "#server/utils/covers";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
 import { renderChangelogContent } from "#server/utils/changelog";
+import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
     // 设置缓存头：CDN和浏览器缓存5分钟
-    setHeader(event, "Cache-Control", "public, max-age=300, s-maxage=300");
+    setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
     // ========== 优化：先查询一次图片分类信息，后续复用 ==========
     // 1. 获取图片分类 slug（只读需要的单个 key，避免拉取整张 informations 表）
@@ -358,7 +359,7 @@ export default defineEventHandler(async event => {
     if (error instanceof Error && 'statusCode' in error) {
       throw error;
     }
-    if (error instanceof Error && 'code' in error && error.code === "P2025") {
+    if (isPrismaNotFoundError(error)) {
       throw createError({
         statusCode: 404,
         message: "数据不存在",

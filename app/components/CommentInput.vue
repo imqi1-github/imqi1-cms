@@ -4,6 +4,7 @@ import { onMounted, watch } from "vue";
 import type { CommentFormData } from "~/types/components/comment";
 import type { CsrfTokenResponse } from "~/types/apis/csrf";
 import type { CommentSubmitResponse } from "~/types/apis/comments";
+import { CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 // 导入前台通知 composable
 const { success, error: showError } = useFrontNotification();
@@ -105,7 +106,7 @@ onMounted(() => {
     fillCommentUserInfo();
 
     // 评论框只需要单独获取 CSRF token；登录状态和站点设置复用全局状态。
-    $fetch<CsrfTokenResponse>("/api/csrf/token", { credentials: "include" })
+    $fetch<CsrfTokenResponse>(CSRF_TOKEN_ENDPOINT, { credentials: "include" })
       .then(csrfRes => {
         if (csrfRes?.data?.token) {
           csrfToken.value = csrfRes.data.token;

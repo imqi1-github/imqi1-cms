@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
 import { siteConfig } from "~~/site.config";
 import type { WaterfallItem } from "~/types/components/waterfall";
 
@@ -22,7 +23,7 @@ const apiSlug = ref(slug.value);
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.site.name);
 const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug ?? "");
-const contentPageSize = computed(() => siteSettings.value?.contentPageSize || 12);
+const contentPageSize = computed(() => siteSettings.value?.contentPageSize || CONTENT_PAGE_SIZE_DEFAULT);
 
 // 从 URL query 参数中获取页码
 const initialPage = route.query.page ? parseInt(route.query.page as string) : 1;
@@ -126,7 +127,7 @@ const skeletonCount = computed(() => {
   if (contents.value.length > 0) {
     return contents.value.length;
   }
-  return contentPageSize.value || 12;
+  return contentPageSize.value || CONTENT_PAGE_SIZE_DEFAULT;
 });
 
 // 监听 pending，控制骨架屏显示

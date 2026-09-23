@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { ADMIN_PAGE_SIZE_MAX, ADMIN_PAGE_SIZE_MIN, PAGE_MAX } from "#shared/constants";
 import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { getIpLocation } from "#server/utils/qqwry";
@@ -62,8 +63,8 @@ export default defineEventHandler(async event => {
   try {
     const query = getQuery(event);
     // 负数/浮点 page 会让 skip/take 为负/非整数被 Prisma 抛错 → 整单 500；floor + 上下限钳制（含上限，防海量 take）
-    const page = Math.min(10000, Math.max(1, Math.floor(Number(query.page) || 1)));
-    const pageSize = Math.min(100, Math.max(1, Math.floor(Number(query.pageSize) || 10)));
+    const page = Math.min(PAGE_MAX, Math.max(1, Math.floor(Number(query.page) || 1)));
+    const pageSize = Math.min(ADMIN_PAGE_SIZE_MAX, Math.max(ADMIN_PAGE_SIZE_MIN, Math.floor(Number(query.pageSize) || 10)));
     const cid = Number.isInteger(Number(query.cid)) ? Number(query.cid) : null;
 
     // 状态筛选：status 为 0/1/2 时按精确状态过滤，未传或 "all" 表示全部
