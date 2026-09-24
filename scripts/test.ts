@@ -10,3 +10,5 @@ const proc = Bun.spawn({
 });
 await proc.exited;
 process.exit(proc.exitCode ?? 0);
+
+export {};

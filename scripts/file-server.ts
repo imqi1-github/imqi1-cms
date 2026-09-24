@@ -180,7 +180,7 @@ if (HOST) server.listen(PORT, HOST, onListening);
 else server.listen(PORT, onListening);
 
 // 错误处理
-server.on('error', (err) => {
+server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ 端口 ${PORT} 已被占用`);
   } else {

@@ -57,7 +57,6 @@ dotenv.config({
 // 因此这里只拿路径,真正选用延后到 resolveFfmpeg() 做实测。
 let ffmpegStaticPath;
 try {
-  // @ts-expect-error ffmpeg-static 未提供类型声明，运行时只取路径不调 spawn
   ffmpegStaticPath = (await import("ffmpeg-static")).default;
 } catch {
   ffmpegStaticPath = null;
@@ -197,7 +196,7 @@ function formatBytes(b) {
 }
 
 function runFfmpeg(args) {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const proc = spawn(ffmpegBin, args, {
       stdio: ["ignore", "ignore", "pipe"],
       shell: IS_WIN,

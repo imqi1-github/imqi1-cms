@@ -153,12 +153,19 @@ async function uploadFile(localPath, remotePath, maxRetries = 3) {
   throw lastError
 }
 
+// getBucket 单页响应(只用到的字段)
+interface CosBucketPage {
+  Contents?: Array<Record<string, unknown>>;
+  IsTruncated?: boolean;
+  NextMarker?: string;
+}
+
 // 获取远程目录中的所有文件（自动翻页，MaxKeys=1000 一页，直到 IsTruncated=false）
 async function getRemoteFiles(prefix = '') {
   const all = []
   let marker = ''
   do {
-    const data = await new Promise((resolve, reject) => {
+    const data = await new Promise<CosBucketPage>((resolve, reject) => {
       cos.getBucket({
         Bucket: cosConfig.Bucket,
         Region: cosConfig.Region,

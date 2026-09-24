@@ -1,8 +1,16 @@
 import { execSync } from 'child_process';
 import https from 'https';
 
+// npm registry 包信息(只声明用到的字段)
+interface NpmPackageInfo {
+  'dist-tags'?: { latest?: string };
+  versions?: Record<string, { releaseNotes?: string }>;
+  changelog?: string;
+  repository?: string | { url?: string; web?: string };
+}
+
 // 从 npm 获取包信息
-const fetchPackageInfo = (packageName) => {
+const fetchPackageInfo = (packageName: string): Promise<NpmPackageInfo> => {
   return new Promise((resolve, reject) => {
     https.get(`https://registry.npmjs.org/${packageName}`, (res) => {
       let data = '';

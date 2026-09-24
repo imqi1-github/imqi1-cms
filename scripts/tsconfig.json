@@ -1,0 +1,15 @@
+{
+  // scripts/ 用 bun 直接跑;只服务 IDE,不进根 references(nuxi typecheck 不查这里)
+  // strict 关闭:scripts 是运维脚本从无 typecheck 门槛,避免既有代码全量亮红
+  "compilerOptions": {
+    "types": ["bun-types", "node"],
+    "module": "esnext",
+    "moduleResolution": "Bundler",
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "strict": false,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["./**/*.ts"]
+}

@@ -10,5 +10,8 @@
     "sharp": "^0.34.1",
     "ssh2-sftp-client": "^12.1.1",
     "tsx": "^4.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26"
   }
 }
