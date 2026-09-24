@@ -2,12 +2,12 @@ import "#test/helpers/nitro-globals";
 
 import { describe, expect, mock, test } from "bun:test";
 
-import { createFakePrisma } from "#test/helpers/fake-prisma";
+import { sharedFake } from "#test/helpers/fake-prisma";
 
 const SITE_URL = "https://sitemap-test.example.com/";
 
 // prisma 假件:文章(1 篇正常 + 1 篇无 slug)/页面(1 个自定义 + 1 个硬编码 slug)/分类/标签
-const fake = createFakePrisma();
+const fake = sharedFake;
 fake.on("contents", "findMany", (args: { where: { type: number } }) => {
   if (args.where.type === 0) {
     return [

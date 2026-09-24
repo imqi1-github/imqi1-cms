@@ -24,3 +24,5 @@ g.defineEventHandler ??= defineEventHandler;
 g.getRouterParam ??= getRouterParam;
 g.getQuery ??= getQuery;
 g.sendStream ??= sendStream;
+// defineNitroPlugin 只是标记函数,bun 下用恒等替身
+g.defineNitroPlugin ??= (fn: (nitroApp?: unknown) => unknown) => fn;

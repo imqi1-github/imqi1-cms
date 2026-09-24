@@ -2,12 +2,12 @@ import "#test/helpers/nitro-globals";
 
 import { describe, expect, mock, test } from "bun:test";
 
-import { createFakePrisma } from "#test/helpers/fake-prisma";
+import { sharedFake } from "#test/helpers/fake-prisma";
 
 const SITE_URL = "https://example.com";
 
 // prisma 用假件:精确控制文章/设置数据,断言 RSS 输出的确定性形状
-const fake = createFakePrisma();
+const fake = sharedFake;
 fake.on("informations", "findMany", () => [
   { key: "siteName", value: "测试站" },
   { key: "siteUrl", value: SITE_URL },
