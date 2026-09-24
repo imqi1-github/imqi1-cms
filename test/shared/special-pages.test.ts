@@ -6,7 +6,7 @@ import {
   SPECIAL_PAGE_OPTIONS,
   SPECIAL_PAGE_SLUGS,
   type SpecialPageValue,
-} from "../../shared/special-pages";
+} from "#shared/special-pages";
 
 describe("SPECIAL_PAGE_OPTIONS", () => {
   test("只含三个预设: messages / agreement / custom", () => {

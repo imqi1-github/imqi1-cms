@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { escapeXml } from "../../../server/utils/xml";
+import { escapeXml } from "#server/utils/xml";
 
 // 实体字符经工具传输会被二次解码,用 chr(N) 拼特殊字符(同 shared/html.test.ts 的做法)
 function chr(n: number): string {

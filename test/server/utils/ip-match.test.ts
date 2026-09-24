@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { expandIpv6, matchIpPattern, parseIpBytes } from "../../../server/utils/ip-match";
+import { expandIpv6, matchIpPattern, parseIpBytes } from "#server/utils/ip-match";
 
 describe("expandIpv6", () => {
   test("完整展开 8 组", () => {

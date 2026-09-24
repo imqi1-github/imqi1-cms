@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { generateTOTPSecret, otpauthUrl, verifyTOTP } from "../../../server/utils/totp";
+import { generateTOTPSecret, otpauthUrl, verifyTOTP } from "#server/utils/totp";
 
 // RFC 6238 附录 B 的标准测试密钥(20 字节 ASCII "12345678901234567890" 的 base32)
 const RFC_SECRET = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";

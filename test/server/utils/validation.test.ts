@@ -1,8 +1,8 @@
-import "../../helpers/nitro-globals";
+import "#test/helpers/nitro-globals";
 
 import { describe, expect, test } from "bun:test";
 
-import { getChangelogMeta } from "../../../shared/changelog";
+import { getChangelogMeta } from "#shared/changelog";
 import {
   validateAttachmentData,
   validateChangelogData,
@@ -15,7 +15,7 @@ import {
   validateSubscribeData,
   validateTravelData,
   validateUserData,
-} from "../../../server/utils/validation";
+} from "#server/utils/validation";
 
 // h3 createError 抛出的错误带 statusCode;统一断言 400 + 消息
 function expect400(fn: () => void, message?: string): void {

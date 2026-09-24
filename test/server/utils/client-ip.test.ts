@@ -1,8 +1,8 @@
-import "../../helpers/nitro-globals";
+import "#test/helpers/nitro-globals";
 
 import { describe, expect, test } from "bun:test";
 
-import { getClientIp } from "../../../server/utils/client-ip";
+import { getClientIp } from "#server/utils/client-ip";
 
 // 造一个最小 H3Event 形状:getHeader 读 node.req.headers,getClientIp 读 context.clientAddress 与 socket
 function makeEvent(peer: string, headers: Record<string, string> = {}) {

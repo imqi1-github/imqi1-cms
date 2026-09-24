@@ -1,8 +1,8 @@
-import "../../helpers/nitro-globals";
+import "#test/helpers/nitro-globals";
 
 import { describe, expect, test } from "bun:test";
 
-import { assertPublicHttpUrl, ensureUrlProtocol, isPrivateIp } from "../../../server/utils/urlGuard";
+import { assertPublicHttpUrl, ensureUrlProtocol, isPrivateIp } from "#server/utils/urlGuard";
 
 describe("ensureUrlProtocol", () => {
   test("无协议补 https://", () => {

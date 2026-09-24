@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { escapeAttribute, escapeHtml, escapeRegExp, sanitizeHtml } from "../../shared/html";
+import { escapeAttribute, escapeHtml, escapeRegExp, sanitizeHtml } from "#shared/html";
 
 // 用 chr(N) 拼特殊字符,避免源码里的 < > " 被工具链二次解释
 function chr(n: number): string {

@@ -615,7 +615,7 @@ const musicPlatforms: MusicPlatform[] = [
   // QQ音乐
   {
     name: "tencent",
-    regex: /https:\/\/y\.qq\.com\/n\/ryqq\/(playlist|songDetail|albumDetail)\/(\d+)/i,
+    regex: /https:\/\/y\.qq\.com\/n\/ryqq\/(playlist|songDetail|albumDetail)\/(\w+)/i,
     getServer: () => "tencent",
     getType: match => {
       const typeMap: Record<string, string> = {
@@ -658,7 +658,8 @@ function transformMusicLinks(content: string): string {
       const id = platform.getId(matchArray);
 
       if (id) {
-        return `:::music ${server} | ${type} | ${id}:::`;
+        // 容器须独立成行:行尾直接跟 ::: 会被吞进参数且容器不闭合,吞掉后续内容
+        return `\n:::music ${server} | ${type} | ${id}\n:::\n`;
       }
       return match;
     });

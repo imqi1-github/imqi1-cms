@@ -10,7 +10,7 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 - 本地开发：`bun run dev`（app + nitro 同起）
 - 构建：`bun run build`（= `nuxt build`；hash 由 nuxt.config `genBuildHash()` 生成、作 CDN 目录 `static/<hash>`，产物进 `.output/`；`postbuild` 跑 `copy-data.ts` + `update-sw-cdn.ts` → 写 `.output/build-hash.json` + 更新 sw.js CDN 引用）。构建哈希**不进 `__NUXT__`**（`runtimeConfig.public` 已清空、`buildHash` 非 public），由 `/api/site` 下发、前端 `useSiteSettings` 读取。
 - 静态预览：`bun run generate` / `preview`，`bun run serve`（本地 file-server）
-- 测试：`bun run test` 跑 `test/` 下全部（用 `bun:test`，零依赖、TypeScript 原生）；支持 `bun run test <pattern>` 指定文件 / 用 `-t "用例名"` 过滤；`--coverage` 出 bun:test 自带覆盖率报告
+- 测试：`bun run test` 跑 `test/` 下全部（用 `bun:test`，零依赖、TypeScript 原生）；支持 `bun run test <pattern>` 指定文件 / 用 `-t "用例名"` 过滤；`--coverage` 出 bun:test 自带覆盖率报告。测试内用 `#shared/#server/#test` 别名导入（勿写多层相对路径）；Nitro 自动导入的运行时替身在 `test/helpers/nitro-globals.ts`
 - 小程序：`bun run mini:dev:h5` / `mini:dev:mp-weixin` / `mini:dev:mp-alipay`
 - 数据库：`bun run prisma:generate` / `prisma:studio`；初始化 `bun run db:init`
 - 运维：`bun run upload:cos` / `upload:server` / `compress:livephoto` / `clear:redis` / `reset:password`

@@ -6,7 +6,9 @@
     "paths": {
       "#shared": ["../shared"],
       "#shared/*": ["../shared/*"],
-      "#server/*": ["../server/*"]
+      "#server/*": ["../server/*"],
+      "@/*": ["../app/*"],
+      "#test/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
@@ -18,6 +20,6 @@
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["./**/*.ts", "./types/*.d.ts"],
+  "include": ["./**/*.ts", "./types/*.d.ts", "../shared/**/*.d.ts"],
   "exclude": ["node_modules", "../node_modules"]
 }

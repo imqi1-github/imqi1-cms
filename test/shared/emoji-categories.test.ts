@@ -4,7 +4,7 @@ import {
   EMOJI_CATEGORIES,
   stripEmojiPrefix,
   type EmojiCategoryMeta,
-} from "../../shared/emoji-categories";
+} from "#shared/emoji-categories";
 
 describe("EMOJI_CATEGORIES", () => {
   test("包含三个预设分类", () => {

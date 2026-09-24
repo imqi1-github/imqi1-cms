@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseUserAgent } from "../../shared/parseUserAgent";
+import { parseUserAgent } from "#shared/parseUserAgent";
 
 describe("parseUserAgent", () => {
   describe("空输入与特殊值", () => {
