@@ -7,12 +7,21 @@ type Handler = (...args: never[]) => unknown;
 export interface FakePrisma {
   prisma: unknown;
   on(model: string, method: string, handler: Handler): void;
+  on(key: string, handler: Handler): void;
 }
 
 export function createFakePrisma(): FakePrisma {
   const state = new Map<string, Handler>();
   const prisma = new Proxy({}, {
     get(_t, model: string) {
+      // $transaction 等顶层方法是单层调用,不走 模型.方法 两级
+      if (model.startsWith("$")) {
+        return (...args: never[]) => {
+          const h = state.get(model);
+          if (!h) throw new Error(`fake prisma: 未设置 ${model}`);
+          return h(...args);
+        };
+      }
       return new Proxy({}, {
         get(_t2, method: string) {
           return (...args: never[]) => {
@@ -26,8 +35,10 @@ export function createFakePrisma(): FakePrisma {
   });
   return {
     prisma,
-    on(model, method, handler) {
-      state.set(`${model}.${method}`, handler);
+    // 两参形式 on("$transaction", fn) 注册顶层方法;三参 on("metas", "findMany", fn) 注册模型方法
+    on(a: string, b: string | Handler, handler?: Handler) {
+      const key = handler ? `${a}.${b}` : a;
+      state.set(key, handler ?? (b as Handler));
     },
   };
 }
