@@ -9,6 +9,8 @@ declare global {
   const defineEventHandler: typeof import("h3").defineEventHandler;
   const getRouterParam: typeof import("h3").getRouterParam;
   const getQuery: typeof import("h3").getQuery;
+  const setResponseHeader: typeof import("h3").setResponseHeader;
+  const sendStream: typeof import("h3").sendStream;
 }
 
 export {};

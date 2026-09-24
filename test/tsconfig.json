@@ -8,6 +8,8 @@
       "#shared/*": ["../shared/*"],
       "#server/*": ["../server/*"],
       "@/*": ["../app/*"],
+      "~~": [".."],
+      "~~/*": ["../*"],
       "#test/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
