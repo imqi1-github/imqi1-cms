@@ -1,0 +1,7 @@
+// Nitro 自动导入的符号在 bun test 里不存在,用 h3 的同名实现挂到 globalThis
+// 被测模块须在挂载之后导入(测试文件把本 helper 放第一个 import)
+import { createError, getHeader } from "h3";
+
+const g = globalThis as unknown as Record<string, unknown>;
+g.createError ??= createError;
+g.getHeader ??= getHeader;

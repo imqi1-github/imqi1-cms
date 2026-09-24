@@ -1,6 +1,15 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
   "files": [],
+  // 供 bun test 解析 #shared/#server(Nuxt 的同名别名在 .nuxt/tsconfig.*,bun 不读)
+  "compilerOptions": {
+    "paths": {
+      "#shared": ["./shared"],
+      "#shared/*": ["./shared/*"],
+      "#server": ["./server"],
+      "#server/*": ["./server/*"]
+    }
+  },
   "references": [
     {
       "path": "./.nuxt/tsconfig.app.json"
