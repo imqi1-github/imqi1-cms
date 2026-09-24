@@ -13,6 +13,8 @@ import {
   setResponseStatus,
 } from "h3";
 
+import { commentAvatarUrl, getCommentAvatarService } from "#server/utils/comment-avatar";
+
 const g = globalThis as unknown as Record<string, unknown>;
 g.createError ??= createError;
 g.getHeader ??= getHeader;
@@ -26,3 +28,6 @@ g.getQuery ??= getQuery;
 g.sendStream ??= sendStream;
 // defineNitroPlugin 只是标记函数,bun 下用恒等替身
 g.defineNitroPlugin ??= (fn: (nitroApp?: unknown) => unknown) => fn;
+// server/utils 层的自动导入:直接用真实实现
+g.getCommentAvatarService ??= getCommentAvatarService;
+g.commentAvatarUrl ??= commentAvatarUrl;

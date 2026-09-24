@@ -1,8 +1,8 @@
 import "#test/helpers/nitro-globals";
 
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
-import { sharedFake } from "#test/helpers/fake-prisma";
+import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 // 模拟 DB 侧「当前 auth_code」:users.update 旋转它,单端登录语义的 DB 一半
 const currentAuthCode = new Map<number, string>();
@@ -23,7 +23,7 @@ sharedFake.on("users", "findUnique", (args: { where: { uid: number } }) => {
     auth_code: currentAuthCode.get(uid) ?? "",
   };
 });
-mock.module("#server/utils/prisma", () => ({ prisma: sharedFake.prisma }));
+mockSharedPrisma();
 
 const { setSession, getUser, clearSession, verifyPassword } = await import("#server/lib/auth");
 

@@ -19,6 +19,8 @@ declare global {
   }) => void) => (nitroApp?: unknown) => void;
   // redis.ts 等被测试 import 链拖进编译图时按需补的 runtimeConfig 最小形状
   const useRuntimeConfig: () => { redis?: { host?: string; port?: number; db?: number } };
+  const getCommentAvatarService: typeof import("#server/utils/comment-avatar").getCommentAvatarService;
+  const commentAvatarUrl: typeof import("#server/utils/comment-avatar").commentAvatarUrl;
 }
 
 export {};

@@ -1,8 +1,8 @@
 import "#test/helpers/nitro-globals";
 
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
-import { sharedFake } from "#test/helpers/fake-prisma";
+import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 const SITE_URL = "https://example.com";
 
@@ -36,7 +36,7 @@ fake.on("contents", "findMany", () => [
     contentrelations: [],
   },
 ]);
-mock.module("#server/utils/prisma", () => ({ prisma: fake.prisma }));
+mockSharedPrisma();
 
 const handler = (await import("#server/routes/feed.get")).default as unknown as (e: unknown) => Promise<string>;
 
