@@ -176,6 +176,8 @@ export interface AuthEventOptions {
   /** 对端 IP:各用例用不同值,隔离 login-rate-limit 的按 IP 状态 */
   peer?: string;
   params?: Record<string, string>;
+  /** 请求 URL(含查询串):getQuery 读 event.path,故 path 与 req.url 都设成它 */
+  url?: string;
 }
 
 export interface AuthEvent {
@@ -194,15 +196,16 @@ export function makeAuthEvent(opts: AuthEventOptions = {}): AuthEvent {
   if (opts.body !== undefined) reqHeaders["content-type"] = "application/json";
 
   const peer = opts.peer ?? "10.9.0.1";
+  const url = opts.url ?? "/api/auth/x";
   const event = {
     method: (opts.method ?? "POST").toUpperCase(),
     context: { params: opts.params ?? {}, clientAddress: peer },
-    path: "/api/auth/x",
+    path: url,
     _requestBody: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     node: {
       req: {
         method: (opts.method ?? "POST").toUpperCase(),
-        url: "/api/auth/x",
+        url,
         headers: reqHeaders,
         socket: { remoteAddress: peer },
       },

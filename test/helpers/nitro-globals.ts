@@ -33,5 +33,10 @@ g.defineNitroPlugin ??= (fn: (nitroApp?: unknown) => unknown) => fn;
 // server/utils 层的自动导入:直接用真实实现
 g.getCommentAvatarService ??= getCommentAvatarService;
 g.commentAvatarUrl ??= commentAvatarUrl;
+// getRequestURL:用 host 头拼最小 URL(不需要 node.req 的完整形状)
+g.getRequestURL ??= (event: { node: { req: { headers: Record<string, string> } } }) => {
+  const host = event.node.req.headers.host ?? "localhost";
+  return new URL("http://" + host + "/");
+};
 // runtimeConfig 桩:redis 默认关(测试不连 Redis),需要具体键的测试自行覆盖赋值
 g.useRuntimeConfig ??= () => ({ redis: null, buildHash: "" });

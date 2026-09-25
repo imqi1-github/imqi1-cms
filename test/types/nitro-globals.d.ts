@@ -6,6 +6,8 @@ declare global {
   const setHeader: typeof import("h3").setHeader;
   const setResponseStatus: typeof import("h3").setResponseStatus;
   const setResponseHeaders: typeof import("h3").setResponseHeaders;
+  const getRequestURL: typeof import("h3").getRequestURL;
+  const $fetch: typeof import("ofetch").$fetch;
   const readBody: typeof import("h3").readBody;
   const defineEventHandler: typeof import("h3").defineEventHandler;
   const getRouterParam: typeof import("h3").getRouterParam;
