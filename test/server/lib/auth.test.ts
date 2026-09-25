@@ -2,28 +2,8 @@ import "#test/helpers/nitro-globals";
 
 import { describe, expect, test } from "bun:test";
 
-import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
-
-// 模拟 DB 侧「当前 auth_code」:users.update 旋转它,单端登录语义的 DB 一半
-const currentAuthCode = new Map<number, string>();
-sharedFake.on("informations", "findUnique", () => ({ value: "memory" }));
-sharedFake.on("users", "update", (args: { where: { uid: number }; data: { auth_code: string } }) => {
-  currentAuthCode.set(args.where.uid, args.data.auth_code);
-  return {};
-});
-sharedFake.on("users", "findUnique", (args: { where: { uid: number } }) => {
-  const uid = args.where.uid;
-  if (uid !== 1) return null;
-  return {
-    uid,
-    name: "admin",
-    nickname: "阿棋",
-    mail: "a@b.c",
-    avatar: null,
-    auth_code: currentAuthCode.get(uid) ?? "",
-  };
-});
-mockSharedPrisma();
+// users/informations 假件统一由 auth-fakes 注册(全仓唯一注册点)
+import "#test/helpers/auth-fakes";
 
 const { setSession, getUser, clearSession, verifyPassword } = await import("#server/lib/auth");
 
@@ -96,13 +76,13 @@ describe("setSession(集成:真 MemorySessionStore + 假 prisma)", () => {
   });
 
   test("store 有 session 但用户已不存在:session 被删除并返回 null", async () => {
-    const { event, setCookieHeaders } = makeEvent();
-    await setSession(event as never, { ...USER, uid: 2 });
-    const sid = sessionIdFromCookie(setCookieHeaders);
-    // uid=2 在假 prisma 里不存在 → getUser 返回 null
-    expect(await getUser(makeEvent(`session=${sid}`).event as never)).toBeNull();
-    // 且那条 session 已被删除(孤儿清理)
+    // 直接向 store 写入孤儿会话(uid=2 在假 prisma 中不存在,setSession 会因 P2025 失败)
     const store = await (await import("#server/utils/session-store")).getSessionStore();
+    const sid = "orphan-session-id";
+    await store.set(sid, { userId: 2, authCode: "stale", expires: Date.now() + 60_000 });
+
+    expect(await getUser(makeEvent(`session=${sid}`).event as never)).toBeNull();
+    // 孤儿会话已被清掉
     expect(await store.get(sid)).toBeNull();
   });
 });

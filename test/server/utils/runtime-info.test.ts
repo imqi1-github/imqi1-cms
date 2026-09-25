@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test";
 
 // getBuildHash 依赖 Nitro 自动导入的 useRuntimeConfig,nitro-globals 未含它,此处给桩
 const g = globalThis as unknown as Record<string, unknown>;
-g.useRuntimeConfig ??= (() => ({ buildHash: "unit-test-hash" }));
+g.useRuntimeConfig = (() => ({ buildHash: "unit-test-hash" }));
 
 const { getBuildHash, detectDocker } = await import("#server/utils/runtime-info");
 

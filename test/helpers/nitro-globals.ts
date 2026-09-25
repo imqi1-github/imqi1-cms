@@ -31,3 +31,5 @@ g.defineNitroPlugin ??= (fn: (nitroApp?: unknown) => unknown) => fn;
 // server/utils 层的自动导入:直接用真实实现
 g.getCommentAvatarService ??= getCommentAvatarService;
 g.commentAvatarUrl ??= commentAvatarUrl;
+// runtimeConfig 桩:redis 默认关(测试不连 Redis),需要具体键的测试自行覆盖赋值
+g.useRuntimeConfig ??= () => ({ redis: null, buildHash: "" });

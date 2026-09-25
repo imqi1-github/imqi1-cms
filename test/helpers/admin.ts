@@ -1,10 +1,13 @@
-// admin/api 层测试基建:共享的用户/设置表 + 登录 cookie + 假 event 工厂
-// 与 lib/auth.test 共用同一套 users/informations 假件(单端登录语义)
+// admin/api 层测试基建:登录 cookie + 假 event 工厂 + metas 内存表
+// users/informations 假件统一在 test/helpers/auth-fakes.ts(全仓唯一注册点,避免跨文件争用)
 import "#test/helpers/nitro-globals";
 
 import { mock } from "bun:test";
 
+import { CSRF_COOKIE, CSRF_TOKEN, loginSessionCookie } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+
+export { CSRF_COOKIE, CSRF_TOKEN, loginSessionCookie };
 
 mockSharedPrisma();
 // admin 写接口的缓存失效是 best-effort,统一 mock 掉
@@ -14,47 +17,6 @@ sharedFake.on("$transaction", async (opsOrFn: unknown) =>
   typeof opsOrFn === "function" ? await (opsOrFn as (tx: unknown) => Promise<unknown>)(sharedFake.prisma) : opsOrFn);
 // FOR UPDATE 行锁等原生查询:假件里是 no-op
 sharedFake.on("$queryRaw", async () => []);
-
-// DB 侧「当前 auth_code」:users.update 旋转,users.findUnique 读回
-const currentAuthCode = new Map<number, string>();
-sharedFake.on("informations", "findUnique", (args: { where: { key: string } }) => {
-  if (args.where.key === "sessionStoreType") return { value: "memory" };
-  if (args.where.key === "commentAvatarService") return { value: "gravatar" };
-  return null;
-});
-sharedFake.on("users", "update", (args: { where: { uid: number }; data: { auth_code: string } }) => {
-  currentAuthCode.set(args.where.uid, args.data.auth_code);
-  return {};
-});
-sharedFake.on("users", "findUnique", (args: { where: { uid: number } }) => {
-  const uid = args.where.uid;
-  if (uid !== 1) return null;
-  return { uid, name: "admin", nickname: "阿棋", mail: null, avatar: null, auth_code: currentAuthCode.get(uid) ?? "" };
-});
-
-// 登录一次,返回可直接放进 Cookie 头的 session 串
-export async function loginSessionCookie(): Promise<string> {
-  const { setSession } = await import("#server/lib/auth");
-  const setCookies: string[] = [];
-  const event = {
-    node: {
-      req: { headers: {} as Record<string, string> },
-      res: {
-        setHeader(name: string, value: unknown) {
-          if (String(name).toLowerCase() === "set-cookie") setCookies.push(String(value));
-        },
-        getHeader: () => setCookies,
-        getHeaders: () => ({}),
-      },
-    },
-  };
-  await setSession(event as never, { uid: 1, name: "admin", nickname: "阿棋", mail: "", avatar: null });
-  return setCookies.find(c => c.startsWith("session="))!.split(";")[0]!;
-}
-
-// CSRF 是 double-submit:cookie 与 body/header 带同值即可,值本身任意定长串
-export const CSRF_TOKEN = "c".repeat(20);
-export const CSRF_COOKIE = `csrf_token=${CSRF_TOKEN}`;
 
 // admin handler 的假 event:cookie + 路由参数 + JSON body(readBody 走 event._requestBody 短路)
 export function adminEvent(opts: {
