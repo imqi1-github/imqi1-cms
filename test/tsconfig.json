@@ -2,12 +2,14 @@
   // 独立一份 test/tsconfig:Nuxt prepare 会重写 .nuxt/tsconfig.*,直接改会被覆盖
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["bun-types"],
+    "types": ["bun-types", "nuxt"],
     "paths": {
       "#shared": ["../shared"],
       "#shared/*": ["../shared/*"],
       "#server/*": ["../server/*"],
       "@/*": ["../app/*"],
+      "~": ["../app"],
+      "~/*": ["../app/*"],
       "~~": [".."],
       "~~/*": ["../*"],
       "#test/*": ["./*"]
