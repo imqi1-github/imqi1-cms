@@ -11,6 +11,7 @@ import {
   setHeader,
   setResponseHeader,
   setResponseStatus,
+  setResponseHeaders,
 } from "h3";
 
 import { commentAvatarUrl, getCommentAvatarService } from "#server/utils/comment-avatar";
@@ -21,6 +22,7 @@ g.getHeader ??= getHeader;
 g.setHeader ??= setHeader;
 g.setResponseHeader ??= setResponseHeader;
 g.setResponseStatus ??= setResponseStatus;
+g.setResponseHeaders ??= setResponseHeaders;
 g.readBody ??= readBody;
 g.defineEventHandler ??= defineEventHandler;
 g.getRouterParam ??= getRouterParam;
