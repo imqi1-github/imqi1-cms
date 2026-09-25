@@ -1,10 +1,10 @@
 import "#test/helpers/nitro-globals";
 
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
-const SITE_URL = "https://sitemap-test.example.com/";
+
 
 // prisma 假件:文章(1 篇正常 + 1 篇无 slug)/页面(1 个自定义 + 1 个硬编码 slug)/分类/标签
 const fake = sharedFake;
@@ -33,10 +33,6 @@ fake.on("metas", "findMany", (args: { where: { type: string } }) => {
   return [{ slug: "life" }];
 });
 mockSharedPrisma();
-mock.module("#server/utils/siteSettings", () => ({
-  getSiteSettings: async () => ({ siteUrl: SITE_URL }),
-}));
-
 const handler = (await import("#server/routes/sitemap.xml.get")).default as (e: unknown) => Promise<string>;
 
 async function run() {
@@ -70,26 +66,26 @@ describe("sitemap.xml.get(集成:prisma/siteSettings 假件 → sitemap 管线)"
   test("XML 骨架与 baseUrl 去尾斜杠", () => {
     expect(xml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     expect(xml).toContain("http://www.sitemaps.org/schemas/sitemap/0.9");
-    expect(xml).toContain("<loc>https://sitemap-test.example.com/</loc>");
+    expect(xml).toContain("<loc>https://example.com/</loc>");
     expect(xml).not.toContain("example.com//");
   });
 
   test("静态页齐全:search/messages/links/map/about/agreement/changelogs/subscribes/feed/archiving", () => {
     for (const p of ["search", "messages", "links", "map", "about", "agreement", "changelogs", "subscribes", "feed", "archiving"]) {
-      expect(xml).toContain(`<loc>https://sitemap-test.example.com/${p}</loc>`);
+      expect(xml).toContain(`<loc>https://example.com/${p}</loc>`);
     }
   });
 
   test("文章:有 slug 的入表并取第一个分类,无 slug 的跳过", () => {
-    expect(xml).toContain("<loc>https://sitemap-test.example.com/content/note/post-a</loc>");
+    expect(xml).toContain("<loc>https://example.com/content/note/post-a</loc>");
     expect(xml).toContain("<lastmod>2026-03-01</lastmod>");
     // 无 slug 的第二篇不入表:全部 /content/ 条目只有 post-a 一条
     expect((xml.match(/<loc>[^<]*\/content\//g) ?? []).length).toBe(1);
   });
 
   test("页面:DB 自定义页入表,与硬编码重复的 messages 不重复生成", () => {
-    expect((xml.match(/<loc>https:\/\/sitemap-test\.example\.com\/messages<\/loc>/g) ?? []).length).toBe(1);
-    expect(xml).toContain("<loc>https://sitemap-test.example.com/custom-page</loc>");
+    expect((xml.match(/<loc>https:\/\/example.com\/messages<\/loc>/g) ?? []).length).toBe(1);
+    expect(xml).toContain("<loc>https://example.com/custom-page</loc>");
   });
 
   test("空 slug 的分类/标签跳过,正常生成的带 /category /tag 前缀", () => {

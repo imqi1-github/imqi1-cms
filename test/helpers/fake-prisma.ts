@@ -47,9 +47,10 @@ export function createFakePrisma(): FakePrisma {
 // 但只要工厂返回同一实例,handlers 就不丢——全部用这个共享单例
 export const sharedFake = createFakePrisma();
 
-// 统一的 prisma 模块 mock:被测模块可能同时 import prisma 与 isPrismaNotFoundError
+// 统一的 prisma 模块 mock:被测模块可能 import prisma(命名)、default prisma、isPrismaNotFoundError 三种形态
 export function mockSharedPrisma(): void {
   mock.module("#server/utils/prisma", () => ({
+    default: sharedFake.prisma,
     prisma: sharedFake.prisma,
     isPrismaNotFoundError: (e: unknown) =>
       e instanceof Error && "code" in e && (e as { code?: string }).code === "P2025",

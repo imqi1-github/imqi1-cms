@@ -2,7 +2,7 @@ import "#test/helpers/nitro-globals";
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 import { afterAll, describe, expect, mock, test } from "bun:test";
 
@@ -11,7 +11,17 @@ const uploadsDir = mkdtempSync(join(tmpdir(), "uploads-test-"));
 writeFileSync(join(uploadsDir, "a.jpg"), "fake-jpeg-bytes");
 writeFileSync(join(uploadsDir, "b.unknownext"), "unknown-bytes");
 mkdirSync(join(uploadsDir, "subdir"));
-mock.module("#server/utils/attachment-file", () => ({ getUploadsDir: () => uploadsDir }));
+// 工厂必须展开真模块全部导出:mock.module 是进程级整体替换,漏导出会打穿别的测试文件
+const realAttachmentFile = await import("#server/utils/attachment-file");
+mock.module("#server/utils/attachment-file", () => ({
+  ...realAttachmentFile,
+  // env.UPLOADS_DIR 优先(与真实现语义一致):attachment-file.test 用它指向自己的临时目录
+  getUploadsDir: () => {
+    const override = process.env.UPLOADS_DIR;
+    if (!override) return uploadsDir;
+    return isAbsolute(override) ? override : join(process.cwd(), override);
+  },
+}));
 
 const handler = (await import("#server/routes/uploads/[...path].get")).default as (e: unknown) => Promise<unknown>;
 

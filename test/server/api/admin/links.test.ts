@@ -99,7 +99,6 @@ describe("admin/links", () => {
     const before = (await callAdmin(getLinks, { method: "GET", cookie: session })) as Array<{ id: number; enabled: boolean }>;
     const first = before.find(l => l.id === 1)!;
     const toggled = await callAdmin(toggleLink, { method: "PATCH", params: { id: "1" }, cookie: c, body: { csrfToken: CSRF_TOKEN } }) as Record<string, unknown>;
-    console.log("[dbg] toggled:", JSON.stringify(toggled), "table:", JSON.stringify(links));
     expect(toggled.enabled).toBe(!first.enabled);
     await expect(callAdmin(toggleLink, { method: "PATCH", params: { id: "999" }, cookie: c, body: { csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 404 });
   });
