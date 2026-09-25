@@ -61,14 +61,15 @@ export const METAS_INITIAL: MetaRow[] = [
   { mid: 3, name: "标签乙", slug: "tag-b", desc: null, type: "tag" },
 ];
 
-export function resetMetas(): void {
+export function resetMetas(seed: MetaRow[] = METAS_INITIAL): void {
   metas.length = 0;
-  metas.push(...METAS_INITIAL.map(m => ({ ...m })));
+  metas.push(...seed.map(m => ({ ...m })));
 }
 
-// metas handlers 只在此注册一次(bun test 并发加载,测试文件顶层注册会互相覆盖)
-{
-  metas.push(...METAS_INITIAL.map(m => ({ ...m })));
+// metas 假件注册成可重复调用的函数:测试文件在 beforeEach 里调用以抢占最新注册
+// (mock.module 的 handler 表是全进程共享的,后注册者覆盖先注册者)
+export function registerMetasFakes(): void {
+  resetMetas();
   sharedFake.on("metas", "create", async ({ data }: { data: Omit<MetaRow, "mid"> }) => {
     if (metas.some(m => m.name === data.name || (data.slug && m.slug === data.slug))) throw prismaError("P2002");
     const row = { mid: metas.length + 100, ...data };
@@ -95,8 +96,11 @@ export function resetMetas(): void {
         v === undefined || v === null ? true : (m as unknown as Record<string, unknown>)[k] === v)) ?? null);
   sharedFake.on("metas", "count", async ({ where }: { where: { type: string } }) =>
     metas.filter(m => m.type === where.type).length);
-  sharedFake.on("metas", "findMany", async ({ where }: { where: { type: string } }) =>
-    metas.filter(m => m.type === where.type).map(m => ({ ...m, _count: { contentrelations: 3 } })));
+  sharedFake.on("metas", "findMany", async ({ where }: { where: { type?: string; mid?: { in: number[] } } }) =>
+    metas
+      .filter(m => (where.type === undefined || m.type === where.type))
+      .filter(m => (where.mid?.in === undefined || where.mid.in.includes(m.mid)))
+      .map(m => ({ ...m, _count: { contentrelations: 3 } })));
 
   sharedFake.on("metas", "update", async ({ where, data }: { where: { mid: number }; data: Partial<MetaRow> }) => {
     const row = metas.find(m => m.mid === where.mid);

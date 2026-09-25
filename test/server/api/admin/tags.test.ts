@@ -2,13 +2,13 @@ import "#test/helpers/nitro-globals";
 
 import { beforeEach, describe, expect, test } from "bun:test";
 
-import { CSRF_COOKIE, CSRF_TOKEN, callAdmin, loginSessionCookie, resetMetas } from "#test/helpers/admin";
+import { CSRF_COOKIE, CSRF_TOKEN, callAdmin, loginSessionCookie, registerMetasFakes, resetMetas } from "#test/helpers/admin";
 import { mockSharedPrisma } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
 // metas 表假件统一在 test/helpers/admin.ts 注册,这里只复位到统一初值
-beforeEach(() => resetMetas());
+beforeEach(() => { registerMetasFakes(); resetMetas(); });
 
 const getTags = (await import("#server/api/admin/tags.get")).default;
 const createTag = (await import("#server/api/admin/tags.post")).default;
