@@ -39,8 +39,7 @@ export default defineEventHandler(async event => {
   const cidList = Array.from(
     new Set(
       ids
-        .map((id: unknown) => (typeof id === "number" ? id : Number(id)))
-        .filter((n): n is number => Number.isSafeInteger(n) && n > 0),
+        .filter((id): id is number => typeof id === "number" && Number.isSafeInteger(id) && id > 0),
     ),
   );
   if (cidList.length === 0) {
