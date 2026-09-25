@@ -64,25 +64,33 @@ export function registerAuthFakes(): void {
     return null;
   });
 
-  sharedFake.on("users", "findUnique", (args: { where: { uid?: number; name?: string } }) => {
-    const { uid, name } = args.where;
-    if (typeof uid === "number") {
-      const row = users.get(uid);
-      return row ? { ...row } : null;
+  sharedFake.on("users", "findUnique", (args: { where: { uid?: number; name?: string; mail?: string }; select?: Record<string, unknown> }) => {
+    const { uid, name, mail } = args.where;
+    let row: UserRow | undefined;
+    if (typeof uid === "number") row = users.get(uid);
+    else if (typeof name === "string") row = [...users.values()].find(u => u.name === name);
+    else if (typeof mail === "string") row = [...users.values()].find(u => u.mail === mail);
+    if (!row) return null;
+    // 模拟 Prisma select 投影:handler 声明了 select 时只回这些键(白名单语义由 select 保证)
+    if (args.select) {
+      const out: Record<string, unknown> = {};
+      for (const key of Object.keys(args.select)) out[key] = (row as unknown as Record<string, unknown>)[key];
+      return out;
     }
-    if (typeof name === "string") {
-      const row = [...users.values()].find(u => u.name === name);
-      return row ? { ...row } : null;
-    }
-    return null;
+    return { ...row };
   });
 
   sharedFake.on("users", "count", () => users.size);
 
-  sharedFake.on("users", "update", (args: { where: { uid: number }; data: Partial<UserRow> }) => {
+  sharedFake.on("users", "update", (args: { where: { uid: number }; data: Partial<UserRow>; select?: Record<string, unknown> }) => {
     const row = users.get(args.where.uid);
     if (!row) throw Object.assign(new Error("P2025"), { code: "P2025" });
     Object.assign(row, args.data);
+    if (args.select) {
+      const out: Record<string, unknown> = {};
+      for (const key of Object.keys(args.select)) out[key] = (row as unknown as Record<string, unknown>)[key];
+      return out;
+    }
     return { ...row };
   });
 }
