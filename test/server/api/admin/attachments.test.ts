@@ -46,6 +46,25 @@ beforeEach(() => {
     { aid: 1, title: "图片甲", type: "image", url: "/uploads/a.png?size=large", metadata: { size: 100, width: 800, height: 600, format: "png" }, create_time: new Date(), linkedContents: [{ cid: 10, title: "文章十" }] },
     { aid: 2, title: "文件乙", type: "file", url: "not-a-url", metadata: null, create_time: new Date(), linkedContents: [] },
   ];
+  // 重注册:handler 表全进程共享,不重注册会被其它测试文件覆盖
+  sharedFake.on("attachments", "count", async () => rows.length);
+  sharedFake.on("attachments", "findMany", async ({ where }: { where: { type?: string } }) =>
+    rows
+      .filter(r => !where?.type || r.type === where.type)
+      .map(r => ({
+        aid: r.aid, title: r.title, type: r.type, url: r.url, metadata: r.metadata, create_time: r.create_time,
+        contentattachments: r.linkedContents.map(c => ({ content: c })),
+      })));
+  sharedFake.on("attachments", "findUnique", async ({ where }: { where: { aid: number } }) => {
+    const row = rows.find(r => r.aid === where.aid);
+    return row ? { ...row, contentattachments: row.linkedContents.map(c => ({ content: c })) } : null;
+  });
+  sharedFake.on("attachments", "update", async ({ where, data }: { where: { aid: number }; data: { title?: string } }) => {
+    const row = rows.find(r => r.aid === where.aid);
+    if (!row) throw Object.assign(new Error("P2025"), { code: "P2025" });
+    if (data.title !== undefined) row.title = data.title;
+    return { ...row };
+  });
 });
 
 async function cookie(): Promise<string> {
