@@ -92,3 +92,39 @@ describe("spaceCjkLatin", () => {
     expect(spaceCjkLatin("pure english")).toBe("pure english");
   });
 });
+
+describe("markdownToPlainText:其余容器占位", () => {
+  test("video / details / callout / card / simple-card / repo / swiper / waterfall", () => {
+    expect(markdownToPlainText([":::video /x.mp4", ":::"].join("\n"))).toContain("<视频");
+    expect(markdownToPlainText([":::details 点开", "内容", ":::"].join("\n"))).toContain("<折叠");
+    // callout 保留内部正文、丢弃开闭行
+    const callout = markdownToPlainText([":::callout warning", "小心内容", ":::"].join("\n"));
+    expect(callout).toContain("小心内容");
+    expect(callout).not.toContain("callout");
+
+    expect(markdownToPlainText([":::card https://a.com | 标题", ":::"].join("\n"))).toContain("<链接卡片");
+    expect(markdownToPlainText([":::simple-card https://a.com | 标题", ":::"].join("\n"))).toContain("<外链卡片");
+  });
+
+  test("repo 容器按平台给出仓库占位", () => {
+    const gh = markdownToPlainText([":::repo https://github.com/imqi1/imqi1-cms", ":::"].join("\n"));
+    expect(gh).toContain("仓库");
+    expect(gh).toContain("imqi1");
+  });
+
+  test("swiper / waterfall 图集转图片占位", () => {
+    const swiper = markdownToPlainText([":::swiper", "![图一](/a.jpg)", ":::"].join("\n"));
+    expect(swiper).toContain("<图片");
+  });
+
+  test("代码块语言未知时给出行数占位", () => {
+    const t = markdownToPlainText(["```", "line1", "line2", "```"].join("\n"));
+    expect(t).toContain("<代码块");
+    expect(t).toContain("2");
+  });
+
+  test("行内表情占位符保留原样(端上再解析)", () => {
+    const t = markdownToPlainText("看这个 :[heo-微笑] 好看");
+    expect(t).toContain(":[heo-微笑]");
+  });
+});
