@@ -36,6 +36,11 @@ mockSharedPrisma();
 const handler = (await import("#server/routes/sitemap.xml.get")).default as (e: unknown) => Promise<string>;
 
 async function run() {
+  // 紧邻调用前注册:handler 表是全进程共享的,越靠近调用越不易被其它文件抢占
+  sharedFake.on("informations", "findMany", async () => [
+    { key: "siteName", value: "测试站" },
+    { key: "siteUrl", value: "https://example.com" },
+  ]);
   const headers: Record<string, string> = {};
   const event = {
     node: {

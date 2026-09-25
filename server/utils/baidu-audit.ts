@@ -19,12 +19,13 @@ async function getAccessToken(apiKey: string, secretKey: string): Promise<string
       },
     );
 
-    const data = await response.json();
+    // 显式收窄:fetch 的 json() 在无 DOM lib 的环境下是 unknown(不能直接取属性)
+    const data = (await response.json()) as { access_token?: string; expires_in?: number };
 
     if (data.access_token) {
       cachedAccessToken = {
         token: data.access_token,
-        expiresAt: Date.now() + (data.expires_in - 300) * 1000,
+        expiresAt: Date.now() + ((data.expires_in ?? 0) - 300) * 1000,
       };
       return data.access_token;
     }
@@ -81,7 +82,7 @@ export async function auditText(text: string): Promise<{ conclusion: string; con
       body: `text=${encodeURIComponent(text)}`,
     });
 
-    const result: BaiduAuditResult = await response.json();
+    const result = (await response.json()) as BaiduAuditResult;
 
     if (result.error_code) {
       console.error(result.error_msg);

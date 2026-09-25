@@ -7,7 +7,8 @@ declare global {
   const setResponseStatus: typeof import("h3").setResponseStatus;
   const setResponseHeaders: typeof import("h3").setResponseHeaders;
   const getRequestURL: typeof import("h3").getRequestURL;
-  const $fetch: typeof import("ofetch").$fetch;
+  // 与 Nuxt 一致:默认泛型 any(过严的 unknown 会让 server 侧 $fetch 调用全报类型错)
+  const $fetch: <T = unknown>(url: string, opts?: Record<string, unknown>) => Promise<T>;
   const readBody: typeof import("h3").readBody;
   const defineEventHandler: typeof import("h3").defineEventHandler;
   const getRouterParam: typeof import("h3").getRouterParam;
