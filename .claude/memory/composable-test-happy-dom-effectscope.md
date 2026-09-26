@@ -17,8 +17,22 @@ metadata:
 
 **busy / setTimeout 0 vs await Promise.resolve()**:useEditorAutosave 类的并发测试,`saveNow("manual")` 后 `release()` 必须等 refreshCsrf 微任务跑完才能调到 save —— 单 `await Promise.resolve()` 不够(顺序不可控),用 `await new Promise(r => setTimeout(r, 10))` 最稳。
 
-**import.meta.client 在 bun:test 无法改**:这是模块级 Vite 编译期常量,bun:test 默认 undefined。测试顶层 `import.meta.client = true` 改的是测试模块的 meta,**源码模块独立**,改不到。`Bun.plugin` 在 `app/composables/*.ts` 注 `import.meta.client = true` 会污染 tsc/eslint + 破坏 mock.module 链(见 [[bun-mock-module-leak-zz-late-layout]])。结论:依赖 `import.meta.client` 真值的代码(如 useMarkdownTableTranspose.mount 的 client 守卫、useAdminPageSize 的 readStored/watch)无法在 bun:test 触发真实分支,fallback 路径覆盖即可,client 分支靠手工 dev 验证。
+**import.meta.client 在 bun:test 无法改**:这是模块级 Vite 编译期常量,bun:test 默认 undefined。测试顶层 `import.meta.client = true` 改的是测试模块的 meta,**源码模块独立**,改不到。`Bun.plugin` 在 `app/composables/*.ts` 注 `import.meta.client = true` 会污染 tsc/eslint + 破坏 mock.module 链(见 [[bun-mock-module-leak-zz-late-layout]])。结论:依赖 `import.meta.client` 真值的代码无法在 bun:test 触发真实分支,fallback 路径覆盖即可,client 分支靠手工 dev 验证。
+
+**当前已被 import.meta.client 守卫挡住的 composables(2026-09-26 摸排)**:
+- `useAdminPageSize` readStored/watch 写回
+- `useMarkdownTableTranspose` mount/cleanup
+- `useScrollRaf` 订阅 + scroll listener
+- `useAuth` checkAuthStatus
+- `useMarkdownContent` mount 全链路(含 9 类容器挂载、表格转置、实况照片兼容)
+- `useMarkdownImages` mount(被 useMarkdownContent 嵌套,同命运)
+- `useMarkdownWidgets` mount(同上)
+- `useFadeOutOnNavigate` line 20 fadeDuration 挂起分支
+- `useScrollbarTheme` style 切换(看代码确认)
+- `useEmojiRichInput` onMounted 整体行为(readDom 等纯函数可单测,主体 onMounted 不行)
 
 **happy-dom type clash**:happy-dom 自带 HTMLElement 类型,import 后遮蔽全局同名,test 文件中 `as unknown as HTMLElement` 需 `InstanceType<typeof win.HTMLElement>` 拿实例类型而非 global HTMLElement。
 
 **cancelAnimationFrame 类型**:happy-dom 期待 `Immediate`(Node.js setImmediate 返回值),不是 number。cast `as unknown as never` 或用 `(handle: number) => win.cancelAnimationFrame(handle as never)` 解决 typecheck。
+
+**同进程 mock.module 污染影响边界测试**:`test/server/routes/uploads.test.ts` 在文件顶部 `mock.module("#server/utils/attachment-file", ...)` 整体替换 `getUploadsDir`(用自家 temp dir,而非走 `process.env.UPLOADS_DIR`)。如果它先于 `test/server/utils/attachment-file.test.ts` 跑(或字典序随机在前),后者的 `getUploadsDir()` 拿到的是 mock 版本 → 断言 process.env 边界(空/空白/trim)全挂。**解决办法**:attachment-file.test.ts 只能覆盖主路径(默认、绝对、相对),UPLOADS_DIR 边界写在注释里说明受 mock 污染,留给 dev 手工 + production 部署验证。同样的污染风险:任何 mock 了热门 util 模块的测试文件,都会让后续同进程测试对该 util 的边界断言失真 → 想覆盖边界就把边界测试拆到 zz-late/ 或独立子进程跑。

@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 
+// 仅类型引用,确保 useEmojiRichInput 源码与本测试的 readDom 等价 copy 同步
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useEmojiRichInput } from "~/composables/useEmojiRichInput";
 import { buildEmojiPlaceholder, getEmojiByKey } from "~/utils/emoji";
 
