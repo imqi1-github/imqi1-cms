@@ -41,16 +41,23 @@ export function adminEvent(opts: {
   body?: unknown;
   headers?: Record<string, string>;
   url?: string;
+  peer?: string;
 }) {
   const reqHeaders: Record<string, string> = { ...(opts.cookie ? { cookie: opts.cookie } : {}), ...(opts.headers ?? {}) };
   if (opts.body !== undefined) reqHeaders["content-type"] = "application/json";
+  const peer = opts.peer ?? "127.0.0.1";
   return {
     method: opts.method ?? "POST",
-    context: { params: opts.params ?? {} },
+    context: { params: opts.params ?? {}, clientAddress: peer },
     path: opts.url ?? "/api/admin/x",
     _requestBody: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     node: {
-      req: { method: opts.method ?? "POST", url: opts.url ?? "/api/admin/x", headers: reqHeaders },
+      req: {
+        method: opts.method ?? "POST",
+        url: opts.url ?? "/api/admin/x",
+        headers: reqHeaders,
+        socket: { remoteAddress: peer },
+      },
       res: { setHeader() {}, getHeader: () => undefined, getHeaders: () => ({}) },
     },
   } as never;
