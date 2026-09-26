@@ -128,3 +128,138 @@ describe("markdownToPlainText:其余容器占位", () => {
     expect(t).toContain(":[heo-微笑]");
   });
 });
+
+describe("markdownToPlainText:repo / music 兜底分支", () => {
+  test("repo:gitee 走 Gitee 仓库占位(不是 GitHub)", () => {
+    const gitee = markdownToPlainText([":::repo https://gitee.com/imqi1/blog", ":::"].join("\n"));
+    expect(gitee).toContain("Gitee");
+    expect(gitee).toContain("imqi1/blog");
+    expect(gitee).not.toContain("GitHub");
+  });
+
+  test("repo:非 github/gitee 主机 → 「<仓库卡片>」兜底,不假装识别", () => {
+    const t = markdownToPlainText([":::repo https://gitlab.com/foo/bar", ":::"].join("\n"));
+    expect(t).toContain("<仓库卡片>");
+    expect(t).not.toContain("GitHub");
+    expect(t).not.toContain("Gitee");
+  });
+
+  test("repo:github.com 缺 owner/repo 段(只是首页)→ 兜底", () => {
+    const t = markdownToPlainText([":::repo https://github.com/", ":::"].join("\n"));
+    expect(t).toContain("<仓库卡片>");
+  });
+
+  test(":::music auto URL:网易云歌曲链接 → 带 id 的中文占位", () => {
+    const t = markdownToPlainText([":::music auto https://music.163.com/song?id=186016", ":::"].join("\n"));
+    expect(t).toContain("<音乐");
+    expect(t).toContain("网易云");
+    expect(t).toContain("186016");
+  });
+
+  test(":::music auto URL:酷我歌曲链接 → 中文占位", () => {
+    const t = markdownToPlainText([":::music auto https://www.kuwo.cn/song/12345", ":::"].join("\n"));
+    expect(t).toContain("酷我");
+    expect(t).toContain("12345");
+  });
+
+  test(":::music auto URL:酷狗歌曲链接 → 中文占位", () => {
+    const t = markdownToPlainText([":::music auto https://www.kugou.com/song/abc123.html", ":::"].join("\n"));
+    expect(t).toContain("酷狗");
+    expect(t).toContain("abc123");
+  });
+
+  test(":::music auto URL:不在任何已知平台 → 「<音乐>」兜底", () => {
+    const t = markdownToPlainText([":::music auto https://spotify.com/track/xyz", ":::"].join("\n"));
+    expect(t).toContain("<音乐>");
+    expect(t).not.toContain("网易云");
+  });
+
+  test(":::music 参数完全不符合(song/playlist/album/artist)→ 「<音乐>」兜底", () => {
+    const t = markdownToPlainText([":::music xyz netease 123", ":::"].join("\n"));
+    expect(t).toContain("<音乐>");
+  });
+
+  test(":::music 形式 2 给出标准占位(<音乐:平台,id=x> 类)", () => {
+    const t = markdownToPlainText([":::music playlist netease 999", ":::"].join("\n"));
+    expect(t).toContain("<音乐列表");
+    expect(t).toContain("网易云");
+    expect(t).toContain("999");
+  });
+});
+
+describe("markdownToPlainText:decodeEntities 与 pre 块", () => {
+  test("常用 HTML 实体一次性解码:&lt; &gt; &amp; &quot; &apos; &nbsp;", () => {
+    const t = markdownToPlainText("a &lt;b&gt; &amp; &quot;c&quot; &apos;d&apos; &nbsp;e");
+    expect(t).toContain("a <b>");
+    expect(t).toContain("&");
+    expect(t).toContain('"c"');
+    expect(t).toContain("'d'");
+    // &nbsp; → U+00A0 (非换行空格,不是普通空格)
+    expect(t).toContain(" e");
+  });
+
+  test("&amp;lt; 不二次解码成 <(防止递归放大)", () => {
+    // 源里写的就是 &amp;lt; (被字面渲染成 "&lt;"),不应被解成 "<"
+    const t = markdownToPlainText("&amp;lt;tag&amp;gt;");
+    expect(t).toContain("&lt;tag&gt;");
+    expect(t).not.toContain("<tag>");
+  });
+
+  test("inline html <pre> 不带语言时(罕见路径)→ 「<代码块:共x行>」兜底占位", () => {
+    // html:false 下原始 <pre> 被去标签前先经 preBlocksToPlaceholders;用 4 空格缩进代码触发
+    const t = markdownToPlainText("    line1\n    line2\n    line3");
+    expect(t).toContain("<代码块");
+    expect(t).toContain("3");
+  });
+
+  test("图片有 title 时,title 优先作为占位标签(alt 为空)", () => {
+    const t = markdownToPlainText('![](/imgs/a.jpg "标题-t")');
+    expect(t).toContain("标题-t");
+  });
+
+  test("图片 src 含 #live → 实况照片占位(无标题)", () => {
+    const t = markdownToPlainText("![](/imgs/lp.jpg#live)");
+    expect(t).toContain("<实况照片");
+  });
+
+  test("图片 alt 含 [live] 标识 → 实况照片占位", () => {
+    const t = markdownToPlainText("![alt [live] text](/imgs/lp.jpg)");
+    expect(t).toContain("<实况照片");
+  });
+});
+
+describe("markdownToPlainText:容器嵌套与多行", () => {
+  test("嵌套 callout(开两层 :::callout warning),内部正文仍保留", () => {
+    const t = markdownToPlainText([
+      ":::callout info",
+      "外层",
+      ":::callout warning",
+      "内层",
+      ":::",
+      ":::", // 外层闭合
+    ].join("\n"));
+    expect(t).toContain("外层");
+    expect(t).toContain("内层");
+    expect(t).not.toContain("callout");
+  });
+
+  test("未闭合 swiper:开启行 + 内容行全回退为普通文本(不吞)", () => {
+    const t = markdownToPlainText([
+      ":::swiper",
+      "![图](/a.jpg)",
+      "(没有闭合 :::)",
+    ].join("\n"));
+    // 没闭合 → 不产 <图片集> 占位
+    expect(t).not.toContain("<图片集");
+    // 内容保留
+    expect(t).toContain("没有闭合");
+  });
+
+  test("多行 :::card:四段 pipe 参数 → 占位带标题", () => {
+    const t = markdownToPlainText([
+      ":::card https://x.com | 我的标题 | 我的描述 | https://x.com/i.png",
+      ":::", // 不需要闭合,但写了也不抛
+    ].join("\n"));
+    expect(t).toContain("我的标题");
+  });
+});
