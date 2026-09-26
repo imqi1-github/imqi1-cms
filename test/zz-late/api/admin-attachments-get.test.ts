@@ -4,9 +4,8 @@ import { callAdmin, loginSessionCookie } from "#test/helpers/admin";
 import { sharedFake } from "#test/helpers/fake-prisma";
 
 const attachmentsIdHandler = (await import("#server/api/admin/attachments/[id].get")).default;
-const _attachmentsAllHandler = (await import("#server/api/admin/attachments/all.get")).default;
+const attachmentsAllHandler = (await import("#server/api/admin/attachments/all.get")).default;
 const contentsIdHandler = (await import("#server/api/admin/contents/[cid].get")).default;
-void _attachmentsAllHandler;
 
 const attachmentRows: Array<Record<string, unknown>> = [];
 attachmentRows.push({ aid: 1, title: "图1", type: "image", url: "https://x.com/a.jpg", size: 1024, metadata: JSON.stringify({ width: 100, height: 100, size: 1024 }), create_time: new Date(), contentattachments: [] });
@@ -108,5 +107,40 @@ describe("admin/contents/[cid].get", () => {
     expect(r.success).toBe(true);
     expect(r.data.cid).toBe(1);
     expect(r.data.title).toBeTruthy();
+  });
+});
+
+describe("admin/attachments/all.get(分页列表)", () => {
+  // attachments.findMany with include contentattachments → content
+  sharedFake.on("attachments", "findMany", async () => attachmentRows.map(a => ({
+    ...a,
+    contentattachments: [],
+  })));
+
+  test("未登录 → 401", async () => {
+    await expect(callAdmin(attachmentsAllHandler, { method: "GET" })).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  test("已登录 → 返回分页数据(list/total/page/pageSize)", async () => {
+    const cookie = await loginSessionCookie();
+    const r = await callAdmin(attachmentsAllHandler, {
+      method: "GET",
+      cookie,
+    }) as { success?: boolean, data?: { list: Array<{ id: number, name: string }>, total: number, page: number, pageSize: number } };
+    expect(r.success).toBe(true);
+    expect(Array.isArray(r.data?.list)).toBe(true);
+    expect(r.data?.total).toBe(1);
+  });
+
+  test("page/pageSize 钳制(超大值)", async () => {
+    const cookie = await loginSessionCookie();
+    const r = await callAdmin(attachmentsAllHandler, {
+      method: "GET",
+      cookie,
+      url: "/api/admin/attachments/all?page=999&pageSize=9999",
+    }) as { data?: { page: number, pageSize: number } };
+    // PAGE_MAX=10000/ADMIN_PAGE_SIZE_MAX=100,超大值钳制到上限
+    expect(r.data?.page).toBeLessThanOrEqual(10000);
+    expect(r.data?.pageSize).toBeLessThanOrEqual(1000);
   });
 });
