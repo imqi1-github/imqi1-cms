@@ -54,6 +54,11 @@ describe("getPublicDir / getUploadsDir", () => {
     expect(getUploadsDir()).toBe(join(process.cwd(), "rel/store"));
     delete process.env.UPLOADS_DIR;
   });
+
+  // 注:以下 3 个边界(空/空白/trim 后相对)在 test/zz-late/ 之外的同进程测试里会被
+  // test/server/routes/uploads.test.ts 的 mock.module 全替换 getUploadsDir 污染(它走
+  // 自己的 temp dir 而非 process.env),导致断言拿到 mock 版的返回值。本文件只能覆盖
+  // 「绝对路径 / 相对路径 / 默认」三条主路径,边界用 dev 手工 + production 部署验证。
 });
 
 describe("deleteAttachmentFile(本地分支)", () => {
@@ -79,5 +84,10 @@ describe("deleteAttachmentFile(本地分支)", () => {
   test("目标是目录(非 ENOENT 错误)→ 记录后不抛", async () => {
     mkdirSync(join(uploadsRoot, "2026", "01", "dir.png"));
     await deleteAttachmentFile({ storage: "local", url: "/uploads/2026/01/dir.png" });
+  });
+
+  test("URL 中段含 .. 但仍以 /uploads/ 开头 → 路径穿越拦截(不删)", async () => {
+    // getLocalUploadPath 用 split("/").some(s => s === "..") 拦(单独 .. 段,不是 /../)
+    await deleteAttachmentFile({ storage: "local", url: "/uploads/sub/../escape.png" });
   });
 });
