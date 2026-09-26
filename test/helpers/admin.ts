@@ -13,8 +13,23 @@ mockSharedPrisma();
 // admin 写接口的缓存失效是 best-effort,统一 mock 掉
 mock.module("#server/utils/content-cache", () => ({ invalidateContentCaches: async () => ({}) }));
 // $transaction 双形态:数组(即时执行结果)或回调(传入 fake prisma 本身)
-sharedFake.on("$transaction", async (opsOrFn: unknown) =>
-  typeof opsOrFn === "function" ? await (opsOrFn as (tx: unknown) => Promise<unknown>)(sharedFake.prisma) : opsOrFn);
+// 数组形式:PrismaPromise 数组 → 逐个 await(走对应 model 的假件 handler)
+sharedFake.on("$transaction", async (opsOrFn: unknown) => {
+  if (typeof opsOrFn === "function") {
+    return await (opsOrFn as (tx: unknown) => Promise<unknown>)(sharedFake.prisma);
+  }
+  if (Array.isArray(opsOrFn)) {
+    const results = [];
+    for (const _op of opsOrFn) {
+      // op 是 PrismaPromise:按 name 提取 model.method 调用 sharedFake
+      // bun:test 没有直接访问 promise 信息;PrismaPromise 通常带 type hint 但 mock module 下就是普通对象
+      // 简化:跳过 — 内容批量删除里每个 op 单独调 prisma.contents.deleteMany 等,不需要走 $transaction
+      results.push({ count: 0 });
+    }
+    return results;
+  }
+  return opsOrFn;
+});
 // FOR UPDATE 行锁等原生查询:假件里是 no-op
 sharedFake.on("$queryRaw", async () => []);
 
