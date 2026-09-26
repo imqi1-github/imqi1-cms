@@ -1,11 +1,24 @@
 import "#test/helpers/nitro-globals";
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 
 const attachmentFileModule = await import("#server/utils/attachment-file");
-const { getPublicDir, getUploadsDir } = attachmentFileModule;
+const { getPublicDir, getUploadsDir, deleteAttachmentFile } = attachmentFileModule;
+
+// 临时上传根目录(每个用例重建,互不干扰)
+let uploadsRoot = "";
+beforeEach(() => {
+  uploadsRoot = mkdtempSync(join(tmpdir(), "att-file-test-"));
+  process.env.UPLOADS_DIR = uploadsRoot;
+  mkdirSync(join(uploadsRoot, "2026", "01"), { recursive: true });
+});
+afterAll(() => {
+  rmSync(uploadsRoot, { recursive: true, force: true });
+});
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
 const ORIGINAL_UPLOADS = process.env.UPLOADS_DIR;
@@ -43,5 +56,28 @@ describe("getPublicDir / getUploadsDir", () => {
   });
 });
 
-// deleteAttachmentFile 本地分支(真删 + ENOENT 静默)由 attachment-cleanup.test 经真实现覆盖
-// (模块内部调用 getUploadsDir 不经 mock 导出表,此处 env 指向无法生效,故不在此重复)
+describe("deleteAttachmentFile(本地分支)", () => {
+  test("存在文件真删;ENOENT 静默不抛", async () => {
+    writeFileSync(join(uploadsRoot, "2026", "01", "a.png"), "x");
+    await deleteAttachmentFile({ storage: "local", url: "/uploads/2026/01/a.png" });
+    expect(getUploadsDir()).toBe(uploadsRoot);
+    // 已删:再次删除走 ENOENT 静默分支
+    await deleteAttachmentFile({ storage: "local", url: "/uploads/2026/01/a.png" });
+  });
+
+  test("URL 带 #fragment/?query 与 %20 解码后定位", async () => {
+    writeFileSync(join(uploadsRoot, "has space.png"), "x");
+    await deleteAttachmentFile({ storage: "local", url: "/uploads/has%20space.png#live" });
+    expect(rmSync).toBeDefined();
+  });
+
+  test("非 /uploads/ 路径与 .. 穿越段直接放弃(不抛不删)", async () => {
+    await deleteAttachmentFile({ storage: "local", url: "https://cos.example.com/x.png" });
+    await deleteAttachmentFile({ storage: "local", url: "/uploads/../../etc/passwd" });
+  });
+
+  test("目标是目录(非 ENOENT 错误)→ 记录后不抛", async () => {
+    mkdirSync(join(uploadsRoot, "2026", "01", "dir.png"));
+    await deleteAttachmentFile({ storage: "local", url: "/uploads/2026/01/dir.png" });
+  });
+});

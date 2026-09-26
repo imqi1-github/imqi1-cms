@@ -31,6 +31,8 @@ sharedFake.on("contentrelations", "findFirst", async () => ({ metas: { slug: "no
 sharedFake.on("contentrelations", "findMany", async () => []);
 
 // 站点设置假件:smtp 全配 + adminEmail
+// 设置覆盖表:handler 每次调用都重建 defaults,单测临时改值须走这里
+let mailSettingOverrides: Record<string, string> = {};
 sharedFake.on("informations", "findMany", async ({ where }: { where?: { key?: { in: string[] } } }) => {
   const defaults: Record<string, string> = {
     emailPushType: "smtp", smtpHost: "smtp.example.com", smtpPort: "465",
@@ -39,6 +41,7 @@ sharedFake.on("informations", "findMany", async ({ where }: { where?: { key?: { 
     adminEmail: "admin@example.com", notifyAdmin: "true", emailLogEnabled: "false",
     siteName: "测试站", siteUrl: "https://example.com",
   };
+  Object.assign(defaults, mailSettingOverrides);
   const keys = where?.key?.in ?? [];
   return keys.filter(k => defaults[k] !== undefined).map(k => ({ key: k, value: defaults[k] }));
 });
@@ -48,9 +51,11 @@ const {
   notifyAdminNewComment,
   notifyCommentReply,
   notifyAdminPendingComment,
+  notifyFriendLinkModification,
 } = await import("#server/utils/mail");
 
 beforeEach(() => {
+  mailSettingOverrides = {};
   sentMails.length = 0;
   contentRow = { title: "文章标题", slug: "post-a", type: 0, contentrelations: [{ metas: { slug: "note" } }] };
 });
@@ -101,5 +106,33 @@ describe("notifyCommentReply / notifyAdminPendingComment", () => {
   test("待审通知可调用", async () => {
     const ok = await notifyAdminPendingComment(10, "甲", "待审内容", 0, 5);
     expect(typeof ok).toBe("boolean");
+  });
+});
+
+describe("notifyFriendLinkModification", () => {
+  test("推送未启用 → false 且不发信", async () => {
+    mailSettingOverrides = { emailPushType: "none" };
+    const ok = await notifyFriendLinkModification(
+      { name: "老站", link: "https://old.com" },
+      { name: "新站", link: "https://new.com", desc: "新描述", avatar: "/a.png" },
+    );
+    expect(ok).toBe(false);
+    expect(sentMails).toHaveLength(0);
+    mailSettingOverrides = {};
+  });
+
+  test("正常:收件人站长、主题带站点名、新旧链接都进正文", async () => {
+    const ok = await notifyFriendLinkModification(
+      { name: "老站", link: "https://old.com" },
+      { name: "新站", link: "https://new.com", desc: "新描述", avatar: null },
+    );
+    expect(ok).toBe(true);
+    expect(sentMails).toHaveLength(1);
+    expect(sentMails[0]!.to).toBe("admin@example.com");
+    expect(String(sentMails[0]!.subject)).toContain("友链修改请求");
+    const html = String(sentMails[0]!.html);
+    expect(html).toContain("https://old.com");
+    expect(html).toContain("https://new.com");
+    expect(html).toContain("新描述");
   });
 });
