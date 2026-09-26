@@ -13,3 +13,19 @@
 - `test/real/` 放「要测真实现、不需要 mock」的文件（字典序最早，无污染风险）：captcha（真实 WASM 栅格化）、qqwry（真 ipdb）、prisma（真 PrismaClient + isPrismaNotFoundError）。
 - `test/zz-late/zzz/` 放**最后**才能跑的 mock 文件（rss-scheduler：它 mock 掉 `#server/utils/rss`，必须排在 `test/server/utils/zz-rss.test.ts` 之后——注意 `utils` 排在 `plugins` 前但 `zz-late` 在后，故整体移出 plugins 目录）。
 - `test/server/utils/zz-rss.test.ts`：需 mock `safe-fetch` 又要排在其真实测试（safe-fetch.test）之后，故用 `zz-` 前缀留在同目录（`u<n<z`）。
+
+## app/composables 测试（Nuxt auto-import 全局桩）
+
+`bun:test` 默认无 Nuxt 编译器、`useState`/`ref`/`watch`/`useNuxtApp`/`useRoute`/`navigateTo`/`$fetch` 都不是全局符号；裸 DOM（`localStorage`/`CSS`/`HTMLElement`）同样缺失。**不能**在 test 文件 inline 给 globalThis 赋值——ESM `import` 全部 hoisted，赋值语句永远在 `import "~/composables/..."` 之后执行，composable 内部调用已经 ReferenceError。
+
+通过 **bunfig.toml `[test] preload` + `Bun.plugin`** 解决：
+- `bunfig.toml`：`[test] preload = ["./test/helpers/bun-preload.ts"]`
+- `bun-preload.ts`：注册 plugin，`onLoad` 仅匹配 `test/app/composables/*.test.ts`，**首行注入 `import "./setup-composable-globals"`**
+- `setup-composable-globals.ts`：用 vue 真 `ref/watch/computed/...` + 自写的 `useState/useNuxtApp/useRoute/$fetch/navigateTo` 装到 globalThis（`writable: true` 让 mock 测试仍能覆盖）
+
+**绝不能上 plugin 改写 `app/composables/*.ts`**：
+- 注入 `import.meta.client = true` 会让 tsc/eslint 看到这些行 → 报「Cannot find name 'ref'」/lint 改规则 → 整仓库 typecheck + eslint 全红
+- plugin `onLoad` 会拦截 mock.module 链，破坏 vue-sonner 等 mock 的完整性（`useToast` 测试需要 `mock.module("vue-sonner", ...)`）
+- 受影响 composable（`useAdminPageSize` 用 `import.meta.client` 守 `localStorage.getItem`）测试断言只能覆盖「client=false 兜底」分支；要测「client=true 读 storage」必须加 happy-dom/jsdom（不在仓库依赖，本轮不动）
+
+**已测**：usePageTitle/useConfirm/useToast/useFadeOutOnNavigate/useLivePhoto(纯函数)/useAdminPageSize(fallback)/useLightbox(不依赖 module state 的部分)。
