@@ -68,8 +68,10 @@ export function resetMetas(seed: MetaRow[] = METAS_INITIAL): void {
 
 // metas 假件注册成可重复调用的函数:测试文件在 beforeEach 里调用以抢占最新注册
 // (mock.module 的 handler 表是全进程共享的,后注册者覆盖先注册者)
-export function registerMetasFakes(): void {
-  resetMetas();
+// seed 可选:不传则用 METAS_INITIAL(1 tag + 1 category);
+            // 某些资源(如 categories.delete 「至少保留一个分类」守卫)需要 ≥2 个 category
+export function registerMetasFakes(seed?: MetaRow[]): void {
+  resetMetas(seed);
   sharedFake.on("metas", "create", async ({ data }: { data: Omit<MetaRow, "mid"> }) => {
     if (metas.some(m => m.name === data.name || (data.slug && m.slug === data.slug))) throw prismaError("P2002");
     const row = { mid: metas.length + 100, ...data };
