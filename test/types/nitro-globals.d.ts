@@ -15,6 +15,8 @@ declare global {
   const getQuery: typeof import("h3").getQuery;
   const setResponseHeader: typeof import("h3").setResponseHeader;
   const sendStream: typeof import("h3").sendStream;
+  const sendRedirect: typeof import("h3").sendRedirect;
+  const readFormData: typeof import("h3").readFormData;
   // nitroApp 最小形状:插件测试只捕获 hooks.hook 注册
   const defineNitroPlugin: (fn: (nitroApp: {
     hooks: {
@@ -22,7 +24,8 @@ declare global {
     };
   }) => void) => (nitroApp?: unknown) => void;
   // redis.ts 等被测试 import 链拖进编译图时按需补的 runtimeConfig 最小形状
-  const useRuntimeConfig: () => { redis?: { host?: string; port?: number; db?: number }; buildHash?: string };
+  // amapUseServerProxy:server/api/amap/config.ts 在服务端读的开关
+  const useRuntimeConfig: () => { redis?: { host?: string; port?: number; db?: number }; buildHash?: string; amapUseServerProxy?: boolean };
   const getCommentAvatarService: typeof import("#server/utils/comment-avatar").getCommentAvatarService;
   const commentAvatarUrl: typeof import("#server/utils/comment-avatar").commentAvatarUrl;
 }
