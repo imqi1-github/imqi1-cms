@@ -2,7 +2,7 @@ import "#test/helpers/nitro-globals";
 
 import { beforeEach, describe, expect, test } from "bun:test";
 
-import { CSRF_COOKIE, CSRF_TOKEN, callAdmin, loginSessionCookie } from "#test/helpers/admin";
+import { CSRF_COOKIE, CSRF_TOKEN, callAdmin, loginSessionCookie, metas } from "#test/helpers/admin";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
@@ -79,6 +79,8 @@ sharedFake.on("links", "delete", async ({ where }: { where: { id: number } }) =>
 });
 
 const adminChangelogsHandler = (await import("#server/api/admin/changelogs.get")).default;
+const tagsHandler = (await import("#server/api/admin/tags.get")).default;
+const contentsListHandler = (await import("#server/api/admin/contents.get")).default;
 const changelogImportHandler = (await import("#server/api/admin/changelogs/import.post")).default;
 const commentBatchDeleteHandler = (await import("#server/api/admin/comments/batch-delete.post")).default;
 const statsHandler = (await import("#server/api/admin/stats.get")).default;
@@ -289,5 +291,51 @@ describe("admin/links/[id]/approve-modification.patch", () => {
     await call("9", { action: "reject" }, c);
     expect(linkUpdates).toHaveLength(0);
     expect(linkDeletes).toEqual([9]);
+  });
+});
+
+describe("admin 收尾域 分支补测", () => {
+  test("changelogs.get / recent-contents / stats:401 与 500", async () => {
+    await expect(callAdmin(adminChangelogsHandler, { method: "GET" })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(recentContentsHandler, { method: "GET" })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(statsHandler, { method: "GET" })).rejects.toMatchObject({ statusCode: 401 });
+
+    const ck = await cookie();
+    sharedFake.on("changelogs", "findMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(adminChangelogsHandler, { method: "GET", cookie: ck })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("changelogs", "findMany", async () => changelogRows.map(r => structuredClone(r)));
+
+    sharedFake.on("contents", "findMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(recentContentsHandler, { method: "GET", cookie: ck })).rejects.toMatchObject({ statusCode: 500 });
+
+    sharedFake.on("users", "count", async () => { throw new Error("db down"); });
+    await expect(callAdmin(statsHandler, { method: "GET", cookie: ck })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});
+
+describe("admin 只读端点 500 / 列表筛选", () => {
+  test("tags.get / travels.get:DB 异常 → 500", async () => {
+    const ck = await cookie();
+    sharedFake.on("metas", "findMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(tagsHandler, { method: "GET", cookie: ck })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("metas", "findMany", async () => metas.map(m => ({ ...m, _count: { contentrelations: 3 } })));
+
+    sharedFake.on("travels", "findMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(adminTravelsHandler, { method: "GET", cookie: ck })).rejects.toMatchObject({ statusCode: 500 });
+  });
+
+  test("contents.get:分类/标签/status 筛选进 where", async () => {
+    const ck = await cookie();
+    const seen: Array<Record<string, unknown>> = [];
+    sharedFake.on("contents", "findMany", async (args: { where: Record<string, unknown> }) => {
+      seen.push(args.where);
+      return [];
+    });
+    sharedFake.on("contentrelations", "findMany", async () => []);
+    sharedFake.on("contents", "count", async () => 0);
+
+    await callAdmin(contentsListHandler, { method: "GET", cookie: ck, url: "/api/admin/contents?status=1&category=2&tag=3" });
+    expect(JSON.stringify(seen[0])).toContain("contentrelations");
+    expect(seen[0]!.status).toBe(1);
   });
 });

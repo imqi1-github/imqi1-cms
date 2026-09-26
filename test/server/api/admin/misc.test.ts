@@ -21,9 +21,13 @@ mock.module("#server/utils/rss", () => ({
 }));
 const realMail = await import("#server/utils/mail").catch(() => ({} as Record<string, unknown>));
 let mailResult: { success: boolean; error?: string } = { success: true };
+let mailThrows = false;
 mock.module("#server/utils/mail", () => ({
   ...realMail,
-  sendTestEmail: async () => mailResult,
+  sendTestEmail: async () => {
+    if (mailThrows) throw new Error("smtp exploded");
+    return mailResult;
+  },
 }));
 
 const updateHandler = (await import("#server/api/admin/subscribes/update.post")).default;
@@ -70,5 +74,38 @@ describe("admin/mail/test.post", () => {
     mailResult = { success: false, error: "SMTP 连接失败" };
     const r = (await callAdmin(mailHandler, { cookie: await cookie(), body: { to: "a@b.c", csrfToken: CSRF_TOKEN } })) as Record<string, unknown>;
     expect(r.success).toBe(false);
+  });
+});
+
+describe("admin/mail/test.post 分支补测", () => {
+  test("未登录 → 401;缺收件人 → 400(adminEmail 兜底另测)", async () => {
+    await expect(callAdmin(mailHandler, { body: { csrfToken: CSRF_TOKEN, to: "a@b.c" } })).rejects.toMatchObject({ statusCode: 401 });
+    const c = await cookie();
+    await expect(callAdmin(mailHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  test("to 缺失时回退 body.adminEmail;sendTestEmail 抛错 → 500", async () => {
+    const c = await cookie();
+    await expect(callAdmin(mailHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, adminEmail: "admin@x.com" } })).resolves.toBeTruthy();
+
+    mailResult = { success: false, error: "SMTP boom" };
+    const r = (await callAdmin(mailHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, to: "a@b.c" } })) as { success: boolean };
+    expect(r.success).toBe(false);
+    mailResult = { success: true };
+  });
+
+  test("sendTestEmail 抛异常(未处理错误)→ 500;CSRF 缺失 → 403", async () => {
+    const session = await loginSessionCookie();
+    await expect(callAdmin(mailHandler, { cookie: session, body: { to: "a@b.c" } })).rejects.toMatchObject({ statusCode: 403 });
+
+    mailThrows = true;
+    await expect(callAdmin(mailHandler, { cookie: `${session}; ${CSRF_COOKIE}`, body: { csrfToken: CSRF_TOKEN, to: "a@b.c" } })).rejects.toMatchObject({ statusCode: 500 });
+    mailThrows = false;
+  });
+});
+
+describe("admin/subscribes/stats.get 分支补测", () => {
+  test("未登录 → 401", async () => {
+    await expect(callAdmin(statsHandler, { method: "GET" })).rejects.toMatchObject({ statusCode: 401 });
   });
 });

@@ -90,3 +90,64 @@ describe("admin/settings/init.post", () => {
     expect(r.data.total).toBeGreaterThan(10);
   });
 });
+
+describe("admin/cache/clear.post 分支补测", () => {
+  test("未登录 → 401(CSRF 先于鉴权)", async () => {
+    await expect(callAdmin(clearHandler, { cookie: CSRF_COOKIE, body: { csrfToken: CSRF_TOKEN, action: "all" } })).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  test("action=search 只删 search:* 前缀", async () => {
+    redisKeys.set("search:other", "r");
+    const session = await loginSessionCookie();
+    const r = (await callAdmin(clearHandler, { cookie: `${session}; ${CSRF_COOKIE}`, body: { csrfToken: CSRF_TOKEN, action: "search" } })) as { cleared: number };
+    expect(r.cleared).toBe(2);
+    expect(deletedKeys.every(k => k.startsWith("search:"))).toBe(true);
+    expect(redisKeys.has("nitro:routes:_:index.abc.json")).toBe(true);
+  });
+
+  test("action=footprint 只删 custom:footprint", async () => {
+    redisKeys.set("custom:footprint", "x");
+    const session = await loginSessionCookie();
+    const r = (await callAdmin(clearHandler, { cookie: `${session}; ${CSRF_COOKIE}`, body: { csrfToken: CSRF_TOKEN, action: "footprint" } })) as { cleared: number };
+    expect(r.cleared).toBe(1);
+    expect(deletedKeys).toEqual(["custom:footprint"]);
+  });
+
+  test("preset/keyword:缺关键词 → 400(两种文案);纯通配符 → 0 命中不扫库", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "preset" } })).rejects.toMatchObject({ statusCode: 400, message: "未知的缓存类别" });
+    await expect(callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "keyword", value: 5 } })).rejects.toMatchObject({ statusCode: 400, message: "请输入关键词" });
+    const r = (await callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "keyword", value: "***" } })) as { cleared: number };
+    expect(r.cleared).toBe(0);
+    expect(deletedKeys).toHaveLength(0);
+  });
+
+  test("未知 action → 400;redis 报错 → 500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "nope" } })).rejects.toMatchObject({ statusCode: 400, message: "未知的操作类型" });
+
+    redisKeys.set("boom", "x");
+    const origUnlink = (await import("#server/utils/redis")).redis!.unlink;
+    (await import("#server/utils/redis")).redis!.unlink = async () => { throw new Error("redis down"); };
+    await expect(callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "keyword", value: "boom" } })).rejects.toMatchObject({ statusCode: 500 });
+    (await import("#server/utils/redis")).redis!.unlink = origUnlink;
+  });
+});
+
+describe("admin/settings/init.post 分支补测", () => {
+  test("非 POST → 405;未登录 → 401;CSRF 缺失 → 403", async () => {
+    await expect(callAdmin(initHandler, { method: "GET" })).rejects.toMatchObject({ statusCode: 405 });
+    await expect(callAdmin(initHandler, { body: { csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    const session = await loginSessionCookie();
+    await expect(callAdmin(initHandler, { cookie: session, body: {} })).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  test("写入失败 → 500", async () => {
+    sharedFake.on("informations", "findMany", async () => []);
+    sharedFake.on("informations", "createMany", async () => { throw new Error("db down"); });
+    const session = await loginSessionCookie();
+    await expect(callAdmin(initHandler, { cookie: `${session}; ${CSRF_COOKIE}`, body: { csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});

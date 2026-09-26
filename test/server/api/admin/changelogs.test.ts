@@ -36,6 +36,35 @@ sharedFake.on("changelogs", "deleteMany", async ({ where }: { where: { id: { in:
   return { count: before - rows.length };
 });
 
+function registerChangelogFakes(): void {
+  sharedFake.on("changelogs", "create", async ({ data }: { data: { content: string } }) => {
+    const row = { id: rows.length + 1, content: data.content };
+    rows.push(row);
+    return { ...row };
+  });
+  sharedFake.on("changelogs", "findUnique", async ({ where }: { where: { id: number } }) => {
+    const row = rows.find(r => r.id === where.id);
+    return row ? { ...row } : null;
+  });
+  sharedFake.on("changelogs", "update", async ({ where, data }: { where: { id: number }; data: { content: string } }) => {
+    const row = rows.find(r => r.id === where.id);
+    if (!row) throw Object.assign(new Error("P2025"), { code: "P2025" });
+    row.content = data.content;
+    return { ...row };
+  });
+  sharedFake.on("changelogs", "delete", async ({ where }: { where: { id: number } }) => {
+    const i = rows.findIndex(r => r.id === where.id);
+    if (i === -1) throw Object.assign(new Error("P2025"), { code: "P2025" });
+    rows.splice(i, 1);
+    return {};
+  });
+  sharedFake.on("changelogs", "deleteMany", async ({ where }: { where: { id: { in: number[] } } }) => {
+    const before = rows.length;
+    rows = rows.filter(r => !where.id.in.includes(r.id));
+    return { count: before - rows.length };
+  });
+}
+
 const postHandler = (await import("#server/api/admin/changelogs.post")).default;
 const putHandler = (await import("#server/api/admin/changelogs/[id].put")).default;
 const deleteHandler = (await import("#server/api/admin/changelogs/[id].delete")).default;
@@ -92,5 +121,62 @@ describe("admin/changelogs", () => {
 
     await callAdmin(batchHandler, { cookie: c, body: { ids: [ids[1]!], csrfToken: CSRF_TOKEN } });
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe("admin/changelogs 分支补测", () => {
+  beforeEach(() => {
+    rows = [];
+    registerChangelogFakes();
+  });
+
+  test("PUT:400 非法 id / 403 CSRF / 404 不存在 / 500", async () => {
+    // 单端登录:同一测试内二次 loginSessionCookie 会作废前一个会话,故只登录一次
+    const c = await cookie();
+    const badCsrf = { method: "PUT", params: { id: "1" }, cookie: c, body: { content: [{ type: "修复", value: "x" }], csrfToken: "wrong" } };
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "abc" }, cookie: c, body: { ...entries("修复", "x"), csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(putHandler, badCsrf)).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { ...entries("修复", "x"), csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 404 });
+
+    rows = [{ id: 1, content: "[]" }];
+    sharedFake.on("changelogs", "update", async () => { throw new Error("db down"); });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { ...entries("修复", "x"), csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("changelogs", "update", async ({ where, data }: { where: { id: number }; data: { content: string } }) => {
+      const row = rows.find(r => r.id === where.id)!;
+      row.content = data.content;
+      return { ...row };
+    });
+  });
+
+  test("PUT:并发删除(P2025)→ 404", async () => {
+    const c = await cookie();
+    rows = [{ id: 1, content: "[]" }];
+    sharedFake.on("changelogs", "update", async () => { throw Object.assign(new Error("P2025"), { code: "P2025" }); });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { ...entries("修复", "x"), csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  test("DELETE:401/400/403/404/500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    const h = { "x-csrf-token": CSRF_TOKEN };
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, headers: h })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, cookie: session, headers: h })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "999" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 404 });
+
+    sharedFake.on("changelogs", "delete", async () => { throw new Error("db down"); });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 500 });
+  });
+
+  test("batch-delete:401/400/403/500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(batchHandler, { body: { ids: [1], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(batchHandler, { cookie: session, body: { ids: [1], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(batchHandler, { cookie: c, body: { ids: [], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(batchHandler, { cookie: c, body: { ids: ["x", -1], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+
+    sharedFake.on("changelogs", "deleteMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(batchHandler, { cookie: c, body: { ids: [1], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
   });
 });

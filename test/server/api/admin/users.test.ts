@@ -1,14 +1,15 @@
 import "#test/helpers/nitro-globals";
 
-import { beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import {
   TEST_PASSWORD,
   loginSessionCookie,
-  resetUsers, makeAuthEvent 
+  registerAuthFakes,
+  resetUsers, makeAuthEvent, getUserRow
 } from "#test/helpers/auth-fakes";
 import { CSRF_COOKIE, CSRF_TOKEN, callAdmin } from "#test/helpers/admin";
-import { mockSharedPrisma } from "#test/helpers/fake-prisma";
+import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
@@ -211,5 +212,119 @@ describe("admin/users/[id].put(IDOR + 唯一性)", () => {
     });
     const r = (await verify(event)) as { valid: boolean };
     expect(r.valid).toBe(true);
+  });
+});
+
+describe("admin/users 分支补测", () => {
+  afterEach(() => { registerAuthFakes(); resetUsers(); });
+
+  test("GET:404 目标不存在;500 DB 异常", async () => {
+    const session = await loginSessionCookie();
+    // getUser 也走 users.findUnique(select 含 auth_code),用 select 形态区分鉴权层与 handler 层
+    sharedFake.on("users", "findUnique", async ({ select }: { select?: Record<string, unknown> }) => {
+      if (select && "auth_code" in select) {
+        const row = getUserRow(1)!;
+        const out: Record<string, unknown> = {};
+        for (const k of Object.keys(select)) out[k] = (row as unknown as Record<string, unknown>)[k];
+        return out;
+      }
+      return null; // handler 层:目标不存在
+    });
+    await expect(callAdmin(getUserHandler, { method: "GET", params: { id: "1" }, cookie: session })).rejects.toMatchObject({ statusCode: 404 });
+
+    registerAuthFakes();
+    sharedFake.on("users", "findUnique", async ({ select }: { select?: Record<string, unknown> }) => {
+      if (select && "auth_code" in select) {
+        const row = getUserRow(1)!;
+        const out: Record<string, unknown> = {};
+        for (const k of Object.keys(select)) out[k] = (row as unknown as Record<string, unknown>)[k];
+        return out;
+      }
+      throw new Error("db down");
+    });
+    await expect(callAdmin(getUserHandler, { method: "GET", params: { id: "1" }, cookie: session })).rejects.toMatchObject({ statusCode: 500 });
+  });
+
+  test("PUT:401/400 前置;缺 id / 非法 id / 无 csrf", async () => {
+    const session = await loginSessionCookie();
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, body: { name: "x", mail: "a@b.c", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    const c = `${session}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "" }, cookie: c, body: { name: "x", mail: "a@b.c", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "abc" }, cookie: c, body: { name: "x", mail: "a@b.c", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, cookie: session, body: { name: "x", mail: "a@b.c", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "2" }, cookie: c, body: { name: "x", mail: "a@b.c", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  test("PUT:字段类型校验 → 400(nickname/avatar/password 非字符串)", async () => {
+    const c = await cookie();
+    const put = (body: Record<string, unknown>) => callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { csrfToken: CSRF_TOKEN, name: "admin", mail: "a@b.c", ...body } });
+    await expect(put({ nickname: 5 })).rejects.toMatchObject({ statusCode: 400, message: "昵称格式错误" });
+    await expect(put({ avatar: [] })).rejects.toMatchObject({ statusCode: 400, message: "头像格式错误" });
+    await expect(put({ password: 123 })).rejects.toMatchObject({ statusCode: 400, message: "密码格式错误" });
+    await expect(put({ name: 5 })).rejects.toMatchObject({ statusCode: 400, message: "用户名和邮箱不能为空" });
+  });
+
+  test("PUT:邮箱/用户名被他人占用 → 400", async () => {
+    const c = await cookie();
+    sharedFake.on("users", "findUnique", async ({ where, select }: { where: { uid?: number; name?: string; mail?: string }; select?: Record<string, unknown> }) => {
+      if (select && "auth_code" in select) {
+        const row = getUserRow(1)!;
+        const out: Record<string, unknown> = {};
+        for (const k of Object.keys(select)) out[k] = (row as unknown as Record<string, unknown>)[k];
+        return out;
+      }
+      if (where.mail === "taken@x.com") return { uid: 2, name: "别人", mail: "taken@x.com" };
+      if (where.name === "taken") return { uid: 2, name: "taken", mail: "o@x.com" };
+      return { uid: 1, name: "admin", nickname: "阿棋", mail: "a@b.c", avatar: null };
+    });
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { csrfToken: CSRF_TOKEN, name: "admin", mail: "taken@x.com" } })).rejects.toMatchObject({ statusCode: 400, message: "邮箱已被其他用户使用" });
+    await expect(callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { csrfToken: CSRF_TOKEN, name: "taken", mail: "a@b.c" } })).rejects.toMatchObject({ statusCode: 400, message: "用户名已被其他用户使用" });
+  });
+
+  test("PUT:404 / P2002 → 400 / P2025 → 404 / 未知 → 500", async () => {
+    const c = await cookie();
+    const put = () => callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { csrfToken: CSRF_TOKEN, name: "admin", mail: "a@b.c" } });
+
+    sharedFake.on("users", "findUnique", async ({ select }: { select?: Record<string, unknown> }) => {
+      if (select && "auth_code" in select) {
+        const row = getUserRow(1)!;
+        const out: Record<string, unknown> = {};
+        for (const k of Object.keys(select)) out[k] = (row as unknown as Record<string, unknown>)[k];
+        return out;
+      }
+      return null;
+    });
+    await expect(put()).rejects.toMatchObject({ statusCode: 404 });
+
+    registerAuthFakes();
+    sharedFake.on("users", "update", async () => { throw Object.assign(new Error("P2002"), { code: "P2002" }); });
+    await expect(put()).rejects.toMatchObject({ statusCode: 400, message: "用户名或邮箱已被使用" });
+
+    registerAuthFakes();
+    sharedFake.on("users", "update", async () => { throw Object.assign(new Error("P2025"), { code: "P2025" }); });
+    await expect(put()).rejects.toMatchObject({ statusCode: 404 });
+
+    registerAuthFakes();
+    sharedFake.on("users", "update", async () => { throw new Error("db down"); });
+    await expect(put()).rejects.toMatchObject({ statusCode: 500 });
+  });
+
+  test("PUT:nickname/avatar 空值存 null;password 空串不改密码", async () => {
+    const cookieStr = await cookie();
+    // 不能在此 resetUsers():setSession 已旋转 auth_code,会话与之绑定(cookie 早于 reset 会失配 401)
+    const updated: Array<Record<string, unknown>> = [];
+    sharedFake.on("users", "update", async ({ data, select }: { data: Record<string, unknown>; select?: Record<string, unknown> }) => {
+      updated.push({ ...data });
+      const row = { uid: 1, name: "admin", nickname: null, mail: "a@b.c", avatar: null, create_time: new Date() };
+      if (!select) return row;
+      const out: Record<string, unknown> = {};
+      for (const k of Object.keys(select)) out[k] = (row as Record<string, unknown>)[k];
+      return out;
+    });
+    const r = (await callAdmin(putUserHandler, { method: "PUT", params: { id: "1" }, cookie: cookieStr, body: { csrfToken: CSRF_TOKEN, name: "admin", mail: "a@b.c", nickname: null, avatar: null, password: "" } })) as { success: boolean };
+    expect(r.success).toBe(true);
+    expect(updated[0]!.nickname).toBeNull();
+    expect(updated[0]!.avatar).toBeNull();
+    expect(updated[0]!.password).toBeUndefined();
   });
 });

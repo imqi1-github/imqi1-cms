@@ -153,3 +153,83 @@ describe("admin/contents delete / batch-delete", () => {
     expect(contents.find(c => c.cid === 30)).toBeUndefined();
   });
 });
+
+describe("admin/contents 分支补测", () => {
+  test("写接口未登录 → 401(POST/PUT/DELETE/batch)", async () => {
+    await expect(callAdmin(putHandler, { method: "PUT", params: { cid: "10" }, body: { title: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(deleteOneHandler, { method: "DELETE", params: { cid: "10" }, headers: { "x-csrf-token": CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(batchDeleteHandler, { body: { ids: [10], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  test("DELETE:非法 cid → 400;batch-delete CSRF 走 body → 403", async () => {
+    const c = await cookie();
+    const h = { "x-csrf-token": CSRF_TOKEN };
+    await expect(callAdmin(deleteOneHandler, { method: "DELETE", params: { cid: "abc" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 400 });
+    const session = await loginSessionCookie();
+    await expect(callAdmin(batchDeleteHandler, { cookie: session , body: { ids: [10], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  test("GET 列表:分页参数钳制 + status/type 筛选", async () => {
+    const r = (await callAdmin(getHandler, { method: "GET", cookie: await cookie(), url: "/api/admin/contents?page=-3&pageSize=0" })) as { pagination: { page: number; pageSize: number } };
+    expect(r.pagination.page).toBe(1);
+    expect(r.pagination.pageSize).toBeGreaterThanOrEqual(1);
+  });
+
+  test("GET 列表:DB 异常 → 500(列表有 catch;单篇无 catch 原样抛)", async () => {
+    const c = await cookie();
+    sharedFake.on("contents", "count", async () => { throw new Error("db down"); });
+    await expect(callAdmin(getHandler, { method: "GET", cookie: c })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("contents", "count", async () => contents.length);
+  });
+
+  test("PUT:401 未登录;500 未知异常", async () => {
+    await expect(callAdmin(putHandler, { method: "PUT", params: { cid: "10" }, body: { title: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+
+    const c = await cookie();
+    sharedFake.on("contents", "update", async () => { throw new Error("db down"); });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { cid: "10" }, cookie: c, body: { title: "改名", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("contents", "update", async ({ where, data }: { where: { cid: number }; data: Record<string, unknown> }) => {
+      const row = contents.find(x => x.cid === where.cid)!;
+      Object.assign(row, data);
+      return { ...row };
+    });
+  });
+});
+
+describe("admin/contents/[cid].delete 分支补测", () => {
+  test("401 未登录;400 缺 cid / 非法 cid", async () => {
+    await expect(callAdmin(deleteOneHandler, { method: "DELETE", params: { cid: "10" }, headers: { "x-csrf-token": CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    const c = await cookie();
+    await expect(callAdmin(deleteOneHandler, { method: "DELETE", params: { cid: "" }, cookie: c, headers: { "x-csrf-token": CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteOneHandler, { method: "DELETE", params: { cid: "0" }, cookie: c, headers: { "x-csrf-token": CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+describe("admin/contents.get / [cid].get 分支补测", () => {
+  test("GET 列表:401;GET 单篇:401", async () => {
+    await expect(callAdmin(getHandler, {})).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(getOneHandler, { method: "GET", params: { cid: "10" } })).rejects.toMatchObject({ statusCode: 401 });
+  });
+});
+
+describe("admin/contents/[cid].put 校验矩阵", () => {
+  test("字段类型非法 → 400(desc/content/slug/publishDate/type)", async () => {
+    const c = await cookie();
+    const put = (body: Record<string, unknown>) => callAdmin(putHandler, { method: "PUT", params: { cid: "10" }, cookie: c, body: { csrfToken: CSRF_TOKEN, title: "标题", ...body } });
+    await expect(put({ desc: 5 })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(put({ content: {} })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(put({ slug: 5 })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(put({ publishDate: "not-a-date" })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(put({ type: "abc" })).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  test("无 slug 且原文无 slug → 用 cid 作 slug;未登录 → 401", async () => {
+    await expect(callAdmin(putHandler, { method: "PUT", params: { cid: "10" }, body: { title: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+
+    const c = await cookie();
+    contents[0]!.slug = null;
+    const r = (await callAdmin(putHandler, { method: "PUT", params: { cid: "10" }, cookie: c, body: { title: "标题", csrfToken: CSRF_TOKEN } })) as { success: boolean };
+    expect(r.success).toBe(true);
+    expect(contents.find(x => x.cid === 10)?.slug).toBe("10");
+  });
+});

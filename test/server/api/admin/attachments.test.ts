@@ -120,3 +120,102 @@ describe("admin/attachments/[id].patch(改名)", () => {
     expect(rows[0]!.title).toBe("改名附件");
   });
 });
+
+// contentattachments 假件(补测的 cids 关联需要)
+const contentAttachments: Array<{ aid: number; cid: number }> = [];
+function registerAttachmentExtraFakes(): void {
+  sharedFake.on("contentattachments", "deleteMany", async ({ where }: { where: { aid: number } }) => {
+    const before = contentAttachments.length;
+    for (let i = contentAttachments.length - 1; i >= 0; i--) {
+      if (contentAttachments[i]!.aid === where.aid) contentAttachments.splice(i, 1);
+    }
+    return { count: before - contentAttachments.length };
+  });
+  sharedFake.on("contentattachments", "createMany", async ({ data }: { data: Array<{ aid: number; cid: number }> }) => {
+    data.forEach(d => contentAttachments.push({ ...d }));
+    return { count: data.length };
+  });
+}
+
+describe("admin/attachments/[id].get 分支补测", () => {
+  beforeEach(registerAttachmentExtraFakes);
+
+  test("未登录 → 401;无效 id → 400", async () => {
+    await expect(callAdmin(getOneHandler, { method: "GET", params: { id: "1" } })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(getOneHandler, { method: "GET", params: { id: "abc" }, cookie: await loginSessionCookie() })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(getOneHandler, { method: "GET", params: { id: "0" }, cookie: await loginSessionCookie() })).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  test("metadata 无 format 时从 URL pathname 扩展名推断(image)", async () => {
+    const session = await loginSessionCookie();
+    rows[0]!.metadata = { size: 10 };
+    rows[0]!.url = "https://cdn.example.com/a/b.png?size=large#x";
+    const r = (await callAdmin(getOneHandler, { method: "GET", params: { id: "1" }, cookie: session })) as { data: { format: string | null; width: unknown } };
+    expect(r.data.format).toBe("png");
+  });
+
+  test("非 image 类型不推断 format;非法 URL 兜底 null;404;500", async () => {
+    const session = await loginSessionCookie();
+    rows[1]!.metadata = null;
+    const r = (await callAdmin(getOneHandler, { method: "GET", params: { id: "2" }, cookie: session })) as { data: { format: string | null } };
+    expect(r.data.format).toBeNull();
+
+    rows[0]!.metadata = null;
+    rows[0]!.url = "not-a-url";
+    const r2 = (await callAdmin(getOneHandler, { method: "GET", params: { id: "1" }, cookie: session })) as { data: { format: string | null } };
+    expect(r2.data.format).toBeNull();
+
+    await expect(callAdmin(getOneHandler, { method: "GET", params: { id: "999" }, cookie: session })).rejects.toMatchObject({ statusCode: 404 });
+
+    sharedFake.on("attachments", "findUnique", async () => { throw new Error("db down"); });
+    await expect(callAdmin(getOneHandler, { method: "GET", params: { id: "1" }, cookie: session })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});
+
+describe("admin/attachments/[id].patch 分支补测", () => {
+  beforeEach(() => { contentAttachments.length = 0; registerAttachmentExtraFakes(); });
+
+  test("未登录 → 401;无效 id → 400;CSRF 缺失 → 403;404 不存在", async () => {
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "abc" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: session, body: { name: "x" } })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "999" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  test("改名:cids 未传时不动关联;name 非字符串收窄为空串", async () => {
+    const c = await cookie();
+    const r = (await callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: 123, csrfToken: CSRF_TOKEN } })) as { success: boolean; data: Record<string, unknown> };
+    expect(r.success).toBe(true);
+    expect(r.data.name).toBe("");
+    expect(contentAttachments).toHaveLength(0);
+  });
+
+  test("cids 全量替换并去重;空数组清空关联", async () => {
+    const c = await cookie();
+    await callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "图甲", cids: [10, 10, "20"], csrfToken: CSRF_TOKEN } });
+    expect(contentAttachments.map(x => x.cid).sort()).toEqual([10, 20]);
+
+    await callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "图甲", cids: [], csrfToken: CSRF_TOKEN } });
+    expect(contentAttachments).toHaveLength(0);
+  });
+
+  test("cids 非法元素/非数组 → 400(绝不静默清空)", async () => {
+    const c = await cookie();
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "x", cids: [0], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "cids 格式错误" });
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "x", cids: [1.5], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "cids 格式错误" });
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "x", cids: "nope", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "cids 格式错误" });
+    expect(contentAttachments).toHaveLength(0);
+  });
+
+  test("cids 关联不存在内容(P2003)→ 400;未知 → 500", async () => {
+    const c = await cookie();
+    sharedFake.on("contentattachments", "createMany", async () => { throw Object.assign(new Error("P2003"), { code: "P2003" }); });
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "x", cids: [99], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "存在无效的关联内容" });
+
+    registerAttachmentExtraFakes();
+    sharedFake.on("attachments", "update", async () => { throw new Error("db down"); });
+    await expect(callAdmin(patchHandler, { method: "PATCH", params: { id: "1" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});

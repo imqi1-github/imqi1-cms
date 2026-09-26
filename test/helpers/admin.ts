@@ -92,8 +92,18 @@ export function registerMetasFakes(): void {
   });
   sharedFake.on("metas", "findFirst", async ({ where }: { where: Record<string, unknown> }) =>
     metas.find(m =>
-      Object.entries(where).every(([k, v]) =>
-        v === undefined || v === null ? true : (m as unknown as Record<string, unknown>)[k] === v)) ?? null);
+      Object.entries(where).every(([k, v]) => {
+        if (v === undefined || v === null) return true;
+        const actual = (m as unknown as Record<string, unknown>)[k];
+        // 支持 Prisma 的 { not } / { in } 过滤(handler 用 mid: { not } 排除自身)
+        if (typeof v === "object" && v !== null) {
+          const cond = v as { not?: unknown; in?: unknown[] };
+          if (cond.not !== undefined) return actual !== cond.not;
+          if (cond.in !== undefined) return cond.in.includes(actual);
+          return true;
+        }
+        return actual === v;
+      })) ?? null);
   sharedFake.on("metas", "count", async ({ where }: { where: { type: string } }) =>
     metas.filter(m => m.type === where.type).length);
   sharedFake.on("metas", "findMany", async ({ where }: { where: { type?: string; mid?: { in: number[] } } }) =>

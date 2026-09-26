@@ -3,7 +3,7 @@ import "#test/helpers/nitro-globals";
 import { beforeEach, describe, expect, test } from "bun:test";
 
 import { CSRF_COOKIE, CSRF_TOKEN, callAdmin, loginSessionCookie, registerMetasFakes, resetMetas } from "#test/helpers/admin";
-import { mockSharedPrisma } from "#test/helpers/fake-prisma";
+import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
@@ -84,5 +84,64 @@ describe("admin/tags:校验与业务分支", () => {
     await callAdmin(deleteTag, { method: "DELETE", params: { id: "1" }, cookie: `${session}; ${CSRF_COOKIE}`, headers: h });
     const list = (await callAdmin(getTags, { method: "GET", cookie: session })) as Array<Record<string, unknown>>;
     expect(list.find(t => t.mid === 1)).toBeUndefined();
+  });
+});
+
+describe("admin/tags 分支补测", () => {
+  test("POST:401/400 类型校验/500", async () => {
+    await expect(callAdmin(createTag, { body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    const c = `${await loginSessionCookie()}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(createTag, { cookie: c, body: { name: 123, csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "标签名称不能为空" });
+    await expect(callAdmin(createTag, { cookie: c, body: { name: "  ", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "标签名称不能为空" });
+    await expect(callAdmin(createTag, { cookie: c, body: { name: "x", slug: 5, csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "标签标识格式错误" });
+    await expect(callAdmin(createTag, { cookie: c, body: { name: "x", desc: [], csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "标签描述格式错误" });
+
+    sharedFake.on("metas", "create", async () => { throw new Error("db down"); });
+    await expect(callAdmin(createTag, { cookie: c, body: { name: "新标签", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+    registerMetasFakes();
+  });
+
+  test("PUT:401/400/403/404/500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "1" }, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "abc" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "1" }, cookie: session, body: { name: "x" } })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "1" }, cookie: c, body: { name: 123, csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "标签名称不能为空" });
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "1" }, cookie: c, body: { name: "x", slug: {}, csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400, message: "标签标识格式错误" });
+
+    sharedFake.on("metas", "findUnique", async () => null);
+    sharedFake.on("metas", "updateMany", async () => ({ count: 1 }));
+    const r = (await callAdmin(updateTag, { method: "PUT", params: { id: "1" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })) as unknown;
+    expect(r).toBeNull();
+
+    registerMetasFakes();
+    sharedFake.on("metas", "updateMany", async () => ({ count: 0 }));
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "999" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 404 });
+
+    registerMetasFakes();
+    sharedFake.on("metas", "updateMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(updateTag, { method: "PUT", params: { id: "1" }, cookie: c, body: { name: "x", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+    registerMetasFakes();
+  });
+
+  test("DELETE:401/400/403/404/type 隔离/500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    const h = { "x-csrf-token": CSRF_TOKEN };
+    await expect(callAdmin(deleteTag, { method: "DELETE", params: { id: "1" }, headers: h })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(deleteTag, { method: "DELETE", params: { id: "" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteTag, { method: "DELETE", params: { id: "1" }, cookie: session, headers: h })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(deleteTag, { method: "DELETE", params: { id: "abc" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteTag, { method: "DELETE", params: { id: "999" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 404 });
+
+    // 数组式 $transaction 默认不 await 各 op,这里改为真实语义(等待并暴露失败)
+    sharedFake.on("$transaction", async (ops: unknown) => (Array.isArray(ops) ? await Promise.all(ops as Promise<unknown>[]) : ops));
+    sharedFake.on("metas", "delete", async () => { throw new Error("db down"); });
+    await expect(callAdmin(deleteTag, { method: "DELETE", params: { id: "1" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("$transaction", async (opsOrFn: unknown) =>
+      typeof opsOrFn === "function" ? await (opsOrFn as (tx: unknown) => Promise<unknown>)(sharedFake.prisma) : opsOrFn);
+    registerMetasFakes();
   });
 });

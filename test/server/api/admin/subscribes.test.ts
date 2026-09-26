@@ -71,3 +71,59 @@ describe("admin/subscribes", () => {
     await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, cookie: c, headers: { "x-csrf-token": CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 404 });
   });
 });
+
+describe("admin/subscribes 分支补测", () => {
+  test("GET 成功:白名单字段 + lastUpdateStatus", async () => {
+    const r = (await callAdmin(getHandler, { method: "GET", cookie: await loginSessionCookie() })) as Array<Record<string, unknown>>;
+    expect(r[0]).toMatchObject({ id: 1, name: "旧订阅", url: "https://old.com/feed" });
+    expect(r[0]).toHaveProperty("lastUpdateStatus");
+  });
+
+  test("GET:DB 异常 → 500", async () => {
+    sharedFake.on("subscribes", "findMany", async () => { throw new Error("db down"); });
+    await expect(callAdmin(getHandler, { method: "GET", cookie: await loginSessionCookie() })).rejects.toMatchObject({ statusCode: 500 });
+  });
+
+  test("DELETE:401/400/403/404/500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    const h = { "x-csrf-token": CSRF_TOKEN };
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, headers: h })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "abc" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, cookie: session, headers: h })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "999" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 404 });
+
+    sharedFake.on("subscribes", "delete", async () => { throw new Error("db down"); });
+    await expect(callAdmin(deleteHandler, { method: "DELETE", params: { id: "1" }, cookie: c, headers: h })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});
+
+describe("admin/subscribes 分支补测 2", () => {
+  test("POST:401/400 必填与类型/500", async () => {
+    await expect(callAdmin(postHandler, { body: { name: "x", url: "https://x.com", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 401 });
+    const c = await cookie();
+    await expect(callAdmin(postHandler, { cookie: c, body: { name: "", url: "https://x.com", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(postHandler, { cookie: c, body: { name: "x", url: "", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(postHandler, { cookie: c, body: { name: 5, url: "https://x.com", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    // avatar 非字符串 → 存 null
+    const ok = (await callAdmin(postHandler, { cookie: c, body: { name: "新订阅", url: "https://new.com/feed", avatar: 5, csrfToken: CSRF_TOKEN } })) as { avatar: string | null };
+    expect(ok.avatar).toBeNull();
+
+    sharedFake.on("subscribes", "create", async () => { throw new Error("db down"); });
+    await expect(callAdmin(postHandler, { cookie: c, body: { name: "另一个", url: "https://y.com/feed", csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 500 });
+  });
+
+  test("PUT:401/400/403/404/500", async () => {
+    const session = await loginSessionCookie();
+    const c = `${session}; ${CSRF_COOKIE}`;
+    const body = { name: "新名", url: "https://new.com/feed", csrfToken: CSRF_TOKEN };
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, body })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: session, body })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { ...body, name: "" } })).rejects.toMatchObject({ statusCode: 400, message: "名称和链接为必填项" });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: c, body: { ...body, url: "" } })).rejects.toMatchObject({ statusCode: 400, message: "名称和链接为必填项" });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "999" }, cookie: c, body })).rejects.toMatchObject({ statusCode: 404 });
+
+    sharedFake.on("subscribes", "update", async () => { throw new Error("db down"); });
+    await expect(callAdmin(putHandler, { method: "PUT", params: { id: "1" }, cookie: c, body })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});

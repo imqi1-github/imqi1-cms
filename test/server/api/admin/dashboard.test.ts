@@ -25,6 +25,7 @@ sharedFake.on("contents", "findMany", async ({ where }: { where?: { type?: numbe
 let commentRows: Array<{ coid: number; cid: number; name: string; content: string; create_time: Date; status: number; parent_id: null }> = [];
 sharedFake.on("comments", "findMany", async () => commentRows.map(c => ({ ...c, content_ref: null })));
 
+const detailedStatsHandler = (await import("#server/api/admin/detailed-stats.get")).default;
 const systemInfoHandler = (await import("#server/api/admin/system-info.get")).default;
 const popularHandler = (await import("#server/api/admin/popular-contents.get")).default;
 const recentCommentsHandler = (await import("#server/api/admin/recent-comments.get")).default;
@@ -70,5 +71,36 @@ describe("admin/dashboard 只读端点", () => {
     expect(r.attachments.count).toBe(3);
     expect(r.attachments.totalSize).toBe(150); // null metadata 归一为 size 0
     expect(typeof r.nodeVersion).toBe("string");
+  });
+});
+
+describe("admin/detailed-stats 分支补测", () => {
+  test("未登录 → 401;DB 异常 → 500", async () => {
+    await expect(detailedStatsHandler(makeAuthEvent({ peer: "10.9.5.1" }).event)).rejects.toMatchObject({ statusCode: 401 });
+    sharedFake.on("metas", "count", async () => { throw new Error("db down"); });
+    const session = await loginSessionCookie();
+    await expect(detailedStatsHandler(makeAuthEvent({ method: "GET", cookie: session, peer: "10.9.5.2" }).event)).rejects.toMatchObject({ statusCode: 500 });
+  });
+});
+
+describe("admin 只读端点 分支补测", () => {
+  test("popular-contents / recent-comments / system-info:未登录 → 401", async () => {
+    await expect(popularHandler(makeAuthEvent({ peer: "10.9.6.1" }).event)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(recentCommentsHandler(makeAuthEvent({ peer: "10.9.6.2" }).event)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(systemInfoHandler(makeAuthEvent({ peer: "10.9.6.3" }).event)).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  test("popular-contents / recent-comments / system-info:DB 异常 → 500", async () => {
+    const session = await loginSessionCookie();
+    const ev = (peer: string) => makeAuthEvent({ method: "GET", cookie: session, peer }).event;
+
+    sharedFake.on("contents", "findMany", async () => { throw new Error("db down"); });
+    await expect(popularHandler(ev("10.9.6.4"))).rejects.toMatchObject({ statusCode: 500 });
+
+    sharedFake.on("comments", "findMany", async () => { throw new Error("db down"); });
+    await expect(recentCommentsHandler(ev("10.9.6.5"))).rejects.toMatchObject({ statusCode: 500 });
+
+    sharedFake.on("attachments", "findMany", async () => { throw new Error("db down"); });
+    await expect(systemInfoHandler(ev("10.9.6.6"))).rejects.toMatchObject({ statusCode: 500 });
   });
 });

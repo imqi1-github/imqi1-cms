@@ -169,3 +169,51 @@ describe("admin/comments/[id].delete", () => {
     expect(contentCounts.get(10)).toBe(1);
   });
 });
+
+describe("admin/comments 分支补测", () => {
+  beforeEach(seedComments);
+
+  test("PATCH:400 缺 id / 非法 id;500 未知异常", async () => {
+    const c = await cookie();
+    await expect(callAdmin(patchComment, { method: "PATCH", params: { id: "" }, cookie: c, body: { csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(patchComment, { method: "PATCH", params: { id: "abc" }, cookie: c, body: { csrfToken: CSRF_TOKEN } })).rejects.toMatchObject({ statusCode: 400 });
+
+    sharedFake.on("comments", "update", async () => { throw new Error("db down"); });
+    await expect(callAdmin(patchComment, { method: "PATCH", params: { id: "1" }, cookie: c, body: { csrfToken: CSRF_TOKEN, status: 1 } })).rejects.toMatchObject({ statusCode: 500 });
+    sharedFake.on("comments", "update", async ({ where, data }: { where: { coid: number }; data: Partial<CommentRow> }) => {
+      const row = comments.find(x => x.coid === where.coid);
+      if (!row) throw Object.assign(new Error("P2025"), { code: "P2025" });
+      Object.assign(row, data);
+      return {
+        coid: row.coid, cid: row.cid, name: row.name, link: row.link, content: row.content,
+        create_time: row.create_time, status: row.status, parent_id: row.parent_id,
+        content_ref: { cid: row.cid, title: `文章${row.cid}`, slug: `post-${row.cid}` },
+      };
+    });
+  });
+
+  test("DELETE:400 缺 id / 非法 id;401", async () => {
+    const c = await cookie();
+    await expect(callAdmin(deleteComment, { method: "DELETE", params: { id: "1" }, headers: H() })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(callAdmin(deleteComment, { method: "DELETE", params: { id: "" }, cookie: c, headers: H() })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteComment, { method: "DELETE", params: { id: "abc" }, cookie: c, headers: H() })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(callAdmin(deleteComment, { method: "DELETE", params: { id: "abc" }, cookie: (await loginSessionCookie()), headers: H() })).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  test("DELETE:计数更新时文章已被删(P2025)→ 404", async () => {
+    const c = await cookie();
+    sharedFake.on("contents", "update", async () => { throw Object.assign(new Error("P2025"), { code: "P2025" }); });
+    await expect(callAdmin(deleteComment, { method: "DELETE", params: { id: "1" }, cookie: c, headers: H() })).rejects.toMatchObject({ statusCode: 404 });
+    sharedFake.on("contents", "update", async ({ where, data }: { where: { cid: number }; data: { comment_num: { increment?: number; decrement?: number } } }) => {
+      const cur = contentCounts.get(where.cid) ?? 0;
+      if (data.comment_num.increment) contentCounts.set(where.cid, cur + data.comment_num.increment);
+      if (data.comment_num.decrement) contentCounts.set(where.cid, cur - data.comment_num.decrement);
+      return {};
+    });
+  });
+
+  test("GET:DB 异常 → 500;status 非法值被丢弃", async () => {
+    sharedFake.on("comments", "count", async () => { throw new Error("db down"); });
+    await expect(callAdmin(getComments, { method: "GET", cookie: await cookie() })).rejects.toMatchObject({ statusCode: 500 });
+  });
+});
