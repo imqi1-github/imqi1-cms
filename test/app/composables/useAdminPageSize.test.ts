@@ -2,6 +2,13 @@ import { describe, expect, test } from "bun:test";
 
 import { useAdminPageSize } from "~/composables/useAdminPageSize";
 
+// 注:client=true 分支(读 localStorage / watch 写回)无法直接覆盖 ——
+// import.meta.client 是模块级 Vite 编译期常量,bun:test 环境为 undefined。
+// 在测试文件顶层 import.meta.client = true 改的是测试模块的 meta,不会传到源码模块;
+// 用 Bun.plugin 在 app/composables/*.ts 注 client=true 会污染 tsc/eslint + 破坏 mock.module 链
+// (见 .claude/memory/bun-mock-module-leak-zz-late-layout.md)。
+// 因此本文件仅覆盖 fallback 分支,client 分支的真实行为靠手工 dev 验证。
+
 describe("useAdminPageSize fallback path (import.meta.client=false 测试环境)", () => {
   test("无存储/localStorage 不可用时回落到 fallback", () => {
     const { pageSize } = useAdminPageSize(20);

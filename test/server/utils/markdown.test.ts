@@ -173,3 +173,171 @@ describe("renderSimpleMarkdown(评论等短文本)", () => {
     expect(renderSimpleMarkdown("")).toBe("");
   });
 });
+
+describe("renderMarkdown:getLinkChipDomain 兜底分支", () => {
+  test("链接 URL 无效时(解析失败)命中兜底:不抛、不插入图标", async () => {
+    // 缺协议 + 含非法字符的 URL,new URL 会抛 → getLinkChipDomain catch → 返回 null
+    const html = await renderMarkdown("[bad](::::not a url::::)");
+    expect(html).not.toContain("markdown-link-icon");
+  });
+
+  test("非 http/https 协议(如 ftp: / data:)不命中域名卡片", async () => {
+    const ftp = await renderMarkdown("[t](ftp://github.com/foo)");
+    const data = await renderMarkdown("[t](data:text/plain,abc)");
+    expect(ftp).not.toContain("markdown-link-icon");
+    expect(data).not.toContain("markdown-link-icon");
+  });
+});
+
+describe("renderMarkdown:图片变体", () => {
+  test("无 alt 文本的普通图片:仅 img,不包 figure/figcaption,灯箱契约保留", async () => {
+    const html = await renderMarkdown("![](https://x.com/a.webp)");
+    expect(html).toContain("<img");
+    expect(html).toContain('data-lightbox="gallery"');
+    expect(html).not.toContain("<figure");
+    expect(html).not.toContain("figcaption");
+  });
+
+  test("#live 实况照片且无 caption:data-params 只编码 src", async () => {
+    // src 须带 #live 后缀触发实况照片分支(alt 留空)
+    const html = await renderMarkdown("![](https://x.com/a.jpg#live)");
+    expect(html).toContain("markdown-live-photo-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("https://x.com/a.jpg#live");
+  });
+});
+
+describe("renderMarkdown:代码块 parseFenceInfo 边界", () => {
+  test("语言+文件名格式缺文件扩展分隔符(无 . / \\):回退用纯语言作 className", async () => {
+    // parseFenceInfo: separatorIndex>0,「py+nosep」不在支持集,baseLang="py",possibleFileName="nosep"
+    // 缺 . / \\ → 走 line 269 分支,返回 { shikiLang: "py", className: "py" }
+    // fence: shikiLang="py" 受支持,shikiClassName="py" === className,不变替换
+    const html = await renderMarkdown("```py+nosep\nprint(1)\n```");
+    expect(html).toContain("language-py");
+  });
+
+  test("首字符为 + 的 fence(separatorIndex=0):走语言原样返回分支后由未知语言兜底", async () => {
+    // separatorIndex=0 ≤ 0 → { shikiLang: "+nosep", className: "+nosep" }
+    // +nosep 不在支持集 → renderPlainCode 纯文本兜底,className 直接拼成 language-+nosep
+    const html = await renderMarkdown("```+nosep\nx\n```");
+    expect(html).toContain('<pre class="shiki language-+nosep"');
+  });
+
+  test("info 仅空白(无语言):走 renderPlainCode,不抛", async () => {
+    const html = await renderMarkdown("```\nplain\n```");
+    expect(html).toContain("<pre class=\"shiki");
+  });
+});
+
+describe("renderMarkdown:容器扩展覆盖", () => {
+  test("video 容器:data-url 转义编码,不含协议无关字符", async () => {
+    // validate "^video\\s+(.+)$" 捕获整行,URL 后不要写多余内容(否则被一起塞进 data-url)
+    const html = await renderMarkdown("::: video https://example.com/v.mp4\n:::");
+    expect(html).toContain("markdown-video-wrapper");
+    expect(html).toMatch(/data-url="https:\/\/example\.com\/v\.mp4"/);
+  });
+
+  test("card 容器:四段 pipe 参数编码进 data-params", async () => {
+    const html = await renderMarkdown("::: card https://x.com/a | 标题 | 描述 | https://x.com/i.png\n:::");
+    expect(html).toContain("markdown-card-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("https://x.com/a | 标题 | 描述 | https://x.com/i.png");
+  });
+
+  test("simple-card 容器:两段 pipe 参数编码", async () => {
+    const html = await renderMarkdown("::: simple-card https://x.com/a | 标题\n:::");
+    expect(html).toContain("markdown-simple-card-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("https://x.com/a | 标题");
+  });
+
+  test("swiper 容器:无参数,只产包裹 div", async () => {
+    const html = await renderMarkdown("::: swiper\n:::");
+    expect(html).toContain("markdown-swiper-wrapper");
+    expect(html).not.toContain("data-");
+  });
+
+  test("waterfall 容器:无参数,只产包裹 div", async () => {
+    const html = await renderMarkdown("::: waterfall\n:::");
+    expect(html).toContain("markdown-waterfall-wrapper");
+    expect(html).not.toContain("data-");
+  });
+
+  test("music 容器:直接写 :::music 语法(非链接转换路径)", async () => {
+    const html = await renderMarkdown("::: music netease | song | 123\n:::");
+    expect(html).toContain("markdown-music-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("netease | song | 123");
+  });
+
+  test("live-photo 容器:无标题时 data-params 仅含 URL", async () => {
+    const html = await renderMarkdown("::: live-photo /imgs/a.jpg\n:::");
+    expect(html).toContain("markdown-live-photo-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("/imgs/a.jpg");
+  });
+
+  test("details 容器:仅 details(无标题)被识别为段落,不触发容器", async () => {
+    // validate 要求 "^details\\s+(.*)$":details 后必须有空白 + 内容;否则整段当段落渲染。
+    // 「data-summary=展开」兜底不可达,跳过该断言。
+    const html = await renderMarkdown("::: details\n内容\n:::");
+    expect(html).not.toContain("markdown-details-wrapper");
+  });
+
+  test("callout 四种类型(success/warning/error/info)data-type 正确", async () => {
+    for (const type of ["success", "warning", "error", "info"]) {
+      const html = await renderMarkdown(`::: callout ${type}\nx\n:::`);
+      expect(html).toContain(`data-type="${type}"`);
+    }
+  });
+
+  test("callout type 非枚举时 validate 拒绝,不产包裹 div", async () => {
+    const html = await renderMarkdown("::: callout debug\nx\n:::");
+    expect(html).not.toContain("markdown-callout-wrapper");
+  });
+
+  test("repo 容器:gitee 仓库也走 wrapper", async () => {
+    const html = await renderMarkdown("::: repo https://gitee.com/a/b\n:::");
+    expect(html).toContain("markdown-repo-wrapper");
+    expect(html).toContain('data-url="https://gitee.com/a/b"');
+  });
+});
+
+describe("renderMarkdown:音乐链接 - 其它平台 + 空匹配", () => {
+  test("QQ 音乐歌单转 playlist 类型", async () => {
+    const html = await renderMarkdown("[歌单](https://y.qq.com/n/ryqq/playlist/1234567)");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("tencent | playlist | 1234567");
+  });
+
+  test("酷我音乐歌曲链接转播放器容器", async () => {
+    const html = await renderMarkdown("[kuwo](https://www.kuwo.cn/song/12345)");
+    expect(html).toContain("markdown-music-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("kuwo | song | 12345");
+  });
+
+  test("酷狗音乐歌曲链接转播放器容器", async () => {
+    const html = await renderMarkdown("[kugou](https://www.kugou.com/song/abc123.html)");
+    expect(html).toContain("markdown-music-wrapper");
+    const params = decodeURIComponent(/data-params="([^"]+)"/.exec(html)?.[1] ?? "");
+    expect(params).toBe("kugou | song | abc123");
+  });
+
+  test("网易云歌单 + 专辑分别转 playlist/album 类型", async () => {
+    const playlist = decodeURIComponent(
+      /data-params="([^"]+)"/.exec(await renderMarkdown("[p](https://music.163.com/playlist?id=123)"))?.[1] ?? "",
+    );
+    const album = decodeURIComponent(
+      /data-params="([^"]+)"/.exec(await renderMarkdown("[a](https://music.163.com/album?id=456)"))?.[1] ?? "",
+    );
+    expect(playlist).toBe("netease | playlist | 123");
+    expect(album).toBe("netease | album | 456");
+  });
+
+  test("不匹配的 URL(无协议 + 非已知平台)保持原链接,不替换为播放器", async () => {
+    const html = await renderMarkdown("[plain](https://spotify.com/track/abc)");
+    expect(html).not.toContain("markdown-music-wrapper");
+    expect(html).toContain("spotify.com");
+  });
+});
