@@ -6,7 +6,7 @@
  *  - take 上限(1000)
  *  - 错误兜底 → 500 而非泄漏 message
  */
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 import { callAdmin, loginSessionCookie } from "#test/helpers/admin";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";

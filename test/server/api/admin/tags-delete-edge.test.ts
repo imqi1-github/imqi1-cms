@@ -81,7 +81,7 @@ describe("admin/tags/[id].delete 业务逻辑", () => {
       // 数组形式:逐个 await
       if (Array.isArray(opsOrFn)) {
         const results = [];
-        for (const op of opsOrFn) {
+        for (const _op of opsOrFn) {
           // 简化:每个 op 是带 _fakeType 标记的 proxy
           // 直接返回成功,验证 delete 顺序已触发
           results.push({ count: 1 });

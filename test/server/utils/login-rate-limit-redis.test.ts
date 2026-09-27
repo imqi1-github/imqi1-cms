@@ -18,7 +18,6 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 const calls: Array<{ method: string; args: unknown[] }> = [];
 let throwOn: Set<string> = new Set();
 let counters = new Map<string, number>();
-let ttls = new Map<string, number>();
 let stored = new Map<string, { value: string; expiresAt: number }>();
 
 function makeFakeRedis() {
@@ -83,7 +82,6 @@ beforeEach(() => {
   calls.length = 0;
   throwOn = new Set();
   counters = new Map();
-  ttls = new Map();
   stored = new Map();
 });
 

@@ -5,7 +5,7 @@
  *  - detailed-stats 各 count 字段、groupBy 分组
  *  - 异常路径 → 500 而非泄漏原始 message
  */
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 import { callAdmin, loginSessionCookie } from "#test/helpers/admin";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";

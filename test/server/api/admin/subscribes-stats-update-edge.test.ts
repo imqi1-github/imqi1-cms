@@ -8,7 +8,7 @@
 import { describe, expect, mock, test } from "bun:test";
 
 import { CSRF_COOKIE, CSRF_TOKEN, callAdmin, loginSessionCookie } from "#test/helpers/admin";
-import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+import { mockSharedPrisma } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 

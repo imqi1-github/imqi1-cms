@@ -6,7 +6,7 @@
  *  4) 结果总是落缓存:即便 index !== player.list.index(用户已切歌),也写 parsed,
  *     仅当前曲才刷 DOM
  */
-import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 
 // aplayer/utils.ts 顶部 evaluate 时访问 window.navigator — import 前必须先注入
@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 // 用可控 XHR 替身:模拟"在途但未完成"的请求
-function installFakeXhr(opts: { abortOn: number[] } = { abortOn: [] }) {
+function installFakeXhr(_opts: { abortOn: number[] } = { abortOn: [] }) {
   const instances: Array<{
     aborted: boolean;
     readyState: number;
@@ -174,7 +174,6 @@ describe("lrc destroy() abort pendingXhr", () => {
 
     lrc.switch(0);
     const xhr = instances[0]!;
-    const htmlBeforeAbort = container.innerHTML;
     lrc.destroy();
     expect(xhr.aborted).toBe(true);
     // 模拟 abort 后 readyState 4 不会触发 onreadystatechange(XHR 自身遵守规则)

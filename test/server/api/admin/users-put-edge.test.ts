@@ -7,7 +7,7 @@
  *  - IDOR 防御:uid !== 会话用户 → 403
  *  - P2025 / P2002 兜底
  */
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 
 import { CSRF_COOKIE, CSRF_TOKEN, loginSessionCookie, resetUsers, registerAuthFakes, getUserRow } from "#test/helpers/auth-fakes";
 import { callAdmin } from "#test/helpers/admin";

@@ -93,7 +93,7 @@ describe("useScrollFadeMask y 轴默认行为", () => {
     setLayout(div, { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 1 });
     win.document.body.appendChild(div);
     const el = ref<HTMLElement | null>(div);
-    const { atStart, atEnd } = useScrollFadeMask(el, "y");
+    const { atStart } = useScrollFadeMask(el, "y");
     expect(atStart.value).toBe(true);
   });
 });
