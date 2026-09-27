@@ -17,7 +17,7 @@ beforeEach(() => {
   }));
 });
 
-const { default: commentsPost } = await import("~/../server/api/mini/comments.post");
+const { default: commentsPost } = await import("#server/api/mini/comments.post");
 
 function callPost(): Promise<unknown> {
   return (commentsPost as (e: never) => Promise<unknown>)({

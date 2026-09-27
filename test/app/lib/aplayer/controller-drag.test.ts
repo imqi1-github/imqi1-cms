@@ -10,7 +10,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 
-import "./setup-globals";
+import "#test/app/lib/aplayer/setup-globals";
 
 import Controller from "~/lib/aplayer/controller";
 import Template from "~/lib/aplayer/template";

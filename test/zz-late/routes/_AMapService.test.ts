@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { createError as h3CreateError } from "h3";
 
-import "../../helpers/nitro-globals";
+import "#test/helpers/nitro-globals";
 
 // _AMapService 路由:依赖 useRuntimeConfig + h3 proxyRequest + process.env.AMAP_KEY/SECURITY_CODE。
 // nitro-globals.ts 已装 createError / getRequestURL 桩;我们额外 stub useRuntimeConfig + proxyRequest。
@@ -40,8 +40,8 @@ afterEach(() => {
   delete process.env.AMAP_SECURITY_CODE;
 });
 
-// 使用相对路径绕过 bun 对 [...] 通配的解析限制
-const routePath = "../../../server/routes/_AMapService/[...path].ts";
+// 用变量传 specifier:字面量里的 [...] 会被 bun 当通配符解析
+const routePath = "#server/routes/_AMapService/[...path].ts";
 const { default: amapHandler } = await import(/* @vite-ignore */ routePath);
 
 function makeEvent(url: string) {

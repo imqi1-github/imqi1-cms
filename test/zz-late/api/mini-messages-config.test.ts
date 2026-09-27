@@ -28,7 +28,7 @@ beforeEach(() => {
   sharedFake.on("contents", "findFirst", async () => null);
 });
 
-const { default: configHandler } = await import("~/../server/api/mini/messages-config.get");
+const { default: configHandler } = await import("#server/api/mini/messages-config.get");
 
 function call(): Promise<unknown> {
   return (configHandler as (e: never) => Promise<unknown>)({} as never);

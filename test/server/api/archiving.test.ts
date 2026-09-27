@@ -14,7 +14,7 @@ import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
-const { default: archiveHandler } = await import("~/../server/api/archiving.get");
+const { default: archiveHandler } = await import("#server/api/archiving.get");
 
 beforeEach(() => {
   sharedFake.on("contents", "findMany", async () => []);

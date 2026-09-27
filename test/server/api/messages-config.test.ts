@@ -13,7 +13,7 @@ import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
-const { default: configHandler } = await import("~/../server/api/messages/config.get");
+const { default: configHandler } = await import("#server/api/messages/config.get");
 
 beforeEach(() => {
   sharedFake.on("informations", "findUnique", async () => null);

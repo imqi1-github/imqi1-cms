@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
@@ -26,7 +25,8 @@ describe("useLivePhoto pure helpers", () => {
 // 没导出 → 通过读源码 + eval 函数体取出来测(去掉 TS `!` 非空断言,Function 构造器不认)。
 // 等价复制一份到测试,源码改函数体时若不一致测试会失败(字符串 match 抛错)。
 function callFindMotionVideoStart(bytes: Uint8Array): number {
-  const src = readFileSync(resolve(__dirname, "../../../app/composables/useLivePhoto.ts"), "utf8");
+  // 根相对路径(测试 cwd = 项目根,与其它读源码的测试一致)
+  const src = readFileSync("app/composables/useLivePhoto.ts", "utf8");
   const start = src.indexOf("const findMotionVideoStart");
   if (start < 0) throw new Error("findMotionVideoStart 源码未找到");
   const body = src.slice(start);

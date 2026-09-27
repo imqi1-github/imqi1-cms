@@ -35,7 +35,7 @@ beforeEach(() => {
   }));
 });
 
-const { default: devicesHandler } = await import("~/../server/api/admin/2fa/devices.get");
+const { default: devicesHandler } = await import("#server/api/admin/2fa/devices.get");
 
 function callList(): Promise<unknown> {
   return (devicesHandler as (e: never) => Promise<unknown>)({} as never);

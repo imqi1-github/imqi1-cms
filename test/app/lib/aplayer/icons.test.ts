@@ -1,4 +1,4 @@
-import "./setup-globals";
+import "#test/app/lib/aplayer/setup-globals";
 
 import { describe, expect, test } from "bun:test";
 

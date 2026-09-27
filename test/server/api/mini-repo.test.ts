@@ -33,7 +33,7 @@ afterEach(() => {
   fetchCalls.length = 0;
 });
 
-const { default: repoHandler } = await import("~/../server/api/mini/repo.get");
+const { default: repoHandler } = await import("#server/api/mini/repo.get");
 
 function callRepo(q: Record<string, string>): Promise<unknown> {
   const qs = new URLSearchParams(q).toString();

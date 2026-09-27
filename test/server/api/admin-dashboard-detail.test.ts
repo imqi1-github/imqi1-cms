@@ -36,11 +36,11 @@ beforeEach(() => {
   sharedFake.on("attachments", "findMany", async () => []);
 });
 
-const { default: statsHandler } = await import("~/../server/api/admin/stats.get");
-const { default: systemInfoHandler } = await import("~/../server/api/admin/system-info.get");
-const { default: popularHandler } = await import("~/../server/api/admin/popular-contents.get");
-const { default: recentCommentsHandler } = await import("~/../server/api/admin/recent-comments.get");
-const { default: recentContentsHandler } = await import("~/../server/api/admin/recent-contents.get");
+const { default: statsHandler } = await import("#server/api/admin/stats.get");
+const { default: systemInfoHandler } = await import("#server/api/admin/system-info.get");
+const { default: popularHandler } = await import("#server/api/admin/popular-contents.get");
+const { default: recentCommentsHandler } = await import("#server/api/admin/recent-comments.get");
+const { default: recentContentsHandler } = await import("#server/api/admin/recent-contents.get");
 
 function call(handler: (e: never) => Promise<unknown>): Promise<unknown> {
   return handler({} as never);

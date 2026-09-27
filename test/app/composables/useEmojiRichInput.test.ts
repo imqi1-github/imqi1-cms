@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
@@ -13,10 +12,7 @@ import { buildEmojiPlaceholder, getEmojiByKey } from "~/utils/emoji";
 // 没导出 → 通过读源码 + eval 函数体取出来测(去掉 TS `!` 非空断言,Function 构造器不认)。
 // 等价复制一份到测试,源码改函数体时若不一致测试会失败(字符串 match 抛错)。
 function callReadDom(root: HTMLElement, isTopLevel = true): string {
-  const src = readFileSync(
-    resolve(__dirname, "../../../app/composables/useEmojiRichInput.ts"),
-    "utf8",
-  );
+  const src = readFileSync("app/composables/useEmojiRichInput.ts", "utf8");
   // 函数体以 `function readDom(root: HTMLElement, isTopLevel = true): string {` 开头
   const start = src.indexOf("function readDom(root:");
   if (start < 0) throw new Error("readDom 源码未找到");

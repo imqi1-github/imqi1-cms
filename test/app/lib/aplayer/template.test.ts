@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window as HappyWindow } from "happy-dom";
 
-import "./setup-globals";
+import "#test/app/lib/aplayer/setup-globals";
 
 import Template from "~/lib/aplayer/template";
 import resolveOptions from "~/lib/aplayer/options";

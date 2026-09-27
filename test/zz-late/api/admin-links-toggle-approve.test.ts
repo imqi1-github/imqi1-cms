@@ -36,8 +36,8 @@ beforeEach(() => {
   }));
 });
 
-const { default: toggleHandler } = await import("~/../server/api/admin/links/[id]/toggle.patch");
-const { default: approveHandler } = await import("~/../server/api/admin/links/[id]/approve-modification.patch");
+const { default: toggleHandler } = await import("#server/api/admin/links/[id]/toggle.patch");
+const { default: approveHandler } = await import("#server/api/admin/links/[id]/approve-modification.patch");
 
 function makeEvent(method: string, params: Record<string, string>, body?: unknown) {
   return {

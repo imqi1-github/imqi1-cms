@@ -63,7 +63,7 @@ beforeEach(() => {
   }));
 });
 
-const { default: clearHandler } = await import("~/../server/api/admin/cache/clear.post");
+const { default: clearHandler } = await import("#server/api/admin/cache/clear.post");
 
 function makeEvent(body: unknown) {
   return {

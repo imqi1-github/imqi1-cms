@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import "./setup-globals";
+import "#test/app/lib/aplayer/setup-globals";
 
 import utils, { escapeHtml } from "~/lib/aplayer/utils";
 

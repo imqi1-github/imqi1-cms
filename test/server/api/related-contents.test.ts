@@ -17,7 +17,7 @@ import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
-const { default: relatedHandler } = await import("~/../server/api/related-contents/[cid].get");
+const { default: relatedHandler } = await import("#server/api/related-contents/[cid].get");
 
 function makeEvent(params: Record<string, string>, query: Record<string, string> = {}) {
   const qs = new URLSearchParams(query).toString();

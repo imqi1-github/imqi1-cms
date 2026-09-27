@@ -17,7 +17,7 @@ import xml from "highlight.js/lib/languages/xml";
 import yaml from "highlight.js/lib/languages/yaml";
 import { createLowlight } from "lowlight";
 
-import CodeBlockNodeView from "../CodeBlockNodeView.vue";
+import CodeBlockNodeView from "~/components/markdown-editor/CodeBlockNodeView.vue";
 
 /**
  * CodeBlockLowlight + 语言选择 NodeView。

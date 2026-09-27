@@ -24,7 +24,7 @@ const plugin: BunPlugin = {
       const normalized = args.path.replace(/\\/g, "/");
       if (!normalized.includes("/test/app/composables/")) return { contents: readFileSync(args.path, "utf8"), loader: "ts" };
       const src = readFileSync(args.path, "utf8");
-      const patched = src.includes("setup-composable-globals") ? src : `import "./setup-composable-globals";\n${src}`;
+      const patched = src.includes("setup-composable-globals") ? src : `import "#test/app/composables/setup-composable-globals";\n${src}`;
       return { contents: patched, loader: "ts" };
     });
   },

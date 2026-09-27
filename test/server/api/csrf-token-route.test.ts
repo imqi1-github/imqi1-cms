@@ -25,7 +25,7 @@ mock.module("#server/utils/csrf", () => ({
   validateCsrfToken: () => true,
 }));
 
-const { default: tokenHandler } = await import("~/../server/api/csrf/token.get");
+const { default: tokenHandler } = await import("#server/api/csrf/token.get");
 
 const setCookies: string[] = [];
 const respHeaders: string[] = [];

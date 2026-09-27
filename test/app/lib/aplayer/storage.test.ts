@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import "./setup-globals";
+import "#test/app/lib/aplayer/setup-globals";
 
 import Storage from "~/lib/aplayer/storage";
 

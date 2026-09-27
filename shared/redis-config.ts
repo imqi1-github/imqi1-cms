@@ -20,6 +20,7 @@
  * 纯值读取、无外部依赖，避免把 ioredis 拉进 Nuxt 构建流程。
  */
 
+// 必须相对:本文件由 nuxt.config.ts 经 jiti 加载,别名在那条路径上不解析
 import { siteConfig } from "../site.config";
 
 export interface RedisConfig {

@@ -4,7 +4,7 @@
  * 在首页加载完成后向浏览器控制台输出站点名称与 ASCII 艺术字，
  * 供 `app.vue` 的 `onMounted` 调用。
  */
-import { siteConfig } from "../site.config";
+import { siteConfig } from "~~/site.config";
 
 /** IMQI1 ASCII 艺术字横幅 */
 const ASCII_BANNER =

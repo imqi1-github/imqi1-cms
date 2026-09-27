@@ -37,7 +37,7 @@ mock.module("vue-sonner", () => {
 });
 
 const sonner = await import("vue-sonner");
-const { useToast } = await import("../../../app/composables/useToast");
+const { useToast } = await import("~/composables/useToast");
 const calls = (sonner as unknown as { __calls: Array<{ kind: string; msg: string; opts: { description?: string; duration?: number } }> }).__calls;
 
 beforeEach(() => calls.length = 0);

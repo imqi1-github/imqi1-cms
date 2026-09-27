@@ -13,7 +13,7 @@ import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
-const { default: randomContentHandler } = await import("~/../server/api/random-content.get");
+const { default: randomContentHandler } = await import("#server/api/random-content.get");
 
 beforeEach(() => {
   // 默认:5 篇可随机文章

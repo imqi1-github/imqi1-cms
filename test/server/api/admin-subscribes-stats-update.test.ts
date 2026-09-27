@@ -37,8 +37,8 @@ beforeEach(() => {
   }));
 });
 
-const { default: statsHandler } = await import("~/../server/api/admin/subscribes/stats.get");
-const { default: updateHandler } = await import("~/../server/api/admin/subscribes/update.post");
+const { default: statsHandler } = await import("#server/api/admin/subscribes/stats.get");
+const { default: updateHandler } = await import("#server/api/admin/subscribes/update.post");
 
 function callStats(): Promise<unknown> {
   return (statsHandler as (e: never) => Promise<unknown>)({} as never);
@@ -83,7 +83,7 @@ describe("admin subscribes/update:post", () => {
       setCsrfToken: () => "csrf",
       generateCsrfToken: () => "csrf",
     }));
-    const { default: h } = await import("~/../server/api/admin/subscribes/update.post");
+    const { default: h } = await import("#server/api/admin/subscribes/update.post");
     await expect((h as (e: never) => Promise<unknown>)({
       method: "POST",
       _requestBody: JSON.stringify({ csrfToken: "x" }),
@@ -103,7 +103,7 @@ describe("admin subscribes/update:post", () => {
       getSubscriptionStats: () => ({}),
       updateAllSubscribes: async () => { throw new Error("RSS fetch failed"); },
     }));
-    const { default: h } = await import("~/../server/api/admin/subscribes/update.post");
+    const { default: h } = await import("#server/api/admin/subscribes/update.post");
     const origErr = console.error;
     console.error = () => {};
     try {

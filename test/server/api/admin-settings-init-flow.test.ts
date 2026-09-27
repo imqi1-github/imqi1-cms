@@ -39,7 +39,7 @@ beforeEach(() => {
   }));
 });
 
-const { default: initHandler } = await import("~/../server/api/admin/settings/init.post");
+const { default: initHandler } = await import("#server/api/admin/settings/init.post");
 
 function makeEvent(method: string, body: unknown) {
   return {

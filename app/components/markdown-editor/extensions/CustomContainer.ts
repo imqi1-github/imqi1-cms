@@ -19,8 +19,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { VueNodeViewRenderer, type NodeViewProps } from "@tiptap/vue-3";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
-import CustomContainerNodeView from "../CustomContainerNodeView.vue";
-
+import CustomContainerNodeView from "~/components/markdown-editor/CustomContainerNodeView.vue";
 import type { MarkdownSerializerStateLike } from "~/types/markdown-editor";
 
 export const CustomContainer = Node.create({
