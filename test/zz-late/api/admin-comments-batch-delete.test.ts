@@ -84,4 +84,18 @@ describe("admin/comments/batch-delete.post(批量删除评论)", () => {
     expect(r.count).toBe(3);
     expect(deletedWhere!.coid.in).toEqual([1, 2, 3]);
   });
+
+  test("$transaction 抛 P2025(并发计数竞态)→ 404", async () => {
+    sharedFake.on("comments", "findMany", async () => [{ coid: 1, cid: 10, status: 1 }]);
+    sharedFake.on("comments", "deleteMany", async () => ({ count: 1 }));
+    sharedFake.on("contents", "update", async () => {
+      throw Object.assign(new Error("not found"), { code: "P2025" });
+    });
+    const cookie = await loginSessionCookie();
+    await expect(callAdmin(handler, {
+      method: "POST",
+      cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
+      body: { csrfToken: CSRF_TOKEN, ids: [1] },
+    })).rejects.toMatchObject({ statusCode: 404 });
+  });
 });
