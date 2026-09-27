@@ -2,6 +2,8 @@
 // + 带 cookie 读写/方法/入参/对端 IP 的事件工厂
 import "#test/helpers/nitro-globals";
 
+import { createHmac } from "node:crypto";
+
 import { mock } from "bun:test";
 
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
@@ -258,4 +260,39 @@ export async function loginSessionCookie(): Promise<string> {
   const { event, setCookies } = makeAuthEvent();
   await setSession(event, { uid: 1, name: "admin", nickname: "阿棋", mail: "a@b.c", avatar: null });
   return `session=${cookieValue(setCookies, "session")}`;
+}
+
+// ===== TOTP:测试用确定性当前码(RFC 6238,30s 步长) =====
+const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+function base32DecodeForTest(input: string): Buffer {
+  let bits = 0;
+  let value = 0;
+  const out: number[] = [];
+  for (const ch of input.toUpperCase().replace(/[=\s]/g, "")) {
+    const v = B32.indexOf(ch);
+    if (v < 0) throw new Error(`bad base32 char: ${ch}`);
+    value = (value << 5) | v;
+    bits += 5;
+    if (bits >= 8) {
+      out.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+}
+
+/** 计算 secret 在 atMs 时刻的 6 位 TOTP 码 — 与被测实现独立(防「实现错了一起错」) */
+export function currentTotpCode(secret: string, atMs: number = Date.now()): string {
+  const counter = Math.floor(atMs / 1000 / 30);
+  const msg = Buffer.alloc(8);
+  msg.writeBigUInt64BE(BigInt(counter));
+  const hmac = createHmac("sha1", base32DecodeForTest(secret)).update(msg).digest();
+  const offset = (hmac[hmac.length - 1] ?? 0) & 0x0f;
+  const code =
+    (((hmac[offset] ?? 0) & 0x7f) << 24) |
+    ((hmac[offset + 1] ?? 0) << 16) |
+    ((hmac[offset + 2] ?? 0) << 8) |
+    ((hmac[offset + 3] ?? 0));
+  return (code % 1_000_000).toString().padStart(6, "0");
 }
