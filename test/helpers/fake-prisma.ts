@@ -8,6 +8,10 @@ export interface FakePrisma {
   prisma: unknown;
   on(model: string, method: string, handler: Handler): void;
   on(key: string, handler: Handler): void;
+  // 取当前 state 快照(bun-preload 在 beforeEach 调,锁定当前所有 registerXxxFakes 注册)
+  snapshot(): Map<string, Handler>;
+  // 把 state 还原到给定快照(afterEach 调,清掉测试里 sharedFake.on() 留下的污染)
+  restore(snap: Map<string, Handler>): void;
 }
 
 export function createFakePrisma(): FakePrisma {
@@ -18,7 +22,7 @@ export function createFakePrisma(): FakePrisma {
       if (model.startsWith("$")) {
         return (...args: never[]) => {
           const h = state.get(model);
-          if (!h) throw new Error(`fake prisma: 未设置 ${model}`);
+          if (!h) return undefined;
           return h(...args);
         };
       }
@@ -26,7 +30,8 @@ export function createFakePrisma(): FakePrisma {
         get(_t2, method: string) {
           return (...args: never[]) => {
             const h = state.get(`${model}.${method}`);
-            if (!h) throw new Error(`fake prisma: 未设置 ${model}.${method}`);
+            // 未注册时返 null(模拟真实 Prisma「记录不存在」语义),避免每个测试都得 registerMetasFakes 这种防御性样板
+            if (!h) return null;
             return h(...args);
           };
         },
@@ -39,6 +44,13 @@ export function createFakePrisma(): FakePrisma {
     on(a: string, b: string | Handler, handler?: Handler) {
       const key = handler ? `${a}.${b}` : a;
       state.set(key, handler ?? (b as Handler));
+    },
+    snapshot() {
+      return new Map(state);
+    },
+    restore(snap: Map<string, Handler>) {
+      state.clear();
+      for (const [k, v] of snap) state.set(k, v);
     },
   };
 }

@@ -1,17 +1,33 @@
 /**
- * bun:test preload: 为 app/composables/*.test.ts 安装 Nuxt/Vue auto-import stubs。
+ * bun:test preload: 为 app/composables/*.test.ts 安装 Nuxt/Vue auto-import stubs +
+ * 全局 snapshot/restore sharedFake 状态,根除「上一个测试 sharedFake.on() 永久覆盖 → 下个测试 setSession 抛 uniq」的进程级污染。
  *
- * 用 Bun.plugin 改写两类文件:
- *  1) test/app/composables/*.test.ts: 首行插入 import "test/helpers/setup-composable-globals.ts";
- *     该模块在 test 文件顶层装 useState/ref/watch/CSS 等到 globalThis。
- *  2) app/composables/*.ts: 首行注入 import.meta.client = true,
- *     让 `import.meta.client` 守门 localStorage/IntersectionObserver 走「客户端」分支。
+ * 用 Bun.plugin 改写一类文件:
+ *  - test/app/composables/*.test.ts: 首行插入 import "test/helpers/setup-composable-globals.ts";
+ *    该模块在 test 文件顶层装 useState/ref/watch/CSS 等到 globalThis。
  *
- * 严格只匹配这两个目录,不影响其它测试与源码(避免污染 mock.module 链)。
+ * 严格只匹配这一个目录,不影响其它测试与源码(避免污染 mock.module 链)。
  */
 import { readFileSync } from "node:fs";
 
 import type { BunPlugin } from "bun";
+import { afterEach, beforeEach } from "bun:test";
+
+// 全局 snapshot/restore sharedFake,根除「上一个测试 sharedFake.on() 永久覆盖 → 下个测试 setSession 抛 uniq」的进程级污染。
+// 用 setImmediate 推迟 snapshot 到当前 macrotask 结束后(所有测试文件 beforeEach 注册完成后再拍),这样 afterEach 还原时
+// 不会误删测试文件 beforeEach 里的 registerMetasFakes() 这类合法注册,只清掉测试 body 的 override。
+let perTestSnap: Map<string, unknown> | null = null;
+beforeEach(async () => {
+  await new Promise<void>(resolve => setImmediate(resolve));
+  const { sharedFake } = await import("#test/helpers/fake-prisma");
+  perTestSnap = sharedFake.snapshot();
+});
+afterEach(async () => {
+  if (!perTestSnap) return;
+  const { sharedFake } = await import("#test/helpers/fake-prisma");
+  sharedFake.restore(perTestSnap as Map<string, never>);
+  perTestSnap = null;
+});
 
 const plugin: BunPlugin = {
   name: "composable-test-globals",
