@@ -17,7 +17,6 @@ import { afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "
 (globalThis as Record<string, unknown>).defineNuxtRouteMiddleware = <T>(fn: (to: T) => unknown) => fn;
 
 beforeAll(() => {
-   
   (Bun as unknown as { plugin: (p: unknown) => void }).plugin({
     name: "auth-global-meta-switcher",
     setup(build: { onLoad: (opts: { filter: RegExp }, fn: (a: { path: string }) => { contents: string; loader: string } | undefined) => void }) {
