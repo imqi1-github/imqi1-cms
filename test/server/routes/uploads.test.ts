@@ -52,6 +52,7 @@ afterAll(() => {
 });
 
 describe("uploads 路由:目录穿越防护(400)", () => {
+  // 下面两条是路径穿越载荷字面量,不是 import —— 勿改成别名
   test.each([
     "../etc/passwd",
     "..\\..\\package.json",

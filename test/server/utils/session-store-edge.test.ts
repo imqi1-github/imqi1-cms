@@ -33,8 +33,8 @@ describe("FileSessionStore:路径穿越防御", () => {
   });
 
   test("sessionId 含 ../ → path.basename 净化为文件名,不逃出 .sessions 目录", async () => {
-    // sessionId = "../../../package" 经 basename → "package",写入 .sessions/package.json
-    // (而不是写到上级目录的 package.json,那是防御重点)
+    // sessionId = "../../../package" 经 basename → "package",写入 .sessions/package.json(防御重点)
+    // 下面几个 "../..*" 是攻击载荷字面量,不是 import —— 勿改成别名
     await store.set("../../../package", { ...DATA });
     expect(existsSync(join(tmp, ".sessions", "package.json"))).toBe(true);
     // 不应有上级目录的 package.json(被逃逸)
@@ -42,6 +42,7 @@ describe("FileSessionStore:路径穿越防御", () => {
   });
 
   test("get 读非法 sessionId → null(不会读出 .sessions 之外的文件)", async () => {
+    // 同上的攻击载荷字面量(非 import):验证读到的不是 .sessions 之外的文件
     const r = await store.get("../../../package");
     expect(r).toEqual(DATA);
     // 验证读到的也是 .sessions/package.json(而不是逃逸到其他位置)
@@ -59,6 +60,7 @@ describe("FileSessionStore:路径穿越防御", () => {
   });
 
   test("delete 非法 sessionId → 不抛(无文件可删也安全)", async () => {
+    // 同上的攻击载荷字面量(非 import)
     await expect(store.delete("../../../package-not-exist")).resolves.toBeUndefined();
   });
 });

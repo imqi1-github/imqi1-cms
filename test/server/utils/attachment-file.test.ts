@@ -77,6 +77,7 @@ describe("deleteAttachmentFile(本地分支)", () => {
   });
 
   test("非 /uploads/ 路径与 .. 穿越段直接放弃(不抛不删)", async () => {
+    // "/uploads/../../etc/passwd" 是攻击载荷字面量,不是 import —— 勿改成别名
     await deleteAttachmentFile({ storage: "local", url: "https://cos.example.com/x.png" });
     await deleteAttachmentFile({ storage: "local", url: "/uploads/../../etc/passwd" });
   });
@@ -87,6 +88,7 @@ describe("deleteAttachmentFile(本地分支)", () => {
   });
 
   test("URL 中段含 .. 但仍以 /uploads/ 开头 → 路径穿越拦截(不删)", async () => {
+    // "/uploads/sub/../escape.png" 是攻击载荷字面量(非 import) —— 勿改成别名
     // getLocalUploadPath 用 split("/").some(s => s === "..") 拦(单独 .. 段,不是 /../)
     await deleteAttachmentFile({ storage: "local", url: "/uploads/sub/../escape.png" });
   });

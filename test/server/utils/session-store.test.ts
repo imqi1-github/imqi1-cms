@@ -64,7 +64,7 @@ describe("FileSessionStore(临时目录)", () => {
   });
 
   test("路径穿越:sessionId 含 ../ 被剥成 basename,读不到外部文件", async () => {
-    // 真实存在的外部文件(项目根 package.json 的 basename),穿越尝试应被净化
+    // "../../package" 是攻击载荷字面量(指向项目根真实存在的 package.json),不是 import —— 勿改成别名
     expect(await fileStore.get("../../package")).toBeNull();
     await fileStore.set("../../evil", { ...DATA });
     // 净化后落盘文件名是 evil.json,且不在临时目录外
