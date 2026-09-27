@@ -23,7 +23,7 @@ describe("admin/contents/[cid].delete 错误路径", () => {
   test("非 Prisma 未知异常 → 500", async () => {
     sharedFake.on("contents", "delete", async () => { throw new Error("db down"); });
     const cookie = await loginSessionCookie();
-    await expect(callAdmin(deleteOneHandler, {
+    expect(callAdmin(deleteOneHandler, {
       method: "DELETE",
       params: { cid: "1" },
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
@@ -36,19 +36,47 @@ describe("admin/contents/[cid].delete 错误路径", () => {
       throw Object.assign(new Error("not found"), { code: "P2025" });
     });
     const cookie = await loginSessionCookie();
-    await expect(callAdmin(deleteOneHandler, {
+    expect(callAdmin(deleteOneHandler, {
       method: "DELETE",
       params: { cid: "999" },
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       headers: { "x-csrf-token": CSRF_TOKEN },
     })).rejects.toMatchObject({ statusCode: 404 });
   });
+
+  test("成功路径 → 删除 + 失效缓存", async () => {
+    sharedFake.on("contents", "delete", async () => ({}));
+    const cookie = await loginSessionCookie();
+    const r = await callAdmin(deleteOneHandler, {
+      method: "DELETE",
+      params: { cid: "1" },
+      cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
+      headers: { "x-csrf-token": CSRF_TOKEN },
+    }) as { success: boolean };
+    expect(r.success).toBe(true);
+  });
+
+  test("id 缺省 / 非正整数 → 400", async () => {
+    const cookie = await loginSessionCookie();
+    expect(callAdmin(deleteOneHandler, {
+      method: "DELETE",
+      params: { cid: "" },
+      cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
+      headers: { "x-csrf-token": CSRF_TOKEN },
+    })).rejects.toMatchObject({ statusCode: 400 });
+    expect(callAdmin(deleteOneHandler, {
+      method: "DELETE",
+      params: { cid: "0" },
+      cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
+      headers: { "x-csrf-token": CSRF_TOKEN },
+    })).rejects.toMatchObject({ statusCode: 400 });
+  });
 });
 
 describe("admin/contents/batch-delete 错误路径", () => {
   test("ids 含合法但 Set 去重后为空 → 400(防止 [true,null,-1] 之类被 Number 后看似合法)", async () => {
     const cookie = await loginSessionCookie();
-    await expect(callAdmin(batchDeleteHandler, {
+    expect(callAdmin(batchDeleteHandler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, ids: [true, null, -1, 0] },
@@ -58,7 +86,7 @@ describe("admin/contents/batch-delete 错误路径", () => {
   test("$transaction 异常 → 500(非 statusCode 非 Prisma)", async () => {
     sharedFake.on("$transaction", async () => { throw new Error("txn boom"); });
     const cookie = await loginSessionCookie();
-    await expect(callAdmin(batchDeleteHandler, {
+    expect(callAdmin(batchDeleteHandler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, ids: [1, 2] },
@@ -70,7 +98,7 @@ describe("admin/contents/batch-delete 错误路径", () => {
       throw createError({ statusCode: 403, message: "forbidden" });
     });
     const cookie = await loginSessionCookie();
-    await expect(callAdmin(batchDeleteHandler, {
+    expect(callAdmin(batchDeleteHandler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, ids: [1] },

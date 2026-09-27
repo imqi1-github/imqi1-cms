@@ -1,3 +1,4 @@
+// schema-fingerprint: 8831164081fcb4bc
 generator client {
   provider = "prisma-client-js"
 }

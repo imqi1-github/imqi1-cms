@@ -58,6 +58,8 @@ export async function cleanDb(): Promise<void> {
   await db.metas.deleteMany({});
   await db.informations.deleteMany({ where: { key: { not: "sessionStoreType" } } });
   // users 保留 admin (uid=1) — loginSessionCookie 需要
+  // 其他测试创建的 uid>1 用户一并清理,避免 name/mail 唯一约束污染后续用例
+  await db.users.deleteMany({ where: { uid: { gt: 1 } } });
 }
 
 /**
