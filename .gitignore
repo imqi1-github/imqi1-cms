@@ -34,6 +34,9 @@ pids
 stats.html
 stats-*.html
 
+# Test coverage (bun test --coverage 产物)
+coverage/
+
 # Playwright (MCP snapshot/console artifacts)
 .playwright-mcp
 .playwright
