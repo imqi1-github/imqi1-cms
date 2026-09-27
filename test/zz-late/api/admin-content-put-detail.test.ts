@@ -172,4 +172,36 @@ describe("admin/contents/[cid].put 边界补测", () => {
       body: { csrfToken: CSRF_TOKEN, title: "x", slug: "new" },
     })).rejects.toThrow(/已被其他文章使用/);
   });
+
+  test("update P2025(并发删除竞态)→ 404", async () => {
+    sharedFake.on("contents", "findUnique", async () => ({ cid: 1, slug: "x", type: 0 }));
+    sharedFake.on("contents", "update", async () => {
+      throw Object.assign(new Error("not found"), { code: "P2025" });
+    });
+    const cookie = await loginSessionCookie();
+    await expect(callAdmin(handler, {
+      method: "PUT",
+      cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
+      params: { cid: "1" },
+      body: { csrfToken: CSRF_TOKEN, title: "x" },
+    })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  test("status/type 同时更新 → 计数同步不触发", async () => {
+    sharedFake.on("contents", "findUnique", async () => ({ cid: 1, slug: "x", type: 0 }));
+    let statusNum: number | undefined;
+    sharedFake.on("contents", "update", async ({ data }: { data: { status?: number; type?: number } }) => {
+      statusNum = data.status;
+      return {};
+    });
+    const cookie = await loginSessionCookie();
+    const r = await callAdmin(handler, {
+      method: "PUT",
+      cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
+      params: { cid: "1" },
+      body: { csrfToken: CSRF_TOKEN, title: "x", status: 1, type: 0 },
+    }) as { success: boolean };
+    expect(r.success).toBe(true);
+    expect(statusNum).toBe(1);
+  });
 });
