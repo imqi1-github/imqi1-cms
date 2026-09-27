@@ -1,6 +1,5 @@
-import { updateAllSubscribes } from '../utils/rss';
-
 import { prisma } from '#server/utils/prisma';
+import { updateAllSubscribes } from '#server/utils/rss';
 
 let updateTimer: NodeJS.Timeout | null = null;
 const STARTUP_DELAY = 60 * 60 * 1000; // 1小时

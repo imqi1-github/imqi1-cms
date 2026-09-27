@@ -1,6 +1,5 @@
 // 将 art-template 转换为 JavaScript 模板函数
-import { escapeHtml } from '../utils';
-
+import { escapeHtml } from '~/lib/aplayer/utils';
 import type { APlayerLrcData } from '~/types/aplayer';
 
 export default function (data: APlayerLrcData): string {

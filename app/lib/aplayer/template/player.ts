@@ -1,8 +1,7 @@
 // 将 art-template 转换为 JavaScript 模板函数
-import { escapeHtml } from '../utils';
-
 import tplListItem from './list-item'
 
+import { escapeHtml } from '~/lib/aplayer/utils';
 import type { APlayerPlayTemplateData } from '~/types/aplayer';
 
 export default function (data: APlayerPlayTemplateData): string {

@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, readdirSync } from "fs";
 import { join } from "path";
 
+// 必须相对:scripts/ 有独立 package.json,bun 不向上找根 tsconfig,`~~` 别名在此不解析
 import { siteConfig } from "../site.config";
 
 // ========== 从 nitro 产物读取 build-hash ==========
