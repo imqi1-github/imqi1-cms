@@ -84,6 +84,11 @@ export async function assertPublicHttpUrl(rawUrl: string): Promise<URL> {
 
   const hostname = url.hostname.replace(/^\[|\]$/g, ""); // 去掉 IPv6 字面量的方括号
 
+  // 主机名长度上限(RFC 1035):单 label ≤63,全名 ≤253;Node URL 不拒绝超长,这里手动拦
+  if (hostname.length === 0 || hostname.length > 253) {
+    throw createError({ statusCode: 400, message: "无效的URL格式" });
+  }
+
   // 主机名本身就是 IP：直接判断
   if (isIP(hostname)) {
     if (isPrivateIp(hostname)) {

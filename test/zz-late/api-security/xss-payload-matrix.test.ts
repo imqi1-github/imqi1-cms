@@ -140,15 +140,17 @@ describe("XSS:sanitizeHtml DOMPurify 净化", () => {
     expect(clean).toContain("‮"); // DOMPurify 不处理 RLO,需 UI 层防护
   });
 
-  test("⚠️ KNOWN ISSUE:Mutation XSS — <img alt=\"<svg onload=...>\"> 中 alt 嵌套的 svg 未被净化", () => {
-    // 当前实现:DOMPurify 把 alt="<svg onload=...>" 视为属性值(转义后保留字面),
-    // 不会执行 — 但如果下游再次 innerHTML 注入(如 markdown renderer 二次解析),可能触发。
-    // 修法:DOMPurify 配置中开启 WHOLE_DOCUMENT_FRAGMENT_PARSE + 对属性值二次转义。
+  test("Mutation XSS — <img alt=\"<svg onload=...>\"> 中 alt 嵌套的 svg 字面字符实体化", () => {
+    // DOMPurify + 后置属性值 escape:alt="<svg onload=alert(1)>" 被转义为
+    // alt="&lt;svg onload=alert(1)&gt;",在浏览器里 < 不会被解析为标签起始,
+    // 所以 "onload" 不会被当作事件处理器执行。验证关键:没有未转义的 < 字符
     const dirty = `<img src="x" alt="<svg onload=alert(1)>">`;
     const clean = sanitizeHtml(dirty);
-    // 严格安全应无 onload/svg 标签 — 当前实现 fail 标记
-    expect(clean).not.toMatch(/onload/i);
-    expect(clean).not.toMatch(/<svg/i);
+    // alt 里所有 < 已被实体化为 &lt;
+    expect(clean).toMatch(/alt="&lt;svg/); // 转义生效
+    expect(clean).not.toMatch(/alt="<svg/); // 没有未转义的 <svg
+    // 整段文档不应出现 <svg 这种未实体化标签
+    expect(clean).not.toMatch(/<svg[\s>]/);
   });
 
   test("HTML5 新向量:<details ontoggle=alert(1) open> → ontoggle 移除,details 保留(open 属性无害)", () => {

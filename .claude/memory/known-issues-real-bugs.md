@@ -83,3 +83,13 @@ metadata:
 `bun run test`:**3510 pass / 3 fail**(commit `9e43834` + 新 SSRF/XSS 测试)
 - 3 fail 都是 known-issue tracker(SSRF 长 host + XSS CSS url() + XSS Mutation)
 - 修复后改 expect 即 PASS
+
+## 2026-09-28 第三轮:A/B/C 全部修复 ✅
+
+| Bug | 修法 | commit |
+|---|---|---|
+| **A SSRF 超长 host** | `assertPublicHttpUrl` 加 hostname 长度 >253 拒绝 | 此 commit |
+| **B XSS style url(javascript:)** | `sanitizeHtml` 后置 `sanitizeStyleAttribute` 扫 style="..." 剥离 url() 中危险协议 | 此 commit |
+| **C XSS Mutation alt 嵌套 svg** | `sanitizeHtml` 第二道 sanitize + `escapeAttributesForMutationSafety` 强制属性值里 < > 转实体 | 此 commit |
+
+修后 `bun run test`:**3512 pass / 1 fail**(只剩 SSRF localhost 子域名 known-issue,用户未要求修)
