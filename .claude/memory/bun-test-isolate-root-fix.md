@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 1f182c31-517f-4d2f-9ec0-e8b8236ee4da
-  modified: 2026-09-28T10:17:21.315Z
+  modified: 2026-09-28T10:29:04.102Z
 ---
 
 `bun:test` 默认 **`--no-isolate`**：所有 `.test.ts` 共享同一个 `globalThis` + 同一个 module cache + 同一个 process。跨文件副作用全部泄漏：
@@ -61,3 +61,26 @@ const cmd = [
 - 写 mock throw 测试,**异常在 mock factory 内 `throw`**,不在 test body 顶层 `throw`
 - 错误对象在 test body 内 `const e = new Error(...) as Error & { code?: string }; e.code = "...";` 后**立即**塞进 mock factory(不抽 helper 函数)
 - handler 内 catch 后用 `console.error` 吞掉原始 error,只返 500 给客户端(`server/api/admin/mail/test.post.ts:46` 范式);测试断言 message 不外泄敏感信息即可
+
+## `expect(promise).resolves/rejects` 前面必须 `await`(IDE 误报勿信)
+
+ESLint `no-floating-promises` 看到 `expect(promise).resolves.toEqual(...)` 链返回 promise 类型,会标红提示"前面加 await 是冗余"。**这是误报,不要去掉 `await`**。
+
+**2026-09-28 实测四种组合:**
+
+| 调用 | 测试结果 |
+|---|---|
+| `expect(Promise.reject(new Error("boom"))).rejects.toThrow("boom")` 不 await | **PASS**(假阳性,reject 被吞成 unhandled,test 函数立即返回,框架看不到失败) |
+| `await expect(Promise.reject(...)).rejects.toThrow("boom")` | PASS(正确捕获) |
+| `expect(Promise.resolve(1)).resolves.toBe(999)` 不 await | **FAIL**(bun:test 内部对 `.resolves` lazy await,值校验失败时同步抛) |
+| `await expect(Promise.resolve(1)).resolves.toBe(1)` | PASS |
+
+**Why:**
+- `.resolves` 是 lazy proxy,即使外层不 await,bun:test 内部链 await 了 promise — 看起来 IDE 提示没错
+- **但 `.rejects` 不 await 时,rejection 不会被 catch,unhandled rejection 出现 + test 函数立即 return → 测试假过**(致命,bug 漏检)
+- 异步函数 await reject chain 才能让 chain 的 rejection 传到 bun:test 的 catch,转成 fail
+
+**How to apply:**
+- 写 `expect(...).resolves` 或 `.rejects` 时**一律 await**,不论 IDE 怎么标红
+- 在 `eslint.config.mjs` 加 `allow-empty-catch` / 关闭 `no-floating-promises` 在 test 目录局部,或加 `// eslint-disable-next-line no-floating-promises` 注释(优先保留 await,避免人类读代码疑虑)
+- 写新测试前,先 `bun run test path/to/new.test.ts` 确认 PASS 再 commit;假阳性在单跑看不出,只能靠全量跑或反向用例(rejection 真发生时测试是否 fail)验证
