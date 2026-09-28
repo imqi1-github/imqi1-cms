@@ -27,7 +27,9 @@ describe("test/real/db 基建冒烟", () => {
 
   test("resetDb → TRUNCATE CASCADE 后只剩 admin 一个用户", async () => {
     const db = await getDb();
-    // 先插一条噪音(用 seedContent 走带 update_time 的全字段)
+    // 先 resetDb 清掉 init-db 硬编码的 cid=1 行(sequence 也回到 1),
+    // 否则 seedContent 用 nextval=1 会撞 init-db 已存在的 cid=1 → P2002
+    await resetDb();
     await seedContent({ title: "噪音", slug: "noise" });
     expect(await db.contents.count()).toBeGreaterThan(0);
 

@@ -40,7 +40,10 @@ const plugin: BunPlugin = {
       const normalized = args.path.replace(/\\/g, "/");
       if (!normalized.includes("/test/app/composables/")) return { contents: readFileSync(args.path, "utf8"), loader: "ts" };
       const src = readFileSync(args.path, "utf8");
-      const patched = src.includes("setup-composable-globals") ? src : `import "#test/app/composables/setup-composable-globals";\n${src}`;
+      // 首行判定:必须以 import "#test/app/composables/setup-composable-globals"; 开头才算已注入,
+      // 注释里出现"setup-composable-globals"字符串不算(避免命中后漏注入)。
+      const alreadyInjected = src.startsWith('import "#test/app/composables/setup-composable-globals";');
+      const patched = alreadyInjected ? src : `import "#test/app/composables/setup-composable-globals";\n${src}`;
       return { contents: patched, loader: "ts" };
     });
   },

@@ -22,6 +22,10 @@ function ev() {
 }
 
 function seedSite(siteUrl: string) {
+  // getSiteSettings 走 informations.findMany(批量取 settings),不是 findUnique。
+  // --isolate 下本文件独立 mock prisma,findMany handler 不会被其它测试继承,必须自己注册。
+  const allRows = [{ key: "siteUrl", value: siteUrl }];
+  sharedFake.on("informations", "findMany", async () => allRows);
   sharedFake.on("informations", "findUnique", async ({ where }: { where: { key: string } }) => {
     if (where.key === "siteUrl") return { value: siteUrl };
     return null;
