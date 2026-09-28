@@ -54,6 +54,13 @@ async function setupComments(records: Array<{ coid: number; cid: number; status:
       content_ref: { cid: r.cid, title: "t", slug: "s" },
     };
   });
+  // updateMany 乐观锁:where status = oldStatus 才改 row(否则 count=0)
+  sharedFake.on("comments", "updateMany", async ({ where, data }: { where: { coid: number; status?: number }; data: { status?: number } }) => {
+    const r = map.get(where.coid);
+    if (!r || where.status === undefined || r.status !== where.status) return { count: 0 };
+    if (data.status !== undefined) r.status = data.status;
+    return { count: 1 };
+  });
   return map;
 }
 

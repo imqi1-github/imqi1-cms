@@ -86,6 +86,19 @@ export default defineEventHandler(async event => {
         });
       }
 
+      // 状态变化用 updateMany + 乐观锁(where status = oldStatus)防并发竞态:
+      // 两个并发 PATCH 都看到 status=0 → updateMany where status=0 只有 1 个赢(返 count=1),
+      // 输的那个返 count=0 → 跳过计数 update(避免 comment_num +2)。
+      // PG 默认 READ COMMITTED 下 updateMany 行锁直至 commit,保证原子。
+      let statusActuallyChanged = false;
+      if (normalizedStatus !== undefined && normalizedStatus !== oldComment.status) {
+        const statusUpd = await tx.comments.updateMany({
+          where: { coid, status: oldComment.status },
+          data: { status: normalizedStatus },
+        });
+        statusActuallyChanged = statusUpd.count === 1;
+      }
+
       const updated = await tx.comments.update({
         where: { coid },
         data: {
@@ -93,7 +106,6 @@ export default defineEventHandler(async event => {
           ...(mail !== undefined && { mail }),
           ...(link !== undefined && { link }),
           ...(content !== undefined && { content }),
-          ...(normalizedStatus !== undefined && { status: normalizedStatus }),
         },
         // 约定1 白名单：update 默认返回全部列（含 ip/agent/mail 等内部/隐私字段），只回传必要字段
         select: {
@@ -115,17 +127,14 @@ export default defineEventHandler(async event => {
         },
       });
 
-      // 如果状态发生变化，更新文章评论计数
-      if (normalizedStatus !== undefined && normalizedStatus !== oldComment.status) {
-        // 从非已发布变为已发布：增加计数
-        if (normalizedStatus === 1 && oldComment.status !== 1) {
+      // 状态真正变化时,更新文章评论计数(乐观锁保证只一个并发事务做计数)
+      if (statusActuallyChanged) {
+        if (normalizedStatus === 1) {
           await tx.contents.update({
             where: { cid: oldComment.cid },
             data: { comment_num: { increment: 1 } },
           });
-        }
-        // 从已发布变为非已发布：减少计数
-        else if (normalizedStatus !== 1 && oldComment.status === 1) {
+        } else {
           await tx.contents.update({
             where: { cid: oldComment.cid },
             data: { comment_num: { decrement: 1 } },

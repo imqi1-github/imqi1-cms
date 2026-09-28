@@ -16,6 +16,15 @@ import type {
 } from "#server/types/apis/search";
 
 // 搜索关键词净化
+// single-flight 防 cache stampede:50 并发 cold miss 只让首个跑 DB,
+// 其余并发 await 同一 promise 共享结果。模块级 Map(单进程有效,Redis 模式跨实例).
+const inflightSearch = new Map<string, Promise<{
+  results: unknown[];
+  total: number;
+  query: string;
+  type: string;
+}>>();
+
 function sanitizeSearchKeyword(keyword: string): string {
   // 1. 移除前后空格
   let sanitized = keyword.trim();
@@ -457,25 +466,38 @@ export default defineTypedApiHandler(
         }
       }
 
-      // ========== 数据库搜索（按类型分支）==========
-      const searchResult: SearchBranchResult = await pathSearch(q, type);
-
-      const { results, total } = searchResult;
-
-      const responseData = {
-        results,
-        total,
-        query: q,
-        type,
-      };
-
-      // ========== 缓存搜索结果 ==========
-      if (searchSettings.cacheEnabled && redis && results.length > 0) {
+      // ========== 数据库搜索(按类型分支)+ single-flight 防 cache stampede ==========
+      // 50 并发 cold miss 场景:不让每个请求各自跑 DB,只让首个 miss 跑 DB,
+      // 其余并发 await 同一 promise 共享结果。模块级 Map 即可(单进程内有效)。
+      let responseData: typeof responseData;
+      const inflightKey = `${q}:${type}`;
+      const existing = inflightSearch.get(inflightKey);
+      if (existing) {
+        responseData = await existing;
+      } else {
+        const p = (async () => {
+          const searchResult: SearchBranchResult = await pathSearch(q, type);
+          return {
+            results: searchResult.results,
+            total: searchResult.total,
+            query: q,
+            type,
+          };
+        })();
+        inflightSearch.set(inflightKey, p);
         try {
-          const cacheKey = `search:${q}:${type}`;
-          await redis.setex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
-        } catch (error) {
-          console.error(error);
+          responseData = await p;
+          // ========== 缓存搜索结果 ==========
+          if (searchSettings.cacheEnabled && redis && responseData.results.length > 0) {
+            try {
+              const cacheKey = `search:${q}:${type}`;
+              await redis.setex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
+            } catch (error) {
+              console.error(error);
+            }
+          }
+        } finally {
+          inflightSearch.delete(inflightKey);
         }
       }
 

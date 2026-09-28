@@ -30,7 +30,11 @@ export function createFakePrisma(): FakePrisma {
         get(_t2, method: string) {
           return (...args: never[]) => {
             const h = state.get(`${model}.${method}`);
-            // 未注册时返 null(模拟真实 Prisma「记录不存在」语义),避免每个测试都得 registerMetasFakes 这种防御性样板
+            // updateMany 未注册时返 {count: 1}(成功路径)兜底,避免每个乐观锁 handler
+            // 都得显式 mock updateMany;已注册的同名 handler 走原 h
+            if (!h && method === "updateMany") {
+              return { count: 1 };
+            }
             if (!h) return null;
             return h(...args);
           };
@@ -43,7 +47,14 @@ export function createFakePrisma(): FakePrisma {
     // 两参形式 on("$transaction", fn) 注册顶层方法;三参 on("metas", "findMany", fn) 注册模型方法
     on(a: string, b: string | Handler, handler?: Handler) {
       const key = handler ? `${a}.${b}` : a;
-      state.set(key, handler ?? (b as Handler));
+      const finalHandler = handler ?? (b as Handler);
+      // 通用回退:updateMany 未注册时返 {count: 1}(成功路径)而非 null
+      // 让使用 updateMany 做乐观锁的 handler 在没专门 mock 时也能正常通过
+      // 已注册的同名 handler 不受影响(避免覆盖测试的精确 mock)
+      if (!state.has(key) && key.endsWith(".updateMany")) {
+        state.set(key, (async () => ({ count: 1 })) as Handler);
+      }
+      state.set(key, finalHandler);
     },
     snapshot() {
       return new Map(state);

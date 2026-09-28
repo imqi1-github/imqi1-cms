@@ -47,18 +47,23 @@ describe("admin/cache/clear.post(边界补测)", () => {
     expect(redisStore.has("other")).toBe(true);
   });
 
-  test("scan 异常 → 500", async () => {
+  test("scan 异常 → 不抛 500,降级 success:false(2026-09-28 修复 redis 兜底)", async () => {
     const brokenRedis = {
       ...fakeRedis,
       scan: async () => { throw new Error("redis down"); },
     };
     mock.module("#server/utils/redis", () => ({ redis: brokenRedis }));
     const cookie = await loginSessionCookie();
-    await expect(callAdmin(handler, {
+    // 修复后:scanAndUnlink 内 try/catch 返 -1,handler 返 success:false 不抛 500
+    const r = await callAdmin(handler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "search" },
-    })).rejects.toMatchObject({ statusCode: 500 });
+    }) as { success?: boolean; message?: string; matched?: number };
+    expect(r.success).toBe(false);
+    expect(r.matched).toBe(-1);
+    expect(String(r.message)).toMatch(/Redis 不可用/);
+    expect(String(r.message)).not.toMatch(/redis down/);
     // 还原
     mock.module("#server/utils/redis", () => ({ redis: fakeRedis }));
   });

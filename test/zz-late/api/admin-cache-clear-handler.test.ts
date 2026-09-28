@@ -223,7 +223,7 @@ describe("admin cache/clear:action 路由", () => {
 });
 
 describe("admin cache/clear:异常处理", () => {
-  test("redis.scan 抛错(非 statusCode)→ 抛 500 '缓存清理失败'", async () => {
+  test("redis.scan 抛错(非 statusCode)→ 不抛 500,降级 success:false(2026-09-28 修复 redis 兜底)", async () => {
     const fake = makeFakeRedis();
     redisImpl = fake;
     fake.redis.scan = async () => { throw new Error("ECONNRESET"); };
@@ -232,13 +232,15 @@ describe("admin cache/clear:异常处理", () => {
     console.error = () => {};
     try {
       const cookie = await authedCookie();
-      await expect(callAdmin(clearHandler, {
+      // 修复后:scanAndUnlink try/catch 返 -1,handler 返 success:false 不抛错
+      const r = await callAdmin(clearHandler, {
         method: "POST", cookie,
         body: { csrfToken: CSRF_TOKEN, action: "search" },
-      })).rejects.toMatchObject({
-        statusCode: 500,
-        message: "缓存清理失败",
-      });
+      }) as { success?: boolean; matched?: number; message?: string };
+      expect(r.success).toBe(false);
+      expect(r.matched).toBe(-1);
+      expect(String(r.message)).toMatch(/Redis 不可用/);
+      expect(String(r.message)).not.toMatch(/ECONNRESET/);
     } finally {
       console.error = origErr;
     }

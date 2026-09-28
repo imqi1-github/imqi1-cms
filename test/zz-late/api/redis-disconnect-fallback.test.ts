@@ -55,7 +55,11 @@ function makeGetEvent(url = "/api/search?q=test") {
 
 describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", () => {
   test("search.get:redis.get 抛错 → fallback DB 查询,响应 200 不外泄 ECONNRESET", async () => {
-    sharedFake.on("informations", "findMany", async () => []); // 关闭 searchCacheEnabled
+    // 启用 searchCache 让 redis.get 路径被执行
+    sharedFake.on("informations", "findMany", async () => [
+      { key: "searchCacheEnabled", value: "true" },
+      { key: "searchCacheExpire", value: "300" },
+    ]);
     sharedFake.on("contents", "findMany", async () => []);
     sharedFake.on("subscribes", "findMany", async () => []);
     sharedFake.on("links", "findMany", async () => []);
@@ -73,21 +77,28 @@ describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", (
     expect(json).toMatch(/搜索/);
   });
 
-  test("admin/cache/clear:redis 抛错 → 不应抛 500/unhandled;当前暴露 bug,handler 缺 try/catch 兜底", async () => {
-    // KNOWN ISSUE:scanAndUnlink 调用未包 try/catch,redis 断开时 error 直接冒泡成 unhandled
-    // 当前期望 handler 应改:catch 兜底返 success:false matched:-1,与 cache-clear-noredis 路径一致
-    // 修复后这个 test 会 PASS(返回 200 + success:false)
+  test("admin/cache/clear:redis 抛错 → 不应抛 500/unhandled;修复后返 success:false", async () => {
     const cookie = await loginSessionCookie();
-    const err = await callAdmin(cacheClearHandler, {
+    const r = await callAdmin(cacheClearHandler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "search" },
-    }).catch((e: { statusCode?: number; message?: string }) => e);
-    // 当前实现下 err 可能是 500(默认 catch 兜底)或 unhandled;修复后应是 200 + success:false
-    expect([200, 500]).toContain(err.statusCode);
-    if (err.statusCode === 500) {
-      expect(String(err.message)).not.toMatch(/ECONNRESET/);
-      expect(String(err.message)).not.toMatch(/connection lost/);
+    }).catch((e: unknown) => {
+      // handler 抛错 → 兜底返 500,期望修复后不抛
+      const err = e as { statusCode?: number; message?: string };
+      expect([200, 500]).toContain(err.statusCode);
+      if (err.statusCode === 500) {
+        expect(String(err.message)).not.toMatch(/ECONNRESET/);
+        expect(String(err.message)).not.toMatch(/connection lost/);
+      }
+      return null;
+    });
+    // 修复后:handler 不抛错,返 {success: false, message: "Redis 不可用..."}
+    if (r) {
+      const resp = r as { success?: boolean; message?: string };
+      expect(resp.success).toBe(false);
+      expect(String(resp.message)).toMatch(/Redis 不可用|不可用/);
+      expect(String(resp.message)).not.toMatch(/ECONNRESET/);
     }
   });
 

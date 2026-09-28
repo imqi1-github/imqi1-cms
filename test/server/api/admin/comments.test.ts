@@ -46,6 +46,13 @@ sharedFake.on("comments", "update", async ({ where, data }: { where: { coid: num
     content_ref: { cid: row.cid, title: `文章${row.cid}`, slug: `post-${row.cid}` },
   };
 });
+// 乐观锁:状态转换的 updateMany(where status = oldStatus) — 模拟:仅当 status 匹配才返 count=1
+sharedFake.on("comments", "updateMany", async ({ where, data }: { where: { coid: number; status?: number }; data: { status?: number } }) => {
+  const row = comments.find(c => c.coid === where.coid);
+  if (!row || where.status === undefined || row.status !== where.status) return { count: 0 };
+  row.status = data.status ?? row.status;
+  return { count: 1 };
+});
 sharedFake.on("comments", "delete", async ({ where }: { where: { coid: number } }) => {
   const i = comments.findIndex(c => c.coid === where.coid);
   if (i === -1) throw Object.assign(new Error("P2025"), { code: "P2025" });

@@ -4,21 +4,28 @@ import { redis } from "#server/utils/redis";
 import type { CacheClearBody, CacheClearResponse } from "#server/types/apis/cache";
 
 // SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis
+// redis 网络断开/连接错误时,scan 抛错 → catch + 返回 -1(哨兵值)让上层区分"网络故障"
+// 与"没找到任何 key"返 0 区分(0 = 真没匹配;-1 = redis 不可用)
 async function scanAndUnlink(pattern: string): Promise<number> {
   if (!redis) {
     return 0;
   }
-  let cursor = "0";
-  let removed = 0;
-  do {
-    const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200);
-    cursor = next;
-    if (keys.length > 0) {
-      await redis.unlink(...keys);
-      removed += keys.length;
-    }
-  } while (cursor !== "0");
-  return removed;
+  try {
+    let cursor = "0";
+    let removed = 0;
+    do {
+      const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200);
+      cursor = next;
+      if (keys.length > 0) {
+        await redis.unlink(...keys);
+        removed += keys.length;
+      }
+    } while (cursor !== "0");
+    return removed;
+  } catch (error) {
+    console.error("[cache/clear] scanAndUnlink 失败:", error);
+    return -1; // -1 = redis 不可用
+  }
 }
 
 // 按关键词子串匹配删除（与宝塔面板搜键一致）：删除所有键名包含该词的缓存
@@ -77,6 +84,14 @@ export default defineEventHandler(async event => {
     // 不碰 Nuxt 页面/ISR 缓存（与缓存管理页"搜索"预设的 *search* 子串匹配区分开）
     if (action === "search") {
       const total = await scanAndUnlink("search:*");
+      if (total === -1) {
+        return {
+          success: false,
+          matched: -1,
+          cleared: -1,
+          message: "Redis 不可用,无法执行清理",
+        } satisfies CacheClearResponse;
+      }
       return {
         success: true,
         matched: total,
@@ -88,6 +103,14 @@ export default defineEventHandler(async event => {
     // 自定义缓存：足迹地理位置等（footprint.get.ts 写入 custom:* 前缀，非 ISR）
     if (action === "footprint") {
       const total = await scanAndUnlink("custom:footprint");
+      if (total === -1) {
+        return {
+          success: false,
+          matched: -1,
+          cleared: -1,
+          message: "Redis 不可用,无法执行清理",
+        } satisfies CacheClearResponse;
+      }
       return {
         success: true,
         matched: total,
@@ -107,6 +130,14 @@ export default defineEventHandler(async event => {
         });
       }
       const total = await clearBySubstring(keyword);
+      if (total === -1) {
+        return {
+          success: false,
+          matched: -1,
+          cleared: -1,
+          message: "Redis 不可用,无法执行清理",
+        } satisfies CacheClearResponse;
+      }
       return {
         success: true,
         matched: total,

@@ -123,7 +123,7 @@ describe("admin/cache/clear.post 分支补测", () => {
     expect(deletedKeys).toHaveLength(0);
   });
 
-  test("未知 action → 400;redis 报错 → 500", async () => {
+  test("未知 action → 400;redis unlink 报错 → 不抛 500(2026-09-28 修复)", async () => {
     const session = await loginSessionCookie();
     const c = `${session}; ${CSRF_COOKIE}`;
     await expect(callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "nope" } })).rejects.toMatchObject({ statusCode: 400, message: "未知的操作类型" });
@@ -131,7 +131,11 @@ describe("admin/cache/clear.post 分支补测", () => {
     redisKeys.set("boom", "x");
     const origUnlink = (await import("#server/utils/redis")).redis!.unlink;
     (await import("#server/utils/redis")).redis!.unlink = async () => { throw new Error("redis down"); };
-    await expect(callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "keyword", value: "boom" } })).rejects.toMatchObject({ statusCode: 500 });
+    // 修复后:scanAndUnlink try/catch 返 -1,handler 返 success:false 不抛 500
+    const r = await callAdmin(clearHandler, { cookie: c, body: { csrfToken: CSRF_TOKEN, action: "keyword", value: "boom" } }) as { success?: boolean; message?: string; matched?: number };
+    expect(r.success).toBe(false);
+    expect(r.matched).toBe(-1);
+    expect(String(r.message)).not.toMatch(/redis down/);
     (await import("#server/utils/redis")).redis!.unlink = origUnlink;
   });
 });
