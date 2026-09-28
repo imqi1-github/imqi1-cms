@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 1f182c31-517f-4d2f-9ec0-e8b8236ee4da
-  modified: 2026-09-28T09:36:42.817Z
+  modified: 2026-09-28T10:17:21.315Z
 ---
 
 `bun:test` 默认 **`--no-isolate`**：所有 `.test.ts` 共享同一个 `globalThis` + 同一个 module cache + 同一个 process。跨文件副作用全部泄漏：
@@ -45,3 +45,19 @@ const cmd = [
   - `test/real/db/_smoke.test.ts` 改顺序:先 `resetDb()` 再 `seedContent()`(避 init-db 显式 cid=1 与 SERIAL nextval=1 的 P2002)
   - `test/zz-late/routes/sitemap-xml.test.ts` 补 `informations.findMany` handler(`getSiteSettings` 走 findMany 不是 findUnique)
 - 撤销此前 zz-late 物理隔离等绕过式修复后,如果个别测试还依赖"上一个测试留下的 handler",需在该测试 body 显式 `sharedFake.on(...)` 注册
+
+## 副作用:mock throw / Error 构造触发 "Unhandled error between tests"
+
+写「依赖故障」类测试(模拟 SMTP/Prisma 抛错)时遇到**非 fail 但有 unhandled** 报警:`3 pass / 0 fail / 1 error`,exit code 1。根因不在 mock 本身(throw 在 handler 内被 catch,500 正常返回),而是 bun:test 对 **栈敏感的 Error 构造 + 顶层 helper 调用**有嗅探:
+
+- ❌ `Object.assign(new Error("msg"), { code: "..." })`:辅助函数 `makeSmtpError()` 在 test body 外顶层被 import 时,某些场景栈捕获触发 unhandled。
+- ❌ 直接 `throw e` 在 test body 顶层(在 `expect()` 之外):会被 bun:test 当作 unhandled。
+- ✅ mock factory 内 `throw`(在 handler 里 catch):正常返回 500,不触发 unhandled。
+- ✅ 用 `mock.module(..., () => ({ x: async () => { throw e } }))`:工厂返回的对象在调用时才 throw,栈捕获在 handler 调用栈,正常被 handler catch。
+
+**`?fresh` 不靠谱**:bun 文档提的 `?fresh=1` query 在 mock.module 切换后**不一定**让 handler 重新解析,实测仍用旧 binding。**正确是**:handler 顶层 `import { x } from "#server/utils/mail"` 是 live binding,后续 `mock.module` 会让新 import 拿到 mock,但**已缓存的 binding** 也会指向新值(ESM live semantics);不要 `await import("?fresh")` 折腾。
+
+**How to apply:**
+- 写 mock throw 测试,**异常在 mock factory 内 `throw`**,不在 test body 顶层 `throw`
+- 错误对象在 test body 内 `const e = new Error(...) as Error & { code?: string }; e.code = "...";` 后**立即**塞进 mock factory(不抽 helper 函数)
+- handler 内 catch 后用 `console.error` 吞掉原始 error,只返 500 给客户端(`server/api/admin/mail/test.post.ts:46` 范式);测试断言 message 不外泄敏感信息即可
