@@ -52,3 +52,34 @@ metadata:
 - `d63a61d` 4 个 gap 测试(挂 fail,暴露 bug)
 - `6960a3a` bug tracker memory
 - 后续 commits 修复 3 个 bug + 配套 test 调整 + `fake-prisma.ts` updateMany fallback
+
+## 2026-09-28 第二轮:SSRF/XSS payload matrix 暴露 3 个新 bug
+
+`test/zz-late/api-security/{ssrf,xss}-payload-matrix.test.ts` 跑全量时挂 fail:
+
+### A. SSRF 超长 host(>253)通过当前实现
+
+- **症状**:`http://a×254.example.com/` 没被拒
+- **根因**:Node `new URL()` 接受超长 host;`assertPublicHttpUrl` 只查 `hostname === "localhost"` 与 DNS 解析;超长 host DNS mock 返公网 IP 时不被拒
+- **修法**:在 URL parse 后 host 长度判定,或对超长 host 直接 reject
+- **状态**:`test/zz-late/api-security/ssrf-payload-matrix.test.ts` 中 `URL 解析边角:空 / 无主机 / 双斜杠` 测 fail
+
+### B. XSS:DOMPurify 不剥离 style 属性里 url(javascript:)
+
+- **症状**:`<div style="background:url(javascript:alert(1))">` 保留 javascript: 协议
+- **根因**:DOMPurify 默认对 style 属性 url() 不做协议白名单;旧 IE 接受,现代浏览器部分拒绝,但仍属于攻击面
+- **修法**:在 sanitizeHtml 后追加 style url() 协议白名单(仅 http/https/data:image)
+- **状态**:`test/zz-late/api-security/xss-payload-matrix.test.ts` 中 `⚠️ KNOWN ISSUE:CSS url(javascript:)` 测 fail
+
+### C. XSS:Mutation XSS — `<img alt="<svg onload=...>">` 中 alt 嵌套的 svg 未被净化
+
+- **症状**:`<img src="x" alt="<svg onload=alert(1)>">` 净化后 `<svg onload=alert(1)>` 仍在 alt 字符串里
+- **根因**:DOMPurify 把 alt 当属性值(字面);如果下游再次 innerHTML 注入(markdown renderer 二次解析),可能执行
+- **修法**:DOMPurify 配置 `WHOLE_DOCUMENT_FRAGMENT_PARSE` + 对属性值二次转义
+- **状态**:`test/zz-late/api-security/xss-payload-matrix.test.ts` 中 `⚠️ KNOWN ISSUE:Mutation XSS` 测 fail
+
+## 当前 fail 状态
+
+`bun run test`:**3510 pass / 3 fail**(commit `9e43834` + 新 SSRF/XSS 测试)
+- 3 fail 都是 known-issue tracker(SSRF 长 host + XSS CSS url() + XSS Mutation)
+- 修复后改 expect 即 PASS
