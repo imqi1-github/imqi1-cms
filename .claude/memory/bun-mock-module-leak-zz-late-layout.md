@@ -1,5 +1,7 @@
 # bun mock.module 全进程泄漏 → 集成测试放 test/zz-late/
 
+> ⚠️ **2026-09-28 根除方案**:`scripts/test.ts` 给 `bun test` 加 **`--isolate`** 后,跨文件 mock.module 污染被切断,`test/zz-late/` 物理隔离退化为防御纵深(防同文件内测试间互踩)。详见 [[bun-test-isolate-root-fix]]。本条目保留作为"如果不开 --isolate 怎么避"的历史方案。
+
 `bun:test` 的 `mock.module` 一旦注册就**整进程生效且无法撤销**（`mock.restore()` 不还原模块 mock，实测确认），后加载文件的注册会覆盖先加载的，但先注册的 mock 会污染之后**首次 import** 真实模块的所有文件。bun 按路径字典序跑文件（api < middleware < plugins < routes < utils < shared）。
 
 **后果**：在 `test/server/api/` 里 `mock.module("#server/utils/cos"|"safe-fetch"|"rss"|"mail")` 写接口测试，会让 `test/server/utils/` 下测**真实模块**的测试（cos.test、safe-fetch.test、mail.test、rss 相关）拿到假件而全挂（2026-09-26 实测 45 个失败全源于此）。
