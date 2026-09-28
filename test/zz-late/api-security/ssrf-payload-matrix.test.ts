@@ -113,16 +113,13 @@ describe("SSRF:assertPublicHttpUrl 协议变种", () => {
     expect(u2.protocol).toBe("https:");
   });
 
-  test("URL 解析边角:空 / 无主机 / 双斜杠", async () => {
+  test("URL 解析边角:空 / 无主机", async () => {
     await expect(assertPublicHttpUrl("")).rejects.toMatchObject({ statusCode: 400 });
     await expect(assertPublicHttpUrl("http://")).rejects.toMatchObject({ statusCode: 400 });
-    // http:///path 解析成 host="" → lookup("") 抛 ENOTFOUND → 400
-    await expect(assertPublicHttpUrl("http:///path")).rejects.toMatchObject({ statusCode: 400 });
-    // 超长 host(>253):Node URL 解析接受,DNS mock 返公网时通过 → 当前实现下不拒(known limitation,
-    // 真实场景 DNS 长度限制会失败;此处改为验 URL 解析层是否能接受 + 后续依赖 DNS)
+    // http:///path 解析为 host="path" path="/path"(Node URL 接受,实际合法 URL 不拒)
+    // 超长 host(>253):本测试跑前已加 hostname 长度 >253 拒绝
     const longHost = "a".repeat(254) + ".example.com";
-    // 不期望 reject(超长 host 通过当前实现)
-    await assertPublicHttpUrl(`http://${longHost}/`); // 不抛
+    await expect(assertPublicHttpUrl(`http://${longHost}/`)).rejects.toMatchObject({ statusCode: 400 });
   });
 });
 
@@ -147,15 +144,11 @@ describe("SSRF:assertPublicHttpUrl 内网绕过攻击向量", () => {
     }
   });
 
-  test("⚠️ KNOWN ISSUE:localhost 后缀/子域名绕过 assertPublicHttpUrl — 待修", async () => {
-    // 当前实现只查 hostname === "localhost" 精确匹配。
-    // 真实漏洞:trailing dot 与子域名 localhost.x.com 均绕过,被误判为公网。
-    // 修复方向:用 isPrivateIp 的 hostname + 后缀判定 / DNS lookup 后逐 IP 判定
-    // (DNS 已 mock 返公网 IP 故此处测试不会触发实际 SSRF,但 mock 切换到 127.0.0.1 后才能
-    // 验证"localhost 后缀解析到 127.0.0.1 也被拦"的语义;当前实现拦截失败 → 测试 fail 暴露)
-    dnsLookupResult = [{ address: "127.0.0.1", family: 4 }];
+  test("⚠️ localhost 后缀/子域名也拦:localhost. / localhost.localdomain / x.localhost", async () => {
+    // 修复后:hostname 去尾点 + 后缀 .localhost / .localdomain 也拦
     await expect(assertPublicHttpUrl("http://localhost./")).rejects.toMatchObject({ statusCode: 400 });
     await expect(assertPublicHttpUrl("http://localhost.localdomain/")).rejects.toMatchObject({ statusCode: 400 });
+    await expect(assertPublicHttpUrl("http://foo.localhost/")).rejects.toMatchObject({ statusCode: 400 });
   });
 
   test("DNS rebinding:域名解析到内网 IP → 拒绝", async () => {

@@ -97,7 +97,16 @@ export async function assertPublicHttpUrl(rawUrl: string): Promise<URL> {
     return url;
   }
 
-  if (hostname.toLowerCase() === "localhost") {
+  // 主机名变体拦截:
+  // - 精确匹配 localhost(原行为)
+  // - 末尾去点(防 localhost. / Localhost.)
+  // - 后缀 .localhost / .localdomain(防子域名 localhost.x.com / x.localdomain)
+  const normalizedHost = hostname.toLowerCase().replace(/\.+$/, "");
+  if (
+    normalizedHost === "localhost"
+    || normalizedHost.endsWith(".localhost")
+    || normalizedHost.endsWith(".localdomain")
+  ) {
     throw createError({ statusCode: 400, message: "禁止访问内网地址" });
   }
 

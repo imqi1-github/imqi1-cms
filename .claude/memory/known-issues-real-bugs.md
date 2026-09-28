@@ -93,3 +93,11 @@ metadata:
 | **C XSS Mutation alt 嵌套 svg** | `sanitizeHtml` 第二道 sanitize + `escapeAttributesForMutationSafety` 强制属性值里 < > 转实体 | 此 commit |
 
 修后 `bun run test`:**3512 pass / 1 fail**(只剩 SSRF localhost 子域名 known-issue,用户未要求修)
+
+## 2026-09-28 第四轮:localhost 子域名绕过 SSRF 修复 ✅
+
+| Bug | 修法 | commit |
+|---|---|---|
+| **D SSRF localhost 子域名绕过** | `assertPublicHttpUrl` 加 `hostname.toLowerCase().replace(/\.+$/, "")` 去尾点 + 后缀 `.localhost` / `.localdomain` 也拦 | 此 commit |
+
+修后 `bun run test`:**3513 pass / 0 fail**(全部测试通过)
