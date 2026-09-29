@@ -124,7 +124,7 @@ if (skipIfNoDb()) {
       });
       await Promise.all([update1, update2]);
       const final = await db.contents.findUnique({ where: { cid: article.cid } });
-      expect(["v2", "v3"]).toContain(final?.title);
+      expect(["v2", "v3"]).toContain(final?.title ?? "");
     });
   });
 }

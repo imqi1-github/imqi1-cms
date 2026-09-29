@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 
 import { useMarkdownImages } from "~/composables/useMarkdownImages";
+import { libParent } from "#test/helpers/happy-dom-cast";
 
 let win: Window;
 
@@ -30,7 +31,7 @@ describe("useMarkdownImages mount 普通图片", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
     const wrapper = root.querySelector(".markdown-image-container");
     expect(wrapper).not.toBeNull();
@@ -45,9 +46,9 @@ describe("useMarkdownImages mount 普通图片", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
-    const wrapper = root.querySelector(".markdown-image-container > div") as HTMLElement | null;
+    const wrapper = root.querySelector(".markdown-image-container > div") as unknown as HTMLElement | null;
     expect(wrapper?.getAttribute("style") ?? "").toContain("aspect-ratio: 800 / 600");
   });
 
@@ -57,11 +58,11 @@ describe("useMarkdownImages mount 普通图片", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root, {
+    mount(libParent(root), {
       resolveDimensions: () => ({ width: 1000, height: 500 }),
     });
 
-    const wrapper = root.querySelector(".markdown-image-container > div") as HTMLElement | null;
+    const wrapper = root.querySelector(".markdown-image-container > div") as unknown as HTMLElement | null;
     expect(wrapper?.getAttribute("style") ?? "").toContain("aspect-ratio: 1000 / 500");
   });
 
@@ -71,7 +72,7 @@ describe("useMarkdownImages mount 普通图片", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
     const img = root.querySelector(".markdown-image");
     expect(img?.getAttribute("data-lightbox")).toBe("g");
@@ -84,9 +85,9 @@ describe("useMarkdownImages mount 普通图片", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
-    const wrapper = root.querySelector(".markdown-image-container > div") as HTMLElement | null;
+    const wrapper = root.querySelector(".markdown-image-container > div") as unknown as HTMLElement | null;
     expect(wrapper?.getAttribute("style") ?? "").not.toContain("aspect-ratio");
   });
 });
@@ -104,7 +105,7 @@ describe("useMarkdownImages 跳过分支", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
     // 卡片内的图片应保留原 <img>,不被替换
     expect(root.querySelector(".markdown-card img")).not.toBeNull();
@@ -123,7 +124,7 @@ describe("useMarkdownImages 跳过分支", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
     expect(root.querySelectorAll(".markdown-image-container").length).toBe(1);
   });
@@ -136,7 +137,7 @@ describe("useMarkdownImages mount 边界", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    expect(() => mount(root)).not.toThrow();
+    expect(() => mount(libParent(root))).not.toThrow();
     expect(root.querySelectorAll(".markdown-image-container").length).toBe(0);
   });
 
@@ -146,7 +147,7 @@ describe("useMarkdownImages mount 边界", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
     // .markdown-body img 选择器限定,other 内图片不应被替换
     expect(root.querySelector(".other img")).not.toBeNull();
@@ -159,8 +160,8 @@ describe("useMarkdownImages mount 边界", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
-    mount(root);
+    mount(libParent(root));
+    mount(libParent(root));
     expect(root.querySelectorAll(".markdown-image-container").length).toBe(1);
   });
 
@@ -170,9 +171,9 @@ describe("useMarkdownImages mount 边界", () => {
     win.document.body.appendChild(root);
 
     const { mount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
 
-    const inner = root.querySelector(".markdown-image-wrapper") as HTMLElement | null;
+    const inner = root.querySelector(".markdown-image-wrapper") as unknown as HTMLElement | null;
     // 模板固定带 relative overflow-hidden,额外 class 应为空
     expect(inner?.className).toContain("relative");
     expect(inner?.className).toContain("overflow-hidden");
@@ -191,7 +192,7 @@ describe("useMarkdownImages unmount", () => {
     win.document.body.appendChild(root);
 
     const { mount, unmount } = useMarkdownImages();
-    mount(root);
+    mount(libParent(root));
     expect(() => unmount()).not.toThrow();
   });
 });

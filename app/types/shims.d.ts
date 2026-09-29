@@ -1,3 +1,4 @@
+// 显式 Vue SFC 与 CSS side-effect import 的 ambient shim
 declare module "swiper/css";
 declare module "swiper/css/navigation";
 declare module "swiper/css/pagination";
@@ -9,13 +10,3 @@ declare module "swiper/css/free-mode";
 declare module "swiper/css/grid";
 declare module "*.css";
 declare module "*.vue";
-
-declare module "smoothscroll" {
-  const smoothScroll: (
-    to: number,
-    duration: number,
-    callback?: (() => void) | null,
-    element?: HTMLElement,
-  ) => void;
-  export default smoothScroll;
-}

@@ -23,7 +23,7 @@ describe("auth.client plugin", () => {
       isLoggedIn: { value },
     });
     const fakeNuxtApp = { provide: () => {} };
-    const result = authClientPlugin(fakeNuxtApp as never, {} as never) as
+    const result = authClientPlugin(fakeNuxtApp as never) as
       | { provide?: { isLogin?: () => boolean } }
       | undefined;
     return result?.provide ?? {};

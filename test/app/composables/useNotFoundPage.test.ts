@@ -107,7 +107,7 @@ describe("useNotFoundPage(client 模式)", () => {
     // 模拟已有旧 title/icon/category
     const { setPageTitle, setPageCategory } = usePageTitle();
     setPageTitle("旧页", "旧icon");
-    setPageCategory("article");
+    setPageCategory({ name: "article", slug: "article" });
 
     useNotFoundPage();
     expect(useState<string | null>("page-title:title", () => null).value).toBe("页面未找到");

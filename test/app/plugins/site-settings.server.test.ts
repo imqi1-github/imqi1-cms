@@ -66,7 +66,7 @@ function installStubs(): void {
 
   // getSiteSettings 走 await import("#server/utils/siteSettings"),需要 mock.module
   mock.module("#server/utils/siteSettings", () => ({
-    getSiteSettings: async () => g.__testGetSiteSettingsImpl(),
+    getSiteSettings: async () => (g.__testGetSiteSettingsImpl as () => Promise<unknown>)(),
   }));
 }
 
@@ -75,7 +75,7 @@ let plugin: (nuxtApp: unknown) => Promise<unknown>;
 beforeAll(async () => {
   installStubs();
   const mod = await import("~/plugins/site-settings.server");
-  plugin = mod.default;
+  plugin = mod.default as unknown as (nuxtApp: unknown) => Promise<unknown>;
 });
 
 beforeEach(() => {

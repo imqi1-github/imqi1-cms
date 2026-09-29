@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import type { ChangelogEntry } from "#shared/changelog";
 import {
   normalizeChangelogEntries,
   parseChangelogContent,
@@ -106,7 +107,7 @@ describe("normalizeChangelogEntries", () => {
 
 describe("stringifyChangelogContent", () => {
   test("序列化为 JSON 字符串(与 parse 往返)", () => {
-    const entries = [{ type: "功能", value: "x" }];
+    const entries = [{ type: "功能", value: "x" }] as ChangelogEntry[];
     const raw = stringifyChangelogContent(entries);
     expect(raw).toBe(JSON.stringify(entries));
     expect(parseChangelogContent(raw)).toEqual(entries);
@@ -119,7 +120,7 @@ describe("stringifyChangelogContent", () => {
 
 describe("renderChangelogEntries / renderChangelogContent", () => {
   test("renderChangelogEntries 每条带 html(renderSimpleMarkdown 渲染 value)", () => {
-    const entries = [{ type: "功能", value: "**bold**" }];
+    const entries = [{ type: "功能", value: "**bold**" }] as ChangelogEntry[];
     const out = renderChangelogEntries(entries);
     expect(out).toHaveLength(1);
     expect(out[0]?.type).toBe("功能");

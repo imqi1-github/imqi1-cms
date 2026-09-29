@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 
 import Bar from "~/lib/aplayer/bar";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 let win: Window;
 
@@ -21,7 +22,7 @@ function makeTemplate() {
   const volume = win.document.createElement("div");
   const played = win.document.createElement("div");
   const loaded = win.document.createElement("div");
-  return { volume, played, loaded };
+  return { volume: libEl(volume), played: libEl(played), loaded: libEl(loaded) };
 }
 
 describe("Bar.set(防 NaN% 钳制)", () => {

@@ -7,6 +7,7 @@ import { Window } from "happy-dom";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useEmojiRichInput } from "~/composables/useEmojiRichInput";
 import { buildEmojiPlaceholder, getEmojiByKey } from "~/utils/emoji";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 // readDom 是 useEmojiRichInput 内部纯函数:遍历 DOM → `:[key]` 字符串。
 // 没导出 → 通过读源码 + eval 函数体取出来测(去掉 TS `!` 非空断言,Function 构造器不认)。
@@ -68,20 +69,20 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
   test("纯文本节点原样保留", () => {
     const root = win.document.createElement("div");
     root.appendChild(win.document.createTextNode("hello world"));
-    expect(callReadDom(root)).toBe("hello world");
+    expect(callReadDom(libEl(root))).toBe("hello world");
   });
 
   test("ZWSP(零宽空格)从文本节点剥掉,不进模型", () => {
     const ZWSP = String.fromCodePoint(0x200b);
     const root = win.document.createElement("div");
     root.appendChild(win.document.createTextNode(`a${ZWSP}b${ZWSP}c`));
-    expect(callReadDom(root)).toBe("abc");
+    expect(callReadDom(libEl(root))).toBe("abc");
   });
 
   test("空文本节点返回空串", () => {
     const root = win.document.createElement("div");
     root.appendChild(win.document.createTextNode(""));
-    expect(callReadDom(root)).toBe("");
+    expect(callReadDom(libEl(root))).toBe("");
   });
 
   test("<br> 在非末尾位置 → \\n;顶层末尾孤立 <br>(bogus-br)忽略", () => {
@@ -90,13 +91,13 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
     root.appendChild(win.document.createElement("br"));
     root.appendChild(win.document.createTextNode("line2"));
     // 中间 br → \n
-    expect(callReadDom(root)).toBe("line1\nline2");
+    expect(callReadDom(libEl(root))).toBe("line1\nline2");
 
     // 末尾孤立 br 忽略(Chrome 的 bogus-br)
     const root2 = win.document.createElement("div");
     root2.appendChild(win.document.createTextNode("solo"));
     root2.appendChild(win.document.createElement("br"));
-    expect(callReadDom(root2)).toBe("solo");
+    expect(callReadDom(libEl(root2))).toBe("solo");
   });
 
   test("<br> 在非顶层(嵌套 div)→ \\n(不走 bogus-br 兜底)", () => {
@@ -107,7 +108,7 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
     const root = win.document.createElement("div");
     root.appendChild(inner);
     // 嵌套 div → 前后补 \n(防御性)+ 内部 br → \n
-    const out = callReadDom(root);
+    const out = callReadDom(libEl(root));
     expect(out).toContain("a");
     expect(out).toContain("b");
     expect(out).toContain("\n");
@@ -123,7 +124,7 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
     root.appendChild(img2);
     root.appendChild(win.document.createTextNode(" after"));
 
-    const out = callReadDom(root);
+    const out = callReadDom(libEl(root));
     expect(out).toContain(":[heo-微笑]");
     expect(out).not.toContain(":[fake-unknown-key]");
     expect(out).toContain("after");
@@ -137,7 +138,7 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
     root.appendChild(block);
     root.appendChild(win.document.createTextNode("after"));
 
-    const out = callReadDom(root);
+    const out = callReadDom(libEl(root));
     expect(out).toMatch(/before\ninner\nafter/);
   });
 
@@ -148,7 +149,7 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
     root.appendChild(win.document.createTextNode("a"));
     root.appendChild(span);
     root.appendChild(win.document.createTextNode("b"));
-    expect(callReadDom(root)).toBe("awrappedb");
+    expect(callReadDom(libEl(root))).toBe("awrappedb");
   });
 
   test("混合场景:文本 + br + img + div 嵌套", () => {
@@ -162,7 +163,7 @@ describe("useEmojiRichInput.readDom:DOM → `:[key]` 模型", () => {
     block.appendChild(win.document.createTextNode("inside"));
     root.appendChild(block);
 
-    const out = callReadDom(root);
+    const out = callReadDom(libEl(root));
     expect(out).toContain("hello");
     expect(out).toContain("\n");
     expect(out).toContain(":[heo-微笑]");

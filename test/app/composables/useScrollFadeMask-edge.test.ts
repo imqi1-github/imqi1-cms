@@ -7,6 +7,7 @@ import { Window } from "happy-dom";
 import { ref } from "vue";
 
 import { useScrollFadeMask } from "~/composables/useScrollFadeMask";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 let win: Window;
 const origWarn = console.warn;
@@ -50,9 +51,9 @@ describe("useScrollFadeMask y 轴默认行为", () => {
 
   test("容器内容超出 + scrollTop=0 → atStart=true, atEnd=false", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "y");
     expect(atStart.value).toBe(true);
     expect(atEnd.value).toBe(false);
@@ -60,9 +61,9 @@ describe("useScrollFadeMask y 轴默认行为", () => {
 
   test("容器内容超出 + scrollTop=中间 → atStart=false, atEnd=false", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 100 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 100 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "y");
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(false);
@@ -70,9 +71,9 @@ describe("useScrollFadeMask y 轴默认行为", () => {
 
   test("容器内容超出 + scrollTop=底部 → atStart=false, atEnd=true", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 200 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 200 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "y");
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(true);
@@ -80,9 +81,9 @@ describe("useScrollFadeMask y 轴默认行为", () => {
 
   test("内容等于容器 → atStart=true, atEnd=true(无需滚动)", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 100 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 100 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "y");
     expect(atStart.value).toBe(true);
     expect(atEnd.value).toBe(true);
@@ -90,9 +91,9 @@ describe("useScrollFadeMask y 轴默认行为", () => {
 
   test("scrollTop=1(容差 ±1)→ atStart=true(顶部)", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 1 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 300, clientWidth: 100, scrollWidth: 100, scrollTop: 1 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart } = useScrollFadeMask(el, "y");
     expect(atStart.value).toBe(true);
   });
@@ -101,9 +102,9 @@ describe("useScrollFadeMask y 轴默认行为", () => {
 describe("useScrollFadeMask x 轴", () => {
   test("水平方向:scrollLeft=中间 → 走 x 轴", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 500, scrollLeft: 200 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 500, scrollLeft: 200 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "x");
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(false);
@@ -111,9 +112,9 @@ describe("useScrollFadeMask x 轴", () => {
 
   test("水平方向:scrollLeft=0 → atStart=true", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 500, scrollLeft: 0 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 500, scrollLeft: 0 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "x");
     expect(atStart.value).toBe(true);
     expect(atEnd.value).toBe(false);
@@ -121,9 +122,9 @@ describe("useScrollFadeMask x 轴", () => {
 
   test("水平方向:scrollLeft=最大 → atEnd=true", () => {
     const div = win.document.createElement("div");
-    setLayout(div, { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 500, scrollLeft: 400 });
+    setLayout(libEl(div), { clientHeight: 100, scrollHeight: 100, clientWidth: 100, scrollWidth: 500, scrollLeft: 400 });
     win.document.body.appendChild(div);
-    const el = ref<HTMLElement | null>(div);
+    const el = ref<HTMLElement | null>(libEl(div));
     const { atStart, atEnd } = useScrollFadeMask(el, "x");
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(true);

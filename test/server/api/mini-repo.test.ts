@@ -26,7 +26,7 @@ beforeEach(() => {
       forks_count: 10,
       private: false,
     };
-  }) as typeof globalThis.$fetch;
+  }) as unknown as typeof globalThis.$fetch;
 });
 
 afterEach(() => {
@@ -115,7 +115,7 @@ describe("mini/repo:get 代理与归一化", () => {
       stargazers_count: undefined,
       forks_count: undefined,
       private: undefined,
-    })) as typeof globalThis.$fetch;
+    })) as unknown as typeof globalThis.$fetch;
     const res = await callRepo({ platform: "github", owner: "o", repo: "r" }) as { data: { fullName: string; description: string; language: string; stars: number; forks: number; isPrivate: boolean } };
     expect(res.data.fullName).toBe("o/r");
     expect(res.data.description).toBe("");
@@ -133,7 +133,7 @@ describe("mini/repo:get 代理与归一化", () => {
 
 describe("mini/repo:get 上游错误", () => {
   test("上游 fetch 抛错 → 502 '获取仓库信息失败'", async () => {
-    globalThis.$fetch = (async () => { throw new Error("upstream 500"); }) as typeof globalThis.$fetch;
+    globalThis.$fetch = (async () => { throw new Error("upstream 500"); }) as unknown as typeof globalThis.$fetch;
     const origErr = console.error;
     console.error = () => {};
     try {

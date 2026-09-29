@@ -29,6 +29,8 @@
     "test": "bun scripts/test.ts",
     "lint": "bun scripts/lint.ts",
     "lint:fix": "bun scripts/lint.ts --fix",
+    "typecheck": "bunx nuxi typecheck",
+    "check": "bun run lint && bun run typecheck && bun run tailwindcss:lint",
     "nginx:generate": "bun scripts/generate-nginx-conf.ts",
     "mini:dev:h5": "cd mini && bun run dev:h5",
     "mini:dev:mp-weixin": "cd mini && bun run dev:mp-weixin",

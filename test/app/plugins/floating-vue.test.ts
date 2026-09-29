@@ -10,6 +10,6 @@ const { default: floatingVuePlugin } = await import("~/plugins/floating-vue");
 
 describe("floating-vue plugin", () => {
   test("plugin 不抛(import.meta.client=false 走 SSR 分支)", () => {
-    expect(() => floatingVuePlugin({ vueApp: {} } as never, {} as never)).not.toThrow();
+    expect(() => floatingVuePlugin({ vueApp: {} } as never)).not.toThrow();
   });
 });

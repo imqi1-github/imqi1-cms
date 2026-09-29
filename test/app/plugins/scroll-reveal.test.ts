@@ -15,7 +15,7 @@ describe("scroll-reveal plugin", () => {
         },
       },
     };
-    scrollRevealPlugin(fakeNuxtApp as never, {} as never);
+    scrollRevealPlugin(fakeNuxtApp as never);
     expect(registered).toHaveLength(1);
     expect(registered[0]?.name).toBe("scroll-reveal");
   });
@@ -29,7 +29,7 @@ describe("scroll-reveal plugin", () => {
         },
       },
     };
-    scrollRevealPlugin(fakeNuxtApp as never, {} as never);
+    scrollRevealPlugin(fakeNuxtApp as never);
     expect(directiveDef).toBeDefined();
     expect(typeof directiveDef).toBe("object");
   });

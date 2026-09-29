@@ -10,10 +10,10 @@ const { default: domainGuardPlugin } = await import("~/plugins/domain-guard.clie
 
 describe("domain-guard plugin", () => {
   test("plugin 调用不抛", () => {
-    expect(() => domainGuardPlugin({} as never, {} as never)).not.toThrow();
+    expect(() => domainGuardPlugin({} as never)).not.toThrow();
   });
 
   test("plugin 在无 window 环境也不抛(SSR 兼容路径)", () => {
-    expect(() => domainGuardPlugin({} as never, {} as never)).not.toThrow();
+    expect(() => domainGuardPlugin({} as never)).not.toThrow();
   });
 });

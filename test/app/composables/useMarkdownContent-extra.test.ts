@@ -33,7 +33,7 @@ describe("useMarkdownContent:选项契约", () => {
   });
 
   test("findImageDimensions 返回 null 不抛(留待 DOM 阶段决定 aspect)", () => {
-    const { mount } = useMarkdownContent({ findImageDimensions: () => null });
+    const { mount } = useMarkdownContent({ findImageDimensions: () => ({ width: null, height: null }) });
     expect(() => mount()).not.toThrow();
   });
 

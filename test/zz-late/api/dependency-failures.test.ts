@@ -44,7 +44,7 @@ describe("admin/mail/test.post SMTP 故障隔离", () => {
         throw e;
       },
     }));
-    const err = await callMail({ to: "test@example.com" }).catch((e: { statusCode?: number; message?: string }) => e);
+    const err = await callMail({ to: "test@example.com" }).catch((e: unknown) => e as { statusCode?: number; message?: string }) as unknown as { statusCode?: number; message?: string };
     expect(err.statusCode).toBe(500);
     expect(String(err.message)).not.toMatch(/ECONNREFUSED/);
     expect(String(err.message)).not.toMatch(/127\.0\.0\.1/);
@@ -60,13 +60,13 @@ describe("admin/mail/test.post SMTP 故障隔离", () => {
         throw e;
       },
     }));
-    const err = await callMail({ to: "test@example.com" }).catch((e: { statusCode?: number; message?: string }) => e);
+    const err = await callMail({ to: "test@example.com" }).catch((e: unknown) => e as { statusCode?: number; message?: string }) as unknown as { statusCode?: number; message?: string };
     expect(err.statusCode).toBe(500);
     expect(String(err.message)).not.toMatch(/Username|password|535/);
   });
 
   test("已有 400(收件人空)→ 原样抛,不被 SMTP catch 吞成 500", async () => {
-    const err = await callMail({}).catch((e: { statusCode?: number }) => e);
+    const err = await callMail({}).catch((e: unknown) => e as { statusCode?: number }) as unknown as { statusCode?: number };
     expect(err.statusCode).toBe(400);
   });
 });
@@ -76,7 +76,7 @@ describe("admin/contents.get Prisma 故障隔离", () => {
     sharedFake.on("contents", "findMany", async () => {
       throw new Error(`relation "contents" does not exist\n  sql: SELECT * FROM contents WHERE...`);
     });
-    const err = await callContents().catch((e: { statusCode?: number; message?: string }) => e);
+    const err = await callContents().catch((e: unknown) => e as { statusCode?: number; message?: string }) as unknown as { statusCode?: number; message?: string };
     expect(err.statusCode).toBe(500);
     expect(String(err.message)).not.toMatch(/SELECT/);
     expect(String(err.message)).not.toMatch(/sql/);

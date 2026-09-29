@@ -29,13 +29,13 @@ afterEach(() => {
 
 describe("useMarkdownContent 合约", () => {
   test("返回 { mount, cleanup } 两个函数", () => {
-    const { mount, cleanup } = useMarkdownContent({ findImageDimensions: () => null });
+    const { mount, cleanup } = useMarkdownContent({ findImageDimensions: () => ({ width: null, height: null }) });
     expect(typeof mount).toBe("function");
     expect(typeof cleanup).toBe("function");
   });
 
   test("mount/cleanup 调用不抛(测试环境 client=false → mount 是空操作,cleanup 是空 querySelectorAll)", () => {
-    const { mount, cleanup } = useMarkdownContent({ findImageDimensions: () => null });
+    const { mount, cleanup } = useMarkdownContent({ findImageDimensions: () => ({ width: null, height: null }) });
     expect(() => mount()).not.toThrow();
     expect(() => cleanup()).not.toThrow();
     // 重复 mount/cleanup 也安全
@@ -54,7 +54,7 @@ describe("useMarkdownContent 合约", () => {
     pre.appendChild(btn);
     win.document.body.appendChild(pre);
 
-    const { cleanup } = useMarkdownContent({ findImageDimensions: () => null });
+    const { cleanup } = useMarkdownContent({ findImageDimensions: () => ({ width: null, height: null }) });
     expect(() => cleanup()).not.toThrow();
     // cleanup 没真跑(客户端守卫外的 DOM 操作在 useMarkdownTableTranspose 之后,
     // 而后者 client=false → 提前 return;但 querySelectorAll/.forEach 仍执行)。

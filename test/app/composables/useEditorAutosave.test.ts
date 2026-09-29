@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import type { Ref } from "vue";
 
+import type { SaveStatus } from "~/types/composables/editor-autosave";
 import { useEditorAutosave } from "~/composables/useEditorAutosave";
 import { useConfirm } from "~/composables/useConfirm";
 
@@ -23,7 +25,7 @@ afterEach(() => {
 // 替换为可控 mock:记录每次调用,默认 CSRF 刷新返回空 data(沿用旧 token)。
 const fetchCalls: Array<{ url: string; opts: { credentials?: string } }> = [];
 const origFetch = globalThis.$fetch;
-(globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async (url: string, opts: { credentials?: string } = {}) => {
+((globalThis as unknown) as { $fetch: typeof globalThis.$fetch }).$fetch = (async (url: string, opts: { credentials?: string } = {}) => {
   fetchCalls.push({ url, opts });
   if (url === "/api/csrf/token") return { data: {} };
   return undefined;
@@ -31,7 +33,7 @@ const origFetch = globalThis.$fetch;
 
 afterEach(() => {
   fetchCalls.length = 0;
-  (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = origFetch;
+  ((globalThis as unknown) as { $fetch: typeof globalThis.$fetch }).$fetch = origFetch;
   // 清 confirm / useConfirm 单例避免跨测试污染
   localStorage.clear();
   useState<unknown>("confirm-dialog", () => null).value = null;
@@ -60,8 +62,10 @@ describe("useEditorAutosave saveNow", () => {
   test("saved 分支:清备份 + saveStatus=saved,csrf 刷新一次", async () => {
     localStorage.setItem("content:draft:test", JSON.stringify({ fields: { old: 1 }, savedAt: 1 }));
     const { opts, csrfToken } = makeOpts();
-    const { saveStatus, lastSavedAt, saveNow } = useEditorAutosave(opts);
-    saveStatus.value = "unsaved"; // 模拟 markChanged
+    const { saveStatus: _ss, lastSavedAt, saveNow } = useEditorAutosave(opts);
+    const saveStatus = _ss as Ref<SaveStatus>;
+    void saveStatus;
+    saveStatus.value = "unsaved" as SaveStatus; // 模拟 markChanged
 
     await saveNow("manual");
     expect(saveStatus.value).toBe("saved");
@@ -77,8 +81,11 @@ describe("useEditorAutosave saveNow", () => {
     const { opts } = makeOpts({
       save: mock(async () => ({ status: "skipped" as const })),
     });
-    const { saveStatus, saveNow } = useEditorAutosave(opts);
-    saveStatus.value = "saved"; // 初始为 saved
+    const r = useEditorAutosave(opts);
+    const saveStatus = r.saveStatus as Ref<typeof r.saveStatus.value>;
+    const saveNow = r.saveNow;
+    void r;
+    saveStatus.value = "saved" as SaveStatus; // 初始为 saved
 
     await saveNow("manual");
     expect(saveStatus.value).toBe("unsaved");
@@ -89,8 +96,11 @@ describe("useEditorAutosave saveNow", () => {
       save: mock(async () => ({ status: "expired" as const })),
       serialize: () => ({ title: "TITLE", body: "BODY" }),
     });
-    const { saveStatus, saveNow } = useEditorAutosave(opts);
-    saveStatus.value = "unsaved";
+    const r = useEditorAutosave(opts);
+    const saveStatus = r.saveStatus as Ref<typeof r.saveStatus.value>;
+    const saveNow = r.saveNow;
+    void r;
+    saveStatus.value = "unsaved" as SaveStatus;
 
     const p = saveNow("manual");
     // 等待 confirm 弹出但暂不响应
@@ -112,8 +122,11 @@ describe("useEditorAutosave saveNow", () => {
     const { opts } = makeOpts({
       save: mock(async () => ({ status: "error" as const, message: "x" })),
     });
-    const { saveStatus, saveNow } = useEditorAutosave(opts);
-    saveStatus.value = "unsaved";
+    const r = useEditorAutosave(opts);
+    const saveStatus = r.saveStatus as Ref<typeof r.saveStatus.value>;
+    const saveNow = r.saveNow;
+    void r;
+    saveStatus.value = "unsaved" as SaveStatus;
     await saveNow("autosave");
     expect(saveStatus.value).toBe("error");
   });
@@ -126,8 +139,11 @@ describe("useEditorAutosave saveNow", () => {
         throw new Error("boom");
       }) as unknown as Parameters<typeof useEditorAutosave>[0]["save"],
     });
-    const { saveStatus, saveNow } = useEditorAutosave(opts);
-    saveStatus.value = "unsaved";
+    const r = useEditorAutosave(opts);
+    const saveStatus = r.saveStatus as Ref<typeof r.saveStatus.value>;
+    const saveNow = r.saveNow;
+    void r;
+    saveStatus.value = "unsaved" as SaveStatus;
     // save 抛 → saveNow 同步抛出(try/finally 没 catch)
     await expect(saveNow("manual")).rejects.toThrow("boom");
     // saveStatus 停在 saving(赋值 saved 在 await save 之后,异常使其跳过)
@@ -142,8 +158,11 @@ describe("useEditorAutosave saveNow", () => {
     let release!: () => void;
     const saveImpl = () => new Promise<{ status: "saved" }>((r) => { release = () => r({ status: "saved" }); });
     const { opts } = makeOpts({ save: mock(saveImpl) as unknown as Parameters<typeof useEditorAutosave>[0]["save"] });
-    const { saveStatus, saveNow } = useEditorAutosave(opts);
-    saveStatus.value = "unsaved";
+    const r = useEditorAutosave(opts);
+    const saveStatus = r.saveStatus as Ref<typeof r.saveStatus.value>;
+    const saveNow = r.saveNow;
+    void r;
+    saveStatus.value = "unsaved" as SaveStatus;
     const p1 = saveNow("manual");
     const p2 = saveNow("manual"); // busy → 立即 return
     // 等待 refreshCsrf 内部 + 链上多个 await 微任务全部跑完(save 才会被调到)
@@ -158,7 +177,9 @@ describe("useEditorAutosave saveNow", () => {
 describe("useEditorAutosave markChanged", () => {
   test("idle/saved → markChanged 变 unsaved", () => {
     const { opts } = makeOpts();
-    const { saveStatus, markChanged } = useEditorAutosave(opts);
+    const { saveStatus: _ss, markChanged } = useEditorAutosave(opts);
+    const saveStatus = _ss as Ref<SaveStatus>;
+    void saveStatus;
     expect(saveStatus.value).toBe("idle");
     markChanged();
     expect(saveStatus.value).toBe("unsaved");
@@ -166,11 +187,13 @@ describe("useEditorAutosave markChanged", () => {
 
   test("已 unsaved/saving/error → markChanged 不重置状态", () => {
     const { opts } = makeOpts();
-    const { saveStatus, markChanged } = useEditorAutosave(opts);
-    saveStatus.value = "saving";
+    const { saveStatus: _ss, markChanged } = useEditorAutosave(opts);
+    const saveStatus = _ss as Ref<SaveStatus>;
+    void saveStatus;
+    saveStatus.value = "saving" as SaveStatus;
     markChanged();
     expect(saveStatus.value).toBe("saving");
-    saveStatus.value = "error";
+    saveStatus.value = "error" as SaveStatus;
     markChanged();
     expect(saveStatus.value).toBe("error");
   });
@@ -220,7 +243,7 @@ describe("useEditorAutosave checkRecovery", () => {
     await new Promise<void>((r) => setTimeout(r, 0));
     useConfirm().answer(true);
     await p;
-    expect(applied).toEqual({ title: "RECOVERED" });
+    expect(applied!).toEqual({ title: "RECOVERED" });
     expect(saveStatus.value).toBe("unsaved");
   });
 
@@ -280,9 +303,9 @@ describe("useEditorAutosave checkRecovery", () => {
 
 describe("useEditorAutosave refreshCsrf 兜底", () => {
   test("CSRF 接口抛错 → 不抛、沿用旧 token", async () => {
-    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => {
+    ((globalThis as unknown) as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => {
       throw new Error("csrf 500");
-    }) as typeof globalThis.$fetch;
+    }) as unknown as typeof globalThis.$fetch;
     const { opts, csrfToken } = makeOpts();
     const { saveNow } = useEditorAutosave(opts);
     csrfToken.value = "stale";
@@ -292,7 +315,7 @@ describe("useEditorAutosave refreshCsrf 兜底", () => {
   });
 
   test("CSRF 成功返回 token → 写入 csrfToken", async () => {
-    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async (url: string) => {
+    ((globalThis as unknown) as { $fetch: typeof globalThis.$fetch }).$fetch = (async (url: string) => {
       if (url === "/api/csrf/token") return { data: { token: "fresh" } };
       return undefined;
     }) as typeof globalThis.$fetch;
@@ -311,7 +334,7 @@ describe("useEditorAutosave 过期提示", () => {
       serialize: () => ({ x: 1 }),
     });
     const navCalls: Array<{ path?: string; query?: Record<string, string> }> = [];
-    (globalThis as { navigateTo: typeof navigateTo }).navigateTo = (async (to: unknown) => {
+    ((globalThis as unknown) as { navigateTo: typeof navigateTo }).navigateTo = (async (to: unknown) => {
       navCalls.push(to as { path?: string; query?: Record<string, string> });
       return undefined;
     }) as typeof navigateTo;
@@ -330,7 +353,7 @@ describe("useEditorAutosave 过期提示", () => {
       serialize: () => ({ x: 1 }),
     });
     let called = 0;
-    (globalThis as { navigateTo: typeof navigateTo }).navigateTo = (async () => {
+    ((globalThis as unknown) as { navigateTo: typeof navigateTo }).navigateTo = (async () => {
       called++;
       return undefined;
     }) as typeof navigateTo;

@@ -1,6 +1,5 @@
 import { ref } from "vue";
 
-import { defineNuxtPlugin } from "#app";
 import type { PlayerManager, PlayerType } from "~/types/plugins/player-manager";
 
 // 使用字符串 key

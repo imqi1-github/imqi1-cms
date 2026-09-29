@@ -83,7 +83,7 @@ describe("server/api/auth/login.post 真实 DB 端到端", () => {
     const db = await getDb();
     const u = await db.users.findUnique({ where: { uid: 1 } });
     expect(u?.auth_code).toBeTruthy();
-    expect(u?.auth_code.length).toBeGreaterThanOrEqual(20);
+    expect(u?.auth_code!.length).toBeGreaterThanOrEqual(20);
   });
 
   test("用户不存在 → 401 + 模糊化消息(不暴露「用户名不存在」)", async () => {
@@ -104,7 +104,7 @@ describe("server/api/auth/login.post 真实 DB 端到端", () => {
     }
     // 第 6 次应被限流(captcha 字段在已通过之前触发,但限流检查先于 captcha)
     const { event } = loginEvent({ body: { username: "admin", password: "wrong", captcha: "any" }, peer: "10.30.1.4" });
-    const err = await loginHandler(event).catch((e: { statusCode?: number; statusMessage?: string; message?: string }) => e);
+    const err = await loginHandler(event).catch((e: unknown) => e) as { statusCode?: number; statusMessage?: string; message?: string };
     expect(err.statusCode).toBe(429);
     expect(err.statusMessage || err.message).toMatch(/Too many|尝试|限流|频率/);
   });
@@ -123,9 +123,9 @@ describe("server/api/auth/login.post 真实 DB 端到端", () => {
       await loginHandler(event).catch(() => null);
     }
     const { event } = loginEvent({ body: { username: "admin", password: "test1234" }, peer: "10.30.99.1" });
-    const err = await loginHandler(event).catch((e: { statusCode?: number; message?: string; data?: unknown }) => e);
+    const err = await loginHandler(event).catch((e: unknown) => e) as { statusCode?: number; message?: string; data?: unknown };
     // 调试:可能 captcha 要求被触发,登录前需要验证码 → 400
-    expect([400, 429]).toContain(err.statusCode);
+    expect([400, 429]).toContain(err.statusCode!);
     if (err.statusCode === 429) {
       expect(String(err.message)).toMatch(/尝试|频率|too many/i);
     }

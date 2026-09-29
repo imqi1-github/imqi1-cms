@@ -112,7 +112,7 @@ describe("admin/subscribes.post 业务逻辑", () => {
 
   test("name 前后空白 trim", async () => {
     let captured: { name: string } | null = null;
-    sharedFake.on("subscribes", "create", async ({ data }: { data: { name: string } }) => {
+    sharedFake.on("subscribes", "create", async ({ data }: { data: { name: string; url: string } }) => {
       captured = { name: data.name };
       return { id: 1, name: data.name, url: data.url, avatar: null, lastUpdated: null };
     });

@@ -25,10 +25,11 @@ describe("CONTAINER_META:10 种容器全覆盖", () => {
       "details",
     ];
     for (const t of expected) {
-      expect(CONTAINER_META[t]).toBeDefined();
-      expect(CONTAINER_META[t].type).toBe(t);
-      expect(CONTAINER_META[t].label.length).toBeGreaterThan(0);
-      expect(CONTAINER_META[t].icon).toMatch(/^lucide:/);
+      expect(CONTAINER_META[t as keyof typeof CONTAINER_META]).toBeDefined();
+      const meta = CONTAINER_META[t as keyof typeof CONTAINER_META];
+      expect(meta.type).toBe(t as keyof typeof CONTAINER_META);
+      expect(meta.label.length).toBeGreaterThan(0);
+      expect(meta.icon).toMatch(/^lucide:/);
     }
   });
 

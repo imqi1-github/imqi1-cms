@@ -8,6 +8,8 @@ import { describe, expect, test } from "bun:test";
 
 import { setupTestEnv } from "./_setup";
 
+import type { CommentNode } from "#server/types/apis/comment-node";
+
 await setupTestEnv();
 await import("#test/helpers/nitro-globals");
 const { getDb, resetDb, seedContent } = await import("./_helpers");
@@ -28,13 +30,6 @@ function event(opts: { cid?: number; page?: number; pageSize?: number } = {}) {
       res: { setHeader() {}, getHeader: () => undefined, getHeaders: () => ({}) },
     },
   } as never;
-}
-
-interface CommentNode {
-  coid: number;
-  parent_id: number | null;
-  children: CommentNode[];
-  content: string;
 }
 
 describe("server/api/comments.get 评论树(真实 DB)", () => {

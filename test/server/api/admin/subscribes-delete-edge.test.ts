@@ -67,7 +67,7 @@ describe("admin/subscribes/[id].delete 业务逻辑", () => {
       return {};
     });
     const r = await callDel({ id: "5" }) as Record<string, unknown>;
-    expect(deletedId).toBe(5);
+    expect(deletedId!).toBe(5);
     expect(r.success).toBe(true);
     expect(Object.keys(r).sort()).toEqual(["success"]);
   });

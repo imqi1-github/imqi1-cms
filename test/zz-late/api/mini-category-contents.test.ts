@@ -20,7 +20,7 @@ contentRelationRows.push({
   },
 });
 
-sharedFake.on("metas", "findUnique", async ({ where }: { where: { slug?: string; mid?: number } } = { where: {} }) => {
+sharedFake.on("metas", "findUnique", async ({ where }: { where: { slug?: string; mid?: number; type?: string } } = { where: {} }) => {
   return metaRows.find(m => {
     if (where.slug !== undefined && m.slug !== where.slug) return false;
     if (where.type !== undefined && m.type !== where.type) return false;

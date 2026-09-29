@@ -86,7 +86,7 @@ describe("admin/subscribes/[id].put 必填与类型", () => {
     // 当前实现:非字符串 avatar 不报错,直接走 null 入库
     sharedFake.on("subscribes", "update", async () => ({ id: 1, url: "https://x.com", name: "x", avatar: null, lastUpdated: null }));
     const r = await callPut({ id: "1", body: { name: "x", url: "https://x.com", avatar: 999 } });
-    expect((r as { success: number }).id).toBe(1);
+    expect((r as unknown as { id: number }).id).toBe(1);
   });
 
   test("name 超 100 字符 → 400", async () => {

@@ -28,7 +28,7 @@ describe("admin/contents/[cid].put(真实 DB)", () => {
       method: "PUT", url: `/api/admin/contents/${post.cid}`,
       cookie, params: { cid: String(post.cid) },
       body: { csrfToken: CSRF_TOKEN, title: "新标题", content: "新正文", status: 1, type: 0 },
-    }) as { success: boolean; data: { title: string } };
+    }) as unknown as { success: boolean; data: { title: string } };
     expect(r.success).toBe(true);
 
     const db = await getDb();

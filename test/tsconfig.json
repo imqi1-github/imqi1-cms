@@ -2,7 +2,7 @@
   // 独立一份 test/tsconfig:Nuxt prepare 会重写 .nuxt/tsconfig.*,直接改会被覆盖
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["bun-types", "nuxt"],
+    "types": ["bun-types"],
     "paths": {
       "#shared": ["../shared"],
       "#shared/*": ["../shared/*"],
@@ -19,11 +19,11 @@
     "moduleResolution": "Bundler",
     "module": "ESNext",
     "target": "ESNext",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "dom", "dom.iterable", "webworker"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["./**/*.ts", "./types/*.d.ts", "../shared/**/*.d.ts"],
+  "include": ["./**/*.ts", "./types/*.d.ts", "./helpers/**/*.d.ts", "../shared/**/*.d.ts", "../.nuxt/nuxt.d.ts"],
   "exclude": ["node_modules", "../node_modules"]
 }

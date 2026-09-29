@@ -24,7 +24,7 @@ function loadManager(): PlayerManagerStub {
       provided[key] = value;
     },
   };
-  playerManagerPlugin(fakeNuxtApp as never, {} as never);
+  playerManagerPlugin(fakeNuxtApp as never);
   return provided[PLAYER_MANAGER_KEY] as PlayerManagerStub;
 }
 

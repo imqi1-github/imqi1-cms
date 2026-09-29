@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { usePageTitle } from "~/composables/usePageTitle";
+import type { PageCategory } from "~/types/composables/page";
 
 const sharedKeys = ["page-title:title", "page-title:icon", "page-title:category"];
 
@@ -21,16 +22,18 @@ describe("usePageTitle", () => {
 
   test("setPageCategory / getPageCategory 双向同步", () => {
     const { setPageCategory, getPageCategory } = usePageTitle();
-    setPageCategory("article");
-    expect(getPageCategory().value).toBe("article");
-    setPageCategory("page");
-    expect(getPageCategory().value).toBe("page");
+    const article: PageCategory = { name: "article", slug: "article" };
+    const page: PageCategory = { name: "page", slug: "page" };
+    setPageCategory(article);
+    expect(getPageCategory().value).toBe(article);
+    setPageCategory(page);
+    expect(getPageCategory().value).toBe(page);
   });
 
   test("clearPageTitle 一并清空 title/icon/category", () => {
     const { setPageTitle, setPageCategory, clearPageTitle, getPageTitle, getPageIcon, getPageCategory } = usePageTitle();
     setPageTitle("A", "🐱");
-    setPageCategory("article");
+    setPageCategory({ name: "article", slug: "article" });
     clearPageTitle();
     expect(getPageTitle().value).toBeNull();
     expect(getPageIcon().value).toBeNull();

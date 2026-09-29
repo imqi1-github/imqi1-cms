@@ -26,17 +26,17 @@ afterEach(() => {
 describe("fetchAllAdminContents", () => {
   test("totalPages=1 → 只发一次请求,返回首页 data", async () => {
     responses.set("/api/admin/contents", {
-      data: [{ id: 1 }, { id: 2 }],
+      data: [{ cid: 1 }, { cid: 2 }],
       pagination: { totalPages: 1 },
     });
     const items = await fetchAllAdminContents();
-    expect(items).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(items.map(i => i.cid)).toEqual([1, 2]);
     expect(fetchCalls.filter(c => c.url.startsWith("/api/admin/contents"))).toHaveLength(1);
   });
 
   test("totalPages=3 → 发 3 次,聚合所有页 data", async () => {
     responses.set("/api/admin/contents", {
-      data: [{ id: 1 }, { id: 2 }],
+      data: [{ cid: 1 }, { cid: 2 }],
       pagination: { totalPages: 3 },
     });
     // 第 2、3 页的 mock(分页参数不同):用 searchParams 区分
@@ -44,14 +44,14 @@ describe("fetchAllAdminContents", () => {
       fetchCalls.push({ url });
       const u = new URL("http://x" + url);
       const page = u.searchParams.get("page");
-      if (page === "1") return { data: [{ id: 1 }], pagination: { totalPages: 3 } };
-      if (page === "2") return { data: [{ id: 2 }, { id: 3 }], pagination: { totalPages: 3 } };
-      if (page === "3") return { data: [{ id: 4 }], pagination: { totalPages: 3 } };
+      if (page === "1") return { data: [{ cid: 1 }], pagination: { totalPages: 3 } };
+      if (page === "2") return { data: [{ cid: 2 }, { cid: 3 }], pagination: { totalPages: 3 } };
+      if (page === "3") return { data: [{ cid: 4 }], pagination: { totalPages: 3 } };
       return { data: [], pagination: { totalPages: 3 } };
     }) as typeof globalThis.$fetch;
 
     const items = await fetchAllAdminContents();
-    expect(items.map(i => i.id)).toEqual([1, 2, 3, 4]);
+    expect(items.map(i => i.cid)).toEqual([1, 2, 3, 4]);
     expect(fetchCalls).toHaveLength(3);
     expect(fetchCalls[0]?.url).toContain("page=1");
     expect(fetchCalls[1]?.url).toContain("page=2");
@@ -64,15 +64,15 @@ describe("fetchAllAdminContents", () => {
   });
 
   test("pagination.totalPages 缺省 → 当 1 处理,只发一次请求", async () => {
-    responses.set("/api/admin/contents", { data: [{ id: 1 }] });
+    responses.set("/api/admin/contents", { data: [{ cid: 1 }] });
     const items = await fetchAllAdminContents();
-    expect(items).toEqual([{ id: 1 }]);
+    expect(items.map(i => i.cid)).toEqual([1]);
     expect(fetchCalls).toHaveLength(1);
   });
 
   test("pageSize 固定 100(常量 PAGE_SIZE = 100)", async () => {
     responses.set("/api/admin/contents", {
-      data: [{ id: 1 }],
+      data: [{ cid: 1 }],
       pagination: { totalPages: 1 },
     });
     await fetchAllAdminContents();
@@ -83,11 +83,11 @@ describe("fetchAllAdminContents", () => {
 describe("fetchAllAdminPages", () => {
   test("totalPages=1 → 返回首页 data", async () => {
     responses.set("/api/admin/pages", {
-      data: [{ id: "p1" }],
+      data: [{ cid: 1, title: "p1" }],
       pagination: { totalPages: 1 },
     });
     const items = await fetchAllAdminPages();
-    expect(items).toEqual([{ id: "p1" }]);
+    expect(items.map(i => i.cid)).toEqual([1]);
   });
 
   test("totalPages=2 → 聚合两页", async () => {
@@ -95,11 +95,11 @@ describe("fetchAllAdminPages", () => {
       fetchCalls.push({ url });
       const u = new URL("http://x" + url);
       const page = u.searchParams.get("page");
-      if (page === "1") return { data: [{ id: "a" }], pagination: { totalPages: 2 } };
+      if (page === "1") return { data: [{ cid: 1, title: "a" }], pagination: { totalPages: 2 } };
       return { data: [{ id: "b" }], pagination: { totalPages: 2 } };
     }) as typeof globalThis.$fetch;
     const items = await fetchAllAdminPages();
-    expect(items.map(i => i.id)).toEqual(["a", "b"]);
+    expect(items.map(i => i.cid)).toEqual([1, 2]);
     expect(fetchCalls).toHaveLength(2);
   });
 

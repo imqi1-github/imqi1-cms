@@ -18,11 +18,11 @@ import { Window } from "happy-dom";
 let win: Window;
 let origFetch: typeof globalThis.$fetch;
 
-interface Song { name: string; url: string }
+interface Song { name: string; url: string; artist: string; pic: string; lrc: string }
 const fakeSongs: Song[] = [
-  { name: "A", url: "https://x/a.mp3" },
-  { name: "B", url: "https://x/b.mp3" },
-  { name: "C", url: "https://x/c.mp3" },
+  { name: "A", url: "https://x/a.mp3", artist: "x", pic: "https://x/a.jpg", lrc: "" },
+  { name: "B", url: "https://x/b.mp3", artist: "x", pic: "https://x/b.jpg", lrc: "" },
+  { name: "C", url: "https://x/c.mp3", artist: "x", pic: "https://x/c.jpg", lrc: "" },
 ];
 
 beforeEach(() => {
@@ -57,12 +57,12 @@ afterEach(async () => {
 });
 
 function setFetchOk(): void {
-  globalThis.$fetch = (async () => fakeSongs) as typeof globalThis.$fetch;
+  globalThis.$fetch = (async () => fakeSongs) as unknown as typeof globalThis.$fetch;
 }
 function setFetchFail(): void {
   globalThis.$fetch = (async () => {
     throw new Error("meting 502");
-  }) as typeof globalThis.$fetch;
+  }) as unknown as typeof globalThis.$fetch;
 }
 
 describe("useAudioPlayer initPlayer 成功路径", () => {
@@ -71,7 +71,7 @@ describe("useAudioPlayer initPlayer 成功路径", () => {
     globalThis.$fetch = (async () => {
       calls++;
       return fakeSongs;
-    }) as typeof globalThis.$fetch;
+    }) as unknown as typeof globalThis.$fetch;
 
     const { useAudioPlayer } = await import("~/composables/useAudioPlayer");
     const player = useAudioPlayer();
@@ -92,7 +92,7 @@ describe("useAudioPlayer initPlayer 成功路径", () => {
     globalThis.$fetch = (async () => {
       calls++;
       return fakeSongs;
-    }) as typeof globalThis.$fetch;
+    }) as unknown as typeof globalThis.$fetch;
 
     const { useAudioPlayer } = await import("~/composables/useAudioPlayer");
     const player = useAudioPlayer();
@@ -116,7 +116,7 @@ describe("useAudioPlayer togglePlay / dispose (mfc=0 时跑)", () => {
     let release!: (songs: Song[]) => void;
     globalThis.$fetch = (async () => new Promise<Song[]>((r) => {
       release = r;
-    })) as typeof globalThis.$fetch;
+    })) as unknown as typeof globalThis.$fetch;
     const { useAudioPlayer } = await import("~/composables/useAudioPlayer");
     const player = useAudioPlayer();
     const p = player.initPlayer({ id: "p", server: "netease" });
@@ -183,7 +183,7 @@ describe("useAudioPlayer initPlayer 失败闸门(累积)", () => {
     globalThis.$fetch = (async () => {
       calls++;
       return fakeSongs;
-    }) as typeof globalThis.$fetch;
+    }) as unknown as typeof globalThis.$fetch;
     const { useAudioPlayer } = await import("~/composables/useAudioPlayer");
     const player = useAudioPlayer();
     await player.initPlayer({ id: "p", server: "netease" });
@@ -204,7 +204,7 @@ describe("useAudioPlayer cleanup (mfc 已 3 后)", () => {
     globalThis.$fetch = (async () => {
       calls++;
       return fakeSongs;
-    }) as typeof globalThis.$fetch;
+    }) as unknown as typeof globalThis.$fetch;
     await player.initPlayer({ id: "p", server: "netease" });
     expect(calls).toBe(0);
     expect(player.isDisabled.value).toBe(true);

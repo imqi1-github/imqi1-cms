@@ -13,6 +13,6 @@ describe("image-loader plugin", () => {
   });
 
   test("plugin callback 调用不抛(import.meta.client=false 时守门 return)", () => {
-    expect(() => imageLoaderPlugin({} as never, {} as never)).not.toThrow();
+    expect(() => imageLoaderPlugin({} as never)).not.toThrow();
   });
 });

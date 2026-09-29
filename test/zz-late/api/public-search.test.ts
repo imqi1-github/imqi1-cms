@@ -84,7 +84,7 @@ describe("search.get:subscribe 分支", () => {
         { id: 12, name: "未审核", link: "https://c.com", desc: "", avatar: null, enabled: true, isModification: true, modificationStatus: "pending" },
         { id: 13, name: "已通过 mod", link: "https://d.com", desc: "", avatar: null, enabled: true, isModification: true, modificationStatus: "approved" },
       ];
-      const q = (where.AND[1]?.OR[0]?.name as { contains: string } | undefined)?.contains ?? "";
+      const q = ((where.AND?.[1]?.OR?.[0] as { name?: { contains: string } } | undefined)?.name?.contains) ?? "";
       return all.filter(l => {
         if (l.enabled !== where.enabled) return false;
         const okMod = !l.isModification || l.modificationStatus === "approved";

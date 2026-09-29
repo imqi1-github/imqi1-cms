@@ -49,5 +49,5 @@ const plugin: BunPlugin = {
   },
 };
 
-// @ts-expect-error Bun.plugin is global
+// Bun.plugin is global on Bun runtime; typegen doesn't expose it under test/ tsconfig
 Bun.plugin(plugin);

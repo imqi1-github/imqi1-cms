@@ -1,11 +1,12 @@
 // 供 mock.module("#server/utils/prisma") 用的假 prisma:
 // prisma.<model>.<method>(args) 调用转发到 state["<model>.<method>"],未设置即抛错
 import { mock } from "bun:test";
+import type { PrismaClient } from "@prisma/client";
 
 type Handler = (...args: never[]) => unknown;
 
 export interface FakePrisma {
-  prisma: unknown;
+  prisma: PrismaClient;
   on(model: string, method: string, handler: Handler): void;
   on(key: string, handler: Handler): void;
   // 取当前 state 快照(bun-preload 在 beforeEach 调,锁定当前所有 registerXxxFakes 注册)
@@ -43,7 +44,7 @@ export function createFakePrisma(): FakePrisma {
     },
   });
   return {
-    prisma,
+    prisma: prisma as unknown as PrismaClient,
     // 两参形式 on("$transaction", fn) 注册顶层方法;三参 on("metas", "findMany", fn) 注册模型方法
     on(a: string, b: string | Handler, handler?: Handler) {
       const key = handler ? `${a}.${b}` : a;

@@ -10,6 +10,8 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 
+import { libParent } from "#test/helpers/happy-dom-cast";
+
 const g = globalThis as Record<string, unknown>;
 
 beforeAll(() => {
@@ -89,7 +91,7 @@ describe("useMarkdownTableTranspose 包装与溢出检测", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
     const wrap = win.document.querySelector(".markdown-table-wrap");
     expect(wrap).not.toBeNull();
@@ -106,13 +108,13 @@ describe("useMarkdownTableTranspose 包装与溢出检测", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
-    const wrap = win.document.querySelector(".markdown-table-wrap") as HTMLElement;
+    const wrap = win.document.querySelector(".markdown-table-wrap") as unknown as HTMLElement;
     // 模拟宽表:wrapper.scrollWidth > wrapper.clientWidth
     setScrollDims(wrap, { scrollWidth: 500, clientWidth: 200, scrollLeft: 0 });
     // 触发 scroll 事件 → schedule → rAF → syncScrollAttrs
-    wrap.dispatchEvent(new win.Event("scroll"));
+    wrap.dispatchEvent(new win.Event("scroll") as unknown as Event);
     await flushRaf();
     expect(wrap.getAttribute("data-table-scrollable")).toBe("true");
     expect(wrap.getAttribute("data-at-left")).toBe("true");
@@ -126,11 +128,11 @@ describe("useMarkdownTableTranspose 包装与溢出检测", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
-    const wrap = win.document.querySelector(".markdown-table-wrap") as HTMLElement;
+    const wrap = win.document.querySelector(".markdown-table-wrap") as unknown as HTMLElement;
     setScrollDims(wrap, { scrollWidth: 500, clientWidth: 200, scrollLeft: 150 });
-    wrap.dispatchEvent(new win.Event("scroll"));
+    wrap.dispatchEvent(new win.Event("scroll") as unknown as Event);
     await flushRaf();
     expect(wrap.getAttribute("data-at-left")).toBe("false");
     expect(wrap.getAttribute("data-at-right")).toBe("false");
@@ -143,11 +145,11 @@ describe("useMarkdownTableTranspose 包装与溢出检测", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
-    const wrap = win.document.querySelector(".markdown-table-wrap") as HTMLElement;
+    const wrap = win.document.querySelector(".markdown-table-wrap") as unknown as HTMLElement;
     setScrollDims(wrap, { scrollWidth: 100, clientWidth: 200 });
-    wrap.dispatchEvent(new win.Event("scroll"));
+    wrap.dispatchEvent(new win.Event("scroll") as unknown as Event);
     await flushRaf();
     expect(wrap.getAttribute("data-table-scrollable")).toBeNull();
     expect(wrap.getAttribute("data-at-left")).toBeNull();
@@ -161,11 +163,11 @@ describe("useMarkdownTableTranspose 包装与溢出检测", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
-    const wrap = win.document.querySelector(".markdown-table-wrap") as HTMLElement;
+    const wrap = win.document.querySelector(".markdown-table-wrap") as unknown as HTMLElement;
     setScrollDims(wrap, { scrollWidth: 500, clientWidth: 200, scrollLeft: 300 });
-    wrap.dispatchEvent(new win.Event("scroll"));
+    wrap.dispatchEvent(new win.Event("scroll") as unknown as Event);
     await flushRaf();
     expect(wrap.getAttribute("data-at-right")).toBe("true");
     expect(wrap.getAttribute("data-at-left")).toBe("false");
@@ -180,7 +182,7 @@ describe("useMarkdownTableTranspose cleanup + 守卫", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
     expect(win.document.querySelector(".markdown-table-wrap")).not.toBeNull();
     cleanup();
@@ -195,10 +197,10 @@ describe("useMarkdownTableTranspose cleanup + 守卫", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
     const firstWrap = win.document.querySelector(".markdown-table-wrap");
-    mount(win.document); // 二次 mount:应先 cleanup 再建
+    mount(libParent(win.document)); // 二次 mount:应先 cleanup 再建
     await flushRaf();
     const wraps = win.document.querySelectorAll(".markdown-table-wrap");
     expect(wraps.length).toBe(1); // 只有一个 wrapper(旧的被 cleanup)
@@ -213,16 +215,16 @@ describe("useMarkdownTableTranspose cleanup + 守卫", () => {
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
     // 多次 mount + cleanup 不抛即说明 mounted/rafScheduled 守卫正常工作
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
     // cleanup 后再 mount,能正常跑(说明 mounted=false 已复位)
     cleanup();
     expect(win.document.querySelectorAll(".markdown-table-wrap")).toHaveLength(0);
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
     // 新一轮 mount 后至少有一个 wrapper
     expect(win.document.querySelectorAll(".markdown-table-wrap").length).toBeGreaterThanOrEqual(1);
@@ -238,7 +240,7 @@ describe("useMarkdownTableTranspose client 守卫", () => {
     `);
     const { useMarkdownTableTranspose } = await import("~/composables/useMarkdownTableTranspose");
     const { mount, cleanup } = useMarkdownTableTranspose();
-    mount(win.document);
+    mount(libParent(win.document));
     await flushRaf();
     expect(win.document.querySelector(".markdown-table-wrap")).toBeNull();
     cleanup();

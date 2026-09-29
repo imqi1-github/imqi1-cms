@@ -5,6 +5,7 @@ import { Window } from "happy-dom";
 // 本测试只覆盖「无 wrapper fixture 时 mount/cleanup 不抛」,具体 widget 解析由 dev 验证。
 
 import { useMarkdownWidgets } from "~/composables/useMarkdownWidgets";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 let win: Window;
 let origUseNuxtApp: unknown;
@@ -36,7 +37,7 @@ describe("useMarkdownWidgets", () => {
     const root = win.document.createElement("div");
     win.document.body.appendChild(root);
 
-    const result = useMarkdownWidgets(root, {
+    const result = useMarkdownWidgets(libEl(root), {
       findImageDimensions: () => ({ width: 0, height: 0 }),
     });
     expect(typeof result.cleanup).toBe("function");
@@ -46,7 +47,7 @@ describe("useMarkdownWidgets", () => {
     const root = win.document.createElement("div");
     win.document.body.appendChild(root);
 
-    const { cleanup } = useMarkdownWidgets(root, {
+    const { cleanup } = useMarkdownWidgets(libEl(root), {
       findImageDimensions: () => ({ width: 0, height: 0 }),
     });
     cleanup();
@@ -60,7 +61,7 @@ describe("useMarkdownWidgets", () => {
     win.document.body.appendChild(root);
 
     let called = false;
-    const { cleanup } = useMarkdownWidgets(root, {
+    const { cleanup } = useMarkdownWidgets(libEl(root), {
       findImageDimensions: () => {
         called = true;
         return { width: 100, height: 50 };

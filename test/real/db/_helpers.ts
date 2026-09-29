@@ -176,11 +176,11 @@ export async function loginDbCookie(): Promise<string> {
   return `session=${sessionVal}; ${CSRF_COOKIE}`;
 }
 
-export async function callDbAdmin(
-  handler: (e: unknown) => Promise<unknown>,
+export async function callDbAdmin<T = unknown>(
+  handler: (e: never) => T,
   opts: AdminEvent,
-): Promise<unknown> {
-  return handler(makeDbEvent(opts).event as unknown);
+): Promise<T> {
+  return handler(makeDbEvent(opts).event as never) as T;
 }
 
 // 进程退出钩子:确保断开 Prisma 连接

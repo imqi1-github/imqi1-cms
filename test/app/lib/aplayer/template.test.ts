@@ -5,6 +5,7 @@ import "#test/app/lib/aplayer/setup-globals";
 
 import Template from "~/lib/aplayer/template";
 import resolveOptions from "~/lib/aplayer/options";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 let win: InstanceType<typeof HappyWindow>;
 
@@ -26,7 +27,7 @@ afterEach(() => {
 
 function makeOptions() {
   return resolveOptions({
-    container: win.document.createElement("div"),
+    container: libEl(win.document.createElement("div")),
     audio: [
       { name: "song-a", artist: "artist-x", url: "https://x/a.mp3", cover: "https://x/a.jpg" },
     ],
@@ -57,7 +58,7 @@ describe("Template 构造", () => {
 
   test("order='random' + randomOrder[0]=n → 取 audio[n].cover", () => {
     const options = resolveOptions({
-      container: win.document.createElement("div"),
+      container: libEl(win.document.createElement("div")),
       order: "random",
       audio: [
         { name: "first", url: "u1", cover: "first.jpg" },
@@ -71,7 +72,7 @@ describe("Template 构造", () => {
   });
 
   test("audio 空数组 → cover 不在 innerHTML 中", () => {
-    const options = resolveOptions({ container: win.document.createElement("div") });
+    const options = resolveOptions({ container: libEl(win.document.createElement("div")) });
     expect(options.audio).toEqual([]);
     new Template({ container: options.container, options, randomOrder: [] });
     expect(options.container.innerHTML).not.toContain("https://x/a.jpg");

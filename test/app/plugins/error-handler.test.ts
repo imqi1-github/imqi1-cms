@@ -42,13 +42,13 @@ function loadPlugin(): {
       },
     },
   };
-  const result = errorHandlerPlugin(fakeNuxtApp as never, {} as never) as
+  const result = errorHandlerPlugin(fakeNuxtApp as never) as
     | { provide?: Record<string, unknown> }
     | undefined;
   for (const [k, v] of Object.entries(result?.provide ?? {})) {
     provided[k] = v;
   }
-  return { api: provided as ProvidedApi, errorHandler: (e: unknown) => captured?.(e) };
+  return { api: provided as unknown as ProvidedApi, errorHandler: (e: unknown) => captured?.(e) };
 }
 
 beforeEach(() => {
@@ -80,8 +80,8 @@ describe("error-handler plugin provide", () => {
 
   test("markErrorHandled 对非对象(数字/字符串)不抛,返回原值", () => {
     const { api } = loadPlugin();
-    expect(api.markErrorHandled(42 as unknown as object)).toBe(42);
-    expect(api.markErrorHandled("x" as unknown as object)).toBe("x");
+    expect((api.markErrorHandled as (e: unknown) => unknown)(42)).toBe(42);
+    expect((api.markErrorHandled as (e: unknown) => unknown)("x")).toBe("x");
   });
 });
 

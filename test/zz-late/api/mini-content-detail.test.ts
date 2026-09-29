@@ -11,13 +11,13 @@ const contentDetailHandler = (await import("#server/api/mini/content/[id].get"))
 const contentRows: Array<Record<string, unknown>> = [];
 contentRows.push({
   cid: 1, title: "文A", desc: "d", content: "# 正文", type: 0, status: 1,
-  covers: JSON.stringify([{ url: "/uploads/a.jpg", desc: "cover1" }]),
+  cover: JSON.stringify([{ url: "/uploads/a.jpg", desc: "cover1" }]),
   create_time: new Date(),
   contentrelations: [],
 });
 contentRows.push({
   cid: 2, title: "文B(草稿)", desc: null, content: "x", type: 0, status: 0,
-  covers: "[]", create_time: new Date(), contentrelations: [],
+  cover: "[]", create_time: new Date(), contentrelations: [],
 });
 
 sharedFake.on("contents", "findFirst", async ({ where }: { where?: Record<string, unknown> } = {}) => {
@@ -33,12 +33,12 @@ beforeEach(() => {
   contentRows.length = 0;
   contentRows.push({
     cid: 1, title: "文A", desc: "d", content: "# 正文", type: 0, status: 1,
-    covers: JSON.stringify([{ url: "/uploads/a.jpg", desc: "cover1" }]),
+    cover: JSON.stringify([{ url: "/uploads/a.jpg", desc: "cover1" }]),
     create_time: new Date(), contentrelations: [],
   });
   contentRows.push({
     cid: 2, title: "文B(草稿)", desc: null, content: "x", type: 0, status: 0,
-    covers: "[]", create_time: new Date(), contentrelations: [],
+    cover: "[]", create_time: new Date(), contentrelations: [],
   });
 });
 
@@ -85,7 +85,7 @@ describe("mini/content/[id].get(小程序文章详情)", () => {
     expect(r.data.title).toBe("文A");
     expect(r.data.description).toBe("d");
     expect(r.data.content).toBe("# 正文");
-    expect(Array.isArray(r.data.covers)).toBe(true);
+    expect(typeof r.data.cover).toBe("string");
     expect(Array.isArray(r.data.categories)).toBe(true);
   });
 });

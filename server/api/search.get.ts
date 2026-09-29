@@ -18,12 +18,7 @@ import type {
 // 搜索关键词净化
 // single-flight 防 cache stampede:50 并发 cold miss 只让首个跑 DB,
 // 其余并发 await 同一 promise 共享结果。模块级 Map(单进程有效,Redis 模式跨实例).
-const inflightSearch = new Map<string, Promise<{
-  results: unknown[];
-  total: number;
-  query: string;
-  type: string;
-}>>();
+const inflightSearch = new Map<string, Promise<SearchBranchResult & { query: string; type: string }>>();
 
 function sanitizeSearchKeyword(keyword: string): string {
   // 1. 移除前后空格
@@ -469,13 +464,13 @@ export default defineTypedApiHandler(
       // ========== 数据库搜索(按类型分支)+ single-flight 防 cache stampede ==========
       // 50 并发 cold miss 场景:不让每个请求各自跑 DB,只让首个 miss 跑 DB,
       // 其余并发 await 同一 promise 共享结果。模块级 Map 即可(单进程内有效)。
-      let responseData: typeof responseData;
+      let responseData: SearchBranchResult & { query: string; type: string };
       const inflightKey = `${q}:${type}`;
       const existing = inflightSearch.get(inflightKey);
       if (existing) {
         responseData = await existing;
       } else {
-        const p = (async () => {
+        const p: Promise<SearchBranchResult & { query: string; type: string }> = (async () => {
           const searchResult: SearchBranchResult = await pathSearch(q, type);
           return {
             results: searchResult.results,

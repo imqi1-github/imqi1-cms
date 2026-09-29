@@ -115,7 +115,7 @@ if (skipIfNoDb()) {
             type: 0,
             uid: 1,
             // update_time 故意不传
-          },
+          } as never,
         });
         expect.unreachable();
       } catch {

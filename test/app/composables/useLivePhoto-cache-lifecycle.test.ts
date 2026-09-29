@@ -81,7 +81,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   globalThis.fetch = originalFetch;
-  URL.createObjectURL = originalFetch ? (() => "") as typeof URL.createObjectURL : URL.createObjectURL;
+  URL.createObjectURL = () => "";
   // 恢复原始 URL.createObjectURL(上面 beforeEach 替换,这里恢复)
   URL.revokeObjectURL = (() => undefined) as typeof URL.revokeObjectURL;
   // 简单方式:重新拉一份 useLivePhoto 模块副作用重置 caches
@@ -128,7 +128,7 @@ describe("useLivePhoto inflight 去重", () => {
 describe("useLivePhoto cacheEpoch 隔离", () => {
   test("clearLivePhotoMediaCache 后旧 promise resolve 时不写回新 cache,blob 立即 revoke", async () => {
     let resolver!: (b: Uint8Array) => void;
-    globalThis.fetch = (async () => new Promise<Response>((resolve) => {
+    globalThis.fetch = (async (): Promise<Response> => new Promise<Response>((resolve) => {
       resolver = (b) => resolve({
         ok: true,
         status: 200,
@@ -141,7 +141,7 @@ describe("useLivePhoto cacheEpoch 隔离", () => {
         }),
         arrayBuffer: async () => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength),
       } as Response);
-    })) as typeof globalThis.fetch;
+    })) as unknown as typeof globalThis.fetch;
     const { extractLivePhotoMedia, peekLivePhotoImageUrl } = useLivePhoto();
     const url = "https://x.com/c.jpg#live";
     const p = extractLivePhotoMedia(url);

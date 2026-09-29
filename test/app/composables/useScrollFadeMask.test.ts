@@ -3,6 +3,7 @@ import { Window } from "happy-dom";
 import { effectScope, nextTick, ref } from "vue";
 
 import { useScrollFadeMask } from "~/composables/useScrollFadeMask";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 // happy-dom 提供 DOM API 但每实例隔离;每个 test 起新 Window、挂到 globalThis。
 // (一次性 Window 跨测试会被 ResizeObserver/scroll listener 残留污染,难以复位)
@@ -88,7 +89,7 @@ describe("useScrollFadeMask", () => {
     win.document.body.appendChild(div);
 
     const s = startScope();
-    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(div), "y"))!;
+    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(libEl(div)), "y"))!;
     expect(atStart.value).toBe(true);
     expect(atEnd.value).toBe(false);
     s.stop();
@@ -100,7 +101,7 @@ describe("useScrollFadeMask", () => {
     win.document.body.appendChild(div);
 
     const s = startScope();
-    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(div), "y"))!;
+    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(libEl(div)), "y"))!;
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(false);
     s.stop();
@@ -112,7 +113,7 @@ describe("useScrollFadeMask", () => {
     win.document.body.appendChild(div);
 
     const s = startScope();
-    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(div), "y"))!;
+    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(libEl(div)), "y"))!;
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(true);
     s.stop();
@@ -124,7 +125,7 @@ describe("useScrollFadeMask", () => {
     win.document.body.appendChild(div);
 
     const s = startScope();
-    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(div), "y"))!;
+    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(libEl(div)), "y"))!;
     expect(atStart.value).toBe(true);
     expect(atEnd.value).toBe(true);
     s.stop();
@@ -136,7 +137,7 @@ describe("useScrollFadeMask", () => {
     win.document.body.appendChild(div);
 
     const s = startScope();
-    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(div), "x"))!;
+    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(libEl(div)), "x"))!;
     expect(atStart.value).toBe(false);
     expect(atEnd.value).toBe(true);
     s.stop();
@@ -148,7 +149,7 @@ describe("useScrollFadeMask", () => {
     win.document.body.appendChild(div);
 
     const s = startScope();
-    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(div), "y"))!;
+    const { atStart, atEnd } = s.run(() => useScrollFadeMask(ref(libEl(div)), "y"))!;
     expect(atEnd.value).toBe(false);
 
     div.scrollTop = 200;

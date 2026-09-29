@@ -86,7 +86,7 @@ describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", (
     }).catch((e: unknown) => {
       // handler 抛错 → 兜底返 500,期望修复后不抛
       const err = e as { statusCode?: number; message?: string };
-      expect([200, 500]).toContain(err.statusCode);
+      expect([200, 500]).toContain(err.statusCode!);
       if (err.statusCode === 500) {
         expect(String(err.message)).not.toMatch(/ECONNRESET/);
         expect(String(err.message)).not.toMatch(/connection lost/);

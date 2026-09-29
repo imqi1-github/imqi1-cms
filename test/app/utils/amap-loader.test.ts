@@ -17,7 +17,7 @@ beforeEach(() => {
   (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async (url: string) => {
     if (url === "/api/amap/config") return { key: "k1", securityCode: "js1" };
     return undefined;
-  }) as typeof globalThis.$fetch;
+  }) as unknown as typeof globalThis.$fetch;
 });
 
 afterEach(() => {
@@ -37,7 +37,7 @@ describe("resolveAmapClientConfig", () => {
 
   test("/api/amap/config 缺 key/securityCode → 用空串兜底(避免 undefined 字符串)", async () => {
     const origFetch2 = (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch;
-    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => ({})) as typeof globalThis.$fetch;
+    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => ({})) as unknown as typeof globalThis.$fetch;
     try {
       const cfg = await resolveAmapClientConfig();
       expect(cfg.key).toBe("");
@@ -49,7 +49,7 @@ describe("resolveAmapClientConfig", () => {
 
   test("/api/amap/config key 为 null → 兜底为空串", async () => {
     const origFetch2 = (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch;
-    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => ({ key: null, securityCode: undefined })) as typeof globalThis.$fetch;
+    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => ({ key: null, securityCode: undefined })) as unknown as typeof globalThis.$fetch;
     try {
       const cfg = await resolveAmapClientConfig();
       expect(cfg.key).toBe("");

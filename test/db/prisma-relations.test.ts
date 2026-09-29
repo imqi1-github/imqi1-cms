@@ -50,7 +50,7 @@ if (skipIfNoDb()) {
             status: 99 as never,
             type: 0,
             uid: 1,
-          },
+          } as never,
         });
         expect.unreachable();
       } catch {

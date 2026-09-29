@@ -6,6 +6,8 @@ import {
   registerRichInput,
   unregisterRichInput,
 } from "~/composables/useRichInputRegistry";
+import type { RichInputHandle } from "~/types/composables/rich-input";
+import { libEl } from "#test/helpers/happy-dom-cast";
 
 let win: Window;
 
@@ -25,27 +27,27 @@ describe("useRichInputRegistry", () => {
   test("register 后 find 能命中同一元素 + 同一 handle", () => {
     const el = win.document.createElement("div");
     el.setAttribute("contenteditable", "true");
-    const handle = { focus: () => {} };
-    registerRichInput(el, handle);
-    const found = findRichInputHandle(el);
+    const handle = { focus: () => {} } as unknown as RichInputHandle;
+    registerRichInput(libEl(el), handle);
+    const found = findRichInputHandle(libEl(el));
     expect(found).not.toBeNull();
-    expect(found?.editor).toBe(el);
+    expect(found?.editor).toBe(libEl(el));
     expect(found?.handle).toBe(handle);
-    unregisterRichInput(el);
+    unregisterRichInput(libEl(el));
   });
 
   test("unregister 后 find 返回 null", () => {
     const el = win.document.createElement("div");
     el.setAttribute("contenteditable", "true");
-    registerRichInput(el, { id: "x" });
-    unregisterRichInput(el);
-    expect(findRichInputHandle(el)).toBeNull();
+    registerRichInput(libEl(el), { id: "x" } as unknown as RichInputHandle);
+    unregisterRichInput(libEl(el));
+    expect(findRichInputHandle(libEl(el))).toBeNull();
   });
 
   test("未注册的元素 find 返回 null", () => {
     const el = win.document.createElement("div");
     el.setAttribute("contenteditable", "true");
-    expect(findRichInputHandle(el)).toBeNull();
+    expect(findRichInputHandle(libEl(el))).toBeNull();
   });
 
   test("target 是编辑器内后代时,closest 找到编辑器根 + 反查 handle", () => {
@@ -56,20 +58,20 @@ describe("useRichInputRegistry", () => {
     editor.appendChild(inner);
     win.document.body.appendChild(editor);
 
-    const handle = { foo: "bar" };
-    registerRichInput(editor, handle);
-    const found = findRichInputHandle(inner);
-    expect(found?.editor).toBe(editor);
+    const handle = { foo: "bar" } as unknown as RichInputHandle;
+    registerRichInput(libEl(editor), handle);
+    const found = findRichInputHandle(libEl(inner));
+    expect(found?.editor).toBe(libEl(editor));
     expect(found?.handle).toBe(handle);
 
-    unregisterRichInput(editor);
+    unregisterRichInput(libEl(editor));
   });
 
   test("target 是非 contenteditable 父节点 → 返回 null", () => {
     const wrapper = win.document.createElement("div");
     const inner = win.document.createElement("span");
     wrapper.appendChild(inner);
-    expect(findRichInputHandle(inner)).toBeNull();
+    expect(findRichInputHandle(libEl(inner))).toBeNull();
   });
 
   test("target 是 contenteditable=false(表情图占位)→ closest 跳过 false 节点找 true 根,命中 handle", () => {
@@ -80,12 +82,12 @@ describe("useRichInputRegistry", () => {
     const emoji = win.document.createElement("span");
     emoji.setAttribute("contenteditable", "false");
     editor.appendChild(emoji);
-    registerRichInput(editor, { id: "x" });
+    registerRichInput(libEl(editor), { id: "x" } as unknown as RichInputHandle);
 
-    const found = findRichInputHandle(emoji);
-    expect(found?.editor).toBe(editor);
+    const found = findRichInputHandle(libEl(emoji));
+    expect(found?.editor).toBe(libEl(editor));
 
-    unregisterRichInput(editor);
+    unregisterRichInput(libEl(editor));
   });
 
   test("null target → 返回 null(不抛)", () => {
@@ -95,18 +97,18 @@ describe("useRichInputRegistry", () => {
   test("register 同一元素多次 → 后者覆盖前者", () => {
     const el = win.document.createElement("div");
     el.setAttribute("contenteditable", "true");
-    registerRichInput(el, { v: 1 });
-    registerRichInput(el, { v: 2 });
-    expect((findRichInputHandle(el)?.handle as { v: number }).v).toBe(2);
-    unregisterRichInput(el);
+    registerRichInput(libEl(el), { v: 1 } as unknown as RichInputHandle);
+    registerRichInput(libEl(el), { v: 2 } as unknown as RichInputHandle);
+    expect((findRichInputHandle(libEl(el))?.handle as unknown as { v: number }).v).toBe(2);
+    unregisterRichInput(libEl(el));
   });
 
   test("unregister 一个未注册的元素 → 不抛,后续 register 仍正常", () => {
     const el = win.document.createElement("div");
     el.setAttribute("contenteditable", "true");
-    expect(() => unregisterRichInput(el)).not.toThrow();
-    registerRichInput(el, { v: "x" });
-    expect(findRichInputHandle(el)).not.toBeNull();
-    unregisterRichInput(el);
+    expect(() => unregisterRichInput(libEl(el))).not.toThrow();
+    registerRichInput(libEl(el), { v: "x" } as unknown as RichInputHandle);
+    expect(findRichInputHandle(libEl(el))).not.toBeNull();
+    unregisterRichInput(libEl(el));
   });
 });

@@ -51,9 +51,10 @@ function installFakeXhr(_opts: { abortOn: number[] } = { abortOn: [] }) {
     readyState: number;
     status: number;
     responseText: string;
-    _onreadystatechange: (() => void) | null;
-    _onerror: (() => void) | null;
+    onreadystatechange: (() => void) | null;
+    onerror: (() => void) | null;
     url: string;
+    complete: (status?: number, text?: string) => void;
   }> = [];
 
   class FakeXhr {
@@ -66,7 +67,7 @@ function installFakeXhr(_opts: { abortOn: number[] } = { abortOn: [] }) {
     url: string;
     constructor() {
       this.url = "";
-      instances.push(this);
+      instances.push(this as unknown as (typeof instances)[number]);
     }
     open(method: string, url: string) { this.url = url; }
     send() { /* 不触发 onreadystatechange,保持 readyState=1 在途 */ }
@@ -87,7 +88,7 @@ function installFakeXhr(_opts: { abortOn: number[] } = { abortOn: [] }) {
     }
   }
 
-  (globalThis as unknown as { XMLHttpRequest: typeof FakeXhr }).XMLHttpRequest = FakeXhr as unknown as typeof XMLHttpRequest;
+  (globalThis as unknown as { XMLHttpRequest: unknown }).XMLHttpRequest = FakeXhr;
   return { instances, FakeXhr: FakeXhr as unknown as { new(): FakeXhr } & typeof FakeXhr };
 }
 

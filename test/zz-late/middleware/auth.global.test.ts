@@ -69,7 +69,7 @@ let auth: (to: { path: string; fullPath: string }) => Promise<unknown>;
 beforeAll(async () => {
   installStubs();
   const mod = await import("~/middleware/auth.global");
-  auth = mod.default;
+  auth = mod.default as unknown as (to: { path: string; fullPath: string }) => Promise<unknown>;
 });
 
 beforeEach(() => {
