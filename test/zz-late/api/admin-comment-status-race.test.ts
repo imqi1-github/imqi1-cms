@@ -66,7 +66,7 @@ async function setupComments(records: Array<{ coid: number; cid: number; status:
 
 describe("admin/comments/[id].patch status 变更时 comment_num 累计方向", () => {
   test("0→1 然后 1→0(同 cid)→ 净变动 0(一次 +1,一次 -1)", async () => {
-    const map = await setupComments([{ coid: 1, cid: 10, status: 0 }]);
+    await setupComments([{ coid: 1, cid: 10, status: 0 }]);
     let incs = 0;
     let decs = 0;
     sharedFake.on("contents", "update", async (args: { data?: { comment_num?: { increment?: number; decrement?: number } } } = { data: {} }) => {

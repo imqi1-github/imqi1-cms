@@ -23,7 +23,7 @@ import { setupTestEnv } from "./_setup";
 
 await setupTestEnv();
 await import("#test/helpers/nitro-globals");
-const { getDb, resetDb, loginDbCookie, callDbAdmin } = await import("./_helpers");
+const { getDb, loginDbCookie, callDbAdmin } = await import("./_helpers");
 const { registerDbReset } = await import("./_helpers");
 void registerDbReset;
 

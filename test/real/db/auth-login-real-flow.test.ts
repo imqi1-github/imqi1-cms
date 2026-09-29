@@ -5,9 +5,7 @@
  * 覆盖：成功路径(返回白名单字段+写入 session)+ 失败路径(密码错/用户不存在)+
  * 限流(5 次失败 → 429)+ 2FA 启用时返 pending2FA + auth code 不外泄 + 退出登录清 session。
  */
-import { mock } from "bun:test";
-
-import { beforeEach, describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { setupTestEnv } from "./_setup";
 

@@ -15,16 +15,13 @@ import { setupTestEnv } from "./_setup";
 
 await setupTestEnv();
 await import("#test/helpers/nitro-globals");
-const { getDb, resetDb } = await import("./_helpers");
+const { resetDb } = await import("./_helpers");
 
 // 创建两个独立的 PrismaClient 实例(模拟两个进程/服务)
 async function makeInstance() {
   const { PrismaClient } = await import("@prisma/client");
   const { PrismaPg } = await import("@prisma/adapter-pg");
-  const cfg = (await import("./_setup")).getDb
-    ? null // 用 _helpers 的 env
-    : null;
-  // 简化:让两个实例共用同一个 PG URL(从 process.env 读)
+  // 让两个实例共用同一个 PG URL(从 process.env 读)
   const { setupDb } = await import("./_setup");
   const c = await setupDb();
   const url = `postgresql://${c.user}:${encodeURIComponent(c.password)}@${c.host}:${c.port}/${c.db}`;

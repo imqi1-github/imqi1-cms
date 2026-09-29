@@ -15,7 +15,7 @@ import { setupTestEnv } from "./_setup";
 
 await setupTestEnv();
 await import("#test/helpers/nitro-globals");
-const { getDb, resetDb, loginDbCookie, callDbAdmin } = await import("./_helpers");
+const { getDb, loginDbCookie, callDbAdmin } = await import("./_helpers");
 
 const contentsHandler = (await import("#server/api/admin/contents.get")).default;
 const commentsHandler = (await import("#server/api/admin/comments.get")).default;

@@ -98,7 +98,7 @@ describe("routes/sitemap.xml.get 真实 DB", () => {
 
   test("响应头 Cache-Control 短缓存", async () => {
     await resetDb();
-    let captured: { headers?: Record<string, string> } = {};
+    const captured: { headers?: Record<string, string> } = {};
     const ev = {
       method: "GET",
       context: {},

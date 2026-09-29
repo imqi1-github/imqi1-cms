@@ -47,24 +47,28 @@ function sanitizeStyleAttribute(rawHtml: string): string {
 /**
  * 后置净化属性值里残留的 < / > / &,防 Mutation XSS(下游 innerHTML 二次注入触发)。
  * 排除已转义的实体(&lt; &gt; &amp;):不重复转义。
+ * 用字符串占位符避免 no-control-regex 规则告警(纯字符串 split/replace 实现)。
  */
+const ENTITY_PLACEHOLDERS = ["__LT__", "__GT__", "__AMP__", "__QT__", "__SQ__"] as const;
+type Entity = "&lt;" | "&gt;" | "&amp;" | "&quot;" | "&#39;";
+const ENTITIES: Entity[] = ["&lt;", "&gt;", "&amp;", "&quot;", "&#39;"];
+
 function escapeAttributesForMutationSafety(rawHtml: string): string {
   return rawHtml.replace(ATTR_PATTERN, (_match, ws, name, value) => {
-    // 不重复转义已实体化的 &lt; / &gt; / &amp; / &quot; / &#39;
-    const escaped = value
-      .replace(/&lt;/g, "\x01LT\x01")
-      .replace(/&gt;/g, "\x01GT\x01")
-      .replace(/&amp;/g, "\x01AMP\x01")
-      .replace(/&quot;/g, "\x01QT\x01")
-      .replace(/&#39;/g, "\x01SQ\x01")
+    // 先把已实体化的实体换成占位符,转义后再换回(避免双重转义)
+    let escaped = value;
+    for (let i = 0; i < ENTITIES.length; i++) {
+      escaped = escaped.split(ENTITIES[i]!).join(ENTITY_PLACEHOLDERS[i]!);
+    }
+    // 转义属性值里的 < / > / &
+    escaped = escaped
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\x01LT\x01/g, "&lt;")
-      .replace(/\x01GT\x01/g, "&gt;")
-      .replace(/\x01AMP\x01/g, "&amp;")
-      .replace(/\x01QT\x01/g, "&quot;")
-      .replace(/\x01SQ\x01/g, "&#39;");
+      .replace(/>/g, "&gt;");
+    // 把占位符换回原实体
+    for (let i = 0; i < ENTITY_PLACEHOLDERS.length; i++) {
+      escaped = escaped.split(ENTITY_PLACEHOLDERS[i]!).join(ENTITIES[i]!);
+    }
     return `${ws}${name}="${escaped}"`;
   });
 }

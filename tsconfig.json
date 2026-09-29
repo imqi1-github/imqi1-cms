@@ -1,8 +1,7 @@
 {
-  // https://nuxt.com/docs/guide/concepts/typescript
   "files": [],
-  // 供 bun test 解析 #shared/#server(Nuxt 的同名别名在 .nuxt/tsconfig.*,bun 不读)
   "compilerOptions": {
+    // 部分路径是给 test 目录做别名导入的
     "paths": {
       "#shared": ["./shared"],
       "#shared/*": ["./shared/*"],
