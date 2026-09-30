@@ -37,9 +37,11 @@ stats-*.html
 # Test coverage (bun test --coverage 产物)
 coverage/
 
-# Playwright (MCP snapshot/console artifacts)
+# Playwright (MCP snapshot/console artifacts + E2E 运行产物)
 .playwright-mcp
 .playwright
+test-results/
+playwright-report/
 
 # /audit 并行共享会话缓存（运行时生成，勿提交）
 .audit-session

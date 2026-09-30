@@ -258,6 +258,7 @@ const handleLogout = async () => {
 
             <Button
               v-tooltip="'退出登录'"
+              aria-label="退出登录"
               variant="ghost"
               size="icon"
               @click="handleLogout"

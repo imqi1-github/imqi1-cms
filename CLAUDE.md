@@ -10,7 +10,7 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 - 本地开发：`bun run dev`（app + nitro 同起）
 - 构建：`bun run build`（= `nuxt build`；hash 由 nuxt.config `genBuildHash()` 生成、作 CDN 目录 `static/<hash>`，产物进 `.output/`；`postbuild` 跑 `copy-data.ts` + `update-sw-cdn.ts` → 写 `.output/build-hash.json` + 更新 sw.js CDN 引用）。构建哈希**不进 `__NUXT__`**（`runtimeConfig.public` 已清空、`buildHash` 非 public），由 `/api/site` 下发、前端 `useSiteSettings` 读取。
 - 静态预览：`bun run generate` / `preview`，`bun run serve`（本地 file-server）
-- 测试：`bun run test` 跑 `test/` 下全部（用 `bun:test`，零依赖、TypeScript 原生）；支持 `bun run test <pattern>` 指定文件 / 用 `-t "用例名"` 过滤；`--coverage` 出 bun:test 自带覆盖率报告。测试内用 `#shared/#server/#test` 别名导入（勿写多层相对路径）；Nitro 自动导入的运行时替身在 `test/helpers/nitro-globals.ts`
+- 测试：`bun run test` 跑 `test/` 下全部（用 `bun:test`，零依赖、TypeScript 原生）；支持 `bun run test <pattern>` 指定文件 / 用 `-t "用例名"` 过滤；`--coverage` 出 bun:test 自带覆盖率报告。测试内用 `#shared/#server/#test` 别名导入（勿写多层相对路径）；Nitro 自动导入的运行时替身在 `test/helpers/nitro-globals.ts`。E2E（Playwright）：`bun run test:e2e`（首跑前置 `test:e2e:install` 装依赖 + `bun run --cwd test e2e:browsers` 装浏览器，后者内置 npmmirror 镜像），复用常驻 dev `localhost:3001`、无服务自启；`bun run test` 不收集 `test/e2e`（bun test 会误收 `*.spec.ts`，已在 `scripts/test.ts` ignore）。第三方冒烟：`bun run test:e2e:smoke`（只跑 `test/e2e/smoke/`，COS/高德/百度/SMTP/GitHub 真服务轻量探活；会登录 admin 踢现有后台会话；发版前手动跑）
 - 小程序：`bun run mini:dev:h5` / `mini:dev:mp-weixin` / `mini:dev:mp-alipay`
 - 数据库：`bun run prisma:generate` / `prisma:studio`；初始化 `bun run db:init`
 - 运维：`bun run upload:cos` / `upload:server` / `compress:livephoto` / `clear:redis` / `reset:password`
@@ -21,7 +21,7 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 - `app/` — Nuxt 前端：`pages/`（路由）、`components/`、`composables/`、`types/apis`（~ 导入）、`shiki`、`router.options.ts`
 - `server/` — Nitro：`api/` + `routes/`、`middleware/`、`plugins/`、`utils/`、`types/apis`（#server 导入）、`lib/`
 - `shared/` — 跨 bundle 共享（runtimeConfig、`redis-config.ts`、amap、emoji、city-coords…）。**注意 app 与 nitro 各内联一份 → 模块级单例坑，见记忆**
-- `test/` — 分级测试（`bun:test`）：`unit/`（单元测，镜像源 `unit/app`、`unit/server`、`unit/shared`，`unit/real/` 测真实现不 mock）、`integration/`（真 DB：`db/` Prisma 集成测 + `real/db/` 真 handler 流程）；`helpers/`、`types/`、`zz-late/`（mock 泄漏防御纵深）保持顶层；`bun-types` 类型定义在 `test/tsconfig.json` 独立挂载，**不动 `.nuxt/tsconfig.*`**（Nuxt prepare 会重写）
+- `test/` — 分级测试（`bun:test`）：`unit/`（单元测，镜像源 `unit/app`、`unit/server`、`unit/shared`，`unit/real/` 测真实现不 mock）、`integration/`（真 DB：`db/` Prisma 集成测 + `real/db/` 真 handler 流程）、`e2e/`（Playwright）；`helpers/`、`types/`、`zz-late/`（mock 泄漏防御纵深）保持顶层。**测试专用依赖在 `test/package.json`**（happy-dom/bun-types/@playwright/test，`bun run test:e2e:install` 独立装，不进根 `bun install`，模式同 `scripts/package.json`）；`bun-types` 类型定义在 `test/tsconfig.json` 独立挂载，**不动 `.nuxt/tsconfig.*`**（Nuxt prepare 会重写）
 - `mini/` — uni-app 小程序：`IS_H5` + 运行时 if 分流（`min` 端无 v-html，表情/视频特殊)。**是 git 子模块**（公有 gitee `imqi1-mini`）：克隆/换机后为空目录，先 `git submodule update --init --recursive` 再跑 `mini:*`。
 - `prisma/`、`server/types` — 数据层
 - `scripts/` — 运维脚本（init-db、reset-password、upload-cos、compress-livephoto、generate-nginx-conf）+ `test.ts` 测试入口（透传 `bun run test [args...]`）。**重依赖（ffmpeg-static/cos-nodejs-sdk-v5/ssh2-sftp-client/pg/tsx 等）在 `scripts/package.json`、不进根 `bun install`**；首跑 `upload:cos`/`upload:server`/`compress:livephoto`/`reset:password`/`db:init` 前置一次 `bun run scripts:install`。

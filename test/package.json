@@ -1,0 +1,16 @@
+{
+  "name": "imqi1-cms-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test --config e2e/playwright.config.ts",
+    "e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
+    "e2e:report": "playwright show-report",
+    "e2e:browsers": "PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "bun-types": "^1.4.2",
+    "happy-dom": "^20.14.5"
+  }
+}

@@ -77,6 +77,7 @@ function handleCommentSubmitted() {
         <button
           v-if="canReply"
           v-tooltip="'回复'"
+          aria-label="回复"
           class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110 z-2"
           @click="startReply(comment)">
           <Icon name="ri-reply-fill" class="size-4" />
@@ -103,6 +104,7 @@ function handleCommentSubmitted() {
             <button
               v-if="canReply"
               v-tooltip="'回复'"
+              aria-label="回复"
               class="absolute -top-1.5 -right-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-gray-500 dark:text-gray-400 transition-all hover:text-blue-600 hover:scale-110 z-2"
               @click="startReply(comment)">
               <Icon name="ri-reply-fill" class="size-4" />
