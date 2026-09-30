@@ -26,7 +26,9 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    command: "bun run dev",
+    // 自启前清掉陈旧 lock(dev 被上次测试进程强杀后残留,pid 复用会让 Nuxt 误判 dev 已在跑);
+    // 仅在无服务可复用时才会执行,不会碰用户手动常驻的 dev
+    command: "rm -f .nuxt/nuxt.lock && bun run dev",
     url: baseURL,
     cwd: ROOT,
     reuseExistingServer: true,
