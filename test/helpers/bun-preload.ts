@@ -3,7 +3,7 @@
  * 全局 snapshot/restore sharedFake 状态,根除「上一个测试 sharedFake.on() 永久覆盖 → 下个测试 setSession 抛 uniq」的进程级污染。
  *
  * 用 Bun.plugin 改写一类文件:
- *  - test/app/composables/*.test.ts: 首行插入 import "test/helpers/setup-composable-globals.ts";
+ *  - test/unit/app/composables/*.test.ts: 首行插入 import "test/helpers/setup-composable-globals.ts";
  *    该模块在 test 文件顶层装 useState/ref/watch/CSS 等到 globalThis。
  *
  * 严格只匹配这一个目录,不影响其它测试与源码(避免污染 mock.module 链)。
@@ -33,17 +33,17 @@ const plugin: BunPlugin = {
   name: "composable-test-globals",
   setup(build) {
     build.onLoad({ filter: /\.test\.ts$/ }, (args) => {
-      // 仅接管 test/app/composables/*.test.ts 的首行注入。
+      // 仅接管 test/unit/app/composables/*.test.ts 的首行注入。
       // app/composables/*.ts 不动 — 避免污染 tsc/eslint 与 mock.module 链。
       // 该路径下的 composable 用 import.meta.client 时,实际拿到的是 bun 默认(undefined),
       // 测试断言改为只覆盖不依赖 client 的分支。
       const normalized = args.path.replace(/\\/g, "/");
-      if (!normalized.includes("/test/app/composables/")) return { contents: readFileSync(args.path, "utf8"), loader: "ts" };
+      if (!normalized.includes("/test/unit/app/composables/")) return { contents: readFileSync(args.path, "utf8"), loader: "ts" };
       const src = readFileSync(args.path, "utf8");
-      // 首行判定:必须以 import "#test/app/composables/setup-composable-globals"; 开头才算已注入,
+      // 首行判定:必须以 import "#test/unit/app/composables/setup-composable-globals"; 开头才算已注入,
       // 注释里出现"setup-composable-globals"字符串不算(避免命中后漏注入)。
-      const alreadyInjected = src.startsWith('import "#test/app/composables/setup-composable-globals";');
-      const patched = alreadyInjected ? src : `import "#test/app/composables/setup-composable-globals";\n${src}`;
+      const alreadyInjected = src.startsWith('import "#test/unit/app/composables/setup-composable-globals";');
+      const patched = alreadyInjected ? src : `import "#test/unit/app/composables/setup-composable-globals";\n${src}`;
       return { contents: patched, loader: "ts" };
     });
   },

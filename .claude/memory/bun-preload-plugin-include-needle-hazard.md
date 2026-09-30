@@ -8,7 +8,7 @@ metadata:
   modified: 2026-09-28T09:36:51.879Z
 ---
 
-`test/helpers/bun-preload.ts` 的 Bun.plugin 给 `test/app/composables/*.test.ts` 注入首行 `import "#test/app/composables/setup-composable-globals";`。**判定"已注入"必须用 `src.startsWith('import "..."')`,不能用 `src.includes("setup-composable-globals")`**。
+`test/helpers/bun-preload.ts` 的 Bun.plugin 给 `test/unit/app/composables/*.test.ts` 注入首行 `import "#test/unit/app/composables/setup-composable-globals";`。**判定"已注入"必须用 `src.startsWith('import "..."')`,不能用 `src.includes("setup-composable-globals")`**。
 
 **坑(2026-09-28 实测):** `usePlayerManager.test.ts` 注释里出现"setup-composable-globals 提供了 useNuxtApp stub"字面量,`src.includes("setup-composable-globals")` 返 true → `patched === src`(没注入首行 import)→ `useNuxtApp` 未注册到 globalThis → 3 个测试全部 `ReferenceError: useNuxtApp is not defined`。
 
@@ -20,8 +20,8 @@ metadata:
   // ❌ 会被注释/字符串误命中
   const patched = src.includes("setup-composable-globals") ? src : `import "...";\n${src}`;
   // ✅ 按实际 import 判定
-  const alreadyInjected = src.startsWith('import "#test/app/composables/setup-composable-globals";');
-  const patched = alreadyInjected ? src : `import "#test/app/composables/setup-composable-globals";\n${src}`;
+  const alreadyInjected = src.startsWith('import "#test/unit/app/composables/setup-composable-globals";');
+  const patched = alreadyInjected ? src : `import "#test/unit/app/composables/setup-composable-globals";\n${src}`;
   ```
 - 类似 plugin 注入判定都用 `startsWith('import "<模块路径>";')` 而不是 `includes`
 - 写新 composable 测试时,若测试文件 import composable 报错说 Nuxt 全局未定义,先看 `setup-composable-globals` 是否被注入(注释里写关键字字符串会导致 plugin 漏注入)

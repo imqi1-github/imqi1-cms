@@ -13,7 +13,7 @@
 - **两处必须保留 `../`，都已在文件内加注释**（别名在那条加载路径上不解析，改了就挂，实测确认）：
   - `shared/redis-config.ts` 的 `../site.config`——被 `nuxt.config.ts` 静态 import，经 jiti/c12 加载，改 `~~/site.config` 会让 `bunx nuxi typecheck` / build 在 `require.resolve` 阶段直接失败。
   - `scripts/update-sw-cdn.ts` 的 `../site.config`——`scripts/` 有自己的 `package.json`，bun 不向上找根 tsconfig，`~~` 从 `scripts/` 内解析实测失败（`bun -e` 从仓库根跑却成功，别被这个假阳性骗到；要验就在 `scripts/` 里建临时文件跑）。
-- **`test/helpers/bun-preload.ts` 注入的 `import "..."` 会被拼进被测测试文件源码**，解析基准是被测文件所在目录、不是 bun-preload.ts 目录。别名在注入上下文里可用，但必须指向真实存在的文件：`#test/app/composables/setup-composable-globals`（桩文件在 `test/app/composables/` 下，不在 `test/helpers/`）。
+- **`test/helpers/bun-preload.ts` 注入的 `import "..."` 会被拼进被测测试文件源码**，解析基准是被测文件所在目录、不是 bun-preload.ts 目录。别名在注入上下文里可用，但必须指向真实存在的文件：`#test/unit/app/composables/setup-composable-globals`（桩文件在 `test/unit/app/composables/` 下，不在 `test/helpers/`）。
 - 测试里读源码用**根相对**路径 `readFileSync("app/composables/x.ts")`（cwd = 项目根，与其它读源码的测试一致），不要 `resolve(__dirname, "../../..")`。
 - **搜 `../..` 会命中一堆非 import 的假阳性**，都是预期保留的：`session-store*.test.ts` / `attachment-file.test.ts` / `uploads.test.ts`（路径穿越**攻击载荷**）、`server/utils/session-store.ts` 与 `scripts/file-server.ts` 的防御注释、`SECURITY.md`、`.claude/memory/*`。别再动它们。`./` 同目录 import（aplayer lib、`app/components/ui/*` 桶文件）不在规则范围内。
 - **改完必跑三件套**：`bunx eslint .`（import/order 会因分组变化报错，改动后可 `bunx eslint --fix <dir>`）+ `bunx nuxi typecheck`（与改动前 error 数逐条对比，仓库存量 844 条不在本轮范围）+ 受影响测试文件。

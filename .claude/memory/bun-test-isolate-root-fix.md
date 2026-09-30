@@ -42,7 +42,7 @@ const cmd = [
 - `--isolate` **不影响同文件内**测试间共享 globalThis(同 worker),所以同文件内的 snapshot/restore 仍必要(`bun-preload.ts` 的 `__imqiSessionStore` 删除、单例 reset 等)
 - 不需要 `--isolate` 才能修的少数小问题(被 `--isolate` 暴露但跟污染无关):
   - `bun-preload.ts` plugin 注入判定 `includes("setup-composable-globals")` → `startsWith('import "..."')`(注释字符串误判)
-  - `test/real/db/_smoke.test.ts` 改顺序:先 `resetDb()` 再 `seedContent()`(避 init-db 显式 cid=1 与 SERIAL nextval=1 的 P2002)
+  - `test/integration/real/db/_smoke.test.ts` 改顺序:先 `resetDb()` 再 `seedContent()`(避 init-db 显式 cid=1 与 SERIAL nextval=1 的 P2002)
   - `test/zz-late/routes/sitemap-xml.test.ts` 补 `informations.findMany` handler(`getSiteSettings` 走 findMany 不是 findUnique)
 - 撤销此前 zz-late 物理隔离等绕过式修复后,如果个别测试还依赖"上一个测试留下的 handler",需在该测试 body 显式 `sharedFake.on(...)` 注册
 
