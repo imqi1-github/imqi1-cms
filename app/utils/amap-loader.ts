@@ -22,6 +22,12 @@ function resetLoaderState() {
   loadedPlugins.clear();
 }
 
+// test-only:清空模块级单例让每个 test fresh start。
+// 业务代码不调用,仅供 test/app/utils/amap-loader.test.ts 在 beforeEach 调用。
+export function _resetAmapLoaderStateForTest(): void {
+  resetLoaderState();
+}
+
 function getBrowserWindow(): AmapWindow {
   if (typeof window === "undefined" || typeof document === "undefined") {
     throw new Error("AMap can only be loaded in the browser.");

@@ -13,7 +13,9 @@ beforeEach(() => {
   (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async (url: string) => {
     fetchCalls.push({ url });
     const key = url.split("?")[0]!;
-    return responses.get(key);
+    const value = responses.get(key);
+    // value 是函数 → 调它(动态 mock,带 url 参数);否则直接返回(raw response 对象)
+    return typeof value === "function" ? (value as (u: string) => unknown)(url) : value;
   }) as typeof globalThis.$fetch;
 });
 
@@ -96,7 +98,7 @@ describe("fetchAllAdminPages", () => {
       const u = new URL("http://x" + url);
       const page = u.searchParams.get("page");
       if (page === "1") return { data: [{ cid: 1, title: "a" }], pagination: { totalPages: 2 } };
-      return { data: [{ id: "b" }], pagination: { totalPages: 2 } };
+      return { data: [{ cid: 2, title: "b" }], pagination: { totalPages: 2 } };
     }) as typeof globalThis.$fetch;
     const items = await fetchAllAdminPages();
     expect(items.map(i => i.cid)).toEqual([1, 2]);
@@ -115,5 +117,60 @@ describe("fetchAllAdminPages", () => {
     });
     await fetchAllAdminPages();
     expect(fetchCalls[0]?.url).toContain("pageSize=100");
+  });
+
+  test("totalPages=5 → 发 5 次请求聚合", async () => {
+    responses.set("/api/admin/pages", (url: string) => {
+      const page = Number(new URL(url, "http://x").searchParams.get("page")) || 1;
+      return {
+        data: [{ cid: page }],
+        pagination: { totalPages: 5 },
+      };
+    });
+    const items = await fetchAllAdminPages();
+    expect(items.map(i => i.cid)).toEqual([1, 2, 3, 4, 5]);
+    expect(fetchCalls).toHaveLength(5);
+    // URL 按 page=1..5 顺序发
+    const pageParams = fetchCalls.map(c => new URL(c.url, "http://x").searchParams.get("page"));
+    expect(pageParams).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  test("pagination 字段为 undefined → totalPages 兜底 1,只发一次请求", async () => {
+    responses.set("/api/admin/pages", { data: [{ cid: 1 }] });
+    const items = await fetchAllAdminPages();
+    expect(items).toHaveLength(1);
+    expect(fetchCalls).toHaveLength(1);
+  });
+
+  test("第 2/3 页 data 为空数组 → 聚合仍正确(空页不算错)", async () => {
+    responses.set("/api/admin/pages", (url: string) => {
+      const page = Number(new URL(url, "http://x").searchParams.get("page")) || 1;
+      return {
+        data: page === 1 ? [{ cid: 1 }, { cid: 2 }] : [],
+        pagination: { totalPages: 3 },
+      };
+    });
+    const items = await fetchAllAdminPages();
+    expect(items.map(i => i.cid)).toEqual([1, 2]);
+    expect(fetchCalls).toHaveLength(3);
+  });
+});
+
+describe("fetchAllAdminContents 错误处理", () => {
+  test("$fetch 第 1 页就抛 → 异常向上传", async () => {
+    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => {
+      throw new Error("network down");
+    }) as unknown as typeof globalThis.$fetch;
+    await expect(fetchAllAdminContents()).rejects.toThrow(/network down/);
+  });
+
+  test("$fetch 第 2 页抛 → 异常向上传(后续页不重试)", async () => {
+    let pageNum = 0;
+    (globalThis as { $fetch: typeof globalThis.$fetch }).$fetch = (async () => {
+      pageNum++;
+      if (pageNum === 1) return { data: [{ cid: 1 }], pagination: { totalPages: 3 } };
+      throw new Error(`page ${pageNum} failed`);
+    }) as unknown as typeof globalThis.$fetch;
+    await expect(fetchAllAdminContents()).rejects.toThrow(/page 2 failed/);
   });
 });

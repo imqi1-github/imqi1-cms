@@ -1,11 +1,9 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 
-// #app 是 Nuxt 别名,bun:test 不识别。plugin 用了 defineNuxtPlugin + ref,
-// 我们用最小 stub 替换 #app 模块。mock.module 必须在 dynamic import 之前注册。
-mock.module("#app", () => ({
-  defineNuxtPlugin: <T>(fn: (nuxtApp: T) => unknown) => fn,
-  ref: <T>(v: T) => ({ value: v }),
-}));
+// plugin 用了 Nuxt 全局 defineNuxtPlugin + Vue 全局 ref,bun:test 不自动注入。
+// 在 globalThis 上挂最小 stub,然后 dynamic import plugin 模块。
+// 注:ref 由 setup-composable-globals 注入(plugin 路径在 bun-preload 注入名单内)。
+(globalThis as Record<string, unknown>).defineNuxtPlugin = <T>(fn: T) => fn;
 
 const { default: playerManagerPlugin, PLAYER_MANAGER_KEY } = await import(
   "~/plugins/player-manager.client"

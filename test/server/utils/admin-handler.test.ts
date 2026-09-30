@@ -107,6 +107,25 @@ describe("CSRF helpers(直接调用)", () => {
     const b = generateCsrfToken();
     expect(a).not.toBe(b);
   });
+
+  test("token 仅含 base64url 字符(无 + / =)", () => {
+    const t = generateCsrfToken();
+    expect(t).not.toMatch(/[+/=]/);
+    expect(t.length).toBeGreaterThanOrEqual(32);
+  });
+});
+
+describe("generateCsrfToken 边界", () => {
+  test("多次生成无重复(熵足够)", () => {
+    const tokens = new Set(Array.from({ length: 100 }, () => generateCsrfToken()));
+    expect(tokens.size).toBe(100); // 无重复
+  });
+
+  test("token 长度稳定(43 字符 ± base64url padding)", () => {
+    const lengths = Array.from({ length: 10 }, () => generateCsrfToken().length);
+    expect(new Set(lengths).size).toBe(1); // 同一算法长度一致
+    expect(lengths[0]).toBeGreaterThanOrEqual(43);
+  });
 });
 
 // 注:setCsrfToken 调 h3 setCookie 需要完整 H3Event(node.req.headers + res),详细集成覆盖
