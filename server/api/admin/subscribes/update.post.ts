@@ -1,6 +1,8 @@
 import { updateAllSubscribes } from '#server/utils/rss';
 import { getUser } from '#server/lib/auth';
 import { validateCsrfToken } from '#server/utils/csrf';
+import { invalidateContentCaches } from '#server/utils/content-cache';
+import { SUBSCRIBE_CACHE_ROUTES } from '#shared/constants';
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -24,6 +26,12 @@ export default defineEventHandler(async event => {
   // 失败仅记录日志，不阻塞/报错本次请求；前端无需拿结果，改由「刷新订阅状态」重新拉取列表。
   void updateAllSubscribes().catch(error => {
     console.error("[订阅更新] 后台更新任务异常:", error);
+  });
+
+  // 用户点了按钮就该立刻看到反馈：先失效订阅相关 ISR（首页/订阅页/地图的订阅卡片），
+  // 抓取完成后 rss.ts:295 会再失效一次（双失效幂等）。
+  void invalidateContentCaches({ routes: SUBSCRIBE_CACHE_ROUTES }).catch(error => {
+    console.error("[cache] 订阅更新失效缓存失败:", error);
   });
 
   return {

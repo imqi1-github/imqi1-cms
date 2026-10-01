@@ -201,7 +201,7 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
     ]);
   });
 
-  test("CONTENT 改 → 比 COMMENT 多一个 /sitemap", () => {
+  test("CONTENT 改 → 比 COMMENT 多 /sitemap + 独立页面", () => {
     expect(CONTENT_CACHE_ROUTES).toEqual([
       "/",
       "/category/**",
@@ -209,6 +209,8 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
       "/archiving",
       "/content/**",
       "/sitemap",
+      "/agreement",
+      "/messages",
     ]);
     // 改动比 COMMENT 多的:归档与 sitemap
     expect(CONTENT_CACHE_ROUTES.length).toBeGreaterThan(COMMENT_CACHE_ROUTES.length);

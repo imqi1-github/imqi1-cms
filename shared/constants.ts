@@ -148,8 +148,11 @@ export const CHANGELOG_CACHE_ROUTES = ["/", "/changelogs"];
 /** 评论变更 → 首页 + 分类/标签列表 + 文章详情 + 归档（评论数会变） */
 export const COMMENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/content/**", "/archiving"];
 
-/** 文章增删改 → 首页 + 分类/标签列表 + 文章详情 + 归档 + 站点地图 */
-export const CONTENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap"];
+/** 文章增删改 → 首页 + 分类/标签列表 + 文章详情 + 归档 + 站点地图 + 独立页面
+ * 独立页面（type=1，contents 表里 status=1 的页面）共用此接口增删改，
+ * 但渲染到独立路径（/agreement、/messages…），必须把它们列出来才会失效 ISR。
+ * 新增独立页面时也要同步加到这里，否则 ISR 缓存永远不失效。 */
+export const CONTENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap", "/agreement", "/messages"];
 
 /** 分类变更 → 首页 + 分类列表 + 文章详情 + 归档 + 站点地图（标签不受影响，故不含 /tag/**） */
 export const CATEGORY_CACHE_ROUTES = ["/", "/category/**", "/content/**", "/archiving", "/sitemap"];
