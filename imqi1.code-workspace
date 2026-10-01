@@ -16,6 +16,10 @@
         "changeProcessCWD": true
       },
       {
+        "directory": "scripts",
+        "changeProcessCWD": true
+      },
+      {
         "directory": "mini",
         "changeProcessCWD": true
       }
