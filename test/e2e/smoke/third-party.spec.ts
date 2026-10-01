@@ -5,6 +5,8 @@ import { expect, test } from "@playwright/test";
 import { ADMIN_SKIP_MSG, loginAdmin, getAdminSettings } from "../_admin";
 import { loadDotEnv } from "../_env";
 
+import { UA_SMOKE } from "#shared/constants";
+
 // 第三方服务冒烟:轻量只读探活,验「配置还活着」(key 有效/桶在/配额没超),不产生业务数据
 // 常规 test:e2e 不跑本目录(仅 E2E_SMOKE=1 时收集);人工低频执行: bun run test:e2e:smoke
 const env = loadDotEnv();
@@ -72,7 +74,7 @@ test.describe("第三方服务冒烟", () => {
 
   test("GitHub API:可达且有限流余量", async () => {
     const res = await fetch("https://api.github.com/rate_limit", {
-      headers: { "User-Agent": "imqi1-cms-smoke" },
+      headers: { "User-Agent": UA_SMOKE },
     });
     expect(res.status).toBe(200);
     const json = (await res.json()) as { resources?: { core?: { remaining?: number } } };

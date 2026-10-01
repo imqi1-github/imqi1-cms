@@ -7,6 +7,8 @@ import { describe, expect, test } from "bun:test";
 
 import { setupTestEnv } from "./_setup";
 
+import { TEST_SITE_URL } from "#shared/constants";
+
 await setupTestEnv();
 await import("#test/helpers/nitro-globals");
 const { getDb, resetDb, seedCategory, seedContent, seedTag } = await import("./_helpers");
@@ -34,17 +36,17 @@ describe("routes/sitemap.xml.get 真实 DB", () => {
     await resetDb();
     const xml = await getXml();
     // 9 个静态页(首页/search/messages/links/map/about/agreement/changelogs/subscribes/feed/archiving 实际 11 个)
-    expect(xml).toContain("<loc>https://imqi1.com/</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/search</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/messages</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/links</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/map</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/about</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/agreement</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/changelogs</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/subscribes</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/feed</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/archiving</loc>");
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/search</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/messages</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/links</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/map</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/about</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/agreement</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/changelogs</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/subscribes</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/feed</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/archiving</loc>`);
     // 不应出现分类/标签/文章 URL
     expect(xml).not.toContain("/category/");
     expect(xml).not.toContain("/tag/");
@@ -61,14 +63,14 @@ describe("routes/sitemap.xml.get 真实 DB", () => {
       data: { cid: post.cid, mid: cat.mid },
     });
     const xml = await getXml();
-    expect(xml).toContain("<loc>https://imqi1.com/content/notes/hello</loc>");
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/content/notes/hello</loc>`);
   });
 
   test("已发布文章(无分类)→ /content/uncategorized/<文章 slug>", async () => {
     await resetDb();
     await seedContent({ title: "无分类", slug: "no-cat", status: 1 });
     const xml = await getXml();
-    expect(xml).toContain("<loc>https://imqi1.com/content/uncategorized/no-cat</loc>");
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/content/uncategorized/no-cat</loc>`);
   });
 
   test("草稿文章(status=0)不出现", async () => {
@@ -92,8 +94,8 @@ describe("routes/sitemap.xml.get 真实 DB", () => {
     await seedCategory({ name: "笔记", slug: "cat-notes", type: "category" });
     await seedTag("JS", "tag-js");
     const xml = await getXml();
-    expect(xml).toContain("<loc>https://imqi1.com/category/cat-notes</loc>");
-    expect(xml).toContain("<loc>https://imqi1.com/tag/tag-js</loc>");
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/category/cat-notes</loc>`);
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/tag/tag-js</loc>`);
   });
 
   test("响应头 Cache-Control 短缓存", async () => {

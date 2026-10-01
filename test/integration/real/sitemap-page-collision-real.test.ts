@@ -14,6 +14,8 @@ import { describe, expect, test } from "bun:test";
 
 import { setupTestEnv } from "./_setup";
 
+import { TEST_SITE_URL } from "#shared/constants";
+
 await setupTestEnv();
 await import("#test/helpers/nitro-globals");
 const { getDb, resetDb } = await import("./_helpers");
@@ -38,7 +40,7 @@ async function getXml(): Promise<string> {
 
 function countOccurrences(xml: string, path: string): number {
   // 用 <loc>...</loc> 包裹防误命中(避免路径子串误判)
-  const needle = `<loc>https://imqi1.com${path}</loc>`;
+  const needle = `<loc>${TEST_SITE_URL}${path}</loc>`;
   return (xml.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length;
 }
 
@@ -111,11 +113,11 @@ describe("sitemap DB page slug 与硬编码路由去重(真实 DB)", () => {
       },
     });
     const xml = await getXml();
-    // 首页(<loc>https://imqi1.com/</loc>)是静态页产物,与空 slug page 无关;
+    // 首页(<loc>${TEST_SITE_URL}/</loc>)是静态页产物,与空 slug page 无关;
     // 验证空 slug page 不产生空路径 <loc>(slug 为空会被 filter 掉)
     // 实现是 page.slug && !HARDCODED.includes → 空字符串 falsy → 跳过
-    // 没有"空 path 的 page URL" 出现:数 <loc>https://imqi1.com</loc> 后跟 <\/loc> 应是首页
-    expect(xml).toContain("<loc>https://imqi1.com/</loc>"); // 首页(静态)
+    // 没有"空 path 的 page URL" 出现:数 <loc>${TEST_SITE_URL}</loc> 后跟 <\/loc> 应是首页
+    expect(xml).toContain(`<loc>${TEST_SITE_URL}/</loc>`); // 首页(静态)
     // 空 slug 不应产生额外空路径
     expect(countOccurrences(xml, "/")).toBe(1); // 只首页一处根路径
   });

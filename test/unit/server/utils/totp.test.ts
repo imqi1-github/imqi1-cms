@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { generateTOTPSecret, otpauthUrl, verifyTOTP } from "#server/utils/totp";
+import { TEST_TOTP_ISSUER } from "#shared/constants";
 
 // RFC 6238 附录 B 的标准测试密钥(20 字节 ASCII "12345678901234567890" 的 base32)
 const RFC_SECRET = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
@@ -62,10 +63,10 @@ describe("generateTOTPSecret", () => {
 
 describe("otpauthUrl", () => {
   test("含 secret/issuer 参数与 issuer:account 标签", () => {
-    const url = otpauthUrl({ secret: "ABC234", account: "admin@example.com", issuer: "imqi1" });
-    expect(url).toContain("otpauth://totp/imqi1:admin%40example.com");
+    const url = otpauthUrl({ secret: "ABC234", account: "admin@example.com", issuer: TEST_TOTP_ISSUER });
+    expect(url).toContain(`otpauth://totp/${TEST_TOTP_ISSUER}:admin%40example.com`);
     expect(url).toContain("secret=ABC234");
-    expect(url).toContain("issuer=imqi1");
+    expect(url).toContain(`issuer=${TEST_TOTP_ISSUER}`);
     expect(url).toContain("digits=6");
     expect(url).toContain("period=30");
   });

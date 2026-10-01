@@ -21,7 +21,7 @@ test("订阅源添加与删除", async ({ page }) => {
   const nameInput = page.getByPlaceholder("订阅名称");
   await expect(nameInput).toBeVisible({ timeout: 10_000 });
   await nameInput.fill(marker);
-  await page.getByPlaceholder("RSS URL").first().fill("http://localhost:3001/feed");
+  await page.getByPlaceholder("RSS URL").first().fill(`http://localhost:${process.env.E2E_PORT ?? "3001"}/feed`);
   await page.getByRole("button", { name: "添加", exact: true }).click();
   await expect(page.getByText("添加成功")).toBeVisible({ timeout: 10_000 });
 

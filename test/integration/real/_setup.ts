@@ -1,5 +1,5 @@
 /**
- * 真实 DB 集成测的全局初始化(test/real/db/* 共享):
+ * 真实 DB 集成测的全局初始化(test/integration/real/* 共享):
  *  - 从项目根 .env 读 DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME,任一缺失即抛
  *  - 默认测试库 = ${DB_NAME}_test(避免污染 dev 数据);TEST_DB_NAME 可覆盖
  *  - CREATE DATABASE IF NOT EXISTS(用 postgres 库探测 + CREATE)
@@ -18,9 +18,10 @@ import { join } from "path";
 import dotenv from "dotenv";
 import pg from "pg";
 
+import { findRepoRoot } from "#test/helpers/find-repo-root";
+
 // bun:test 下 import.meta.path 不是 file:// URL,改用 import.meta.dirname
-// 路径: test/integration/real/db/_setup.ts → ROOT 需向上 4 层
-const ROOT = join(import.meta.dirname, "..", "..", "..", "..");
+const ROOT = findRepoRoot(import.meta.dirname);
 const SQL_FILE = join(ROOT, "scripts", "init-db.sql");
 
 dotenv.config({ path: join(ROOT, ".env") });
@@ -34,16 +35,16 @@ function readEnv(): { host: string; port: number; user: string; password: string
   const baseDb = process.env.DB_NAME;
   if (!host || !user || !password || !baseDb) {
     throw new Error(
-      "[test/real/db] .env 缺少 DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME 中的任一字段,拒绝静默用默认",
+      "[test/integration/real] .env 缺少 DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME 中的任一字段,拒绝静默用默认",
     );
   }
   if (!Number.isFinite(port) || port <= 0) {
-    throw new Error(`[test/real/db] DB_PORT 非法:${process.env.DB_PORT}`);
+    throw new Error(`[test/integration/real] DB_PORT 非法:${process.env.DB_PORT}`);
   }
   // 库名白名单(复用 init-db.ts 约束,防 SQL 注入 / 非法字符)
   const db = explicitTestDb || `${baseDb}_test`;
   if (!/^[A-Za-z0-9_-]+$/.test(db)) {
-    throw new Error(`[test/real/db] 测试库名含非法字符(仅字母数字下划线连字符):${db}`);
+    throw new Error(`[test/integration/real] 测试库名含非法字符(仅字母数字下划线连字符):${db}`);
   }
   return { host, port, user, password, db };
 }
@@ -51,7 +52,7 @@ function readEnv(): { host: string; port: number; user: string; password: string
 let bootstrapped = false;
 let cached: { host: string; port: number; user: string; password: string; db: string } | null = null;
 
-/** 模块级幂等 bootstrap:测一次运行只执行一次(任何 test/real/db/* 文件 import 即触发) */
+/** 模块级幂等 bootstrap:测一次运行只执行一次(任何 test/integration/real/* 文件 import 即触发) */
 export async function setupDb(): Promise<{ host: string; port: number; user: string; password: string; db: string }> {
   if (bootstrapped && cached) return cached;
   const cfg = readEnv();
@@ -67,7 +68,7 @@ export async function setupDb(): Promise<{ host: string; port: number; user: str
     }
   } catch (err) {
     throw new Error(
-      `[test/real/db] DB 不可达或权限不足(${cfg.user}@${cfg.host}:${cfg.port}):${(err as Error).message}`,
+      `[test/integration/real] DB 不可达或权限不足(${cfg.user}@${cfg.host}:${cfg.port}):${(err as Error).message}`,
       { cause: err },
     );
   } finally {
@@ -96,7 +97,7 @@ export function describeDb(cfg: { host: string; port: number; user: string; db: 
 }
 
 /**
- * 各 test/real/db/*.test.ts 顶部的「初始化」一行调用:
+ * 各 test/integration/real/*.test.ts 顶部的「初始化」一行调用:
  *   await setupTestEnv();
  *   await import("#test/helpers/nitro-globals");
  *   const { ... } = await import("./_helpers");

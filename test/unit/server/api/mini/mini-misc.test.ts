@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+import { UA_MINI } from "#shared/constants";
 
 mockSharedPrisma();
 
@@ -74,7 +75,7 @@ describe("mini/repo(上游 API 代理)", () => {
     expect(seen[0]!.url).toBe("https://api.github.com/repos/imqi1/imqi1-cms");
     // 拒绝重定向(SSRF 防护) + GitHub 必带 User-Agent
     expect((seen[0]!.opts as { redirect: string }).redirect).toBe("error");
-    expect((seen[0]!.opts as { headers: Record<string, string> }).headers["User-Agent"]).toBe("imqi1-mini");
+    expect((seen[0]!.opts as { headers: Record<string, string> }).headers["User-Agent"]).toBe(UA_MINI);
 
     fetchImpl = async () => {
       throw new Error("upstream down");

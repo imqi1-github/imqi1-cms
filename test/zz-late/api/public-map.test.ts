@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+import { FOOTPRINT_CACHE_TTL } from "#shared/constants";
 
 mockSharedPrisma();
 
@@ -172,7 +173,7 @@ describe("footprint.get(访客分布)", () => {
     expect(raw).not.toContain("9.9.9.9");
     expect(raw).not.toContain("1.1.1.1");
     // 自定义缓存写入,TTL 1 小时
-    expect(lastSetex).toMatchObject({ key: "custom:footprint", ttl: 3600 });
+    expect(lastSetex).toMatchObject({ key: "custom:footprint", ttl: FOOTPRINT_CACHE_TTL });
     expect(headers["cache-control"]).toContain("max-age=300");
   });
 

@@ -5,7 +5,7 @@
  * 是否按 status 变化方向正确增减 comment_num。mock prisma 下事务是同步顺序
  * 的（不暴露真正的并发 race），所以这里只验证「顺序两次调用累计」与
  * 「混合方向（0→1 + 1→0）净变动 0」两条不变量；真实并发的 race 须用
- * test/real/db/ 跑 PostgreSQL 才能暴露（详见 memory）。
+ * test/integration/real/ 跑 PostgreSQL 才能暴露（详见 memory）。
  */
 import { describe, expect, test } from "bun:test";
 

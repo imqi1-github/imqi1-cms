@@ -1,9 +1,11 @@
 import type { APIRequestContext } from "@playwright/test";
 
+// 默认走 init-db 种子凭据;env 覆盖供 CI / 自定义库使用(避免「密码被改过则整组 skip」)
 const SEED_USER = "admin";
 const SEED_PASS = "123456";
-export const ADMIN_USER = SEED_USER;
-export const ADMIN_PASS = SEED_PASS;
+const ADMIN_USER = process.env.E2E_ADMIN_USER ?? SEED_USER;
+const ADMIN_PASS = process.env.E2E_ADMIN_PASS ?? SEED_PASS;
+export { ADMIN_USER, ADMIN_PASS };
 // 凭据与库不一致时调用方以此 skip 用例(不修改开发库数据)
 export const ADMIN_SKIP_MSG = "admin 凭据与数据库不一致(用户名/密码被改过) — 跳过;可跑 bun run reset:password 重置回默认后重跑";
 
@@ -20,7 +22,7 @@ export async function getCsrfToken(request: APIRequestContext): Promise<string> 
 export async function loginAdmin(request: APIRequestContext): Promise<boolean> {
   const csrf = await getCsrfToken(request);
   const res = await request.post("/api/auth/login", {
-    data: { username: SEED_USER, password: SEED_PASS, csrfToken: csrf },
+    data: { username: ADMIN_USER, password: ADMIN_PASS, csrfToken: csrf },
   });
   if (res.status() === 200) return true;
 

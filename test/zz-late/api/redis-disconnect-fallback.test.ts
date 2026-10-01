@@ -13,6 +13,7 @@
 import { describe, expect, mock, test } from "bun:test";
 
 import { CSRF_TOKEN, callAdmin, loginSessionCookie } from "#test/helpers/admin";
+import { DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
@@ -58,7 +59,7 @@ describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", (
     // 启用 searchCache 让 redis.get 路径被执行
     sharedFake.on("informations", "findMany", async () => [
       { key: "searchCacheEnabled", value: "true" },
-      { key: "searchCacheExpire", value: "300" },
+      { key: "searchCacheExpire", value: String(DEFAULT_SEARCH_CACHE_EXPIRE) },
     ]);
     sharedFake.on("contents", "findMany", async () => []);
     sharedFake.on("subscribes", "findMany", async () => []);

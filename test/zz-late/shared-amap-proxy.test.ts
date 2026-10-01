@@ -11,6 +11,7 @@
  */
 import { describe, expect, test } from "bun:test";
 
+import { TEST_SITE_URL } from "#shared/constants";
 import {
   AMAP_PROXY_BASE_PATH,
   buildAmapDirectScriptUrl,
@@ -66,15 +67,15 @@ describe("buildAmapDirectScriptUrl", () => {
 
 describe("buildAmapServiceHost", () => {
   test("origin + basePath 拼成完整 URL", () => {
-    expect(buildAmapServiceHost("https://imqi1.com")).toBe("https://imqi1.com/_AMapService");
+    expect(buildAmapServiceHost(TEST_SITE_URL)).toBe(`${TEST_SITE_URL}/_AMapService`);
   });
 
   test("origin 带尾 / 时归一化", () => {
-    expect(buildAmapServiceHost("https://imqi1.com/")).toBe("https://imqi1.com/_AMapService");
+    expect(buildAmapServiceHost(`${TEST_SITE_URL}/`)).toBe(`${TEST_SITE_URL}/_AMapService`);
   });
 
   test("自定义 basePath(不带前导 /)→ 自动补", () => {
-    expect(buildAmapServiceHost("https://imqi1.com", "amap")).toBe("https://imqi1.com/amap");
+    expect(buildAmapServiceHost(TEST_SITE_URL, "amap")).toBe(`${TEST_SITE_URL}/amap`);
   });
 });
 

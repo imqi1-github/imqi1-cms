@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 
 import { CSRF_COOKIE, CSRF_TOKEN, cookieValue, loginSessionCookie, makeAuthEvent, patchUser, resetUsers, resetTrustedDevices, TEST_PASSWORD } from "#test/helpers/auth-fakes";
 import { generateTOTPSecret } from "#server/utils/totp";
+import { TEST_TOTP_ISSUER } from "#shared/constants";
 
 const setupHandler = (await import("#server/api/auth/2fa/setup.post")).default;
 const enableHandler = (await import("#server/api/auth/2fa/enable.post")).default;
@@ -110,7 +111,7 @@ describe("2fa/setup.post", () => {
     expect(r.enabled).toBe(false);
     expect(r.secret).toMatch(/^[A-Z2-7]{32}$/);
     expect(r.otpauthUrl).toContain(`secret=${r.secret}`);
-    expect(r.otpauthUrl).toContain("issuer=imqi1");
+    expect(r.otpauthUrl).toContain(`issuer=${TEST_TOTP_ISSUER}`);
     expect(r.qrDataUrl).toMatch(/^data:image\/png;base64,/);
   });
 });

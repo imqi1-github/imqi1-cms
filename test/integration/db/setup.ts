@@ -16,8 +16,9 @@
  *
  * 约束:
  *   - 不并发跑(bun --max-concurrency=1 + 全局事务隔离已够测试用)
- *   - DB_NAME=imqi1 测试库(开发库同名,需谨慎:不要 init-db 重置)
- *   - 不放生产:DB_NAME/PASSWORD 走 .env,本机无则 skip 整组
+ *   - DB_NAME=imqi1-cms 测试库(开发库同名,需谨慎:不要 init-db 重置)
+ *   - 不放生产:DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME 任一缺失即抛
+ *     (与 real/_setup.ts 强原则一致,禁止静默 fallback)
  */
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -25,10 +26,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 // 单实例避免连接池耗尽
 const globalForDb = globalThis as unknown as { __db?: PrismaClient };
 export const db: PrismaClient = globalForDb.__db ?? (() => {
-  if (!process.env.DB_NAME) throw new Error("[test/db] DB_NAME 未配置,跳过真实 DB 测试");
-  const connectionString = `postgresql://${encodeURIComponent(process.env.DB_USER || "postgres")}:${encodeURIComponent(
-    process.env.DB_PASSWORD ?? "",
-  )}@${process.env.DB_HOST || "localhost"}:${Number(process.env.DB_PORT || 5432)}/${process.env.DB_NAME || ""}`;
+  const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+  if (!DB_HOST || !DB_PORT || !DB_USER || !DB_PASSWORD || !DB_NAME) {
+    throw new Error("[test/db] .env 缺少 DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME 中的任一字段,拒绝静默用默认");
+  }
+  const port = Number(DB_PORT);
+  if (!Number.isFinite(port) || port <= 0) throw new Error(`[test/db] DB_PORT 非法:${DB_PORT}`);
+  const connectionString = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${port}/${DB_NAME}`;
   const adapter = new PrismaPg({ connectionString });
   const client = new PrismaClient({ adapter });
   globalForDb.__db = client;

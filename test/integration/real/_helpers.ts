@@ -17,6 +17,8 @@ import bcrypt from "bcryptjs";
 
 import { setupDb } from "./_setup";
 
+import { TEST_SITE_URL } from "#shared/constants";
+
 let dbEnvApplied = false;
 async function ensureDbEnv() {
   if (dbEnvApplied) return;
@@ -69,6 +71,8 @@ export async function resetDb(): Promise<void> {
       auth_code: "",
     },
   });
+  // 注入测试用 siteUrl(sitemap/路由输出走测试域名,不依赖生产 imqi1.com)
+  await db.informations.create({ data: { key: "siteUrl", value: TEST_SITE_URL } });
 }
 
 export async function seedCategory(overrides: Partial<{

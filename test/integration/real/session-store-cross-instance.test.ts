@@ -7,7 +7,7 @@
  *   auth_code 不匹配 → getUser 返 null(单端登录的跨实例有效性)
  * - 跨实例 delete 后,实例 A 再 get 应返 null
  *
- * 放 test/real/db/:需要真实 PG,DatabaseSessionStore 才生效。
+ * 放 test/integration/real/:需要真实 PG,DatabaseSessionStore 才生效。
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 

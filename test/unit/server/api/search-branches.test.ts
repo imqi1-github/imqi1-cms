@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+import { DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 
 mockSharedPrisma();
 
@@ -107,7 +108,7 @@ describe("search/订阅文章分支(type=subscribepost)", () => {
 describe("search/缓存分支", () => {
   test("cacheEnabled=true:首次回源并写缓存,二次命中缓存", async () => {
     settingsMap.set("searchCacheEnabled", "true");
-    settingsMap.set("searchCacheExpire", "300");
+    settingsMap.set("searchCacheExpire", String(DEFAULT_SEARCH_CACHE_EXPIRE));
     // 实现仅在「有结果」时写缓存
     commentRows = [{ coid: 1, name: "甲", mail: null, content: "c", create_time: new Date(), content_ref: { cid: 10, title: "t", slug: "s", status: 1, contentrelations: [] } }];
 

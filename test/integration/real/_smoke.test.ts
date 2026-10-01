@@ -1,13 +1,13 @@
 /**
- * test/real/db 基建自检:验证 setup + helpers 能跑通(连 DB、建测试库、跑 init-db.sql、TRUNCATE、reseed)。
- * 任何 test/real/db/* 集成测失败时,先跑这一个排查基建问题。
+ * test/integration/real 基建自检:验证 setup + helpers 能跑通(连 DB、建测试库、跑 init-db.sql、TRUNCATE、reseed)。
+ * 任何 test/integration/real/* 集成测失败时,先跑这一个排查基建问题。
  */
 import { describe, expect, test } from "bun:test";
 
 import { describeDb, setupDb } from "./_setup";
 import { closeDb, getDb, loginDbCookie, resetDb, seedCategory, seedContent, seedTag } from "./_helpers";
 
-describe("test/real/db 基建冒烟", () => {
+describe("test/integration/real 基建冒烟", () => {
   test("setupDb → 测试库可达 + 表已建", async () => {
     const cfg = await setupDb();
     expect(cfg.db).toMatch(/_test$/); // 默认后缀 _test(避免污染 dev DB)

@@ -105,6 +105,27 @@ export const PUBLIC_CACHE_CONTROL = "public, max-age=300, s-maxage=300";
 /** 不带 s-maxage 的版本：RSS / sitemap / 二维码等不经 CDN 分层、只由浏览器直接取的响应 */
 export const PUBLIC_CACHE_CONTROL_SHORT = "public, max-age=300";
 
+/** 访客分布（custom:footprint）缓存 TTL（秒）：1 小时 */
+export const FOOTPRINT_CACHE_TTL = 3600;
+
+// ==================== User-Agent ====================
+
+/** 小程序代理上游 API（GitHub/Gitee）的 User-Agent：上游按 UA 限流/反爬 */
+export const UA_MINI = "imqi1-mini";
+
+/** 第三方冒烟请求的 User-Agent：标识来源便于上游审计 */
+export const UA_SMOKE = "imqi1-cms-smoke";
+
+// ==================== 测试 fixture ====================
+// 同一字面量在多处测试内重复出现时，提到这里避免散落硬编码（换标识时一处改完）。
+// 与生产 site.config.ts 的值可以不一致——测试就是要「不依赖生产配置」。
+
+/** sitemap 真 DB 集成测的 siteUrl fixture：跨环境/CI 不依赖生产 imqi1.com */
+export const TEST_SITE_URL = "https://imqi1.test";
+
+/** TOTP issuer fixture：扫除测试内多处硬编码 "imqi1" 字符串 */
+export const TEST_TOTP_ISSUER = "imqi1";
+
 // ==================== 错误码 ====================
 
 /** Prisma「记录不存在」错误码：并发删除竞态下映射为 404（判定见 server/utils/prisma.ts） */
