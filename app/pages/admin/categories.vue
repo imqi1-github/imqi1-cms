@@ -195,8 +195,8 @@ onMounted(() => {
           <TableHeader>
             <TableRow>
               <TableHead>名称</TableHead>
+              <TableHead>Slug</TableHead>
               <TableHead>描述</TableHead>
-              <TableHead>类型</TableHead>
               <TableHead>文章数</TableHead>
               <TableHead class="text-right">操作</TableHead>
             </TableRow>
@@ -207,13 +207,13 @@ onMounted(() => {
                 <div class="h-4 bg-muted rounded w-24 animate-pulse" />
               </TableCell>
               <TableCell>
+                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+              </TableCell>
+              <TableCell>
                 <div class="h-4 bg-muted rounded w-48 animate-pulse" />
               </TableCell>
               <TableCell>
-                <div class="h-6 bg-muted rounded w-16 animate-pulse" />
-              </TableCell>
-              <TableCell>
-                <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+                <div class="h-4 bg-muted rounded w-10 animate-pulse" />
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-2">
@@ -287,11 +287,16 @@ onMounted(() => {
         <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="space-y-2">
             <div class="h-5 bg-muted rounded w-20 animate-pulse" />
+            <div class="h-4 bg-muted rounded w-24 animate-pulse" />
             <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
           </div>
           <div class="flex gap-2">
-            <div class="h-6 bg-muted rounded w-12 animate-pulse" />
-            <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+            <div class="h-4 w-16 bg-muted rounded animate-pulse" />
+          </div>
+          <div class="flex items-center justify-end pt-2 border-t gap-1">
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
           </div>
         </div>
       </div>

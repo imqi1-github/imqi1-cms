@@ -260,8 +260,17 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- 标题区骨架 -->
+      <div v-if="loading" class="flex items-center justify-between">
+        <div class="space-y-2">
+          <div class="h-7 w-32 bg-muted rounded animate-pulse" />
+          <div class="h-4 w-48 bg-muted rounded animate-pulse" />
+        </div>
+        <div class="h-9 w-28 bg-muted rounded animate-pulse" />
+      </div>
+
       <!-- 添加表单 -->
-      <Card v-if="editingId === null" class="p-4">
+      <Card v-if="editingId === null && !loading" class="p-4">
         <form class="space-y-3" @submit.prevent="save">
           <!-- 条目编辑器：可重复行 -->
           <div class="space-y-2">
@@ -314,11 +323,21 @@ onMounted(() => {
         </form>
       </Card>
 
-      <!-- 加载骨架屏：贴合下方日志卡片布局（卡片壳 + 日期/操作行 + 若干条目行） -->
+      <!-- 加载骨架屏 -->
       <div v-if="loading" class="space-y-2">
-        <div v-for="i in 4" :key="i" class="rounded-xl border bg-card p-3 space-y-3">
+        <!-- 工具栏骨架 -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <div class="size-4 bg-muted rounded animate-pulse" />
+            <div class="h-4 w-12 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+        <div v-for="i in 10" :key="i" class="rounded-xl border bg-card p-3 space-y-3">
           <div class="flex items-center justify-between gap-3">
-            <div class="h-3.5 bg-muted rounded w-40 animate-pulse" />
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="size-4 bg-muted rounded animate-pulse shrink-0" />
+              <div class="h-3.5 bg-muted rounded w-40 animate-pulse" />
+            </div>
             <div class="size-8 bg-muted rounded-lg animate-pulse" />
           </div>
           <div class="space-y-2">

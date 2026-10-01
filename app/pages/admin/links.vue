@@ -236,7 +236,7 @@ onMounted(() => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow v-for="i in 5" :key="i">
+            <TableRow v-for="i in 20" :key="i">
               <TableCell>
                 <div class="flex items-center gap-3">
                   <div class="size-8 bg-muted rounded-full animate-pulse" />
@@ -342,7 +342,7 @@ onMounted(() => {
 
       <!-- 加载状态 - 移动端卡片 -->
       <div v-if="loading" class="lg:hidden space-y-4">
-        <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
+        <div v-for="i in 20" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-center gap-3">
             <div class="size-8 bg-muted rounded-full animate-pulse" />
             <div class="h-4 bg-muted rounded w-24 animate-pulse" />
@@ -351,8 +351,9 @@ onMounted(() => {
             <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
             <div class="h-4 bg-muted rounded w-1/2 animate-pulse" />
           </div>
-          <div class="flex gap-2">
-            <div class="h-8 bg-muted rounded w-12 animate-pulse" />
+          <div class="flex items-center justify-end pt-2 border-t gap-1">
+            <div class="h-8 w-12 bg-muted rounded animate-pulse" />
+            <div class="size-8 bg-muted rounded-lg animate-pulse" />
             <div class="size-8 bg-muted rounded-lg animate-pulse" />
           </div>
         </div>

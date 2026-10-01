@@ -343,7 +343,7 @@ onMounted(() => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow v-for="i in 5" :key="i">
+            <TableRow v-for="i in 10" :key="i">
               <TableCell>
                 <div class="size-4 bg-muted rounded animate-pulse" />
               </TableCell>
@@ -422,17 +422,25 @@ onMounted(() => {
 
       <!-- 加载状态 - 移动端卡片 -->
       <div v-if="loading" class="lg:hidden space-y-4">
-        <div v-for="i in 5" :key="i" class="border rounded-lg p-4 space-y-3">
+        <div v-for="i in 10" :key="i" class="border rounded-lg p-4 space-y-3">
           <div class="flex items-start gap-3">
-            <div class="size-4 bg-muted rounded animate-pulse mt-1" />
-            <div class="flex-1 space-y-2">
+            <div class="size-4 bg-muted rounded animate-pulse mt-1 shrink-0" />
+            <div class="flex-1 space-y-2 min-w-0">
               <div class="h-5 bg-muted rounded w-3/4 animate-pulse" />
-              <div class="h-4 bg-muted rounded w-1/2 animate-pulse" />
+              <div class="h-4 bg-muted rounded w-24 animate-pulse" />
             </div>
           </div>
-          <div class="flex gap-2">
-            <div class="h-6 bg-muted rounded w-12 animate-pulse" />
-            <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="h-5 w-12 bg-muted rounded animate-pulse" />
+            <div class="h-4 w-8 bg-muted rounded animate-pulse" />
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t">
+            <div class="h-3 w-20 bg-muted rounded animate-pulse" />
+            <div class="flex gap-1">
+              <div class="size-8 bg-muted rounded-lg animate-pulse" />
+              <div class="size-8 bg-muted rounded-lg animate-pulse" />
+              <div class="size-8 bg-muted rounded-lg animate-pulse" />
+            </div>
           </div>
         </div>
       </div>

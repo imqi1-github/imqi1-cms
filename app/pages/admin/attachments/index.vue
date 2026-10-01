@@ -366,6 +366,12 @@ onMounted(async () => {
               <div class="h-3 bg-muted rounded w-1/2 animate-pulse" />
             </div>
           </div>
+          <!-- 分页骨架 -->
+          <div class="mt-6 flex items-center justify-center gap-4">
+            <div class="h-9 w-20 bg-muted rounded animate-pulse" />
+            <div class="h-5 w-24 bg-muted rounded animate-pulse" />
+            <div class="h-9 w-20 bg-muted rounded animate-pulse" />
+          </div>
         </div>
 
         <!-- 空状态 -->

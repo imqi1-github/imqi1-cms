@@ -225,7 +225,8 @@ onMounted(() => {
           <div class="flex items-center justify-between gap-3">
             <div class="space-y-2 flex-1">
               <div class="h-4 bg-muted rounded w-20 animate-pulse" />
-              <div class="h-8 bg-muted rounded w-16 animate-pulse" />
+              <div class="h-9 bg-muted rounded w-16 animate-pulse" />
+              <div class="h-3 bg-muted rounded w-24 animate-pulse" />
             </div>
             <div class="size-8 bg-muted rounded-lg animate-pulse shrink-0" />
           </div>
@@ -253,36 +254,67 @@ onMounted(() => {
     </div>
 
     <!-- 附加统计卡片 -->
-    <div v-if="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-      <Card v-for="card in additionalStatCards" :key="card.title" class="hover:shadow-md transition-shadow">
-        <CardContent class="p-4 sm:p-6">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <p class="text-sm text-muted-foreground">{{ card.title }}</p>
-              <p class="text-2xl sm:text-3xl font-bold mt-1">{{ card.value }}</p>
-              <p class="text-xs text-muted-foreground mt-1 truncate">{{ card.description }}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+      <template v-if="loading">
+        <Card v-for="i in 2" :key="`add-${i}`">
+          <CardContent class="p-4 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+              <div class="space-y-2 flex-1">
+                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+                <div class="h-8 bg-muted rounded w-16 animate-pulse" />
+                <div class="h-3 bg-muted rounded w-24 animate-pulse" />
+              </div>
+              <div class="size-8 sm:size-10 bg-muted rounded-lg animate-pulse shrink-0" />
             </div>
-            <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 shrink-0" />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent class="p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-3">
+              <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+              <div class="size-4 bg-muted rounded animate-pulse shrink-0" />
+            </div>
+            <div class="h-6 sm:h-7 bg-muted rounded w-3/4 animate-pulse" />
+            <div class="mt-3 pt-3 border-t">
+              <div class="flex items-center justify-between gap-2">
+                <div class="h-4 bg-muted rounded w-12 animate-pulse" />
+                <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </template>
+      <template v-else>
+        <Card v-for="card in additionalStatCards" :key="card.title" class="hover:shadow-md transition-shadow">
+          <CardContent class="p-4 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-muted-foreground">{{ card.title }}</p>
+                <p class="text-2xl sm:text-3xl font-bold mt-1">{{ card.value }}</p>
+                <p class="text-xs text-muted-foreground mt-1 truncate">{{ card.description }}</p>
+              </div>
+              <Icon :name="card.icon" class="size-8 sm:size-10 text-muted-foreground/30 shrink-0" />
+            </div>
+          </CardContent>
+        </Card>
 
-      <!-- 系统信息卡片 -->
-      <Card class="hover:shadow-md transition-shadow">
-        <CardContent class="p-4 sm:p-6">
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-sm text-muted-foreground">系统运行时间</p>
-            <Icon name="lucide:activity" class="size-4 text-muted-foreground/50 shrink-0" />
-          </div>
-          <p class="text-base sm:text-lg font-bold truncate">{{ systemInfo.uptime }}</p>
-          <div class="mt-3 pt-3 border-t">
-            <div class="flex items-center justify-between text-xs gap-2">
-              <span class="text-muted-foreground shrink-0">内存使用</span>
-              <span class="font-medium truncate">{{ systemInfo.memory.used }} / {{ systemInfo.memory.total }} {{ systemInfo.memory.unit }}</span>
+        <!-- 系统信息卡片 -->
+        <Card class="hover:shadow-md transition-shadow">
+          <CardContent class="p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm text-muted-foreground">系统运行时间</p>
+              <Icon name="lucide:activity" class="size-4 text-muted-foreground/50 shrink-0" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <p class="text-base sm:text-lg font-bold truncate">{{ systemInfo.uptime }}</p>
+            <div class="mt-3 pt-3 border-t">
+              <div class="flex items-center justify-between text-xs gap-2">
+                <span class="text-muted-foreground shrink-0">内存使用</span>
+                <span class="font-medium truncate">{{ systemInfo.memory.used }} / {{ systemInfo.memory.total }} {{ systemInfo.memory.unit }}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </template>
     </div>
 
     <!-- 最新文章 -->
@@ -360,9 +392,21 @@ onMounted(() => {
         <CardContent class="pt-0">
           <!-- 加载状态 -->
           <div v-if="loading" class="space-y-4">
-            <div v-for="i in 5" :key="i" class="py-3 border-b">
-              <div class="h-4 bg-muted rounded w-3/4 animate-pulse mb-2" />
-              <div class="h-3 bg-muted rounded w-1/2 animate-pulse" />
+            <div v-for="i in 5" :key="i" class="py-3 border-b last:border-0">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <div class="size-8 rounded-full bg-muted animate-pulse shrink-0" />
+                  <div class="space-y-1.5 flex-1 min-w-0">
+                    <div class="h-3 bg-muted rounded w-20 animate-pulse" />
+                    <div class="h-3 bg-muted rounded w-16 animate-pulse" />
+                  </div>
+                </div>
+                <div class="size-8 bg-muted rounded-lg animate-pulse shrink-0" />
+              </div>
+              <div class="space-y-1.5">
+                <div class="h-3 bg-muted rounded w-full animate-pulse" />
+                <div class="h-3 bg-muted rounded w-2/3 animate-pulse" />
+              </div>
             </div>
           </div>
 
@@ -412,9 +456,15 @@ onMounted(() => {
         <CardContent class="pt-0">
           <!-- 加载状态 -->
           <div v-if="loading" class="space-y-4">
-            <div v-for="i in 5" :key="i" class="py-3 border-b">
-              <div class="h-4 bg-muted rounded w-3/4 animate-pulse mb-2" />
-              <div class="h-3 bg-muted rounded w-1/3 animate-pulse" />
+            <div v-for="i in 5" :key="i" class="flex items-start gap-3 py-3 border-b last:border-0">
+              <div class="size-6 rounded-full bg-muted animate-pulse shrink-0" />
+              <div class="flex-1 space-y-2 min-w-0">
+                <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+                <div class="flex items-center gap-2">
+                  <div class="h-3 bg-muted rounded w-16 animate-pulse" />
+                  <div class="h-3 bg-muted rounded w-12 animate-pulse" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -454,13 +504,24 @@ onMounted(() => {
     </div>
 
     <!-- 系统详细信息 -->
-    <Card v-if="!loading" class="mt-4 sm:mt-6">
+    <Card class="mt-4 sm:mt-6">
       <CardHeader class="space-y-1">
         <CardTitle class="text-lg sm:text-xl">系统信息</CardTitle>
         <CardDescription class="text-sm">服务器和应用程序运行状态</CardDescription>
       </CardHeader>
       <CardContent class="pt-0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <template v-if="loading">
+            <div v-for="i in 5" :key="i" class="space-y-2 p-3 rounded-lg bg-muted/30">
+              <div class="flex items-center gap-2">
+                <div class="size-4 bg-muted rounded animate-pulse shrink-0" />
+                <div class="h-4 bg-muted rounded w-20 animate-pulse" />
+              </div>
+              <div class="h-6 bg-muted rounded w-3/4 animate-pulse" />
+              <div class="h-3 bg-muted rounded w-1/2 animate-pulse" />
+            </div>
+          </template>
+          <template v-else>
           <!-- Node.js 信息 -->
           <div class="space-y-2 p-3 rounded-lg bg-muted/30">
             <div class="flex items-center gap-2 text-sm font-medium">
@@ -521,6 +582,7 @@ onMounted(() => {
               {{ systemInfo.deploymentType === 'docker' ? '运行于容器内' : '直接运行于主机' }}
             </p>
           </div>
+          </template>
         </div>
       </CardContent>
     </Card>

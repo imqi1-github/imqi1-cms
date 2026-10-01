@@ -449,7 +449,7 @@ onMounted(() => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="i in 5" :key="i">
+              <TableRow v-for="i in 10" :key="i">
                 <TableCell>
                   <div class="size-4 bg-muted rounded animate-pulse" />
                 </TableCell>
@@ -463,16 +463,22 @@ onMounted(() => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div class="h-4 bg-muted rounded w-full max-w-md animate-pulse" />
+                  <div class="space-y-1.5">
+                    <div class="h-4 bg-muted rounded w-full max-w-md animate-pulse" />
+                    <div class="h-3 bg-muted rounded w-3/4 max-w-md animate-pulse" />
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <div class="h-4 bg-muted rounded w-24 animate-pulse" />
+                  <div class="h-8 bg-muted rounded w-32 animate-pulse" />
                 </TableCell>
                 <TableCell>
                   <div class="h-6 bg-muted rounded w-16 animate-pulse" />
                 </TableCell>
                 <TableCell>
-                  <div class="h-4 bg-muted rounded w-48 animate-pulse" />
+                  <div class="space-y-1.5">
+                    <div class="h-4 bg-muted rounded w-48 animate-pulse" />
+                    <div class="h-3 bg-muted rounded w-32 animate-pulse" />
+                  </div>
                 </TableCell>
                 <TableCell class="text-right">
                   <div class="size-8 bg-muted rounded-lg animate-pulse ms-auto" />
@@ -583,7 +589,7 @@ onMounted(() => {
       <div class="hidden max-[1650px]:lg:block min-[1650px]:hidden">
         <!-- 加载状态 -->
         <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div v-for="i in 4" :key="i" class="border rounded-lg p-4 space-y-3">
+          <div v-for="i in 8" :key="i" class="border rounded-lg p-4 space-y-3">
             <div class="flex items-center gap-3">
               <div class="size-8 bg-muted rounded-full animate-pulse" />
               <div class="space-y-1 flex-1">
@@ -694,7 +700,7 @@ onMounted(() => {
       <div class="lg:hidden space-y-3 sm:space-y-4">
         <!-- 移动端加载状态 -->
         <div v-if="loading" class="space-y-3 sm:space-y-4">
-          <div v-for="i in 3" :key="i" class="border rounded-lg p-3 sm:p-4 space-y-3">
+          <div v-for="i in 6" :key="i" class="border rounded-lg p-3 sm:p-4 space-y-3">
             <div class="flex items-center gap-3">
               <div class="size-8 sm:size-10 bg-muted rounded-full animate-pulse" />
               <div class="space-y-1 flex-1">

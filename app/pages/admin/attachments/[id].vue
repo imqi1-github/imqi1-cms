@@ -368,7 +368,7 @@ onMounted(() => {
           </CardHeader>
           <CardContent>
             <div v-if="loading" class="space-y-4">
-              <div v-for="i in 5" :key="i" class="flex justify-between">
+              <div v-for="i in 10" :key="i" class="flex justify-between">
                 <div class="h-4 bg-muted rounded w-20 animate-pulse" />
                 <div class="h-4 bg-muted rounded w-24 animate-pulse" />
               </div>
