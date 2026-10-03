@@ -84,8 +84,8 @@ const cosConfig = {
   Region: process.env.COS_REGION,
 }
 
-// 上传路径前缀：构建 hash 目录 + 环境变量前缀
-const UPLOAD_PREFIX = buildHashPrefix || process.env.COS_PREFIX || ''
+// 上传路径前缀（来自 .output/build-hash.json 的 dir，配 CDN 时恒为 static/<hash>）
+const UPLOAD_PREFIX = buildHashPrefix || ''
 
 if (!cosConfig.SecretId || !cosConfig.SecretKey || !cosConfig.Bucket || !cosConfig.Region) {
   console.error('❌ 缺少必要的 COS 配置，请检查 .env 文件')
@@ -217,11 +217,11 @@ function askQuestion(query) {
 // 清空远程目录
 async function clearRemoteDirectory() {
   try {
-    // 守卫:未确定清空范围(构建 hash 与 COS_PREFIX 都为空)时,拒绝清空整个 bucket。
-    // 否则 Prefix='' 会列出并删除全部对象(不可逆)。
+    // 守卫:.output/build-hash.json 的 dir 缺失时拒绝清空。
+    // 否则 Prefix='' 会列出并删除 bucket 全部对象(不可逆)。
     if (!UPLOAD_PREFIX) {
       console.error('❌ 未确定清空范围(UPLOAD_PREFIX 为空):拒绝清空整个 COS bucket。')
-      console.error('   请链接 .output/build-hash.json,或用 -- 传 COS_PREFIX 指定子前缀。')
+      console.error('   请先 bun run build 生成 .output/build-hash.json。')
       return false
     }
 

@@ -7,11 +7,11 @@ description: 构建并上传到云端：bun run build + upload:cos + upload:serv
 
 目标：把本地最新代码构建成产物，上传到腾讯云 COS（静态资源）与自建服务器（Nitro server）。**这是对外发布动作，每一步都先确认。**
 
-**关键：upload:server 会因缺少 `SERVER_HOST` 等直接 `exit(1)`；upload:cos 有一个交互式「清空远程目录 yes/no」——Codex 可用 `printf 'y\n' |` / `printf 'n\n' |` 向 stdin 喂答案代跑，**不会挂起**，但只能在用户明确确认后执行。清空范围由 `scripts/upload-cos.ts` 的 `UPLOAD_PREFIX` 决定（`= buildHashPrefix || COS_PREFIX || ''`）：**配了 CDN（`_cdnUrl` 为 http(s)）时恒为 `static/<hash>`**，`y` 只清本次构建目录（随即重传），**非全站**；`.env` 的 `COS_PREFIX` 只有未配 CDN（`.build-hash-dir` 为空）时才参与。**⚠️ `n` 不是「增量覆盖」**：目标前缀已有文件时答 `n` → `main()` 取消整个上传（exit 0「上传已取消」）。本流程必须先校 env，并对 y/n 做硬确认。**
+**关键：upload:server 会因缺少 `SERVER_HOST` 等直接 `exit(1)`；upload:cos 有一个交互式「清空远程目录 yes/no」——Codex 可用 `printf 'y\n' |` / `printf 'n\n' |` 向 stdin 喂答案代跑，**不会挂起**，但只能在用户明确确认后执行。清空范围由 `scripts/upload-cos.ts` 的 `UPLOAD_PREFIX` 决定（`= buildHashPrefix || ''`）：**配了 CDN（`_cdnUrl` 为 http(s)）时恒为 `static/<hash>`**，`y` 只清本次构建目录（随即重传），**非全站**；未配 CDN → `UPLOAD_PREFIX` 为空，`clearRemoteDirectory()` 守卫拒空、`main()` 退出整个上传。**⚠️ `n` 不是「增量覆盖」**：目标前缀已有文件时答 `n` → `main()` 取消整个上传（exit 0「上传已取消」）。本流程必须先校 env，并对 y/n 做硬确认。**
 
 ## 0. 前置确认
 - 这一步会**覆盖线上产物**。开始前向用户复述「将执行 build + 上传 COS + 上传服务器」，确认无异议再动手。
-- `upload:cos` 的「清空远程目录」会删除 `UPLOAD_PREFIX` 前缀下的远程文件。配 CDN 时前缀=`static/<hash>`（本次构建目录，随即重传）；未配 CDN 且 `COS_PREFIX` 空 → 前缀=全 bucket（真危险）。务必让用户知道 y 的实际范围与 n 会取消上传。
+- `upload:cos` 的「清空远程目录」会删除 `UPLOAD_PREFIX` 前缀下的远程文件。配 CDN 时前缀=`static/<hash>`（本次构建目录，随即重传）；未配 CDN → 守卫拒空、退出整个上传。务必让用户知道 y 的实际范围与 n 会取消上传。
 
 ## 1. 校验项目根 + 环境变量（缺即停，不要往下跑）
 ```bash
@@ -37,8 +37,8 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 echo "✓ COS / 服务器上传配置齐全"
 ```
-> 参考：`SERVER_USER`/`SERVER_PORT` 缺省时脚本用 `root` / `22`；`COS_PREFIX`、`SERVER_UPLOAD_CONCURRENCY`、`COS_CONCURRENCY` 可省。
-> **当前 .env 实测**：`COS_*` 四项 + `SERVER_HOST/SERVER_PASSWORD/SERVER_UPLOAD_DIR` 均已配置；`SERVER_USER` 缺省用 `root`、`SERVER_PORT`=22、`COS_PREFIX`=`''`（空——但配了 CDN，故实际上传/清空前缀=`static/<hash>`，此值不参与）、`COS_CONCURRENCY`=20；`restart:server` 所需的 `BT_PANEL_URL/BT_API_KEY/BT_PROJECT_NAME` 未配、用不了。缺任一项本步即拦下提示。
+> 参考：`SERVER_USER`/`SERVER_PORT` 缺省时脚本用 `root` / `22`；`SERVER_UPLOAD_CONCURRENCY`、`COS_CONCURRENCY` 可省。
+> **当前 .env 实测**：`COS_*` 四项 + `SERVER_HOST/SERVER_PASSWORD/SERVER_UPLOAD_DIR` 均已配置；`SERVER_USER` 缺省用 `root`、`SERVER_PORT`=22、`COS_CONCURRENCY`=20；`restart:server` 所需的 `BT_PANEL_URL/BT_API_KEY/BT_PROJECT_NAME` 未配、用不了。缺任一项本步即拦下提示。
 
 ## 2. 构建
 ```bash
@@ -56,9 +56,9 @@ bun run upload:server
 ## 4. 上传到 COS（⚠️ 交互式「清空远程目录」，Codex 可代跑但 y/n 须用户定）
 `upload:cos` 内置 `readline` 问「是否清空远程目录 yes/no」。Codex 用管道喂 stdin 即可代跑，**不会挂起**，但必须先向用户取得明确 y/n。关键：**清空范围与 n 的语义都和文案直觉相反**，先读 `scripts/upload-cos.ts` 再向用户取明确 y/n。
 
-**清空范围（`upload-cos.ts:88` `UPLOAD_PREFIX = buildHashPrefix || process.env.COS_PREFIX || ''`）**
-- **配 CDN**（`_cdnUrl` http(s)，当前如此）→ `buildHashPrefix` = `.build-hash-dir` = `static/<hash>` → 前缀=`static/<hash>`。`y` 只删该 hash 目录下的文件名（即刚上传那批），随即重传；**非全站**，`.env` 的 `COS_PREFIX` 不生效。
-- **未配 CDN** → `update-sw-cdn.ts` 跳过、`.build-hash-dir` 写空 → 前缀回退 `COS_PREFIX`；若它也空 → 前缀=**全 bucket**，`y` 才真的清空全站（不可逆）。
+**清空范围（`upload-cos.ts:88` `UPLOAD_PREFIX = buildHashPrefix || ''`）**
+- **配 CDN**（`_cdnUrl` http(s)，当前如此）→ `buildHashPrefix` = `.build-hash-dir` = `static/<hash>` → 前缀=`static/<hash>`。`y` 只删该 hash 目录下的文件名（即刚上传那批），随即重传；**非全站**。
+- **未配 CDN** → `update-sw-cdn.ts` 跳过、`.build-hash-dir` 写空 → `UPLOAD_PREFIX` 为空 → `clearRemoteDirectory()` 守卫拒空、`main()` 退出整个上传；**不会**清空全 bucket。
 
 **⚠️ `n` 的真实语义（不是「增量覆盖」）**
 - 目标前缀**已有文件**时答 `n` → `clearRemoteDirectory()` 返回 `false` → `main()`（`:363`）**取消整个上传**：`❌ 上传已取消`，exit 0。会「看似成功、实际没传」。

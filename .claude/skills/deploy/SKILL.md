@@ -43,7 +43,7 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 echo "✓ COS / 服务器 / 宝塔 配置齐全"
 ```
-> 参考：`SERVER_USER`/`SERVER_PORT` 缺省时脚本用 `root` / `22`；`COS_PREFIX`、`SERVER_UPLOAD_CONCURRENCY`、`COS_CONCURRENCY` 可省。
+> 参考：`SERVER_USER`/`SERVER_PORT` 缺省时脚本用 `root` / `22`；`SERVER_UPLOAD_CONCURRENCY`、`COS_CONCURRENCY` 可省。
 
 ## 2. 构建
 ```bash
@@ -65,7 +65,7 @@ printf 'n\n' | bun run upload:cos
 **核对退出码 0 且 stdout 不出现「❌ 上传已取消」**——后者是 `n` 在前缀非空时的取消信号（exit 0 但等于没传）。
 
 **清空范围与 n/y 的真实语义**（调试用，默认不动）：
-- `upload-cos.ts` 里 `UPLOAD_PREFIX = buildHashPrefix || COS_PREFIX || ''`；配 CDN（`_cdnUrl` 为 http(s)）时 `buildHashPrefix` 恒为 `static/<hash>`，y 只清本次构建目录、非全站；未配 CDN 且 `COS_PREFIX` 空 → 前缀=全 bucket（y 才真的危险）。
+- `upload-cos.ts` 里 `UPLOAD_PREFIX = buildHashPrefix || ''`；配 CDN（`_cdnUrl` 为 http(s)）时 `buildHashPrefix` 恒为 `static/<hash>`，y 只清本次构建目录、非全站；未配 CDN → `UPLOAD_PREFIX` 为空，`clearRemoteDirectory()` 守卫拒空、退出整个上传（不会清空全 bucket）。
 - 目标前缀**已有文件**时答 n → `main()` 取消整个上传；**为空**时答 n/y 都走"无需清空"分支照常上传。
 
 ## 5. 重启服务器（通过宝塔面板 API）
