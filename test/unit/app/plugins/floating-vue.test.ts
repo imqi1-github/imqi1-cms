@@ -56,6 +56,57 @@ describe("floating-vue plugin — Client 分支(import.meta.client=true)", () =>
   });
 });
 
+// suppressTooltipOnTabReturn:切标签页 / 切窗口返回时 hideAllPoppers + 进入抑制窗口,
+// 期间通过 MutationObserver 监听 floating-vue 给 reference 加 aria-describedby 的动作,
+// 派发合成 blur 事件让 floating-vue 走 hide 路径。这是全局方案,不维护 per-element 状态。
+// happy-dom 的 MutationObserver 对 setAttribute 后 attributeFilter 命中不触发回调(已知限制),
+// 真正跨标签页行为由 dev 手工验证。
+describe("suppressTooltipOnTabReturn — 切标签页返回时主动 hide + 抑制窗口", () => {
+  let win: Window;
+
+  beforeEach(() => {
+    win = new Window({ url: "http://localhost/" });
+    Object.assign(globalThis, {
+      window: win,
+      document: win.document,
+      HTMLElement: win.HTMLElement,
+      MutationObserver: win.MutationObserver,
+    });
+  });
+
+  afterEach(() => {
+    win.close();
+  });
+
+  test("visibilitychange → visible:不抛", async () => {
+    const { suppressTooltipOnTabReturn } = await import("~/plugins/floating-vue");
+    const dispose = suppressTooltipOnTabReturn();
+    Object.defineProperty(win.document, "visibilityState", { configurable: true, get: () => "hidden" });
+    win.document.dispatchEvent(new win.Event("visibilitychange"));
+    Object.defineProperty(win.document, "visibilityState", { configurable: true, get: () => "visible" });
+    expect(() => win.document.dispatchEvent(new win.Event("visibilitychange"))).not.toThrow();
+    dispose();
+  });
+
+  test("window blur:不抛", async () => {
+    const { suppressTooltipOnTabReturn } = await import("~/plugins/floating-vue");
+    const dispose = suppressTooltipOnTabReturn();
+    expect(() => win.dispatchEvent(new win.Event("blur"))).not.toThrow();
+    dispose();
+  });
+
+  test("dispose 注销 observer / visibilitychange / blur 监听,后续触发不抛", async () => {
+    const { suppressTooltipOnTabReturn } = await import("~/plugins/floating-vue");
+    const dispose = suppressTooltipOnTabReturn();
+    dispose();
+    Object.defineProperty(win.document, "visibilityState", { configurable: true, get: () => "visible" });
+    expect(() => {
+      win.document.dispatchEvent(new win.Event("visibilitychange"));
+      win.dispatchEvent(new win.Event("blur"));
+    }).not.toThrow();
+  });
+});
+
 describe("floating-vue plugin — SSR 分支(import.meta.server=true)", () => {
   // 注:bun:test 模块加载时 import.meta.client/server 被 cache 在 module scope,
   // 模块顶层设 client=true → SSR describe 改 server=true 无效(plugin 函数体仍走 client 分支)。
