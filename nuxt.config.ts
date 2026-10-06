@@ -463,7 +463,7 @@ export default defineNuxtConfig({
     },
     hooks: {
       compiled: async () => {
-        const { mkdirSync, copyFileSync, existsSync } = await import("fs");
+        const { mkdirSync, copyFileSync, existsSync, cpSync } = await import("fs");
         const { join } = await import("path");
         const assetsDir = join(process.cwd(), "server", "runtime-assets");
         const targetDir = join(
@@ -509,6 +509,35 @@ export default defineNuxtConfig({
           console.log(
             `✓ Copied ${file.label} to .output/server/runtime-assets/`,
           );
+        }
+
+        // nft 偶尔漏拷 runtime 依赖(动态 import / polyfill / driver-adapter)。
+        // 上传 .output/server/ 到生产后,Nitro 进程用 .output/server/node_modules/<pkg>
+        // 解析这些包;一旦漏,生产即报 ERR_MODULE_NOT_FOUND。
+        // 这里硬列白名单,nft 没拷就从根 node_modules 补拷;不依赖 nft 行为。
+        const runtimeNodeModules = join(process.cwd(), ".output", "server", "node_modules");
+        // WHY: 这些包的 transitive(@prisma/adapter-pg / pg / node-fetch / isomorphic-dompurify)
+        // nft 经常漏拷(动态 require / 间接 import)。每次发版前遇到新的就追加进此处。
+        // 同样:Dockerfile 的 `COPY --from=builder /app/node_modules/undici ...` 也是同一处理。
+        const mustHaveDeps = [
+          { pkg: "undici", label: "isomorphic-dompurify / fetch polyfill" },
+          { pkg: "whatwg-url", label: "node-fetch / undici transitive" },
+          { pkg: "postgres-array", label: "@prisma/adapter-pg deps" },
+          { pkg: "postgres-bytea", label: "pg-types deps" },
+          { pkg: "postgres-date", label: "pg-types deps" },
+          { pkg: "postgres-interval", label: "pg-types deps" },
+        ];
+        mkdirSync(runtimeNodeModules, { recursive: true });
+        for (const { pkg, label } of mustHaveDeps) {
+          const dest = join(runtimeNodeModules, pkg);
+          if (existsSync(join(dest, "package.json"))) continue;
+          const src = join(process.cwd(), "node_modules", pkg);
+          if (!existsSync(join(src, "package.json"))) {
+            console.warn(`⚠ 根 node_modules 也缺 ${pkg}(${label}),跳过`);
+            continue;
+          }
+          cpSync(src, dest, { recursive: true });
+          console.log(`✓ nft 漏拷 → 补拷 ${pkg}(${label})到 .output/server/node_modules/`);
         }
       },
     },
