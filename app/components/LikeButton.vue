@@ -9,13 +9,16 @@ import { computed, watch } from "vue";
  *
  * 动画纯 CSS（不引第三方）：burstKey 改变时给 burst 容器加 .like-burst--play 类，
  * 动画结束通过 animationend 移除（避免无限叠加 keyframes 拖性能）。
+ *
+ * pulse 与 burst 都绑 burstKey：仅在用户主动点击时递增，初次 SSR 注入 liked=true
+ * 或 onMounted localStorage 水合时不会自动播（否则页面打开瞬间会闪一次）。
  */
 
 interface Props {
   count: number;
   liked: boolean;
   pending: boolean;
-  /** 每次 like 触发 +1；组件 watch 后启动一次 burst 动画 */
+  /** 每次 like 触发 +1；组件 watch 后启动一次 burst + pulse 动画 */
   burstKey: number;
 }
 
@@ -25,12 +28,14 @@ const emit = defineEmits<{
 }>();
 
 const animating = ref(false);
+const pulseKey = ref(0);
 
 watch(
   () => props.burstKey,
   () => {
     if (props.burstKey <= 0) return;
     animating.value = false;
+    pulseKey.value += 1;
     // 下一帧再加类，触发 animationend 重新监听（同一类不重启动画）
     requestAnimationFrame(() => {
       animating.value = true;
@@ -40,6 +45,10 @@ watch(
 
 function onAnimationEnd() {
   animating.value = false;
+}
+
+function onPulseEnd() {
+  pulseKey.value = 0;
 }
 
 // 数字显示：千以下原样；千以上 1.2k 风格（与评论/阅读量风格统一）
@@ -92,7 +101,7 @@ const tooltipText = computed(() => {
         :class="liked ? 'fill-current' : ''"
         class="size-4"
       />
-      <span v-if="liked" class="like-heart-pulse" />
+      <span v-if="pulseKey > 0" :key="pulseKey" class="like-heart-pulse" @animationend="onPulseEnd" />
     </span>
 
     <!-- 数字：liked 切换时短暂滑动 -->

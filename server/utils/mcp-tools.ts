@@ -274,5 +274,426 @@ export function createImqi1McpServer(): McpServer {
     },
   );
 
+  // —— list_pages：独立页面列表 ——
+  server.registerTool(
+    "list_pages",
+    {
+      description: "列出已发布的独立页面（如留言板、协议、关于）。返回 slug、标题、描述与前台 URL。",
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(50).default(20).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ limit }) => {
+      const rows = await prisma.contents.findMany({
+        where: { status: 1, type: 1 },
+        select: { slug: true, title: true, desc: true, update_time: true },
+        orderBy: { update_time: "desc" },
+        take: limit,
+      });
+      const items = rows.map(row => ({
+        slug: row.slug,
+        title: row.title,
+        desc: row.desc ?? "",
+        url: row.slug === "messages" ? "/messages" : `/page/${row.slug}`,
+        updated_at: row.update_time.toISOString(),
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— get_random_content：随机文章 ——
+  server.registerTool(
+    "get_random_content",
+    {
+      description: "随机返回一篇已发布文章。可按分类 slug 限定范围。",
+      inputSchema: z.object({
+        categorySlug: z.string().min(1).optional()
+          .describe("限定到某分类下的随机文章（slug 来自 list_categories）"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ categorySlug }) => {
+      const where = { status: 1, type: 0 } as const;
+      if (categorySlug) {
+        const rows = await prisma.contents.findMany({
+          where: {
+            ...where,
+            contentrelations: { some: { metas: { slug: categorySlug, type: "category" } } },
+          },
+          select: { cid: true },
+        });
+        if (rows.length === 0) {
+          return { content: [{ type: "text", text: JSON.stringify({ error: "no_article_in_category", categorySlug }) }], isError: true };
+        }
+        const picked = rows[Math.floor(Math.random() * rows.length)]!;
+        return { content: [{ type: "text", text: JSON.stringify({ cid: picked.cid, note: "用 get_content(cid) 取正文" }, null, 2) }] };
+      }
+      const total = await prisma.contents.count({ where });
+      if (total === 0) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "no_article" }) }], isError: true };
+      }
+      const skip = Math.floor(Math.random() * total);
+      const [row] = await prisma.contents.findMany({
+        where,
+        skip,
+        take: 1,
+        select: { cid: true },
+      });
+      return { content: [{ type: "text", text: JSON.stringify({ cid: row!.cid, note: "用 get_content(cid) 取正文" }, null, 2) }] };
+    },
+  );
+
+  // —— get_recent_comments：全站最新评论 ——
+  server.registerTool(
+    "get_recent_comments",
+    {
+      description: "取全站最新已审核评论，含文章标题与链接。",
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(50).default(20).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ limit }) => {
+      const rows = await prisma.comments.findMany({
+        where: { status: 1 },
+        select: {
+          coid: true,
+          content: true,
+          name: true,
+          create_time: true,
+          content_ref: {
+            select: {
+              cid: true,
+              title: true,
+              slug: true,
+              contentrelations: {
+                where: { metas: { type: "category" } },
+                orderBy: { mid: "asc" },
+                take: 1,
+                select: { metas: { select: { slug: true } } },
+              },
+            },
+          },
+        },
+        orderBy: { create_time: "desc" },
+        take: limit,
+      });
+      const items = rows
+        .filter(r => r.content_ref?.slug && r.content_ref.contentrelations.length > 0)
+        .map(r => {
+          const catSlug = r.content_ref!.contentrelations[0]?.metas?.slug ?? "";
+          return {
+            coid: r.coid,
+            text: r.content,
+            author: r.name,
+            created_at: r.create_time.toISOString(),
+            article: {
+              cid: r.content_ref!.cid,
+              title: r.content_ref!.title,
+              url: `/content/${catSlug}/${r.content_ref!.slug}`,
+            },
+          };
+        });
+      return {
+        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— get_comments：单篇文章评论 ——
+  server.registerTool(
+    "get_comments",
+    {
+      description: "取指定文章 cid 下已审核的评论列表，按时间倒序。",
+      inputSchema: z.object({
+        cid: z.number().int().positive().describe("文章 cid"),
+        limit: z.number().int().min(1).max(100).default(20).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cid, limit }) => {
+      const rows = await prisma.comments.findMany({
+        where: { cid, status: 1 },
+        select: {
+          coid: true,
+          content: true,
+          name: true,
+          mail: true,
+          create_time: true,
+          parent_id: true,
+        },
+        orderBy: { create_time: "desc" },
+        take: limit,
+      });
+      const items = rows.map(r => ({
+        coid: r.coid,
+        parent_coid: r.parent_id,
+        text: r.content,
+        author: r.name,
+        created_at: r.create_time.toISOString(),
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ cid, count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_friend_links：友链 ——
+  server.registerTool(
+    "list_friend_links",
+    {
+      description: "列出已启用且已审核的友情链接。",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      const rows = await prisma.links.findMany({
+        where: {
+          enabled: true,
+          OR: [{ isModification: false }, { isModification: true, modificationStatus: "approved" }],
+        },
+        select: { name: true, desc: true, link: true, avatar: true },
+        orderBy: { id: "asc" },
+      });
+      const items = rows.map(r => ({
+        name: r.name,
+        desc: r.desc ?? "",
+        url: r.link,
+        avatar: r.avatar,
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_changelogs：公开更新日志 ——
+  server.registerTool(
+    "list_changelogs",
+    {
+      description: "取公开更新日志（已按类型分组的渲染 HTML）。",
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(50).default(10).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ limit }) => {
+      const rows = await prisma.changelogs.findMany({
+        select: { id: true, content: true, create_time: true },
+        orderBy: { create_time: "desc" },
+        take: limit,
+      });
+      const items = rows.map(r => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(r.content);
+        } catch {
+          parsed = [];
+        }
+        return {
+          id: r.id,
+          create_time: r.create_time.toISOString(),
+          entries: parsed,
+        };
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— get_related_contents：相关文章 ——
+  server.registerTool(
+    "get_related_contents",
+    {
+      description: "取指定文章 cid 的相关文章（按共享标签数排序）。返回标题、链接、发布时间，不含正文。",
+      inputSchema: z.object({
+        cid: z.number().int().positive().describe("文章 cid"),
+        limit: z.number().int().min(1).max(20).default(5).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cid, limit }) => {
+      const me = await prisma.contents.findUnique({
+        where: { cid },
+        select: {
+          contentrelations: {
+            where: { metas: { type: "tag" } },
+            select: { mid: true },
+          },
+        },
+      });
+      if (!me) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "article_not_found", cid }) }], isError: true };
+      }
+      const tagMids = me.contentrelations.map(r => r.mid);
+      if (tagMids.length === 0) {
+        return { content: [{ type: "text", text: JSON.stringify({ cid, count: 0, items: [] }, null, 2) }] };
+      }
+      const cands = await prisma.contents.findMany({
+        where: {
+          status: 1, type: 0, cid: { not: cid },
+          contentrelations: { some: { mid: { in: tagMids }, metas: { type: "tag" } } },
+        },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          create_time: true,
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            orderBy: { mid: "asc" },
+            take: 1,
+            select: { metas: { select: { slug: true } } },
+          },
+          _count: {
+            select: {
+              contentrelations: {
+                where: { mid: { in: tagMids }, metas: { type: "tag" } },
+              },
+            },
+          },
+        },
+        take: limit * 4,
+      });
+      const items = cands
+        .sort((a, b) => b._count.contentrelations - a._count.contentrelations)
+        .slice(0, limit)
+        .map(c => ({
+          cid: c.cid,
+          title: c.title,
+          url: `/content/${c.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${c.slug ?? c.cid}`,
+          published_at: c.create_time.toISOString(),
+          shared_tags: c._count.contentrelations,
+        }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ cid, count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_category_articles：分类下文章 ——
+  server.registerTool(
+    "list_category_articles",
+    {
+      description: "取指定分类 slug 下的文章列表，按发布时间倒序。",
+      inputSchema: z.object({
+        slug: z.string().min(1).describe("分类 slug"),
+        limit: z.number().int().min(1).max(50).default(20).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ slug, limit }) => {
+      const rows = await prisma.contents.findMany({
+        where: {
+          status: 1, type: 0,
+          contentrelations: { some: { metas: { slug, type: "category" } } },
+        },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          desc: true,
+          create_time: true,
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            orderBy: { mid: "asc" },
+            take: 1,
+            select: { metas: { select: { slug: true } } },
+          },
+        },
+        orderBy: { create_time: "desc" },
+        take: limit,
+      });
+      const items = rows.map(r => ({
+        cid: r.cid,
+        title: r.title,
+        desc: r.desc ?? "",
+        url: `/content/${r.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${r.slug ?? r.cid}`,
+        published_at: r.create_time.toISOString(),
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ slug, count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_tag_articles：标签下文章 ——
+  server.registerTool(
+    "list_tag_articles",
+    {
+      description: "取指定标签 slug 下的文章列表，按发布时间倒序。",
+      inputSchema: z.object({
+        slug: z.string().min(1).describe("标签 slug"),
+        limit: z.number().int().min(1).max(50).default(20).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ slug, limit }) => {
+      const rows = await prisma.contents.findMany({
+        where: {
+          status: 1, type: 0,
+          contentrelations: { some: { metas: { slug, type: "tag" } } },
+        },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          desc: true,
+          create_time: true,
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            orderBy: { mid: "asc" },
+            take: 1,
+            select: { metas: { select: { slug: true } } },
+          },
+        },
+        orderBy: { create_time: "desc" },
+        take: limit,
+      });
+      const items = rows.map(r => ({
+        cid: r.cid,
+        title: r.title,
+        desc: r.desc ?? "",
+        url: `/content/${r.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${r.slug ?? r.cid}`,
+        published_at: r.create_time.toISOString(),
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ slug, count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— get_site_info：站点基本信息 ——
+  server.registerTool(
+    "get_site_info",
+    {
+      description: "取站点名、描述、URL 等基本信息，用于自我介绍或引用。",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      const rows = await prisma.informations.findMany({
+        where: { key: { in: ["siteName", "siteUrl", "siteDescription", "siteBeian"] } },
+        select: { key: true, value: true },
+      });
+      const map = Object.fromEntries(rows.map(r => [r.key, r.value]));
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            name: map.siteName ?? "",
+            url: map.siteUrl ?? "",
+            description: map.siteDescription ?? "",
+            beian: map.siteBeian ?? "",
+          }, null, 2),
+        }],
+      };
+    },
+  );
+
   return server;
 }
