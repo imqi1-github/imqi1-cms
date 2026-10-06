@@ -77,3 +77,4 @@
 - [E2E 用户操作用例踩坑](e2e-user-actions-gotchas.md) — 评论框是 EmojiRichInput(contenteditable)用 role 定位;访客评论强制图形验证码→登录态;单端登录互踢→一用例只登录一次(全用 page.request);反垃圾 5s 窗;toast 4s 消失且真文案是服务端 message→toast.or(forceBtn) 竞速;写库用例 finally 无条件清 marker(门控会在断言失败时留脏);ensureArticle 数据自给自足(categories 无 type 字段/contents 返回不含 slug/"至少保留一个分类")
 
 - [久未触碰文件非必然 bug,实测再下结论](stale-config-files-not-always-bug.md) — 扫仓库「长期没改」文件不等同 bug,要跑 tailwindcss:lint / 查 tsconfig alias 兜底 / 实际 fs 检查;shadcn 组件+components.json 6 个月未动是典型误报(tailwindcss:lint 0 警 + tsconfig alias 兜底);用户对 lint exit 0 有强要求,无证据的改动只增加技术债
+- [MCP 运维工具组 MCP_OPS_TOKEN 门禁](mcp-ops-tools.md) — /mcp 公开端点加 5 个运维工具(系统状态/日志/内容统计/缓存诊断/清缓存),未配 MCP_OPS_TOKEN 整组不注册(fail-closed),配了每工具入参带 token(timingSafeEqual);clear_cache 唯一非 readOnly(destructiveHint+confirm:true);get_cache_info 键前缀 rl: 是 rate-limit 内部前缀;get_recent_logs 类别白名单=LOG_TAG_LABELS 键防穿越;测试须在 import mcp-tools 前设 LOG_DIR 到 tmpdir
