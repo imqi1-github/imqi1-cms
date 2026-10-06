@@ -42,6 +42,9 @@ const settings = ref<AdminSettings>({
   smtpFromName: "",
   adminEmail: "",
   notifyAdmin: false,
+  notifyError: true,
+  notifyComment: true,
+  notifyLinkApply: true,
   uploadLocation: DEFAULT_UPLOAD_LOCATION,
   cosSecretId: "",
   cosSecretKey: "",
@@ -252,6 +255,9 @@ const defaultSettings: AdminSettings = {
   smtpFromName: "",
   adminEmail: "",
   notifyAdmin: false,
+  notifyError: true,
+  notifyComment: true,
+  notifyLinkApply: true,
   uploadLocation: DEFAULT_UPLOAD_LOCATION,
   cosSecretId: "",
   cosSecretKey: "",
@@ -1019,12 +1025,41 @@ onMounted(() => {
                       <Input id="adminEmail" v-model="settings.adminEmail" placeholder="请填写站长收件邮箱地址" />
                     </div>
                   </div>
-                  <div class="flex items-center justify-between">
-                    <div class="space-y-0.5">
-                      <Label for="notifyAdmin">通知站长</Label>
-                      <p class="text-sm text-muted-foreground">新评论或通知时是否发送邮件给站长</p>
+                  <Separator />
+
+                  <!-- 通知开关：总开关 + 三个分类子开关 -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-medium">通知开关</h4>
+                    <div class="flex items-center justify-between">
+                      <div class="space-y-0.5">
+                        <Label for="notifyAdmin">通知站长（总开关）</Label>
+                        <p class="text-sm text-muted-foreground">关闭后不发送任何给站长的通知邮件</p>
+                      </div>
+                      <Switch id="notifyAdmin" v-model="settings.notifyAdmin" />
                     </div>
-                    <Switch id="notifyAdmin" v-model="settings.notifyAdmin" />
+                    <div class="space-y-3 pl-4 border-l-2 border-muted" :class="{ 'opacity-50 pointer-events-none': !settings.notifyAdmin }">
+                      <div class="flex items-center justify-between">
+                        <div class="space-y-0.5">
+                          <Label for="notifyError">错误日志通知</Label>
+                          <p class="text-sm text-muted-foreground">服务端异常 / 5xx / 客户端错误上报时邮件通知</p>
+                        </div>
+                        <Switch id="notifyError" v-model="settings.notifyError" />
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <div class="space-y-0.5">
+                          <Label for="notifyComment">评论通知</Label>
+                          <p class="text-sm text-muted-foreground">新评论、待审核与垃圾评论邮件通知</p>
+                        </div>
+                        <Switch id="notifyComment" v-model="settings.notifyComment" />
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <div class="space-y-0.5">
+                          <Label for="notifyLinkApply">友链通知</Label>
+                          <p class="text-sm text-muted-foreground">友链申请与修改请求邮件通知</p>
+                        </div>
+                        <Switch id="notifyLinkApply" v-model="settings.notifyLinkApply" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -27,6 +27,9 @@ async function getMailConfig() {
           "smtpAddress",
           "adminEmail",
           "notifyAdmin",
+          "notifyError",
+          "notifyComment",
+          "notifyLinkApply",
         ],
       },
     },
@@ -45,6 +48,8 @@ async function getMailConfig() {
     address: get("smtpAddress") || get("smtpUser"),
     adminEmail: get("adminEmail"),
     notifyAdmin: get("notifyAdmin") === "true",
+    notifyComment: get("notifyComment") === "true",
+    notifyLinkApply: get("notifyLinkApply") === "true",
   };
 }
 
@@ -277,8 +282,8 @@ async function getContentTitle(cid: number): Promise<string> {
 export async function notifyFriendLinkApplication(linkName: string, linkUrl: string, autoApproved = false): Promise<boolean> {
   const config = await getMailConfig();
 
-  // 检查是否启用邮件通知
-  if (config.pushType === "none" || !config.adminEmail) {
+  // 检查是否启用邮件通知（总开关 + 友链子开关）
+  if (config.pushType === "none" || !config.adminEmail || !config.notifyAdmin || !config.notifyLinkApply) {
     log.external("notify.skipped", { service: "mail", kind: "friendlink.apply", linkName, linkUrl, autoApproved });
     return false;
   }
@@ -312,8 +317,8 @@ export async function notifyFriendLinkApplication(linkName: string, linkUrl: str
 export async function notifyAdminNewComment(contentId: number, commenterName: string, commentContent: string, commentId: number): Promise<boolean> {
   const config = await getMailConfig();
 
-  // 检查是否启用邮件通知
-  if (config.pushType === "none" || !config.adminEmail) {
+  // 检查是否启用邮件通知（总开关 + 评论子开关）
+  if (config.pushType === "none" || !config.adminEmail || !config.notifyAdmin || !config.notifyComment) {
     log.external("notify.skipped", { service: "mail", kind: "comment.new", contentId, commenterName });
     return false;
   }
@@ -417,8 +422,8 @@ export async function notifyAdminPendingComment(
 ): Promise<boolean> {
   const config = await getMailConfig();
 
-  // 检查是否启用邮件通知
-  if (config.pushType === "none" || !config.adminEmail) {
+  // 检查是否启用邮件通知（总开关 + 评论子开关）
+  if (config.pushType === "none" || !config.adminEmail || !config.notifyAdmin || !config.notifyComment) {
     log.external("notify.skipped", { service: "mail", kind: "comment.pending", contentId, commenterName, status });
     return false;
   }
@@ -461,8 +466,8 @@ export async function notifyFriendLinkModification(
 ): Promise<boolean> {
   const config = await getMailConfig();
 
-  // 检查是否启用邮件通知
-  if (config.pushType === "none" || !config.adminEmail) {
+  // 检查是否启用邮件通知（总开关 + 友链子开关）
+  if (config.pushType === "none" || !config.adminEmail || !config.notifyAdmin || !config.notifyLinkApply) {
     log.external("notify.skipped", { service: "mail", kind: "friendlink.modify", originalLink, newLink });
     return false;
   }

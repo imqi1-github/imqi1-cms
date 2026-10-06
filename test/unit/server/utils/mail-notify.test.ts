@@ -39,6 +39,7 @@ sharedFake.on("informations", "findMany", async ({ where }: { where?: { key?: { 
     smtpSecureMode: "ssl", smtpUser: "bot@example.com", smtpPassword: "pw",
     smtpFromName: "测试站", smtpAddress: "noreply@example.com",
     adminEmail: "admin@example.com", notifyAdmin: "true", emailLogEnabled: "false",
+    notifyComment: "true", notifyLinkApply: "true", notifyError: "true",
     siteName: "测试站", siteUrl: "https://example.com",
   };
   Object.assign(defaults, mailSettingOverrides);
@@ -134,5 +135,31 @@ describe("notifyFriendLinkModification", () => {
     expect(html).toContain("https://old.com");
     expect(html).toContain("https://new.com");
     expect(html).toContain("新描述");
+  });
+});
+
+describe("通知子开关", () => {
+  test("notifyComment=false → 新评论通知跳过", async () => {
+    mailSettingOverrides = { notifyComment: "false" };
+    const ok = await notifyAdminNewComment(10, "甲", "内容", 1);
+    expect(ok).toBe(false);
+    expect(sentMails).toHaveLength(0);
+    mailSettingOverrides = {};
+  });
+
+  test("notifyLinkApply=false → 友链申请通知跳过", async () => {
+    mailSettingOverrides = { notifyLinkApply: "false" };
+    const ok = await notifyFriendLinkApplication("友站", "https://x.example");
+    expect(ok).toBe(false);
+    expect(sentMails).toHaveLength(0);
+    mailSettingOverrides = {};
+  });
+
+  test("notifyAdmin=false 总关 → 子开关开着也不发", async () => {
+    mailSettingOverrides = { notifyAdmin: "false", notifyComment: "true" };
+    const ok = await notifyAdminNewComment(10, "甲", "内容", 1);
+    expect(ok).toBe(false);
+    expect(sentMails).toHaveLength(0);
+    mailSettingOverrides = {};
   });
 });

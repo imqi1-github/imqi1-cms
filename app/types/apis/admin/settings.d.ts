@@ -36,6 +36,9 @@ export interface AdminSettings {
 	smtpFromName: string;
 	adminEmail: string;
 	notifyAdmin: boolean;
+	notifyError: boolean;
+	notifyComment: boolean;
+	notifyLinkApply: boolean;
 	uploadLocation: "local" | "cos";
 	cosSecretId: string;
 	cosSecretKey: string;

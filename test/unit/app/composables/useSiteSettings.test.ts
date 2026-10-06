@@ -40,6 +40,9 @@ const SAMPLE: SiteSettings = {
   musicPlaylistId: "123",
   adminEmail: "admin@imqi1.com",
   notifyAdmin: false,
+  notifyError: true,
+  notifyComment: true,
+  notifyLinkApply: true,
 };
 
 describe("useSiteSettings:派生只读 computed", () => {

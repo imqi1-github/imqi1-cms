@@ -2,7 +2,8 @@ import { redis } from "#server/utils/redis";
 import { log } from "#server/utils/log";
 
 // SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis（与 admin/cache/clear.post.ts 一致）。
-async function scanAndUnlink(pattern: string): Promise<number> {
+// 导出给 MCP 运维工具 clear_cache 复用（search/footprint/keyword 清理与 admin 端同模式）。
+export async function scanAndUnlink(pattern: string): Promise<number> {
   if (!redis) return 0;
   let cursor = "0";
   let removed = 0;
@@ -15,6 +16,19 @@ async function scanAndUnlink(pattern: string): Promise<number> {
     }
   } while (cursor !== "0");
   return removed;
+}
+
+/** 只计数不删除：SCAN 遍历匹配键数（MCP get_cache_info 按前缀统计用）。 */
+export async function countKeysByPattern(pattern: string): Promise<number> {
+  if (!redis) return 0;
+  let cursor = "0";
+  let count = 0;
+  do {
+    const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200);
+    cursor = next;
+    count += keys.length;
+  } while (cursor !== "0");
+  return count;
 }
 
 /**

@@ -32,8 +32,8 @@ function fmtTs(d: Date = new Date()): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
 }
 
-/** 当天文件日期键：YYYY-MM-DD；与 fmtTs 同时区（都是 host/容器 time zone） */
-function dateKey(d: Date = new Date()): string {
+/** 当天文件日期键：YYYY-MM-DD；与 fmtTs 同时区（都是 host/容器 time zone）。导出给 MCP 运维工具定位当天日志文件 */
+export function dateKey(d: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

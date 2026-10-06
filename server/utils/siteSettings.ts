@@ -25,6 +25,9 @@ const defaults: SiteSettings = {
   musicPlaylistId: "",
   adminEmail: "",
   notifyAdmin: false,
+  notifyError: true,
+  notifyComment: true,
+  notifyLinkApply: true,
 };
 
 function sanitizePublicSettings(settings: MutableSettings): SiteSettings {

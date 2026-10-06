@@ -3,21 +3,43 @@
  *
  * 测试目标：createImqi1McpServer 注册的工具集合（名字、只读标注、入参 schema、回调行为）。
  * 策略：mock @modelcontextprotocol/server 拦截 registerTool 调用，拿到每个工具的回调直接驱动。
- * 这样不用走 SDK 内部 JSON-RPC 协议，能在毫秒级验完 15 个工具的契约。
+ * 这样不用走 SDK 内部 JSON-RPC 协议，能在毫秒级验完 15 个内容工具 + 5 个运维工具的契约。
+ *
+ * 运维工具组由 MCP_OPS_TOKEN 门禁：本文件动态改该环境变量覆盖「配了/没配」两种注册面。
+ * LOG_DIR 在模块导入前指到临时目录，让 get_recent_logs 读确定性的假日志文件。
  */
 import "#test/helpers/nitro-globals";
 
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
+// —— 假 redis：方法 → handler map（仿 fake-prisma 模式），运行时只用到 ping/dbsize/info/scan/unlink/status ——
+type RedisHandler = (...args: never[]) => unknown;
+const redisHandlers = new Map<string, RedisHandler>();
+const fakeRedis = {
+  status: "ready",
+  ping: () => redisHandlers.get("ping")?.(),
+  dbsize: () => redisHandlers.get("dbsize")?.(),
+  info: (section: string) => redisHandlers.get("info")?.(section),
+  scan: (cursor: string, match: string, pattern: string, count: string, n: number) =>
+    redisHandlers.get("scan")?.(cursor, match, pattern, count, n),
+  unlink: (...keys: string[]) => redisHandlers.get("unlink")?.(...keys),
+} as unknown as import("ioredis").default;
+
+mock.module("#server/utils/redis", () => ({ redis: fakeRedis }));
+
 interface CapturedTool {
   name: string;
   description: string;
   inputSchema: { parse: (input: unknown) => unknown };
-  annotations?: { readOnlyHint?: boolean };
+  annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
   callback: (args: unknown) => Promise<unknown>;
 }
 
@@ -26,11 +48,10 @@ const capturedTools: CapturedTool[] = [];
 mock.module("@modelcontextprotocol/server", () => {
   class FakeMcpServer {
     server = {};
-    constructor(_info: unknown, _opts: unknown) {}
     registerTool(name: string, config: {
       description?: string;
       inputSchema?: { parse?: (input: unknown) => unknown };
-      annotations?: { readOnlyHint?: boolean };
+      annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
     }, cb: (args: unknown) => Promise<unknown>) {
       capturedTools.push({
         name,
@@ -48,9 +69,13 @@ mock.module("@modelcontextprotocol/server", () => {
   };
 });
 
+// LOG_DIR 必须在 mcp-tools（连带 log.ts）导入前设置：LOG_DIR_RESOLVED 在模块加载时解析
+const TEST_LOG_DIR = join(tmpdir(), `mcp-ops-logs-${process.pid}`);
+process.env.LOG_DIR = TEST_LOG_DIR;
+
 const { createImqi1McpServer } = await import("#server/utils/mcp-tools");
 
-const EXPECTED_TOOLS = [
+const CONTENT_TOOLS = [
   "search_content",
   "get_content",
   "list_recent_contents",
@@ -68,31 +93,75 @@ const EXPECTED_TOOLS = [
   "get_site_info",
 ];
 
+const OPS_TOOLS = ["get_system_status", "get_recent_logs", "get_content_stats", "get_cache_info", "clear_cache"];
+
+const TEST_OPS_TOKEN = "test-ops-token";
+
+function setDefaultRedisHandlers(): void {
+  redisHandlers.clear();
+  redisHandlers.set("ping", async () => "PONG");
+  redisHandlers.set("dbsize", async () => 42);
+  redisHandlers.set("info", async () => "# Memory\r\nused_memory_human:1.50M\r\nused_memory_peak_human:2.00M\r\n");
+  redisHandlers.set("scan", async () => ["0", [] as string[]]);
+  redisHandlers.set("unlink", async () => 0);
+}
+
 beforeEach(() => {
+  process.env.MCP_OPS_TOKEN = TEST_OPS_TOKEN;
+  setDefaultRedisHandlers();
   capturedTools.length = 0;
   createImqi1McpServer();
 });
 
 afterEach(() => {
+  delete process.env.MCP_OPS_TOKEN;
   // 显式清空 sharedFake 注册的 handler，避免跨测试污染
   for (const key of [...(sharedFake as unknown as { state?: Map<string, unknown> }).state?.keys() ?? []]) {
     if (typeof key === "string") sharedFake.on(key, () => null as never);
   }
 });
 
+afterAll(async () => {
+  await rm(TEST_LOG_DIR, { recursive: true, force: true });
+});
+
 describe("createImqi1McpServer 注册契约", () => {
-  test("注册的 15 个工具,名字齐全且唯一", () => {
+  test("未配置 MCP_OPS_TOKEN → 运维工具不注册（fail-closed），仅 15 个内容工具", () => {
+    delete process.env.MCP_OPS_TOKEN;
+    capturedTools.length = 0;
+    createImqi1McpServer();
     const names = capturedTools.map(t => t.name);
-    expect(names.length).toBe(EXPECTED_TOOLS.length);
-    for (const expected of EXPECTED_TOOLS) {
+    expect(names.length).toBe(CONTENT_TOOLS.length);
+    for (const expected of CONTENT_TOOLS) {
+      expect(names).toContain(expected);
+    }
+  });
+
+  test("配置令牌后注册 20 个工具，名字齐全且唯一", () => {
+    const names = capturedTools.map(t => t.name);
+    expect(names.length).toBe(CONTENT_TOOLS.length + OPS_TOOLS.length);
+    for (const expected of [...CONTENT_TOOLS, ...OPS_TOOLS]) {
       expect(names).toContain(expected);
     }
     expect(new Set(names).size).toBe(names.length);
   });
 
-  test("所有工具都标记 readOnlyHint(防 prompt injection 引导到写操作)", () => {
-    for (const tool of capturedTools) {
+  test("内容工具全部 readOnlyHint:true（防 prompt injection 引导到写操作）", () => {
+    for (const tool of capturedTools.filter(t => CONTENT_TOOLS.includes(t.name))) {
       expect(tool.annotations?.readOnlyHint).toBe(true);
+    }
+  });
+
+  test("运维工具只读，唯一例外 clear_cache（非只读 + destructiveHint）", () => {
+    for (const name of OPS_TOOLS) {
+      const tool = capturedTools.find(t => t.name === name);
+      if (!tool) throw new Error(`tool ${name} 未注册`);
+      if (name === "clear_cache") {
+        expect(tool.annotations?.readOnlyHint).toBe(false);
+        expect(tool.annotations?.destructiveHint).toBe(true);
+      } else {
+        expect(tool.annotations?.readOnlyHint).toBe(true);
+      }
     }
   });
 
@@ -117,6 +186,220 @@ async function invoke(name: string, args: unknown): Promise<{ text: string; isEr
   };
   return { text: result.content[0]!.text, isError: result.isError };
 }
+
+describe("运维工具令牌门禁", () => {
+  test("token 缺失或错误 → 全部返回 invalid_ops_token，不执行任何查询", async () => {
+    sharedFake.on("$queryRaw", async () => {
+      throw new Error("不应该被调用");
+    });
+    for (const name of OPS_TOOLS) {
+      const r = await invoke(name, { token: "wrong-token", target: "search", confirm: true });
+      expect(r.isError).toBe(true);
+      expect(JSON.parse(r.text)).toMatchObject({ error: "invalid_ops_token" });
+    }
+  });
+});
+
+describe("工具回调:get_system_status", () => {
+  test("DB 与 Redis 都正常 → ok:true + 延迟 + 版本", async () => {
+    sharedFake.on("$queryRaw", async () => [{ version: "PostgreSQL 16.4 (Debian 16.4-1.pgdg120+1)" }]);
+    const { text } = await invoke("get_system_status", { token: TEST_OPS_TOKEN });
+    const parsed = JSON.parse(text) as {
+      database: { ok: boolean; version: string; latencyMs: number };
+      redis: { configured: boolean; ok: boolean; status: string };
+      uptimeSec: number;
+      node: string;
+    };
+    expect(parsed.database.ok).toBe(true);
+    expect(parsed.database.version).toBe("PostgreSQL 16.4");
+    expect(typeof parsed.database.latencyMs).toBe("number");
+    expect(parsed.redis).toMatchObject({ configured: true, ok: true, status: "ready" });
+    expect(typeof parsed.uptimeSec).toBe("number");
+    expect(parsed.node.startsWith("v")).toBe(true);
+  });
+
+  test("DB 挂掉 → database.ok:false 带错误信息，工具不炸", async () => {
+    sharedFake.on("$queryRaw", async () => {
+      throw new Error("connect ECONNREFUSED 127.0.0.1:5432");
+    });
+    const { text } = await invoke("get_system_status", { token: TEST_OPS_TOKEN });
+    const parsed = JSON.parse(text) as { database: { ok: boolean; error?: string } };
+    expect(parsed.database.ok).toBe(false);
+    expect(parsed.database.error).toContain("ECONNREFUSED");
+  });
+});
+
+describe("工具回调:get_recent_logs", () => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const d = new Date();
+  const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const LINES = [
+    "2026-10-06 10:00:00.000 [应用] [INFO] 启动正常",
+    "2026-10-06 10:01:00.000 [应用] [ERROR] 数据库连接失败 error=ECONNREFUSED",
+    "2026-10-06 10:02:00.000 [应用] [WARN] 慢查询 durationMs=1200",
+    "2026-10-06 10:03:00.000 [应用] [INFO] 定时任务完成 count=3",
+  ];
+
+  beforeEach(async () => {
+    await mkdir(join(TEST_LOG_DIR, "app"), { recursive: true });
+    await writeFile(join(TEST_LOG_DIR, "app", `${today}.log`), LINES.join("\n"), "utf8");
+  });
+
+  test("默认读今天 app 类别，返回末尾 lines 行", async () => {
+    const { text } = await invoke("get_recent_logs", { token: TEST_OPS_TOKEN, category: "app", lines: 2, level: "all" });
+    const parsed = JSON.parse(text) as { totalLines: number; returnedLines: number; lines: string[] };
+    expect(parsed.totalLines).toBe(4);
+    expect(parsed.returnedLines).toBe(2);
+    expect(parsed.lines[0]).toContain("慢查询");
+    expect(parsed.lines[1]).toContain("定时任务完成");
+  });
+
+  test("level=error 只留 ERROR 行", async () => {
+    const { text } = await invoke("get_recent_logs", { token: TEST_OPS_TOKEN, category: "app", lines: 50, level: "error" });
+    const parsed = JSON.parse(text) as { totalLines: number; lines: string[] };
+    expect(parsed.totalLines).toBe(1);
+    expect(parsed.lines[0]).toContain("ECONNREFUSED");
+  });
+
+  test("未知类别 → unknown_category 并给出白名单", async () => {
+    const r = await invoke("get_recent_logs", { token: TEST_OPS_TOKEN, category: "../etc", lines: 10, level: "all" });
+    expect(r.isError).toBe(true);
+    const parsed = JSON.parse(r.text) as { error: string; allowed: string[] };
+    expect(parsed.error).toBe("unknown_category");
+    expect(parsed.allowed).toContain("app");
+  });
+
+  test("该类别当日无文件 → 空列表 + note，不报错", async () => {
+    const { text } = await invoke("get_recent_logs", { token: TEST_OPS_TOKEN, category: "audit", lines: 10, level: "all" });
+    const parsed = JSON.parse(text) as { totalLines: number; lines: unknown[]; note?: string };
+    expect(parsed.totalLines).toBe(0);
+    expect(parsed.lines).toEqual([]);
+    expect(parsed.note).toBeTruthy();
+  });
+
+  test("date 入参被正则限定（路径穿越直接 schema 拒绝）", () => {
+    const schema = findTool("get_recent_logs").inputSchema;
+    expect(() => schema.parse({ token: TEST_OPS_TOKEN, date: "../../etc/passwd" })).toThrow();
+    expect(() => schema.parse({ token: TEST_OPS_TOKEN, date: "2026-01-01" })).not.toThrow();
+  });
+});
+
+describe("工具回调:get_content_stats", () => {
+  test("聚合各表计数与队列", async () => {
+    sharedFake.on("contents", "groupBy", async () => [
+      { status: 1, _count: { _all: 7 } },
+      { status: 0, _count: { _all: 2 } },
+    ]);
+    sharedFake.on("comments", "groupBy", async () => [{ status: 1, _count: { _all: 5 } }]);
+    sharedFake.on("contents", "count", async () => 3);
+    sharedFake.on("links", "count", async ({ where }: { where?: { isModification?: boolean } }) =>
+      where?.isModification ? 1 : 9);
+    sharedFake.on("attachments", "count", async () => 11);
+    sharedFake.on("subscribes", "count", async () => 4);
+    sharedFake.on("contents", "findFirst", async () => ({
+      cid: 1, title: "最新文章", create_time: new Date("2026-01-01T00:00:00Z"),
+    }));
+    sharedFake.on("contents", "findMany", async () => [
+      { cid: 2, title: "定时稿", scheduled_at: new Date("2026-02-01T00:00:00Z") },
+    ]);
+
+    const { text } = await invoke("get_content_stats", { token: TEST_OPS_TOKEN });
+    const parsed = JSON.parse(text) as {
+      articlesByStatus: Record<string, number>;
+      commentsByStatus: Record<string, number>;
+      pagesPublished: number;
+      links: { enabled: number; pendingModifications: number };
+      attachments: number;
+      subscribes: number;
+      latestPublished: { cid: number; publishedAt: string } | null;
+      scheduledPublishQueue: Array<{ cid: number; publishAt: string }>;
+    };
+    expect(parsed.articlesByStatus).toEqual({ "1": 7, "0": 2 });
+    expect(parsed.commentsByStatus).toEqual({ "1": 5 });
+    expect(parsed.pagesPublished).toBe(3);
+    expect(parsed.links).toEqual({ enabled: 9, pendingModifications: 1 });
+    expect(parsed.attachments).toBe(11);
+    expect(parsed.subscribes).toBe(4);
+    expect(parsed.latestPublished).toMatchObject({ cid: 1, publishedAt: "2026-01-01T00:00:00.000Z" });
+    expect(parsed.scheduledPublishQueue[0]).toMatchObject({ cid: 2, publishAt: "2026-02-01T00:00:00.000Z" });
+  });
+});
+
+describe("工具回调:get_cache_info", () => {
+  test("按前缀统计键量并解析 memory info", async () => {
+    redisHandlers.set("scan", async (_cursor: string, _m: string, pattern: string) => {
+      if (pattern === "nitro:routes:*") return ["0", ["a", "b", "c"]];
+      if (pattern === "search:*") return ["0", ["s1"]];
+      return ["0", [] as string[]];
+    });
+    redisHandlers.set("dbsize", async () => 5);
+
+    const { text } = await invoke("get_cache_info", { token: TEST_OPS_TOKEN });
+    const parsed = JSON.parse(text) as {
+      configured: boolean;
+      pingLatencyMs: number;
+      dbSize: number;
+      usedMemory: string | null;
+      peakMemory: string | null;
+      keyCounts: Record<string, number>;
+    };
+    expect(parsed.configured).toBe(true);
+    expect(parsed.dbSize).toBe(5);
+    expect(parsed.usedMemory).toBe("1.50M");
+    expect(parsed.peakMemory).toBe("2.00M");
+    expect(parsed.keyCounts).toEqual({
+      "nitro:routes": 3,
+      "search": 1,
+      "custom": 0,
+      "error:notify": 0,
+      "rl:mcp:post": 0,
+    });
+    expect(typeof parsed.pingLatencyMs).toBe("number");
+  });
+});
+
+describe("工具回调:clear_cache", () => {
+  test("confirm 未显式传 true → need_confirm，不执行删除", async () => {
+    let unlinkCalled = false;
+    redisHandlers.set("unlink", async () => {
+      unlinkCalled = true;
+      return 1;
+    });
+    const r = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "search", confirm: false });
+    expect(r.isError).toBe(true);
+    expect(JSON.parse(r.text)).toMatchObject({ error: "need_confirm" });
+    expect(unlinkCalled).toBe(false);
+  });
+
+  test("target=search 清掉搜索缓存并返回数量", async () => {
+    redisHandlers.set("scan", async () => ["0", ["search:a", "search:b"]]);
+    const { text } = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "search", confirm: true });
+    const parsed = JSON.parse(text) as { target: string; cleared: number };
+    expect(parsed).toMatchObject({ target: "search", cleared: 2 });
+  });
+
+  test("target=pages 清整组 ISR 缓存，cleared=-1 语义", async () => {
+    redisHandlers.set("scan", async () => ["0", ["nitro:routes:_:x"]]);
+    const { text } = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "pages", confirm: true });
+    const parsed = JSON.parse(text) as { cleared: number; note?: string };
+    expect(parsed.cleared).toBe(-1);
+    expect(parsed.note).toContain("ISR");
+  });
+
+  test("target=keyword 时通配符被剥掉，剥完为空报 keyword_required", async () => {
+    let capturedPattern = "";
+    redisHandlers.set("scan", async (_cursor: string, _m: string, pattern: string) => {
+      capturedPattern = pattern;
+      return ["0", ["k1"]];
+    });
+    await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "keyword", keyword: "foot*", confirm: true });
+    expect(capturedPattern).toBe("*foot*");
+
+    const r = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "keyword", keyword: "*?[]", confirm: true });
+    expect(r.isError).toBe(true);
+    expect(JSON.parse(r.text)).toMatchObject({ error: "keyword_required" });
+  });
+});
 
 describe("工具回调:get_content", () => {
   beforeEach(() => {

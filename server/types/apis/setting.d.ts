@@ -17,7 +17,10 @@ export type SettingKey =
   | "linkAutoApprove"
   | "musicPlaylistId"
   | "adminEmail"
-  | "notifyAdmin";
+  | "notifyAdmin"
+  | "notifyError"
+  | "notifyComment"
+  | "notifyLinkApply";
 
 export interface SiteSettings {
   siteName: string;
@@ -41,6 +44,12 @@ export interface SiteSettings {
   adminEmail: string;
   /** 是否启用邮件通知（false 时不发送） */
   notifyAdmin: boolean;
+  /** 错误监控邮件通知（总开关 notifyAdmin 之下） */
+  notifyError: boolean;
+  /** 新评论/待审核评论邮件通知（总开关 notifyAdmin 之下） */
+  notifyComment: boolean;
+  /** 友链申请/修改请求邮件通知（总开关 notifyAdmin 之下） */
+  notifyLinkApply: boolean;
 }
 
 export type MetaItem = {

@@ -92,7 +92,7 @@ const LEVEL_LABELS: Record<ErrorLevel, string> = {
 async function sendErrorNotification(input: ErrorReportInput): Promise<boolean> {
   const settings = await getSiteSettings();
   const adminEmail = settings?.adminEmail;
-  if (!adminEmail || settings?.notifyAdmin === false) return false;
+  if (!adminEmail || settings?.notifyAdmin === false || settings?.notifyError === false) return false;
 
   const siteName = settings?.siteName || "imqi1-cms";
   const levelText = LEVEL_LABELS[input.level] ?? input.level;

@@ -11,8 +11,10 @@
  *     无 session、无 SSE 长连接。每次请求新建一个 McpServer 实例（最干净）。
  *   - **Web Request/Response ↔ h3 双向桥接**：Nitro/h3 原生不接 Web API，桥接一次性代价换 SDK 可用。
  *   - **限流**：handler 内自建 60 次/分/IP。
- *   - **写接口不暴露**：工具集全部 readOnlyHint:true，仅 search/get/list，无任何 mutate 工具；
+ *   - **写接口不暴露**：内容工具全部 readOnlyHint:true，仅 search/get/list，无任何 mutate 工具；
  *     防止 prompt injection 把 AI 引导到删文章/改评论（参考 memory: 强安全不变式）。
+ *     唯一例外是 MCP_OPS_TOKEN 门禁的运维工具组（详见 server/utils/mcp-tools.ts）：
+ *     除 clear_cache（清缓存、自动重建）外其余运维工具仍只读，且未配令牌时不注册。
  */
 import { legacyStatelessFallback } from "@modelcontextprotocol/server";
 import type { H3Event } from "h3";
@@ -119,6 +121,12 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 405, message: "MCP 端点仅接受 POST" });
   }
 
+  // 1MB body 上限，避免恶意大 body 占满内存（SDK 的 legacyStatelessFallback 不收该选项，自行前置校验）
+  const declaredLength = Number(event.node.req.headers["content-length"] ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > 1024 * 1024) {
+    throw createError({ statusCode: 413, message: "MCP 请求体过大" });
+  }
+
   // 桥接：h3 → Web Request
   let webReq: Request;
   try {
@@ -135,7 +143,6 @@ export default defineEventHandler(async event => {
       // 报告 MCP 处理失败（不影响响应内容；SDK 已发出 500）
       console.error("[mcp] handler error:", error);
     },
-    { maxRequestBodySize: 1024 * 1024 }, // 1MB 上限，避免恶意大 body 占满内存
   );
 
   let webRes: Response;
