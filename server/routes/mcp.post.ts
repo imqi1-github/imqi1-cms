@@ -48,21 +48,15 @@ function toWebHeaders(event: H3Event): Headers {
 async function eventToWebRequest(event: H3Event): Promise<Request> {
   const url = getRequestURL(event);
   const headers = toWebHeaders(event);
-  // readRawBody 在没有 body 时返 undefined / "" / Buffer 都行，统一转 Buffer
-  const raw = await readRawBody(event, "binary");
+  // encoding=false 拿 Buffer：绝不能走 "binary"/字符串解码——latin1 字符串再被 Request 按 UTF-8
+  // 编码就是双重编码，JSON 里的中文入参会变 mojibake（英文不受影响，曾致中文搜索恒 0 结果）
+  const raw = await readRawBody(event, false);
   const init: RequestInit = {
     method: "POST",
     headers,
   };
-  // Buffer 在 h3 编出来可能没类型（运行时是 Buffer），用 ArrayBuffer/Uint8Array 等同形式构造 body
-  if (Buffer.isBuffer(raw)) {
-    init.body = raw;
-    // 显式标记 binary 类型，避免 SDK 误判为 string 走 text 解码
-    if (!headers.has("content-type")) {
-      headers.set("content-type", "application/octet-stream");
-    }
-  } else if (typeof raw === "string" && raw.length > 0) {
-    init.body = raw;
+  if (Buffer.isBuffer(raw) && raw.length > 0) {
+    init.body = new Uint8Array(raw);
   }
   return new Request(url.toString(), init);
 }
