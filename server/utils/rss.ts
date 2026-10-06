@@ -1,7 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
-import { prisma } from "./prisma";
+import { prisma, isPrismaUniqueConstraintError } from "./prisma";
 
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { fetchPublicUrl } from "#server/utils/safe-fetch";
@@ -166,7 +165,7 @@ async function fetchSubscribePosts(subscribeId: number, url: string): Promise<Fe
       } catch (error) {
         console.error(error);
         // 忽略重复链接错误
-        if (error instanceof PrismaClientKnownRequestError && error.code.includes("P2002")) continue;
+        if (isPrismaUniqueConstraintError(error)) continue;
         throw error;
       }
     }

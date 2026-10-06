@@ -22,7 +22,30 @@ import dotenv from "dotenv";
 // 加载 .env + 强制 DB_NAME 为 imqi1_test:必须在任何 import 之前同步跑（process.env 之前）。
 // bun test 启动顺序是 preload → worker → .test.ts → #server/utils/prisma 模块加载；
 // 改 process.env 必须在 preload 阶段同步完成，#server/utils/prisma 才能在加载时读到覆盖后的值。
-dotenv.config({ path: join(import.meta.dirname, "..", "..", ".env") });
+dotenv.config({ path: join(import.meta.dirname, "..", "..", ".env"), quiet: true });
+
+// 测试期间静默 server 业务日志（[认证] / [审计] / [CSRF] / [Redis] 等带模块标签的 banner）。
+// 3500+ 用例时这些 console.log/warn 是主要噪音源（每条认证/CSRF/Redis 路径都打一行）。
+// 过滤规则:首个参数是 string 且含 [xxx] 模块标签(允许 ISO 时间戳前缀) → 静默；其他原样打。
+// 不动 console.error:redis-cache-reset 等测试断言失败路径的 console.error 必须保留。
+// spy 测试(useEditorAutosave/useScrollFadeMask 等)的 origWarn 拿到的是 filter 版本,
+// 但它们本身又先过滤 [Vue warn] 再调用 orig,行为兼容。
+const isServerBanner = (args: unknown[]): boolean => {
+  const first = args[0];
+  // ISO 时间戳(可选) + [模块标签] —— 加 u flag 让 \p{L} 匹配中文标签（[认证]/[审计]）。
+  return typeof first === "string"
+    && /^(\d{4}-\d{2}-\d{2}[T ][\d:]+(?:\.\d+)?\s*)?\[\p{L}[\p{L}\w-]*\]/u.test(first);
+};
+const origLog = console.log;
+const origWarn = console.warn;
+console.log = (...args: unknown[]) => {
+  if (isServerBanner(args)) return;
+  origLog.apply(console, args as Parameters<typeof origLog>);
+};
+console.warn = (...args: unknown[]) => {
+  if (isServerBanner(args)) return;
+  origWarn.apply(console, args as Parameters<typeof origWarn>);
+};
 const baseDbName = process.env.DB_NAME || "imqi1";
 if (!baseDbName.endsWith("_test")) {
   process.env.DB_NAME = `${baseDbName}_test`;

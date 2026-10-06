@@ -38,10 +38,48 @@ function parseRepo() {
   return { p, owner, repo };
 }
 
+// localStorage 缓存:GitHub/Gitee 未认证 API 配额极低(GitHub 60 次/小时/IP),
+// 文章里的仓库卡片每次访问都打 API 很快 403。缓存命中直接渲染;过期条目在请求失败时兜底。
+const CACHE_PREFIX = "imqi1:repo:";
+const CACHE_FRESH_MS = 24 * 60 * 60 * 1000; // 24h 内视为新鲜,不发请求
+
+interface RepoCacheEntry {
+  data: RepoData;
+  cachedAt: number;
+}
+
+function readCache(p: string, owner: string, repo: string): RepoCacheEntry | null {
+  try {
+    const raw = localStorage.getItem(`${CACHE_PREFIX}${p}:${owner}/${repo}`);
+    return raw ? (JSON.parse(raw) as RepoCacheEntry) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(p: string, owner: string, repo: string, repoData: RepoData): void {
+  try {
+    const entry: RepoCacheEntry = { data: repoData, cachedAt: Date.now() };
+    localStorage.setItem(`${CACHE_PREFIX}${p}:${owner}/${repo}`, JSON.stringify(entry));
+  } catch {
+    // 隐私模式/配额满:缓存不可用,仅退化为每次都请求
+  }
+}
+
 onMounted(async () => {
   const parsed = parseRepo();
   if (!parsed) return;
   const { p, owner, repo } = parsed;
+
+  // 1. 缓存新鲜(24h 内)→ 直接渲染,零请求
+  const cached = readCache(p, owner, repo);
+  if (cached && Date.now() - cached.cachedAt < CACHE_FRESH_MS) {
+    data.value = cached.data;
+    state.value = "ok";
+    return;
+  }
+
+  // 2. 缓存缺失/过期 → 请求 API;成功则回写缓存
   try {
     const apiUrl = p === "github"
       ? `https://api.github.com/repos/${owner}/${repo}`
@@ -50,8 +88,15 @@ onMounted(async () => {
     if (!response.ok) throw new Error("Failed to fetch repo data");
     data.value = (await response.json()) as RepoData;
     state.value = "ok";
+    writeCache(p, owner, repo, data.value);
   } catch {
-    state.value = "error";
+    // 3. 请求失败(403 限流/网络)→ 有旧缓存就兜底展示,否则报错
+    if (cached) {
+      data.value = cached.data;
+      state.value = "ok";
+    } else {
+      state.value = "error";
+    }
   }
 });
 

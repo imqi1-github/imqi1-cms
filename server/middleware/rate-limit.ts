@@ -45,8 +45,6 @@ const RULES: RateRule[] = [
   { method: "POST", prefix: "/api/links", limit: 3, windowSec: 3600, keyHint: "links:apply" },
   // 邮件相关：每小时 10 次（防发件耗尽）
   { method: "POST", prefix: "/api/admin/mail/", limit: 10, windowSec: 3600, keyHint: "admin:mail" },
-  // 客户端错误上报：每分钟 5 次（防滥用把日志灌满；正常用户遇到 bug 一次即可）
-  { method: "POST", prefix: "/api/error-report", limit: 5, windowSec: 60, keyHint: "error-report" },
 ];
 
 function matchRule(method: string, path: string): RateRule | null {

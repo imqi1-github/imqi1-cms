@@ -1,12 +1,16 @@
 /**
- * MCP Server 入口（POST /api/mcp）—— 把站点内容以 Model Context Protocol 暴露给 AI Agent。
+ * MCP Server 入口（POST /mcp）—— 把站点内容以 Model Context Protocol 暴露给 AI Agent。
+ *
+ * 开关：site.config.features.mcp（默认 true）→ 经 runtimeConfig.mcpEnabled 运行时判定,
+ * 关闭时本路由保持注册但一律 404（镜像 _AMapService 的 amapUseServerProxy 模式）。
+ * 位于 server/routes/（根级 URL）,不受 /api/* 前缀的 referer-check / access-log 约束——
+ * AI 客户端无浏览器 Referer,端点自带限流与只读白名单,无需 referer 门禁。
  *
  * 设计取舍：
  *   - **只支持 POST + JSON-RPC**：用 SDK 的 legacyStatelessFallback 实现 stateless mode，
  *     无 session、无 SSE 长连接。每次请求新建一个 McpServer 实例（最干净）。
  *   - **Web Request/Response ↔ h3 双向桥接**：Nitro/h3 原生不接 Web API，桥接一次性代价换 SDK 可用。
- *   - **限流 + 错误不敏感**：与通用 API 限流中间件并行（/api/mcp 会被规则兜不住 → 加一条专属规则），
- *     实际 plan：调通用限流（每分钟 60 次,每 IP）。由 site.config 控制是否启用。
+ *   - **限流**：handler 内自建 60 次/分/IP。
  *   - **写接口不暴露**：工具集全部 readOnlyHint:true，仅 search/get/list，无任何 mutate 工具；
  *     防止 prompt injection 把 AI 引导到删文章/改评论（参考 memory: 强安全不变式）。
  */
@@ -78,6 +82,11 @@ async function writeWebResponse(event: H3Event, res: Response): Promise<void> {
 }
 
 export default defineEventHandler(async event => {
+  // 功能开关（镜像 amapUseServerProxy 模式）：site.config.features.mcp 关闭时路由保持注册但一律 404
+  if (!useRuntimeConfig().mcpEnabled) {
+    throw createError({ statusCode: 404, message: "MCP Server is disabled." });
+  }
+
   // 限速：AI Agent 流量单 IP 一般不高，60/min 已很宽松；防 prompt injection 把工具当放大器刷
   const ip = getClientIp(event);
   try {

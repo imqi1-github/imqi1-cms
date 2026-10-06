@@ -439,10 +439,17 @@ watch(
   { immediate: true },
 );
 
-// 相关文章区块：数据随 SSR 首帧直达（useFetch 已 await 于上方流水），无需旧版「数据到达再渐入」
-// 的 watch —— 那套机制依赖「数据从无到有」触发，SSR 化后永不触发会导致区块永远 opacity-0。
-// 评论区数据仍由客户端 CommentList 拉取，渐入动画改由下方 onMounted 触发。
+// 相关文章区块：数据随 SSR 首帧直达,渐入改由 onMounted 定时触发(旧版依赖「数据从无到有」的
+// watch,SSR 化后永不触发会导致区块永远 opacity-0)。评论区数据仍由客户端 CommentList 拉取。
+// 时序:正文 100ms → 相关文章 200ms → 评论 300ms,层级递进。
 onMounted(() => {
+  setTimeout(() => {
+    const relatedSection = document.querySelector(".related-contents-section");
+    if (relatedSection && relatedSection.classList.contains("opacity-0")) {
+      relatedSection.classList.remove("opacity-0", "translate-y-8");
+      relatedSection.classList.add("opacity-100", "translate-y-0");
+    }
+  }, 200);
   setTimeout(() => {
     const commentSection = document.querySelector(".comment-section");
     if (commentSection && commentSection.classList.contains("opacity-0")) {
@@ -782,7 +789,7 @@ onMounted(() => {
       </div>
       <section
         v-if="relatedContents.length > 0"
-        class="related-contents-section w-full article-constrained">
+        class="related-contents-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
           <div

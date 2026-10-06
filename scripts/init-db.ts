@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SQL_FILE = join(__dirname, "init-db.sql");
 
 // 固定加载项目根的 .env（脚本可能从任意 cwd 运行，勿依赖 dotenv 默认的 cwd 查找）
-dotenv.config({ path: join(__dirname, "..", ".env") });
+dotenv.config({ path: join(__dirname, "..", ".env"), quiet: true });
 
 /**
  * 执行 scripts/init-db.sql，直接、完整建库（建表 + 默认设置 + 示例数据 + pg_trgm 扩展）。

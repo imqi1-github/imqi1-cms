@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 // 加载环境变量
-dotenv.config({ path: path.join(ROOT_DIR, '.env') });
+dotenv.config({ path: path.join(ROOT_DIR, '.env'), quiet: true });
 
 // 读取并验证必须环境变量
 function requireEnv(name) {

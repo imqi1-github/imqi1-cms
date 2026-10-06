@@ -17,7 +17,8 @@ export default defineNitroPlugin(async () => {
   if (!redis) return;
   try {
     await redis.flushdb();
-    console.log("[cache] 服务启动：已清空 Redis 缓存（避免旧残留）");
+    // 测试环境不打 banner，避免污染测试输出
+    if (process.env.NODE_ENV !== "test") console.log("[cache] 服务启动：已清空 Redis 缓存（避免旧残留）");
   } catch (err) {
     // 启动期 Redis 抖动不应阻断服务：只记一笔，缓存留待后台手动清或下次启动再清
     console.error("[cache] 服务启动清空 Redis 失败（已跳过，不影响启动）:", err);

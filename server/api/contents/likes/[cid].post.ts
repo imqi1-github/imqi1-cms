@@ -1,6 +1,4 @@
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-
-import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
+import { prisma, isPrismaNotFoundError, isPrismaUniqueConstraintError } from "#server/utils/prisma";
 import { computeLikeFingerprint, isLikeRateLimited } from "#server/utils/likes";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { log } from "#server/utils/log";
@@ -76,8 +74,7 @@ export default defineEventHandler(async event => {
       });
     } catch (error) {
       if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === "P2002"
+        isPrismaUniqueConstraintError(error)
       ) {
         // 唯一约束命中 = 已点过；按 created=false 处理，不抛错
         const countResult = await prisma.likes.aggregate({

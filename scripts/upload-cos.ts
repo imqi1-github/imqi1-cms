@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url)
 const COS = require('cos-nodejs-sdk-v5')
 
 // 加载环境变量（锚定仓库根 .env，勿依赖调用 cwd——脚本可能从任意目录运行）
-dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env') })
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env'), quiet: true })
 
 // 创建 readline 接口用于用户交互
 const rl = readline.createInterface({

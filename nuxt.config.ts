@@ -65,6 +65,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     redis: redisConfig ?? { host: "", port: 0, db: 0, lazyConnect: false },
     amapUseServerProxy: isProduction && siteConfig.features.amap.proxy,
+    mcpEnabled: siteConfig.features.mcp,
     buildHash: buildHash,
     public: {},
   },

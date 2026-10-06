@@ -53,7 +53,8 @@ function startScheduler() {
   }
 
   scheduleNextUpdate(STARTUP_DELAY);
-  console.log('[RSS订阅] 定时任务已启动，服务器启动1小时后首次更新，随后按数据库设置间隔更新');
+  // 测试环境不打 banner，避免污染测试输出
+  if (process.env.NODE_ENV !== "test") console.log('[RSS订阅] 定时任务已启动，服务器启动1小时后首次更新，随后按数据库设置间隔更新');
 }
 
 // Nitro plugin

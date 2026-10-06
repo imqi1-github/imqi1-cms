@@ -16,11 +16,15 @@
 import { prisma } from "#server/utils/prisma";
 import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
+/** 单次请求允许查询的 cid 上限（列表页单页只会传几十个，留足余量同时封住超长 IN 子句） */
+const MAX_CIDS = 2000;
+
 export default defineEventHandler(async event => {
   try {
     const q = getQuery(event);
     const raw = typeof q.cids === "string" ? q.cids : "";
-    // 严格正整数白名单：避免 ?cids=foo,1;2 这种 injection / 边界
+    // 严格正整数白名单 + 数量上限：避免 ?cids=foo,1;2 这类注入/边界，
+    // 也避免超长 cids 串构造巨型 IN 子句（列表页单页最多几十个 cid，2K 上限绰绰有余）。
     const cids = Array.from(
       new Set(
         raw
@@ -28,14 +32,20 @@ export default defineEventHandler(async event => {
           .map(s => Number(s))
           .filter(n => Number.isInteger(n) && n > 0 && n < 2_000_000_000),
       ),
-    );
+    ).slice(0, MAX_CIDS);
 
     // 单次 groupBy by cid + _count：一次 SQL 出 N 行
     // 不传 cids 时返全表所有有赞文章的计数（页面 SSR 阶段列表数据尚未就绪，
     // 走「全量查」让 SSR 一定能拿到结果，hydrate 后按 cid 取；全表规模下查询走 cid 索引 O(N)）
+    //
+    // 必须过滤 content.status=1/type=0（与 [cid].get.ts、[cid].post.ts 同口径）：
+    // 否则撤回为草稿的文章其历史点赞仍会经此公开接口暴露 cid 与计数（可枚举未公开文章）。
     const rows = await prisma.likes.groupBy({
       by: ["cid"],
-      ...(cids.length > 0 ? { where: { cid: { in: cids } } } : {}),
+      where: {
+        content: { status: 1, type: 0 },
+        ...(cids.length > 0 ? { cid: { in: cids } } : {}),
+      },
       _count: { _all: true },
     });
 

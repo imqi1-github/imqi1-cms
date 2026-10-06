@@ -36,4 +36,15 @@ export function isPrismaNotFoundError(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === PRISMA_NOT_FOUND_CODE;
 }
 
+/**
+ * Prisma「唯一约束冲突」(P2002) 判定：把「并发写入同一唯一键」映射成幂等/400 而非 500。
+ *
+ * **必须 duck-typing，不能 `instanceof PrismaClientKnownRequestError`**：Prisma 7 + driver adapter
+ * 抛出的错误实例与 `@prisma/client/runtime/client` 导出的类是两份（模块实例不同），
+ * instanceof 恒为 false，会把唯一约束冲突误判成未知 500（点赞幂等分支曾因此失效）。
+ */
+export function isPrismaUniqueConstraintError(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "P2002";
+}
+
 export default prisma;

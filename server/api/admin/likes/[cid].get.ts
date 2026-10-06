@@ -45,7 +45,7 @@ export default defineEventHandler(async event => {
         take: pageSize,
         select: {
           id: true,
-          // 截断显示：避免后台误把完整 fingerprint/IP/UA 复制出去；这只是 hint
+          // 站主本人可看完整值（用于识别刷量来源）；展示层再做截断
           fingerprint: true,
           ip: true,
           user_agent: true,

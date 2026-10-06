@@ -9,6 +9,9 @@ const pattern = args.length > 0 ? [] : ["test/"];
 // 每个文件 fresh global,跨文件污染被切断。
 // 串行执行:max-concurrency=1 根除并发对进程级状态(env/共享假件/globalThis 桩)的互踩;
 // 用户显式传 --max-concurrency 可覆盖(bun 取最后一个)
+// reporter:bun test 仅 'junit' 和 'dots' 两选项,本脚本不显式传 — 默认就是 dots
+// (每 pass 一字符、fail/error inline 打印文件/行号/堆栈)。
+// 要写 XML 报告:`bun run test --reporter=junit file=tmp/test-report.xml`(stdout 只剩 final summary)。
 // preload 通过 bunfig.toml [test] 段注入,见 bunfig.toml
 // --path-ignore-patterns 排除 git submodule(mini 是独立子项目,有自己的 bunfig +
 // globalThis.uni 桩,与主仓库 globalThis 同 process 会冲突 → 主仓库跑 mini 测试必挂;

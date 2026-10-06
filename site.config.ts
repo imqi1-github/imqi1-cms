@@ -219,6 +219,8 @@ export const siteConfig = defineSiteConfig({
   features: {
     miniApi: true,
     miniComment: true,
+    // MCP Server（运行时判定,改动需重新 build）：暴露 POST /mcp 只读内容检索接口供 AI 客户端调用
+    mcp: true,
     // 小程序审核模式（构建期，改动需重新 build）：只返回一篇占位文章、评论关闭、其余内容置空
     miniFakeData: false,
     mobileQr: true,

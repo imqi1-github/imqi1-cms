@@ -24,7 +24,7 @@ import { findRepoRoot } from "#test/helpers/find-repo-root";
 const ROOT = findRepoRoot(import.meta.dirname);
 const SQL_FILE = join(ROOT, "scripts", "init-db.sql");
 
-dotenv.config({ path: join(ROOT, ".env") });
+dotenv.config({ path: join(ROOT, ".env"), quiet: true });
 
 function readEnv(): { host: string; port: number; user: string; password: string; db: string } {
   const host = process.env.DB_HOST;

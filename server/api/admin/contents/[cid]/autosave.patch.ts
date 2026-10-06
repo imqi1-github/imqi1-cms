@@ -43,7 +43,9 @@ export default defineEventHandler(async event => {
     const updated = await prisma.contents.update({
       where: { cid },
       data: {
-        content: draftContent ?? null,
+        // 只在明确传入字符串时写正文：省略字段不能把已有正文覆盖成 null（草稿同步是保守操作，
+        // 宁可这次不同步也不能丢稿）
+        ...(typeof draftContent === "string" ? { content: draftContent } : {}),
         update_time: new Date(),
       },
       select: { cid: true, update_time: true },
