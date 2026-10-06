@@ -4,6 +4,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CATEGORY_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 鉴权与 CSRF 放 try 块外：安全不变式不应进入会吞错的 catch
@@ -105,6 +106,16 @@ export default defineEventHandler(async event => {
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
     void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类创建失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "category.create",
+
+      target: { type: "category", id: category.mid },
+
+    });
 
     return {
       success: true,

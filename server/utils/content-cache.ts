@@ -1,4 +1,5 @@
 import { redis } from "#server/utils/redis";
+import { log } from "#server/utils/log";
 
 // SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis（与 admin/cache/clear.post.ts 一致）。
 async function scanAndUnlink(pattern: string): Promise<number> {
@@ -49,9 +50,15 @@ export async function invalidateContentCaches(opts: { routes?: string[] } = {}):
     ? opts.routes.map(r => `*nitro:routes*:${escapeGlob(routeFrag(r))}*`)
     : ["*nitro:routes*"];
 
+  const start = Date.now();
   for (const pattern of patterns) {
     await scanAndUnlink(pattern);
   }
+  log.cache("invalidate", {
+    routes: opts.routes?.length ? opts.routes.join(",") : "(all)",
+    patterns: patterns.length,
+    durationMs: Date.now() - start,
+  });
 }
 
 // 与 Nitro 内部 cachedEventHandler 的 getKey/escapeKey 对齐：去掉非词字符、截取前 16 个字符；

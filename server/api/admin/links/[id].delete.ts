@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CSRF_HEADER, LINKS_CACHE_ROUTES  } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -44,6 +45,11 @@ export default defineEventHandler(async event => {
     });
     // 友链变更 → 立即失效相关 ISR 页面缓存（best-effort）
     void invalidateContentCaches({ routes: LINKS_CACHE_ROUTES }).catch(err => console.error("[cache] 友链删除失效缓存失败", err));
+    await logAdminAudit({
+      actor: { uid: user.uid, name: user.name },
+      action: "link.delete",
+      target: { type: "link", id: id },
+    });
     return { success: true };
   } catch (error) {
     // 删除不存在的链接：Prisma P2025 → 404，避免被统一吞成 500

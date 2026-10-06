@@ -14,11 +14,10 @@ const SQL_FILE = join(__dirname, "init-db.sql");
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
 /**
- * 执行 scripts/init-db.sql，完成建表 + 写入默认设置 + 插入示例数据。
+ * 执行 scripts/init-db.sql，直接、完整建库（建表 + 默认设置 + 示例数据 + pg_trgm 扩展）。
  *
- * SQL 本身是幂等的（CREATE TABLE IF NOT EXISTS + ON DUPLICATE KEY UPDATE），
- * 因此本脚本在开发/生产环境均可安全重复执行。生产环境也可跳过本脚本，
- * 直接在数据库管理工具中导入 init-db.sql。
+ * SQL 不幂等 —— 仅在空库上运行一次，重复执行会因主键冲突报错。
+ * 生产环境也可跳过本脚本，直接用 psql 导入 init-db.sql。
  */
 async function main() {
   console.log("\n=== ImQi1 CMS 数据库初始化 ===\n");
@@ -66,12 +65,9 @@ async function main() {
   try {
     console.log(`→ 连接数据库 ${user}@${host}:${port}/${database}`);
 
-    // 强制该库默认 timezone 为 UTC：避免服务器时区（如东八区）与 Prisma 写入的 UTC Date 字面值混用，
+    // 强制本会话 timezone 为 UTC：避免服务器时区（如东八区）与 Prisma 写入的 UTC Date 字面值混用，
     // 导致 CREATE TABLE ... DEFAULT CURRENT_TIMESTAMP 与 create_time 写入存在时区差，
     // 进而让归档分组（archiving.get.ts 用 getUTC*）与按时间排序的搜索结果跨区错位。
-    // ALTER DATABASE ... SET 影响该库后续新建会话；本连接也立即 SET timezone='UTC' 兜底当前会话。
-    // PG 不允许 ALTER DATABASE 后跟函数（库名需字面量），这里用插值；库名已在上方白名单校验。
-    await client.query(`ALTER DATABASE "${database}" SET timezone = 'UTC'`);
     await client.query("SET timezone = 'UTC'");
 
     console.log("→ 执行 init-db.sql（建表 + 默认设置 + 示例数据）...");

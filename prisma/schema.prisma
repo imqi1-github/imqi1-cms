@@ -94,14 +94,18 @@ model contents {
   tags             String?              @db.VarChar(500)
   type             Int                  @default(0)
   uid              Int                  @default(1)
+  // 定时发布：cron worker 扫描 scheduled_at<=now 且 status=0 的 contents 自动置 1
+  scheduled_at     DateTime?
   attachments      contentattachments[]
   comments         comments[]
+  likes            likes[]
   travels          contenttravels[]
   user             users                @relation(fields: [uid], references: [uid], map: "Contents_uid_fkey")
   contentrelations contentrelations[]
 
   @@unique([slug, type], map: "Contents_slug_type_key")
   @@index([status, type, create_time], map: "Contents_status_type_create_time_idx")
+  @@index([status, scheduled_at], map: "Contents_status_scheduled_at_idx")
   @@index([uid], map: "Contents_uid_idx")
 }
 
@@ -222,4 +226,20 @@ model contenttravels {
   @@id([travel_id, cid])
   @@index([travel_id], map: "ContentTravels_travel_id_idx")
   @@index([cid], map: "ContentTravels_cid_idx")
+}
+
+model likes {
+  id          Int      @id @default(autoincrement())
+  // 复合唯一：同一访客对同一篇文章只能点一次（无登录体系，fingerprint = SHA256(ip+ua)）
+  cid         Int
+  fingerprint String   @db.VarChar(64)
+  // 原值冗余存储，便于后台审计 / 反查 spam 来源（公开接口只下发 count，不回传 ip/agent）
+  ip          String?  @db.VarChar(45)
+  user_agent  String?  @db.VarChar(255)
+  create_time DateTime @default(now())
+
+  content contents @relation(fields: [cid], references: [cid], onDelete: Cascade, map: "Likes_cid_fkey")
+
+  @@unique([cid, fingerprint], map: "Likes_cid_fingerprint_key")
+  @@index([cid, create_time], map: "Likes_cid_create_time_idx")
 }

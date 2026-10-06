@@ -15,7 +15,9 @@ export type SettingKey =
   | "contentPageSize"
   | "feedCacheInterval"
   | "linkAutoApprove"
-  | "musicPlaylistId";
+  | "musicPlaylistId"
+  | "adminEmail"
+  | "notifyAdmin";
 
 export interface SiteSettings {
   siteName: string;
@@ -35,6 +37,10 @@ export interface SiteSettings {
   feedCacheInterval: number;
   linkAutoApprove: boolean;
   musicPlaylistId: string;
+  /** 站主邮箱（错误监控/订阅等通知收件人） */
+  adminEmail: string;
+  /** 是否启用邮件通知（false 时不发送） */
+  notifyAdmin: boolean;
 }
 
 export type MetaItem = {

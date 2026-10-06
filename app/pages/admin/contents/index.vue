@@ -4,6 +4,7 @@ import type {AcceptableValue} from "reka-ui";
 import type {AdminContent, AdminContentListResponse, Category, Tag} from "~/types/apis/admin/contents";
 import type { CsrfResponse } from "~/types/apis/admin/categories";
 import { CSRF_TOKEN_ENDPOINT, CSRF_HEADER } from "#shared/constants";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 
 const router = useRouter();
 const route = useRoute();
@@ -20,6 +21,16 @@ const selectedStatus = ref<number | null>(null);
 const selectedIds = ref<number[]>([]);
 const deleting = ref(false);
 const fetchSeq = ref(0);
+
+// 点赞管理：列表中每行展示点赞数；点开后弹 dialog 列出点赞明细 + 单条删除
+const likesCountMap = ref<Record<number, number>>({});
+const likesDialogOpen = ref(false);
+const likesDialogCid = ref<number | null>(null);
+const likesDialogTitle = ref("");
+const likesDialogItems = ref<Array<{ id: number; fingerprint: string; ip: string | null; user_agent: string | null; create_time: string }>>([]);
+const likesDialogLoading = ref(false);
+const likesDialogTotal = ref(0);
+const likesDialogDeleting = ref<number | null>(null);
 // 每页条数走后台统一偏好（10/20/50 + 自定义）；pagination 里的 pageSize 只作占位，首帧响应会整体覆盖
 const { pageSize } = useAdminPageSize(10);
 const pagination = ref({
@@ -271,6 +282,72 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString("zh-CN");
 }
 
+function likesCount(cid: number): number {
+  return likesCountMap.value[cid] ?? 0;
+}
+
+async function loadLikesCounts() {
+  try {
+    // 时间戳破缓存：该接口对前台带 5min 浏览器缓存,后台删除点赞后需要实时数字
+    const res = await $fetch<{ success: boolean; data: Record<string, number> }>(`/api/likes/counts?t=${Date.now()}`);
+    if (res.success) likesCountMap.value = res.data;
+  } catch (err) {
+    console.error("[contents] 加载点赞数失败:", err);
+  }
+}
+
+async function openLikesDialog(content: AdminContent) {
+  likesDialogCid.value = content.cid;
+  likesDialogTitle.value = content.title;
+  likesDialogOpen.value = true;
+  await fetchLikesDialog();
+}
+
+async function fetchLikesDialog(page = 1) {
+  if (likesDialogCid.value === null) return;
+  likesDialogLoading.value = true;
+  try {
+    const url = `/api/admin/likes/${likesDialogCid.value}?page=${page}`;
+    const res = await $fetch<{ success: boolean; data: { items: typeof likesDialogItems.value; pagination: { total: number } } }>(url);
+    if (res.success) {
+      likesDialogItems.value = res.data.items;
+      likesDialogTotal.value = res.data.pagination.total;
+    }
+  } catch (err) {
+    console.error("[contents] 加载点赞明细失败:", err);
+    toast.error({ message: "加载点赞明细失败" });
+  } finally {
+    likesDialogLoading.value = false;
+  }
+}
+
+async function deleteLike(id: number) {
+  const confirmed = await confirm({
+    title: "删除点赞",
+    description: "确认删除这条点赞记录?用于清理刷赞或误操作。",
+    variant: "destructive",
+    confirmText: "确认删除",
+    icon: "lucide:trash-2",
+  });
+  if (!confirmed) return;
+  if (!csrfToken.value) {
+    toast.error({ message: "会话已失效，请刷新页面后重试" });
+    return;
+  }
+  likesDialogDeleting.value = id;
+  try {
+    await $fetch(`/api/admin/likes/${likesDialogCid.value}/${id}`, { method: "DELETE", headers: { [CSRF_HEADER]: csrfToken.value } });
+    toast.success({ message: "点赞已删除" });
+    // 删除后刷新明细 + 顶上的点赞数 map
+    await fetchLikesDialog();
+    await loadLikesCounts();
+  } catch (err) {
+    toast.error({ message: "删除失败", error: err });
+  } finally {
+    likesDialogDeleting.value = null;
+  }
+}
+
 function getStatusBadge(status: number) {
   return status === 1 ? { label: "已发布", variant: "default" as const } : { label: "草稿", variant: "secondary" as const };
 }
@@ -328,6 +405,7 @@ onMounted(() => {
 
   fetchCategories();
   fetchTags();
+  loadLikesCounts();
 
   const categoryId = route.query.category ? Number(route.query.category) : null;
   if (categoryId) {
@@ -355,6 +433,62 @@ onMounted(() => {
 
 <template>
   <AdminLayout>
+    <!-- 点赞管理 dialog：列出单篇文章的所有点赞(分页)+ 单条删除,用于清理刷赞/测试残留 -->
+    <Dialog :open="likesDialogOpen" @update:open="likesDialogOpen = $event">
+      <DialogContent class="max-w-3xl!">
+        <DialogHeader>
+          <DialogTitle>点赞明细</DialogTitle>
+          <DialogDescription>
+            {{ likesDialogTitle }} · 共 {{ likesDialogTotal }} 个赞
+          </DialogDescription>
+        </DialogHeader>
+        <div v-if="likesDialogLoading" class="flex items-center justify-center py-8 text-muted-foreground">
+          <Icon name="lucide:loader-2" class="mr-2 size-4 animate-spin" />
+          加载中...
+        </div>
+        <div v-else-if="likesDialogItems.length === 0" class="py-8 text-center text-muted-foreground">
+          暂无点赞
+        </div>
+        <Table v-else>
+          <TableHeader>
+            <TableRow>
+              <TableHead class="w-12">ID</TableHead>
+              <TableHead>指纹</TableHead>
+              <TableHead>IP</TableHead>
+              <TableHead>UA</TableHead>
+              <TableHead>时间</TableHead>
+              <TableHead class="w-20 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="row in likesDialogItems" :key="row.id">
+              <TableCell class="font-mono text-xs text-muted-foreground">#{{ row.id }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ row.fingerprint.slice(0, 12) }}…</TableCell>
+              <TableCell class="font-mono text-xs">{{ row.ip || "-" }}</TableCell>
+              <TableCell class="font-mono text-xs text-muted-foreground">{{ row.user_agent ? row.user_agent.slice(0, 40) + (row.user_agent.length > 40 ? "…" : "") : "-" }}</TableCell>
+              <TableCell class="text-xs whitespace-nowrap">{{ formatDate(row.create_time) }}</TableCell>
+              <TableCell class="text-right">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="size-7 text-destructive hover:text-destructive"
+                  :disabled="likesDialogDeleting === row.id"
+                  title="删除"
+                  @click="deleteLike(row.id)"
+                >
+                  <Icon v-if="likesDialogDeleting === row.id" name="lucide:loader-2" class="size-3.5 animate-spin" />
+                  <Icon v-else name="lucide:trash-2" class="size-3.5" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        <DialogFooter>
+          <Button variant="outline" @click="likesDialogOpen = false">关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- 页面标题 -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -441,8 +575,8 @@ onMounted(() => {
 
     <!-- 文章列表 -->
     <Card>
-      <!-- 加载状态 - 桌面端表格 -->
-      <div v-if="loading" class="p-4 hidden min-[1175px]:block">
+      <!-- 加载状态 - 桌面端表格（与真实表格同构：同列数、无额外内边距,避免加载完成时布局跳动） -->
+      <div v-if="loading" class="hidden min-[1175px]:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -452,6 +586,7 @@ onMounted(() => {
               <TableHead>分类</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>评论数</TableHead>
+              <TableHead>点赞数</TableHead>
               <TableHead>创建时间</TableHead>
               <TableHead class="text-right">操作</TableHead>
             </TableRow>
@@ -462,7 +597,7 @@ onMounted(() => {
                 <div class="size-4 bg-muted rounded animate-pulse" />
               </TableCell>
               <TableCell>
-                <div class="h-4 bg-muted rounded w-3/4 animate-pulse" />
+                <div class="h-4 bg-muted rounded w-3/4 min-w-40 animate-pulse" />
               </TableCell>
               <TableCell>
                 <div class="h-4 bg-muted rounded w-16 animate-pulse" />
@@ -475,6 +610,12 @@ onMounted(() => {
               </TableCell>
               <TableCell>
                 <div class="h-4 bg-muted rounded w-8 animate-pulse" />
+              </TableCell>
+              <TableCell>
+                <div class="flex items-center gap-1">
+                  <div class="size-3.5 bg-muted rounded animate-pulse" />
+                  <div class="h-4 bg-muted rounded w-6 animate-pulse" />
+                </div>
               </TableCell>
               <TableCell>
                 <div class="h-4 bg-muted rounded w-20 animate-pulse" />
@@ -503,6 +644,7 @@ onMounted(() => {
             <TableHead>分类</TableHead>
             <TableHead>状态</TableHead>
             <TableHead>评论数</TableHead>
+            <TableHead>点赞数</TableHead>
             <TableHead>创建时间</TableHead>
             <TableHead class="text-right">操作</TableHead>
           </TableRow>
@@ -528,6 +670,17 @@ onMounted(() => {
               </Badge>
             </TableCell>
             <TableCell>{{ content.comment_num || 0 }}</TableCell>
+            <TableCell>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 text-sm tabular-nums hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                :class="likesCount(content.cid) > 0 ? 'font-medium' : 'text-muted-foreground'"
+                @click="openLikesDialog(content)"
+              >
+                <Icon name="ri:heart-3-line" class="size-3.5" />
+                {{ likesCount(content.cid) }}
+              </button>
+            </TableCell>
             <TableCell>{{ formatDate(content.create_time) }}</TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-2">

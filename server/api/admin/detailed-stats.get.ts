@@ -29,6 +29,8 @@ export default defineEventHandler(async event => {
       categoriesCount,
       tagsCount,
       usersCount,
+      likesCount,
+      thisMonthLikesCount,
     ] = await Promise.all([
       // 文章统计
       prisma.contents.count({ where: { type: 0 } }),
@@ -57,6 +59,10 @@ export default defineEventHandler(async event => {
 
       // 用户统计
       prisma.users.count(),
+
+      // 文章点赞统计
+      prisma.likes.count(),
+      prisma.likes.count({ where: { create_time: { gte: startOfMonth } } }),
     ]);
 
     return {
@@ -83,6 +89,10 @@ export default defineEventHandler(async event => {
       users: {
         total: usersCount,
         online: 0, // 暂不支持在线用户统计
+      },
+      likes: {
+        total: likesCount,
+        thisMonth: thisMonthLikesCount,
       },
     };
   } catch (error) {

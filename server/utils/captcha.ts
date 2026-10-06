@@ -29,7 +29,7 @@ const TTL = 5 * 60 * 1000; // 5 分钟有效
 const MAX_STORE = 5000; // 防 Map 无限增长
 // 排除易混淆字符：0/O/o、1/I/i/l/L、2/Z/z
 const CHARSET = "3456789abcdefghjkmnpqrstuvwxyABCDEFGHJKMNPQRSTUVWXY";
-const LENGTH = 4;
+const LENGTH = 4; // 4 字符，人眼可读优先；字符间距/旋转/噪点等其他干扰保留防 OCR
 // 在浅色背景上可见的颜色
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#db2777", "#0891b2"];
 
@@ -90,24 +90,28 @@ function randomText(): string {
 
 /** 生成带干扰线、噪点、彩色旋转字符的 SVG 验证码图片 */
 function buildSvg(text: string): string {
-  const width = 130;
-  const height = 44;
+  const width = 160;
+  const height = 50;
 
+  // 字符间距 18px(原 28):5 字符总宽 ~90px,字与字重叠以增加打码难度
+  // 旋转 ±35°(原 ±25):更强扭曲,人眼仍能读但 OCR 模型识别率明显下降
+  // 字体大小变化 ±10(原 ±7):字符高度差异更大,打码时字符分割更困难
   const chars = text
     .split("")
     .map((char, index) => {
-      const x = 20 + index * 28;
-      const y = 30 + (randomInt(9) - 4);
-      const rotation = randomInt(50) - 25;
+      const x = 18 + index * 24;
+      const y = 34 + (randomInt(11) - 5);
+      const rotation = randomInt(70) - 35;
       const color = COLORS[randomInt(COLORS.length)] || COLORS[0];
-      const size = 24 + randomInt(7);
+      const size = 22 + randomInt(11);
 
       return `<text x="${x}" y="${y}" font-size="${size}" fill="${color}" font-family="monospace" font-weight="bold" transform="rotate(${rotation} ${x} ${y})">${escapeXml(char)}</text>`;
     })
     .join("");
 
+  // 8 条直线干扰(原 5)
   let lines = "";
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     const x1 = randomInt(width);
     const y1 = randomInt(height);
     const x2 = randomInt(width);
@@ -116,8 +120,23 @@ function buildSvg(text: string): string {
     lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1" opacity="0.5"/>`;
   }
 
+  // 2 条曲线干扰:模拟"波浪笔触",让线性 OCR 路径检测失灵
+  for (let i = 0; i < 2; i++) {
+    const cy = randomInt(height);
+    const color = COLORS[randomInt(COLORS.length)] || COLORS[0];
+    const points = [
+      `0,${cy}`,
+      `${width / 4},${cy + randomInt(15) - 7}`,
+      `${width / 2},${cy + randomInt(15) - 7}`,
+      `${(3 * width) / 4},${cy + randomInt(15) - 7}`,
+      `${width},${cy}`,
+    ].join(" ");
+    lines += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="1" opacity="0.4"/>`;
+  }
+
+  // 70 个噪点(原 40):更高密度让简单二值化失效
   let dots = "";
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 70; i++) {
     const color = COLORS[randomInt(COLORS.length)] || COLORS[0];
     dots += `<circle cx="${randomInt(width)}" cy="${randomInt(height)}" r="1" fill="${color}" opacity="0.6"/>`;
   }

@@ -2,6 +2,7 @@ import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { verifyTOTP } from "#server/utils/totp";
+import { log } from "#server/utils/log";
 
 /**
  * 确认启用两步验证（已登录 + CSRF）：用当前 6 位动态码验证暂存的 totp_secret，通过则正式启用。
@@ -37,6 +38,7 @@ export default defineEventHandler(async event => {
     where: { uid: user.uid },
     data: { totp_enabled: true },
   });
+  log.auth("2FA启用", { 用户: user.name });
 
   return { enabled: true };
 });

@@ -39,7 +39,6 @@ export default defineEventHandler(async event => {
       baiduApiKey: "",
       baiduSecretKey: "",
       baiduCheckAdmin: false,
-      emailLogEnabled: true,
       emailPushType: "none",
       smtpHost: "",
       smtpUser: "",

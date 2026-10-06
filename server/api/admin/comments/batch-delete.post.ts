@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { COMMENT_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -81,6 +82,16 @@ export default defineEventHandler(async event => {
 
     // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
     void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 评论批量删除失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "comment.delete",
+
+      target: { type: "comment-batch" },
+
+    });
 
     return {
       success: true,

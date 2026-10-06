@@ -32,7 +32,6 @@ const settings = ref<AdminSettings>({
   baiduApiKey: "",
   baiduSecretKey: "",
   baiduCheckAdmin: false,
-  emailLogEnabled: true,
   emailPushType: "none",
   smtpHost: "",
   smtpUser: "",
@@ -243,7 +242,6 @@ const defaultSettings: AdminSettings = {
   baiduApiKey: "",
   baiduSecretKey: "",
   baiduCheckAdmin: false,
-  emailLogEnabled: true,
   emailPushType: "none",
   smtpHost: "",
   smtpUser: "",
@@ -434,7 +432,7 @@ onMounted(() => {
     <div v-if="loading" class="space-y-6">
       <!-- Tab 骨架屏 -->
       <Card>
-        <CardContent class="pt-6">
+        <CardContent>
           <div class="flex gap-6">
             <div class="h-10 bg-muted rounded w-24 animate-pulse" />
             <div class="h-10 bg-muted rounded w-24 animate-pulse" />
@@ -938,13 +936,6 @@ onMounted(() => {
               <!-- 基础设置 -->
               <div class="space-y-4">
                 <h4 class="text-sm font-medium">基础设置</h4>
-                <div class="flex items-center justify-between">
-                  <div class="space-y-0.5">
-                    <Label for="emailLogEnabled">记录邮件日志</Label>
-                    <p class="text-sm text-muted-foreground">是否记录邮件发送日志到文件</p>
-                  </div>
-                  <Switch id="emailLogEnabled" v-model="settings.emailLogEnabled" />
-                </div>
                 <div class="space-y-2">
                   <Label for="emailPushType">邮件推送方式</Label>
                   <Select v-model="settings.emailPushType">

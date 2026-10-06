@@ -5,6 +5,7 @@ import { prisma } from "#server/utils/prisma";
 import { validateSettingsData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { siteConfig } from "~~/site.config";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   const body = (await readBody(event)) ?? {};
@@ -68,7 +69,6 @@ export default defineEventHandler(async event => {
       { key: "baiduApiKey", value: settingsData.baiduApiKey ?? "" },
       { key: "baiduSecretKey", value: settingsData.baiduSecretKey ?? "" },
       { key: "baiduCheckAdmin", value: String(settingsData.baiduCheckAdmin ?? false) },
-      { key: "emailLogEnabled", value: String(settingsData.emailLogEnabled ?? true) },
       { key: "emailPushType", value: settingsData.emailPushType ?? "none" },
       { key: "smtpHost", value: settingsData.smtpHost ?? "" },
       { key: "smtpUser", value: settingsData.smtpUser ?? "" },
@@ -107,6 +107,16 @@ export default defineEventHandler(async event => {
 
     // 站点设置变更 → 影响全站（header/footer/文案/链接数等），清空全部 ISR 页面缓存
     void invalidateContentCaches().catch(err => console.error("[cache] 站点设置失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "settings.update",
+
+      target: { type: "settings" },
+
+    });
 
     return { success: true };
   } catch (error) {

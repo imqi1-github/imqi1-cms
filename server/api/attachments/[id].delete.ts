@@ -5,6 +5,8 @@ import { deleteAttachmentFile } from "#server/utils/attachment-file";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import prisma, { isPrismaNotFoundError } from "#server/utils/prisma";
+import { logAdminAudit } from "#server/utils/audit";
+import { log } from "#server/utils/log";
 import { CSRF_HEADER, CONTENT_DETAIL_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
@@ -121,6 +123,13 @@ export default defineEventHandler(async event => {
 
     // 全局删除附件（级联取消所有关联）→ 影响引用它的文章详情 /content/** 渲染
     void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error("[cache] 附件删除失效缓存失败", err));
+
+    log.external("cos.delete", { 附件: id, url: attachment.url, kind: attachment.type });
+    await logAdminAudit({
+      actor: { uid: user.uid, name: user.name },
+      action: "attachment.delete",
+      target: { type: "attachment", id },
+    });
 
     return {
       success: true,

@@ -362,6 +362,7 @@ async function submitComment() {
             :src="currentUser.avatar"
             :alt="loggedInDisplayName"
             class="size-5.5 shrink-0 rounded-full border border-[rgb(229,224,224)] bg-slate-200 object-cover" >
+          <span v-else>{{ currentUser?.nickname || currentUser?.name || "匿名" }}</span>
         </div>
       </template>
       <template v-else-if="showGuestFields">

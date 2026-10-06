@@ -2,6 +2,10 @@
  * bun:test preload: 为 app/composables/*.test.ts 安装 Nuxt/Vue auto-import stubs +
  * 全局 snapshot/restore sharedFake 状态,根除「上一个测试 sharedFake.on() 永久覆盖 → 下个测试 setSession 抛 uniq」的进程级污染。
  *
+ * 同时:在 bun 启动**第一时间**加载 .env 并把 DB_NAME 强制改为 imqi1_test，
+ * 这样所有 .test.ts 加载的 #server/utils/prisma(模块级 singleton,加载时绑 DB_NAME)
+ * 都会连到 imqi1_test，**永远不会**误清开发库 imqi1。
+ *
  * 用 Bun.plugin 改写一类文件:
  *  - test/unit/app/composables/*.test.ts: 首行插入 import "test/helpers/setup-composable-globals.ts";
  *    该模块在 test 文件顶层装 useState/ref/watch/CSS 等到 globalThis。
@@ -9,9 +13,20 @@
  * 严格只匹配这一个目录,不影响其它测试与源码(避免污染 mock.module 链)。
  */
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import type { BunPlugin } from "bun";
 import { afterEach, beforeEach } from "bun:test";
+import dotenv from "dotenv";
+
+// 加载 .env + 强制 DB_NAME 为 imqi1_test:必须在任何 import 之前同步跑（process.env 之前）。
+// bun test 启动顺序是 preload → worker → .test.ts → #server/utils/prisma 模块加载；
+// 改 process.env 必须在 preload 阶段同步完成，#server/utils/prisma 才能在加载时读到覆盖后的值。
+dotenv.config({ path: join(import.meta.dirname, "..", "..", ".env") });
+const baseDbName = process.env.DB_NAME || "imqi1";
+if (!baseDbName.endsWith("_test")) {
+  process.env.DB_NAME = `${baseDbName}_test`;
+}
 
 // 全局 snapshot/restore sharedFake,根除「上一个测试 sharedFake.on() 永久覆盖 → 下个测试 setSession 抛 uniq」的进程级污染。
 // 用 setImmediate 推迟 snapshot 到当前 macrotask 结束后(所有测试文件 beforeEach 注册完成后再拍),这样 afterEach 还原时

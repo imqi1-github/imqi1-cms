@@ -44,6 +44,8 @@ export interface AdminContent {
 	uid: number;
 	user: ContentUser;
 	contentrelations: ContentMetaRelation[];
+	/** 定时发布时间（null/缺省 = 无定时任务）；cron plugin 扫到此字段 ≤ now() 会自动发布 */
+	scheduled_at: string | null;
 }
 
 export interface ContentMeta {

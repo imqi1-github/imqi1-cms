@@ -4,6 +4,7 @@ import { getUser, verifyPassword } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { verifyTOTP } from "#server/utils/totp";
+import { log } from "#server/utils/log";
 import { TRUSTED_DEVICE_COOKIE } from "#server/utils/security-token";
 
 /**
@@ -47,6 +48,7 @@ export default defineEventHandler(async event => {
     data: { totp_enabled: false, totp_secret: null },
   });
   deleteCookie(event, TRUSTED_DEVICE_COOKIE, { path: "/" });
+  log.auth("2FA关闭", { 用户: sessionUser.name });
 
   return { enabled: false };
 });

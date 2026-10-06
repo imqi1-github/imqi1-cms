@@ -6,6 +6,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CONTENT_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -49,6 +50,7 @@ export default defineEventHandler(async event => {
     covers,
     showToc,
     publishDate,
+    scheduledAt,
   } = body;
 
   if (!title) {
@@ -125,6 +127,26 @@ export default defineEventHandler(async event => {
           return { create_time: d };
         })()
       : {}),
+    // scheduledAt：「待发布时间」。空字符串/null/undefined = 清除；早于 now 视为立即发布（落 status=1）
+    ...(scheduledAt !== undefined
+      ? (() => {
+          if (scheduledAt === null || scheduledAt === "") {
+            return { scheduled_at: null };
+          }
+          if (typeof scheduledAt !== "string") {
+            throw createError({ statusCode: 400, message: "scheduledAt 格式无效" });
+          }
+          const d = new Date(scheduledAt);
+          if (Number.isNaN(d.getTime())) {
+            throw createError({ statusCode: 400, message: "scheduledAt 格式无效" });
+          }
+          // 已过点：调用方若想立即发布不应传 scheduledAt（应传 status=1）；把已过期定时视为清空
+          if (d.getTime() <= Date.now()) {
+            return { scheduled_at: null };
+          }
+          return { scheduled_at: d };
+        })()
+      : {}),
   };
 
   // 处理 slug：只有当提供了新的 slug 且与当前不同时才更新
@@ -164,6 +186,11 @@ export default defineEventHandler(async event => {
     void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));
 
     // 前端保存后只需 cid，不再回查全字段（含正文）。
+    await logAdminAudit({
+      actor: { uid: user.uid, name: user.name },
+      action: "content.update",
+      target: { type: "content", id: cid },
+    });
     return {
       success: true,
       data: { cid },

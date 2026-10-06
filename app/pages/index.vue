@@ -381,7 +381,7 @@
                   </NuxtLink>
                 </h3>
                 <div
-                  class="flex items-center gap-2 text-xs flex-wrap"
+                  class="flex items-center gap-x-2 gap-y-1 text-xs flex-wrap"
                   :class="content.covers && content.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
                   <div v-if="content.categories && content.categories.length > 0" class="flex items-center gap-0.5">
                     <Icon name="ri:menu-line" aria-hidden="true" class="size-3" />
@@ -418,6 +418,10 @@
                   <span v-tooltip="'评论数量'" class="flex items-center gap-0.5">
                     <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
                     {{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}
+                  </span>
+                  <span v-tooltip="'点赞数'" class="flex items-center gap-0.5">
+                    <Icon name="ri:heart-3-line" aria-hidden="true" class="size-3" />
+                    {{ getLikesCount(content.cid) > 0 ? getLikesCount(content.cid) : "暂无点赞" }}
                   </span>
                 </div>
               </div>
@@ -504,7 +508,7 @@
                     </NuxtLink>
                   </h3>
                   <div
-                    class="flex items-center gap-2 text-xs flex-wrap"
+                    class="flex items-center gap-x-2 gap-y-1 text-xs flex-wrap"
                     :class="content.covers && content.covers.length > 0 ? 'text-white/80' : 'text-slate-500 dark:text-gray-400'">
                     <span v-if="content.tags && content.tags.length > 0" class="flex items-center gap-0.5">
                       <Icon name="ri:hashtag" aria-hidden="true" class="size-3" />
@@ -529,6 +533,10 @@
                     <span v-tooltip="'评论数量'" class="flex items-center gap-0.5">
                       <Icon name="ri:chat-2-line" aria-hidden="true" class="size-3" />
                       <span>{{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}</span>
+                    </span>
+                    <span v-tooltip="'点赞数'" class="flex items-center gap-0.5">
+                      <Icon name="ri:heart-3-line" aria-hidden="true" class="size-3" />
+                      <span>{{ getLikesCount(content.cid) > 0 ? getLikesCount(content.cid) : "暂无点赞" }}</span>
                     </span>
                   </div>
                 </div>
@@ -891,6 +899,12 @@ const subscribePosts = computed(() => homeData.value?.data?.subscribePosts || []
 
 // 更新日志
 const recentChangelogs = computed(() => homeData.value?.data?.changelogs || []);
+
+// 点赞数：调 /api/likes/counts，不传 cids 时服务端返全表所有非零项；await 让 setup 等响应,SSR 渲染期有数据
+const { data: likesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
+function getLikesCount(cid: number): number {
+  return likesData.value?.data?.[String(cid)] ?? 0;
+}
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {

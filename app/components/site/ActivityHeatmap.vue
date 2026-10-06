@@ -9,30 +9,26 @@ import type { CategoryOption, HeatmapCell, HeatmapDayData, HeatmapData, HeatmapG
 const categoryFilter = ref("");
 const tagFilter = ref("");
 
-const categoryOptions = ref<CategoryOption[]>([]);
-const tagOptions = ref<TagOption[]>([]);
+// 分类/标签是稳定的元数据，走 useFetch 与 SiteNavMenu 共享（共用 key="nav-categories" 复用一份 cache），
+// SSR 阶段直接调 server util、不发 HTTP，hydrate 时不重发，控制台看不到这些 API。
+// 注释保留了「避免 SSR 渲染时区敏感内容」的设计意图 — 但只针对热力图本体，分类/标签不在其列。
+const { data: categoriesResNav } = useFetch<{ success: boolean; data: CategoryOption[] }>("/api/categories", {
+  key: "nav-categories-heatmap",
+  query: { limit: 100 },
+  headers: getInternalRequestHeaders(),
+});
+const { data: tagsResNav } = useFetch<{ success: boolean; data: TagOption[] }>("/api/tags", {
+  key: "nav-tags",
+  headers: getInternalRequestHeaders(),
+});
 
-const loadOptions = async () => {
-  try {
-    const [categoriesRes, tagsRes] = await Promise.all([
-      $fetch<{ success: boolean; data: CategoryOption[] }>("/api/categories", {
-        query: { limit: 100 },
-        headers: getInternalRequestHeaders(),
-      }),
-      $fetch<{ success: boolean; data: TagOption[] }>("/api/tags", {
-        headers: getInternalRequestHeaders(),
-      }),
-    ]);
-    // slug 为空的分筛选不了，直接过滤掉
-    categoryOptions.value = (categoriesRes?.data ?? []).filter(cat => cat.slug);
-    tagOptions.value = tagsRes?.data ?? [];
-  } catch (error) {
-    // 与 loadHeatmap 对齐：失败保持下拉为空，避免未捕获的 Promise rejection
-    console.error("加载筛选项失败:", error);
-  }
-};
+const categoryOptions = computed(() =>
+  (categoriesResNav.value?.data ?? []).filter(cat => cat.slug),
+);
+const tagOptions = computed(() => tagsResNav.value?.data ?? []);
 
 // ---- 热力图数据 ----
+// 时区敏感（按日贡献网格），SSR 阶段不渲染；仅客户端 onMounted + 筛选条件变化时拉取
 const heatmapData = ref<HeatmapData | null>(null);
 const status = ref<"idle" | "pending" | "error">("idle");
 let heatmapSeq = 0;
@@ -66,7 +62,6 @@ const loadHeatmap = async () => {
 
 onMounted(() => {
   void loadHeatmap();
-  void loadOptions();
 });
 // 筛选变化时重新拉取；失败保留旧数据（无闪烁）
 watch([categoryFilter, tagFilter], () => void loadHeatmap());

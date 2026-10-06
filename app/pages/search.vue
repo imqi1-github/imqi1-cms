@@ -40,6 +40,12 @@ if (!initialQ) {
 }
 
 // 搜索结果
+// 点赞数：搜索结果文章项展示点赞数；不影响其他类型（订阅/友链/评论无 cid）
+const { data: likesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
+function searchLikesCount(cid: number): number {
+  return likesData.value?.data?.[String(cid)] ?? 0;
+}
+
 const { data, pending, error, refresh } = await useFetch("/api/search", {
   headers: getInternalRequestHeaders(),
   query: {
@@ -435,9 +441,25 @@ const emptyNoun = computed(() => {
     <!-- 搜索结果 -->
     <div v-if="searchKeyword" v-scroll-reveal role="status" aria-live="polite" aria-atomic="true">
       <!-- 加载状态（含防抖待发窗口：关键词已变但 refresh 尚未触发） -->
-      <div v-if="pending || isDebouncing" class="relative py-20">
-        <div aria-hidden="true" class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"/>
-        <p class="text-center text-muted-foreground mt-4">搜索中...</p>
+      <div v-if="pending || isDebouncing" class="space-y-3" aria-hidden="true">
+        <div
+          v-for="i in 10"
+          :key="`skel-${i}`"
+          class="group border rounded-lg p-5">
+          <!-- 标题骨架 -->
+          <div class="h-5 bg-muted rounded w-3/4 animate-pulse mb-3" />
+          <!-- 摘要骨架 -->
+          <div class="space-y-2 mb-3">
+            <div class="h-3 bg-muted rounded w-full animate-pulse" />
+            <div class="h-3 bg-muted rounded w-5/6 animate-pulse" />
+          </div>
+          <!-- meta 骨架：分类 + 日期 + 点赞数 -->
+          <div class="flex items-center gap-3">
+            <div class="h-3 bg-muted rounded w-12 animate-pulse" />
+            <div class="h-3 bg-muted rounded w-16 animate-pulse" />
+            <div class="h-3 bg-muted rounded w-8 animate-pulse" />
+          </div>
+        </div>
       </div>
 
       <!-- 错误状态 -->
@@ -505,6 +527,13 @@ const emptyNoun = computed(() => {
                 <span class="inline-flex items-center gap-1">
                   <Icon name="ri:calendar-line" class="size-3" />
                   {{ formatDate(item.createTime) }}
+                </span>
+                <span
+                  v-if="searchLikesCount(item.cid) > 0"
+                  v-tooltip="'点赞数'"
+                  class="inline-flex items-center gap-0.5 text-rose-500/80 tabular-nums">
+                  <Icon name="ri:heart-3-line" class="size-3" />
+                  {{ searchLikesCount(item.cid) }}
                 </span>
               </div>
             </template>

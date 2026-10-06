@@ -1,8 +1,6 @@
-import * as fs from "fs";
-import * as path from "path";
-
 import prisma from "#server/utils/prisma";
 import { MailEmojiRenderer } from "#server/utils/emoji-mail";
+import { log } from "#server/utils/log";
 import { siteConfig } from "~~/site.config";
 import { escapeHtml } from "#shared/html";
 import type { MailOptions } from "#server/types/utils/mail";
@@ -13,43 +11,12 @@ function safeHttpUrl(u: string): string {
   return /^https?:\/\//i.test(t) ? t : "#";
 }
 
-// 邮件日志目录
-const LOG_DIR = path.join(process.cwd(), "logs", "mail");
-
-// 确保日志目录存在
-function ensureLogDir() {
-  if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
-  }
-}
-
-// 获取日志文件路径
-function getLogFilePath() {
-  const date = new Date().toISOString().split("T")[0];
-  return path.join(LOG_DIR, `${date}.log`);
-}
-
-// 写入日志
-function writeLog(level: string, message: string, data?: Record<string, unknown>) {
-  ensureLogDir();
-  const timestamp = new Date().toISOString();
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    ...data,
-  };
-  const logLine = JSON.stringify(logEntry) + "\n";
-  fs.appendFileSync(getLogFilePath(), logLine, "utf-8");
-}
-
 // 获取邮件配置
 async function getMailConfig() {
   const settings = await prisma.informations.findMany({
     where: {
       key: {
         in: [
-          "emailLogEnabled",
           "emailPushType",
           "smtpHost",
           "smtpPort",
@@ -68,7 +35,6 @@ async function getMailConfig() {
   const get = (key: string) => settings.find(s => s.key === key)?.value || "";
 
   return {
-    logEnabled: get("emailLogEnabled") === "true",
     pushType: get("emailPushType") || "none",
     host: get("smtpHost"),
     port: parseInt(get("smtpPort")) || 465,
@@ -107,22 +73,14 @@ async function createTransporter() {
 export async function sendMail(options: MailOptions): Promise<boolean> {
   const config = await getMailConfig();
 
-  // 记录日志
-  if (config.logEnabled) {
-    writeLog("info", "准备发送邮件", {
-      to: options.to,
-      subject: options.subject,
-    });
-  }
+  // 全量记录：所有邮件调用都落 logs/external/{date}.log（包括 none 模式跳过、未配置 SMTP 等场景）
+  const baseFields = { service: "mail", to: options.to, subject: options.subject };
+
+  log.external("prepare", baseFields);
 
   // 如果推送类型是 none，只记录日志
   if (config.pushType === "none") {
-    if (config.logEnabled) {
-      writeLog("warn", "邮件推送未启用，跳过发送", {
-        to: options.to,
-        subject: options.subject,
-      });
-    }
+    log.external("skipped", { ...baseFields, reason: "pushType=none" });
     return true;
   }
 
@@ -144,23 +102,14 @@ export async function sendMail(options: MailOptions): Promise<boolean> {
       attachments: options.attachments,
     });
 
-    if (config.logEnabled) {
-      writeLog("info", "邮件发送成功", {
-        to: options.to,
-        subject: options.subject,
-      });
-    }
-
+    log.external("sent", baseFields);
     return true;
   } catch (error) {
     console.error(error);
-    if (config.logEnabled) {
-      writeLog("error", "邮件发送失败", {
-        to: options.to,
-        subject: options.subject,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+    log.external("error", {
+      ...baseFields,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -202,12 +151,12 @@ export async function sendTestEmail(to: string): Promise<{ success: boolean; mes
       `,
     });
 
-    writeLog("info", "测试邮件发送成功", { to });
+    log.external("test.sent", { service: "mail", to });
     return { success: true, message: "测试邮件发送成功" };
   } catch (error) {
     console.error(error);
     const errorMsg = error instanceof Error ? error.message : String(error);
-    writeLog("error", "测试邮件发送失败", { to, error: errorMsg });
+    log.external("test.error", { service: "mail", to, error: errorMsg });
     return { success: false, message: `发送失败: ${errorMsg}` };
   }
 }
@@ -330,7 +279,7 @@ export async function notifyFriendLinkApplication(linkName: string, linkUrl: str
 
   // 检查是否启用邮件通知
   if (config.pushType === "none" || !config.adminEmail) {
-    writeLog("warn", "邮件推送未启用，跳过友链申请通知", { linkName, linkUrl, autoApproved });
+    log.external("notify.skipped", { service: "mail", kind: "friendlink.apply", linkName, linkUrl, autoApproved });
     return false;
   }
 
@@ -365,7 +314,7 @@ export async function notifyAdminNewComment(contentId: number, commenterName: st
 
   // 检查是否启用邮件通知
   if (config.pushType === "none" || !config.adminEmail) {
-    writeLog("warn", "邮件推送未启用，跳过新评论通知", { contentId, commenterName });
+    log.external("notify.skipped", { service: "mail", kind: "comment.new", contentId, commenterName });
     return false;
   }
 
@@ -408,7 +357,7 @@ export async function notifyCommentReply(
 
   // 检查是否启用邮件通知
   if (config.pushType === "none") {
-    writeLog("warn", "邮件推送未启用，跳过评论回复通知", {
+    log.external("notify.skipped", {
       contentId,
       parentCommenterName,
       replierName,
@@ -418,7 +367,7 @@ export async function notifyCommentReply(
 
   // 如果被回复者就是自己（同一个邮箱或站点管理员），不发送通知
   if (parentCommenterEmail === config.adminEmail || parentCommenterEmail === config.address) {
-    writeLog("info", "被回复者为自己，跳过回复通知", {
+    log.external("notify.skipped", {
       contentId,
       parentCommenterName,
       replierName,
@@ -470,7 +419,7 @@ export async function notifyAdminPendingComment(
 
   // 检查是否启用邮件通知
   if (config.pushType === "none" || !config.adminEmail) {
-    writeLog("warn", "邮件推送未启用，跳过待审核评论通知", { contentId, commenterName, status });
+    log.external("notify.skipped", { service: "mail", kind: "comment.pending", contentId, commenterName, status });
     return false;
   }
 
@@ -514,7 +463,7 @@ export async function notifyFriendLinkModification(
 
   // 检查是否启用邮件通知
   if (config.pushType === "none" || !config.adminEmail) {
-    writeLog("warn", "邮件推送未启用，跳过友链修改通知", { originalLink, newLink });
+    log.external("notify.skipped", { service: "mail", kind: "friendlink.modify", originalLink, newLink });
     return false;
   }
 

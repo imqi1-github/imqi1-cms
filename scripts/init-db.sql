@@ -1,20 +1,16 @@
 -- ============================================================
--- ImQi1 CMS 数据库初始化脚本（PostgreSQL，开发 / 生产通用）
--- 列类型以 prisma migrate diff 生成的 PG DDL 为准：
---   普通 String → TEXT；@db.VarChar(n) → VARCHAR(n)；自增 → SERIAL；
---   DateTime → TIMESTAMP(3)（无时区）；Boolean → BOOLEAN；Json → JSONB；Float → DOUBLE PRECISION。
+-- ImQi1 CMS 数据库初始化脚本（PostgreSQL）
+-- 直接、完整建库：不幂等、不兼容旧库 —— 仅在空库上运行一次。
 -- ============================================================
--- 幂等性：
---   建表 CREATE TABLE IF NOT EXISTS；外键内联（父表优先，目标表先建），
---   索引 IF NOT EXISTS；种子 INSERT ... ON CONFLICT DO NOTHING（不覆盖后台改过的值）。
---   标识符一律双引号保留 camelCase 列名（与 Prisma 生成库一致）。
+-- 列类型与 prisma/schema.prisma 一致：SERIAL / VARCHAR(n) / TEXT / TIMESTAMP(3) / BOOLEAN / JSONB / DOUBLE PRECISION / INTEGER。
+-- 标识符双引保留列名大小写与 Prisma 生成库一致。
 -- ============================================================
 
 -- ============================================================
--- 一、数据表结构（父表在前，FK 内联）
+-- 一、数据表（父表在前，FK 内联）
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS "users" (
+CREATE TABLE "users" (
   "uid" SERIAL NOT NULL,
   "name" VARCHAR(191) NOT NULL,
   "nickname" VARCHAR(191),
@@ -28,8 +24,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   PRIMARY KEY ("uid")
 );
 
--- 已信任设备（2FA 「信任此设备」的管理/撤回）：
-CREATE TABLE IF NOT EXISTS "trusted_devices" (
+CREATE TABLE "trusted_devices" (
   "id" SERIAL NOT NULL,
   "userId" INTEGER NOT NULL,
   "deviceId" TEXT NOT NULL,
@@ -42,9 +37,8 @@ CREATE TABLE IF NOT EXISTS "trusted_devices" (
   CONSTRAINT "TrustedDevices_deviceId_key" UNIQUE ("deviceId"),
   CONSTRAINT "TrustedDevices_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("uid") ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS "TrustedDevices_userId_idx" ON "trusted_devices"("userId");
 
-CREATE TABLE IF NOT EXISTS "attachments" (
+CREATE TABLE "attachments" (
   "aid" SERIAL NOT NULL,
   "type" VARCHAR(191) NOT NULL,
   "title" VARCHAR(191) NOT NULL,
@@ -55,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "attachments" (
   PRIMARY KEY ("aid")
 );
 
-CREATE TABLE IF NOT EXISTS "metas" (
+CREATE TABLE "metas" (
   "mid" SERIAL NOT NULL,
   "name" VARCHAR(191) NOT NULL,
   "slug" VARCHAR(191),
@@ -64,14 +58,14 @@ CREATE TABLE IF NOT EXISTS "metas" (
   PRIMARY KEY ("mid")
 );
 
-CREATE TABLE IF NOT EXISTS "changelogs" (
+CREATE TABLE "changelogs" (
   "id" SERIAL NOT NULL,
   "content" TEXT NOT NULL,
   "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "links" (
+CREATE TABLE "links" (
   "id" SERIAL NOT NULL,
   "name" VARCHAR(191) NOT NULL,
   "desc" VARCHAR(191),
@@ -85,14 +79,14 @@ CREATE TABLE IF NOT EXISTS "links" (
   CONSTRAINT "links_originalLinkId_fkey" FOREIGN KEY ("originalLinkId") REFERENCES "links"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "informations" (
+CREATE TABLE "informations" (
   "id" SERIAL NOT NULL,
   "key" VARCHAR(191) NOT NULL,
   "value" VARCHAR(191) NOT NULL,
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "travels" (
+CREATE TABLE "travels" (
   "id" SERIAL NOT NULL,
   "name" VARCHAR(255) NOT NULL,
   "desc" TEXT,
@@ -105,7 +99,7 @@ CREATE TABLE IF NOT EXISTS "travels" (
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "subscribes" (
+CREATE TABLE "subscribes" (
   "id" SERIAL NOT NULL,
   "url" VARCHAR(191) NOT NULL,
   "name" VARCHAR(191) NOT NULL,
@@ -114,7 +108,7 @@ CREATE TABLE IF NOT EXISTS "subscribes" (
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "contents" (
+CREATE TABLE "contents" (
   "cid" SERIAL NOT NULL,
   "title" VARCHAR(255) NOT NULL,
   "slug" VARCHAR(255),
@@ -130,11 +124,12 @@ CREATE TABLE IF NOT EXISTS "contents" (
   "tags" VARCHAR(500),
   "type" INTEGER NOT NULL DEFAULT 0,
   "uid" INTEGER NOT NULL DEFAULT 1,
+  "scheduled_at" TIMESTAMP(3),
   PRIMARY KEY ("cid"),
   CONSTRAINT "Contents_uid_fkey" FOREIGN KEY ("uid") REFERENCES "users"("uid") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "comments" (
+CREATE TABLE "comments" (
   "coid" SERIAL NOT NULL,
   "cid" INTEGER NOT NULL,
   "name" VARCHAR(255) NOT NULL,
@@ -150,7 +145,7 @@ CREATE TABLE IF NOT EXISTS "comments" (
   CONSTRAINT "Comments_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "contentrelations" (
+CREATE TABLE "contentrelations" (
   "cid" INTEGER NOT NULL,
   "mid" INTEGER NOT NULL,
   PRIMARY KEY ("mid", "cid"),
@@ -158,7 +153,7 @@ CREATE TABLE IF NOT EXISTS "contentrelations" (
   CONSTRAINT "ContentRelation_mid_fkey" FOREIGN KEY ("mid") REFERENCES "metas"("mid") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "contentattachments" (
+CREATE TABLE "contentattachments" (
   "aid" INTEGER NOT NULL,
   "cid" INTEGER NOT NULL,
   PRIMARY KEY ("aid", "cid"),
@@ -166,7 +161,7 @@ CREATE TABLE IF NOT EXISTS "contentattachments" (
   CONSTRAINT "ContentAttachments_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "subscribeposts" (
+CREATE TABLE "subscribeposts" (
   "id" SERIAL NOT NULL,
   "subscribeId" INTEGER NOT NULL,
   "title" VARCHAR(500) NOT NULL,
@@ -180,7 +175,7 @@ CREATE TABLE IF NOT EXISTS "subscribeposts" (
   CONSTRAINT "SubscribePost_subscribeId_fkey" FOREIGN KEY ("subscribeId") REFERENCES "subscribes"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "sessions" (
+CREATE TABLE "sessions" (
   "id" TEXT NOT NULL,
   "userId" INTEGER NOT NULL,
   "authCode" VARCHAR(191) NOT NULL,
@@ -190,7 +185,7 @@ CREATE TABLE IF NOT EXISTS "sessions" (
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE IF NOT EXISTS "contenttravels" (
+CREATE TABLE "contenttravels" (
   "travel_id" INTEGER NOT NULL,
   "cid" INTEGER NOT NULL,
   PRIMARY KEY ("travel_id", "cid"),
@@ -198,38 +193,54 @@ CREATE TABLE IF NOT EXISTS "contenttravels" (
   CONSTRAINT "ContentTravels_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE "likes" (
+  "id" SERIAL NOT NULL,
+  "cid" INTEGER NOT NULL,
+  "fingerprint" VARCHAR(64) NOT NULL,
+  "ip" VARCHAR(45),
+  "user_agent" VARCHAR(255),
+  "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "Likes_cid_fkey" FOREIGN KEY ("cid") REFERENCES "contents"("cid") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+
 -- ============================================================
 -- 二、索引（PG 索引不能内联在 CREATE TABLE 中，单独 CREATE；名与 Prisma 生成一致）
---     FK 列索引用 `_idx` 后缀，避免与 FK 约束名（`_fkey`）在 PG schema 命名空间冲突。
 -- ============================================================
-CREATE UNIQUE INDEX IF NOT EXISTS "Users_name_key" ON "users"("name");
-CREATE UNIQUE INDEX IF NOT EXISTS "Users_mail_key" ON "users"("mail");
-CREATE UNIQUE INDEX IF NOT EXISTS "Metas_name_key" ON "metas"("name");
-CREATE UNIQUE INDEX IF NOT EXISTS "Metas_slug_key" ON "metas"("slug");
-CREATE INDEX IF NOT EXISTS "Metas_mid_type_idx" ON "metas"("mid", "type");
-CREATE INDEX IF NOT EXISTS "Changelogs_create_time_idx" ON "changelogs"("create_time");
-CREATE UNIQUE INDEX IF NOT EXISTS "Informations_key_key" ON "informations"("key");
-CREATE INDEX IF NOT EXISTS "links_originalLinkId_idx" ON "links"("originalLinkId");
-CREATE INDEX IF NOT EXISTS "Travels_sort_idx" ON "travels"("sort");
-CREATE INDEX IF NOT EXISTS "Contents_status_type_create_time_idx" ON "contents"("status", "type", "create_time");
-CREATE UNIQUE INDEX IF NOT EXISTS "Contents_slug_type_key" ON "contents"("slug", "type");
-CREATE INDEX IF NOT EXISTS "Contents_uid_idx" ON "contents"("uid");
-CREATE INDEX IF NOT EXISTS "Comments_cid_idx" ON "comments"("cid");
-CREATE INDEX IF NOT EXISTS "ContentRelation_mid_cid_idx" ON "contentrelations"("mid", "cid");
-CREATE INDEX IF NOT EXISTS "ContentRelation_cid_idx" ON "contentrelations"("cid");
-CREATE INDEX IF NOT EXISTS "ContentAttachments_aid_idx" ON "contentattachments"("aid");
-CREATE INDEX IF NOT EXISTS "ContentAttachments_cid_idx" ON "contentattachments"("cid");
-CREATE UNIQUE INDEX IF NOT EXISTS "SubscribePost_link_key" ON "subscribeposts"("link");
-CREATE INDEX IF NOT EXISTS "SubscribePost_subscribeId_idx" ON "subscribeposts"("subscribeId");
-CREATE INDEX IF NOT EXISTS "Sessions_expires_idx" ON "sessions"("expires");
-CREATE INDEX IF NOT EXISTS "Sessions_userId_idx" ON "sessions"("userId");
-CREATE INDEX IF NOT EXISTS "ContentTravels_travel_id_idx" ON "contenttravels"("travel_id");
-CREATE INDEX IF NOT EXISTS "ContentTravels_cid_idx" ON "contenttravels"("cid");
+
+CREATE UNIQUE INDEX "Users_name_key" ON "users"("name");
+CREATE UNIQUE INDEX "Users_mail_key" ON "users"("mail");
+CREATE UNIQUE INDEX "Metas_name_key" ON "metas"("name");
+CREATE UNIQUE INDEX "Metas_slug_key" ON "metas"("slug");
+CREATE INDEX "Metas_mid_type_idx" ON "metas"("mid", "type");
+CREATE INDEX "Changelogs_create_time_idx" ON "changelogs"("create_time");
+CREATE UNIQUE INDEX "Informations_key_key" ON "informations"("key");
+CREATE INDEX "links_originalLinkId_idx" ON "links"("originalLinkId");
+CREATE INDEX "Travels_sort_idx" ON "travels"("sort");
+CREATE INDEX "Contents_status_type_create_time_idx" ON "contents"("status", "type", "create_time");
+CREATE INDEX "Contents_status_scheduled_at_idx" ON "contents"("status", "scheduled_at");
+CREATE UNIQUE INDEX "Contents_slug_type_key" ON "contents"("slug", "type");
+CREATE INDEX "Contents_uid_idx" ON "contents"("uid");
+CREATE INDEX "Comments_cid_idx" ON "comments"("cid");
+CREATE INDEX "ContentRelation_mid_cid_idx" ON "contentrelations"("mid", "cid");
+CREATE INDEX "ContentRelation_cid_idx" ON "contentrelations"("cid");
+CREATE INDEX "ContentAttachments_aid_idx" ON "contentattachments"("aid");
+CREATE INDEX "ContentAttachments_cid_idx" ON "contentattachments"("cid");
+CREATE UNIQUE INDEX "SubscribePost_link_key" ON "subscribeposts"("link");
+CREATE INDEX "SubscribePost_subscribeId_idx" ON "subscribeposts"("subscribeId");
+CREATE INDEX "Sessions_expires_idx" ON "sessions"("expires");
+CREATE INDEX "Sessions_userId_idx" ON "sessions"("userId");
+CREATE INDEX "ContentTravels_travel_id_idx" ON "contenttravels"("travel_id");
+CREATE INDEX "ContentTravels_cid_idx" ON "contenttravels"("cid");
+CREATE UNIQUE INDEX "Likes_cid_fingerprint_key" ON "likes"("cid", "fingerprint");
+CREATE INDEX "Likes_cid_create_time_idx" ON "likes"("cid", "create_time");
 
 -- ============================================================
 -- 三、站点设置项默认值（informations 表）
 -- value 列为字符串，布尔值以 'true' / 'false' 存储，数字以字符串存储。
 -- ============================================================
+
 INSERT INTO "informations" ("key", "value") VALUES
   ('siteName', ''),
   ('siteUrl', ''),
@@ -252,7 +263,6 @@ INSERT INTO "informations" ("key", "value") VALUES
   ('baiduApiKey', ''),
   ('baiduSecretKey', ''),
   ('baiduCheckAdmin', 'false'),
-  ('emailLogEnabled', 'true'),
   ('emailPushType', 'none'),
   ('smtpHost', ''),
   ('smtpUser', ''),
@@ -275,63 +285,47 @@ INSERT INTO "informations" ("key", "value") VALUES
   ('messageContentId', ''),
   ('linkAutoApprove', 'false'),
   ('searchCacheEnabled', 'false'),
-  ('searchCacheExpire', '300')
-ON CONFLICT ("key") DO NOTHING;
+  ('searchCacheExpire', '300');
 
 -- ============================================================
--- 四、示例数据（仅在空库时插入；已有数据的库跳过，不产生脏示例行）
+-- 四、示例数据（仅在空库上有效；已有数据的库会因主键冲突直接报错）
+-- 密码 123456 的 bcrypt 哈希；登录后请尽快修改。
 -- ============================================================
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM "contents") THEN
-    -- 4.1 默认管理员（admin / 123456 / example@example.com / 默认管理员）
-    -- 密码为 bcrypt('123456') 的哈希；登录后请尽快修改。
-    INSERT INTO "users" ("uid", "name", "nickname", "mail", "password", "create_time") VALUES
-      (1, 'admin', '默认管理员', 'example@example.com', '$2b$10$hpAJTTHU9sKV0reiQL8FWun.6gR6RDlotAfbCZyGJZbUyozeS6ON6', now())
-    ON CONFLICT ("uid") DO NOTHING;
 
-    -- 4.2 默认分类
-    INSERT INTO "metas" ("mid", "name", "slug", "desc", "type") VALUES
-      (1, '默认分类', 'default', '默认文章分类', 'category')
-    ON CONFLICT ("mid") DO NOTHING;
+INSERT INTO "users" ("uid", "name", "nickname", "mail", "password", "create_time") VALUES
+  (1, 'admin', '默认管理员', 'example@example.com', '$2b$10$hpAJTTHU9sKV0reiQL8FWun.6gR6RDlotAfbCZyGJZbUyozeS6ON6', now());
 
-    -- 4.3 示例文章（type=0 文章，status=1 已发布）
-    INSERT INTO "contents" ("cid", "title", "slug", "desc", "content", "create_time", "update_time", "status", "comment_num", "type", "uid") VALUES
-      (1, '你好，世界', 'hello-world', '这是一篇示例文章，用于演示站点的文章展示效果。',
-       E'# 你好，世界\n\n欢迎使用 **ImQi1 CMS**！这是一篇自动生成的示例文章。\n\n你可以在后台「文章管理」中编辑或删除它，然后开始创作属于你自己的内容。\n\n## Markdown 支持\n\n- 标题、段落、列表\n- **加粗**、*斜体*、`行内代码`\n- 代码块（基于 Shiki 高亮）\n- 图片、链接、引用等\n\n```js\nconsole.log("Hello, ImQi1 CMS!");\n```\n',
-       now(), now(), 1, 1, 0, 1)
-    ON CONFLICT ("cid") DO NOTHING;
+INSERT INTO "metas" ("mid", "name", "slug", "desc", "type") VALUES
+  (1, '默认分类', 'default', '默认文章分类', 'category');
 
-    -- 4.4 文章 ↔ 分类 关联
-    INSERT INTO "contentrelations" ("cid", "mid") VALUES
-      (1, 1)
-    ON CONFLICT ("mid", "cid") DO NOTHING;
+INSERT INTO "contents" ("cid", "title", "slug", "desc", "content", "create_time", "update_time", "status", "comment_num", "type", "uid") VALUES
+  (1, '你好，世界', 'hello-world', '这是一篇示例文章，用于演示站点的文章展示效果。',
+   E'# 你好，世界\n\n欢迎使用 **ImQi1 CMS**！这是一篇自动生成的示例文章。\n\n你可以在后台「文章管理」中编辑或删除它，然后开始创作属于你自己的内容。\n\n## Markdown 支持\n\n- 标题、段落、列表\n- **加粗**、*斜体*、`行内代码`\n- 代码块（基于 Shiki 高亮）\n- 图片、链接、引用等\n\n```js\nconsole.log("Hello, ImQi1 CMS!");\n```\n',
+   now(), now(), 1, 1, 0, 1);
 
-    -- 4.5 示例评论（status=1 已通过审核，前台可见）
-    INSERT INTO "comments" ("coid", "cid", "name", "mail", "content", "create_time", "status") VALUES
-      (1, 1, '访客', 'guest@example.com', '这是一条示例评论，欢迎在留言板或文章下方参与讨论！', now(), 1)
-    ON CONFLICT ("coid") DO NOTHING;
-  END IF;
-END
-$$;
+INSERT INTO "contentrelations" ("cid", "mid") VALUES (1, 1);
+
+INSERT INTO "comments" ("coid", "cid", "name", "mail", "content", "create_time", "status") VALUES
+  (1, 1, '访客', 'guest@example.com', '这是一条示例评论，欢迎在留言板或文章下方参与讨论！', now(), 1);
 
 -- ============================================================
--- 五、pg_trgm 子串搜索索引（让 LIKE '%q%' 走 GIN 索引，召回 100% 且有索引）
+-- 五、pg_trgm 扩展与 trgm 索引（让 LIKE '%q%' 走 GIN 索引）
 -- 需要 superuser 权限创建扩展；应用账号若无，可单独用 psql 以 superuser 执行本段。
 -- ============================================================
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
-CREATE INDEX IF NOT EXISTS "contents_title_trgm" ON "contents" USING GIN ("title" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "contents_desc_trgm" ON "contents" USING GIN ("desc" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "contents_content_trgm" ON "contents" USING GIN ("content" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "comments_content_trgm" ON "comments" USING GIN ("content" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "comments_name_trgm" ON "comments" USING GIN ("name" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "subscribes_name_trgm" ON "subscribes" USING GIN ("name" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "subscribes_url_trgm" ON "subscribes" USING GIN ("url" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "links_name_trgm" ON "links" USING GIN ("name" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "links_link_trgm" ON "links" USING GIN ("link" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "links_desc_trgm" ON "links" USING GIN ("desc" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "subscribeposts_title_trgm" ON "subscribeposts" USING GIN ("title" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "subscribeposts_description_trgm" ON "subscribeposts" USING GIN ("description" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "subscribeposts_content_trgm" ON "subscribeposts" USING GIN ("content" gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS "subscribeposts_author_trgm" ON "subscribeposts" USING GIN ("author" gin_trgm_ops);
+CREATE EXTENSION pg_trgm;
+
+CREATE INDEX "contents_title_trgm" ON "contents" USING GIN ("title" gin_trgm_ops);
+CREATE INDEX "contents_desc_trgm" ON "contents" USING GIN ("desc" gin_trgm_ops);
+CREATE INDEX "contents_content_trgm" ON "contents" USING GIN ("content" gin_trgm_ops);
+CREATE INDEX "comments_content_trgm" ON "comments" USING GIN ("content" gin_trgm_ops);
+CREATE INDEX "comments_name_trgm" ON "comments" USING GIN ("name" gin_trgm_ops);
+CREATE INDEX "subscribes_name_trgm" ON "subscribes" USING GIN ("name" gin_trgm_ops);
+CREATE INDEX "subscribes_url_trgm" ON "subscribes" USING GIN ("url" gin_trgm_ops);
+CREATE INDEX "links_name_trgm" ON "links" USING GIN ("name" gin_trgm_ops);
+CREATE INDEX "links_link_trgm" ON "links" USING GIN ("link" gin_trgm_ops);
+CREATE INDEX "links_desc_trgm" ON "links" USING GIN ("desc" gin_trgm_ops);
+CREATE INDEX "subscribeposts_title_trgm" ON "subscribeposts" USING GIN ("title" gin_trgm_ops);
+CREATE INDEX "subscribeposts_description_trgm" ON "subscribeposts" USING GIN ("description" gin_trgm_ops);
+CREATE INDEX "subscribeposts_content_trgm" ON "subscribeposts" USING GIN ("content" gin_trgm_ops);
+CREATE INDEX "subscribeposts_author_trgm" ON "subscribeposts" USING GIN ("author" gin_trgm_ops);

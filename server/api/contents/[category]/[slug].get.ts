@@ -107,6 +107,11 @@ export default defineEventHandler(async event => {
       });
     }
 
+    // 文章点赞总数（公开字段白名单：随 type/字段由 contentrelations.content 过滤，仅统计 type=0 已发布文章点赞）
+    const likeCount = await prisma.likes.count({
+      where: { cid: content.cid },
+    });
+
     // 过滤 contentrelations，只保留分类（type = "category"）
     const categoryRelations = content.contentrelations.filter(
       relation => relation.metas.type === "category"
@@ -174,6 +179,7 @@ export default defineEventHandler(async event => {
         markdownImages,
         parsedCovers: coversWithDimensions,
         renderedContent, // 返回已渲染的 HTML
+        likeCount, // 公开点赞总数（liked 由客户端 onMounted 后拉取，避免 SSR 每文都算 fingerprint）
       },
     };
   } catch (error) {

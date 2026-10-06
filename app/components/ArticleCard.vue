@@ -7,6 +7,8 @@ defineProps<{
   linkSlug: string;
   /** 元信息行显示什么：'tags'=列标签（分类页），'category'=列所属分类（标签页） */
   metaMode: "tags" | "category";
+  /** 点赞数：可选，由父页面从 /api/likes/counts 单独拉取后塞进来 */
+  likesCount?: number;
 }>();
 </script>
 
@@ -98,6 +100,11 @@ defineProps<{
         <span v-tooltip="`评论数量`" class="flex items-center">
           <Icon name="ri-chat-2-line" class="size-4" />
           {{ content.commentsNum > 0 ? content.commentsNum : "暂无评论" }}
+        </span>
+
+        <span v-tooltip="`点赞数`" class="flex items-center">
+          <Icon name="ri-heart-3-line" class="size-4" />
+          {{ likesCount && likesCount > 0 ? likesCount : "暂无点赞" }}
         </span>
       </div>
 

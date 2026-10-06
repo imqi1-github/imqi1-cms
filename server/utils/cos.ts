@@ -1,6 +1,7 @@
 import { createHash, createHmac } from "crypto";
 
 import { prisma } from "./prisma";
+import { log } from "./log";
 
 import type { CosConfig, CosDeleteResult, CosUploadResult } from "#server/types/utils/cos";
 
@@ -260,6 +261,7 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
     const fileUrl = `${accessUrl}${filePath}`;
 
     console.log("[COS上传] 成功:", fileUrl);
+    log.external("cos.upload.ok", { url: fileUrl, bytes: fileBuffer.length, type: contentType });
 
     return {
       success: true,
@@ -267,6 +269,11 @@ export async function uploadToCOS(fileBuffer: Buffer, fileName: string, contentT
     };
   } catch (error) {
     console.error(error);
+    log.external("cos.upload.error", {
+      bytes: fileBuffer.length,
+      type: contentType,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return {
       success: false,
       error: (error instanceof Error ? error.message : String(error)) || "COS上传失败",
@@ -382,12 +389,14 @@ export async function deleteFromCOS(fileUrl: string): Promise<CosDeleteResult> {
     }
 
     console.log("[COS删除] 成功:", filePath);
+    log.external("cos.delete.ok", { path: filePath });
 
     return {
       success: true,
     };
   } catch (error) {
     console.error(error);
+    log.external("cos.delete.error", { url: fileUrl, error: error instanceof Error ? error.message : String(error) });
     return {
       success: false,
       error: (error instanceof Error ? error.message : String(error)) || "COS删除失败",

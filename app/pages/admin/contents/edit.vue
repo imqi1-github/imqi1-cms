@@ -52,6 +52,7 @@ const initialSlug = ref("");
 const initialCoversInput = ref("");
 const initialStatus = ref("");
 const initialPublishDate = ref("");
+const initialScheduledAt = ref("");
 const initialShowToc = ref(false);
 const initialManyCovers = ref(false);
 const initialCategoryIds = ref<number[]>([]);
@@ -62,11 +63,16 @@ const description = ref("");
 const slug = ref("");
 const content = ref("");
 const publishDate = ref("");
+const scheduledAt = ref(""); // 定时发布时间（待发布），与 publishDate（回写发布时间）语义独立
 const showToc = ref(false);
 const manyCovers = ref(false);
 const status = ref("published"); // draft | published
 const coversInput = ref(""); // 封面输入，格式: 封面 || 标题
 const markdownEditorRef = ref<InstanceType<typeof import("~/components/MarkdownEditor.vue").default> | null>(null);
+// 草稿云端同步状态（独立于 useEditorAutosave 的 lastSavedAt，仅用于 PATCH autosave 指示）
+const cloudSyncedAt = ref<number | null>(null);
+const cloudSyncing = ref(false);
+const cloudSyncError = ref<string | null>(null);
 
 // 分类相关
 const categories = ref<Category[]>([]);
@@ -510,6 +516,22 @@ const fetchContent = async () => {
         publishDate.value = `${year}-${month}-${day}T${hours}:${minutes}`;
       }
 
+      // 定时发布时间（与 publishDate 语义独立：「待发布」而非「回写发布时间」）。
+      // 仅在 status=0 时携带；status=1 时清空控件避免误导。
+      if (contentData.scheduled_at && contentData.status === 0) {
+        const sd = new Date(contentData.scheduled_at);
+        if (!Number.isNaN(sd.getTime())) {
+          const y = sd.getFullYear();
+          const m = String(sd.getMonth() + 1).padStart(2, "0");
+          const d = String(sd.getDate()).padStart(2, "0");
+          const hh = String(sd.getHours()).padStart(2, "0");
+          const mm = String(sd.getMinutes()).padStart(2, "0");
+          scheduledAt.value = `${y}-${m}-${d}T${hh}:${mm}`;
+        }
+      } else {
+        scheduledAt.value = "";
+      }
+
       // 同时获取附件列表和分类
       await Promise.all([fetchAttachments(), fetchContentCategories(), fetchContentTags()]);
 
@@ -537,6 +559,7 @@ const saveInitialContent = () => {
   initialCoversInput.value = coversInput.value;
   initialStatus.value = status.value;
   initialPublishDate.value = publishDate.value;
+  initialScheduledAt.value = scheduledAt.value;
   initialShowToc.value = showToc.value;
   initialManyCovers.value = manyCovers.value;
   initialCategoryIds.value = [...selectedCategoryIds.value];
@@ -554,6 +577,7 @@ const checkUnsavedChanges = () => {
     coversInput.value !== initialCoversInput.value ||
     status.value !== initialStatus.value ||
     publishDate.value !== initialPublishDate.value ||
+    scheduledAt.value !== initialScheduledAt.value ||
     showToc.value !== initialShowToc.value ||
     manyCovers.value !== initialManyCovers.value ||
     JSON.stringify([...selectedCategoryIds.value].sort()) !== JSON.stringify([...initialCategoryIds.value].sort()) ||
@@ -706,6 +730,7 @@ async function saveContent(source: "manual" | "autosave"): Promise<SaveResult> {
       covers: coversValue,
       showToc: showToc.value,
       publishDate: publishDate.value,
+      scheduledAt: scheduledAt.value || null,
       csrfToken: csrfToken.value,
     };
 
@@ -877,6 +902,44 @@ onMounted(async () => {
 // 组件卸载时移除事件监听器
 onUnmounted(() => {
   window.removeEventListener("beforeunload", handleBeforeUnload);
+  if (cloudSyncTimer) clearInterval(cloudSyncTimer);
+});
+
+// 草稿云端同步：每 30s 把当前 content PATCH 到服务端（status 仍是 0，公开路由不渲染）
+// 与 useEditorAutosave 互补 —— 后者负责 Ctrl+S/2s 内的全量保存（含 title/tags/封面）；
+// 云端 PATCH 只同步正文，单条小请求、不带元数据，写作期间不影响其他字段。
+const CLOUD_SYNC_INTERVAL_MS = 30_000;
+let cloudSyncTimer: ReturnType<typeof setInterval> | null = null;
+let lastCloudSyncContent = "";
+
+async function syncDraftToCloud() {
+  if (!contentId.value) return;
+  if (!import.meta.client) return;
+  if (cloudSyncing.value) return;
+  // 内容未变更不重复发；空字符串也跳过（用户刚开页面/还没写）
+  if (content.value === lastCloudSyncContent) return;
+  cloudSyncing.value = true;
+  cloudSyncError.value = null;
+  try {
+    await $fetch(`/api/admin/contents/${contentId.value}/autosave`, {
+      method: "PATCH",
+      body: { content: content.value, csrfToken: csrfToken.value },
+    });
+    lastCloudSyncContent = content.value;
+    cloudSyncedAt.value = Date.now();
+  } catch (e) {
+    // 401/403 由 useEditorAutosave 处理；这里只标记通用错误，不打扰用户
+    cloudSyncError.value = e instanceof Error ? e.message : "云端同步失败";
+  } finally {
+    cloudSyncing.value = false;
+  }
+}
+
+onMounted(() => {
+  if (contentId.value) {
+    lastCloudSyncContent = content.value;
+    cloudSyncTimer = setInterval(syncDraftToCloud, CLOUD_SYNC_INTERVAL_MS);
+  }
 });
 
 // 监听 contentId 变化，自动填充 slug
@@ -1313,6 +1376,29 @@ watch(contentId, newCid => {
             <div class="space-y-2">
               <Label for="publishDate">发布日期</Label>
               <Input id="publishDate" v-model="publishDate" type="datetime-local" class="text-sm" />
+            </div>
+
+            <!-- 定时发布（与发布日期独立语义：未来某时刻自动发布） -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <Label for="scheduledAt">定时发布</Label>
+                <button
+                  type="button"
+                  class="text-xs text-muted-foreground hover:text-foreground"
+                  @click="scheduledAt = ''"
+                >
+                  清除
+                </button>
+              </div>
+              <Input
+                id="scheduledAt"
+                v-model="scheduledAt"
+                type="datetime-local"
+                class="text-sm"
+              />
+              <p class="text-xs text-muted-foreground">
+                设置后，到点 cron 任务将自动发布；早于当前时间视为立即发布
+              </p>
             </div>
 
             <!-- 是否展示目录 -->

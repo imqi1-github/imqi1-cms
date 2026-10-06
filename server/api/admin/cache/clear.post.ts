@@ -2,6 +2,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { redis } from "#server/utils/redis";
 import type { CacheClearBody, CacheClearResponse } from "#server/types/apis/cache";
+import { logAdminAudit } from "#server/utils/audit";
 
 // SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis
 // redis 网络断开/连接错误时,scan 抛错 → catch + 返回 -1(哨兵值)让上层区分"网络故障"
@@ -72,6 +73,11 @@ export default defineEventHandler(async event => {
   try {
     if (action === "all") {
       await redis.flushdb();
+      await logAdminAudit({
+        actor: { uid: user.uid, name: user.name },
+        action: "cache.clear",
+        target: { type: "cache" },
+      });
       return {
         success: true,
         matched: -1,

@@ -23,6 +23,8 @@ const defaults: SiteSettings = {
   feedCacheInterval: DEFAULT_FEED_CACHE_INTERVAL,
   linkAutoApprove: false,
   musicPlaylistId: "",
+  adminEmail: "",
+  notifyAdmin: false,
 };
 
 function sanitizePublicSettings(settings: MutableSettings): SiteSettings {

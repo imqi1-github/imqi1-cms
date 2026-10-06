@@ -8,10 +8,20 @@ const SITE_URL = "https://example.com";
 
 // prisma 用假件:精确控制文章/设置数据,断言 RSS 输出的确定性形状
 const fake = sharedFake;
-fake.on("informations", "findMany", () => [
-  { key: "siteName", value: "测试站" },
-  { key: "siteUrl", value: SITE_URL },
-]);
+// 信息表 mock：识别 where.key in / ==，便于多个 feed 路由共享同一份 settings 假件
+fake.on("informations", "findMany", (args: { where?: { key?: string | { in?: string[] } } } = {}) => {
+  const all = [
+    { key: "siteName", value: "测试站" },
+    { key: "siteUrl", value: SITE_URL },
+  ];
+  const w = args?.where?.key;
+  if (!w) return all;
+  if (typeof w === "string") return all.filter(item => item.key === w);
+  if (typeof w === "object" && "in" in w && Array.isArray(w.in)) {
+    return all.filter(item => w.in!.includes(item.key));
+  }
+  return all;
+});
 fake.on("contents", "findMany", () => [
   {
     cid: 1,

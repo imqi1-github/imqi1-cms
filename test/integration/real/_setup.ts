@@ -76,12 +76,25 @@ export async function setupDb(): Promise<{ host: string; port: number; user: str
   }
 
   // 目标库初始化(init-db.sql 幂等)
+  // init-db.sql 在历史库上跑会因 CREATE TABLE 缺 IF NOT EXISTS 触发 42P07(table already exists)；
+  // 测试库(imqi1_test)多次跑 setupDb 必然踩到。捕获这类错误当作成功跳过。
   const client = new pg.Client({ host: cfg.host, port: cfg.port, user: cfg.user, password: cfg.password, database: cfg.db });
   await client.connect();
   try {
     await client.query(`ALTER DATABASE "${cfg.db}" SET timezone = 'UTC'`);
     await client.query("SET timezone = 'UTC'");
-    await client.query(readFileSync(SQL_FILE, "utf-8"));
+    try {
+      await client.query(readFileSync(SQL_FILE, "utf-8"));
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      // 42P07 = duplicate_table, 42710 = duplicate_object, 42P06 = duplicate_schema
+      // 表/索引已存在 → 视为幂等成功（init-db.sql 没加 IF NOT EXISTS 时的兼容层）
+      if (code === "42P07" || code === "42710" || code === "42P06") {
+        console.warn(`[setup] 跳过 init-db.sql 中已存在的对象(${code}),视为幂等成功`);
+      } else {
+        throw err;
+      }
+    }
   } finally {
     await client.end();
   }

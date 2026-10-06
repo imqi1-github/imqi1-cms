@@ -26,7 +26,6 @@ export interface AdminSettings {
 	baiduApiKey: string;
 	baiduSecretKey: string;
 	baiduCheckAdmin: boolean;
-	emailLogEnabled: boolean;
 	emailPushType: string;
 	smtpHost: string;
 	smtpUser: string;

@@ -1,6 +1,7 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { renameTrustedDevice } from "#server/utils/trusted-device";
+import { logAdminAudit } from "#server/utils/audit";
 
 /** 后台：重命名一台已信任设备（PUT，CSRF 走 body csrfToken）；name 传空串/缺省则清空回「未知设备」 */
 export default defineEventHandler(async event => {
@@ -37,5 +38,10 @@ export default defineEventHandler(async event => {
   if (n === 0) {
     throw createError({ statusCode: 404, message: "该设备不存在或已被撤回" });
   }
+  await logAdminAudit({
+    actor: { uid: user.uid, name: user.name },
+    action: "2fa.trust-device",
+    target: { type: "trusted-device", id: id },
+  });
   return { success: true, name: newName };
 });

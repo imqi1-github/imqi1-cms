@@ -20,11 +20,11 @@ const travelNavPillClass =
 // 移动端侧边栏开关
 const isMobileMenuOpen = ref(false);
 
-// 获取分类 - 使用非阻塞加载，不阻塞首屏渲染
-const { data: categoriesData } = useLazyAsyncData("nav-categories", () => $fetch<{ data: CategoryOption[] }>("/api/categories", {
+// 获取分类 — 改用 useFetch：SSR 阶段直接调 server util，不绕 HTTP；多组件共用同一份 cache，
+// 浏览器 hydrate 时直接从 payload 拿 data，不会再发请求（控制台看不到这条 API）。
+const { data: categoriesData } = useFetch<{ data: CategoryOption[] }>("/api/categories", {
+  key: "nav-categories",
   headers: getInternalRequestHeaders(),
-}), {
-  server: true,
 });
 const categories = computed(() => categoriesData.value?.data || []);
 // 导航只显示有 slug 的分类，避免 /category/null 死链

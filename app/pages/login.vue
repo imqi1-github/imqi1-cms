@@ -249,27 +249,28 @@ const handleLogin = async () => {
     await navigateTo(redirectTo.value)
   } catch (rawError: unknown) {
     const e = rawError as ApiError
-    // 验证码被要求/错误：显示验证码并刷新
+    // 任何登录失败都显示+刷新验证码：服务端 recordLoginFailure 后该 IP 即进入验证码模式,
+    // 立刻显示新图让用户知道「下一步要输验证码」,UX 更顺。500/网络错只刷图,不显示验证码框。
     if (e?.data?.captchaRequired) {
       captchaRequired.value = true
       await loadCaptcha()
       toast.error({ message: '请填写正确验证码' })
-    } else {
+    } else if (e?.statusCode === 401) {
+      // 用户名/密码错：服务端刚记录了失败,该 IP 下次必触发验证码；立刻显示并刷图。
       toast.error({
         message: '登录失败',
         error: e,
         description: '请检查用户名和密码',
       })
-      // 失败后该 IP 进入验证码模式，刷新一次配置
-      try {
-        const cfg = await $fetch<LoginConfigResponse>('/api/auth/login-config')
-        if (cfg.captchaRequired && !captchaRequired.value) {
-          captchaRequired.value = true
-          await loadCaptcha()
-        }
-      } catch {
-        // 忽略
-      }
+      if (!captchaRequired.value) captchaRequired.value = true
+      await loadCaptcha()
+    } else {
+      // 500 / 网络错：只显示错误，不闪验证码框
+      toast.error({
+        message: '登录失败',
+        error: e,
+        description: '请稍后重试',
+      })
     }
   } finally {
     loading.value = false

@@ -3,6 +3,7 @@ import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CSRF_HEADER, TAG_CACHE_ROUTES  } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -66,6 +67,16 @@ export default defineEventHandler(async event => {
 
     // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
     void invalidateContentCaches({ routes: TAG_CACHE_ROUTES }).catch(err => console.error("[cache] 标签删除失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "tag.delete",
+
+      target: { type: "tag", id: tagId },
+
+    });
 
     return { success: true };
   } catch (error) {

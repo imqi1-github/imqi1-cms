@@ -16,7 +16,9 @@
  *
  * 约束:
  *   - 不并发跑(bun --max-concurrency=1 + 全局事务隔离已够测试用)
- *   - DB_NAME=imqi1-cms 测试库(开发库同名,需谨慎:不要 init-db 重置)
+ *   - DB_NAME 强制追加 `_test` 后缀：test/integration/real/_setup.ts 加载 .env 后
+ *     process.env.DB_NAME=imqi1（开发库），如果直接用会清空 dev 库（用户真实数据被误清事故）。
+ *     这里**自动**改用 imqi1_test 测试库，避免污染 dev。
  *   - 不放生产:DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME 任一缺失即抛
  *     (与 real/_setup.ts 强原则一致,禁止静默 fallback)
  */
@@ -32,7 +34,9 @@ export const db: PrismaClient = globalForDb.__db ?? (() => {
   }
   const port = Number(DB_PORT);
   if (!Number.isFinite(port) || port <= 0) throw new Error(`[test/db] DB_PORT 非法:${DB_PORT}`);
-  const connectionString = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${port}/${DB_NAME}`;
+  // 强制追加 _test 后缀：与 test/integration/real/_setup.ts 对齐，永远不污染开发库 imqi1
+  const testDbName = DB_NAME.endsWith("_test") ? DB_NAME : `${DB_NAME}_test`;
+  const connectionString = `postgresql://${encodeURIComponent(DB_USER)}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${port}/${testDbName}`;
   const adapter = new PrismaPg({ connectionString });
   const client = new PrismaClient({ adapter });
   globalForDb.__db = client;

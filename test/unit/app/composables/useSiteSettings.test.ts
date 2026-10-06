@@ -38,6 +38,8 @@ const SAMPLE: SiteSettings = {
   feedCacheInterval: 12,
   linkAutoApprove: true,
   musicPlaylistId: "123",
+  adminEmail: "admin@imqi1.com",
+  notifyAdmin: false,
 };
 
 describe("useSiteSettings:派生只读 computed", () => {

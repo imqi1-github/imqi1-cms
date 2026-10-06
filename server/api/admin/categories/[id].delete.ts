@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CSRF_HEADER, CATEGORY_CACHE_ROUTES  } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -129,6 +130,16 @@ export default defineEventHandler(async event => {
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
     void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "category.delete",
+
+      target: { type: "category", id: categoryId },
+
+    });
 
     return { success: true };
   } catch (error) {

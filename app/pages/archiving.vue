@@ -10,6 +10,12 @@ const { data, pending, error } = await useFetch("/api/archiving", {
   },
 });
 
+// 点赞数：归档页每行极简列表 — 不破坏布局，在标题后加 ❤️ N 小徽章
+const { data: likesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
+function archiveLikesCount(cid: number): number {
+  return likesData.value?.data?.[String(cid)] ?? 0;
+}
+
 // 使用全局站点设置
 const { siteSettings } = useSiteSettings();
 const siteName = computed(() => siteSettings.value?.siteName || siteConfig.site.name);
@@ -137,6 +143,16 @@ function isMonthExpanded(year: number, month: number): boolean {
               class="flex-1 font-medium line-clamp-1 text-muted-foreground cursor-default">
               {{ content.title }}
             </span>
+
+            <!-- 点赞数小徽章：极简列表只显示数字，不加图标避免拥挤 -->
+            <span
+              v-if="archiveLikesCount(content.cid) > 0"
+              v-tooltip="'点赞数'"
+              class="inline-flex items-center gap-0.5 text-xs text-rose-500/80 shrink-0 tabular-nums">
+              <Icon name="ri:heart-3-line" class="size-3.5" />
+              {{ archiveLikesCount(content.cid) }}
+            </span>
+            <span v-else class="w-0" />
 
             <!-- 箭头图标 -->
             <Icon

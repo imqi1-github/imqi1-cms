@@ -5,6 +5,7 @@ import "swiper/css/pagination";
 import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue";
 
 import type { RelatedContent } from "~/types/apis/content/related-contents";
+import type { ContentDetailResponse } from "~/types/apis/content/detail";
 import LivePhoto from "~/components/LivePhoto.vue";
 import { siteConfig } from "~~/site.config";
 import type { TocItem } from "~/types/apis/toc";
@@ -31,7 +32,7 @@ function formatDate(date: string | Date): string {
 }
 
 // 获取文章数据 - 使用新的 API 格式
-const { data, pending, error, refresh } = await useFetch(`/api/contents/${categorySlug}/${slug}`, {
+const { data, pending, error, refresh } = await useFetch<ContentDetailResponse>(`/api/contents/${categorySlug}/${slug}`, {
   headers: getInternalRequestHeaders(),
 });
 
@@ -152,51 +153,24 @@ const { isLoggedIn, isLoadingAuth } = useAuth();
 const photoCategorySlug = computed(() => siteSettings.value?.photoCategorySlug ?? "");
 const isPhotoCategory = computed(() => categorySlug === photoCategorySlug.value);
 
-// 获取相关文章（根据标签筛选）
-const relatedContentsData = ref<{ success: boolean; data: RelatedContent[] } | null>(null);
-const relatedContentsPending = ref(false);
-
-// 监听文章数据，加载后再获取相关文章。
-// 仅客户端：服务端不取相关文章（避免双发与卸载后回写），用 import.meta.client + 卸载守卫。
-// 关键：首帧不置 relatedContentsPending，改为 onMounted 后再触发加载。若在 setup 同步置 true，
-// 客户端首帧会渲染「加载相关文章」div，而 SSR 该处为注释（服务端被守卫挡回 → 不渲染），
-// 造成 hydration node mismatch（comment↔div）。onMounted 触发后首帧 SSR/客户端均无加载态，结构一致。
-let relatedActive = true;
-onUnmounted(() => {
-  relatedActive = false;
-});
-const loadRelatedContents = async (contentId?: number) => {
-  if (!import.meta.client || !contentId || !relatedActive) return;
-  relatedContentsPending.value = true;
-  try {
-    const res = await $fetch<{ success: boolean; data: RelatedContent[] }>(`/api/related-contents/${contentId}?limit=3`, {
-      headers: getInternalRequestHeaders(),
-    });
-    if (relatedActive) relatedContentsData.value = res;
-  } catch (error) {
-    console.error("获取相关文章失败:", error);
-    if (relatedActive) relatedContentsData.value = { success: false, data: [] };
-  } finally {
-    if (relatedActive) relatedContentsPending.value = false;
-  }
-};
-watch(
-  () => content.value?.cid,
-  async contentId => {
-    await loadRelatedContents(contentId);
+// 相关文章：cid reactive → URL 非空触发 useFetch；SSR 阶段拉到、浏览器 hydrate 不重发
+const relatedURL = computed(() =>
+  content.value?.cid ? `/api/related-contents/${content.value.cid}?limit=3` : "",
+);
+const { data: relatedContentsData, pending: relatedContentsPending } = useFetch<{ success: boolean; data: RelatedContent[] }>(
+  relatedURL,
+  {
+    headers: getInternalRequestHeaders(),
+    key: () => `related-contents-${content.value?.cid ?? "none"}`,
   },
 );
-onMounted(() => {
-  loadRelatedContents(content.value?.cid);
-});
-
-const relatedContents = computed(() => {
-  if (!relatedContentsData.value?.success || !content.value) return [];
-  return relatedContentsData.value.data.slice(0, 3);
-});
 
 const tocItems = ref<TocItem[]>([]);
 const activeTocId = ref("");
+
+const relatedContents = computed(() =>
+  relatedContentsData.value?.success ? relatedContentsData.value.data.slice(0, 3) : [],
+);
 
 // 根据文章的 show_toc 字段预留目录区域，避免客户端提取目录后产生布局偏移
 const shouldReserveToc = computed(() => Boolean(content.value?.show_toc));
@@ -376,6 +350,12 @@ const seoMeta = computed(() => {
         rel: "canonical",
         href: fullUrl,
       },
+      {
+        rel: "alternate",
+        type: "application/rss+xml",
+        title: "《" + (content.value?.title ?? "") + "》的评论",
+        href: `/feed/comments/${content.value?.cid ?? ""}`,
+      },
     ],
   };
 });
@@ -459,51 +439,18 @@ watch(
   { immediate: true },
 );
 
-// 监听相关文章数据，触发渐入动画
-watch(
-  () => relatedContents.value,
-  contents => {
-    if (import.meta.client) {
-      nextTick(() => {
-        setTimeout(() => {
-          // 只有当相关文章有数据时才触发相关文章区域的动画
-          if (contents && contents.length > 0) {
-            const relatedSection = document.querySelector(".related-contents-section");
-            if (relatedSection && relatedSection.classList.contains("opacity-0")) {
-              relatedSection.classList.remove("opacity-0", "translate-y-8");
-              relatedSection.classList.add("opacity-100", "translate-y-0");
-            }
-          }
-
-          // 无论是否有相关文章，都触发评论区的渐入动画
-          const commentSection = document.querySelector(".comment-section");
-          if (commentSection && commentSection.classList.contains("opacity-0")) {
-            commentSection.classList.remove("opacity-0", "translate-y-8");
-            commentSection.classList.add("opacity-100", "translate-y-0");
-          }
-        }, 200);
-      });
+// 相关文章区块：数据随 SSR 首帧直达（useFetch 已 await 于上方流水），无需旧版「数据到达再渐入」
+// 的 watch —— 那套机制依赖「数据从无到有」触发，SSR 化后永不触发会导致区块永远 opacity-0。
+// 评论区数据仍由客户端 CommentList 拉取，渐入动画改由下方 onMounted 触发。
+onMounted(() => {
+  setTimeout(() => {
+    const commentSection = document.querySelector(".comment-section");
+    if (commentSection && commentSection.classList.contains("opacity-0")) {
+      commentSection.classList.remove("opacity-0", "translate-y-8");
+      commentSection.classList.add("opacity-100", "translate-y-0");
     }
-  },
-);
-
-// 独立监听评论区，确保即使没有相关文章也能渐入
-watch(
-  () => [content.value?.cid, commentEnabled.value],
-  ([contentId, enabled]) => {
-    if (import.meta.client && contentId && enabled) {
-      nextTick(() => {
-        setTimeout(() => {
-          const commentSection = document.querySelector(".comment-section");
-          if (commentSection && commentSection.classList.contains("opacity-0")) {
-            commentSection.classList.remove("opacity-0", "translate-y-8");
-            commentSection.classList.add("opacity-100", "translate-y-0");
-          }
-        }, 300);
-      });
-    }
-  },
-);
+  }, 300);
+});
 
 // 监听路由 hash 变化，滚动到评论
 watch(
@@ -575,6 +522,23 @@ onMounted(() => {
 onUnmounted(() => {
   unregister(lightboxEl);
   window.removeEventListener("scroll", handleTocScroll);
+});
+
+// 点赞：SSR 注入 likeCount 作初始计数，liked 留客户端挂载后 refresh() 拉取
+// （SSR 阶段读 fingerprint 需 H3 事件，跳过；客户端 onMounted 后合流服务端 + localStorage）
+const articleCid = content.value?.cid ?? 0;
+const {
+  count: likeCount,
+  liked: likedByMe,
+  pending: likePending,
+  burstKey,
+  refresh: refreshLike,
+  like: likeContent,
+} = useContentLike(articleCid, false, content.value?.likeCount ?? 0);
+
+onMounted(() => {
+  // 客户端合流服务端 liked + localStorage，防 SSR 时 fingerprint 漂移
+  if (articleCid > 0) refreshLike();
 });
 </script>
 
@@ -719,6 +683,18 @@ onUnmounted(() => {
               {{ tag.name }}
             </NuxtLink>
           </span>
+          <!-- 点赞按钮：ml-auto 推到右侧；wrap 行为下移动到下一行右对齐 -->
+          <ClientOnly>
+            <LikeButton
+              v-if="articleCid > 0"
+              :count="likeCount"
+              :liked="likedByMe"
+              :pending="likePending"
+              :burst-key="burstKey"
+              class="ml-auto"
+              @like="likeContent"
+            />
+          </ClientOnly>
         </div>
 
         <!-- CC 协议授权 -->
@@ -806,7 +782,7 @@ onUnmounted(() => {
       </div>
       <section
         v-if="relatedContents.length > 0"
-        class="related-contents-section w-full opacity-0 translate-y-8 duration-300 ease-out article-constrained">
+        class="related-contents-section w-full article-constrained">
         <h3 class="text-xl font-semibold my-4 text-slate-900 dark:text-slate-100 h-max">相关文章</h3>
         <div class="flex flex-wrap gap-4">
           <div

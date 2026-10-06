@@ -5,6 +5,7 @@ import { Agent, fetch } from "undici";
 import type { RequestInit as UndiciRequestInit, Response as UndiciResponse } from "undici";
 
 import { assertPublicHttpUrl, isPrivateIp } from "#server/utils/urlGuard";
+import { log } from "#server/utils/log";
 
 /**
  * 服务端外联 fetch 的安全封装（SSRF 防护 + DNS rebinding 封堵）。
@@ -116,10 +117,12 @@ export async function fetchPublicUrl<T>(
           throw new Error(`重定向到非 http(s) 协议: ${probe.protocol}`);
         }
         console.log(`[safe-fetch] 重定向 ${hop + 1}/${MAX_REDIRECTS}: ${url.href} -> ${nextUrl}`);
+        log.external("fetch.redirect", { hop: hop + 1, from: url.href, to: nextUrl });
         currentUrl = nextUrl;
         continue;
       }
 
+      log.external("fetch.ok", { url: url.href, status, hop });
       return await process(response);
     } finally {
       clearTimeout(timeoutId);

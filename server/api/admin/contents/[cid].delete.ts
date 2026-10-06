@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { logAdminAudit } from "#server/utils/audit";
 import { CSRF_HEADER, CONTENT_CACHE_ROUTES  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
@@ -44,6 +45,11 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    const target = await prisma.contents.findUnique({
+      where: { cid: contentId },
+      select: { cid: true, title: true, status: true, type: true },
+    });
+
     const affectedAttachments = await prisma.contentattachments.findMany({
       where: { cid: contentId },
       select: { aid: true },
@@ -57,6 +63,15 @@ export default defineEventHandler(async event => {
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
     void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
+
+    logAdminAudit({
+      actor: { uid: user.uid, name: user.name },
+      action: "content.delete",
+      target: { type: "content", id: contentId },
+      diff: target
+        ? { title: target.title.slice(0, 30), status: target.status, type: target.type, attachments: affectedAttachments.length }
+        : { attachments: affectedAttachments.length },
+    });
 
     return { success: true };
   } catch (error) {

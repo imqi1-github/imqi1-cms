@@ -40,6 +40,10 @@ const detailedStats = ref({
     total: 0,
     online: 0,
   },
+  likes: {
+    total: 0,
+    thisMonth: 0,
+  },
 })
 
 const systemInfo = ref<SystemInfo>({
@@ -103,6 +107,12 @@ const additionalStatCards = computed(() => [
     value: detailedStats.value.contents.draft,
     icon: 'lucide:file-edit',
     description: '未发布文章',
+  },
+  {
+    title: '点赞总数',
+    value: detailedStats.value.likes.total,
+    icon: 'lucide:heart',
+    description: `本月 +${detailedStats.value.likes.thisMonth}`,
   },
 ])
 

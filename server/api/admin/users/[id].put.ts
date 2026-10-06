@@ -6,6 +6,7 @@ import { validateUserData } from "#server/utils/validation";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CONTENT_DETAIL_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -147,6 +148,16 @@ export default defineEventHandler(async event => {
 
     // 修改昵称/头像 → 影响文章详情 /content/** 的作者展示（作者信息/评论表单），失效该模块缓存
     void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error("[cache] 用户资料失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "user.update",
+
+      target: { type: "user", id: user.uid },
+
+    });
 
     return {
       success: true,

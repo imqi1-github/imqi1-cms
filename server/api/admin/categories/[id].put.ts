@@ -4,6 +4,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CATEGORY_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -135,6 +136,16 @@ export default defineEventHandler(async event => {
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
     void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
+
+    await logAdminAudit({
+
+      actor: { uid: user.uid, name: user.name },
+
+      action: "category.update",
+
+      target: { type: "category", id: category.mid },
+
+    });
 
     return {
       success: true,

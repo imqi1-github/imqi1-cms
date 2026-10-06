@@ -5,6 +5,7 @@ import { getClientIp } from "#server/utils/client-ip";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { verifyCaptcha } from "#server/utils/captcha";
+import { log } from "#server/utils/log";
 import {
   checkLoginRateLimit,
   recordLoginFailure,
@@ -123,6 +124,7 @@ export default defineEventHandler(async event => {
 
     if (!isValid) {
       await recordLoginFailure(ip);
+      log.auth("失败", { 用户: user.name, IP: ip, 原因: "密码错误" });
       throw createError({
         statusCode: 401,
         message: "用户名或密码错误",
@@ -137,8 +139,10 @@ export default defineEventHandler(async event => {
       const trusted = getCookie(event, TRUSTED_DEVICE_COOKIE);
       if (trusted && await verifyTrustedDevice(trusted, user.uid)) {
         await setSession(event, userSafe!);
+        log.auth("登录成功", { 用户: user.name, IP: ip, 方式: "2FA-信任设备" });
         return { success: true, user: userSafe! };
       }
+      log.auth("待2FA验证", { 用户: user.name, IP: ip });
       return {
         success: false,
         pending2FA: true,
@@ -148,6 +152,7 @@ export default defineEventHandler(async event => {
 
     // 未启用 2FA：直接建会话
     await setSession(event, userSafe!);
+    log.auth("登录成功", { 用户: user.name, IP: ip, 方式: "密码" });
     return { success: true, user: userSafe! };
   } catch (error) {
     // 已构造的业务错误（带 statusCode）原样抛出，避免被下面的 500 吞掉

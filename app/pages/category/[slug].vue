@@ -39,6 +39,12 @@ const { data, pending, error, refresh } = await useFetch(() => `/api/category/${
   watch: [page, apiSlug],
 });
 
+// 点赞数：调 /api/likes/counts 不传 cids，SSR 阶段必发；服务端返全表非零项，按 cid 直接查
+const { data: _catLikesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
+function catLikesCount(cid: number): number {
+  return _catLikesData.value?.data?.[String(cid)] ?? 0;
+}
+
 const category = computed(() => data.value?.data?.category);
 const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
@@ -320,6 +326,18 @@ onBeforeUnmount(() => {
   for (const id of fadeTimers) clearTimeout(id);
   fadeTimers.clear();
 });
+
+// RSS alternate:分类 RSS,前端订阅器/读者在分类页能一键订阅
+useHead({
+  link: [
+    {
+      rel: "alternate",
+      type: "application/rss+xml",
+      title: `${category.value?.name ?? "分类"} 订阅`,
+      href: computed(() => `/feed/category/${apiSlug.value}`),
+    },
+  ],
+});
 </script>
 
 <template>
@@ -416,6 +434,7 @@ onBeforeUnmount(() => {
             :key="content.cid"
             :content="content"
             :link-slug="apiSlug"
+            :likes-count="catLikesCount(content.cid)"
             meta-mode="tags" />
         </div>
 

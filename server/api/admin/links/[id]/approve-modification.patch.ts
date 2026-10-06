@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { LINKS_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -104,6 +105,16 @@ export default defineEventHandler(async event => {
 
       // 友链变更（批准修改会更新原友链）→ 立即失效相关 ISR 页面缓存（best-effort）
       void invalidateContentCaches({ routes: LINKS_CACHE_ROUTES }).catch(err => console.error("[cache] 友链审批失效缓存失败", err));
+
+      await logAdminAudit({
+
+        actor: { uid: user.uid, name: user.name },
+
+        action: "link.approve",
+
+        target: { type: "link", id: id },
+
+      });
 
       return {
         success: true,

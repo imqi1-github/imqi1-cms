@@ -4,6 +4,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { CONTENT_CACHE_ROUTES } from "#shared/constants";
+import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -28,6 +29,7 @@ export default defineEventHandler(async event => {
     covers,
     showToc = false,
     publishDate,
+    scheduledAt,
     csrfToken,
   } = body;
 
@@ -96,6 +98,23 @@ export default defineEventHandler(async event => {
     createTime = d;
   }
 
+  // 处理 scheduledAt：与 publishDate 字段独立（语义为「待发布」）。
+  // 已过点视为 null（调用方应传 status=1 实现立即发布）。
+  let scheduledAtValue: Date | null | undefined = undefined;
+  if (scheduledAt !== undefined) {
+    if (scheduledAt === null || scheduledAt === "") {
+      scheduledAtValue = null;
+    } else if (typeof scheduledAt !== "string") {
+      throw createError({ statusCode: 400, message: "scheduledAt 格式无效" });
+    } else {
+      const d = new Date(scheduledAt);
+      if (Number.isNaN(d.getTime())) {
+        throw createError({ statusCode: 400, message: "scheduledAt 格式无效" });
+      }
+      scheduledAtValue = d.getTime() <= Date.now() ? null : d;
+    }
+  }
+
   // 创建文章 + （无 slug 时）回填 slug=cid 需原子：否则 create 成功而 update 失败会留下 slug 为空的记录
   let contentRecord: { cid: number };
   try {
@@ -114,6 +133,7 @@ export default defineEventHandler(async event => {
           create_time: createTime,
           update_time: new Date(),
           uid: user.uid, // 设置文章作者为当前登录用户
+          ...(scheduledAtValue !== undefined && { scheduled_at: scheduledAtValue }),
         },
       });
 
@@ -148,6 +168,11 @@ export default defineEventHandler(async event => {
   void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
 
   // 前端保存后只需 cid（跳转/关联），不再回查全字段（含正文）。
+  await logAdminAudit({
+    actor: { uid: user.uid, name: user.name },
+    action: "content.create",
+    target: { type: "content", id: contentRecord.cid },
+  });
   return {
     success: true,
     data: { cid: contentRecord.cid },

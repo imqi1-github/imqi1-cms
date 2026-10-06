@@ -5,6 +5,7 @@ import { getClientIp } from "#server/utils/client-ip";
 import { prisma } from "#server/utils/prisma";
 import { verifyTOTP } from "#server/utils/totp";
 import { resolveTrustedDeviceName } from "#server/utils/trusted-device-name";
+import { log } from "#server/utils/log";
 import {
   checkLoginRateLimit,
   recordLoginFailure,
@@ -65,6 +66,7 @@ export default defineEventHandler(async event => {
 
   if (!verifyTOTP(user.totp_secret, code)) {
     await recordLoginFailure(ip);
+    log.auth("2FA失败", { 用户: user.name, IP: ip });
     throw createError({ statusCode: 401, message: "动态验证码错误" });
   }
 
@@ -97,6 +99,7 @@ export default defineEventHandler(async event => {
     mail: user.mail,
     avatar: user.avatar,
   });
+  log.auth("2FA通过", { 用户: user.name, IP: ip, 信任设备: !!rememberDevice });
 
   return {
     success: true,
