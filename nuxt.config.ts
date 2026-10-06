@@ -463,7 +463,7 @@ export default defineNuxtConfig({
     },
     hooks: {
       compiled: async () => {
-        const { mkdirSync, copyFileSync, existsSync, cpSync } = await import("fs");
+        const { mkdirSync, copyFileSync, existsSync, cpSync, readdirSync } = await import("fs");
         const { join } = await import("path");
         const assetsDir = join(process.cwd(), "server", "runtime-assets");
         const targetDir = join(
@@ -538,6 +538,26 @@ export default defineNuxtConfig({
           }
           cpSync(src, dest, { recursive: true });
           console.log(`✓ nft 漏拷 → 补拷 ${pkg}(${label})到 .output/server/node_modules/`);
+        }
+
+        // nft 把相同包常用软链到 .nitro/ 缓存目录(postgres-array / whatwg-url / entities)。
+        // SFTP 上传到生产后软链指向本地 Windows 路径(/x/imqi1-cms/...),
+        // 生产机无此路径 → ERR_MODULE_NOT_FOUND → 502。
+        // 这里把 .output/server/node_modules/ 下所有软链解成真实目录(递归 cp target → dest 覆盖),
+        // 不依赖上传工具是否跟随软链,永久兜底。
+        const { lstatSync, readlinkSync, rmSync } = await import("fs");
+        const entries = readdirSync(runtimeNodeModules, { withFileTypes: true });
+        for (const ent of entries) {
+          const p = join(runtimeNodeModules, ent.name);
+          if (!lstatSync(p).isSymbolicLink()) continue;
+          const target = readlinkSync(p);
+          if (!existsSync(target)) {
+            console.warn(`⚠ 软链悬空 → ${ent.name} -> ${target}`);
+            continue;
+          }
+          rmSync(p, { recursive: true, force: true });
+          cpSync(target, p, { recursive: true });
+          console.log(`✓ 软链解实目录 ${ent.name} (→ ${target})`);
         }
       },
     },
