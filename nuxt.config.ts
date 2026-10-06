@@ -540,25 +540,32 @@ export default defineNuxtConfig({
           console.log(`✓ nft 漏拷 → 补拷 ${pkg}(${label})到 .output/server/node_modules/`);
         }
 
-        // nft 把相同包常用软链到 .nitro/ 缓存目录(postgres-array / whatwg-url / entities)。
-        // SFTP 上传到生产后软链指向本地 Windows 路径(/x/imqi1-cms/...),
-        // 生产机无此路径 → ERR_MODULE_NOT_FOUND → 502。
-        // 这里把 .output/server/node_modules/ 下所有软链解成真实目录(递归 cp target → dest 覆盖),
-        // 不依赖上传工具是否跟随软链,永久兜底。
+        // nft 把部分包软链到 .nitro/ 缓存目录,且不止顶层:markdown-it/node_modules/entities、
+        // pg-types/node_modules/postgres-array 等嵌套位置也有(共 7+ 处)。
+        // SFTP 上传到生产后软链指向本地 Windows 路径(如 /x/imqi1-cms/...),
+        // 生产机无此路径 → 软链悬空 → ERR_MODULE_NOT_FOUND(/feed 500 就是 markdown-it 解析不到 entities)。
+        // 这里递归扫 .output/server/node_modules/ 全树,把所有软链解成真实目录;
+        // 解完再走进解出的目录继续扫(目标内部可能还有软链)。
         const { lstatSync, readlinkSync, rmSync } = await import("fs");
-        const entries = readdirSync(runtimeNodeModules, { withFileTypes: true });
-        for (const ent of entries) {
-          const p = join(runtimeNodeModules, ent.name);
-          if (!lstatSync(p).isSymbolicLink()) continue;
-          const target = readlinkSync(p);
-          if (!existsSync(target)) {
-            console.warn(`⚠ 软链悬空 → ${ent.name} -> ${target}`);
-            continue;
+        const derefAll = (dir: string): void => {
+          for (const ent of readdirSync(dir, { withFileTypes: true })) {
+            const p = join(dir, ent.name);
+            if (lstatSync(p).isSymbolicLink()) {
+              const target = readlinkSync(p);
+              if (!existsSync(target)) {
+                console.warn(`⚠ 软链悬空 → ${p} -> ${target}`);
+                continue;
+              }
+              rmSync(p, { recursive: true, force: true });
+              cpSync(target, p, { recursive: true });
+              console.log(`✓ 软链解实目录 ${p.replace(process.cwd(), "")} (→ ${target.split(/[\\/]/).pop()})`);
+              derefAll(p);
+            } else if (ent.isDirectory()) {
+              derefAll(p);
+            }
           }
-          rmSync(p, { recursive: true, force: true });
-          cpSync(target, p, { recursive: true });
-          console.log(`✓ 软链解实目录 ${ent.name} (→ ${target})`);
-        }
+        };
+        derefAll(runtimeNodeModules);
       },
     },
   },
