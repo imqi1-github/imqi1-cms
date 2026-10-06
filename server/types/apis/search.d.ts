@@ -6,6 +6,7 @@ export interface SearchContentItem {
   slug: string | null;
   desc: string | null;
   content: string | null;
+  _count: { likes: number };
   contentrelations: {
       metas: {
           name: string;
@@ -24,6 +25,7 @@ export interface ContentSearchResult {
   slug: string | null;
   desc: string | null;
   createTime: Date;
+  like_num: number;
   categoryName: string | null;
   categorySlug: string | null;
   // 正文高亮摘要

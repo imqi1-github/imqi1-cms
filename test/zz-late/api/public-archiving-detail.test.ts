@@ -41,7 +41,7 @@ function row(opts: {
   return {
     cid: opts.cid, title: opts.title, slug: opts.slug,
     status: opts.status, type: opts.type ?? 0,
-    create_time: opts.time, contentrelations: rels,
+    create_time: opts.time, _count: { likes: 0 }, contentrelations: rels,
   };
 }
 

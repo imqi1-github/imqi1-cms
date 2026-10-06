@@ -26,14 +26,17 @@ sharedFake.on("contentrelations", "groupBy", async () => [{ mid: 5, _count: { _a
 const contents = [
   {
     cid: 1, title: "三月文", slug: "mar", create_time: new Date(Date.UTC(2026, 2, 15)),
+    _count: { likes: 0 },
     contentrelations: [{ metas: { slug: "note" } }],
   },
   {
     cid: 2, title: "无分类文", slug: "noclass", create_time: new Date(Date.UTC(2026, 2, 2)),
+    _count: { likes: 0 },
     contentrelations: [],
   },
   {
     cid: 3, title: "一月文", slug: "jan", create_time: new Date(Date.UTC(2026, 0, 9)),
+    _count: { likes: 0 },
     contentrelations: [{ metas: { slug: "note" } }],
   },
 ];

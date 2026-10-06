@@ -40,12 +40,6 @@ if (!initialQ) {
 }
 
 // 搜索结果
-// 点赞数：搜索结果文章项展示点赞数；不影响其他类型（订阅/友链/评论无 cid）
-const { data: likesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
-function searchLikesCount(cid: number): number {
-  return likesData.value?.data?.[String(cid)] ?? 0;
-}
-
 const { data, pending, error, refresh } = await useFetch("/api/search", {
   headers: getInternalRequestHeaders(),
   query: {
@@ -529,11 +523,11 @@ const emptyNoun = computed(() => {
                   {{ formatDate(item.createTime) }}
                 </span>
                 <span
-                  v-if="searchLikesCount(item.cid) > 0"
+                  v-if="item.like_num > 0"
                   v-tooltip="'点赞数'"
                   class="inline-flex items-center gap-0.5 text-rose-500/80 tabular-nums">
                   <Icon name="ri:heart-3-line" class="size-3" />
-                  {{ searchLikesCount(item.cid) }}
+                  {{ item.like_num }}
                 </span>
               </div>
             </template>

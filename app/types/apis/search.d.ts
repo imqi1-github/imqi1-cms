@@ -23,6 +23,8 @@ export interface ContentSearchItem {
 	slug: string | null;
 	desc: string | null;
 	createTime: string;
+	/** 点赞数（随搜索结果带出） */
+	like_num: number;
 	categoryName: string | null;
 	categorySlug: string | null;
 	/** 正文高亮摘要（后端已拼 <mark>） */

@@ -7,7 +7,7 @@ defineProps<{
   linkSlug: string;
   /** 元信息行显示什么：'tags'=列标签（分类页），'category'=列所属分类（标签页） */
   metaMode: "tags" | "category";
-  /** 点赞数：可选，由父页面从 /api/likes/counts 单独拉取后塞进来 */
+  /** 点赞数：可选，来自列表数据的 like_num 字段 */
   likesCount?: number;
 }>();
 </script>

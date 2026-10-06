@@ -77,6 +77,7 @@ let catRelations = [
       create_time: new Date("2026-03-01T00:00:00Z"),
       update_time: new Date("2026-03-02T00:00:00Z"),
       comment_num: 2,
+      _count: { likes: 0 },
       many_covers: 1,
       covers: JSON.stringify([{ url: "/uploads/a.jpg" }]),
       contentrelations: [
@@ -127,6 +128,7 @@ beforeEach(() => {
         create_time: new Date("2026-03-01T00:00:00Z"),
         update_time: new Date("2026-03-02T00:00:00Z"),
         comment_num: 2,
+        _count: { likes: 0 },
         many_covers: 1,
         covers: JSON.stringify([{ url: "/uploads/a.jpg" }]),
         contentrelations: [

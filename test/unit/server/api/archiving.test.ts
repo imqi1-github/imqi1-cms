@@ -34,9 +34,9 @@ describe("archiving.get", () => {
 
   test("按 UTC 年月分组 + 倒序", async () => {
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 1, title: "A", slug: "a", create_time: new Date("2026-03-15T08:00:00Z"), contentrelations: [] },
-      { cid: 2, title: "B", slug: "b", create_time: new Date("2026-03-20T10:00:00Z"), contentrelations: [] },
-      { cid: 3, title: "C", slug: "c", create_time: new Date("2025-12-01T00:00:00Z"), contentrelations: [] },
+      { cid: 1, title: "A", slug: "a", create_time: new Date("2026-03-15T08:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
+      { cid: 2, title: "B", slug: "b", create_time: new Date("2026-03-20T10:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
+      { cid: 3, title: "C", slug: "c", create_time: new Date("2025-12-01T00:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
     ]);
     const res = await callArchive() as { data: { groups: Array<{ year: number; month: number; contents: Array<{ cid: number }> }> } };
     // 先 2026-03,再 2025-12(倒序)
@@ -50,8 +50,8 @@ describe("archiving.get", () => {
 
   test("同月内按 create_time desc 排序保留(原始 findMany orderBy 已 desc)", async () => {
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 5, title: "newer", slug: "n", create_time: new Date("2026-03-20T10:00:00Z"), contentrelations: [] },
-      { cid: 1, title: "older", slug: "o", create_time: new Date("2026-03-15T08:00:00Z"), contentrelations: [] },
+      { cid: 5, title: "newer", slug: "n", create_time: new Date("2026-03-20T10:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
+      { cid: 1, title: "older", slug: "o", create_time: new Date("2026-03-15T08:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
     ]);
     const res = await callArchive() as { data: { groups: Array<{ contents: Array<{ cid: number }> }> } };
     expect(res.data.groups[0]!.contents[0]!.cid).toBe(5);
@@ -60,20 +60,21 @@ describe("archiving.get", () => {
 
   test("响应字段白名单:无 content 正文/covers/desc/内部字段", async () => {
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 1, title: "T", slug: "s", create_time: new Date("2026-01-01T00:00:00Z"), contentrelations: [] },
+      { cid: 1, title: "T", slug: "s", create_time: new Date("2026-01-01T00:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
     ]);
     const res = await callArchive() as { data: { groups: Array<{ contents: Array<Record<string, unknown>> }> } };
     const item = res.data.groups[0]!.contents[0]!;
     const keys = Object.keys(item).sort();
-    expect(keys).toEqual(["categorySlug", "cid", "createTime", "slug", "title"]);
+    expect(keys).toEqual(["categorySlug", "cid", "createTime", "like_num", "slug", "title"]);
+    expect(item.like_num).toBe(2);
     expect("content" in item).toBe(false);
     expect("covers" in item).toBe(false);
   });
 
   test("categorySlug 取 contentrelations[0].metas.slug;无 relations → null", async () => {
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 1, title: "A", slug: "a", create_time: new Date("2026-01-01T00:00:00Z"), contentrelations: [{ metas: { slug: "tech" } }] },
-      { cid: 2, title: "B", slug: "b", create_time: new Date("2026-01-02T00:00:00Z"), contentrelations: [] },
+      { cid: 1, title: "A", slug: "a", create_time: new Date("2026-01-01T00:00:00Z"), _count: { likes: 2 }, contentrelations: [{ metas: { slug: "tech" } }] },
+      { cid: 2, title: "B", slug: "b", create_time: new Date("2026-01-02T00:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
     ]);
     const res = await callArchive() as { data: { groups: Array<{ contents: Array<{ cid: number; categorySlug: string | null }> }> } };
     const a = res.data.groups[0]!.contents.find(c => c.cid === 1);
@@ -84,7 +85,7 @@ describe("archiving.get", () => {
 
   test("createTime 是 ISO 字符串", async () => {
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 1, title: "T", slug: "s", create_time: new Date("2026-03-15T08:30:00Z"), contentrelations: [] },
+      { cid: 1, title: "T", slug: "s", create_time: new Date("2026-03-15T08:30:00Z"), _count: { likes: 2 }, contentrelations: [] },
     ]);
     const res = await callArchive() as { data: { groups: Array<{ contents: Array<{ createTime: string }> }> } };
     expect(res.data.groups[0]!.contents[0]!.createTime).toBe("2026-03-15T08:30:00.000Z");
@@ -92,9 +93,9 @@ describe("archiving.get", () => {
 
   test("stats.total = 文章总数", async () => {
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 1, title: "A", slug: "a", create_time: new Date("2026-03-15T08:00:00Z"), contentrelations: [] },
-      { cid: 2, title: "B", slug: "b", create_time: new Date("2026-04-15T08:00:00Z"), contentrelations: [] },
-      { cid: 3, title: "C", slug: "c", create_time: new Date("2025-12-15T08:00:00Z"), contentrelations: [] },
+      { cid: 1, title: "A", slug: "a", create_time: new Date("2026-03-15T08:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
+      { cid: 2, title: "B", slug: "b", create_time: new Date("2026-04-15T08:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
+      { cid: 3, title: "C", slug: "c", create_time: new Date("2025-12-15T08:00:00Z"), _count: { likes: 2 }, contentrelations: [] },
     ]);
     const res = await callArchive() as { data: { stats: { total: number } } };
     expect(res.data.stats.total).toBe(3);

@@ -421,7 +421,7 @@
                   </span>
                   <span v-tooltip="'点赞数'" class="flex items-center gap-0.5">
                     <Icon name="ri:heart-3-line" aria-hidden="true" class="size-3" />
-                    {{ getLikesCount(content.cid) > 0 ? getLikesCount(content.cid) : "暂无点赞" }}
+                    {{ content.like_num > 0 ? content.like_num : "暂无点赞" }}
                   </span>
                 </div>
               </div>
@@ -536,7 +536,7 @@
                     </span>
                     <span v-tooltip="'点赞数'" class="flex items-center gap-0.5">
                       <Icon name="ri:heart-3-line" aria-hidden="true" class="size-3" />
-                      <span>{{ getLikesCount(content.cid) > 0 ? getLikesCount(content.cid) : "暂无点赞" }}</span>
+                      <span>{{ content.like_num > 0 ? content.like_num : "暂无点赞" }}</span>
                     </span>
                   </div>
                 </div>
@@ -899,12 +899,6 @@ const subscribePosts = computed(() => homeData.value?.data?.subscribePosts || []
 
 // 更新日志
 const recentChangelogs = computed(() => homeData.value?.data?.changelogs || []);
-
-// 点赞数：调 /api/likes/counts，不传 cids 时服务端返全表所有非零项；await 让 setup 等响应,SSR 渲染期有数据
-const { data: likesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
-function getLikesCount(cid: number): number {
-  return likesData.value?.data?.[String(cid)] ?? 0;
-}
 
 // 展示的图片列表（所有文章的封面展开）
 const photoImages = computed(() => {

@@ -37,12 +37,6 @@ const { data, pending, error, refresh } = await useFetch(() => `/api/tag/${apiSl
   watch: [page, apiSlug],
 });
 
-// 点赞数：调 /api/likes/counts 不传 cids，SSR 必发
-const { data: _tagLikesData } = await useFetch<{ success: boolean; data: Record<string, number> }>("/api/likes/counts");
-function tagLikesCount(cid: number): number {
-  return _tagLikesData.value?.data?.[String(cid)] ?? 0;
-}
-
 const tag = computed(() => data.value?.data?.tag);
 const contents = computed(() => data.value?.data?.contents || []);
 const pagination = computed(() => data.value?.data?.pagination);
@@ -318,7 +312,7 @@ useHead({
             :key="content.cid"
             :content="content"
             :link-slug="content.categorySlug || 'uncategorized'"
-            :likes-count="tagLikesCount(content.cid)"
+            :likes-count="content.like_num"
             meta-mode="category" />
         </div>
 

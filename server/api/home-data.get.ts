@@ -49,6 +49,8 @@ export default defineEventHandler(async event => {
         many_covers: true,
         create_time: true,
         comment_num: true,
+        // 点赞数（列表角标用）：关系计数随列表一次带出，免掉单独 /api/likes/counts 往返
+        _count: { select: { likes: true } },
         contentrelations: {
           select: {
             metas: {
@@ -88,6 +90,7 @@ export default defineEventHandler(async event => {
         travelCount: content.travels.length,
         created: content.create_time,
         commentsNum: content.comment_num || 0,
+        like_num: content._count.likes,
         categories,
         tags,
       };
@@ -177,6 +180,7 @@ export default defineEventHandler(async event => {
                 many_covers: true,
                 create_time: true,
                 comment_num: true,
+                _count: { select: { likes: true } },
                 contentrelations: {
                   select: {
                     mid: true,
@@ -217,6 +221,7 @@ export default defineEventHandler(async event => {
                 travelCount: content.travels.length,
                 created: content.create_time,
                 commentsNum: content.comment_num || 0,
+                like_num: content._count.likes,
                 tags,
               };
             });

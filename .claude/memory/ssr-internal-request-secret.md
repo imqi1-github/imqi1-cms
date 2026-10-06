@@ -19,3 +19,5 @@ metadata:
 - `SSR_INTERNAL_REQUEST_SECRET=xxx` + 带 `xxx` → 不 403；带错值/旧常量 → 403
 
 公开 URL 白名单（`siteConfig.security.allowedRefererDomains`）是同一道 referer 门禁的另一半。
+
+**新增 SSR 内 useFetch 必带 `headers: getInternalRequestHeaders()`**（2026-10-07 实锤）：v1.2.0 五个列表页拉 `/api/likes/counts` 全漏了这个头 → SSR 内部请求无 Referer 无密钥 → 生产全部 403 → 首页/归档/分类/标签/搜索点赞数恒「暂无点赞」；浏览器内 fetch 有 Referer 正常，所以只有 SSR 烘焙的数据是坏的。**dev 下 referer-check 整段跳过，本地永远复现不了**。修复：列表接口直接内联 `like_num`（Prisma `_count`，与 `comment_num` 同语义），取消独立拉取；`/api/likes/counts` 仅剩 admin 客户端在用（浏览器 Referer 放行）。曾用 sed 停补丁给生产 nitro.mjs 的 referer-check 加 `/api/likes/` 白名单过渡（编译产物未压缩、锚点唯一可 patch，但下次全量发版自动覆盖）。

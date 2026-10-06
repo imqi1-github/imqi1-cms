@@ -77,6 +77,8 @@ export default defineEventHandler(async event => {
           create_time: true,
           update_time: true,
           comment_num: true,
+          // 点赞数（列表角标用）：随列表一次带出，免掉单独 /api/likes/counts 往返
+          _count: { select: { likes: true } },
           many_covers: true,
           covers: true,
           contentrelations: {
@@ -163,6 +165,7 @@ export default defineEventHandler(async event => {
       created: content.create_time,
       updated: content.update_time,
       commentsNum,
+      like_num: content._count.likes,
       many_covers: content.many_covers,
       covers,
       travelCount: content.travels.length,

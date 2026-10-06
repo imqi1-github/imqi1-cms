@@ -34,11 +34,11 @@ const metaRows: Array<Record<string, unknown>> = [
   { mid: 3, name: "标签甲", slug: "tag-a", type: "tag" },
 ];
 const contentRows: Array<Record<string, unknown>> = [
-  { cid: 100, slug: "post-a", title: "文A", status: 1, type: 0, desc: "d", covers: "[]", create_time: new Date(Date.UTC(2026, 2, 10)) },
-  { cid: 101, slug: "post-b", title: "文B", status: 0, type: 0, desc: null, covers: "[]", create_time: new Date(Date.UTC(2026, 2, 11)) },
-  { cid: 102, slug: "post-c", title: "文C", status: 1, type: 0, desc: "d3", covers: "[]", create_time: new Date(Date.UTC(2026, 1, 5)) },
-  { cid: 200, slug: "about", title: "关于", status: 1, type: 1, desc: null, covers: "[]", content: "# 关于", create_time: new Date(Date.UTC(2026, 0, 1)) },
-  { cid: 201, slug: "draft-page", title: "草稿页", status: 0, type: 1, desc: null, covers: "[]", content: "x", create_time: new Date() },
+  { cid: 100, slug: "post-a", title: "文A", status: 1, type: 0, desc: "d", covers: "[]", _count: { likes: 0 }, create_time: new Date(Date.UTC(2026, 2, 10)) },
+  { cid: 101, slug: "post-b", title: "文B", status: 0, type: 0, desc: null, covers: "[]", _count: { likes: 0 }, create_time: new Date(Date.UTC(2026, 2, 11)) },
+  { cid: 102, slug: "post-c", title: "文C", status: 1, type: 0, desc: "d3", covers: "[]", _count: { likes: 0 }, create_time: new Date(Date.UTC(2026, 1, 5)) },
+  { cid: 200, slug: "about", title: "关于", status: 1, type: 1, desc: null, covers: "[]", _count: { likes: 0 }, content: "# 关于", create_time: new Date(Date.UTC(2026, 0, 1)) },
+  { cid: 201, slug: "draft-page", title: "草稿页", status: 0, type: 1, desc: null, covers: "[]", _count: { likes: 0 }, content: "x", create_time: new Date() },
 ];
 
 sharedFake.on("metas", "findMany", async ({ where, take }: { where?: Record<string, unknown>; take?: number } = {}) => {
@@ -99,11 +99,11 @@ beforeEach(() => {
   );
   contentRows.length = 0;
   contentRows.push(
-    { cid: 100, slug: "post-a", title: "文A", status: 1, type: 0, desc: "d", covers: "[]", create_time: new Date(Date.UTC(2026, 2, 10)) },
-    { cid: 101, slug: "post-b", title: "文B", status: 0, type: 0, desc: null, covers: "[]", create_time: new Date(Date.UTC(2026, 2, 11)) },
-    { cid: 102, slug: "post-c", title: "文C", status: 1, type: 0, desc: "d3", covers: "[]", create_time: new Date(Date.UTC(2026, 1, 5)) },
-    { cid: 200, slug: "about", title: "关于", status: 1, type: 1, desc: null, covers: "[]", content: "# 关于", create_time: new Date(Date.UTC(2026, 0, 1)) },
-    { cid: 201, slug: "draft-page", title: "草稿页", status: 0, type: 1, desc: null, covers: "[]", content: "x", create_time: new Date() },
+    { cid: 100, slug: "post-a", title: "文A", status: 1, type: 0, desc: "d", covers: "[]", _count: { likes: 0 }, create_time: new Date(Date.UTC(2026, 2, 10)) },
+    { cid: 101, slug: "post-b", title: "文B", status: 0, type: 0, desc: null, covers: "[]", _count: { likes: 0 }, create_time: new Date(Date.UTC(2026, 2, 11)) },
+    { cid: 102, slug: "post-c", title: "文C", status: 1, type: 0, desc: "d3", covers: "[]", _count: { likes: 0 }, create_time: new Date(Date.UTC(2026, 1, 5)) },
+    { cid: 200, slug: "about", title: "关于", status: 1, type: 1, desc: null, covers: "[]", _count: { likes: 0 }, content: "# 关于", create_time: new Date(Date.UTC(2026, 0, 1)) },
+    { cid: 201, slug: "draft-page", title: "草稿页", status: 0, type: 1, desc: null, covers: "[]", _count: { likes: 0 }, content: "x", create_time: new Date() },
   );
 });
 

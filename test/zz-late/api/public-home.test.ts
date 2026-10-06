@@ -52,6 +52,7 @@ const recentRows = Array.from({ length: 6 }, (_, i) => ({
   many_covers: 0,
   create_time: new Date(Date.UTC(2026, 2, 10 - i)),
   comment_num: 0,
+  _count: { likes: 0 },
   contentrelations: [{ metas: { mid: 2, name: "笔记", slug: "note", type: "category" } }],
   travels: [],
 }));
@@ -60,6 +61,7 @@ const sectionRows = [
     cid: 200, title: "分区文", slug: "sec-1", desc: null,
     covers: JSON.stringify([]), many_covers: 0,
     create_time: new Date(Date.UTC(2026, 1, 1)), comment_num: 1,
+    _count: { likes: 0 },
     contentrelations: [{ metas: { mid: 5, name: "标签甲", slug: "tag-a", type: "tag" } }],
     travels: [{ travel_id: 1 }],
   },

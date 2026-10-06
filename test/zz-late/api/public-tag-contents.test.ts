@@ -33,6 +33,7 @@ describe("tag/[slug]/contents.get(标签文章列表)", () => {
         update_time: new Date(),
         create_time: new Date(),
         comment_num: 0,
+        _count: { likes: 0 },
         many_covers: null,
         covers: null,
         contentrelations: [

@@ -124,6 +124,7 @@ function formatSearchResults(contents: SearchContentItem[], query: string): Cont
       slug: content.slug,
       desc: content.desc,
       createTime: content.create_time,
+      like_num: content._count.likes,
       categoryName: category?.name || null,
       categorySlug: category?.slug || null,
       // 添加高亮摘要
@@ -151,6 +152,8 @@ async function searchContents(q: string): Promise<SearchBranchResult> {
       desc: true,
       content: true,
       create_time: true,
+      // 点赞数（结果角标用）：随搜索一次带出，免掉单独 /api/likes/counts 往返
+      _count: { select: { likes: true } },
       contentrelations: {
         where: {
           metas: { type: "category" },

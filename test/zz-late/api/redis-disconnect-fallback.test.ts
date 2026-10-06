@@ -106,7 +106,7 @@ describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", (
   test("search.get:redis.setex 抛错 → catch 兜底,响应 200", async () => {
     sharedFake.on("informations", "findMany", async () => []);
     sharedFake.on("contents", "findMany", async () => [
-      { cid: 1, title: "T", slug: "t", desc: null, content: "x", create_time: new Date(), contentrelations: [], status: 1 },
+      { cid: 1, title: "T", slug: "t", desc: null, content: "x", create_time: new Date(), _count: { likes: 0 }, contentrelations: [], status: 1 },
     ]);
     sharedFake.on("subscribes", "findMany", async () => []);
     sharedFake.on("links", "findMany", async () => []);

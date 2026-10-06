@@ -15,6 +15,8 @@ export default defineEventHandler(async () => {
         title: true,
         slug: true,
         create_time: true,
+        // 点赞数（标题后 ❤️ 徽章用）：随归档列表一次带出
+        _count: { select: { likes: true } },
         contentrelations: {
           where: {
             metas: { type: "category" },
@@ -67,6 +69,7 @@ export default defineEventHandler(async () => {
         title: content.title,
         slug: content.slug,
         categorySlug,
+        like_num: content._count.likes,
         createTime: content.create_time.toISOString(),
       });
 

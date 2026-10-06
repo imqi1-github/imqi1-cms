@@ -75,7 +75,7 @@ describe("大压力 + 缓存击穿", () => {
     let dbCallCount = 0;
     enableCacheAndContents(() => {
       dbCallCount++;
-      return [{ cid: 1, title: "x", slug: "x", desc: null, content: "x", create_time: new Date(0), contentrelations: [], status: 1 }];
+      return [{ cid: 1, title: "x", slug: "x", desc: null, content: "x", create_time: new Date(0), _count: { likes: 0 }, contentrelations: [], status: 1 }];
     });
     const CONCURRENT = 50;
     const results = await Promise.all(Array.from({ length: CONCURRENT }, () => searchHandler(event() as never)));
@@ -100,7 +100,7 @@ describe("大压力 + 缓存击穿", () => {
     let dbCallCount = 0;
     enableCacheAndContents(() => {
       dbCallCount++;
-      return [{ cid: 1, title: "x", slug: "x", desc: null, content: "x", create_time: new Date(0), contentrelations: [], status: 1 }];
+      return [{ cid: 1, title: "x", slug: "x", desc: null, content: "x", create_time: new Date(0), _count: { likes: 0 }, contentrelations: [], status: 1 }];
     });
     const CONCURRENT = 50;
     const start = performance.now();
@@ -119,7 +119,7 @@ describe("大压力 + 缓存击穿", () => {
     const callQueries: string[] = [];
     enableCacheAndContents((q) => {
       callQueries.push(q);
-      return q ? [{ cid: 1, title: q, slug: q, desc: null, content: "x", create_time: new Date(0), contentrelations: [], status: 1 }] : [];
+      return q ? [{ cid: 1, title: q, slug: q, desc: null, content: "x", create_time: new Date(0), _count: { likes: 0 }, contentrelations: [], status: 1 }] : [];
     });
     const CONCURRENT = 50;
     const queries = Array.from({ length: CONCURRENT }, (_, i) => `q-${i}`);

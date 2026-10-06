@@ -43,6 +43,7 @@ describe("search.get:content 分支", () => {
       desc: "摘要",
       content: "这是一段包含 hello 关键词的正文内容,用于验证高亮。",
       create_time: new Date("2026-04-01"),
+      _count: { likes: 0 },
       contentrelations: [{ metas: { name: "笔记", slug: "note" } }],
     }]);
     const r = (await searchHandler(ev("/api/search?q=hello&type=content"))) as unknown as {

@@ -18,6 +18,7 @@ sharedFake.on("contents", "findMany", () => [
     desc: "关于 bun 的文章",
     content: "<p>这是一篇讲 bun 的长文,关键词出现在这里</p>",
     create_time: new Date("2026-05-01T00:00:00Z"),
+    _count: { likes: 3 },
     contentrelations: [{ metas: { name: "笔记", slug: "note" } }],
   },
 ]);
