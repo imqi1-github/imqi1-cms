@@ -23,14 +23,16 @@ mockSharedPrisma();
 // —— 假 redis：方法 → handler map（仿 fake-prisma 模式），运行时只用到 ping/dbsize/info/scan/unlink/status ——
 type RedisHandler = (...args: never[]) => unknown;
 const redisHandlers = new Map<string, RedisHandler>();
+// never[] 参数只为注册端任意签名可赋值;调用端经此转型拿可调用类型
+const getHandler = (name: string) => redisHandlers.get(name) as ((...args: unknown[]) => unknown) | undefined;
 const fakeRedis = {
   status: "ready",
-  ping: () => redisHandlers.get("ping")?.(),
-  dbsize: () => redisHandlers.get("dbsize")?.(),
-  info: (section: string) => redisHandlers.get("info")?.(section),
+  ping: () => getHandler("ping")?.(),
+  dbsize: () => getHandler("dbsize")?.(),
+  info: (section: string) => getHandler("info")?.(section),
   scan: (cursor: string, match: string, pattern: string, count: string, n: number) =>
-    redisHandlers.get("scan")?.(cursor, match, pattern, count, n),
-  unlink: (...keys: string[]) => redisHandlers.get("unlink")?.(...keys),
+    getHandler("scan")?.(cursor, match, pattern, count, n),
+  unlink: (...keys: string[]) => getHandler("unlink")?.(...keys),
 } as unknown as import("ioredis").default;
 
 mock.module("#server/utils/redis", () => ({ redis: fakeRedis }));
@@ -468,7 +470,10 @@ describe("工具回调:list_friend_links", () => {
       { name: "友站 A", desc: "desc A", link: "https://a.example", avatar: null },
     ]);
     const { text } = await invoke("list_friend_links", {});
-    const parsed = JSON.parse(text) as { count: number; items: Array<{ name: string; url: string; desc: string }> };
+    const parsed = JSON.parse(text) as {
+      count: number;
+      items: Array<{ name: string; url: string; desc: string; avatar: string | null }>;
+    };
     expect(parsed.count).toBe(1);
     expect(parsed.items[0]).toEqual({
       name: "友站 A",

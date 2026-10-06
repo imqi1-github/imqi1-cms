@@ -18,9 +18,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { McpServer } from "@modelcontextprotocol/server";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { LOG_TAG_LABELS } from "#shared/constants";
 
 import { prisma } from "./prisma";
 import { markdownToPlainText } from "./markdownToPlainText";
@@ -28,6 +28,8 @@ import { redis } from "./redis";
 import { dateKey, LOG_DIR_RESOLVED, log } from "./log";
 import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
 import { detectDocker, getBuildHash } from "./runtime-info";
+
+import { LOG_TAG_LABELS } from "#shared/constants";
 
 /** 运维工具组开关：读进程环境（每请求判定，生产补配令牌无需重新构建） */
 function opsEnabled(): boolean {
@@ -729,12 +731,6 @@ export function createImqi1McpServer(): McpServer {
 
 // ==================== 运维工具组（MCP_OPS_TOKEN 门禁） ====================
 
-/** MCP 工具统一返回形态 */
-interface OpsToolResult {
-  content: Array<{ type: "text"; text: string }>;
-  isError?: boolean;
-}
-
 /** 运维令牌校验：定长比较防时序侧信道（与 security-token 同策略） */
 function verifyOpsToken(token: string): boolean {
   const expected = process.env.MCP_OPS_TOKEN?.trim() ?? "";
@@ -744,16 +740,16 @@ function verifyOpsToken(token: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function opsText(data: unknown): OpsToolResult {
+function opsText(data: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
 
-function opsError(code: string, extra: Record<string, unknown> = {}): OpsToolResult {
+function opsError(code: string, extra: Record<string, unknown> = {}): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify({ error: code, ...extra }, null, 2) }], isError: true };
 }
 
 /** 运维工具统一兜底：DB/Redis 挂了要把错误带回给排障方，而不是炸掉 MCP 响应 */
-async function opsGuard(fn: () => Promise<OpsToolResult>): Promise<OpsToolResult> {
+async function opsGuard(fn: () => Promise<CallToolResult>): Promise<CallToolResult> {
   try {
     return await fn();
   } catch (error) {
@@ -869,7 +865,7 @@ function registerOpsTools(server: McpServer): void {
 
         const filtered = level === "all" ? all : all.filter(line => line.includes(`[${level.toUpperCase()}]`));
         // 每行截断 + 总量兜底：日志行可能含长堆栈/长 UA，防止一次调用撑爆模型上下文
-        let picked = filtered.slice(-lines).map(line => (line.length > 4000 ? `${line.slice(0, 4000)}…[截断]` : line));
+        const picked = filtered.slice(-lines).map(line => (line.length > 4000 ? `${line.slice(0, 4000)}…[截断]` : line));
         while (picked.length > 1 && picked.reduce((n, line) => n + line.length, 0) > OPS_LOG_MAX_CHARS) {
           picked.shift();
         }
