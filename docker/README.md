@@ -117,4 +117,4 @@ docker compose --env-file .env -f docker/docker-compose.yml exec postgres psql -
 
 ## 镜像加速
 
-如服务器在国内拉 `postgres:16-alpine` / `oven/bun:1.4` / `node:22-slim` 慢，可在 `~/.docker/daemon.json` 加 `registry-mirrors`（按就近原则挑选实际可达的源，本仓库验证 `https://docker.m.daocloud.io` 可用）。镜像列表见各 `Dockerfile` 的 `FROM` 行。
+如服务器在国内拉 `postgres:16-alpine` / `oven/bun:1.4` / `node:22-slim` 慢，给 daemon 加 `registry-mirrors`：Linux 写 `/etc/docker/daemon.json` 后 `systemctl reload docker`；Docker Desktop 在 Settings → Docker Engine 的 JSON 编辑器里加，Apply & Restart。按就近原则挑实际可达的源，本仓库验证 `https://docker.m.daocloud.io` 可用。镜像列表见各 `Dockerfile` 的 `FROM` 行。
