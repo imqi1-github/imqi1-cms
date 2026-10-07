@@ -1,8 +1,6 @@
 import { prisma, isPrismaNotFoundError, isPrismaUniqueConstraintError } from "#server/utils/prisma";
 import { computeLikeFingerprint, isLikeRateLimited } from "#server/utils/likes";
 import { getClientIp } from "#server/utils/client-ip";
-import { invalidateContentCaches } from "#server/utils/content-cache";
-import { log } from "#server/utils/log";
 import type { LikeToggleResponse } from "#server/types/apis/content/likes";
 
 /**
@@ -113,12 +111,10 @@ export default defineEventHandler(async event => {
       },
     };
 
-    // 点赞数变更 ISR 失效：列表页（首页/归档/分类/标签）和文章详情页都显示点赞数，全部失效。
-    // 失效路由集合 = HOME + ARCHIVING + CATEGORY + TAG + CONTENT_DETAIL + likes/counts 批量接口。
-    // 点赞频率远低于阅读频率，cache thrashing 影响可控。
-    void invalidateContentCaches({
-      routes: ["/", "/archiving", "/category/**", "/tag/**", "/content/**", "/api/likes/counts"],
-    }).catch(err => log.external("cache.invalidate.error", { scope: "likes", err: String(err) }));
+    // 点赞不再失效页面缓存：/content/** 是整组匹配，一个赞会清掉全部文章页 ISR，
+    // 下一个访问者就要重跑 Shiki 全量渲染（30 分钟 ISR 形同虚设）。点赞数展示的正确性
+    // 由客户端兜底：详情页挂载时 refreshLike() 拉实时数，列表角标滞后 ≤1 个 ISR 窗口（虚荣数字可接受）。
+    // /api/likes/counts 无服务端缓存（仅后台带 ?t= 破缓存调用），无需失效。
 
     return payload;
   } catch (error) {

@@ -4,6 +4,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
 import { validateSettingsData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { invalidateSiteSettingsCache } from "#server/utils/siteSettings";
 import { siteConfig } from "~~/site.config";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -108,7 +109,8 @@ export default defineEventHandler(async event => {
       }
     });
 
-    // 站点设置变更 → 影响全站（header/footer/文案/链接数等），清空全部 ISR 页面缓存
+    // 站点设置变更 → 影响全站（header/footer/文案/链接数等），清空全部 ISR 页面缓存 + 进程内设置缓存
+    invalidateSiteSettingsCache();
     void invalidateContentCaches().catch(err => console.error("[cache] 站点设置失效缓存失败", err));
 
     await logAdminAudit({

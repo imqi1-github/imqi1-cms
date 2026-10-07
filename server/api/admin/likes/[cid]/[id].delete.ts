@@ -1,7 +1,6 @@
 import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
-import { invalidateContentCaches } from "#server/utils/content-cache";
 import { logAdminAudit } from "#server/utils/audit";
 import { CSRF_HEADER } from "#shared/constants";
 
@@ -45,10 +44,8 @@ export default defineEventHandler(async event => {
 
     await prisma.likes.delete({ where: { id } });
 
-    // 失效相关 ISR：列表页（点赞数变了）+ 文章详情 + likes/counts 批量接口
-    void invalidateContentCaches({
-      routes: ["/", "/archiving", "/category/**", "/tag/**", "/content/**", "/api/likes/counts"],
-    }).catch(err => console.error("[cache] 删除点赞失效缓存失败", err));
+    // 同 likes/[cid].post：不再失效页面缓存（整组 /content/** 清空会逼出 Shiki 全量重渲染），
+    // 前台数字由详情页挂载刷新 / 列表角标 ISR 窗口内收敛；后台数字本接口 no-store 实时。
 
     logAdminAudit({
       actor: { uid: user.uid, name: user.name },

@@ -3,6 +3,7 @@ import { buildUrlKeys, hasSharedUrlKey } from "#server/utils/cover-keys";
 import { renderMarkdown } from "#server/utils/markdown";
 import { parseCovers } from "#server/utils/covers";
 import { normalizeAttachmentMetadata } from "#server/utils/attachmentMetadata";
+import { getCachedRender, setCachedRender } from "#server/utils/render-cache";
 
 export default defineEventHandler(async event => {
   try {
@@ -157,7 +158,13 @@ export default defineEventHandler(async event => {
     });
 
     // 在服务端渲染 Markdown 内容
-    const renderedContent = content.content ? await renderMarkdown(content.content) : "";
+    // 渲染缓存（见 utils/render-cache）：编辑/自动保存都会推进 update_time，旧 key 自然失效
+    const renderKey = `${content.cid}:${content.update_time.getTime()}`;
+    let renderedContent = getCachedRender(renderKey);
+    if (renderedContent === null) {
+      renderedContent = content.content ? await renderMarkdown(content.content) : "";
+      if (content.content) setCachedRender(renderKey, renderedContent);
+    }
 
     return {
       success: true,

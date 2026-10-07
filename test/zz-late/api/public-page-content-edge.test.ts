@@ -43,8 +43,8 @@ beforeEach(() => {
   );
   contentRows.length = 0;
   contentRows.push(
-    { cid: 100, slug: "post-a", title: "文A", status: 1, type: 0, desc: "d", covers: "[]", content: "正文 A", create_time: new Date(Date.UTC(2026, 2, 10)) },
-    { cid: 101, slug: "post-b", title: "文B", status: 0, type: 0, desc: null, covers: "[]", content: "正文 B", create_time: new Date(Date.UTC(2026, 2, 11)) },
+    { cid: 100, slug: "post-a", title: "文A", status: 1, type: 0, desc: "d", covers: "[]", content: "正文 A", create_time: new Date(Date.UTC(2026, 2, 10)), update_time: new Date(Date.UTC(2026, 2, 10)) },
+    { cid: 101, slug: "post-b", title: "文B", status: 0, type: 0, desc: null, covers: "[]", content: "正文 B", create_time: new Date(Date.UTC(2026, 2, 11)), update_time: new Date(Date.UTC(2026, 2, 11)) },
   );
 });
 

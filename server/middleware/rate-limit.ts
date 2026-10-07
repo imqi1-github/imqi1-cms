@@ -43,6 +43,8 @@ const RULES: RateRule[] = [
   { method: "GET", prefix: "/api/captcha/", limit: 10, windowSec: 60, keyHint: "captcha:get" },
   // 搜索：每分钟 30 次（防扫）
   { method: "GET", prefix: "/api/search", limit: 30, windowSec: 60, keyHint: "search:get" },
+  // 仓库卡片代理：回源 GitHub/Gitee 配额全站共享，防借道刷爆（缓存 24h，正常流量打不到上游）
+  { method: "GET", prefix: "/api/repo", limit: 30, windowSec: 60, keyHint: "repo:get" },
   // 友链申请：每小时 3 次（防 spam）
   { method: "POST", prefix: "/api/links", limit: 3, windowSec: 3600, keyHint: "links:apply" },
   // 邮件相关：每小时 10 次（防发件耗尽）

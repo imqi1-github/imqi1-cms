@@ -43,8 +43,27 @@ function sanitizePublicSettings(settings: MutableSettings): SiteSettings {
  * handler(server/api/site.get.ts) 与 SSR 预取插件共用本函数，
  * 直连数据库、不经过 HTTP，避免 SSR 时"自己 fetch 自己"的往返。
  * DB 异常时回退到默认值（与原 handler 行为一致）。
+ *
+ * 进程内短缓存：每次页面渲染都会走到这里，而公共设置变更频率极低——
+ * TTL 兜底 + settings.post 保存成功后 invalidateSiteSettingsCache() 主动失效。
  */
+const SETTINGS_CACHE_TTL_MS = 30_000;
+let settingsCache: { at: number; value: SiteSettings } | null = null;
+
+export function invalidateSiteSettingsCache(): void {
+  settingsCache = null;
+}
+
 export async function getSiteSettings(): Promise<SiteSettings> {
+  if (settingsCache && Date.now() - settingsCache.at < SETTINGS_CACHE_TTL_MS) {
+    return settingsCache.value;
+  }
+  const result = await loadSiteSettings();
+  settingsCache = { at: Date.now(), value: result };
+  return result;
+}
+
+async function loadSiteSettings(): Promise<SiteSettings> {
   try {
     const meta = (await prisma.informations.findMany({
       where: {

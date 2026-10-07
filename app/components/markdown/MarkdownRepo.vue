@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 
 import type { RepoData } from "~/types/components/markdown-repo";
+import type { RepoResponse } from "~/types/apis/repo";
 
 // 仓库卡片：服务端渲染为 .markdown-repo-wrapper 占位，客户端组件化挂载并自管 fetch。
 const props = defineProps<{ url: string }>();
@@ -105,18 +106,21 @@ onMounted(async () => {
     return;
   }
 
-  // 2. 缓存缺失/过期 → 请求 API;成功则回写缓存
+  // 2. 缓存缺失/过期 → 走本站代理(服务端 24h 共享缓存,回源 GitHub/Gitee);成功则回写本地缓存
   try {
-    const apiUrl = p === "github"
-      ? `https://api.github.com/repos/${owner}/${repo}`
-      : `https://gitee.com/api/v5/repos/${owner}/${repo}`;
-    const response = await fetch(apiUrl);
-    if (!response.ok) throw new Error("Failed to fetch repo data");
-    data.value = (await response.json()) as RepoData;
+    const res = await $fetch<RepoResponse>("/api/repo", { query: { p, owner, repo } });
+    if (!res.success) throw new Error("bad response");
+    data.value = {
+      full_name: res.data.fullName,
+      description: res.data.description,
+      language: res.data.language,
+      stargazers_count: res.data.stars,
+      forks_count: res.data.forks,
+    };
     state.value = "ok";
     writeCache(p, owner, repo, data.value);
   } catch {
-    // 3. 请求失败(403 限流/网络)→ 有旧缓存就兜底展示,否则报错
+    // 3. 请求失败(代理限流/上游 404/网络)→ 有旧缓存就兜底展示,否则报错
     if (cached) {
       data.value = cached.data;
       state.value = "ok";

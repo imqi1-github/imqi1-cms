@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
+// getSiteSettings 有进程内短缓存:同用例内改 settings 后须手动失效再断言
+const { invalidateSiteSettingsCache } = await import("#server/utils/siteSettings");
+
 mockSharedPrisma();
 
 let commentsEnabled = true;
@@ -79,6 +82,8 @@ beforeEach(() => {
   auditConclusion = "合规";
   auditConclusionType = 1;
   settings = { commentRequireMail: false, commentRequireLink: false, commentAvatarService: "gravatar" };
+  // getSiteSettings 进程内短缓存:每个用例前失效,保持「每次调用读 fake」语义
+  invalidateSiteSettingsCache();
   infoMap = new Map([["commentInterval", "0"], ["commentModeration", "false"]]);
   // commentRequireMail/Link 由 siteSettings 从 informations 读;用假数据控制
   sharedFake.on("informations", "findMany", async () => [
@@ -140,9 +145,11 @@ describe("mini/comments.post", () => {
 
   test("必填邮箱/链接(跟随主站设置)→ 400", async () => {
     settings = { commentRequireMail: true, commentRequireLink: false, commentAvatarService: "gravatar" };
+    invalidateSiteSettingsCache();
     await expect(postHandler(postEv("10.9.10.9", { cid: 10, content: "x", name: "n" }))).rejects.toMatchObject({ statusCode: 400, message: "请填写邮箱" });
 
     settings = { commentRequireMail: false, commentRequireLink: true, commentAvatarService: "gravatar" };
+    invalidateSiteSettingsCache();
     await expect(postHandler(postEv("10.9.10.10", { cid: 10, content: "x", name: "n" }))).rejects.toMatchObject({ statusCode: 400, message: "请填写链接" });
   });
 

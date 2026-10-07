@@ -676,6 +676,12 @@ export default defineNuxtConfig({
           "/feed/**": {
             cache: { maxAge: 300, base: "redis" },
           },
+
+          // 热力图聚合（全量文章+已审核评论按天聚合）：60s 服务端缓存，
+          // query 进 cache key，分类/标签筛选组合各自独立；数据滞后 ≤1 分钟可接受
+          "/api/heatmap": {
+            cache: { maxAge: 60, base: "redis" },
+          },
         }
       : {}),
 
