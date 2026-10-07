@@ -14,7 +14,7 @@
  *     是全部工具里唯一非 readOnly 的）外，其余工具一律 readOnlyHint:true。
  */
 import { timingSafeEqual } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { McpServer } from "@modelcontextprotocol/server";
@@ -25,7 +25,7 @@ import { z } from "zod";
 import { prisma } from "./prisma";
 import { markdownToPlainText } from "./markdownToPlainText";
 import { redis } from "./redis";
-import { dateKey, LOG_DIR_RESOLVED, log } from "./log";
+import { dateKey, dayShardFiles, LOG_DIR_RESOLVED, log } from "./log";
 import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
 import { detectDocker, getBuildHash } from "./runtime-info";
 
@@ -838,7 +838,7 @@ function registerOpsTools(server: McpServer): void {
   server.registerTool(
     "get_recent_logs",
     {
-      description: `【运维】读站点结构化日志（logs/<类别>/<日期>.log）的末尾若干行，可按级别过滤。排查报错、限流命中、外部服务失败。类别：${LOG_CATEGORIES.join(" / ")}。`,
+      description: `【运维】读站点结构化日志（logs/<类别>/<日期>.log，含大小切分分片、自动合并全天）的末尾若干行，可按级别过滤。排查报错、限流命中、外部服务失败。类别：${LOG_CATEGORIES.join(" / ")}。`,
       inputSchema: z.object({
         token: opsTokenSchema,
         category: z.string().min(1).default("app").describe("日志类别（见工具描述里的列表）"),
@@ -855,12 +855,23 @@ function registerOpsTools(server: McpServer): void {
 
         // category 过白名单、date 被正则限定，拼接不会穿越出 LOG_DIR
         const day = date ?? dateKey();
-        const file = join(LOG_DIR_RESOLVED, category, `${day}.log`);
-        let all: string[];
+        const dir = join(LOG_DIR_RESOLVED, category);
+        // 开启大小切分后一天可能有多个分片（{day}.log、{day}.1.log…），按序号升序合并
+        let shards: string[];
         try {
-          all = (await readFile(file, "utf8")).split("\n").filter(line => line.length > 0);
+          shards = dayShardFiles(day, await readdir(dir));
         } catch {
+          shards = [];
+        }
+        if (shards.length === 0) {
           return opsText({ category, date: day, level, totalLines: 0, returnedLines: 0, lines: [], note: "该类别当日无日志文件" });
+        }
+        const all: string[] = [];
+        for (const name of shards) {
+          const text = await readFile(join(dir, name), "utf8");
+          for (const l of text.split("\n")) {
+            if (l.length > 0) all.push(l);
+          }
         }
 
         const filtered = level === "all" ? all : all.filter(line => line.includes(`[${level.toUpperCase()}]`));
@@ -869,7 +880,7 @@ function registerOpsTools(server: McpServer): void {
         while (picked.length > 1 && picked.reduce((n, line) => n + line.length, 0) > OPS_LOG_MAX_CHARS) {
           picked.shift();
         }
-        return opsText({ category, date: day, level, totalLines: filtered.length, returnedLines: picked.length, lines: picked });
+        return opsText({ category, date: day, level, shards, totalLines: filtered.length, returnedLines: picked.length, lines: picked });
       });
     },
   );

@@ -7,7 +7,7 @@
  * 2. 构建时需要的值（PWA manifest、CSP、SEO meta）
  * 3. 统一的 SEO 文案，避免各页面不一致
  *
- * 按六个区组织：站点基础设置 / 构建 / 安全 / SEO / 页面 / 功能（类型见 `lib/site-config.ts`）。
+ * 按七个区组织：站点基础设置 / 构建 / 安全 / SEO / 页面 / 功能 / 日志（类型见 `lib/site-config.ts`）。
  *
  * @example
  * ```ts
@@ -228,6 +228,26 @@ export const siteConfig = defineSiteConfig({
     amap: {
       proxy: true,
       entry: true,
+    },
+  },
+
+  // ==================== 日志 ====================
+  logs: {
+    file: true,
+    dir: "./logs",
+    lineFormat: "{ts} [{tag}] [{level}] {msg}{kv}",
+    maxFileSizeMb: 20,
+    retentionDays: 90,
+    categories: {
+      access: true,
+      audit: true,
+      auth: true,
+      external: true,
+      cache: true,
+      ratelimit: true,
+      cron: true,
+      monitor: true,
+      app: true,
     },
   },
 });

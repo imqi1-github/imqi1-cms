@@ -2,26 +2,30 @@
  * 轻量结构化日志：分类标签 + ISO 时间戳 + 自由字段，**双写到 console + 文件**。
  *
  * 文件落地结构（用户约定）：
- *   - 根目录由 `LOG_DIR` 环境变量控制，默认 `./logs/`
+ *   - 根目录默认取 site.config `logs.dir`，`LOG_DIR` 环境变量优先（Docker 挂卷 / 测试指 tmpdir）
  *   - **每类别一个子目录、子目录内每天一个文件**：`logs/access/2026-05-10.log`
  *     —— 与历史 mail.ts 的 `logs/mail/{date}.log` 习惯一致；按天分文件便于归档 + logrotate
+ *   - **单文件超过 site.config `logs.maxFileSizeMb` 后切分**：`{date}.1.log`、`{date}.2.log`…
+ *     防单日日志爆量撑爆磁盘；分片序号记录在内存，进程重启后 stat 接续
+ *   - 超过 site.config `logs.retentionDays` 的旧文件在新的一天首次写入时顺手清理
  *   - 子目录名为英文 category（windows/工具链对中文路径友好性差）
- *   - **行内标签用中文**（如 `[访问] [请求]`）让现场排障可读性更高
+ *   - **行内标签用中文**（如 `[访问] [请求]`）让现场排障可读性更高；行格式见 site.config `logs.lineFormat`
  *   - msg / kv 内容由调用方决定（保持原有英文 / 中文自由）
  *
  * 设计：
  *   - 文件落地：**best-effort**，appendFile 失败仅 console.error，不抛（避免日志本身再抛造成无限循环）
  *   - **console 同步打 + 文件异步追加**：调试期到终端看，部署期重定向 stdout 或扫 logs/* 离线分析
- *   - 环境变量 `LOG_DIR` 覆盖默认 `./logs`，与 docker-compose 的 `${LOGS_DIR}` 挂卷对应
+ *   - 总开关 / 分类开关在 site.config `logs`：关闭的只打 console 不落盘
+ *   - 同类别写入按 promise 链串行：切分判定 / 序号推进 / 字节数统计不并发竞态，行序也稳定
  *   - 不引入 log 库（pino/winston），用户明确不要复杂日志
  */
-import { appendFile, mkdir } from "node:fs/promises";
+import { appendFile, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-import { LOG_LINE_FORMAT, LOG_TAG_LABELS } from "#shared/constants";
+import { siteConfig } from "~~/site.config";
+import { LOG_TAG_LABELS } from "#shared/constants";
 
-const DEFAULT_LOG_DIR = "./logs";
-const LOG_DIR = resolve(process.env.LOG_DIR || DEFAULT_LOG_DIR);
+const LOG_DIR = resolve(process.env.LOG_DIR || siteConfig.logs.dir || "./logs");
 
 /** 时间戳：YYYY-MM-DD HH:mm:ss.SSS，用本地时区（dev 走主机时区、prod 容器 UTC 时显示容器时间）。
  * 不引入 LOG_TIMEZONE 等额外环境变量 —— 项目内只用 LOG_DIR 一项配置日志路径。
@@ -36,6 +40,27 @@ function fmtTs(d: Date = new Date()): string {
 export function dateKey(d: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** 分片文件名：seq 0 = `{date}.log`（兼容无切分的历史命名），之后 `{date}.{seq}.log` */
+function shardName(date: string, seq: number): string {
+  return seq === 0 ? `${date}.log` : `${date}.${seq}.log`;
+}
+
+/** 文件名 → 当天分片序号；不是该天的文件返回 -1 */
+function shardSeq(date: string, name: string): number {
+  if (name === `${date}.log`) return 0;
+  const m = new RegExp(`^${date}\\.(\\d+)\\.log$`).exec(name);
+  return m ? Number(m[1]) : -1;
+}
+
+/** 从目录文件名列表挑出某天的分片并按序号升序返回（MCP get_recent_logs 合并全天日志用） */
+export function dayShardFiles(day: string, names: string[]): string[] {
+  return names
+    .map(name => ({ name, seq: shardSeq(day, name) }))
+    .filter(s => s.seq >= 0)
+    .sort((a, b) => a.seq - b.seq)
+    .map(s => s.name);
 }
 
 function stringifyFields(fields?: Record<string, unknown>): string {
@@ -66,19 +91,99 @@ async function ensureDir(dir: string): Promise<void> {
   await p;
 }
 
+/** 每类别写入状态：当天日期 + 分片序号 + 当前分片近似字节数（免每行 stat） */
+interface CategoryState {
+  date: string;
+  seq: number;
+  size: number;
+}
+const writeState = new Map<string, CategoryState>();
+
+/** 同类别写入串行链：appendLine 逐个接力，writeChains 恒存「最近一次写完」的 promise */
+const writeChains = new Map<string, Promise<void>>();
+
+/** 等待全部已入队写入完成（测试 / 优雅退出 flush 用） */
+export function flushLogWrites(): Promise<void> {
+  return Promise.allSettled([...writeChains.values()]).then(() => undefined);
+}
+
+function maxSizeBytes(): number {
+  const mb = siteConfig.logs.maxFileSizeMb;
+  return mb > 0 ? mb * 1024 * 1024 : Number.POSITIVE_INFINITY;
+}
+
+/** 总开关 + 分类开关；未知类别默认放行（新增分类没来得及配开关时不能静默丢日志） */
+function fileEnabled(category: string): boolean {
+  if (!siteConfig.logs.file) return false;
+  const on: boolean | undefined = siteConfig.logs.categories[category as keyof typeof siteConfig.logs.categories];
+  return on !== false;
+}
+
+/** 清理超过保留天数的分片（文件名前缀即日期）；retentionDays 0 = 永久保留 */
+async function cleanExpired(category: string, names: string[]): Promise<void> {
+  const days = siteConfig.logs.retentionDays;
+  if (days <= 0) return;
+  const cutoff = Date.now() - days * 86400_000;
+  await Promise.all(
+    names.map(async name => {
+      if (!/^\d{4}-\d{2}-\d{2}/.test(name)) return;
+      const d = Date.parse(`${name.slice(0, 10)}T00:00:00`);
+      if (!Number.isNaN(d) && d < cutoff) {
+        await rm(join(LOG_DIR, category, name), { force: true }).catch(() => undefined);
+      }
+    }),
+  );
+}
+
+/** 新的一天（或进程首写）初始化分片状态：stat 接续已有分片追加而不是另起 seq，并顺手清理过期文件 */
+async function initState(category: string, day: string): Promise<CategoryState> {
+  const dir = join(LOG_DIR, category);
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return { date: day, seq: 0, size: 0 };
+  }
+  await cleanExpired(category, names);
+  const shards = dayShardFiles(day, names);
+  if (shards.length === 0) return { date: day, seq: 0, size: 0 };
+  const last = shards[shards.length - 1]!;
+  try {
+    return { date: day, seq: shardSeq(day, last), size: (await stat(join(dir, last))).size };
+  } catch {
+    return { date: day, seq: shardSeq(day, last), size: 0 };
+  }
+}
+
 /**
- * 把一行日志写到 `{LOG_DIR}/{category}/{date}.log`。
+ * 把一行日志追加进 `{LOG_DIR}/{category}/` 当天分片；同类别经 promise 链串行。
  * 失败 → console.error，不抛。
  */
-async function writeLogFile(category: string, line: string): Promise<void> {
-  const dir = join(LOG_DIR, category);
-  const file = join(dir, `${dateKey()}.log`);
+async function appendLine(category: string, line: string): Promise<void> {
   try {
+    const day = dateKey();
+    let st = writeState.get(category);
+    if (!st || st.date !== day) {
+      st = await initState(category, day);
+      writeState.set(category, st);
+    }
+    if (st.size > 0 && st.size >= maxSizeBytes()) {
+      st.seq += 1;
+      st.size = 0;
+    }
+    const dir = join(LOG_DIR, category);
     await ensureDir(dir);
-    await appendFile(file, line + "\n", "utf8");
+    await appendFile(join(dir, shardName(day, st.seq)), line + "\n", "utf8");
+    st.size += Buffer.byteLength(line, "utf8") + 1;
   } catch (error) {
     console.error(`[log] 写日志文件失败 (${category}):`, error instanceof Error ? error.message : String(error));
   }
+}
+
+function writeLogFile(category: string, line: string): Promise<void> {
+  const next = (writeChains.get(category) ?? Promise.resolve()).catch(() => undefined).then(() => appendLine(category, line));
+  writeChains.set(category, next.catch(() => undefined));
+  return next;
 }
 
 /**
@@ -120,7 +225,7 @@ interface EmitOptions {
 function emit(category: string, opts: EmitOptions): void {
   const ts = fmtTs();
   const kv = stringifyFields(opts.fields);
-  const line = LOG_LINE_FORMAT.replace("{ts}", ts)
+  const line = siteConfig.logs.lineFormat.replace("{ts}", ts)
     .replace("{tag}", labelOf(opts.tag))
     .replace("{level}", opts.level.toUpperCase())
     .replace("{msg}", opts.msg)
@@ -130,7 +235,7 @@ function emit(category: string, opts: EmitOptions): void {
   else if (opts.level === "warn") console.warn(line);
   else console.log(line);
 
-  void writeLogFile(category, line);
+  if (fileEnabled(category)) void writeLogFile(category, line);
 }
 
 /**

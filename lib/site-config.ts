@@ -4,13 +4,13 @@
  * 此文件存放 {@link SiteConfig} 接口与 {@link defineSiteConfig} 类型守卫函数，
  * 供 `site.config.ts` 引用。将类型与实现分离，让 `site.config.ts` 只保留纯配置值。
  *
- * 配置按六个区组织：站点基础设置 / 构建 / 安全 / SEO / 页面 / 功能。
+ * 配置按七个区组织：站点基础设置 / 构建 / 安全 / SEO / 页面 / 功能 / 日志。
  *
  * @module lib/site-config
  */
 
 /**
- * 站点配置类型定义（六个区）
+ * 站点配置类型定义（七个区）
  *
  * 修改此处字段会同步触发所有引用处的 TypeScript 类型检查。
  */
@@ -27,6 +27,8 @@ export interface SiteConfig {
   pages: SitePagesConfig;
   /** 功能开关 */
   features: SiteFeaturesConfig;
+  /** 日志：文件开关、目录、行格式、大小切分、保留清理与分类开关（server/utils/log.ts 消费） */
+  logs: SiteLogsConfig;
 }
 
 // ==================== 站点基础设置 ====================
@@ -268,6 +270,58 @@ export interface AmapConfig {
   proxy: boolean;
   /** 是否在订阅页 / 友链页 / 首页 / 留言板 / 关于页展示指向地图页的入口胶囊；未配好高德 apikey 时置 false 以免死链 */
   entry: boolean;
+}
+
+// ==================== 日志 ====================
+
+/**
+ * 日志配置（server/utils/log.ts 消费）
+ *
+ * 目录、开关、切分与保留都在此处集中管理；`LOG_DIR` 环境变量仍可覆盖 `dir`（Docker 挂卷 / 测试指向 tmpdir）。
+ */
+export interface SiteLogsConfig {
+  /** 文件日志总开关：false 时所有日志只打 console 不落盘 */
+  file: boolean;
+  /** 日志根目录（每类别一个子目录、每天一个文件）；`LOG_DIR` 环境变量优先于此值 */
+  dir: string;
+  /**
+   * 文件行格式。占位符：
+   *   {ts}    —— ISO 时间（毫秒精度）
+   *   {tag}   —— 分类标签（中文 display：访问/审计/认证/外部/缓存/限流/任务/监控/应用）
+   *   {level} —— INFO / WARN / ERROR（英文，兼容 logrotate/grok 等常用解析器）
+   *   {msg}   —— 短消息
+   *   {caller}—— "file:line"（可选；只有 logWithCaller() 会带，普通 log.*() 输出 ":-"）
+   *   {kv}    —— k=v k2=v2 ... 字符串（field 为空时包含空格 / 换行 → JSON.stringify）
+   */
+  lineFormat: string;
+  /** 单个日志文件大小上限（MB），超出后切分为 {date}.1.log、{date}.2.log…；≤0 视为不切分 */
+  maxFileSizeMb: number;
+  /** 每类别日志保留天数，新的一天首次写入时清理过期文件；0 = 永久保留 */
+  retentionDays: number;
+  /** 分类落盘开关（键 = logs/<类别>/ 子目录名，须与 shared/constants.ts LOG_TAG_LABELS 一致）：false 的类别只打 console 不落盘 */
+  categories: LogCategoriesConfig;
+}
+
+/** 日志分类落盘开关集（site.config.ts logs.categories） */
+export interface LogCategoriesConfig {
+  /** 每个 API 请求 1 行（访问日志，量最大，磁盘紧张时第一个关它） */
+  access: boolean;
+  /** 管理操作审计（后台增删改、登录等敏感动作留痕） */
+  audit: boolean;
+  /** 认证事件（登录/登出/2FA/会话） */
+  auth: boolean;
+  /** 第三方服务调用（mail/cos/github/amap/captcha） */
+  external: boolean;
+  /** ISR 缓存失效记录 */
+  cache: boolean;
+  /** 限流命中（warn 级） */
+  ratelimit: boolean;
+  /** 定时任务（定时发布扫描等） */
+  cron: boolean;
+  /** 错误监控自身（异常入站 + 邮件发送结果） */
+  monitor: boolean;
+  /** 通用兜底——没有合适分类时的日志，建议保持开启 */
+  app: boolean;
 }
 
 /**

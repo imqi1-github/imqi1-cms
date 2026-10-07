@@ -134,22 +134,11 @@ export const PRISMA_NOT_FOUND_CODE = "P2025";
 // ==================== 日志格式 ====================
 
 /**
- * 文件落地日志格式：`YYYY-MM-DD HH:mm:ss.SSS [TAG] [LEVEL] msg k=v k2="v with spaces"`。
- *
- * 占位符：
- *   {ts}    —— ISO 时间（毫秒精度）
- *   {tag}   —— 分类标签（中文 display：访问/审计/认证/外部/缓存/限流/任务/监控/应用）
- *   {level} —— INFO / WARN / ERROR（英文，兼容 logrotate/grok 等常用解析器）
- *   {msg}   —— 短消息
- *   {caller}—— "file:line"（可选；只有 logWithCaller() 会带，普通 log.*() 输出 ":-"）
- *   {kv}    —— k=v k2=v2 ... 字符串（field 为空时包含空格 / 换行 → JSON.stringify）
- */
-export const LOG_LINE_FORMAT = "{ts} [{tag}] [{level}] {msg}{kv}";
-
-/**
  * 日志分类 → 中文标签（用于 {tag} 占位 + file 行内容）。
  * 目录名仍用英文 category（避免中文路径在 windows/工具链兼容问题），
  * 行内标签用中文让现场可读性更高。
+ * 行格式本身（LOG_LINE_FORMAT）已迁至 site.config.ts 的 logs.lineFormat；
+ * 这里的键同时是 logs.categories 的合法键与 MCP get_recent_logs 的类别白名单。
  */
 export const LOG_TAG_LABELS: Record<string, string> = {
   access: "访问",
