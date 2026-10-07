@@ -1,5 +1,6 @@
 import { prisma, isPrismaNotFoundError, isPrismaUniqueConstraintError } from "#server/utils/prisma";
 import { computeLikeFingerprint, isLikeRateLimited } from "#server/utils/likes";
+import { getClientIp } from "#server/utils/client-ip";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { log } from "#server/utils/log";
 import type { LikeToggleResponse } from "#server/types/apis/content/likes";
@@ -23,7 +24,8 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 400, message: "文章 ID 非法" });
   }
 
-  const ip = (event.context.clientAddress || "").toString().slice(0, 45) || null;
+  // 与 fingerprint 同源（吃 TRUSTED_PROXY），否则反代下落库成网关 IP，审计无从反查
+  const ip = getClientIp(event);
   const ua = (event.node.req.headers["user-agent"] || "").toString().slice(0, 255) || null;
   const fingerprint = computeLikeFingerprint(event);
 
