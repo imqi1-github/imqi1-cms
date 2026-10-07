@@ -93,7 +93,7 @@ function buildSvg(text: string): string {
   const width = 160;
   const height = 50;
 
-  // 字符间距 18px(原 28):5 字符总宽 ~90px,字与字重叠以增加打码难度
+  // 字符间距 24px(原 28):4 字符总宽 ~96px,字形紧凑增加打码难度
   // 旋转 ±35°(原 ±25):更强扭曲,人眼仍能读但 OCR 模型识别率明显下降
   // 字体大小变化 ±10(原 ±7):字符高度差异更大,打码时字符分割更困难
   const chars = text

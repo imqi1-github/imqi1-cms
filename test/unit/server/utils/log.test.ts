@@ -81,6 +81,17 @@ describe("大小切分", () => {
   });
 });
 
+describe("行内容写入", () => {
+  test("回归:msg/kv 含 $& $' 等替换模式 → 原样落盘不被展开", async () => {
+    // 字符串形式 replace 会把值里的 $& 展开成被匹配的占位符,破坏日志行;函数形式原样
+    log.app("修复$&占位$'测试", { path: "/api/x$&y" });
+    await flushLogWrites();
+    const text = await readFile(join(LOGS_DIR_RESOLVED, "app", `${dateKey()}.log`), "utf8");
+    expect(text).toContain("修复$&占位$'测试");
+    expect(text).toContain("path=/api/x$&y");
+  });
+});
+
 describe("保留清理", () => {
   test("超 retentionDays 的旧日志在新的一天首写时清理，当日分片保留", async () => {
     siteConfig.logs.retentionDays = 30;

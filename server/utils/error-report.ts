@@ -52,8 +52,13 @@ export async function reportError(input: ErrorReportInput): Promise<ErrorReportR
     try {
       const key = `error:notify:${fingerprint(input)}`;
       const recent = await redis.incr(key);
-      if (recent === 1) await redis.expire(key, NOTIFY_DEDUPE_WINDOW_SEC);
-      if (recent > 1) suppressed = true;
+      if (recent === 1) {
+        await redis.expire(key, NOTIFY_DEDUPE_WINDOW_SEC);
+      } else {
+        // 自愈：INCR 与 EXPIRE 之间崩溃会留下无 TTL 键 → 该类错误永久静音，补上窗口
+        if ((await redis.ttl(key)) === -1) await redis.expire(key, NOTIFY_DEDUPE_WINDOW_SEC);
+        suppressed = true;
+      }
     } catch (error) {
       console.error("[error-report] 抑制检查失败:", error);
     }

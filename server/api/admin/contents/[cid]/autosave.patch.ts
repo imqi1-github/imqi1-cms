@@ -40,6 +40,19 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    // 仅草稿可云同步：已发布内容改动须走全量 PUT（带 ISR 失效），
+    // 否则半成品正文覆盖线上且缓存不失效，缓存过期后无声上线
+    const existing = await prisma.contents.findFirst({
+      where: { cid },
+      select: { status: true },
+    });
+    if (!existing) {
+      throw createError({ statusCode: 404, message: "文章不存在" });
+    }
+    if (existing.status !== 0) {
+      throw createError({ statusCode: 409, message: "仅草稿支持云端自动保存，已发布内容请手动保存" });
+    }
+
     const updated = await prisma.contents.update({
       where: { cid },
       data: {

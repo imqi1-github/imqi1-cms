@@ -27,6 +27,28 @@ function cdata(text: string): string {
   return text.replace(/]]>/g, "]]]]><![CDATA[>");
 }
 
+// 评论侧内容降为纯文本：入库的评论是 DOMPurify 白名单后的 HTML（p/br/a/img…），
+// 阅读器把 description 当 HTML 渲染时白名单内的 <img src> 可做跟踪像素、个别阅读器
+// 标题按 HTML 渲染有残余 XSS 面。去标签 + 一次性解码实体（非递归，防 &amp;lt; 二次解码）。
+const ENTITY_MAP: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&apos;": "'",
+  "&nbsp;": " ",
+};
+
+export function htmlToPlainText(s: string): string {
+  return s
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div)>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(amp|lt|gt|quot|#39|apos|nbsp);/g, m => ENTITY_MAP[m] ?? m)
+    .trim();
+}
+
 // 封面 URL 扩展名 → MIME 类型（media:content type 属性），未知兜底 image/jpeg。
 export function imageMimeType(url: string): string {
   const ext = (url.split(/[?#]/)[0]?.match(/\.([a-z0-9]+)$/i)?.[1] ?? "").toLowerCase();
@@ -121,8 +143,11 @@ export function buildContentRssItem(input: ContentRssItemInput, baseUrl: string)
   const coverTitle = cover?.desc?.trim() ?? "";
   // coverUrl 去掉 #live 等 mock 片段，保证给阅读器的封面地址干净可抓取
   const coverUrl = (cover?.url ?? "").split("#")[0] ?? "";
+  // width/height 强转数字再入属性：covers JSON 由站主维护，字符串值（含引号）会破坏 XML 结构
+  const w = Number(cover?.width);
+  const h = Number(cover?.height);
   const mediaContent = cover && !isVideoCover
-    ? `<media:content url="${escapeXml(coverUrl)}" type="${imageMimeType(coverUrl)}" medium="image" isDefault="true"${cover.width ? ` width="${cover.width}"` : ""}${cover.height ? ` height="${cover.height}"` : ""}${coverTitle ? ` title="${escapeXml(coverTitle)}"` : ""} />`
+    ? `<media:content url="${escapeXml(coverUrl)}" type="${imageMimeType(coverUrl)}" medium="image" isDefault="true"${Number.isFinite(w) && w > 0 ? ` width="${Math.round(w)}"` : ""}${Number.isFinite(h) && h > 0 ? ` height="${Math.round(h)}"` : ""}${coverTitle ? ` title="${escapeXml(coverTitle)}"` : ""} />`
     : "";
 
   return `
@@ -156,12 +181,14 @@ export function buildCommentRssItem(input: CommentRssItemInput, baseUrl: string)
   const resolvedSlug = contentSlug ?? String(cid);
   const commentUrl = `${baseUrl}/content/${categorySlug}/${resolvedSlug}#comment-${coid}`;
   const pubDate = new Date(create_time).toUTCString();
-  const title = `${name} 留言于《${contentTitle}》`;
+  // name/评论内容统一降纯文本（见 htmlToPlainText 注释），阅读器标题/描述不再见到白名单标签
+  const safeName = htmlToPlainText(name);
+  const title = `${safeName} 留言于《${contentTitle}》`;
   return `
     <item>
       <title><![CDATA[${cdata(title)}]]></title>
       <link>${escapeXml(commentUrl)}</link>
-      <description><![CDATA[${cdata(content)}]]></description>
+      <description><![CDATA[${cdata(htmlToPlainText(content))}]]></description>
       <guid isPermaLink="true">${escapeXml(commentUrl)}</guid>
       <pubDate>${pubDate}</pubDate>
     </item>`;

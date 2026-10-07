@@ -193,5 +193,5 @@ export function useEditorAutosave(opts: EditorAutosaveOptions) {
     }
   }
 
-  return { saveStatus, lastSavedAt, saveNow, markChanged, checkRecovery };
+  return { saveStatus, lastSavedAt, saveNow, markChanged, checkRecovery, refreshCsrf };
 }

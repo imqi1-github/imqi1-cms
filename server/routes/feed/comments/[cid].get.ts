@@ -42,6 +42,7 @@ export default defineEventHandler(async event => {
       prisma.comments.findMany({
         where: { cid, status: 1 },
         orderBy: { create_time: "desc" },
+        take: 200, // 上限防千评文章一次吐全量 XML
         select: {
           coid: true,
           cid: true,

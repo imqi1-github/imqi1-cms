@@ -547,11 +547,13 @@ export default defineNuxtConfig({
         // 这里递归扫 .output/server/node_modules/ 全树,把所有软链解成真实目录;
         // 解完再走进解出的目录继续扫(目标内部可能还有软链)。
         const { lstatSync, readlinkSync, rmSync } = await import("fs");
-        const derefAll = (dir: string): void => {
+        const { dirname, resolve } = await import("path");
+        const derefAll = (dir: string, depth = 0): void => {
           for (const ent of readdirSync(dir, { withFileTypes: true })) {
             const p = join(dir, ent.name);
             if (lstatSync(p).isSymbolicLink()) {
-              const target = readlinkSync(p);
+              // readlink 只给原始串：相对软链（如 ../foo）必须按链接所在目录解析，按 CWD 解会误判悬空
+              const target = resolve(dirname(p), readlinkSync(p));
               if (!existsSync(target)) {
                 console.warn(`⚠ 软链悬空 → ${p} -> ${target}`);
                 continue;
@@ -559,9 +561,10 @@ export default defineNuxtConfig({
               rmSync(p, { recursive: true, force: true });
               cpSync(target, p, { recursive: true });
               console.log(`✓ 软链解实目录 ${p.replace(process.cwd(), "")} (→ ${target.split(/[\\/]/).pop()})`);
-              derefAll(p);
+              // depth 只在解软链时递增：环必然经过软链边，普通目录层级不设限
+              if (depth < 10) derefAll(p, depth + 1);
             } else if (ent.isDirectory()) {
-              derefAll(p);
+              derefAll(p, depth);
             }
           }
         };
@@ -666,6 +669,12 @@ export default defineNuxtConfig({
           "/search": {
             isr: ISR_CACHE_SECONDS,
             cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
+          },
+
+          // Feed（RSS）：5 分钟缓存，防订阅器轮询每次全表扫 content 大字段；
+          // 新文章上线最多延迟 5 分钟出现在订阅端，可接受
+          "/feed/**": {
+            cache: { maxAge: 300, base: "redis" },
           },
         }
       : {}),

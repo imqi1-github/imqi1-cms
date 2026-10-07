@@ -592,6 +592,7 @@ const {
   saveNow,
   markChanged,
   checkRecovery,
+  refreshCsrf,
 } = useEditorAutosave({
   kind: "content",
   recoveryKey: () => `imqi1-draft:content:${contentId.value ?? "new"}`,
@@ -729,8 +730,10 @@ async function saveContent(source: "manual" | "autosave"): Promise<SaveResult> {
       manyCovers: manyCovers.value,
       covers: coversValue,
       showToc: showToc.value,
-      publishDate: publishDate.value,
-      scheduledAt: scheduledAt.value || null,
+      // datetime-local 裸串按解析方时区解释：必须先在浏览器转成绝对时刻（ISO），
+      // 否则 UTC 容器会把东八区填的时间当 UTC 存（发布时间/定时发布同理，晚 8 小时）
+      publishDate: publishDate.value ? new Date(publishDate.value).toISOString() : "",
+      scheduledAt: scheduledAt.value ? new Date(scheduledAt.value).toISOString() : null,
       csrfToken: csrfToken.value,
     };
 
@@ -905,7 +908,7 @@ onUnmounted(() => {
   if (cloudSyncTimer) clearInterval(cloudSyncTimer);
 });
 
-// 草稿云端同步：每 30s 把当前 content PATCH 到服务端（status 仍是 0，公开路由不渲染）
+// 草稿云端同步：每 30s 把当前 content PATCH 到服务端（仅 status=0 草稿，公开路由不渲染）
 // 与 useEditorAutosave 互补 —— 后者负责 Ctrl+S/2s 内的全量保存（含 title/tags/封面）；
 // 云端 PATCH 只同步正文，单条小请求、不带元数据，写作期间不影响其他字段。
 const CLOUD_SYNC_INTERVAL_MS = 30_000;
@@ -915,12 +918,16 @@ let lastCloudSyncContent = "";
 async function syncDraftToCloud() {
   if (!contentId.value) return;
   if (!import.meta.client) return;
+  // 仅草稿云同步：已发布内容改动走全量保存（PUT 带 ISR 失效），避免半成品上线
+  if (status.value !== "draft") return;
   if (cloudSyncing.value) return;
   // 内容未变更不重复发；空字符串也跳过（用户刚开页面/还没写）
   if (content.value === lastCloudSyncContent) return;
   cloudSyncing.value = true;
   cloudSyncError.value = null;
   try {
+    // csrf_token 1h 过期：长文写作超 1h 时先刷新再发，否则云端同步会静默 403 到手动保存为止
+    await refreshCsrf();
     await $fetch(`/api/admin/contents/${contentId.value}/autosave`, {
       method: "PATCH",
       body: { content: content.value, csrfToken: csrfToken.value },
@@ -928,7 +935,7 @@ async function syncDraftToCloud() {
     lastCloudSyncContent = content.value;
     cloudSyncedAt.value = Date.now();
   } catch (e) {
-    // 401/403 由 useEditorAutosave 处理；这里只标记通用错误，不打扰用户
+    // 401/403 的会话过期兜底由 useEditorAutosave 负责；这里只标记通用错误展示在侧栏
     cloudSyncError.value = e instanceof Error ? e.message : "云端同步失败";
   } finally {
     cloudSyncing.value = false;
@@ -1397,7 +1404,7 @@ watch(contentId, newCid => {
                 class="text-sm"
               />
               <p class="text-xs text-muted-foreground">
-                设置后，到点 cron 任务将自动发布；早于当前时间视为立即发布
+                设置后到点自动发布；保存时若时间已过则清除定时（立即上线需另选「已发布」）
               </p>
             </div>
 
@@ -1486,6 +1493,11 @@ watch(contentId, newCid => {
                 <span>登录已过期，内容已暂存本地</span>
                 <Button variant="outline" size="sm" class="h-6 text-xs" @click="saveNow('manual')">重试</Button>
               </div>
+              <!-- 云端同步指示：仅草稿模式触发，失败要可见（否则用户误以为稿子已同步） -->
+              <p v-if="cloudSyncError" class="text-destructive">云端同步失败：{{ cloudSyncError }}</p>
+              <p v-else-if="cloudSyncedAt && status === 'draft'" class="text-muted-foreground">
+                草稿已云同步 {{ formatSavedTime(cloudSyncedAt) }}
+              </p>
             </div>
             <Button variant="outline" class="w-full" size="lg" :disabled="!contentId" @click="openContent">
               <Icon name="lucide:eye" class="mr-2 size-4" />

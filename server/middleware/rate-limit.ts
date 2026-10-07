@@ -37,6 +37,8 @@ const RULES: RateRule[] = [
   // 点赞：单 IP 对每篇文章 5 分钟一次（与 likes.ts 内 Redis 限速互为冗余防护；
   // 这里是按 IP 维度统计，覆盖「同一访客点不同文章」的脚本行为）
   { method: "POST", prefix: "/api/contents/likes/", limit: 30, windowSec: 60, keyHint: "likes:post" },
+  // 点赞批量计数：不传 cids 时是全表聚合，防脚本刷库
+  { method: "GET", prefix: "/api/likes/counts", limit: 30, windowSec: 60, keyHint: "likes:counts" },
   // 验证码拉取：每分钟 10 张（防图形识别滥刷）
   { method: "GET", prefix: "/api/captcha/", limit: 10, windowSec: 60, keyHint: "captcha:get" },
   // 搜索：每分钟 30 次（防扫）

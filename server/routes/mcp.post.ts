@@ -44,18 +44,15 @@ function toWebHeaders(event: H3Event): Headers {
   return headers;
 }
 
-/** 把 h3 event 桥接成 Web Request（POST only） */
-async function eventToWebRequest(event: H3Event): Promise<Request> {
+/** 把 h3 event 桥接成 Web Request（POST only）。raw 由调用方预读，便于统一做 body 上限校验 */
+async function eventToWebRequest(event: H3Event, raw?: Buffer): Promise<Request> {
   const url = getRequestURL(event);
   const headers = toWebHeaders(event);
-  // encoding=false 拿 Buffer：绝不能走 "binary"/字符串解码——latin1 字符串再被 Request 按 UTF-8
-  // 编码就是双重编码，JSON 里的中文入参会变 mojibake（英文不受影响，曾致中文搜索恒 0 结果）
-  const raw = await readRawBody(event, false);
   const init: RequestInit = {
     method: "POST",
     headers,
   };
-  if (Buffer.isBuffer(raw) && raw.length > 0) {
+  if (raw && raw.length > 0) {
     init.body = new Uint8Array(raw);
   }
   return new Request(url.toString(), init);
@@ -115,17 +112,29 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 405, message: "MCP 端点仅接受 POST" });
   }
 
-  // 1MB body 上限，避免恶意大 body 占满内存（SDK 的 legacyStatelessFallback 不收该选项，自行前置校验）
+  // 1MB body 上限，避免恶意大 body 占满内存（SDK 的 legacyStatelessFallback 不收该选项，自行前置校验）。
+  // content-length 只是快速拒绝通道：chunked 传输没有该头，真正上限靠读完 raw 后的兜底校验
+  const MAX_BODY_BYTES = 1024 * 1024;
   const declaredLength = Number(event.node.req.headers["content-length"] ?? 0);
-  if (Number.isFinite(declaredLength) && declaredLength > 1024 * 1024) {
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
     throw createError({ statusCode: 413, message: "MCP 请求体过大" });
   }
 
   // 桥接：h3 → Web Request
   let webReq: Request;
   try {
-    webReq = await eventToWebRequest(event);
+    // encoding=false 拿 Buffer：绝不能走 "binary"/字符串解码——latin1 字符串再被 Request 按 UTF-8
+    // 编码就是双重编码，JSON 里的中文入参会变 mojibake（英文不受影响，曾致中文搜索恒 0 结果）
+    const raw = await readRawBody(event, false);
+    if (raw && raw.length > MAX_BODY_BYTES) {
+      throw createError({ statusCode: 413, message: "MCP 请求体过大" });
+    }
+    webReq = await eventToWebRequest(event, raw ?? undefined);
   } catch (error) {
+    // 413 已是预期响应，原样抛；其余构造失败才包装 400
+    if (error instanceof Error && "statusCode" in error && (error as { statusCode?: number }).statusCode === 413) {
+      throw error;
+    }
     console.error("[mcp] 构造 Web Request 失败:", error);
     throw createError({ statusCode: 400, message: "MCP 请求构造失败" });
   }

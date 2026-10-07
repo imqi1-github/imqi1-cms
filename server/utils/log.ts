@@ -225,12 +225,14 @@ interface EmitOptions {
 function emit(category: string, opts: EmitOptions): void {
   const ts = fmtTs();
   const kv = stringifyFields(opts.fields);
-  const line = siteConfig.logs.lineFormat.replace("{ts}", ts)
-    .replace("{tag}", labelOf(opts.tag))
-    .replace("{level}", opts.level.toUpperCase())
-    .replace("{msg}", opts.msg)
-    .replace("{caller}", opts.caller ?? "")
-    .replace("{kv}", kv);
+  // 替换值用函数形式：msg/kv 含用户可控内容（URL/UA/报错信息），字符串形式下
+  // $& $' 等替换模式会被展开破坏日志行
+  const line = siteConfig.logs.lineFormat.replace("{ts}", () => ts)
+    .replace("{tag}", () => labelOf(opts.tag))
+    .replace("{level}", () => opts.level.toUpperCase())
+    .replace("{msg}", () => opts.msg)
+    .replace("{caller}", () => opts.caller ?? "")
+    .replace("{kv}", () => kv);
   if (opts.level === "error") console.error(line);
   else if (opts.level === "warn") console.warn(line);
   else console.log(line);

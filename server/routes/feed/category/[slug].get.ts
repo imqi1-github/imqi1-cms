@@ -45,6 +45,7 @@ export default defineEventHandler(async event => {
           user: { select: { nickname: true, name: true } },
         },
         orderBy: { create_time: "desc" },
+        take: 50, // 上限防全量拉 content 大字段（RSS 订阅器只看近期）
       }),
       getSiteBaseUrl(),
     ]);

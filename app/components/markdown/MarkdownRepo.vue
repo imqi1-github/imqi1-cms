@@ -66,7 +66,33 @@ function writeCache(p: string, owner: string, repo: string, repoData: RepoData):
   }
 }
 
+// 过期条目永不覆写会永久滞留 localStorage,文章删掉仓库卡片后成死数据:
+// 写缓存时顺手清掉 30 天未更新的条目(含解析失败的脏数据)
+const CACHE_STALE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function sweepStaleCache(): void {
+  try {
+    const now = Date.now();
+    const staleKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(CACHE_PREFIX)) continue;
+      try {
+        const raw = localStorage.getItem(key);
+        const entry = raw ? (JSON.parse(raw) as RepoCacheEntry) : null;
+        if (!entry?.cachedAt || now - entry.cachedAt > CACHE_STALE_MS) staleKeys.push(key);
+      } catch {
+        staleKeys.push(key);
+      }
+    }
+    for (const key of staleKeys) localStorage.removeItem(key);
+  } catch {
+    // localStorage 不可用:跳过清扫,不影响渲染
+  }
+}
+
 onMounted(async () => {
+  sweepStaleCache();
   const parsed = parseRepo();
   if (!parsed) return;
   const { p, owner, repo } = parsed;

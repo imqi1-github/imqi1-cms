@@ -42,6 +42,9 @@ export async function isLikeRateLimited(cid: number, fingerprint: string): Promi
     const recent = await redis.incr(key);
     if (recent === 1) {
       await redis.expire(key, LIKE_RATE_TTL_SECONDS);
+    } else if ((await redis.ttl(key)) === -1) {
+      // 自愈：INCR 与 EXPIRE 之间崩溃会留下无 TTL 键 → 该访客对该文章永久限流，补上窗口
+      await redis.expire(key, LIKE_RATE_TTL_SECONDS);
     }
     return recent > 1;
   } catch (error) {
