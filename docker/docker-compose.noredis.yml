@@ -18,6 +18,7 @@ services:
       DB_PORT: "5432"
       # 容器内路径固定；宿主路径见下方 volumes
       UPLOADS_DIR: /app/.output/public/uploads
+      LOGS_DIR: /app/logs
     env_file:
       # .env 可选：不存在也能启动（变量都有默认值）
       - path: ../.env

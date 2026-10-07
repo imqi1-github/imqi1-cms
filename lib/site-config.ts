@@ -277,12 +277,12 @@ export interface AmapConfig {
 /**
  * 日志配置（server/utils/log.ts 消费）
  *
- * 目录、开关、切分与保留都在此处集中管理；`LOG_DIR` 环境变量仍可覆盖 `dir`（Docker 挂卷 / 测试指向 tmpdir）。
+ * 目录、开关、切分与保留都在此处集中管理；`LOGS_DIR` 环境变量仍可覆盖 `dir`（Docker 挂卷 / 测试指向 tmpdir）。
  */
 export interface SiteLogsConfig {
   /** 文件日志总开关：false 时所有日志只打 console 不落盘 */
   file: boolean;
-  /** 日志根目录（每类别一个子目录、每天一个文件）；`LOG_DIR` 环境变量优先于此值 */
+  /** 日志根目录（每类别一个子目录、每天一个文件）；`LOGS_DIR` 环境变量优先于此值 */
   dir: string;
   /**
    * 文件行格式。占位符：

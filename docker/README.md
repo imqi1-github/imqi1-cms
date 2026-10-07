@@ -43,7 +43,7 @@ docker compose --env-file .env -f docker/docker-compose.yml build --build-arg RE
 | `DB_USER` | 应用连接的用户。**PG 没有 root/普通用户分权**，应用用户与库所有者是同一个；设 `DB_USER=root` 是字面值能跑，但建议沿用普通用户名（如 `nodejs`、`imqi1`）保持与 MySQL 时代同样的命名习惯 |
 | `DEPLOY_PORT` | 宿主对外端口（默认 `3000`）。**可不填**——compose 有默认值 |
 | `UPLOADS_DIR` | 本地上传目录的**宿主路径**（bind mount）。默认 `../uploads`（即项目根 `uploads/`，本地文件系统直接可见）；容器内挂载点固定为 `/app/.output/public/uploads`。裸机部署则指应用直接写入的目录。**可不填**——compose 有默认值 |
-| `LOGS_DIR` | 日志目录的**宿主路径**（bind mount）。默认 `../logs`（即项目根 `logs/`）；容器内挂载点固定为 `/app/logs`。裸机部署的日志目录由 `LOG_DIR` / `site.config.ts` 决定，与此变量无关。**可不填**——compose 有默认值 |
+| `LOGS_DIR` | 日志目录。**裸机部署**指应用写日志的目录（留空默认 `./logs`，相对 cwd）；**Docker 部署**指挂载日志的**宿主路径**（bind mount），默认 `../logs`（即项目根 `logs/`），容器内路径由 compose 固定。**可不填**——有默认值 |
 
 > 前三个**实质必填**：compose 虽然给 postgres 容器兜了默认值，但 app 容器是从 `env_file: ../.env` 取 DB_\* 的，`.env` 里没有就两边对不上、app 连不上库。后两个只影响 compose 自身，有默认值即可。
 

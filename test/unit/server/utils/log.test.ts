@@ -1,7 +1,7 @@
 /**
  * server/utils/log.ts 单元测：落盘开关 / 行格式 / 大小切分 / 保留清理 / 分片挑选。
  *
- * LOG_DIR 必须在 log.ts 导入前设置（LOG_DIR_RESOLVED 模块加载时解析），指到 tmpdir。
+ * LOGS_DIR 必须在 log.ts 导入前设置（LOGS_DIR_RESOLVED 模块加载时解析），指到 tmpdir。
  * siteConfig.logs 直接改对象（log.ts 每次写盘才读值，改完即生效），不用 mock.module——那会全进程泄漏。
  */
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -10,10 +10,10 @@ import { join } from "node:path";
 
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
-const TEST_LOG_DIR = join(tmpdir(), `log-rotation-${process.pid}`);
-process.env.LOG_DIR = TEST_LOG_DIR;
+const TEST_LOGS_DIR = join(tmpdir(), `log-rotation-${process.pid}`);
+process.env.LOGS_DIR = TEST_LOGS_DIR;
 
-const { dateKey, dayShardFiles, flushLogWrites, LOG_DIR_RESOLVED, log } = await import("#server/utils/log");
+const { dateKey, dayShardFiles, flushLogWrites, LOGS_DIR_RESOLVED, log } = await import("#server/utils/log");
 const { siteConfig } = await import("~~/site.config");
 
 const logsDefaults = JSON.parse(JSON.stringify(siteConfig.logs)) as typeof siteConfig.logs;
@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  await rm(TEST_LOG_DIR, { recursive: true, force: true });
+  await rm(TEST_LOGS_DIR, { recursive: true, force: true });
 });
 
 describe("dayShardFiles 分片挑选", () => {
@@ -42,7 +42,7 @@ describe("文件日志落盘", () => {
   test("按行格式写入 {category}/{date}.log：中文标签 + kv 字段", async () => {
     log.app("启动正常", { count: 3 });
     await flushLogWrites();
-    const text = await readFile(join(LOG_DIR_RESOLVED, "app", `${dateKey()}.log`), "utf8");
+    const text = await readFile(join(LOGS_DIR_RESOLVED, "app", `${dateKey()}.log`), "utf8");
     expect(text).toContain("[应用] [INFO] 启动正常");
     expect(text).toContain("count=3");
     expect(text.endsWith("\n")).toBe(true);
@@ -53,8 +53,8 @@ describe("文件日志落盘", () => {
     log.audit("不该落盘");
     log.auth("该落盘", { uid: 1 });
     await flushLogWrites();
-    await expect(readFile(join(LOG_DIR_RESOLVED, "audit", `${dateKey()}.log`), "utf8")).rejects.toThrow();
-    const authText = await readFile(join(LOG_DIR_RESOLVED, "auth", `${dateKey()}.log`), "utf8");
+    await expect(readFile(join(LOGS_DIR_RESOLVED, "audit", `${dateKey()}.log`), "utf8")).rejects.toThrow();
+    const authText = await readFile(join(LOGS_DIR_RESOLVED, "auth", `${dateKey()}.log`), "utf8");
     expect(authText).toContain("该落盘");
   });
 
@@ -62,7 +62,7 @@ describe("文件日志落盘", () => {
     siteConfig.logs.file = false;
     log.monitor("不该落盘");
     await flushLogWrites();
-    await expect(readdir(join(LOG_DIR_RESOLVED, "monitor"))).rejects.toThrow();
+    await expect(readdir(join(LOGS_DIR_RESOLVED, "monitor"))).rejects.toThrow();
   });
 });
 
@@ -70,7 +70,7 @@ describe("大小切分", () => {
   test("超 maxFileSizeMb 后切分为 {date}.1.log，行不丢", async () => {
     siteConfig.logs.maxFileSizeMb = 0.0002; // ≈ 210B，三行即触发切分
     const day = dateKey();
-    const dir = join(LOG_DIR_RESOLVED, "cron");
+    const dir = join(LOGS_DIR_RESOLVED, "cron");
     for (let i = 1; i <= 4; i++) log.cron(`任务${i}_${"x".repeat(80)}`);
     await flushLogWrites();
     const names = await readdir(dir);
@@ -84,7 +84,7 @@ describe("大小切分", () => {
 describe("保留清理", () => {
   test("超 retentionDays 的旧日志在新的一天首写时清理，当日分片保留", async () => {
     siteConfig.logs.retentionDays = 30;
-    const dir = join(LOG_DIR_RESOLVED, "external");
+    const dir = join(LOGS_DIR_RESOLVED, "external");
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "2020-01-01.log"), "old\n", "utf8");
     log.external("新一天首写");
@@ -96,7 +96,7 @@ describe("保留清理", () => {
 
   test("retentionDays=0 永久保留", async () => {
     siteConfig.logs.retentionDays = 0;
-    const dir = join(LOG_DIR_RESOLVED, "cache");
+    const dir = join(LOGS_DIR_RESOLVED, "cache");
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "2020-01-01.log"), "old\n", "utf8");
     log.cache("触发首写");

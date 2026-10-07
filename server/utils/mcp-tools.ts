@@ -25,7 +25,7 @@ import { z } from "zod";
 import { prisma } from "./prisma";
 import { markdownToPlainText } from "./markdownToPlainText";
 import { redis } from "./redis";
-import { dateKey, dayShardFiles, LOG_DIR_RESOLVED, log } from "./log";
+import { dateKey, dayShardFiles, LOGS_DIR_RESOLVED, log } from "./log";
 import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
 import { detectDocker, getBuildHash } from "./runtime-info";
 
@@ -853,9 +853,9 @@ function registerOpsTools(server: McpServer): void {
         if (!verifyOpsToken(token)) return opsError("invalid_ops_token");
         if (!LOG_CATEGORIES.includes(category)) return opsError("unknown_category", { allowed: LOG_CATEGORIES });
 
-        // category 过白名单、date 被正则限定，拼接不会穿越出 LOG_DIR
+        // category 过白名单、date 被正则限定，拼接不会穿越出 LOGS_DIR
         const day = date ?? dateKey();
-        const dir = join(LOG_DIR_RESOLVED, category);
+        const dir = join(LOGS_DIR_RESOLVED, category);
         // 开启大小切分后一天可能有多个分片（{day}.log、{day}.1.log…），按序号升序合并
         let shards: string[];
         try {

@@ -6,7 +6,7 @@
  * 这样不用走 SDK 内部 JSON-RPC 协议，能在毫秒级验完 15 个内容工具 + 5 个运维工具的契约。
  *
  * 运维工具组由 MCP_OPS_TOKEN 门禁：本文件动态改该环境变量覆盖「配了/没配」两种注册面。
- * LOG_DIR 在模块导入前指到临时目录，让 get_recent_logs 读确定性的假日志文件。
+ * LOGS_DIR 在模块导入前指到临时目录，让 get_recent_logs 读确定性的假日志文件。
  */
 import "#test/helpers/nitro-globals";
 
@@ -71,9 +71,9 @@ mock.module("@modelcontextprotocol/server", () => {
   };
 });
 
-// LOG_DIR 必须在 mcp-tools（连带 log.ts）导入前设置：LOG_DIR_RESOLVED 在模块加载时解析
-const TEST_LOG_DIR = join(tmpdir(), `mcp-ops-logs-${process.pid}`);
-process.env.LOG_DIR = TEST_LOG_DIR;
+// LOGS_DIR 必须在 mcp-tools（连带 log.ts）导入前设置：LOGS_DIR_RESOLVED 在模块加载时解析
+const TEST_LOGS_DIR = join(tmpdir(), `mcp-ops-logs-${process.pid}`);
+process.env.LOGS_DIR = TEST_LOGS_DIR;
 
 const { createImqi1McpServer } = await import("#server/utils/mcp-tools");
 
@@ -124,7 +124,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  await rm(TEST_LOG_DIR, { recursive: true, force: true });
+  await rm(TEST_LOGS_DIR, { recursive: true, force: true });
 });
 
 describe("createImqi1McpServer 注册契约", () => {
@@ -243,8 +243,8 @@ describe("工具回调:get_recent_logs", () => {
   ];
 
   beforeEach(async () => {
-    await mkdir(join(TEST_LOG_DIR, "app"), { recursive: true });
-    await writeFile(join(TEST_LOG_DIR, "app", `${today}.log`), LINES.join("\n"), "utf8");
+    await mkdir(join(TEST_LOGS_DIR, "app"), { recursive: true });
+    await writeFile(join(TEST_LOGS_DIR, "app", `${today}.log`), LINES.join("\n"), "utf8");
   });
 
   test("默认读今天 app 类别，返回末尾 lines 行", async () => {

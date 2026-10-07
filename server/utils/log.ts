@@ -2,7 +2,7 @@
  * 轻量结构化日志：分类标签 + ISO 时间戳 + 自由字段，**双写到 console + 文件**。
  *
  * 文件落地结构（用户约定）：
- *   - 根目录默认取 site.config `logs.dir`，`LOG_DIR` 环境变量优先（Docker 挂卷 / 测试指 tmpdir）
+ *   - 根目录默认取 site.config `logs.dir`，`LOGS_DIR` 环境变量优先（Docker 挂卷 / 测试指 tmpdir）
  *   - **每类别一个子目录、子目录内每天一个文件**：`logs/access/2026-05-10.log`
  *     —— 与历史 mail.ts 的 `logs/mail/{date}.log` 习惯一致；按天分文件便于归档 + logrotate
  *   - **单文件超过 site.config `logs.maxFileSizeMb` 后切分**：`{date}.1.log`、`{date}.2.log`…
@@ -25,10 +25,10 @@ import { join, resolve } from "node:path";
 import { siteConfig } from "~~/site.config";
 import { LOG_TAG_LABELS } from "#shared/constants";
 
-const LOG_DIR = resolve(process.env.LOG_DIR || siteConfig.logs.dir || "./logs");
+const LOGS_DIR = resolve(process.env.LOGS_DIR || siteConfig.logs.dir || "./logs");
 
 /** 时间戳：YYYY-MM-DD HH:mm:ss.SSS，用本地时区（dev 走主机时区、prod 容器 UTC 时显示容器时间）。
- * 不引入 LOG_TIMEZONE 等额外环境变量 —— 项目内只用 LOG_DIR 一项配置日志路径。
+ * 不引入 LOG_TIMEZONE 等额外环境变量 —— 项目内只用 LOGS_DIR 一项配置日志路径。
  * 用户只要保证容器 / 主机的本地时区符合预期（dev 东八区 OK、prod 容器 UTC 也是显式期望）。
  */
 function fmtTs(d: Date = new Date()): string {
@@ -129,7 +129,7 @@ async function cleanExpired(category: string, names: string[]): Promise<void> {
       if (!/^\d{4}-\d{2}-\d{2}/.test(name)) return;
       const d = Date.parse(`${name.slice(0, 10)}T00:00:00`);
       if (!Number.isNaN(d) && d < cutoff) {
-        await rm(join(LOG_DIR, category, name), { force: true }).catch(() => undefined);
+        await rm(join(LOGS_DIR, category, name), { force: true }).catch(() => undefined);
       }
     }),
   );
@@ -137,7 +137,7 @@ async function cleanExpired(category: string, names: string[]): Promise<void> {
 
 /** 新的一天（或进程首写）初始化分片状态：stat 接续已有分片追加而不是另起 seq，并顺手清理过期文件 */
 async function initState(category: string, day: string): Promise<CategoryState> {
-  const dir = join(LOG_DIR, category);
+  const dir = join(LOGS_DIR, category);
   let names: string[];
   try {
     names = await readdir(dir);
@@ -156,7 +156,7 @@ async function initState(category: string, day: string): Promise<CategoryState> 
 }
 
 /**
- * 把一行日志追加进 `{LOG_DIR}/{category}/` 当天分片；同类别经 promise 链串行。
+ * 把一行日志追加进 `{LOGS_DIR}/{category}/` 当天分片；同类别经 promise 链串行。
  * 失败 → console.error，不抛。
  */
 async function appendLine(category: string, line: string): Promise<void> {
@@ -171,7 +171,7 @@ async function appendLine(category: string, line: string): Promise<void> {
       st.seq += 1;
       st.size = 0;
     }
-    const dir = join(LOG_DIR, category);
+    const dir = join(LOGS_DIR, category);
     await ensureDir(dir);
     await appendFile(join(dir, shardName(day, st.seq)), line + "\n", "utf8");
     st.size += Buffer.byteLength(line, "utf8") + 1;
@@ -281,4 +281,4 @@ export function logWithCaller(
 }
 
 /** 当前实际日志目录（暴露供测试 / 调试使用） */
-export const LOG_DIR_RESOLVED = LOG_DIR;
+export const LOGS_DIR_RESOLVED = LOGS_DIR;
