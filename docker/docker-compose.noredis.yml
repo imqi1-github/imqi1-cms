@@ -27,6 +27,8 @@ services:
       - ${UPLOADS_DIR:-../uploads}:/app/.output/public/uploads
       # 会话（sessionStoreType=file）；须具名卷否则重建容器掉登录态，属主靠 Dockerfile.noredis 的 chown node:node
       - sessions-data:/app/.sessions
+      # 宿主日志目录 → 容器内日志目录（每类别一个子目录、按天分文件）；宿主目录须 node 用户（uid 1000）可写
+      - ${LOGS_DIR:-../logs}:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
