@@ -299,7 +299,20 @@ SQL 与开发环境用的是同一份（`scripts/init-db.sql`），会创建全�
 > ALTER DATABASE "你的库名" SET timezone = 'UTC';
 > ```
 
-### 8. 指定服务器运行环境变量
+### 8. 升级已有部署的数据库
+
+新版本可能涉及 schema 变更（新增字段、修改索引、改 informations 表种子等）。**禁止 `prisma migrate dev/reset`**（会清空数据）。按当前运行版本与目标版本，**到文档站的「数据库迁移」页面在线生成 SQL**：
+
+- 打开 [https://docs.qi1.website/migration-tool](https://docs.qi1.website/migration-tool)
+- 起点选当前运行版本（如 v1.1.0），目标选要升级到的版本（如 v1.2.0）
+- 工具按区间顺序或逆序拼接所有需要执行的 SQL（含 DDL / informations 表种子变更 / 索引）
+- **执行前先备份**：`pg_dump -Fc dbname > backup.dump`
+- 复制 SQL 到 psql / pgadmin 执行
+- 升级 v1.1.4→v1.2.0 这步含 `pg_trgm` GIN 索引，**需数据库属主有 `CREATE EXTENSION` 权限**（PostgreSQL 13+ 为 trusted 扩展，多数情况下应用账号即可；无权限时以超级用户单独执行该段）
+
+数据条目维护在 docs 仓的 `data/migrations.json`，每条对应「**从某 release/commit 到下一段**」的一段可执行 SQL + commit hash。文档站的迁移页面会列出所有 DDL 变更点，方便逐条对照执行。
+
+### 9. 指定服务器运行环境变量
 
 在服务器的运行环境（宝塔「Node 项目管理器」的环境变量、系统环境变量或 `.env`）中配置生产运行所需变量。以下为一份完整示例，请将其中的账号、密码、密钥等替换为你自己的值：
 
@@ -356,7 +369,7 @@ MINI_API_SECRET="your_random_secret"
 
 > ⚠️ 上述密钥、密码等敏感信息切勿提交到代码仓库，请仅在服务器运行环境中配置。
 
-### 9. 启动 Node 服务
+### 10. 启动 Node 服务
 
 在服务器上运行打包产物的入口：
 
@@ -389,7 +402,7 @@ bun run restart:server -- start # 启动
 
 服务启动后，还需配置 Nginx 将其（默认 `127.0.0.1:3000`）反向代理到对外域名，并处理 HTTPS、PWA 脚本缓存与静态资源重定向。可执行 `bun run nginx:generate` 根据 `.env` 中的 `DEPLOY_*` 变量生成参考配置。
 
-### 10. 查看运行日志
+### 11. 查看运行日志
 
 服务启动后，通过日志确认运行状态、排查启动或运行时错误：
 
