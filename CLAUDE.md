@@ -31,7 +31,7 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 ## 硬性约定（必须遵守）
 1. **公开接口白名单** — 前台任何 `findMany` 必带 `select` 或逐字段构造响应，禁 `...row`。隐私 + 内部审核字段都算泄露。
 2. **Admin 写接口必带 CSRF** — `/api/admin/*` POST/PUT/DELETE 走 `validateCsrfToken`（POST/PUT 从 body `csrfToken`，DELETE 从 header `x-csrf-token`）；catch 别吞 400/404。
-3. **DB 改动** — 禁用 `migrate dev/reset`（会 reset 丢数据）。schema 变更走 db execute 或 `scripts/` 里幂等 tsx。**库名 `imqi1-cms`**（与项目目录 / package name 一致；旧名 imqi1-nodejs 已统一改掉；同实例 imqi1/imqi1-old 是历史库别碰；docker-compose 的 `POSTGRES_DB` 默认 `${DB_NAME:-imqi1-cms}`，真值在 .env）。
+3. **DB 改动** — 禁用 `migrate dev/reset`（会 reset 丢数据）。schema 变更走 db execute 或 `scripts/` 里幂等 tsx，**库变更由站主手动执行**（DDL 单一来源是 `scripts/init-db.sql`，勿另写一次性迁移脚本）。**库名以 .env `DB_NAME` 为准**（本机真值 `imqi1` = 开发库；测试库 `imqi1_test` 由 `test/helpers/bun-preload.ts` 强制注入，永不误清开发库；`imqi1-cms` / `imqi1-old` / 旧名 imqi1-nodejs 是历史快照/旧名，别碰）；docker-compose 的 `POSTGRES_DB` 取 `${DB_NAME:-imqi1-cms}`（无 .env 时的兜底默认）。
 4. **类型放独立文件** — 前端 `app/types/apis`、服务端 `server/types/apis`，不在 .ts/.vue 内联 interface/type；API 端到端类型用 Nuxt 内置 InternalApi，入参加 zod 局部 `z.infer`。
 5. **敏感配置运行时化** — redis/amap key 等走构建期烘焙或 env 注入（`shared/redis-config.ts`），别写死在前端/后端分支里。
 
