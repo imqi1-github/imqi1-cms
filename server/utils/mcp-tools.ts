@@ -59,18 +59,27 @@ export function createImqi1McpServer(): McpServer {
   server.registerTool(
     "search_content",
     {
-      description: "搜索已发布的文章。返回匹配的标题、摘要、链接、发布时间；不含正文。",
+      description: "搜索已发布的文章（标题/摘要/正文全文匹配）。支持按分类/标签/时间窗过滤；返回标题、摘要、链接、发布时间与评论/点赞数；不含正文。",
       inputSchema: z.object({
         q: z.string().min(1).describe("搜索关键词（中英文均可）"),
         limit: z.number().int().min(1).max(20).default(10).describe("返回条数上限，1~20"),
+        categorySlug: z.string().min(1).optional().describe("限定分类 slug（来自 list_categories）"),
+        tagSlug: z.string().min(1).optional().describe("限定标签 slug（来自 list_tags）"),
+        days: z.number().int().min(1).max(3650).optional().describe("只搜最近 N 天内发布的文章"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ q, limit }) => {
+    async ({ q, limit, categorySlug, tagSlug, days }) => {
+      const relations = [
+        ...(categorySlug ? [{ contentrelations: { some: { metas: { slug: categorySlug, type: "category" } } } }] : []),
+        ...(tagSlug ? [{ contentrelations: { some: { metas: { slug: tagSlug, type: "tag" } } } }] : []),
+      ];
       const rows = await prisma.contents.findMany({
         where: {
           status: 1,
           type: 0,
+          ...(relations.length > 0 ? { AND: relations } : {}),
+          ...(days ? { create_time: { gte: new Date(Date.now() - days * 86400_000) } } : {}),
           OR: [
             { title: { contains: q, mode: "insensitive" } },
             { desc: { contains: q, mode: "insensitive" } },
@@ -83,6 +92,7 @@ export function createImqi1McpServer(): McpServer {
           desc: true,
           slug: true,
           create_time: true,
+          _count: { select: { comments: { where: { status: 1 } }, likes: true } },
           contentrelations: {
             where: { metas: { type: "category" } },
             orderBy: { mid: "asc" },
@@ -101,6 +111,8 @@ export function createImqi1McpServer(): McpServer {
         slug: row.slug,
         url: `/content/${row.contentrelations?.[0]?.metas?.slug ?? "uncategorized"}/${row.slug ?? row.cid}`,
         published_at: row.create_time.toISOString(),
+        comment_num: row._count?.comments ?? 0,
+        like_num: row._count?.likes ?? 0,
       }));
 
       return {
@@ -118,13 +130,14 @@ export function createImqi1McpServer(): McpServer {
   server.registerTool(
     "get_content",
     {
-      description: "取一篇文章的完整正文（Markdown 源码转纯文本）。",
+      description: "取一篇文章的完整正文。默认返回纯文本（Markdown 源码转换），raw=true 返回原始 Markdown；附字数/阅读时长/评论点赞数/分类标签。",
       inputSchema: z.object({
         cid: z.number().int().positive().describe("文章 cid（数字 ID）"),
+        raw: z.boolean().optional().default(false).describe("true 返回原始 Markdown 源码而非纯文本"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ cid }) => {
+    async ({ cid, raw }) => {
       const row = await prisma.contents.findFirst({
         where: { cid, status: 1, type: 0 },
         select: {
@@ -136,11 +149,9 @@ export function createImqi1McpServer(): McpServer {
           create_time: true,
           update_time: true,
           user: { select: { nickname: true, name: true } },
+          _count: { select: { comments: { where: { status: 1 } }, likes: true } },
           contentrelations: {
-            where: { metas: { type: "category" } },
-            orderBy: { mid: "asc" },
-            take: 1,
-            select: { metas: { select: { slug: true } } },
+            select: { metas: { select: { slug: true, type: true } } },
           },
         },
       });
@@ -152,8 +163,12 @@ export function createImqi1McpServer(): McpServer {
         };
       }
 
-      const plain = markdownToPlainText(row.content ?? row.desc ?? "");
-      const truncated = plain.length > 8192 ? `${plain.slice(0, 8192)}\n\n[截断，原文更长]` : plain;
+      const source = row.content ?? row.desc ?? "";
+      const plain = markdownToPlainText(source);
+      const truncated = (raw ? source : plain).slice(0, 8192);
+      const body = raw ? source : plain;
+      const categories = row.contentrelations.filter(r => r.metas?.type === "category").map(r => r.metas!.slug);
+      const tags = row.contentrelations.filter(r => r.metas?.type === "tag").map(r => r.metas!.slug);
 
       return {
         content: [
@@ -164,11 +179,17 @@ export function createImqi1McpServer(): McpServer {
                 cid: row.cid,
                 title: row.title,
                 desc: row.desc ?? "",
-                url: `/content/${row.contentrelations?.[0]?.metas?.slug ?? "uncategorized"}/${row.slug ?? row.cid}`,
+                url: `/content/${categories[0] ?? "uncategorized"}/${row.slug ?? row.cid}`,
                 author: row.user?.nickname ?? row.user?.name ?? "admin",
                 published_at: row.create_time.toISOString(),
                 updated_at: row.update_time.toISOString(),
-                plain_text: truncated,
+                word_count: body.length,
+                reading_time_min: Math.max(1, Math.round(body.length / 400)),
+                comment_num: row._count?.comments ?? 0,
+                like_num: row._count?.likes ?? 0,
+                categories,
+                tags,
+                [raw ? "markdown" : "plain_text"]: body.length > 8192 ? `${truncated}\n\n[截断，原文更长]` : truncated,
               },
               null,
               2,
@@ -183,21 +204,29 @@ export function createImqi1McpServer(): McpServer {
   server.registerTool(
     "list_recent_contents",
     {
-      description: "列出最近发布的文章标题、链接、发布时间。",
+      description: "列出最近发布的文章标题、链接、发布时间与评论/点赞数。支持按分类/时间窗过滤。",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10).describe("返回条数上限"),
+        categorySlug: z.string().min(1).optional().describe("限定分类 slug（来自 list_categories）"),
+        days: z.number().int().min(1).max(3650).optional().describe("只列最近 N 天内发布的文章"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ limit }) => {
+    async ({ limit, categorySlug, days }) => {
       const rows = await prisma.contents.findMany({
-        where: { status: 1, type: 0 },
+        where: {
+          status: 1,
+          type: 0,
+          ...(categorySlug ? { contentrelations: { some: { metas: { slug: categorySlug, type: "category" } } } } : {}),
+          ...(days ? { create_time: { gte: new Date(Date.now() - days * 86400_000) } } : {}),
+        },
         select: {
           cid: true,
           title: true,
           slug: true,
           desc: true,
           create_time: true,
+          _count: { select: { comments: { where: { status: 1 } }, likes: true } },
           contentrelations: {
             where: { metas: { type: "category" } },
             orderBy: { mid: "asc" },
@@ -215,6 +244,8 @@ export function createImqi1McpServer(): McpServer {
         desc: row.desc ?? "",
         url: `/content/${row.contentrelations?.[0]?.metas?.slug ?? "uncategorized"}/${row.slug ?? row.cid}`,
         published_at: row.create_time.toISOString(),
+        comment_num: row._count?.comments ?? 0,
+        like_num: row._count?.likes ?? 0,
       }));
 
       return {
@@ -246,6 +277,12 @@ export function createImqi1McpServer(): McpServer {
               },
             },
           },
+          contentrelations: {
+            where: { content: { type: 0, status: 1 } },
+            orderBy: { content: { create_time: "desc" } },
+            take: 1,
+            select: { content: { select: { create_time: true } } },
+          },
         },
         orderBy: { mid: "asc" },
       });
@@ -255,6 +292,7 @@ export function createImqi1McpServer(): McpServer {
         desc: row.desc ?? "",
         url: `/category/${row.slug}`,
         content_count: row._count.contentrelations,
+        latest_article_at: row.contentrelations[0]?.content?.create_time?.toISOString() ?? null,
       }));
       return {
         content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
@@ -266,11 +304,13 @@ export function createImqi1McpServer(): McpServer {
   server.registerTool(
     "list_tags",
     {
-      description: "列出所有标签（含每标签下的文章数）。",
-      inputSchema: z.object({}),
+      description: "列出所有标签（含每标签下的已发布文章数）。可按使用量排序找热门标签。",
+      inputSchema: z.object({
+        sort: z.enum(["name", "count"]).optional().default("name").describe("排序方式：name=按名称，count=按文章数降序"),
+      }),
       annotations: { readOnlyHint: true },
     },
-    async () => {
+    async ({ sort }) => {
       const rows = await prisma.metas.findMany({
         where: { type: "tag" },
         select: {
@@ -287,13 +327,15 @@ export function createImqi1McpServer(): McpServer {
         },
         orderBy: { name: "asc" },
       });
-      const items = rows.map(row => ({
-        name: row.name,
-        slug: row.slug,
-        desc: row.desc ?? "",
-        url: `/tag/${row.slug}`,
-        content_count: row._count.contentrelations,
-      }));
+      const items = rows
+        .map(row => ({
+          name: row.name,
+          slug: row.slug,
+          desc: row.desc ?? "",
+          url: `/tag/${row.slug}`,
+          content_count: row._count.contentrelations,
+        }))
+        .sort((a, b) => (sort === "count" ? b.content_count - a.content_count : a.name.localeCompare(b.name)));
       return {
         content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
       };
@@ -343,19 +385,41 @@ export function createImqi1McpServer(): McpServer {
     },
     async ({ categorySlug }) => {
       const where = { status: 1, type: 0 } as const;
+      const listSelect = {
+        cid: true,
+        title: true,
+        desc: true,
+        slug: true,
+        contentrelations: {
+          where: { metas: { type: "category" } },
+          orderBy: { mid: "asc" },
+          take: 1,
+          select: { metas: { select: { slug: true } } },
+        },
+      } as const;
+      const toItem = (row: {
+        cid: number; title: string; desc: string | null; slug: string | null;
+        contentrelations: Array<{ metas: { slug: string | null } }>;
+      }) => ({
+        cid: row.cid,
+        title: row.title,
+        desc: row.desc ?? "",
+        url: `/content/${row.contentrelations?.[0]?.metas?.slug ?? "uncategorized"}/${row.slug ?? row.cid}`,
+        note: "用 get_content(cid) 取正文",
+      });
       if (categorySlug) {
         const rows = await prisma.contents.findMany({
           where: {
             ...where,
             contentrelations: { some: { metas: { slug: categorySlug, type: "category" } } },
           },
-          select: { cid: true },
+          select: listSelect,
         });
         if (rows.length === 0) {
           return { content: [{ type: "text", text: JSON.stringify({ error: "no_article_in_category", categorySlug }) }], isError: true };
         }
         const picked = rows[Math.floor(Math.random() * rows.length)]!;
-        return { content: [{ type: "text", text: JSON.stringify({ cid: picked.cid, note: "用 get_content(cid) 取正文" }, null, 2) }] };
+        return { content: [{ type: "text", text: JSON.stringify(toItem(picked), null, 2) }] };
       }
       const total = await prisma.contents.count({ where });
       if (total === 0) {
@@ -366,9 +430,9 @@ export function createImqi1McpServer(): McpServer {
         where,
         skip,
         take: 1,
-        select: { cid: true },
+        select: listSelect,
       });
-      return { content: [{ type: "text", text: JSON.stringify({ cid: row!.cid, note: "用 get_content(cid) 取正文" }, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(toItem(row!), null, 2) }] };
     },
   );
 
@@ -390,6 +454,7 @@ export function createImqi1McpServer(): McpServer {
           content: true,
           name: true,
           create_time: true,
+          parent_id: true,
           content_ref: {
             select: {
               cid: true,
@@ -407,6 +472,15 @@ export function createImqi1McpServer(): McpServer {
         orderBy: { create_time: "desc" },
         take: limit,
       });
+      // 父评论作者名（parent_id 是裸外键无关系导航，二次查询补齐回复上下文）
+      const parentIds = [...new Set(rows.map(r => r.parent_id).filter((v): v is number => v != null))];
+      const parents = parentIds.length > 0
+        ? await prisma.comments.findMany({
+            where: { coid: { in: parentIds } },
+            select: { coid: true, name: true },
+          })
+        : [];
+      const parentName = new Map(parents.map(p => [p.coid, p.name]));
       const items = rows
         .filter(r => r.content_ref?.slug && r.content_ref.contentrelations.length > 0)
         .map(r => {
@@ -416,6 +490,7 @@ export function createImqi1McpServer(): McpServer {
             text: r.content,
             author: r.name,
             created_at: r.create_time.toISOString(),
+            ...(r.parent_id != null ? { parent_coid: r.parent_id, parent_author: parentName.get(r.parent_id) ?? null } : {}),
             article: {
               cid: r.content_ref!.cid,
               title: r.content_ref!.title,
@@ -433,27 +508,30 @@ export function createImqi1McpServer(): McpServer {
   server.registerTool(
     "get_comments",
     {
-      description: "取指定文章 cid 下已审核的评论列表，按时间倒序。",
+      description: "取指定文章 cid 下已审核的评论列表（含回复关系），可正/倒序；附该文总评论数。",
       inputSchema: z.object({
         cid: z.number().int().positive().describe("文章 cid"),
         limit: z.number().int().min(1).max(100).default(20).describe("返回条数上限"),
+        order: z.enum(["asc", "desc"]).optional().default("desc").describe("排序：asc=从旧到新，desc=从新到旧"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ cid, limit }) => {
-      const rows = await prisma.comments.findMany({
-        where: { cid, status: 1 },
-        select: {
-          coid: true,
-          content: true,
-          name: true,
-          mail: true,
-          create_time: true,
-          parent_id: true,
-        },
-        orderBy: { create_time: "desc" },
-        take: limit,
-      });
+    async ({ cid, limit, order }) => {
+      const [rows, total] = await Promise.all([
+        prisma.comments.findMany({
+          where: { cid, status: 1 },
+          select: {
+            coid: true,
+            content: true,
+            name: true,
+            create_time: true,
+            parent_id: true,
+          },
+          orderBy: { create_time: order },
+          take: limit,
+        }),
+        prisma.comments.count({ where: { cid, status: 1 } }),
+      ]);
       const items = rows.map(r => ({
         coid: r.coid,
         parent_coid: r.parent_id,
@@ -462,7 +540,7 @@ export function createImqi1McpServer(): McpServer {
         created_at: r.create_time.toISOString(),
       }));
       return {
-        content: [{ type: "text", text: JSON.stringify({ cid, count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ cid, total, count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -559,42 +637,54 @@ export function createImqi1McpServer(): McpServer {
       if (tagMids.length === 0) {
         return { content: [{ type: "text", text: JSON.stringify({ cid, count: 0, items: [] }, null, 2) }] };
       }
-      const cands = await prisma.contents.findMany({
-        where: {
-          status: 1, type: 0, cid: { not: cid },
-          contentrelations: { some: { mid: { in: tagMids }, metas: { type: "tag" } } },
-        },
-        select: {
-          cid: true,
-          title: true,
-          slug: true,
-          create_time: true,
-          contentrelations: {
-            where: { metas: { type: "category" } },
-            orderBy: { mid: "asc" },
-            take: 1,
-            select: { metas: { select: { slug: true } } },
+      const [tagNames, cands] = await Promise.all([
+        prisma.metas.findMany({
+          where: { mid: { in: tagMids }, type: "tag" },
+          select: { mid: true, name: true },
+        }),
+        prisma.contents.findMany({
+          where: {
+            status: 1, type: 0, cid: { not: cid },
+            contentrelations: { some: { mid: { in: tagMids }, metas: { type: "tag" } } },
           },
-          _count: {
-            select: {
-              contentrelations: {
-                where: { mid: { in: tagMids }, metas: { type: "tag" } },
+          select: {
+            cid: true,
+            title: true,
+            slug: true,
+            create_time: true,
+            contentrelations: {
+              select: { mid: true, metas: { select: { slug: true, type: true } } },
+            },
+            _count: {
+              select: {
+                contentrelations: {
+                  where: { mid: { in: tagMids }, metas: { type: "tag" } },
+                },
               },
             },
           },
-        },
-        take: limit * 4,
-      });
+          take: limit * 4,
+        }),
+      ]);
+      const tagNameByMid = new Map(tagNames.map(t => [t.mid, t.name]));
+      const tagMidSet = new Set(tagMids);
       const items = cands
         .sort((a, b) => b._count.contentrelations - a._count.contentrelations)
         .slice(0, limit)
-        .map(c => ({
-          cid: c.cid,
-          title: c.title,
-          url: `/content/${c.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${c.slug ?? c.cid}`,
-          published_at: c.create_time.toISOString(),
-          shared_tags: c._count.contentrelations,
-        }));
+        .map(c => {
+          const categorySlug = c.contentrelations.find(r => r.metas?.type === "category")?.metas?.slug;
+          const sharedMids = [...new Set(
+            c.contentrelations.filter(r => r.metas?.type === "tag" && tagMidSet.has(r.mid)).map(r => r.mid),
+          )];
+          return {
+            cid: c.cid,
+            title: c.title,
+            url: `/content/${categorySlug ?? "uncategorized"}/${c.slug ?? c.cid}`,
+            published_at: c.create_time.toISOString(),
+            shared_tags: c._count.contentrelations,
+            shared_tag_names: sharedMids.map(mid => tagNameByMid.get(mid)).filter((v): v is string => v != null),
+          };
+        });
       return {
         content: [{ type: "text", text: JSON.stringify({ cid, count: items.length, items }, null, 2) }],
       };
@@ -624,6 +714,7 @@ export function createImqi1McpServer(): McpServer {
           slug: true,
           desc: true,
           create_time: true,
+          _count: { select: { comments: { where: { status: 1 } }, likes: true } },
           contentrelations: {
             where: { metas: { type: "category" } },
             orderBy: { mid: "asc" },
@@ -640,6 +731,8 @@ export function createImqi1McpServer(): McpServer {
         desc: r.desc ?? "",
         url: `/content/${r.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${r.slug ?? r.cid}`,
         published_at: r.create_time.toISOString(),
+        comment_num: r._count?.comments ?? 0,
+        like_num: r._count?.likes ?? 0,
       }));
       return {
         content: [{ type: "text", text: JSON.stringify({ slug, count: items.length, items }, null, 2) }],
@@ -670,6 +763,7 @@ export function createImqi1McpServer(): McpServer {
           slug: true,
           desc: true,
           create_time: true,
+          _count: { select: { comments: { where: { status: 1 } }, likes: true } },
           contentrelations: {
             where: { metas: { type: "category" } },
             orderBy: { mid: "asc" },
@@ -686,6 +780,8 @@ export function createImqi1McpServer(): McpServer {
         desc: r.desc ?? "",
         url: `/content/${r.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${r.slug ?? r.cid}`,
         published_at: r.create_time.toISOString(),
+        comment_num: r._count?.comments ?? 0,
+        like_num: r._count?.likes ?? 0,
       }));
       return {
         content: [{ type: "text", text: JSON.stringify({ slug, count: items.length, items }, null, 2) }],
@@ -702,10 +798,29 @@ export function createImqi1McpServer(): McpServer {
       annotations: { readOnlyHint: true },
     },
     async () => {
-      const rows = await prisma.informations.findMany({
-        where: { key: { in: ["siteName", "siteUrl", "siteDescription", "siteBeian"] } },
-        select: { key: true, value: true },
-      });
+      const [rows, articleCount, commentCount, categoryCount, tagCount, pageCount, linkCount, latest, earliest] =
+        await Promise.all([
+          prisma.informations.findMany({
+            where: { key: { in: ["siteName", "siteUrl", "siteDescription", "siteBeian"] } },
+            select: { key: true, value: true },
+          }),
+          prisma.contents.count({ where: { status: 1, type: 0 } }).catch(() => 0),
+          prisma.comments.count({ where: { status: 1 } }).catch(() => 0),
+          prisma.metas.count({ where: { type: "category" } }).catch(() => 0),
+          prisma.metas.count({ where: { type: "tag" } }).catch(() => 0),
+          prisma.contents.count({ where: { status: 1, type: 1 } }).catch(() => 0),
+          prisma.links.count({ where: { enabled: true } }).catch(() => 0),
+          prisma.contents.findFirst({
+            where: { status: 1, type: 0 },
+            select: { create_time: true },
+            orderBy: { create_time: "desc" },
+          }).catch(() => null),
+          prisma.contents.findFirst({
+            where: { status: 1, type: 0 },
+            select: { create_time: true },
+            orderBy: { create_time: "asc" },
+          }).catch(() => null),
+        ]);
       const map = Object.fromEntries(rows.map(r => [r.key, r.value]));
       return {
         content: [{
@@ -715,6 +830,16 @@ export function createImqi1McpServer(): McpServer {
             url: map.siteUrl ?? "",
             description: map.siteDescription ?? "",
             beian: map.siteBeian ?? "",
+            stats: {
+              articles: articleCount,
+              comments: commentCount,
+              categories: categoryCount,
+              tags: tagCount,
+              pages: pageCount,
+              friend_links: linkCount,
+              latest_publish_at: latest?.create_time.toISOString() ?? null,
+              first_publish_at: earliest?.create_time.toISOString() ?? null,
+            },
           }, null, 2),
         }],
       };
@@ -805,7 +930,14 @@ function registerOpsTools(server: McpServer): void {
           const pingStart = Date.now();
           try {
             await redis.ping();
-            redisStatus = { configured: true, ok: true, status: redis.status, latencyMs: Date.now() - pingStart };
+            let redisVersion: string | null = null;
+            try {
+              const serverInfo = await redis.info("server");
+              redisVersion = /redis_version:([^\r\n]+)/.exec(serverInfo)?.[1]?.trim() ?? null;
+            } catch {
+              // INFO server 失败不阻塞状态输出
+            }
+            redisStatus = { configured: true, ok: true, status: redis.status, latencyMs: Date.now() - pingStart, version: redisVersion };
           } catch (error) {
             redisStatus = {
               configured: true,
@@ -821,6 +953,7 @@ function registerOpsTools(server: McpServer): void {
         return opsText({
           time: new Date().toISOString(),
           node: process.version,
+          node_env: process.env.NODE_ENV ?? null,
           platform: `${process.platform}/${process.arch}`,
           inDocker: await detectDocker(),
           buildHash: getBuildHash() || "(开发版)",
@@ -838,17 +971,18 @@ function registerOpsTools(server: McpServer): void {
   server.registerTool(
     "get_recent_logs",
     {
-      description: `【运维】读站点结构化日志（logs/<类别>/<日期>.log，含大小切分分片、自动合并全天）的末尾若干行，可按级别过滤。排查报错、限流命中、外部服务失败。类别：${LOG_CATEGORIES.join(" / ")}。`,
+      description: `【运维】读站点结构化日志（logs/<类别>/<日期>.log，含大小切分分片、自动合并全天）的末尾若干行，可按级别过滤、按关键词子串过滤。排查报错、限流命中、外部服务失败。类别：${LOG_CATEGORIES.join(" / ")}。`,
       inputSchema: z.object({
         token: opsTokenSchema,
         category: z.string().min(1).default("app").describe("日志类别（见工具描述里的列表）"),
         lines: z.number().int().min(1).max(OPS_LOG_MAX_LINES).default(50).describe("返回末尾行数"),
         level: z.enum(["all", "info", "warn", "error"]).default("all").describe("按级别过滤"),
+        keyword: z.string().max(100).optional().describe("按关键词子串过滤行（如 cid、IP、错误码）"),
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("日期 YYYY-MM-DD（默认今天，服务器时区）"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ token, category, lines, level, date }) => {
+    async ({ token, category, lines, level, keyword, date }) => {
       return opsGuard(async () => {
         if (!verifyOpsToken(token)) return opsError("invalid_ops_token");
         if (!LOG_CATEGORIES.includes(category)) return opsError("unknown_category", { allowed: LOG_CATEGORIES });
@@ -875,12 +1009,16 @@ function registerOpsTools(server: McpServer): void {
         }
 
         const filtered = level === "all" ? all : all.filter(line => line.includes(`[${level.toUpperCase()}]`));
+        const matched = keyword ? filtered.filter(line => line.includes(keyword)) : filtered;
         // 每行截断 + 总量兜底：日志行可能含长堆栈/长 UA，防止一次调用撑爆模型上下文
-        const picked = filtered.slice(-lines).map(line => (line.length > 4000 ? `${line.slice(0, 4000)}…[截断]` : line));
+        const picked = matched.slice(-lines).map(line => (line.length > 4000 ? `${line.slice(0, 4000)}…[截断]` : line));
         while (picked.length > 1 && picked.reduce((n, line) => n + line.length, 0) > OPS_LOG_MAX_CHARS) {
           picked.shift();
         }
-        return opsText({ category, date: day, level, shards, totalLines: filtered.length, returnedLines: picked.length, lines: picked });
+        return opsText({
+          category, date: day, level, ...(keyword ? { keyword } : {}),
+          shards, totalLines: matched.length, returnedLines: picked.length, lines: picked,
+        });
       });
     },
   );
@@ -897,7 +1035,7 @@ function registerOpsTools(server: McpServer): void {
       return opsGuard(async () => {
         if (!verifyOpsToken(token)) return opsError("invalid_ops_token");
 
-        const [articleGroups, commentGroups, pagesPublished, enabledLinks, pendingLinkMods, attachmentCount, subscribeCount] =
+        const [articleGroups, commentGroups, pagesPublished, enabledLinks, pendingLinkMods, attachmentCount, subscribeCount, likesTotal, likesThisMonth, commentsLast24h, scheduledTotal] =
           await Promise.all([
             prisma.contents.groupBy({ by: ["status"], where: { type: 0 }, _count: { _all: true } }),
             prisma.comments.groupBy({ by: ["status"], _count: { _all: true } }),
@@ -906,6 +1044,10 @@ function registerOpsTools(server: McpServer): void {
             prisma.links.count({ where: { isModification: true, modificationStatus: "pending" } }),
             prisma.attachments.count(),
             prisma.subscribes.count(),
+            prisma.likes.count(),
+            prisma.likes.count({ where: { create_time: { gte: new Date(Date.now() - 30 * 86400_000) } } }),
+            prisma.comments.count({ where: { create_time: { gte: new Date(Date.now() - 86400_000) } } }),
+            prisma.contents.count({ where: { type: 0, status: 0, scheduled_at: { not: null } } }),
           ]);
         const [latest, scheduled] = await Promise.all([
           prisma.contents.findFirst({
@@ -932,6 +1074,9 @@ function registerOpsTools(server: McpServer): void {
           links: { enabled: enabledLinks, pendingModifications: pendingLinkMods },
           attachments: attachmentCount,
           subscribes: subscribeCount,
+          likes: { total: likesTotal ?? 0, last30days: likesThisMonth ?? 0 },
+          commentsLast24h: commentsLast24h ?? 0,
+          scheduledTotal: scheduledTotal ?? 0,
           latestPublished: latest
             ? { cid: latest.cid, title: latest.title, publishedAt: latest.create_time.toISOString() }
             : null,
@@ -961,13 +1106,20 @@ function registerOpsTools(server: McpServer): void {
 
         const pingStart = Date.now();
         await redis.ping();
-        const memory = await redis.info("memory");
+        const [memory, statsInfo] = await Promise.all([redis.info("memory"), redis.info("stats").catch(() => "")]);
 
         const keyCounts = Object.fromEntries(
           await Promise.all(
             CACHE_KEY_PREFIXES.map(async prefix => [prefix.replace(/:$/, ""), await countKeysByPattern(`${prefix}*`)] as const),
           ),
         );
+
+        // 键空间命中率：排查「缓存有没有在干活」
+        const hits = Number(/keyspace_hits:(\d+)/.exec(statsInfo)?.[1]);
+        const misses = Number(/keyspace_misses:(\d+)/.exec(statsInfo)?.[1]);
+        const hitRate = Number.isFinite(hits) && Number.isFinite(misses) && hits + misses > 0
+          ? Math.round((hits / (hits + misses)) * 1000) / 10
+          : null;
 
         return opsText({
           configured: true,
@@ -976,6 +1128,7 @@ function registerOpsTools(server: McpServer): void {
           dbSize: await redis.dbsize(),
           usedMemory: /used_memory_human:([^\r\n]+)/.exec(memory)?.[1]?.trim() ?? null,
           peakMemory: /used_memory_peak_human:([^\r\n]+)/.exec(memory)?.[1]?.trim() ?? null,
+          keyspace: { hits: Number.isFinite(hits) ? hits : null, misses: Number.isFinite(misses) ? misses : null, hitRatePercent: hitRate },
           keyCounts,
         });
       });
@@ -986,10 +1139,10 @@ function registerOpsTools(server: McpServer): void {
   server.registerTool(
     "clear_cache",
     {
-      description: "【运维】清 Redis 缓存（清后自动重建）。target=pages 清整组 ISR 页面缓存（改了内容前台不刷新时用）/ search 搜索缓存 / footprint 访客足迹缓存 / keyword 按键名子串。须 confirm:true。",
+      description: "【运维】清 Redis 缓存（清后自动重建）。target=pages 清整组 ISR 页面缓存（改了内容前台不刷新时用）/ search 搜索缓存 / footprint 访客足迹缓存 / rl 限流计数键（误伤解除）/ keyword 按键名子串。须 confirm:true。",
       inputSchema: z.object({
         token: opsTokenSchema,
-        target: z.enum(["pages", "search", "footprint", "keyword"]).describe("清理目标"),
+        target: z.enum(["pages", "search", "footprint", "rl", "keyword"]).describe("清理目标"),
         keyword: z.string().min(1).optional().describe("target=keyword 时的键名子串"),
         confirm: z.boolean().describe("必须显式传 true 才执行"),
       }),
@@ -1012,6 +1165,9 @@ function registerOpsTools(server: McpServer): void {
           cleared = await scanAndUnlink("search:*");
         } else if (target === "footprint") {
           cleared = await scanAndUnlink("custom:footprint");
+        } else if (target === "rl") {
+          cleared = await scanAndUnlink("rl:*");
+          note = "已清限流计数键（误伤的 429 立即解除）";
         } else {
           const safe = (keyword ?? "").replace(/[\\*?[\]]/g, "");
           if (!safe) return opsError("keyword_required", { note: "target=keyword 时须提供不含通配符的子串" });

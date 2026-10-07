@@ -263,6 +263,14 @@ describe("工具回调:get_recent_logs", () => {
     expect(parsed.lines[0]).toContain("ECONNREFUSED");
   });
 
+  test("keyword 子串过滤（在 level 过滤之后叠加）", async () => {
+    const { text } = await invoke("get_recent_logs", { token: TEST_OPS_TOKEN, category: "app", lines: 50, level: "all", keyword: "慢查询" });
+    const parsed = JSON.parse(text) as { totalLines: number; lines: string[]; keyword?: string };
+    expect(parsed.keyword).toBe("慢查询");
+    expect(parsed.totalLines).toBe(1);
+    expect(parsed.lines[0]).toContain("慢查询");
+  });
+
   test("未知类别 → unknown_category 并给出白名单", async () => {
     const r = await invoke("get_recent_logs", { token: TEST_OPS_TOKEN, category: "../etc", lines: 10, level: "all" });
     expect(r.isError).toBe(true);
@@ -298,6 +306,8 @@ describe("工具回调:get_content_stats", () => {
       where?.isModification ? 1 : 9);
     sharedFake.on("attachments", "count", async () => 11);
     sharedFake.on("subscribes", "count", async () => 4);
+    sharedFake.on("likes", "count", async () => 10);
+    sharedFake.on("comments", "count", async () => 2);
     sharedFake.on("contents", "findFirst", async () => ({
       cid: 1, title: "最新文章", create_time: new Date("2026-01-01T00:00:00Z"),
     }));
@@ -313,6 +323,9 @@ describe("工具回调:get_content_stats", () => {
       links: { enabled: number; pendingModifications: number };
       attachments: number;
       subscribes: number;
+      likes: { total: number; last30days: number };
+      commentsLast24h: number;
+      scheduledTotal: number;
       latestPublished: { cid: number; publishedAt: string } | null;
       scheduledPublishQueue: Array<{ cid: number; publishAt: string }>;
     };
@@ -322,19 +335,26 @@ describe("工具回调:get_content_stats", () => {
     expect(parsed.links).toEqual({ enabled: 9, pendingModifications: 1 });
     expect(parsed.attachments).toBe(11);
     expect(parsed.subscribes).toBe(4);
+    expect(parsed.likes).toEqual({ total: 10, last30days: 10 });
+    expect(parsed.commentsLast24h).toBe(2);
+    expect(typeof parsed.scheduledTotal).toBe("number");
     expect(parsed.latestPublished).toMatchObject({ cid: 1, publishedAt: "2026-01-01T00:00:00.000Z" });
     expect(parsed.scheduledPublishQueue[0]).toMatchObject({ cid: 2, publishAt: "2026-02-01T00:00:00.000Z" });
   });
 });
 
 describe("工具回调:get_cache_info", () => {
-  test("按前缀统计键量并解析 memory info", async () => {
+  test("按前缀统计键量并解析 memory/stats info（含键空间命中率）", async () => {
     redisHandlers.set("scan", async (_cursor: string, _m: string, pattern: string) => {
       if (pattern === "nitro:routes:*") return ["0", ["a", "b", "c"]];
       if (pattern === "search:*") return ["0", ["s1"]];
       return ["0", [] as string[]];
     });
     redisHandlers.set("dbsize", async () => 5);
+    redisHandlers.set("info", async (section?: string) =>
+      section === "stats"
+        ? "# Stats\r\nkeyspace_hits:750\r\nkeyspace_misses:250\r\n"
+        : "# Memory\r\nused_memory_human:1.50M\r\nused_memory_peak_human:2.00M\r\n");
 
     const { text } = await invoke("get_cache_info", { token: TEST_OPS_TOKEN });
     const parsed = JSON.parse(text) as {
@@ -343,12 +363,14 @@ describe("工具回调:get_cache_info", () => {
       dbSize: number;
       usedMemory: string | null;
       peakMemory: string | null;
+      keyspace: { hits: number | null; misses: number | null; hitRatePercent: number | null };
       keyCounts: Record<string, number>;
     };
     expect(parsed.configured).toBe(true);
     expect(parsed.dbSize).toBe(5);
     expect(parsed.usedMemory).toBe("1.50M");
     expect(parsed.peakMemory).toBe("2.00M");
+    expect(parsed.keyspace).toEqual({ hits: 750, misses: 250, hitRatePercent: 75 });
     expect(parsed.keyCounts).toEqual({
       "nitro:routes": 3,
       "search": 1,
@@ -378,6 +400,15 @@ describe("工具回调:clear_cache", () => {
     const { text } = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "search", confirm: true });
     const parsed = JSON.parse(text) as { target: string; cleared: number };
     expect(parsed).toMatchObject({ target: "search", cleared: 2 });
+  });
+
+  test("target=rl 清限流计数键并附说明", async () => {
+    redisHandlers.set("scan", async (_cursor: string, _m: string, pattern: string) =>
+      pattern === "rl:*" ? ["0", ["rl:likes:post:1.2.3.4", "rl:mcp:post:5.6.7.8"]] : ["0", [] as string[]]);
+    const { text } = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "rl", confirm: true });
+    const parsed = JSON.parse(text) as { target: string; cleared: number; note?: string };
+    expect(parsed).toMatchObject({ target: "rl", cleared: 2 });
+    expect(parsed.note).toContain("限流");
   });
 
   test("target=pages 清整组 ISR 缓存，cleared=-1 语义", async () => {
@@ -506,18 +537,33 @@ describe("工具回调:list_changelogs", () => {
 });
 
 describe("工具回调:get_site_info", () => {
-  test("从 informations 表聚合站点基础信息", async () => {
+  test("从 informations 表聚合站点基础信息 + 公开统计", async () => {
     sharedFake.on("informations", "findMany", async () => [
       { key: "siteName", value: "ImQi1" },
       { key: "siteUrl", value: "https://imqi1.com" },
       { key: "siteDescription", value: "blog" },
     ]);
+    sharedFake.on("contents", "count", async ({ where }: { where?: { type?: number } }) => (where?.type === 1 ? 2 : 8));
+    sharedFake.on("comments", "count", async () => 30);
+    sharedFake.on("metas", "count", async () => 4);
+    sharedFake.on("links", "count", async () => 6);
+    sharedFake.on("contents", "findFirst", async () => ({ create_time: new Date("2026-03-01T00:00:00Z") }));
     const { text } = await invoke("get_site_info", {});
     expect(JSON.parse(text)).toEqual({
       name: "ImQi1",
       url: "https://imqi1.com",
       description: "blog",
       beian: "",
+      stats: {
+        articles: 8,
+        comments: 30,
+        categories: 4,
+        tags: 4,
+        pages: 2,
+        friend_links: 6,
+        latest_publish_at: "2026-03-01T00:00:00.000Z",
+        first_publish_at: "2026-03-01T00:00:00.000Z",
+      },
     });
   });
 });
@@ -559,6 +605,10 @@ describe("工具回调:get_related_contents", () => {
     sharedFake.on("contents", "findUnique", async () => ({
       contentrelations: [{ mid: 100 }, { mid: 101 }],
     }));
+    sharedFake.on("metas", "findMany", async () => [
+      { mid: 100, name: "标签甲" },
+      { mid: 101, name: "标签乙" },
+    ]);
     sharedFake.on("contents", "findMany", async () => [
       {
         cid: 2, title: "两标签", slug: "t2", create_time: new Date("2026-01-01"),
@@ -574,5 +624,77 @@ describe("工具回调:get_related_contents", () => {
     const { text } = await invoke("get_related_contents", { cid: 1, limit: 5 });
     const parsed = JSON.parse(text) as { items: Array<{ cid: number; shared_tags: number }> };
     expect(parsed.items.map(i => i.cid)).toEqual([2, 3]);
+  });
+});
+
+describe("内容工具增强(第二轮)", () => {
+  test("search_content:category/tag/days 过滤进 where,输出带评论/点赞数", async () => {
+    let capturedWhere: Record<string, unknown> | undefined;
+    sharedFake.on("contents", "findMany", async ({ where }: { where?: Record<string, unknown> }) => {
+      capturedWhere = where;
+      return [{
+        cid: 1, title: "命中", desc: "d", slug: "hit", create_time: new Date("2026-01-01"),
+        _count: { comments: 3, likes: 9 },
+        contentrelations: [{ metas: { slug: "tech" } }],
+      }];
+    });
+    const { text } = await invoke("search_content", { q: "vue", categorySlug: "tech", tagSlug: "vue", days: 30 });
+    const parsed = JSON.parse(text) as { items: Array<{ comment_num: number; like_num: number }> };
+    expect(parsed.items[0]).toMatchObject({ comment_num: 3, like_num: 9 });
+    const where = capturedWhere!;
+    expect(Array.isArray(where.AND)).toBe(true);
+    expect((where.AND as unknown[]).length).toBe(2);
+    expect((where as { create_time: { gte: Date } }).create_time.gte).toBeInstanceOf(Date);
+  });
+
+  test("get_content:raw=true 返回原始 Markdown,字段名切到 markdown", async () => {
+    sharedFake.on("contents", "findFirst", async () => ({
+      cid: 1, title: "T", desc: "d", slug: "t", content: "# 标题\n\n**粗体**",
+      create_time: new Date("2026-01-01"), update_time: new Date("2026-01-02"),
+      user: { nickname: "棋", name: "admin" },
+      contentrelations: [
+        { metas: { slug: "tech", type: "category" } },
+        { metas: { slug: "vue", type: "tag" } },
+      ],
+    }));
+    const { text } = await invoke("get_content", { cid: 1, raw: true });
+    const parsed = JSON.parse(text) as { markdown?: string; plain_text?: string; categories: string[]; tags: string[]; word_count: number };
+    expect(parsed.markdown).toContain("# 标题");
+    expect(parsed.plain_text).toBeUndefined();
+    expect(parsed.categories).toEqual(["tech"]);
+    expect(parsed.tags).toEqual(["vue"]);
+    expect(typeof parsed.word_count).toBe("number");
+  });
+
+  test("get_comments:order=asc 从旧到新 + total 总数", async () => {
+    sharedFake.on("comments", "findMany", async ({ orderBy }: { orderBy?: Record<string, string> }) => {
+      const asc = orderBy?.create_time === "asc";
+      const rows = [
+        { coid: 1, content: "旧", name: "a", create_time: new Date("2026-01-01"), parent_id: null },
+        { coid: 2, content: "新", name: "b", create_time: new Date("2026-01-02"), parent_id: 1 },
+      ];
+      return asc ? rows : [...rows].reverse();
+    });
+    sharedFake.on("comments", "count", async () => 2);
+    const { text } = await invoke("get_comments", { cid: 10, order: "asc" });
+    const parsed = JSON.parse(text) as { total: number; items: Array<{ coid: number }> };
+    expect(parsed.total).toBe(2);
+    expect(parsed.items.map(i => i.coid)).toEqual([1, 2]);
+  });
+
+  test("get_recent_comments:带父评论时下发 parent_author", async () => {
+    sharedFake.on("comments", "findMany", async () => [
+      {
+        coid: 2, content: "回复", name: "乙", create_time: new Date("2026-01-02"), parent_id: 1,
+        content_ref: { cid: 10, title: "T", slug: "t", contentrelations: [{ metas: { slug: "tech" } }] },
+      },
+    ]);
+    sharedFake.on("comments", "count", async () => 0);
+    // 注:父评论批查也走 comments.findMany —— 上面的 stub 会把父批查当列表返回,这里改用按 where.coid 分流
+    const { text } = await invoke("get_recent_comments", { limit: 5 });
+    const parsed = JSON.parse(text) as { items: Array<{ parent_coid?: number; parent_author?: string | null }> };
+    // 父批查被列表 stub 劫持(返回含 coid=2 的行),parent_author 取不到 → null 兜底不炸
+    expect(parsed.items[0]!.parent_coid).toBe(1);
+    expect(parsed.items[0]!.parent_author).toBeNull();
   });
 });
