@@ -71,7 +71,7 @@ mock.module("@modelcontextprotocol/server", () => {
   };
 });
 
-// LOGS_DIR 必须在 mcp-tools（连带 log.ts）导入前设置：LOGS_DIR_RESOLVED 在模块加载时解析
+// LOGS_DIR 指到 tmpdir：log.ts 的 logsDir() 每次调用现算，设 env 即生效，不依赖导入顺序
 const TEST_LOGS_DIR = join(tmpdir(), `mcp-ops-logs-${process.pid}`);
 process.env.LOGS_DIR = TEST_LOGS_DIR;
 
@@ -243,6 +243,8 @@ describe("工具回调:get_recent_logs", () => {
   ];
 
   beforeEach(async () => {
+    // 别的文件可能改过 LOGS_DIR(bun test 共享进程), 每个用例前钉回自己的 tmpdir
+    process.env.LOGS_DIR = TEST_LOGS_DIR;
     await mkdir(join(TEST_LOGS_DIR, "app"), { recursive: true });
     await writeFile(join(TEST_LOGS_DIR, "app", `${today}.log`), LINES.join("\n"), "utf8");
   });
@@ -541,7 +543,8 @@ describe("工具回调:get_site_info", () => {
     sharedFake.on("informations", "findMany", async () => [
       { key: "siteName", value: "ImQi1" },
       { key: "siteUrl", value: "https://imqi1.com" },
-      { key: "siteDescription", value: "blog" },
+      { key: "siteDesc", value: "blog" },
+      { key: "siteIcp", value: "京ICP备00000000号" },
     ]);
     sharedFake.on("contents", "count", async ({ where }: { where?: { type?: number } }) => (where?.type === 1 ? 2 : 8));
     sharedFake.on("comments", "count", async () => 30);
@@ -553,7 +556,7 @@ describe("工具回调:get_site_info", () => {
       name: "ImQi1",
       url: "https://imqi1.com",
       description: "blog",
-      beian: "",
+      beian: "京ICP备00000000号",
       stats: {
         articles: 8,
         comments: 30,

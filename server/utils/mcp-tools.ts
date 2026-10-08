@@ -25,7 +25,7 @@ import { z } from "zod";
 import { prisma } from "./prisma";
 import { markdownToPlainText } from "./markdownToPlainText";
 import { redis } from "./redis";
-import { dateKey, dayShardFiles, LOGS_DIR_RESOLVED, log } from "./log";
+import { dateKey, dayShardFiles, logsDir, log } from "./log";
 import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
 import { detectDocker, getBuildHash } from "./runtime-info";
 
@@ -801,7 +801,7 @@ export function createImqi1McpServer(): McpServer {
       const [rows, articleCount, commentCount, categoryCount, tagCount, pageCount, linkCount, latest, earliest] =
         await Promise.all([
           prisma.informations.findMany({
-            where: { key: { in: ["siteName", "siteUrl", "siteDescription", "siteBeian"] } },
+            where: { key: { in: ["siteName", "siteUrl", "siteDesc", "siteIcp"] } },
             select: { key: true, value: true },
           }),
           prisma.contents.count({ where: { status: 1, type: 0 } }).catch(() => 0),
@@ -828,8 +828,8 @@ export function createImqi1McpServer(): McpServer {
           text: JSON.stringify({
             name: map.siteName ?? "",
             url: map.siteUrl ?? "",
-            description: map.siteDescription ?? "",
-            beian: map.siteBeian ?? "",
+            description: map.siteDesc ?? "",
+            beian: map.siteIcp ?? "",
             stats: {
               articles: articleCount,
               comments: commentCount,
@@ -989,7 +989,7 @@ function registerOpsTools(server: McpServer): void {
 
         // category 过白名单、date 被正则限定，拼接不会穿越出 LOGS_DIR
         const day = date ?? dateKey();
-        const dir = join(LOGS_DIR_RESOLVED, category);
+        const dir = join(logsDir(), category);
         // 开启大小切分后一天可能有多个分片（{day}.log、{day}.1.log…），按序号升序合并
         let shards: string[];
         try {
