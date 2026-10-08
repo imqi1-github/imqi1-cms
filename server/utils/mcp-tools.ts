@@ -338,7 +338,8 @@ export function createImqi1McpServer(): McpServer {
           // 与 admin popular-contents 同口径：只列真有热度的，零计数不占坑
           ...(byLikes ? { likes: { some: {} } } : { comment_num: { gt: 0 } }),
         },
-        orderBy: byLikes ? { _count: { likes: "desc" } } : { comment_num: "desc" },
+        // 关系计数排序须嵌在关系名下：Prisma7 运行时拒收 _count 在前的写法（类型不报错）
+        orderBy: byLikes ? { likes: { _count: "desc" } } : { comment_num: "desc" },
         select: {
           cid: true,
           title: true,
