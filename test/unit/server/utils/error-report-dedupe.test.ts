@@ -1,18 +1,41 @@
 /**
  * reportError 邮件通知去重(同 级别+消息 5 分钟一封)+ 无 TTL 残留键自愈
  * (回归:INCR/EXPIRE 间隙崩溃曾会让该类错误永久静音、再也不发通知)。
- * mail/siteSettings 打桩隔离 prisma;redis 用记录型假件。
+ * prisma 走共享假件(informations 行喂给 getSiteSettings / getMailConfig),
+ * nodemailer 捕获发信;redis 用记录型假件。
+ *
+ * 刻意不 mock.module "#server/utils/mail" / siteSettings —— mock.module 全进程
+ * 泄漏且不可恢复,只导出 sendMail 的假件会把后续文件(如 mail-notify.test)
+ * import 到的真实模块一起替换掉。要隔离就隔离更下层:nodemailer / prisma。
  */
 import "#test/helpers/nitro-globals";
 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 
-// log.ts 导入时解析 LOGS_DIR,先指到 tmpdir 防止测试写仓库 logs/
+import { flushLogWrites } from "#server/utils/log";
+import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+
+// log.ts 的 logsDir() 每次调用现算,这里指到 tmpdir 防止测试写仓库 logs/
 process.env.LOGS_DIR = join(tmpdir(), `error-report-test-${process.pid}`);
 
+mockSharedPrisma();
+
+// informations 行假件: reportError → getSiteSettings / sendMail → getMailConfig 都从这里取
+sharedFake.on("informations", "findMany", async ({ where }: { where?: { key?: { in: string[] } } }) => {
+  const rows: Record<string, string> = {
+    emailPushType: "smtp", smtpHost: "smtp.example.com", smtpPort: "465",
+    smtpSecureMode: "ssl", smtpUser: "bot@example.com", smtpPassword: "pw",
+    smtpFromName: "测试站", smtpAddress: "noreply@example.com",
+    adminEmail: "a@b.c", notifyAdmin: "true", notifyError: "true", siteName: "测试站",
+  };
+  const keys = where?.key?.in ?? [];
+  return keys.filter(k => rows[k] !== undefined).map(k => ({ key: k, value: rows[k] }));
+});
+
+// nodemailer 捕获(同 mail-notify.test 的手法)
 const mailCalls: string[] = [];
 const redisCalls: Array<{ m: string; args: unknown[] }> = [];
 const noTtl = new Set<string>();
@@ -38,16 +61,24 @@ function makeFakeRedis() {
   };
 }
 
-mock.module("#server/utils/mail", () => ({
-  sendMail: async (opts: { subject?: string }) => {
-    mailCalls.push(opts.subject ?? "");
-    return true;
+mock.module("nodemailer", () => ({
+  default: {
+    createTransport: () => ({
+      sendMail: async (opts: { subject?: string }) => {
+        mailCalls.push(opts.subject ?? "");
+        return { messageId: "ok" };
+      },
+    }),
   },
 }));
-mock.module("#server/utils/siteSettings", () => ({
-  getSiteSettings: async () => ({ adminEmail: "a@b.c", notifyAdmin: true, notifyError: true, siteName: "测试站" }),
-}));
+
 mock.module("#server/utils/redis", () => ({ redis: makeFakeRedis() }));
+
+// reportError 里的 log.monitor 写入是异步链: 不等落完就换文件, 会把写入
+// 带进下一个测试文件的 LOGS_DIR 里(bun test 共享进程)
+afterAll(async () => {
+  await flushLogWrites();
+});
 
 beforeEach(() => {
   mailCalls.length = 0;

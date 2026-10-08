@@ -1,20 +1,27 @@
 /**
  * server/utils/log.ts 单元测：落盘开关 / 行格式 / 大小切分 / 保留清理 / 分片挑选。
  *
- * LOGS_DIR 必须在 log.ts 导入前设置（LOGS_DIR_RESOLVED 模块加载时解析），指到 tmpdir。
+ * LOGS_DIR 指到 tmpdir：logsDir() 每次调用现算目录，设 env 即生效，不依赖导入顺序。
  * siteConfig.logs 直接改对象（log.ts 每次写盘才读值，改完即生效），不用 mock.module——那会全进程泄漏。
  */
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 const TEST_LOGS_DIR = join(tmpdir(), `log-rotation-${process.pid}`);
 process.env.LOGS_DIR = TEST_LOGS_DIR;
 
-const { dateKey, dayShardFiles, flushLogWrites, LOGS_DIR_RESOLVED, log } = await import("#server/utils/log");
+const { dateKey, dayShardFiles, flushLogWrites, logsDir, log, resetLogStateForTests } = await import("#server/utils/log");
 const { siteConfig } = await import("~~/site.config");
+
+// bun test 全部文件共享同一进程: 前一个文件可能给 writeState 留下状态,
+// 不清掉的话本文件的「首写」语义(initState 触发保留清理/切分接续)不成立
+beforeEach(() => {
+  resetLogStateForTests();
+  process.env.LOGS_DIR = TEST_LOGS_DIR;
+});
 
 const logsDefaults = JSON.parse(JSON.stringify(siteConfig.logs)) as typeof siteConfig.logs;
 afterEach(() => {
@@ -42,7 +49,7 @@ describe("文件日志落盘", () => {
   test("按行格式写入 {category}/{date}.log：中文标签 + kv 字段", async () => {
     log.app("启动正常", { count: 3 });
     await flushLogWrites();
-    const text = await readFile(join(LOGS_DIR_RESOLVED, "app", `${dateKey()}.log`), "utf8");
+    const text = await readFile(join(logsDir(), "app", `${dateKey()}.log`), "utf8");
     expect(text).toContain("[应用] [INFO] 启动正常");
     expect(text).toContain("count=3");
     expect(text.endsWith("\n")).toBe(true);
@@ -53,8 +60,8 @@ describe("文件日志落盘", () => {
     log.audit("不该落盘");
     log.auth("该落盘", { uid: 1 });
     await flushLogWrites();
-    await expect(readFile(join(LOGS_DIR_RESOLVED, "audit", `${dateKey()}.log`), "utf8")).rejects.toThrow();
-    const authText = await readFile(join(LOGS_DIR_RESOLVED, "auth", `${dateKey()}.log`), "utf8");
+    await expect(readFile(join(logsDir(), "audit", `${dateKey()}.log`), "utf8")).rejects.toThrow();
+    const authText = await readFile(join(logsDir(), "auth", `${dateKey()}.log`), "utf8");
     expect(authText).toContain("该落盘");
   });
 
@@ -62,7 +69,7 @@ describe("文件日志落盘", () => {
     siteConfig.logs.file = false;
     log.monitor("不该落盘");
     await flushLogWrites();
-    await expect(readdir(join(LOGS_DIR_RESOLVED, "monitor"))).rejects.toThrow();
+    await expect(readdir(join(logsDir(), "monitor"))).rejects.toThrow();
   });
 });
 
@@ -70,7 +77,7 @@ describe("大小切分", () => {
   test("超 maxFileSizeMb 后切分为 {date}.1.log，行不丢", async () => {
     siteConfig.logs.maxFileSizeMb = 0.0002; // ≈ 210B，三行即触发切分
     const day = dateKey();
-    const dir = join(LOGS_DIR_RESOLVED, "cron");
+    const dir = join(logsDir(), "cron");
     for (let i = 1; i <= 4; i++) log.cron(`任务${i}_${"x".repeat(80)}`);
     await flushLogWrites();
     const names = await readdir(dir);
@@ -86,7 +93,7 @@ describe("行内容写入", () => {
     // 字符串形式 replace 会把值里的 $& 展开成被匹配的占位符,破坏日志行;函数形式原样
     log.app("修复$&占位$'测试", { path: "/api/x$&y" });
     await flushLogWrites();
-    const text = await readFile(join(LOGS_DIR_RESOLVED, "app", `${dateKey()}.log`), "utf8");
+    const text = await readFile(join(logsDir(), "app", `${dateKey()}.log`), "utf8");
     expect(text).toContain("修复$&占位$'测试");
     expect(text).toContain("path=/api/x$&y");
   });
@@ -95,7 +102,7 @@ describe("行内容写入", () => {
 describe("保留清理", () => {
   test("超 retentionDays 的旧日志在新的一天首写时清理，当日分片保留", async () => {
     siteConfig.logs.retentionDays = 30;
-    const dir = join(LOGS_DIR_RESOLVED, "external");
+    const dir = join(logsDir(), "external");
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "2020-01-01.log"), "old\n", "utf8");
     log.external("新一天首写");
@@ -107,7 +114,7 @@ describe("保留清理", () => {
 
   test("retentionDays=0 永久保留", async () => {
     siteConfig.logs.retentionDays = 0;
-    const dir = join(LOGS_DIR_RESOLVED, "cache");
+    const dir = join(logsDir(), "cache");
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "2020-01-01.log"), "old\n", "utf8");
     log.cache("触发首写");

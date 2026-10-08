@@ -25,7 +25,15 @@ import { join, resolve } from "node:path";
 import { siteConfig } from "~~/site.config";
 import { LOG_TAG_LABELS } from "#shared/constants";
 
-const LOGS_DIR = resolve(process.env.LOGS_DIR || siteConfig.logs.dir || "./logs");
+/**
+ * 当前日志根目录: 每次调用现算, LOGS_DIR 环境变量优先于 site.config.logs.dir。
+ * 刻意不在模块加载时定格 —— bun test 的所有文件共享同一个模块实例, 先被导入的
+ * 文件会把 env 未设时的目录焊死成常量, 后导入的测试文件(mcp-tools.test 等)
+ * 再设 env 就不生效了。
+ */
+export function logsDir(): string {
+  return resolve(process.env.LOGS_DIR || siteConfig.logs.dir || "./logs");
+}
 
 /** 时间戳：YYYY-MM-DD HH:mm:ss.SSS，用本地时区（dev 走主机时区、prod 容器 UTC 时显示容器时间）。
  * 不引入 LOG_TIMEZONE 等额外环境变量 —— 项目内只用 LOGS_DIR 一项配置日志路径。
@@ -107,6 +115,17 @@ export function flushLogWrites(): Promise<void> {
   return Promise.allSettled([...writeChains.values()]).then(() => undefined);
 }
 
+/**
+ * 测试专用: 清空分片状态。bun test 的所有文件共享同一个模块实例, 前一个文件
+ * 写过的类别会带着 {date, seq, size} 留在这里, 后一个文件对同名类别的「首写」
+ * 就不会触发 initState(保留清理 / 切分接续全部失效)。写日志的测试文件在
+ * beforeEach 里先 flushLogWrites 再调这个。
+ */
+export function resetLogStateForTests(): void {
+  writeState.clear();
+  writeChains.clear();
+}
+
 function maxSizeBytes(): number {
   const mb = siteConfig.logs.maxFileSizeMb;
   return mb > 0 ? mb * 1024 * 1024 : Number.POSITIVE_INFINITY;
@@ -129,7 +148,7 @@ async function cleanExpired(category: string, names: string[]): Promise<void> {
       if (!/^\d{4}-\d{2}-\d{2}/.test(name)) return;
       const d = Date.parse(`${name.slice(0, 10)}T00:00:00`);
       if (!Number.isNaN(d) && d < cutoff) {
-        await rm(join(LOGS_DIR, category, name), { force: true }).catch(() => undefined);
+        await rm(join(logsDir(), category, name), { force: true }).catch(() => undefined);
       }
     }),
   );
@@ -137,7 +156,7 @@ async function cleanExpired(category: string, names: string[]): Promise<void> {
 
 /** 新的一天（或进程首写）初始化分片状态：stat 接续已有分片追加而不是另起 seq，并顺手清理过期文件 */
 async function initState(category: string, day: string): Promise<CategoryState> {
-  const dir = join(LOGS_DIR, category);
+  const dir = join(logsDir(), category);
   let names: string[];
   try {
     names = await readdir(dir);
@@ -171,7 +190,7 @@ async function appendLine(category: string, line: string): Promise<void> {
       st.seq += 1;
       st.size = 0;
     }
-    const dir = join(LOGS_DIR, category);
+    const dir = join(logsDir(), category);
     await ensureDir(dir);
     await appendFile(join(dir, shardName(day, st.seq)), line + "\n", "utf8");
     st.size += Buffer.byteLength(line, "utf8") + 1;
@@ -281,6 +300,3 @@ export function logWithCaller(
   const caller = captureCaller();
   emit(category, { level, tag: category, msg, fields, caller });
 }
-
-/** 当前实际日志目录（暴露供测试 / 调试使用） */
-export const LOGS_DIR_RESOLVED = LOGS_DIR;

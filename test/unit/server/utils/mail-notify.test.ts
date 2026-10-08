@@ -1,6 +1,8 @@
 import "#test/helpers/nitro-globals";
 
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
+
+import { flushLogWrites } from "#server/utils/log";
 
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
@@ -59,6 +61,12 @@ beforeEach(() => {
   mailSettingOverrides = {};
   sentMails.length = 0;
   contentRow = { title: "文章标题", slug: "post-a", type: 0, contentrelations: [{ metas: { slug: "note" } }] };
+});
+
+// 门禁跳过路径会走 log.external 异步落盘: 不等落完就换文件, 写入会带进
+// 下一个测试文件的 LOGS_DIR(bun test 共享进程)
+afterAll(async () => {
+  await flushLogWrites();
 });
 
 describe("notifyFriendLinkApplication", () => {
