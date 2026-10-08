@@ -3,7 +3,7 @@
  *
  * 测试目标：createImqi1McpServer 注册的工具集合（名字、只读标注、入参 schema、回调行为）。
  * 策略：mock @modelcontextprotocol/server 拦截 registerTool 调用，拿到每个工具的回调直接驱动。
- * 这样不用走 SDK 内部 JSON-RPC 协议，能在毫秒级验完 15 个内容工具 + 5 个运维工具的契约。
+ * 这样不用走 SDK 内部 JSON-RPC 协议，能在毫秒级验完 19 个内容工具 + 5 个运维工具的契约。
  *
  * 运维工具组由 MCP_OPS_TOKEN 门禁：本文件动态改该环境变量覆盖「配了/没配」两种注册面。
  * LOGS_DIR 在模块导入前指到临时目录，让 get_recent_logs 读确定性的假日志文件。
@@ -87,11 +87,15 @@ const CONTENT_TOOLS = [
   "get_random_content",
   "get_recent_comments",
   "get_comments",
+  "list_content_images",
   "list_friend_links",
   "list_changelogs",
   "get_related_contents",
   "list_category_articles",
   "list_tag_articles",
+  "get_popular_contents",
+  "list_archives",
+  "list_travels",
   "get_site_info",
 ];
 
@@ -128,7 +132,7 @@ afterAll(async () => {
 });
 
 describe("createImqi1McpServer 注册契约", () => {
-  test("未配置 MCP_OPS_TOKEN → 运维工具不注册（fail-closed），仅 15 个内容工具", () => {
+  test("未配置 MCP_OPS_TOKEN → 运维工具不注册（fail-closed），仅 19 个内容工具", () => {
     delete process.env.MCP_OPS_TOKEN;
     capturedTools.length = 0;
     createImqi1McpServer();
@@ -699,5 +703,238 @@ describe("内容工具增强(第二轮)", () => {
     // 父批查被列表 stub 劫持(返回含 coid=2 的行),parent_author 取不到 → null 兜底不炸
     expect(parsed.items[0]!.parent_coid).toBe(1);
     expect(parsed.items[0]!.parent_author).toBeNull();
+  });
+});
+
+describe("内容工具增强(第三轮:分页/续读/新工具/site_url)", () => {
+  test("search_content:offset 透传成 skip,limit+1 探测 has_more", async () => {
+    let lastSkip: number | undefined;
+    sharedFake.on("contents", "findMany", async ({ skip }: { skip?: number }) => {
+      lastSkip = skip;
+      return [1, 2, 3].map(cid => ({
+        cid, title: `t${cid}`, desc: "", slug: `s${cid}`, create_time: new Date("2026-01-01"),
+        _count: { comments: 0, likes: 0 },
+        contentrelations: [{ metas: { slug: "tech" } }],
+      }));
+    });
+    const { text } = await invoke("search_content", { q: "x", limit: 2, offset: 20 });
+    const parsed = JSON.parse(text) as { has_more: boolean; offset: number; count: number };
+    expect(lastSkip).toBe(20);
+    expect(parsed).toMatchObject({ has_more: true, offset: 20, count: 2 });
+
+    sharedFake.on("contents", "findMany", async () => []);
+    const r = await invoke("search_content", { q: "x", limit: 2, offset: 0 });
+    expect(JSON.parse(r.text)).toMatchObject({ has_more: false, count: 0 });
+  });
+
+  test("get_content:maxChars 截断带 next_offset,续读偏移拼接还原全文", async () => {
+    const body = "0123456789".repeat(10);
+    sharedFake.on("contents", "findFirst", async ({ where }: { where: { cid: number } }) => ({
+      cid: where.cid, title: "T", desc: "d", slug: "t", content: body,
+      create_time: new Date("2026-01-01"), update_time: new Date("2026-01-02"),
+      user: { nickname: "棋", name: "admin" },
+      contentrelations: [{ metas: { slug: "tech", type: "category" } }],
+    }));
+    const first = JSON.parse((await invoke("get_content", { cid: 1, maxChars: 30 })).text) as {
+      plain_text: string; has_more: boolean; next_offset: number; returned_chars: number; word_count: number;
+    };
+    expect(first.returned_chars).toBe(30);
+    expect(first.has_more).toBe(true);
+    expect(first.next_offset).toBe(30);
+    expect(first.word_count).toBe(100);
+    expect(first.plain_text).toContain("用 offset=30 续读");
+
+    const second = JSON.parse((await invoke("get_content", { cid: 1, offset: 30, maxChars: 30 })).text) as {
+      plain_text: string; has_more: boolean; next_offset?: number;
+    };
+    expect(second.plain_text.startsWith(body.slice(30, 60))).toBe(true);
+    expect(second.has_more).toBe(true);
+
+    const tail = JSON.parse((await invoke("get_content", { cid: 1, offset: 90, maxChars: 30 })).text) as {
+      plain_text: string; has_more: boolean; next_offset?: number;
+    };
+    expect(tail.has_more).toBe(false);
+    expect(tail.next_offset).toBeUndefined();
+    expect(tail.plain_text).not.toContain("续读");
+  });
+
+  test("get_content:offset 超出正文长度 → 空正文 + note,不报错", async () => {
+    sharedFake.on("contents", "findFirst", async () => ({
+      cid: 1, title: "T", desc: "d", slug: "t", content: "短文",
+      create_time: new Date("2026-01-01"), update_time: new Date("2026-01-02"),
+      user: { nickname: "棋", name: "admin" },
+      contentrelations: [{ metas: { slug: "tech", type: "category" } }],
+    }));
+    const { text, isError } = await invoke("get_content", { cid: 1, offset: 999 });
+    expect(isError).toBeUndefined();
+    const parsed = JSON.parse(text) as { plain_text: string; has_more: boolean; note?: string };
+    expect(parsed.plain_text).toBe("");
+    expect(parsed.has_more).toBe(false);
+    expect(parsed.note).toContain("超出正文长度");
+  });
+
+  test("list_archives:按 UTC 年月分组 + year 过滤进 where", async () => {
+    let capturedWhere: Record<string, unknown> | undefined;
+    sharedFake.on("contents", "findMany", async ({ where }: { where?: Record<string, unknown> }) => {
+      capturedWhere = where;
+      return [
+        { cid: 1, title: "二月", slug: "a", create_time: new Date("2026-02-01T00:00:00Z"), contentrelations: [{ metas: { slug: "tech" } }] },
+        { cid: 2, title: "一月晚", slug: "b", create_time: new Date("2026-01-15T00:00:00Z"), contentrelations: [{ metas: { slug: "tech" } }] },
+        { cid: 3, title: "一月早", slug: "c", create_time: new Date("2026-01-02T00:00:00Z"), contentrelations: [{ metas: { slug: "life" } }] },
+        { cid: 4, title: "去年", slug: "d", create_time: new Date("2025-12-31T00:00:00Z"), contentrelations: [] },
+      ];
+    });
+    const { text } = await invoke("list_archives", { year: 2026 });
+    const parsed = JSON.parse(text) as {
+      total: number;
+      groups: Array<{ year: number; month: number; items: Array<{ cid: number; url: string }> }>;
+    };
+    expect(parsed.total).toBe(4);
+    expect(parsed.groups.map(g => `${g.year}-${g.month}`)).toEqual(["2026-2", "2026-1", "2025-12"]);
+    expect(parsed.groups[0]!.items).toHaveLength(1);
+    expect(parsed.groups[1]!.items).toHaveLength(2);
+    // 无分类的文章走 uncategorized 兜底,链接仍可拼
+    expect(parsed.groups[1]!.items[1]!.url).toBe("/content/life/c");
+    expect(parsed.groups[2]!.items[0]!.url).toBe("/content/uncategorized/d");
+    const bounds = (capturedWhere!.create_time as { gte: Date; lt: Date });
+    expect(bounds.gte.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+    expect(bounds.lt.toISOString()).toBe("2027-01-01T00:00:00.000Z");
+  });
+
+  test("list_travels:地点映射 + 无分类/无 slug 的关联文章被过滤", async () => {
+    sharedFake.on("travels", "findMany", async () => [
+      {
+        id: 1, name: "杭州", desc: "西湖", cover: "/imgs/hz.jpg", longitude: 120.1, latitude: 30.2,
+        contenttravels: [
+          { content: { cid: 10, title: "游记A", slug: "a", contentrelations: [{ metas: { slug: "travel" } }] } },
+          { content: { cid: 11, title: "无分类", slug: "b", contentrelations: [] } },
+          { content: { cid: 12, title: "无slug", slug: null, contentrelations: [{ metas: { slug: "travel" } }] } },
+        ],
+      },
+    ]);
+    const { text } = await invoke("list_travels", {});
+    const parsed = JSON.parse(text) as {
+      count: number;
+      items: Array<{ id: number; name: string; longitude: number; articles: Array<{ cid: number; title: string; url: string }> }>;
+    };
+    expect(parsed.count).toBe(1);
+    expect(parsed.items[0]).toMatchObject({ id: 1, name: "杭州", longitude: 120.1 });
+    expect(parsed.items[0]!.articles).toEqual([{ cid: 10, title: "游记A", url: "/content/travel/a" }]);
+  });
+
+  test("get_popular_contents:likes 口径按计数排序下发,comments 口径 where 走 comment_num", async () => {
+    let capturedWhere: Record<string, unknown> | undefined;
+    sharedFake.on("contents", "findMany", async ({ where }: { where?: Record<string, unknown> }) => {
+      capturedWhere = where;
+      return [
+        { cid: 1, title: "最热", slug: "hot", comment_num: 2, create_time: new Date("2026-01-01"), _count: { likes: 9 }, contentrelations: [{ metas: { slug: "tech" } }] },
+        { cid: 2, title: "次热", slug: "warm", comment_num: 0, create_time: new Date("2026-01-02"), _count: { likes: 5 }, contentrelations: [] },
+      ];
+    });
+    const { text } = await invoke("get_popular_contents", { sort: "likes", limit: 5 });
+    const parsed = JSON.parse(text) as { sort: string; items: Array<{ cid: number; like_num: number; comment_num: number; url: string }> };
+    expect(parsed.sort).toBe("likes");
+    expect(parsed.items.map(i => i.cid)).toEqual([1, 2]);
+    expect(parsed.items[0]).toMatchObject({ like_num: 9, comment_num: 2 });
+    expect(parsed.items[1]!.url).toBe("/content/uncategorized/warm");
+    expect(capturedWhere).toMatchObject({ likes: { some: {} } });
+
+    await invoke("get_popular_contents", { sort: "comments" });
+    expect(capturedWhere).toMatchObject({ comment_num: { gt: 0 } });
+  });
+
+  test("site_url:从 informations.siteUrl 下发并剥尾斜杠", async () => {
+    sharedFake.on("informations", "findMany", async () => [
+      { key: "siteUrl", value: "https://blog.example/" },
+    ]);
+    sharedFake.on("contents", "findMany", async () => []);
+    const { text } = await invoke("list_recent_contents", {});
+    const parsed = JSON.parse(text) as { site_url: string; count: number };
+    expect(parsed.site_url).toBe("https://blog.example");
+    expect(parsed.count).toBe(0);
+  });
+});
+
+describe("内容工具增强(第四轮:slug/独立页面/命中摘录/配图)", () => {
+  const baseRow = (overrides: Record<string, unknown> = {}) => ({
+    cid: 1, title: "T", desc: "d", slug: "t", content: "body",
+    create_time: new Date("2026-01-01"), update_time: new Date("2026-01-02"),
+    user: { nickname: "棋", name: "admin" },
+    contentrelations: [{ metas: { slug: "tech", type: "category" } }],
+    ...overrides,
+  });
+
+  test("get_content:slug 直查进 where；互斥/缺参/未命中各自报错", async () => {
+    let capturedWhere: Record<string, unknown> | undefined;
+    sharedFake.on("contents", "findFirst", async ({ where }: { where?: Record<string, unknown> }) => {
+      capturedWhere = where;
+      return baseRow();
+    });
+    const { text } = await invoke("get_content", { slug: "t" });
+    const parsed = JSON.parse(text) as { type: string; url: string };
+    expect(parsed.type).toBe("post");
+    expect(parsed.url).toBe("/content/tech/t");
+    expect(capturedWhere).toMatchObject({ slug: "t", type: 0, status: 1 });
+
+    const both = await invoke("get_content", { cid: 1, slug: "t" });
+    expect(both.isError).toBe(true);
+    expect(JSON.parse(both.text)).toMatchObject({ error: "cid_slug_exclusive" });
+
+    const neither = await invoke("get_content", {});
+    expect(neither.isError).toBe(true);
+    expect(JSON.parse(neither.text)).toMatchObject({ error: "cid_or_slug_required" });
+
+    sharedFake.on("contents", "findFirst", async () => null);
+    const miss = await invoke("get_content", { slug: "nope" });
+    expect(miss.isError).toBe(true);
+    expect(JSON.parse(miss.text)).toMatchObject({ error: "article_not_found", slug: "nope" });
+  });
+
+  test("get_content:type=page 查 type 1，页面 url 与 messages 特例", async () => {
+    let capturedWhere: Record<string, unknown> | undefined;
+    sharedFake.on("contents", "findFirst", async ({ where }: { where?: Record<string, unknown> }) => {
+      capturedWhere = where;
+      return baseRow({ slug: "about", contentrelations: [] });
+    });
+    const { text } = await invoke("get_content", { slug: "about", type: "page" });
+    const parsed = JSON.parse(text) as { type: string; url: string };
+    expect(parsed.type).toBe("page");
+    expect(parsed.url).toBe("/page/about");
+    expect(capturedWhere).toMatchObject({ type: 1, slug: "about" });
+
+    sharedFake.on("contents", "findFirst", async () => baseRow({ slug: "messages", contentrelations: [] }));
+    const r = await invoke("get_content", { slug: "messages", type: "page" });
+    expect(JSON.parse(r.text)).toMatchObject({ url: "/messages" });
+  });
+
+  test("search_content:正文命中给 match_excerpt，仅标题命中不给", async () => {
+    sharedFake.on("contents", "findMany", async () => [
+      { cid: 1, title: "命中标题", desc: "", slug: "a", create_time: new Date("2026-01-01"), _count: { comments: 0, likes: 0 }, contentrelations: [{ metas: { slug: "tech" } }] },
+      { cid: 2, title: "别的", desc: "", slug: "b", content: `前缀${"x".repeat(50)}关键词后缀`, create_time: new Date("2026-01-02"), _count: { comments: 0, likes: 0 }, contentrelations: [{ metas: { slug: "tech" } }] },
+    ]);
+    const { text } = await invoke("search_content", { q: "关键词" });
+    const parsed = JSON.parse(text) as { items: Array<{ cid: number; match_excerpt?: string }> };
+    expect(parsed.items[0]!.match_excerpt).toBeUndefined();
+    expect(parsed.items[1]!.match_excerpt).toContain("关键词");
+  });
+
+  test("list_content_images:封面 + 图片附件合并，type 过滤进 where，未命中报错", async () => {
+    let capturedAttWhere: Record<string, unknown> | undefined;
+    sharedFake.on("contents", "findFirst", async () => ({ covers: JSON.stringify([{ url: "/imgs/c1.jpg", title: "封面一" }]) }));
+    sharedFake.on("attachments", "findMany", async ({ where }: { where?: Record<string, unknown> }) => {
+      capturedAttWhere = where;
+      return [{ aid: 1, title: "图A", url: "/uploads/a.png", metadata: { width: 800, height: 600, format: "png" } }];
+    });
+    const { text } = await invoke("list_content_images", { cid: 1 });
+    const parsed = JSON.parse(text) as { count: number; items: Array<{ url: string; source: string; desc?: string; width?: number }> };
+    expect(parsed.count).toBe(2);
+    expect(parsed.items[0]).toMatchObject({ url: "/imgs/c1.jpg", source: "cover", desc: "封面一" });
+    expect(parsed.items[1]).toMatchObject({ url: "/uploads/a.png", source: "attachment", width: 800 });
+    expect(capturedAttWhere).toMatchObject({ type: "image" });
+
+    sharedFake.on("contents", "findFirst", async () => null);
+    const miss = await invoke("list_content_images", { cid: 999 });
+    expect(miss.isError).toBe(true);
+    expect(JSON.parse(miss.text)).toMatchObject({ error: "article_not_found", cid: 999 });
   });
 });

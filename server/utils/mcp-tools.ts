@@ -24,6 +24,9 @@ import { z } from "zod";
 
 import { prisma } from "./prisma";
 import { markdownToPlainText } from "./markdownToPlainText";
+import { normalizeAttachmentMetadata } from "./attachmentMetadata";
+import { parseCovers } from "./covers";
+import { getSiteBaseUrl } from "./feed";
 import { redis } from "./redis";
 import { dateKey, dayShardFiles, logsDir, log } from "./log";
 import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
@@ -36,14 +39,34 @@ function opsEnabled(): boolean {
   return Boolean(process.env.MCP_OPS_TOKEN?.trim());
 }
 
-const BASE_INSTRUCTIONS = "只读检索 imqi1.com 个人博客的公开内容：搜索文章、读全文、列分类/标签/最新文章。";
+const BASE_INSTRUCTIONS = "只读检索 imqi1.com 个人博客的公开内容：搜索/阅读文章、归档目录、旅行足迹、热门文章、分类/标签/最新文章、评论与友链。";
+
+/** 站点根地址（informations.siteUrl 优先，复用 feed 的 getSiteBaseUrl）；失败降级空串不阻塞工具 */
+async function siteUrlOrEmpty(): Promise<string> {
+  try {
+    return await getSiteBaseUrl();
+  } catch {
+    return "";
+  }
+}
+
+/** search 命中上下文摘录：q 在正文（转纯文本）首现位置前后取片段；标题/摘要命中时返回 null */
+function buildMatchExcerpt(content: string | null | undefined, q: string): string | null {
+  if (!content) return null;
+  const plain = markdownToPlainText(content);
+  const idx = plain.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return null;
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(plain.length, idx + q.length + 80);
+  return `${start > 0 ? "…" : ""}${plain.slice(start, end)}${end < plain.length ? "…" : ""}`;
+}
 
 /** MCP 服务端描述。Agent 通过 listTools 看 description 决定调不调。 */
 export function createImqi1McpServer(): McpServer {
   const server = new McpServer(
     {
       name: "imqi1-cms",
-      version: "1.0.0",
+      version: "1.1.0",
     },
     {
       capabilities: {
@@ -63,13 +86,15 @@ export function createImqi1McpServer(): McpServer {
       inputSchema: z.object({
         q: z.string().min(1).describe("搜索关键词（中英文均可）"),
         limit: z.number().int().min(1).max(20).default(10).describe("返回条数上限，1~20"),
+        offset: z.number().int().min(0).default(0).describe("跳过前 N 条（配合 has_more 翻页）"),
         categorySlug: z.string().min(1).optional().describe("限定分类 slug（来自 list_categories）"),
         tagSlug: z.string().min(1).optional().describe("限定标签 slug（来自 list_tags）"),
         days: z.number().int().min(1).max(3650).optional().describe("只搜最近 N 天内发布的文章"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ q, limit, categorySlug, tagSlug, days }) => {
+    // 解构默认兜底直调（测试绕过 zod）;线上流量由 inputSchema 补默认
+    async ({ q, limit, offset = 0, categorySlug, tagSlug, days }) => {
       const relations = [
         ...(categorySlug ? [{ contentrelations: { some: { metas: { slug: categorySlug, type: "category" } } } }] : []),
         ...(tagSlug ? [{ contentrelations: { some: { metas: { slug: tagSlug, type: "tag" } } } }] : []),
@@ -91,6 +116,7 @@ export function createImqi1McpServer(): McpServer {
           title: true,
           desc: true,
           slug: true,
+          content: true,
           create_time: true,
           _count: { select: { comments: { where: { status: 1 } }, likes: true } },
           contentrelations: {
@@ -101,45 +127,70 @@ export function createImqi1McpServer(): McpServer {
           },
         },
         orderBy: { create_time: "desc" },
-        take: limit,
+        skip: offset,
+        take: limit + 1,
       });
 
-      const items = rows.map(row => ({
-        cid: row.cid,
-        title: row.title,
-        desc: row.desc ?? "",
-        slug: row.slug,
-        url: `/content/${row.contentrelations?.[0]?.metas?.slug ?? "uncategorized"}/${row.slug ?? row.cid}`,
-        published_at: row.create_time.toISOString(),
-        comment_num: row._count?.comments ?? 0,
-        like_num: row._count?.likes ?? 0,
-      }));
+      // 多查 1 条探测 has_more，避免为翻页信号额外 count
+      const hasMore = rows.length > limit;
+      const page = rows.slice(0, limit);
+      const items = page.map(row => {
+        const excerpt = buildMatchExcerpt(row.content, q);
+        return {
+          cid: row.cid,
+          title: row.title,
+          desc: row.desc ?? "",
+          slug: row.slug,
+          url: `/content/${row.contentrelations?.[0]?.metas?.slug ?? "uncategorized"}/${row.slug ?? row.cid}`,
+          published_at: row.create_time.toISOString(),
+          comment_num: row._count?.comments ?? 0,
+          like_num: row._count?.likes ?? 0,
+          // 仅正文命中时给摘录，标题/摘要命中场景 desc 已够
+          ...(excerpt ? { match_excerpt: excerpt } : {}),
+        };
+      });
 
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify({ q, count: items.length, items }, null, 2),
+            text: JSON.stringify(
+              { site_url: await siteUrlOrEmpty(), q, offset, has_more: hasMore, count: items.length, items },
+              null,
+              2,
+            ),
           },
         ],
       };
     },
   );
 
-  // —— get_content：取一篇文章的正文 ——
+  // —— get_content：取一篇文章/独立页面的正文 ——
   server.registerTool(
     "get_content",
     {
-      description: "取一篇文章的完整正文。默认返回纯文本（Markdown 源码转换），raw=true 返回原始 Markdown；附字数/阅读时长/评论点赞数/分类标签。",
+      description: "取一篇文章或独立页面的完整正文。cid 与 slug 二选一；独立页面（type=page）只能 slug 直查。默认返回纯文本（Markdown 源码转换），raw=true 返回原始 Markdown；长文用 offset/maxChars 分页续读。",
       inputSchema: z.object({
-        cid: z.number().int().positive().describe("文章 cid（数字 ID）"),
+        cid: z.number().int().positive().optional().describe("文章 cid（与 slug 二选一）"),
+        slug: z.string().min(1).optional().describe("slug 直查（与 cid 二选一；独立页面须配 type=page）"),
+        type: z.enum(["post", "page"]).default("post").describe("内容类型：post=文章（默认），page=独立页面（list_pages 列出的）"),
         raw: z.boolean().optional().default(false).describe("true 返回原始 Markdown 源码而非纯文本"),
+        offset: z.number().int().min(0).default(0).describe("从正文第 N 个字符开始读（长文续读，配合 next_offset）"),
+        maxChars: z.number().int().min(256).max(32768).default(8192).describe("本次返回正文的最大字符数"),
       }),
       annotations: { readOnlyHint: true },
     },
-    async ({ cid, raw }) => {
+    // 解构默认兜底直调（测试绕过 zod）；线上流量由 inputSchema 补默认
+    async ({ cid, slug, type = "post", raw = false, offset = 0, maxChars = 8192 }) => {
+      if (cid != null && slug != null) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "cid_slug_exclusive", note: "cid 与 slug 二选一" }) }], isError: true };
+      }
+      if (cid == null && !slug) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "cid_or_slug_required" }) }], isError: true };
+      }
+      const typeNum = type === "page" ? 1 : 0;
       const row = await prisma.contents.findFirst({
-        where: { cid, status: 1, type: 0 },
+        where: { status: 1, type: typeNum, ...(cid != null ? { cid } : { slug }) },
         select: {
           cid: true,
           title: true,
@@ -158,17 +209,22 @@ export function createImqi1McpServer(): McpServer {
 
       if (!row) {
         return {
-          content: [{ type: "text", text: JSON.stringify({ error: "article_not_found", cid }) }],
+          content: [{ type: "text", text: JSON.stringify({ error: "article_not_found", ...(cid != null ? { cid } : { slug }) }) }],
           isError: true,
         };
       }
 
       const source = row.content ?? row.desc ?? "";
       const plain = markdownToPlainText(source);
-      const truncated = (raw ? source : plain).slice(0, 8192);
       const body = raw ? source : plain;
+      const slice = body.slice(offset, offset + maxChars);
+      const hasMore = offset + slice.length < body.length;
       const categories = row.contentrelations.filter(r => r.metas?.type === "category").map(r => r.metas!.slug);
       const tags = row.contentrelations.filter(r => r.metas?.type === "tag").map(r => r.metas!.slug);
+      // 页面无分类维度；messages 页面前台走独立路由（与 list_pages 同口径）
+      const url = typeNum === 1
+        ? (row.slug === "messages" ? "/messages" : `/page/${row.slug ?? row.cid}`)
+        : `/content/${categories[0] ?? "uncategorized"}/${row.slug ?? row.cid}`;
 
       return {
         content: [
@@ -177,9 +233,10 @@ export function createImqi1McpServer(): McpServer {
             text: JSON.stringify(
               {
                 cid: row.cid,
+                type,
                 title: row.title,
                 desc: row.desc ?? "",
-                url: `/content/${categories[0] ?? "uncategorized"}/${row.slug ?? row.cid}`,
+                url,
                 author: row.user?.nickname ?? row.user?.name ?? "admin",
                 published_at: row.create_time.toISOString(),
                 updated_at: row.update_time.toISOString(),
@@ -189,7 +246,14 @@ export function createImqi1McpServer(): McpServer {
                 like_num: row._count?.likes ?? 0,
                 categories,
                 tags,
-                [raw ? "markdown" : "plain_text"]: body.length > 8192 ? `${truncated}\n\n[截断，原文更长]` : truncated,
+                offset,
+                returned_chars: slice.length,
+                has_more: hasMore,
+                ...(hasMore ? { next_offset: offset + slice.length } : {}),
+                ...(slice.length === 0 && offset > 0 ? { note: "offset 超出正文长度，正文为空" } : {}),
+                [raw ? "markdown" : "plain_text"]: hasMore && slice.length > 0
+                  ? `${slice}\n\n[已截断，用 offset=${offset + slice.length} 续读]`
+                  : slice,
               },
               null,
               2,
@@ -249,7 +313,58 @@ export function createImqi1McpServer(): McpServer {
       }));
 
       return {
-        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— get_popular_contents：热门文章（按点赞/评论数排序） ——
+  server.registerTool(
+    "get_popular_contents",
+    {
+      description: "取热门文章：按点赞数或评论数倒序的已发布文章（含计数与链接），适合「最值得读」类推荐。",
+      inputSchema: z.object({
+        sort: z.enum(["likes", "comments"]).default("likes").describe("热度口径：likes=点赞数，comments=评论数"),
+        limit: z.number().int().min(1).max(20).default(10).describe("返回条数上限"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ sort, limit }) => {
+      const byLikes = sort === "likes";
+      const rows = await prisma.contents.findMany({
+        where: {
+          status: 1,
+          type: 0,
+          // 与 admin popular-contents 同口径：只列真有热度的，零计数不占坑
+          ...(byLikes ? { likes: { some: {} } } : { comment_num: { gt: 0 } }),
+        },
+        orderBy: byLikes ? { _count: { likes: "desc" } } : { comment_num: "desc" },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          comment_num: true,
+          create_time: true,
+          _count: { select: { likes: true } },
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            orderBy: { mid: "asc" },
+            take: 1,
+            select: { metas: { select: { slug: true } } },
+          },
+        },
+        take: limit,
+      });
+      const items = rows.map(r => ({
+        cid: r.cid,
+        title: r.title,
+        url: `/content/${r.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${r.slug ?? r.cid}`,
+        published_at: r.create_time.toISOString(),
+        like_num: r._count?.likes ?? 0,
+        comment_num: r.comment_num,
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), sort, count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -295,7 +410,7 @@ export function createImqi1McpServer(): McpServer {
         latest_article_at: row.contentrelations[0]?.content?.create_time?.toISOString() ?? null,
       }));
       return {
-        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -337,7 +452,7 @@ export function createImqi1McpServer(): McpServer {
         }))
         .sort((a, b) => (sort === "count" ? b.content_count - a.content_count : a.name.localeCompare(b.name)));
       return {
-        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -367,7 +482,7 @@ export function createImqi1McpServer(): McpServer {
         updated_at: row.update_time.toISOString(),
       }));
       return {
-        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -419,7 +534,7 @@ export function createImqi1McpServer(): McpServer {
           return { content: [{ type: "text", text: JSON.stringify({ error: "no_article_in_category", categorySlug }) }], isError: true };
         }
         const picked = rows[Math.floor(Math.random() * rows.length)]!;
-        return { content: [{ type: "text", text: JSON.stringify(toItem(picked), null, 2) }] };
+        return { content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), ...toItem(picked) }, null, 2) }] };
       }
       const total = await prisma.contents.count({ where });
       if (total === 0) {
@@ -432,7 +547,7 @@ export function createImqi1McpServer(): McpServer {
         take: 1,
         select: listSelect,
       });
-      return { content: [{ type: "text", text: JSON.stringify(toItem(row!), null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), ...toItem(row!) }, null, 2) }] };
     },
   );
 
@@ -499,7 +614,7 @@ export function createImqi1McpServer(): McpServer {
           };
         });
       return {
-        content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -541,6 +656,57 @@ export function createImqi1McpServer(): McpServer {
       }));
       return {
         content: [{ type: "text", text: JSON.stringify({ cid, total, count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_content_images：文章配图（封面 + 图片附件） ——
+  server.registerTool(
+    "list_content_images",
+    {
+      description: "列指定文章 cid 关联的图片：封面（covers）+ 图片附件（URL/尺寸/格式）。用于引用文中配图；不含视频附件。",
+      inputSchema: z.object({
+        cid: z.number().int().positive().describe("文章 cid"),
+        limit: z.number().int().min(1).max(100).default(50).describe("返回条数上限（封面优先）"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cid, limit }) => {
+      const [content, atts] = await Promise.all([
+        prisma.contents.findFirst({ where: { cid, status: 1, type: 0 }, select: { covers: true } }),
+        prisma.attachments.findMany({
+          where: { type: "image", contentattachments: { some: { cid } } },
+          orderBy: { create_time: "desc" },
+          select: { aid: true, title: true, url: true, metadata: true },
+          take: limit,
+        }),
+      ]);
+      if (!content) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "article_not_found", cid }) }], isError: true };
+      }
+      const items = [
+        ...parseCovers(content.covers).map(c => ({
+          url: c.url,
+          source: "cover" as const,
+          ...(c.desc ? { desc: c.desc } : {}),
+          ...(c.width != null ? { width: c.width } : {}),
+          ...(c.height != null ? { height: c.height } : {}),
+        })),
+        ...atts.map(a => {
+          const meta = normalizeAttachmentMetadata(a.metadata);
+          return {
+            aid: a.aid,
+            url: a.url,
+            source: "attachment" as const,
+            ...(a.title ? { name: a.title } : {}),
+            ...(meta.width ? { width: meta.width } : {}),
+            ...(meta.height ? { height: meta.height } : {}),
+            ...(meta.format ? { format: meta.format } : {}),
+          };
+        }),
+      ].slice(0, limit);
+      return {
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), cid, count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -605,6 +771,64 @@ export function createImqi1McpServer(): McpServer {
       });
       return {
         content: [{ type: "text", text: JSON.stringify({ count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_travels：旅行足迹地图 ——
+  server.registerTool(
+    "list_travels",
+    {
+      description: "列出旅行足迹地图的全部地点（名称/简介/经纬度/封面）及各地点关联的游记文章。对应前台 TravelMap。",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      const rows = await prisma.travels.findMany({
+        where: { enabled: true },
+        orderBy: [{ sort: "asc" }, { create_time: "desc" }],
+        select: {
+          id: true,
+          name: true,
+          desc: true,
+          cover: true,
+          longitude: true,
+          latitude: true,
+          contenttravels: {
+            select: {
+              content: {
+                select: {
+                  cid: true,
+                  title: true,
+                  slug: true,
+                  contentrelations: {
+                    where: { metas: { type: "category" } },
+                    orderBy: { mid: "asc" },
+                    take: 1,
+                    select: { metas: { select: { slug: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      const items = rows.map(t => ({
+        id: t.id,
+        name: t.name,
+        desc: t.desc ?? "",
+        cover: t.cover ?? null,
+        longitude: t.longitude,
+        latitude: t.latitude,
+        articles: t.contenttravels.flatMap(rel => {
+          const c = rel.content;
+          const catSlug = c.contentrelations[0]?.metas?.slug;
+          if (!catSlug || !c.slug) return [];
+          return [{ cid: c.cid, title: c.title, url: `/content/${catSlug}/${c.slug}` }];
+        }),
+      }));
+      return {
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -686,7 +910,62 @@ export function createImqi1McpServer(): McpServer {
           };
         });
       return {
-        content: [{ type: "text", text: JSON.stringify({ cid, count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), cid, count: items.length, items }, null, 2) }],
+      };
+    },
+  );
+
+  // —— list_archives：归档时间线（全站目录） ——
+  server.registerTool(
+    "list_archives",
+    {
+      description: "全站文章归档时间线：按年月分组的全部已发布文章（cid/标题/链接），一次拿到整站目录。可用 year 只看某一年。",
+      inputSchema: z.object({
+        year: z.number().int().min(2000).max(2100).optional().describe("只返回某一年（UTC 年份）"),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ year }) => {
+      const rows = await prisma.contents.findMany({
+        where: {
+          status: 1,
+          type: 0,
+          ...(year
+            ? { create_time: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } }
+            : {}),
+        },
+        select: {
+          cid: true,
+          title: true,
+          slug: true,
+          create_time: true,
+          contentrelations: {
+            where: { metas: { type: "category" } },
+            orderBy: { mid: "asc" },
+            take: 1,
+            select: { metas: { select: { slug: true } } },
+          },
+        },
+        orderBy: { create_time: "desc" },
+      });
+      // UTC 口径分组（与 archiving.get.ts 对齐，避免服务端/客户端时区错位）
+      const groups = new Map<string, { year: number; month: number; items: Array<{ cid: number; title: string; url: string }> }>();
+      for (const r of rows) {
+        const d = r.create_time;
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        const group = groups.get(key) ?? { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, items: [] };
+        if (!groups.has(key)) groups.set(key, group);
+        group.items.push({
+          cid: r.cid,
+          title: r.title,
+          url: `/content/${r.contentrelations[0]?.metas?.slug ?? "uncategorized"}/${r.slug ?? r.cid}`,
+        });
+      }
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ site_url: await siteUrlOrEmpty(), total: rows.length, groups: [...groups.values()] }, null, 2),
+        }],
       };
     },
   );
@@ -735,7 +1014,7 @@ export function createImqi1McpServer(): McpServer {
         like_num: r._count?.likes ?? 0,
       }));
       return {
-        content: [{ type: "text", text: JSON.stringify({ slug, count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), slug, count: items.length, items }, null, 2) }],
       };
     },
   );
@@ -784,7 +1063,7 @@ export function createImqi1McpServer(): McpServer {
         like_num: r._count?.likes ?? 0,
       }));
       return {
-        content: [{ type: "text", text: JSON.stringify({ slug, count: items.length, items }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ site_url: await siteUrlOrEmpty(), slug, count: items.length, items }, null, 2) }],
       };
     },
   );
