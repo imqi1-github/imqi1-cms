@@ -3,7 +3,6 @@ import "#test/helpers/nitro-globals";
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { flushLogWrites } from "#server/utils/log";
-
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
