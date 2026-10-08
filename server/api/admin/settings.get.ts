@@ -49,9 +49,10 @@ export default defineEventHandler(async event => {
       smtpFromName: "",
       adminEmail: "",
       notifyAdmin: false,
-      notifyError: true,
-      notifyComment: true,
-      notifyLinkApply: true,
+      // 与 siteSettings 同语义: 缺行视为关, 行不存在时后台如实显示关
+      notifyError: false,
+      notifyComment: false,
+      notifyLinkApply: false,
       uploadLocation: DEFAULT_UPLOAD_LOCATION,
       cosSecretId: "",
       cosSecretKey: "",

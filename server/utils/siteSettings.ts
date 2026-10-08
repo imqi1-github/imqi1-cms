@@ -25,9 +25,11 @@ const defaults: SiteSettings = {
   musicPlaylistId: "",
   adminEmail: "",
   notifyAdmin: false,
-  notifyError: true,
-  notifyComment: true,
-  notifyLinkApply: true,
+  // 三个通知子开关语义为「缺行视为关」: 读取以 informations 行为准, 这里的
+  // false 只是行不存在时的兜底显示; 升级部署的种子行由 docs 迁移工具补
+  notifyError: false,
+  notifyComment: false,
+  notifyLinkApply: false,
 };
 
 function sanitizePublicSettings(settings: MutableSettings): SiteSettings {

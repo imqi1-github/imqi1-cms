@@ -48,6 +48,9 @@ async function getMailConfig() {
     address: get("smtpAddress") || get("smtpUser"),
     adminEmail: get("adminEmail"),
     notifyAdmin: get("notifyAdmin") === "true",
+    // 两个子开关以 informations 行为准:缺行视为关。这是刻意的 —— 不在代码里
+    // 给缺数据兜底,升级部署由 docs 迁移工具的 2fc0994 节点补种子行('true'),
+    // 执行过该段 SQL 的站行为与升级前一致;没执行的站通知为关,是显式选择
     notifyComment: get("notifyComment") === "true",
     notifyLinkApply: get("notifyLinkApply") === "true",
   };
