@@ -311,6 +311,12 @@ INSERT INTO "contentrelations" ("cid", "mid") VALUES (1, 1);
 INSERT INTO "comments" ("coid", "cid", "name", "mail", "content", "create_time", "status") VALUES
   (1, 1, '访客', 'guest@example.com', '这是一条示例评论，欢迎在留言板或文章下方参与讨论！', now(), 1);
 
+-- 显式指定主键的 INSERT 不推进 SERIAL 序列，拨到现有最大值，避免首次建内容撞主键
+SELECT setval(pg_get_serial_sequence('users', 'uid'), COALESCE((SELECT MAX("uid") FROM "users"), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('metas', 'mid'), COALESCE((SELECT MAX("mid") FROM "metas"), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('contents', 'cid'), COALESCE((SELECT MAX("cid") FROM "contents"), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('comments', 'coid'), COALESCE((SELECT MAX("coid") FROM "comments"), 0) + 1, false);
+
 -- ============================================================
 -- 五、pg_trgm 扩展与 trgm 索引（让 LIKE '%q%' 走 GIN 索引）
 -- 需要 superuser 权限创建扩展；应用账号若无，可单独用 psql 以 superuser 执行本段。
