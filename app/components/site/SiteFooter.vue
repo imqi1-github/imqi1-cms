@@ -276,12 +276,15 @@ onMounted(() => {
             v-tooltip="'返回顶部'"
             type="button"
             :aria-label="showProgress ? `返回顶部，当前阅读进度 ${roundedProgress}%` : '返回顶部'"
-            class="cursor-pointer relative rounded-full p-1.5 flex items-center justify-center transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
+            class="group cursor-pointer relative rounded-full p-1.5 flex items-center justify-center transition-all duration-300 aspect-square size-7.5 hover:border-blue-700 max-md:hidden dark:hover:border-blue-600"
             :class="footerBtnShell"
             @click="scrollToTop">
-            <!-- 进度圆环 -->
-            <Transition name="icon-fade" mode="out-in">
-              <svg v-if="showProgress" key="progress" aria-hidden="true" class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+            <!-- 进度层：圆环 + 数字，悬浮时淡出让位给箭头 -->
+            <span
+              aria-hidden="true"
+              class="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
+              :class="showProgress ? 'opacity-100 group-hover:opacity-0' : 'opacity-0'">
+              <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
                 <circle
                   cx="14"
                   cy="14"
@@ -294,16 +297,15 @@ onMounted(() => {
                   :stroke-dasharray="PROGRESS_CIRCUMFERENCE"
                   :stroke-dashoffset="PROGRESS_CIRCUMFERENCE - (PROGRESS_CIRCUMFERENCE * scrollProgress) / 100" />
               </svg>
-              <div v-else-if="showBackToTop" key="arrow" aria-hidden="true" class="absolute inset-0 flex items-center justify-center">
-                <Icon name="ri:arrow-up-line" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
-              </div>
-            </Transition>
-            <!-- 进度数字 -->
-            <Transition name="icon-fade" mode="out-in">
-              <span v-if="showProgress" key="number" aria-hidden="true" class="text-[10px] font-medium text-gray-600 dark:text-gray-300">
-                {{ roundedProgress }}
-              </span>
-            </Transition>
+              <span class="text-[10px] font-medium text-gray-600 dark:text-gray-300">{{ roundedProgress }}</span>
+            </span>
+            <!-- 箭头层：悬浮时淡入（进度到底时常驻显示） -->
+            <span
+              aria-hidden="true"
+              class="absolute inset-0 flex items-center justify-center transition-all duration-300"
+              :class="showBackToTop ? 'opacity-100' : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'">
+              <Icon name="ri:arrow-up-line" aria-hidden="true" class="size-4 text-gray-600 dark:text-gray-300" />
+            </span>
           </button>
         </Transition>
       </ClientOnly>
@@ -464,19 +466,5 @@ onMounted(() => {
 .fade-leave-to {
   opacity: 0;
   transform: scale(0.75);
-}
-
-/* 进度圆环 ↔ 返回顶部箭头 之间的切换（mode="out-in"） */
-.icon-fade-enter-active,
-.icon-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.icon-fade-enter-from {
-  opacity: 0;
-  transform: scale(0.7);
-}
-.icon-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.7);
 }
 </style>
