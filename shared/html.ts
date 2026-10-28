@@ -13,6 +13,92 @@ export function escapeAttribute(value: string): string {
   return escapeHtml(value);
 }
 
+// 单次扫描解码常见命名实体（非递归：&amp;lt; 只解一次成 &lt;，不会再解成 <）。
+const ENTITY_RE = /&(amp|lt|gt|quot|#39|#x27|apos|nbsp);/g;
+
+/**
+ * 解码常见命名实体。
+ *
+ * 净化器（DOMPurify）序列化文本节点时会把 & < > 编码成实体，入库前用本函数解回字面字符，
+ * 渲染端再 escapeHtml 一次即可所见即所得；否则会二次编码，页面显示字面量 &amp; / &lt;。
+ */
+export function decodeEntities(value: string): string {
+  return value.replace(ENTITY_RE, (match, name: string) => {
+    switch (name) {
+      case "amp":
+        return "&";
+      case "lt":
+        return "<";
+      case "gt":
+        return ">";
+      case "quot":
+        return '"';
+      case "apos":
+      case "#39":
+      case "#x27":
+        return "'";
+      case "nbsp":
+        return " ";
+      default:
+        return match;
+    }
+  });
+}
+
+// 裸链识别：仅 http(s)；字符集限定 URL 合法字符（不含 CJK 与引号），
+// 免得把紧跟 URL 的中文或引号吃进链接本体。
+const URL_RE = /\bhttps?:\/\/[A-Za-z0-9\-._~:/?#@!$&()*+,;=%]+/gi;
+
+// 链接末尾常见标点（中英文）不属于链接本体
+const URL_TAIL_CHARS = new Set([".", ",", ";", ":", "!", "?", ")", "]", "}", "、", "。", "，", "；", "：", "！", "？", "）", "】", "》"]);
+
+function countChar(text: string, char: string): number {
+  return text.split(char).length - 1;
+}
+
+/** 去掉 URL 末尾的标点；括号不配平时保留末尾 ')'（如 wiki 的 Foo_(bar)）。 */
+function trimUrlTail(url: string): string {
+  let out = url;
+  while (out.length > 0) {
+    const last = out[out.length - 1]!;
+    if (!URL_TAIL_CHARS.has(last)) break;
+    // 末尾 ')' 只有在括号不配对时才是标点（Foo_(bar) 的 ')' 属于 URL 本体）
+    if (last === ")" && countChar(out, ")") <= countChar(out, "(")) break;
+    out = out.slice(0, -1);
+  }
+  return out;
+}
+
+export interface EscapeWithLinksOptions {
+  /** 链接显示文本的最大长度，超出截断加省略号（href 仍是完整 URL） */
+  maxLinkTextLength?: number;
+}
+
+/**
+ * 纯文本 → HTML：转义 + 裸链自动链接。
+ *
+ * 链接在原文上匹配并分段处理：若先整体转义，URL 里的 & 会变成 &amp;，正则会被截断。
+ * 链接只认 http(s)（防 javascript: / data:），外链一律 nofollow noopener noreferrer。
+ */
+export function escapeHtmlWithLinks(text: string, options: EscapeWithLinksOptions = {}): string {
+  if (!text) return "";
+  const out: string[] = [];
+  let last = 0;
+  for (const match of text.matchAll(URL_RE)) {
+    const url = trimUrlTail(match[0]);
+    if (!url) continue;
+    const start = match.index ?? 0;
+    out.push(escapeHtml(text.slice(last, start)));
+    const label = options.maxLinkTextLength && url.length > options.maxLinkTextLength
+      ? `${url.slice(0, options.maxLinkTextLength)}…`
+      : url;
+    out.push(`<a href="${escapeAttribute(url)}" target="_blank" rel="nofollow noopener noreferrer">${escapeHtml(label)}</a>`);
+    last = start + url.length;
+  }
+  out.push(escapeHtml(text.slice(last)));
+  return out.join("");
+}
+
 export function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { escapeAttribute, escapeHtml, escapeRegExp, sanitizeHtml } from "#shared/html";
+import { decodeEntities, escapeAttribute, escapeHtml, escapeHtmlWithLinks, escapeRegExp, sanitizeHtml } from "#shared/html";
 
 // 用 chr(N) 拼特殊字符,避免源码里的 < > " 被工具链二次解释
 function chr(n: number): string {
@@ -82,6 +82,79 @@ describe("sanitizeHtml", () => {
   test("剥离事件处理器 onerror / onclick", () => {
     expect(sanitizeHtml('<img src="x" onerror="alert(1)">')).not.toContain("onerror");
     expect(sanitizeHtml('<a href="/x" onclick="evil()">go</a>')).not.toContain("onclick");
+  });
+});
+
+describe("decodeEntities", () => {
+  test("解码常见命名实体", () => {
+    const AMP = chr(38);
+    expect(decodeEntities(`A ${AMP}amp; B ${AMP}lt;6${AMP}gt; ${AMP}quot;q${AMP}quot; ${AMP}#39;s${AMP}#39;`)).toBe(
+      `A & B <6> "q" 's'`,
+    );
+  });
+
+  test("非递归:&amp;lt; 只解一次成 &lt;", () => {
+    const AMP = chr(38);
+    expect(decodeEntities(`${AMP}amp;lt;`)).toBe(`${AMP}lt;`);
+  });
+
+  test("无实体时原样返回", () => {
+    expect(decodeEntities("普通文本")).toBe("普通文本");
+  });
+});
+
+describe("escapeHtmlWithLinks", () => {
+  test("裸 http(s) 链接转成 <a>,带 target/rel", () => {
+    const html = escapeHtmlWithLinks("见 https://example.com/x 完毕");
+    expect(html).toContain(`href="https://example.com/x"`);
+    expect(html).toContain(`target="_blank"`);
+    expect(html).toContain(`rel="nofollow noopener noreferrer"`);
+  });
+
+  test("URL 里的 & 不被截断(href 保留完整 query)", () => {
+    const AMP = chr(38);
+    const html = escapeHtmlWithLinks(`https://example.com/?a=1${AMP}b=2`);
+    expect(html).toContain(`href="https://example.com/?a=1${AMP}amp;b=2"`);
+  });
+
+  test("javascript: / data: 不转成链接", () => {
+    const html = escapeHtmlWithLinks("javascript:alert(1) data:text/html,x");
+    expect(html).not.toContain("<a ");
+  });
+
+  test("链接末尾的中英文标点不并入链接", () => {
+    const html = escapeHtmlWithLinks("见 https://example.com/path。");
+    expect(html).toContain(`href="https://example.com/path"`);
+    expect(html).toContain("</a>。");
+  });
+
+  test("紧跟链接的中文不被吞进链接", () => {
+    const html = escapeHtmlWithLinks("链接https://example.com好的");
+    expect(html).toContain(`href="https://example.com"`);
+    expect(html).toContain("</a>好的");
+  });
+
+  test("括号配对时末尾 ) 属于链接本体", () => {
+    const html = escapeHtmlWithLinks("https://example.com/wiki/Foo_(bar)");
+    expect(html).toContain(`href="https://example.com/wiki/Foo_(bar)"`);
+  });
+
+  test("无链接时只转义,不留 <a>", () => {
+    const html = escapeHtmlWithLinks(`<b>x</b> ${chr(38)}`);
+    expect(html).not.toContain("<a ");
+    expect(html).toContain(`&lt;b&gt;`);
+    expect(html).toContain(`&amp;`);
+  });
+
+  test("maxLinkTextLength 截断显示文本,href 仍是完整 URL", () => {
+    const long = "https://example.com/" + "a".repeat(80);
+    const html = escapeHtmlWithLinks(long, { maxLinkTextLength: 20 });
+    expect(html).toContain(`href="${long}"`);
+    expect(html).toContain("…");
+  });
+
+  test("空字符串原样返回", () => {
+    expect(escapeHtmlWithLinks("")).toBe("");
   });
 });
 

@@ -1,5 +1,3 @@
-import DOMPurify from "isomorphic-dompurify";
-
 import { MAX_COMMENT_LENGTH, COMMENT_CACHE_ROUTES  } from "#shared/constants";
 import type { MiniCommentBody, MiniCommentCreateResponse } from "#server/types/apis/mini";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
@@ -10,23 +8,10 @@ import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getSiteSettings } from "#server/utils/siteSettings";
 import { validateCommentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { sanitizeCommentContent } from "#server/utils/comment-content";
 
-// HTML 净化配置：与主站 comments.post.ts 保持一致，只允许安全标签/属性。
-// 小程序端本就以纯文本展示评论，此处净化是入库前的双重兜底（防其他端复用同一数据时 XSS）。
-const PURIFY_CONFIG = {
-  ALLOWED_TAGS: ["p", "br", "strong", "em", "a", "img", "code", "pre"],
-  ALLOWED_ATTR: ["href", "src", "alt", "class", "title"],
-  ALLOW_DATA_ATTR: false,
-  ALLOW_UNKNOWN_PROTOCOLS: false,
-  ALLOW_SELF_CLOSE_IN_ATTR: false,
-  SAFE_FOR_TEMPLATES: true,
-  WHOLE_DOCUMENT: false,
-  CUSTOM_ELEMENT_HANDLING: {
-    tagNameCheck: null,
-    attributeNameCheck: null,
-    allowCustomizedBuiltInElements: false,
-  },
-};
+// 入库净化与主站 comments.post.ts 共用（server/utils/comment-content.ts）：
+// 落库存纯文本，小程序端本就以纯文本展示评论，此处是入库前的兜底（防其他端复用同一数据时 XSS）。
 
 export default defineEventHandler(async event => {
   // 小程序评论使用独立的构建期开关，不跟随主站后台评论开关；审核模式（miniFakeData）下也一并关闭。
@@ -179,7 +164,7 @@ export default defineEventHandler(async event => {
       commentStatus = meta?.value === "true" ? 0 : 1;
     }
 
-    const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG) as string;
+    const sanitizedContent = sanitizeCommentContent(content);
 
     // 评论写入与文章评论数累加放入同一事务：要么都成功要么都回滚，
     // 避免后续 update（如目标文章被并发删除）失败时留下孤立评论。

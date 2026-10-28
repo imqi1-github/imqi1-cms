@@ -2,6 +2,7 @@ import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateCommentData } from "#server/utils/validation";
+import { sanitizeCommentContent } from "#server/utils/comment-content";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { COMMENT_CACHE_ROUTES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
@@ -106,7 +107,7 @@ export default defineEventHandler(async event => {
           ...(name !== undefined && { name }),
           ...(mail !== undefined && { mail }),
           ...(link !== undefined && { link }),
-          ...(content !== undefined && { content }),
+          ...(content !== undefined && { content: sanitizeCommentContent(content) }),
         },
         // 约定1 白名单：update 默认返回全部列（含 ip/agent/mail 等内部/隐私字段），只回传必要字段
         select: {

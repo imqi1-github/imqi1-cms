@@ -69,6 +69,17 @@ describe("parseEmojiContent", () => {
   test("空文本返回空串", () => {
     expect(parseEmojiContent("")).toBe("");
   });
+
+  test("裸链转成可点链接(外链带 nofollow noopener)", () => {
+    const html = parseEmojiContent("见 https://example.com/x 完毕");
+    expect(html).toContain('href="https://example.com/x"');
+    expect(html).toContain('rel="nofollow noopener noreferrer"');
+    expect(html).toContain("</a>");
+  });
+
+  test("javascript:/data: 不转成链接", () => {
+    expect(parseEmojiContent("javascript:alert(1) data:text/html,x")).not.toContain("<a ");
+  });
 });
 
 describe("textToEditableHtml", () => {

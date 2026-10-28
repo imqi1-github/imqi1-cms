@@ -30,4 +30,19 @@ describe("MailEmojiRenderer(真实 emojis.json)", () => {
     expect(r.getAttachments()).toHaveLength(1);
     expect(r.renderContent(":[不存在的表情]")).toContain(":[不存在的表情]");
   });
+
+  test("换行转 <br>(邮件正文按 HTML 渲染,裸 \\n 会被折叠成一行)", () => {
+    const r = new MailEmojiRenderer();
+    const html = r.renderContent("第一行\n第二行");
+    expect(html).toContain("<br>");
+    expect(html).toContain("第一行");
+    expect(html).toContain("第二行");
+  });
+
+  test("裸链转成可点链接", () => {
+    const r = new MailEmojiRenderer();
+    const html = r.renderContent("见 https://example.com/x 完毕");
+    expect(html).toContain('href="https://example.com/x"');
+    expect(html).toContain('rel="nofollow noopener noreferrer"');
+  });
 });

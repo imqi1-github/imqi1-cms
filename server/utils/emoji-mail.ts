@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { escapeAttribute, escapeHtml } from "#shared/html";
+import { escapeAttribute, escapeHtmlWithLinks } from "#shared/html";
 import { EMOJI_CATEGORIES, stripEmojiPrefix } from "#shared/emoji-categories";
 import { getPublicDir } from "#server/utils/attachment-file";
 import type { EmojiEntry, MailEmojiAttachment } from "#server/types/utils/emoji-mail";
@@ -87,10 +87,10 @@ export class MailEmojiRenderer {
   private counter = 0;
   private attachments: MailEmojiAttachment[] = [];
 
-  /** 渲染一段评论文本：先 escapeHtml（顺带修邮件未转义插值的 XSS），再把 :[key] 替换为 cid img。未命中保留原占位符。 */
+  /** 渲染一段评论文本：先 escapeHtml（顺带修邮件未转义插值的 XSS）+ 裸链自动链接 + 换行转 <br>，再把 :[key] 替换为 cid img。未命中保留原占位符。 */
   renderContent(text: string | null | undefined): string {
     if (!text) return "";
-    const escaped = escapeHtml(text);
+    const escaped = escapeHtmlWithLinks(text, { maxLinkTextLength: 60 }).replace(/\r?\n/g, "<br>");
     if (!text.includes(":[")) return escaped;
     const map = getEmojiKeyMap();
     return escaped.replace(PLACEHOLDER_RE, (match, key: string) => {

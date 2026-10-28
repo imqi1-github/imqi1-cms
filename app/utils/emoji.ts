@@ -8,7 +8,7 @@ import { publicAsset } from "./asset";
 
 import emojisData from "~/assets/emojis.json";
 import type { EmojiDict, EmojiItem, EmojiLookupEntry } from "~/types/emoji";
-import { escapeAttribute, escapeHtml } from "#shared/html";
+import { escapeAttribute, escapeHtml, escapeHtmlWithLinks } from "#shared/html";
 // 表情分类配置与 stripEmojiPrefix 的源头在 ~~shared/emoji-categories（前端/服务端共用）：
 // Nitro 不打包 app/，服务端无法 import ~/utils 或 ~/types，故跨边界常量必须放 shared/。
 import { EMOJI_CATEGORIES, stripEmojiPrefix } from "#shared/emoji-categories";
@@ -54,10 +54,11 @@ export function getEmojiList(dataKey: string): EmojiItem[] {
 
 const EMOJI_PLACEHOLDER_RE = /:\[([^\]]+)\]/g;
 
-// 解析评论文本：先转义原始文本，命中 :[key] 的占位符替换为受控 img，避免 v-html 注入。
+// 解析评论文本：先转义原始文本 + 裸链自动链接，命中 :[key] 的占位符替换为受控 img，避免 v-html 注入。
 export function parseEmojiContent(text: string): string {
   if (!text) return "";
-  const escaped = escapeHtml(text);
+  // 转义与链接识别同源（escapeHtmlWithLinks）：链接在原文上匹配，URL 里的 & 不会被转义打断。
+  const escaped = escapeHtmlWithLinks(text, { maxLinkTextLength: 60 });
   // 绝大多数评论不含表情，提前跳过正则替换。
   if (!text.includes(":[")) return escaped;
   return escaped.replace(EMOJI_PLACEHOLDER_RE, (match, key: string) => {

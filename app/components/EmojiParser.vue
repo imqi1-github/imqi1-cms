@@ -15,8 +15,12 @@ const props = withDefaults(
 const parsedContent = computed(() => parseEmojiContent(props.content));
 </script>
 
+<!--
+  whitespace-pre-wrap：评论正文里的换行（入库时存的是 \n）必须保留，
+  否则 HTML 默认折叠空白，多行评论会被显示成一行（小程序端同理，已在 comment-node.vue 处理）。
+-->
 <template>
-  <span :class="size === 'sm' ? 'emoji-sm' : 'emoji-lg'" v-html="parsedContent" />
+  <span :class="[size === 'sm' ? 'emoji-sm' : 'emoji-lg', 'whitespace-pre-wrap']" v-html="parsedContent" />
 </template>
 
 <style scoped>

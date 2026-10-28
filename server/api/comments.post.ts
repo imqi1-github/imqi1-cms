@@ -1,5 +1,3 @@
-import DOMPurify from "isomorphic-dompurify";
-
 import { getUser } from "#server/lib/auth";
 import { auditText, getAuditConfig, mapAuditResultToStatus } from "#server/utils/baidu-audit";
 import { verifyCaptcha } from "#server/utils/captcha";
@@ -11,24 +9,8 @@ import { CommentCreateSchema } from "#server/utils/schemas";
 import { defineTypedApiHandler } from "#server/types/typedApi";
 import { validateCommentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { sanitizeCommentContent } from "#server/utils/comment-content";
 import { COMMENT_CACHE_ROUTES } from "#shared/constants";
-
-
-// HTML 净化配置 - 只允许安全的标签和属性
-const PURIFY_CONFIG = {
-  ALLOWED_TAGS: ["p", "br", "strong", "em", "a", "img", "code", "pre"],
-  ALLOWED_ATTR: ["href", "src", "alt", "class", "title"],
-  ALLOW_DATA_ATTR: false,
-  ALLOW_UNKNOWN_PROTOCOLS: false,
-  ALLOW_SELF_CLOSE_IN_ATTR: false,
-  SAFE_FOR_TEMPLATES: true,
-  WHOLE_DOCUMENT: false,
-  CUSTOM_ELEMENT_HANDLING: {
-    tagNameCheck: null,
-    attributeNameCheck: null,
-    allowCustomizedBuiltInElements: false,
-  },
-};
 
 export default defineTypedApiHandler(
   {
@@ -239,8 +221,8 @@ export default defineTypedApiHandler(
         commentStatus = needModeration ? 0 : 1;
       }
 
-      // 净化评论内容，防止 XSS 攻击
-      const sanitizedContent = DOMPurify.sanitize(content, PURIFY_CONFIG) as string;
+      // 净化评论内容，防止 XSS 攻击（落库存纯文本，渲染端再转义一次）
+      const sanitizedContent = sanitizeCommentContent(content);
 
       // 评论写入与评论数累加必须原子（对齐 mini/comments.post）：若 create 后、update 前目标被并发
       // 删除/下架，update 抛 P2025，整笔回滚，避免留下计数不同步的孤儿评论。
