@@ -79,3 +79,4 @@
 
 - [久未触碰文件非必然 bug,实测再下结论](stale-config-files-not-always-bug.md) — 扫仓库「长期没改」文件不等同 bug,要跑 tailwindcss:lint / 查 tsconfig alias 兜底 / 实际 fs 检查;shadcn 组件+components.json 6 个月未动是典型误报(tailwindcss:lint 0 警 + tsconfig alias 兜底);用户对 lint exit 0 有强要求,无证据的改动只增加技术债
 - [MCP 运维工具组 MCP_OPS_TOKEN 门禁](mcp-ops-tools.md) — /mcp 公开端点加 5 个运维工具(系统状态/日志/内容统计/缓存诊断/清缓存),未配 MCP_OPS_TOKEN 整组不注册(fail-closed),配了每工具入参带 token(timingSafeEqual);clear_cache 唯一非 readOnly(destructiveHint+confirm:true);get_cache_info 键前缀 rl: 是 rate-limit 内部前缀;get_recent_logs 类别白名单=LOG_TAG_LABELS 键防穿越;测试须在 import mcp-tools 前设 LOGS_DIR 到 tmpdir
+- [/link-audit 友链订阅合规审查](link-audit-skill.md) — 判定只走百度内容审核(不做 agent 复核),仓库内无违规词表;范围=只判对方自己的内容(maskThirdParty 屏蔽其友链区/外链/留言区,实测单站屏蔽 814 处);结论映射 不合规0.90/疑似0.65;百度 v2 单条上限实测 6000~8000 字符(超限282909)→按字节切块+二分;博客语境误报高→机审只当定位器;密钥只能放 .env.local(.env.example 会被 git 跟踪);处置走 admin API 才失效 ISR 缓存
