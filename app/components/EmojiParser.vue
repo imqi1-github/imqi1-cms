@@ -39,4 +39,21 @@ const parsedContent = computed(() => parseEmojiContent(props.content));
   width: 1.6em;
   height: 1.6em;
 }
+
+/* 裸链样式：Tailwind preflight 把 a 复位成继承色+无下划线，这里补回蓝色+下划线让访客看出可点击。 */
+:deep(a) {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* 暗色模式跟随主题（.dark 在 html 上，用 :is(.dark *) 而非 .dark 前缀，否则 scoped 注入会错位）。 */
+:deep(a):is(.dark *) {
+  color: #60a5fa;
+}
+:deep(a:hover) {
+  color: #1d4ed8;
+}
+:deep(a:hover):is(.dark *) {
+  color: #93c5fd;
+}
 </style>
