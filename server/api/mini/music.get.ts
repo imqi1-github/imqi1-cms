@@ -14,7 +14,6 @@ const ALLOWED_MEDIA_DOMAINS = [
   "kuwo.cn", // 酷我
   "kugou.com", // 酷狗
   "baidu.com", // 百度
-  "xiami.com", // 虾米
 ];
 
 function isAllowedMediaUrl(url: string): boolean {
@@ -90,7 +89,8 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 400, message: "缺少必要参数 id" });
   }
 
-  const validServers = ["netease", "tencent", "xiami", "kugou", "baidu", "kuwo"];
+  // 虾米 xiami 已从 meting 上游移除，不支持的平台会被静默回落成 netease，故不开放
+  const validServers = ["netease", "tencent", "kugou", "baidu", "kuwo"];
   if (!validServers.includes(server)) {
     throw createError({ statusCode: 400, message: `不支持的音乐平台：${server}` });
   }

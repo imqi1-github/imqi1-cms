@@ -63,7 +63,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: imqi1-redis
     restart: unless-stopped
     # 仅 compose 内网可达（未发布端口），故不开鉴权

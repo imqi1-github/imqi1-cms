@@ -415,7 +415,7 @@ bun run restart:server -- start # 启动
 
 Docker 部署文件已整理进 `docker/` 子目录，提供**两套独立版本**按是否需要 Redis 二选一：
 
-- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + PostgreSQL 16 + Redis 7。默认烘焙 `redis:6379`（compose 服务名）并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
+- **带 Redis**（`docker/docker-compose.yml` + `docker/Dockerfile`）：应用 + PostgreSQL 16 + Redis 8。默认烘焙 `redis:6379`（compose 服务名）并启动 redis 容器，ISR 增量缓存与搜索缓存共用。
 - **不带 Redis**（`docker/docker-compose.noredis.yml` + `docker/Dockerfile.noredis`）：仅应用 + PostgreSQL 16。页面不做整页缓存、搜索缓存关闭，不创建 redis 容器/卷。
 
 **是否启用 Redis 只由「选哪套 compose 文件」决定**：compose 的 `build.args` 是固定字面量，不读环境变量，所以 `.env` 里不需要也不应该写 `REDIS_*`（也不需要任何 `COMPOSE_PROFILES` 之类的环境变量魔法）。要指定连哪台 Redis、端口、DB 号，在**构建命令里用 `--build-arg` 覆盖**，例如 `--build-arg REDIS_HOST=10.0.0.5`（可用变量：`REDIS_ENABLED` / `REDIS_HOST` / `REDIS_PORT` / `REDIS_DB`；默认部署的 redis 只在 compose 内网可达、未开鉴权，故**不支持密码**——原因与自行加密码的做法见 [`docker/README.md`](docker/README.md) 的「指定 Redis 参数」）。两个版本的具体用法、启动命令与运维命令见 **[`docker/README.md`](docker/README.md)**。

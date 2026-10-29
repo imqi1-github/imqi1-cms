@@ -2,7 +2,7 @@
  * server/utils/wechat-mini.ts:
  *  - isConfigured() = process.env.WECHAT_MINI_APPID && WECHAT_MINI_SECRET
  *  - 未配置 → generateMiniProgramCode 抛"未配置微信小程序凭据"(前端据此隐藏入口)
- *  - getAccessToken 内存缓存 expiresAt,过期前 60s 提前刷新
+ *  - getAccessToken 走稳定版接口 POST /cgi-bin/stable_token,内存缓存 expiresAt,过期前 60s 提前刷新
  *  - token API 响应无 access_token → 抛错(JSON.stringify 原样回传)
  *  - 二维码 API 响应 content-type 含 application/json(微信错误码) → 抛错
  *  - 成功 → 返回 Buffer
@@ -16,14 +16,18 @@ const ORIGINAL_FETCH = globalThis.fetch;
 const ORIGINAL_APPID = process.env.WECHAT_MINI_APPID;
 const ORIGINAL_SECRET = process.env.WECHAT_MINI_SECRET;
 
+const TOKEN_ENDPOINT = "/cgi-bin/stable_token";
+
 let tokenResponses: Array<() => Response> = [];
 let qrResponses: Array<() => Response> = [];
 let fetchUrls: string[] = [];
+let fetchBodies: string[] = [];
 
-function fakeFetch(input: string | URL | Request): Promise<Response> {
+function fakeFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input);
   fetchUrls.push(url);
-  if (url.includes("/cgi-bin/token")) {
+  fetchBodies.push(typeof init?.body === "string" ? init.body : "");
+  if (url.includes(TOKEN_ENDPOINT)) {
     const next = tokenResponses.shift() ?? (() => new Response("{}", { status: 500 }));
     return Promise.resolve(next());
   }
@@ -36,6 +40,7 @@ function fakeFetch(input: string | URL | Request): Promise<Response> {
 
 beforeEach(() => {
   fetchUrls = [];
+  fetchBodies = [];
   tokenResponses = [];
   qrResponses = [];
   delete process.env.WECHAT_MINI_APPID;
@@ -79,9 +84,13 @@ describe("isConfigured 守门", () => {
     const buf = await generateMiniProgramCode("cid=1", "pages/article");
     expect(buf).toBeInstanceOf(Buffer);
     expect(fetchUrls.length).toBe(2);
-    expect(fetchUrls[0]).toContain("/cgi-bin/token");
-    expect(fetchUrls[0]).toContain("appid=wx-test");
-    expect(fetchUrls[0]).toContain("secret=sec");
+    expect(fetchUrls[0]).toContain(TOKEN_ENDPOINT);
+    // 稳定版接口凭据走 POST JSON body，不再拼在 URL query 上
+    const tokenBody = JSON.parse(fetchBodies[0]!) as { appid: string; secret: string; force_refresh: boolean };
+    expect(tokenBody.appid).toBe("wx-test");
+    expect(tokenBody.secret).toBe("sec");
+    // force_refresh=true 会让正在使用的旧 token 立即失效，必须为 false
+    expect(tokenBody.force_refresh).toBe(false);
   });
 });
 
@@ -121,7 +130,7 @@ describe("access_token 缓存命中(单用例覆盖,只断言 ≤ 1 fetch)", () 
     qrResponses.push(() => new Response(new Uint8Array([2]), { status: 200, headers: { "content-type": "image/jpeg" } }));
     await generateMiniProgramCode("a", "p");
     await generateMiniProgramCode("b", "p");
-    expect(fetchUrls.filter(u => u.includes("/cgi-bin/token")).length).toBe(2);
+    expect(fetchUrls.filter(u => u.includes(TOKEN_ENDPOINT)).length).toBe(2);
   });
 
   test("expires_in=7200 + 2 次调用 → token fetch ≤ 1,QR fetch = 2", async () => {
@@ -132,7 +141,7 @@ describe("access_token 缓存命中(单用例覆盖,只断言 ≤ 1 fetch)", () 
     qrResponses.push(() => new Response(new Uint8Array([2]), { status: 200, headers: { "content-type": "image/jpeg" } }));
     await generateMiniProgramCode("a", "p");
     await generateMiniProgramCode("b", "p");
-    const tokenFetches = fetchUrls.filter(u => u.includes("/cgi-bin/token")).length;
+    const tokenFetches = fetchUrls.filter(u => u.includes(TOKEN_ENDPOINT)).length;
     const qrFetches = fetchUrls.filter(u => u.includes("/wxa/getwxacodeunlimit")).length;
     expect(tokenFetches).toBeLessThanOrEqual(1);
     expect(qrFetches).toBe(2);
@@ -146,7 +155,7 @@ describe("access_token 缓存命中(单用例覆盖,只断言 ≤ 1 fetch)", () 
     qrResponses.push(() => new Response(new Uint8Array([2]), { status: 200, headers: { "content-type": "image/jpeg" } }));
     await generateMiniProgramCode("a", "p");
     await generateMiniProgramCode("b", "p");
-    expect(fetchUrls.filter(u => u.includes("/cgi-bin/token")).length).toBeLessThanOrEqual(1);
+    expect(fetchUrls.filter(u => u.includes(TOKEN_ENDPOINT)).length).toBeLessThanOrEqual(1);
   });
 });
 

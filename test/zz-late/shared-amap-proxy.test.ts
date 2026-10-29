@@ -96,17 +96,17 @@ describe("resolveAmapProxyTarget", () => {
     expect(u?.searchParams.get("jscode")).toBeNull();
   });
 
-  test("/v4/map/styles → webapi/v4/map/styles + securityJsCode,key 被丢弃", () => {
+  test("/v4/map/styles2 → webapi/v4/map/styles2 + securityJsCode,浏览器侧 key 透传", () => {
     const u = resolveAmapProxyTarget({
-      pathname: "/_AMapService/v4/map/styles",
-      search: "?key=evil&theme=dark",
+      pathname: "/_AMapService/v4/map/styles2",
+      search: "?key=browser-side-key&theme=dark",
       key, securityJsCode: js,
     });
     expect(u?.hostname).toBe("webapi.amap.com");
-    expect(u?.pathname).toBe("/v4/map/styles");
+    expect(u?.pathname).toBe("/v4/map/styles2");
     expect(u?.searchParams.get("theme")).toBe("dark");
     expect(u?.searchParams.get("jscode")).toBe(js);
-    expect(u?.searchParams.get("key")).toBeNull();
+    expect(u?.searchParams.get("key")).toBe("browser-side-key");
   });
 
   test("其它 /rest → restapi.amap.com + securityJsCode,删 key/jscode", () => {

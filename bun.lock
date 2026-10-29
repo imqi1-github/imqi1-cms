@@ -6,7 +6,7 @@
       "name": "imqi1-cms",
       "dependencies": {
         "@amap/amap-jsapi-loader": "^1.0.1",
-        "@meting/core": "^1.6.1",
+        "@meting/core": "^1.6.2",
         "@nuxtjs/color-mode": "^4.0.1",
         "@prisma/adapter-pg": "^7.10.0",
         "@prisma/client": "^7.8.0",
@@ -480,7 +480,7 @@
 
     "@mapbox/node-pre-gyp": ["@mapbox/node-pre-gyp@2.0.3", "https://registry.npmmirror.com/@mapbox/node-pre-gyp/-/node-pre-gyp-2.0.3.tgz", { "dependencies": { "consola": "^3.2.3", "detect-libc": "^2.0.0", "https-proxy-agent": "^7.0.5", "node-fetch": "^2.6.7", "nopt": "^8.0.0", "semver": "^7.5.3", "tar": "^7.4.0" }, "bin": { "node-pre-gyp": "bin/node-pre-gyp" } }, "sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg=="],
 
-    "@meting/core": ["@meting/core@1.6.1", "https://registry.npmmirror.com/@meting/core/-/core-1.6.1.tgz", {}, "sha512-6LPRZlZc8hUc0Jmg74tbMBLeoyXoyttPBLoNNpybLZ6GY+de95h9w3YQGh0yDwnrSivqcHMGZ5u5VJym5PdY1w=="],
+    "@meting/core": ["@meting/core@1.6.2", "", {}, "sha512-Qygn2CkfvBB3s1HFNfqdXLF/zpFjcFICn+FlakBI+yNNkMXDwEkrwWCrNkRDiAjfktAz/RTin3jQxCiY3HsIwg=="],
 
     "@modelcontextprotocol/core": ["@modelcontextprotocol/core@2.0.0", "https://registry.npmmirror.com/@modelcontextprotocol/core/-/core-2.0.0.tgz", { "dependencies": { "zod": "^4.2.0" } }, "sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA=="],
 

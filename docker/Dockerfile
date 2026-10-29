@@ -4,7 +4,7 @@
 
 # ---- Stage 1: 依赖安装 + 构建 ----
 # 匹配 package.json 的 packageManager，避免 bun 版本不一致导致 --frozen-lockfile 失败
-FROM oven/bun:1.4 AS builder
+FROM oven/bun:1.4.4 AS builder
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile --ignore-scripts
@@ -28,7 +28,7 @@ FROM scratch AS bundle
 COPY --from=builder /app/.output /output
 
 # ---- Stage 2: 运行时 ----
-FROM node:22-slim AS runner
+FROM node:24-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NITRO_PRESET=node-server \

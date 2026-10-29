@@ -18,6 +18,12 @@ const PLATFORM_API_BASE: Record<"github" | "gitee", string> = {
   gitee: "https://gitee.com/api/v5/repos",
 };
 
+// GitHub REST API 日历版本化：钉 2022-11-28（官方支持至 2028-03-10），不钉会随上游默认版本漂移
+const PLATFORM_HEADERS: Record<"github" | "gitee", Record<string, string>> = {
+  github: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+  gitee: { Accept: "application/json" },
+};
+
 // owner/repo 只允许字母数字与 _ . -（GitHub/Gitee 命名空间的合法子集），防 URL 拼接注入
 const NAME_RE = /^[A-Za-z0-9_.-]{1,100}$/;
 
@@ -110,7 +116,7 @@ export default defineEventHandler(async event => {
         if (!response.ok) throw new Error(`upstream ${response.status}`);
         return (await response.json()) as Record<string, unknown>;
       },
-      { headers: { "User-Agent": "imqi1-cms", Accept: "application/vnd.github+json" } },
+      { headers: { "User-Agent": "imqi1-cms", ...PLATFORM_HEADERS[platform] } },
       8000,
     );
     const entry: CacheEntry = { at: now, data: normalize(platform, owner, repo, data) };

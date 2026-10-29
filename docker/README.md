@@ -4,7 +4,7 @@
 
 | 版本 | 文件 | 服务 | 说明 |
 | --- | --- | --- | --- |
-| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + PostgreSQL 16 + Redis 7 | 构建期烘焙 `redis:6379`（compose 服务名）并启动 redis 容器，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
+| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + PostgreSQL 16 + Redis 8 | 构建期烘焙 `redis:6379`（compose 服务名）并启动 redis 容器，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
 | **不带 Redis** | `docker-compose.noredis.yml` + `Dockerfile.noredis` | 应用 + PostgreSQL 16 | 构建期显式关闭 Redis：页面不做整页缓存、搜索缓存关闭，无 redis 容器/卷 |
 
 > **`site.config.ts` 的 `build.redis` 在 Docker 部署下不生效**，它只对**裸机部署**负责。两个 Dockerfile 总会把 `REDIS_ENABLED` / `REDIS_HOST` 等设进构建环境，而 [shared/redis-config.ts](../shared/redis-config.ts) 的取值是 `环境变量 ?? site.config`——环境变量一旦有值，`site.config` 就永远不被查。所以把 `build.redis.enabled` 改成 `false` 并不能关掉 Docker 里的 Redis；Docker 这边唯一的开关就是选哪套 compose。
@@ -117,4 +117,4 @@ docker compose --env-file .env -f docker/docker-compose.yml exec postgres psql -
 
 ## 镜像加速
 
-如服务器在国内拉 `postgres:16-alpine` / `oven/bun:1.4` / `node:22-slim` 慢，给 daemon 加 `registry-mirrors`：Linux 写 `/etc/docker/daemon.json` 后 `systemctl reload docker`；Docker Desktop 在 Settings → Docker Engine 的 JSON 编辑器里加，Apply & Restart。按就近原则挑实际可达的源，本仓库验证 `https://docker.m.daocloud.io` 可用。镜像列表见各 `Dockerfile` 的 `FROM` 行。
+如服务器在国内拉 `postgres:16-alpine` / `oven/bun:1.4.4` / `node:24-slim` 慢，给 daemon 加 `registry-mirrors`：Linux 写 `/etc/docker/daemon.json` 后 `systemctl reload docker`；Docker Desktop 在 Settings → Docker Engine 的 JSON 编辑器里加，Apply & Restart。按就近原则挑实际可达的源，本仓库验证 `https://docker.m.daocloud.io` 可用。镜像列表见各 `Dockerfile` 的 `FROM` 行。

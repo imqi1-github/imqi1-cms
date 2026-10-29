@@ -116,19 +116,20 @@ describe("resolveAmapProxyTarget", () => {
     expect(url!.searchParams.has("jscode")).toBe(false);
   });
 
-  test("v4/map/styles 路径 → 转发到 webapi styles,带 jscode 不带 key", () => {
+  test("v4/map/styles2 路径 → 转发到 webapi styles2,带 jscode 并保留浏览器侧 key", () => {
     const url = resolveAmapProxyTarget({
-      pathname: `${basePath}/v4/map/styles`,
-      search: "?id=normal",
+      pathname: `${basePath}/v4/map/styles2`,
+      search: "?styleid=custom&id=normal&key=browser-side-key",
       key,
       securityJsCode: jscode,
     });
     expect(url).not.toBeNull();
     expect(url!.hostname).toBe("webapi.amap.com");
-    expect(url!.pathname).toBe("/v4/map/styles");
+    expect(url!.pathname).toBe("/v4/map/styles2");
     expect(url!.searchParams.get("id")).toBe("normal");
     expect(url!.searchParams.get("jscode")).toBe(jscode);
-    expect(url!.searchParams.has("key")).toBe(false);
+    // 高德 bundle 在自定义 styleid 时自带 key 走代理，服务端只补 jscode 不该剥掉它
+    expect(url!.searchParams.get("key")).toBe("browser-side-key");
   });
 
   test("其它子路径 → 转发到 restapi upstream,带 jscode 不带 key", () => {

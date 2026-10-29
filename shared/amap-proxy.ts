@@ -1,7 +1,7 @@
 export const AMAP_PROXY_BASE_PATH = "/_AMapService";
 
 const AMAP_SCRIPT_UPSTREAM = "https://webapi.amap.com/maps";
-const AMAP_STYLE_UPSTREAM = "https://webapi.amap.com/v4/map/styles";
+const AMAP_STYLE_UPSTREAM = "https://webapi.amap.com/v4/map/styles2";
 const AMAP_REST_UPSTREAM = "https://restapi.amap.com/";
 
 interface BuildAmapProxyScriptUrlOptions {
@@ -74,6 +74,8 @@ export function buildAmapServiceHost(origin: string, basePath = AMAP_PROXY_BASE_
 export function resolveAmapProxyTarget(options: ResolveAmapProxyTargetOptions) {
   const basePath = normalizeProxyBasePath(options.basePath || AMAP_PROXY_BASE_PATH);
   const params = createSearchParams(options.search);
+  // 浏览器侧请求自带 key（高德 bundle 自己拼的），样式分支要透传，故先留一份再删
+  const incomingKey = params.get("key");
 
   params.delete("key");
   params.delete("jscode");
@@ -85,9 +87,11 @@ export function resolveAmapProxyTarget(options: ResolveAmapProxyTargetOptions) {
     return target;
   }
 
-  if (options.pathname === `${basePath}/v4/map/styles`) {
+  // 自定义 styleid（≥32 字符）时高德 bundle 走 serviceHost 代理，路径是 /v4/map/styles2（带 2）
+  if (options.pathname === `${basePath}/v4/map/styles2`) {
     const target = new URL(AMAP_STYLE_UPSTREAM);
     params.set("jscode", options.securityJsCode);
+    if (incomingKey) params.set("key", incomingKey);
     target.search = params.toString();
     return target;
   }

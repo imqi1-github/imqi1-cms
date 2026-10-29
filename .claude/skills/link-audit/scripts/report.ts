@@ -35,12 +35,13 @@ interface ModerationTarget {
   files: string[];
   hits: ModerationHit[];
   logIds: number[];
+  auditFailed: boolean;
 }
 
 interface Moderation {
   generatedAt: string;
   credentialSource: string;
-  summary: { items: number; targets: number; flaggedTargets: number; failed: number; byConclusion: Record<string, number> };
+  summary: { items: number; targets: number; flaggedTargets: number; failed: number; auditFailedTargets?: number; byConclusion: Record<string, number> };
   targets: ModerationTarget[];
 }
 
@@ -158,6 +159,11 @@ const dismissed = moderation.targets.filter(t => {
 });
 
 const lines: string[] = [];
+/** 章节序号：中文数字，新增章节自动顺延。 */
+const SECTION_NUMERALS = ["一", "二", "三", "四", "五", "六"];
+let sectionIndex = 0;
+const section = (title: string): string => `## ${SECTION_NUMERALS[sectionIndex++] ?? sectionIndex}、${title}`;
+
 lines.push("# 友链与订阅合规审查报告（百度内容审核）");
 lines.push("");
 lines.push(`- 判定引擎：百度内容审核（自定义文本审核 v2）｜凭证来源：${moderation.credentialSource}`);
@@ -165,7 +171,7 @@ lines.push(`- 审查时间：${moderation.generatedAt}`);
 if (manifest) {
   lines.push(`- 覆盖目标：${manifest.targets.length} 个（友链 ${manifest.targets.filter(t => t.kind === "link").length} / 订阅源 ${manifest.targets.filter(t => t.kind === "subscribe").length}）`);
 }
-lines.push(`- 机审覆盖：${moderation.summary.items} 份快照 / ${moderation.summary.targets} 个目标，审核失败 ${moderation.summary.failed} 份`);
+lines.push(`- 机审覆盖：${moderation.summary.items} 份快照 / ${moderation.summary.targets} 个目标，审核失败 ${moderation.summary.failed} 份${moderation.summary.auditFailedTargets ? `（涉及 ${moderation.summary.auditFailedTargets} 个目标，结论不完整需重审）` : ""}`);
 lines.push(`- 需处置：${flagged.length} 个目标（机审判定为不合规或疑似）`);
 lines.push(`- 其中命中高危子类（涉黄/赌博/毒品/涉恐等）：${flagged.filter(isHighRisk).length} 个，优先复核`);
 lines.push("");
@@ -174,7 +180,7 @@ lines.push(">");
 lines.push("> 审查范围：**只判各友链/订阅源自己的内容**。对方页面里的友链区、外链聚合、留言板已在抓取阶段屏蔽（那些是他们自己的责任，不记到本站头上）。");
 lines.push("");
 
-lines.push("## 一、需处置清单");
+lines.push(section("需处置清单"));
 lines.push("");
 if (!flagged.length) {
   lines.push("机审未标记任何目标。");
@@ -195,7 +201,7 @@ if (!flagged.length) {
 }
 lines.push("");
 
-lines.push("## 二、逐条详述");
+lines.push(section("逐条详述"));
 lines.push("");
 if (!flagged.length) {
   lines.push("（无）");
@@ -221,8 +227,23 @@ for (const [index, target] of flagged.entries()) {
   lines.push("");
 }
 
+const needRetest = moderation.targets.filter(t => t.auditFailed);
+if (needRetest.length) {
+  lines.push(section("需重审（有内容未审成，结论只覆盖已审部分）"));
+  lines.push("");
+  lines.push("下列目标存在未审成的分块（百度返回「审核失败」或请求异常），其结论**只代表已审部分**，可能漏判 —— 建议重跑机审或人工补看。");
+  lines.push("");
+  lines.push("| 类型 | 名称 | 地址 | 当前结论 | 快照 |");
+  lines.push("| --- | --- | --- | --- | --- |");
+  for (const target of needRetest) {
+    const kind = target.targetKind === "subscribe" ? "订阅" : "友链";
+    lines.push(`| ${kind} | ${target.name} | ${target.url || "—"} | ${target.conclusion} | ${target.files.length} 份 |`);
+  }
+  lines.push("");
+}
+
 if (dismissed.length) {
-  lines.push("## 三、人工判定为误报（已排除，不需处置）");
+  lines.push(section("人工判定为误报（已排除，不需处置）"));
   lines.push("");
   lines.push("| 类型 | 名称 | 地址 | 机审结论 | 人工标注 | 建议 |");
   lines.push("| --- | --- | --- | --- | --- | --- |");
@@ -238,7 +259,7 @@ if (manifest) {
   const uncovered = manifest.targets.filter(
     target => !moderation.targets.some(t => t.targetKind === target.kind && t.targetId === target.id),
   );
-  lines.push(`${dismissed.length ? "## 四" : "## 三"}、未覆盖 / 未命中的目标`);
+  lines.push(section("未覆盖 / 未命中的目标"));
   lines.push("");
   if (!uncovered.length) {
     lines.push("（全部目标均有机审结论）");

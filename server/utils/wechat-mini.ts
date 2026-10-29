@@ -18,9 +18,13 @@ async function getAccessToken(): Promise<string> {
 
   const appid = process.env.WECHAT_MINI_APPID!;
   const secret = process.env.WECHAT_MINI_SECRET!;
-  const res = await fetch(
-    `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${encodeURIComponent(appid)}&secret=${encodeURIComponent(secret)}`,
-  );
+  // 稳定版 token 接口：同 appid 的 token 不会被反复签发顶掉（旧 cgi-bin/token 每次签发都作废上一个）
+  // force_refresh 必须为 false —— 强刷会让正在使用的旧 token 立即失效
+  const res = await fetch("https://api.weixin.qq.com/cgi-bin/stable_token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ grant_type: "client_credential", appid, secret, force_refresh: false }),
+  });
   const data = (await res.json()) as { access_token?: string; expires_in?: number; errcode?: number; errmsg?: string };
   if (!data.access_token) {
     throw new Error(`微信 access_token 失败: ${JSON.stringify(data)}`);

@@ -19,7 +19,7 @@
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { parseArgs, readJson, writeJson } from "./lib";
+import { baiduSeverityRank, hasAuditFailure, parseArgs, pickWorstConclusion, readJson, writeJson } from "./lib";
 
 interface Block {
   index: number;
@@ -39,6 +39,8 @@ interface ModerationItem {
   worstConclusionType: number;
   conclusion: string;
   logId: number | null;
+  /** 有块没审成（本地异常或百度返回 4）：该条目/目标的结论只是「已审部分」的最差值，不等于全量判定。 */
+  auditFailed: boolean;
   hits: ModerationHit[];
   blocks: Array<{
     index: number;
@@ -404,7 +406,7 @@ async function worker(): Promise<void> {
       }
     }
 
-    const worst = results.reduce((max, r) => Math.max(max, r.conclusionType), 0);
+    const worstBlock = pickWorstConclusion(results);
     items.push({
       file: item.file,
       targetKind: item.targetKind,
@@ -413,9 +415,10 @@ async function worker(): Promise<void> {
       url: item.url,
       title: meta.title ?? meta.name ?? "",
       chars: body.length,
-      worstConclusionType: worst,
-      conclusion: results.find(r => r.conclusionType === worst)?.conclusion ?? "未知",
-      logId: results.find(r => r.conclusionType === worst)?.logId ?? null,
+      worstConclusionType: worstBlock?.conclusionType ?? 0,
+      conclusion: worstBlock?.conclusion ?? "未知",
+      logId: worstBlock?.logId ?? null,
+      auditFailed: hasAuditFailure(results),
       hits,
       blocks: results,
     });
@@ -431,7 +434,7 @@ for (const item of items) {
   const key = String(item.worstConclusionType);
   byConclusion[key] = (byConclusion[key] ?? 0) + 1;
 }
-const failed = items.filter(i => i.blocks.some(b => b.error));
+const failed = items.filter(i => i.auditFailed);
 
 /** 按目标聚合：一个目标（友链/订阅源）汇总其所有快照的机审结论与命中。 */
 const targetMap = new Map<string, {
@@ -445,6 +448,7 @@ const targetMap = new Map<string, {
   files: string[];
   hits: Array<ModerationHit & { file: string }>;
   logIds: number[];
+  auditFailed: boolean;
 }>();
 
 for (const item of items) {
@@ -462,6 +466,7 @@ for (const item of items) {
       files: [item.file],
       hits: item.hits.map(hit => ({ ...hit, file: item.file })),
       logIds: item.logId ? [item.logId] : [],
+      auditFailed: item.auditFailed,
     });
     continue;
   }
@@ -469,13 +474,16 @@ for (const item of items) {
   existing.files.push(item.file);
   existing.hits.push(...item.hits.map(hit => ({ ...hit, file: item.file })));
   if (item.logId) existing.logIds.push(item.logId);
-  if (item.worstConclusionType > existing.conclusionType) {
+  existing.auditFailed = existing.auditFailed || item.auditFailed;
+  if (baiduSeverityRank(item.worstConclusionType) > baiduSeverityRank(existing.conclusionType)) {
     existing.conclusionType = item.worstConclusionType;
     existing.conclusion = item.conclusion;
   }
 }
 
-const targetList = [...targetMap.values()].sort((a, b) => b.conclusionType - a.conclusionType || b.hits.length - a.hits.length);
+const targetList = [...targetMap.values()].sort(
+  (a, b) => baiduSeverityRank(b.conclusionType) - baiduSeverityRank(a.conclusionType) || b.hits.length - a.hits.length,
+);
 const flaggedTargets = targetList.filter(t => t.conclusionType === 2 || t.conclusionType === 3);
 
 const output = {
@@ -488,6 +496,7 @@ const output = {
     flaggedItems: items.filter(i => i.worstConclusionType === 2 || i.worstConclusionType === 3).length,
     flaggedTargets: flaggedTargets.length,
     failed: failed.length,
+    auditFailedTargets: targetList.filter(t => t.auditFailed).length,
     byConclusion,
   },
   targets: targetList,

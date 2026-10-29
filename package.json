@@ -3,6 +3,9 @@
   "type": "module",
   "private": true,
   "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": "^22.12.0 || ^24.11.0 || >=26.0.0"
+  },
   "scripts": {
     "serve": "bun scripts/file-server.ts",
     "build": "nuxt build",
@@ -46,7 +49,7 @@
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
-    "@meting/core": "^1.6.1",
+    "@meting/core": "^1.6.2",
     "@nuxtjs/color-mode": "^4.0.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.8.0",
@@ -99,7 +102,7 @@
     "vue-sonner": "^2.0.9",
     "zod": "^4.4.3"
   },
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.4",
   "devDependencies": {
     "@amap/amap-jsapi-types": "^0.0.15",
     "@iconify-json/lucide": "^1.2.115",

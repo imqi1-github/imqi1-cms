@@ -353,6 +353,32 @@ export function extractOutboundDomains(html: string, baseUrl: string, limit: num
   return [...found].slice(0, limit);
 }
 
+/** 百度 conclusionType（官方）：1=合规 2=不合规 3=疑似 4=审核失败（技术性失败）。 */
+export const BAIDU_CONCLUSION_TYPE = { compliant: 1, violation: 2, suspicious: 3, auditFailed: 4 } as const;
+
+/** 严重度序：数值大小≠严重度 —— 4（审核失败）数值最大却只是技术失败，按数值取 max 会盖掉 2（不合规）导致漏判。 */
+const SEVERITY_RANK: Record<number, number> = { 2: 5, 3: 4, 4: 3, 1: 1 };
+
+export function baiduSeverityRank(conclusionType: number): number {
+  return SEVERITY_RANK[conclusionType] ?? 0;
+}
+
+/** 取一组块里最差的那块（按严重度序，不按数值大小）。 */
+export function pickWorstConclusion<T extends { conclusionType: number }>(blocks: T[]): T | null {
+  let worst: T | null = null;
+  for (const block of blocks) {
+    if (worst === null || baiduSeverityRank(block.conclusionType) > baiduSeverityRank(worst.conclusionType)) {
+      worst = block;
+    }
+  }
+  return worst;
+}
+
+/** 是否存在没审成的块（百度返回「审核失败」或本地异常）。 */
+export function hasAuditFailure(blocks: Array<{ conclusionType: number; error?: string | null }>): boolean {
+  return blocks.some(b => b.conclusionType === BAIDU_CONCLUSION_TYPE.auditFailed || Boolean(b.error));
+}
+
 /** 读 JSON 文件。 */
 export async function readJson<T>(path: string): Promise<T> {
   const file = Bun.file(path);

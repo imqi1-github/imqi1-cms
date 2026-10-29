@@ -11,7 +11,6 @@ const ALLOWED_REDIRECT_DOMAINS = [
   "kuwo.cn", // 酷我
   "kugou.com", // 酷狗
   "baidu.com", // 百度
-  "xiami.com", // 虾米（已停止服务，但保留）
 ];
 
 // 验证重定向 URL 是否安全
@@ -52,8 +51,8 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // 验证 server 类型
-  const validServers = ["netease", "tencent", "xiami", "kugou", "baidu", "kuwo"];
+  // 验证 server 类型（虾米 xiami 已从 meting 上游移除，不支持的平台会被静默回落成 netease，故不开放）
+  const validServers = ["netease", "tencent", "kugou", "baidu", "kuwo"];
   if (!validServers.includes(server)) {
     throw createError({
       statusCode: 400,
