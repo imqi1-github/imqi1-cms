@@ -58,9 +58,14 @@ export const siteConfig = defineSiteConfig({
   build: {
     brotliCompression: true,
     statsHtml: false,
+    // 页面缓存时长（秒）：源站 ISR 与 CDN 边缘缓存都用这个值。
+    // 1800 = 原来 Redis ISR 的时长：源站每页每 30 分钟重渲染一次（内容变更时额外一次，
+    // 因为变更会精确清掉对应缓存键）→ 渲染频率与原方案一致。
+    // 边缘那层的「实时性」不靠这个值，靠控制台的缓存预刷新百分比（99% = 每个请求都回源验证）。
+    pageCacheSeconds: 1800,
     // Redis：仅生产构建生效（开发恒不启用），改完需重新打包；不启用时 ISR 退文件系统、搜索缓存关闭
     redis: {
-      enabled: true,
+      enabled: false,
       // 本机部署填 127.0.0.1；Docker 部署由构建参数覆盖，改这里对 Docker 无效
       host: "127.0.0.1",
       port: 6379,

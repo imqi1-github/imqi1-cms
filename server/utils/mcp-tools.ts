@@ -30,6 +30,7 @@ import { getSiteBaseUrl } from "./feed";
 import { redis } from "./redis";
 import { dateKey, dayShardFiles, logsDir, log } from "./log";
 import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
+import { createCdnProvider, purgeCdnRoutes } from "./cdn";
 import { detectDocker, getBuildHash } from "./runtime-info";
 
 import { LOG_TAG_LABELS } from "#shared/constants";
@@ -1371,18 +1372,31 @@ function registerOpsTools(server: McpServer): void {
     },
   );
 
-  // —— get_cache_info：Redis 缓存诊断 ——
+  // —— get_cache_info：缓存诊断 ——
   server.registerTool(
     "get_cache_info",
     {
-      description: "【运维】Redis 缓存诊断：连通性与延迟、键总数、内存占用、按前缀统计键量（ISR 页面缓存/搜索/自定义/错误通知去重/MCP 限流）。排查「改了内容前台不刷新」。",
+      description: "【运维】缓存诊断：CDN 边缘缓存启用状态 + Redis 连通性与延迟、键总数、内存占用、按前缀统计键量（源站页面缓存/搜索/自定义/错误通知去重/MCP 限流）。排查「改了内容前台不刷新」。",
       inputSchema: z.object({ token: opsTokenSchema }),
       annotations: { readOnlyHint: true },
     },
     async ({ token }) => {
       return opsGuard(async () => {
         if (!verifyOpsToken(token)) return opsError("invalid_ops_token");
-        if (!redis) return opsText({ configured: false, note: "未配置 Redis：整页缓存退文件系统、搜索缓存关闭" });
+
+        const cdnProvider = createCdnProvider();
+        const cdn = {
+          provider: cdnProvider?.name ?? null,
+          enabled: cdnProvider?.isEnabled() ?? false,
+        };
+
+        if (!redis) {
+          return opsText({
+            configured: false,
+            cdn,
+            note: "未配置 Redis：页面缓存由 CDN 边缘承担，搜索/足迹等短期缓存走进程内内存",
+          });
+        }
 
         const pingStart = Date.now();
         await redis.ping();
@@ -1403,6 +1417,7 @@ function registerOpsTools(server: McpServer): void {
 
         return opsText({
           configured: true,
+          cdn,
           status: redis.status,
           pingLatencyMs: Date.now() - pingStart,
           dbSize: await redis.dbsize(),
@@ -1419,10 +1434,10 @@ function registerOpsTools(server: McpServer): void {
   server.registerTool(
     "clear_cache",
     {
-      description: "【运维】清 Redis 缓存（清后自动重建）。target=pages 清整组 ISR 页面缓存（改了内容前台不刷新时用）/ search 搜索缓存 / footprint 访客足迹缓存 / rl 限流计数键（误伤解除）/ keyword 按键名子串。须 confirm:true。",
+      description: "【运维】清缓存（清后自动重建）。target=pages 清源站页面缓存（自动刷新 CDN 默认关闭，需立即生效请用 cdn）/ cdn 只刷新 CDN 边缘 / search 搜索缓存 / footprint 访客足迹缓存 / rl 限流计数键（误伤解除）/ keyword 按键名子串。须 confirm:true。",
       inputSchema: z.object({
         token: opsTokenSchema,
-        target: z.enum(["pages", "search", "footprint", "rl", "keyword"]).describe("清理目标"),
+        target: z.enum(["pages", "cdn", "search", "footprint", "rl", "keyword"]).describe("清理目标"),
         keyword: z.string().min(1).optional().describe("target=keyword 时的键名子串"),
         confirm: z.boolean().describe("必须显式传 true 才执行"),
       }),
@@ -1432,26 +1447,35 @@ function registerOpsTools(server: McpServer): void {
       return opsGuard(async () => {
         if (!verifyOpsToken(token)) return opsError("invalid_ops_token");
         if (confirm !== true) return opsError("need_confirm", { note: "clear_cache 会删缓存键，须显式 confirm:true" });
-        if (!redis) return opsText({ target, cleared: 0, note: "未配置 Redis，无需清理" });
 
         let cleared: number;
         let note: string | undefined;
-        if (target === "pages") {
-          // 清整组页面缓存（pattern *nitro:routes*）；-1 = 全组不计数（与 admin 端语义一致）
+
+        if (target === "cdn") {
+          const result = await purgeCdnRoutes();
+          cleared = result?.requested ?? 0;
+          note = result
+            ? `已提交 CDN 刷新：${result.requested} 个目标${result.taskId ? `（任务 ${result.taskId}）` : ""}`
+            : "未配置 CDN 刷新（缺 EDGEONE_ZONE_ID / 腾讯云密钥）";
+        } else if (target === "pages") {
+          // 清整组源站页面缓存；-1 = 全组不计数（与 admin 端语义一致）
           await invalidateContentCaches();
           cleared = -1;
-          note = "已清整组 ISR 页面缓存（nitro:routes）";
-        } else if (target === "search") {
-          cleared = await scanAndUnlink("search:*");
-        } else if (target === "footprint") {
-          cleared = await scanAndUnlink("custom:footprint");
-        } else if (target === "rl") {
-          cleared = await scanAndUnlink("rl:*");
-          note = "已清限流计数键（误伤的 429 立即解除）";
+          note = "已清整组源站页面缓存（CDN 自动刷新默认关闭，要立刻刷边缘请用 target=cdn）";
         } else {
-          const safe = (keyword ?? "").replace(/[\\*?[\]]/g, "");
-          if (!safe) return opsError("keyword_required", { note: "target=keyword 时须提供不含通配符的子串" });
-          cleared = await scanAndUnlink(`*${safe}*`);
+          if (!redis) return opsText({ target, cleared: 0, note: "未配置 Redis，无需清理" });
+          if (target === "search") {
+            cleared = await scanAndUnlink("search:*");
+          } else if (target === "footprint") {
+            cleared = await scanAndUnlink("custom:footprint");
+          } else if (target === "rl") {
+            cleared = await scanAndUnlink("rl:*");
+            note = "已清限流计数键（误伤的 429 立即解除）";
+          } else {
+            const safe = (keyword ?? "").replace(/[\\*?[\]]/g, "");
+            if (!safe) return opsError("keyword_required", { note: "target=keyword 时须提供不含通配符的子串" });
+            cleared = await scanAndUnlink(`*${safe}*`);
+          }
         }
 
         log.audit("MCP 清理缓存", { target, keyword: keyword ?? undefined, cleared });

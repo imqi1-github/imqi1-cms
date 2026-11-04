@@ -4,8 +4,11 @@
 
 | 版本 | 文件 | 服务 | 说明 |
 | --- | --- | --- | --- |
-| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + PostgreSQL 16 + Redis 8 | 构建期烘焙 `redis:6379`（compose 服务名）并启动 redis 容器，ISR 增量缓存与搜索缓存共用；redis 数据存于 `redis-data` 卷 |
-| **不带 Redis** | `docker-compose.noredis.yml` + `Dockerfile.noredis` | 应用 + PostgreSQL 16 | 构建期显式关闭 Redis：页面不做整页缓存、搜索缓存关闭，无 redis 容器/卷 |
+| **带 Redis** | `docker-compose.yml` + `Dockerfile` | 应用 + PostgreSQL 16 + Redis 8 | 构建期烘焙 `redis:6379`（compose 服务名）并启动 redis 容器，源站 ISR 缓存与共享缓存后端共用；redis 数据存于 `redis-data` 卷 |
+| **不带 Redis** | `docker-compose.noredis.yml` + `Dockerfile.noredis` | 应用 + PostgreSQL 16 | 构建期显式关闭 Redis：无 redis 容器/卷；页面缓存交给 CDN 边缘，搜索/足迹等短期缓存与限流计数改用进程内内存 |
+
+> **接了 CDN 边缘缓存就用「不带 Redis」这套**：页面缓存由 CDN 承担（见 README「接入 CDN 边缘缓存」），Redis 只在需要源站 ISR 或跨实例共享计数时才有意义。两套都能跑，区别只在缓存后端。
+
 
 > **`site.config.ts` 的 `build.redis` 在 Docker 部署下不生效**，它只对**裸机部署**负责。两个 Dockerfile 总会把 `REDIS_ENABLED` / `REDIS_HOST` 等设进构建环境，而 [shared/redis-config.ts](../shared/redis-config.ts) 的取值是 `环境变量 ?? site.config`——环境变量一旦有值，`site.config` 就永远不被查。所以把 `build.redis.enabled` 改成 `false` 并不能关掉 Docker 里的 Redis；Docker 这边唯一的开关就是选哪套 compose。
 

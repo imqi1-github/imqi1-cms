@@ -39,6 +39,61 @@ const publicCdnAsset = (p: string) =>
 const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 const redisConfig = getRedisConfig();
 const ISR_CACHE_SECONDS = 60 * 30;
+// 页面缓存时长（site.config build.pageCacheSeconds，默认 60 秒）。
+// 它同时决定：① 内容的新鲜度上界（源站 ISR 与边缘缓存都用这个时长）；
+// ② 边缘「缓存预刷新」回源验证时命中源站 ISR → 只回 304、不重渲染（否则预刷新会把源站打满）。
+const PAGE_CACHE_SECONDS = siteConfig.build.pageCacheSeconds;
+const cdnPageCacheControl = `public, max-age=0, s-maxage=${PAGE_CACHE_SECONDS}`;
+
+// 变化很少、且不含用户态的公开接口：加源站缓存。
+// 边缘的缓存预刷新会频繁回源验证，源站这边命中缓存（几毫秒）就不必每次跑 DB。
+// 刻意不列列表类/计数类（home-data、comments、likes/counts…）：那些变化快，进缓存会让前台看到滞后数据。
+const PUBLIC_STATIC_API_ROUTES = [
+  "/api/categories",
+  "/api/tags",
+  "/api/site",
+  "/api/travels",
+  "/api/subscribes",
+  "/api/changelogs",
+  "/api/blog-network",
+];
+
+// 走 CDN 边缘缓存的页面。/search 排除：SSR 结果随查询词变化，边缘会堆一堆一次性条目，
+// 且刷新接口不支持通配符 URL，没法按路由把带查询串的变体刷掉。
+//
+// ⚠️ 这些页面的 SSR HTML 必须与登录态无关——边缘缓存的是同一份 HTML 给所有人。
+// 按登录态变化的 UI 一律放 <ClientOnly>（水合后才渲染），别在页面 setup 里服务端读会话再渲染。
+const CDN_CACHED_ROUTES = [
+  "/",
+  "/archiving",
+  "/category/**",
+  "/content/**",
+  "/tag/**",
+  "/subscribes",
+  "/changelogs",
+  "/agreement",
+  "/sitemap",
+  "/sitemap.xml",
+  "/about",
+  "/map",
+  "/links",
+  "/messages",
+];
+
+// 每条页面规则 = 源站 ISR（配了 Redis 才有）+ CDN 边缘缓存头
+const pageCacheRules = Object.fromEntries(
+  CDN_CACHED_ROUTES.map(path => [
+    path,
+    {
+      // 源站缓存层：配了 Redis 用 Redis，没配就用文件缓存（.nitro/cache）——都不需要额外组件。
+      // 它是边缘预刷新的前提：边缘的条件请求命中它 → 304 不重渲染；没有它，预刷新每次都重渲染。
+      ...(redisConfig
+        ? { isr: PAGE_CACHE_SECONDS, cache: { maxAge: PAGE_CACHE_SECONDS, base: "redis" } }
+        : { cache: { maxAge: PAGE_CACHE_SECONDS, base: "cache" } }),
+      ...(isProduction ? { headers: { "Cache-Control": cdnPageCacheControl } } : {}),
+    },
+  ]),
+);
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -581,121 +636,63 @@ export default defineNuxtConfig({
           },
         }
       : {}),
-    ...(redisConfig
-      ? {
-          // 首页
-          "/": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
+    ...pageCacheRules,
 
-          // 文章归档
-          "/archiving": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 分类页
-          "/category/**": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 文章详情
-          "/content/**": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 标签页
-          "/tag/**": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 订阅页
-          "/subscribes": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 更新日志
-          "/changelogs": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 协议页面（原"完全静态"，统一为30分钟）
-          "/agreement": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 站点地图
-          "/sitemap": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-          "/sitemap.xml": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 关于页
-          "/about": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 旅行地图
-          "/map": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 友链页
-          "/links": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 留言板
-          "/messages": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // 搜索页
-          "/search": {
-            isr: ISR_CACHE_SECONDS,
-            cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" },
-          },
-
-          // Feed（RSS）：5 分钟缓存，防订阅器轮询每次全表扫 content 大字段；
-          // 新文章上线最多延迟 5 分钟出现在订阅端，可接受
-          "/feed/**": {
-            cache: { maxAge: 300, base: "redis" },
-          },
-
-          // 热力图聚合（全量文章+已审核评论按天聚合）：60s 服务端缓存，
-          // query 进 cache key，分类/标签筛选组合各自独立；数据滞后 ≤1 分钟可接受
-          "/api/heatmap": {
-            cache: { maxAge: 60, base: "redis" },
-          },
-        }
-      : {}),
-
-    // 登录页面禁用 SSR，避免 hydration 不匹配
-    "/login": {
-      ssr: false,
+    // 搜索页：SSR 结果随查询词变化，只在源站缓存（配了 Redis 才有），不进 CDN 边缘缓存
+    // （不进边缘 → 不受边缘 TTL 约束，源站 ISR 仍用原时长）
+    "/search": {
+      ...(redisConfig
+        ? { isr: ISR_CACHE_SECONDS, cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" } }
+        : {}),
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },
 
-    // 管理后台：禁用ISR，保持实时数据
+    // Feed（RSS）：5 分钟缓存，防订阅器轮询每次全表扫 content 大字段；
+    // 新文章上线最多延迟 5 分钟出现在订阅端，可接受
+    "/feed/**": {
+      cache: { maxAge: 300, base: redisConfig ? "redis" : "cache" },
+      ...(isProduction ? { headers: { "Cache-Control": "public, max-age=300, s-maxage=300" } } : {}),
+    },
+
+    // 热力图聚合（全量文章+已审核评论按天聚合）：60s 缓存，
+    // query 进缓存键，分类/标签筛选组合各自独立；数据滞后 ≤1 分钟可接受
+    "/api/heatmap": {
+      cache: { maxAge: 60, base: redisConfig ? "redis" : "cache" },
+      ...(isProduction ? { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } } : {}),
+    },
+
+    // 变化很少的公开接口：加源站缓存，配合 ETag → 边缘预刷新回源验证只命中缓存（几毫秒），
+    // 不必每次跑 DB。刻意只列「读公开数据、变化很少」的接口：
+    // 列表类/计数类（home-data、comments、likes/counts…）变化快，不进缓存，避免前台看到滞后数据。
+    ...(redisConfig
+      ? {}
+      : Object.fromEntries(
+          PUBLIC_STATIC_API_ROUTES.map(path => [
+            path,
+            { cache: { maxAge: 60, base: "cache" } },
+          ]),
+        )),
+
+    // 登录页面禁用 SSR，避免 hydration 不匹配；登录页绝不能进 CDN 缓存
+    "/login": {
+      ssr: false,
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
+
+    // 管理后台：禁用ISR，保持实时数据；后台绝不能进 CDN 缓存
     "/admin/**": {
       isr: false,
       ssr: true,
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },
 
+    // 认证与后台接口同理：带用户态，绝不能进边缘缓存
+    "/api/auth/**": {
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
+    "/api/admin/**": {
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
     ...(isProduction &&
     siteConfig.site.cdnUrl &&
     siteConfig.site.cdnUrl.startsWith("http")

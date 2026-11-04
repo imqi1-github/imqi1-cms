@@ -13,12 +13,12 @@ const tagFilter = ref("");
 // hydrate 时不重发，控制台看不到这些 API。分类 key 与 SiteNavMenu 有意分开——
 // 导航只要默认 4 条，筛选下拉要全量 100 条，query 不同不能共用同一份 cache。
 // 注释保留了「避免 SSR 渲染时区敏感内容」的设计意图 — 但只针对热力图本体，分类/标签不在其列。
-const { data: categoriesResNav } = useFetch<{ success: boolean; data: CategoryOption[] }>("/api/categories", {
+const { data: categoriesResNav } = await useFetch<{ success: boolean; data: CategoryOption[] }>("/api/categories", {
   key: "nav-categories-heatmap",
   query: { limit: 100 },
   headers: getInternalRequestHeaders(),
 });
-const { data: tagsResNav } = useFetch<{ success: boolean; data: TagOption[] }>("/api/tags", {
+const { data: tagsResNav } = await useFetch<{ success: boolean; data: TagOption[] }>("/api/tags", {
   key: "nav-tags",
   headers: getInternalRequestHeaders(),
 });

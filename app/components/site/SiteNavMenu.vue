@@ -22,7 +22,9 @@ const isMobileMenuOpen = ref(false);
 
 // 获取分类 — 改用 useFetch：SSR 阶段直接调 server util，不绕 HTTP；多组件共用同一份 cache，
 // 浏览器 hydrate 时直接从 payload 拿 data，不会再发请求（控制台看不到这条 API）。
-const { data: categoriesData } = useFetch<{ data: CategoryOption[] }>("/api/categories", {
+// 必须 await：不 await 时 SSR 阶段数据可能没就绪，导航会缺一段、payload 的 key 也时有时无
+// （HTML 每次渲染都不一样 → CDN 边缘缓存与 ETag 都失效）。
+const { data: categoriesData } = await useFetch<{ data: CategoryOption[] }>("/api/categories", {
   key: "nav-categories",
   headers: getInternalRequestHeaders(),
 });

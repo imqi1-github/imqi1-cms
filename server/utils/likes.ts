@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { H3Event } from "h3";
 
-import { redis } from "./redis";
+import { cacheExpire, cacheIncr, cacheTtl } from "./cache/store";
 import { getClientIp } from "./client-ip";
 
 /**
@@ -23,32 +23,31 @@ export function computeLikeFingerprint(event: H3Event): string {
     .slice(0, 32);
 }
 
-/** Redis 限速 key：likes:<cid>:<fingerprint> —— 同一访客对同一文章 5 分钟只算一次 */
+/** 限速 key：likes:<cid>:<fingerprint> —— 同一访客对同一文章 5 分钟只算一次 */
 export function buildLikeRateKey(cid: number, fingerprint: string): string {
   return `likes:${cid}:${fingerprint}`;
 }
 
-/** 限速窗口：5 分钟（300s）。Redis 可选：未配 Redis 时跳过限速，依赖唯一约束兜底 */
+/** 限速窗口：5 分钟（300s）。Redis 未启用时用进程内内存，依赖唯一约束兜底 */
 export const LIKE_RATE_TTL_SECONDS = 300;
 
 /**
  * 触发限速检查：返回 true 表示「本次是窗口内重复请求，不写库」；false 表示放行。
- * Redis 未配置或调用失败时一律放行（fail-open），唯一约束兜底防写穿。
+ * 缓存后端异常时一律放行（fail-open），唯一约束兜底防写穿。
  */
 export async function isLikeRateLimited(cid: number, fingerprint: string): Promise<boolean> {
-  if (!redis) return false;
   try {
     const key = buildLikeRateKey(cid, fingerprint);
-    const recent = await redis.incr(key);
+    const recent = await cacheIncr(key);
     if (recent === 1) {
-      await redis.expire(key, LIKE_RATE_TTL_SECONDS);
-    } else if ((await redis.ttl(key)) === -1) {
+      await cacheExpire(key, LIKE_RATE_TTL_SECONDS);
+    } else if ((await cacheTtl(key)) === -1) {
       // 自愈：INCR 与 EXPIRE 之间崩溃会留下无 TTL 键 → 该访客对该文章永久限流，补上窗口
-      await redis.expire(key, LIKE_RATE_TTL_SECONDS);
+      await cacheExpire(key, LIKE_RATE_TTL_SECONDS);
     }
     return recent > 1;
   } catch (error) {
-    console.error("[likes] Redis 限速检查失败，按放行处理:", error);
+    console.error("[likes] 限速检查失败，按放行处理:", error);
     return false;
   }
 }

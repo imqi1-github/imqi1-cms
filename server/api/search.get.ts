@@ -1,6 +1,6 @@
 import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { SEARCH_RESULT_TAKE } from "#shared/constants";
-import { redis } from "#server/utils/redis";
+import { cacheGet, cacheSetex } from "#server/utils/cache/store";
 import { getCommentAvatarService, commentAvatarUrl } from "#server/utils/comment-avatar";
 import { SearchQuerySchema } from "#server/utils/schemas";
 import { sanitizeExternalUrl } from "#server/utils/rss";
@@ -444,13 +444,13 @@ export default defineTypedApiHandler(
       // 获取搜索设置
       const searchSettings = await getSearchSettings();
 
-      // ========== Redis 缓存逻辑 ==========
-      if (searchSettings.cacheEnabled && redis) {
+      // ========== 搜索结果缓存（Redis 优先，未启用时用进程内内存） ==========
+      if (searchSettings.cacheEnabled) {
         const cacheKey = `search:${q}:${type}`;
 
         try {
           // 尝试从缓存获取
-          const cached = await redis.get(cacheKey);
+          const cached = await cacheGet(cacheKey);
           if (cached) {
             return {
               code: 200,
@@ -486,10 +486,10 @@ export default defineTypedApiHandler(
         try {
           responseData = await p;
           // ========== 缓存搜索结果 ==========
-          if (searchSettings.cacheEnabled && redis && responseData.results.length > 0) {
+          if (searchSettings.cacheEnabled && responseData.results.length > 0) {
             try {
               const cacheKey = `search:${q}:${type}`;
-              await redis.setex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
+              await cacheSetex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
             } catch (error) {
               console.error(error);
             }

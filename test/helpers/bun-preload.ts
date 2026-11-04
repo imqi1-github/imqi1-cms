@@ -27,7 +27,7 @@ dotenv.config({ path: join(import.meta.dirname, "..", "..", ".env"), quiet: true
 // 测试期间静默 server 业务日志（[认证] / [审计] / [CSRF] / [Redis] 等带模块标签的 banner）。
 // 3500+ 用例时这些 console.log/warn 是主要噪音源（每条认证/CSRF/Redis 路径都打一行）。
 // 过滤规则:首个参数是 string 且含 [xxx] 模块标签(允许 ISO 时间戳前缀) → 静默；其他原样打。
-// 不动 console.error:redis-cache-reset 等测试断言失败路径的 console.error 必须保留。
+// 不动 console.error:cache-reset 等测试断言失败路径的 console.error 必须保留。
 // spy 测试(useEditorAutosave/useScrollFadeMask 等)的 origWarn 拿到的是 filter 版本,
 // 但它们本身又先过滤 [Vue warn] 再调用 orig,行为兼容。
 const isServerBanner = (args: unknown[]): boolean => {

@@ -59,6 +59,13 @@ export interface SiteBuildConfig {
   statsHtml: boolean;
   /** Redis 连接配置（仅生产构建生效，开发环境恒不启用） */
   redis: RedisBuildConfig;
+  /**
+   * 页面缓存时长（秒）：源站 ISR 与 CDN 边缘缓存共用。
+   *
+   * 它是内容的新鲜度上界——不发刷新请求，靠边缘的「缓存预刷新 + 源站 ETag」在 TTL 内自动收敛。
+   * 值越小源站重渲染越频繁、内容越新；值越大越省源站、内容可能旧更久。
+   */
+  pageCacheSeconds: number;
 }
 
 /**

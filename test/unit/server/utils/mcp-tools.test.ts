@@ -417,12 +417,12 @@ describe("工具回调:clear_cache", () => {
     expect(parsed.note).toContain("限流");
   });
 
-  test("target=pages 清整组 ISR 缓存，cleared=-1 语义", async () => {
+  test("target=pages 清整组源站页面缓存，cleared=-1 语义", async () => {
     redisHandlers.set("scan", async () => ["0", ["nitro:routes:_:x"]]);
     const { text } = await invoke("clear_cache", { token: TEST_OPS_TOKEN, target: "pages", confirm: true });
     const parsed = JSON.parse(text) as { cleared: number; note?: string };
     expect(parsed.cleared).toBe(-1);
-    expect(parsed.note).toContain("ISR");
+    expect(parsed.note).toContain("源站页面缓存");
   });
 
   test("target=keyword 时通配符被剥掉，剥完为空报 keyword_required", async () => {

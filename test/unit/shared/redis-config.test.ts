@@ -50,24 +50,30 @@ describe("getRedisConfig(构建期解析)", () => {
     }
   });
 
-  test("默认取 site.config.build.redis(enabled=true + 127.0.0.1)", () => {
+  test("默认取 site.config.build.redis 的值(站主可显式关掉 Redis)", () => {
     useProductionRedis({});
-    expect(siteConfig.build.redis.enabled).toBe(true);
-    expect(getRedisConfig()).toEqual({ host: siteConfig.build.redis.host, port: 6379, db: 0, lazyConnect: false });
+    const base = siteConfig.build.redis;
+    const cfg = getRedisConfig();
+    // 站主把 build.redis.enabled 改成 false(生产不用 Redis)时这里就该是 null
+    if (base.enabled) {
+      expect(cfg).toEqual({ host: base.host, port: base.port || 6379, db: base.db || 0, lazyConnect: false });
+    } else {
+      expect(cfg).toBeNull();
+    }
   });
 
   test("env 覆盖 host/port/db;空串/非法数值视为未覆盖", () => {
-    useProductionRedis({ REDIS_HOST: "redis", REDIS_PORT: "6380", REDIS_DB: "2" });
+    useProductionRedis({ REDIS_ENABLED: "true", REDIS_HOST: "redis", REDIS_PORT: "6380", REDIS_DB: "2" });
     expect(getRedisConfig()).toEqual({ host: "redis", port: 6380, db: 2, lazyConnect: false });
 
-    useProductionRedis({ REDIS_PORT: "abc", REDIS_DB: "" });
+    useProductionRedis({ REDIS_ENABLED: "true", REDIS_PORT: "abc", REDIS_DB: "" });
     expect(getRedisConfig()).toEqual({ host: siteConfig.build.redis.host, port: 6379, db: 0, lazyConnect: false });
   });
 
   test("port 落 0 时兜底 6379;db 落 0 兜底 0(0 是合法 db)", () => {
-    useProductionRedis({ REDIS_PORT: "0" });
+    useProductionRedis({ REDIS_ENABLED: "true", REDIS_PORT: "0" });
     expect(getRedisConfig()!.port).toBe(6379);
-    useProductionRedis({ REDIS_PORT: "", REDIS_DB: "0" });
+    useProductionRedis({ REDIS_ENABLED: "true", REDIS_PORT: "", REDIS_DB: "0" });
     expect(getRedisConfig()!.db).toBe(0);
   });
 });

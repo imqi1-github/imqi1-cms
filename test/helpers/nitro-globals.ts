@@ -40,3 +40,17 @@ g.getRequestURL ??= (event: { node: { req: { headers: Record<string, string> } }
 };
 // runtimeConfig 桩:redis 默认关(测试不连 Redis),需要具体键的测试自行覆盖赋值
 g.useRuntimeConfig ??= () => ({ redis: null, buildHash: "" });
+// storage 桩:内存 Map(键原样存,兼容 Redis 冒号键形与文件驱动斜杠键形);
+// getKeys 照文件驱动那样返回全部键(无视 base),实现自己要再筛缓存组
+const storageStub = new Map<string, string>();
+g.useStorage ??= () => ({
+  getKeys: async () => [...storageStub.keys()],
+  getItem: async (key: string) => storageStub.get(key) ?? null,
+  setItem: async (key: string, value: string) => {
+    storageStub.set(key, value);
+  },
+  removeItem: async (key: string) => {
+    storageStub.delete(key);
+  },
+  hasItem: async (key: string) => storageStub.has(key),
+});

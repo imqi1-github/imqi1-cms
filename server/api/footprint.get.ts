@@ -2,7 +2,7 @@ import { commentAvatarUrl } from "#server/utils/comment-avatar";
 import { UNBOUNDED_TAKE_FALLBACK, PUBLIC_CACHE_CONTROL  } from "#shared/constants";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
-import { redis } from "#server/utils/redis";
+import { cacheGet, cacheSetex } from "#server/utils/cache/store";
 import { CITY_COORDS } from "#shared/city-coords";
 import type { Reader } from "#server/types/apis/reader";
 import type { IdStatus, FootprintPayload } from "#server/types/apis/footprint";
@@ -48,13 +48,11 @@ export default defineEventHandler(async event => {
   setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
   // 自定义缓存（非 ISR）命中直接返回，避免重复跑 IP 归属地解析
-  if (redis) {
-    try {
-      const cached = await redis.get(FOOTPRINT_CACHE_KEY);
-      if (cached) return JSON.parse(cached) as FootprintPayload;
-    } catch (error) {
-      console.error("[footprint] 缓存读取失败", error);
-    }
+  try {
+    const cached = await cacheGet(FOOTPRINT_CACHE_KEY);
+    if (cached) return JSON.parse(cached) as FootprintPayload;
+  } catch (error) {
+    console.error("[footprint] 缓存读取失败", error);
   }
 
   const avatarSetting = await prisma.informations.findUnique({ where: { key: "commentAvatarService" } });
@@ -203,12 +201,10 @@ export default defineEventHandler(async event => {
   };
 
   // 自定义缓存（非 ISR）：下次直接复用
-  if (redis) {
-    try {
-      await redis.setex(FOOTPRINT_CACHE_KEY, FOOTPRINT_CACHE_TTL, JSON.stringify(payload));
-    } catch (error) {
-      console.error("[footprint] 缓存写入失败", error);
-    }
+  try {
+    await cacheSetex(FOOTPRINT_CACHE_KEY, FOOTPRINT_CACHE_TTL, JSON.stringify(payload));
+  } catch (error) {
+    console.error("[footprint] 缓存写入失败", error);
   }
 
   return payload;

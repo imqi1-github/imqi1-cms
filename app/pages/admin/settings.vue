@@ -1083,7 +1083,7 @@ onMounted(() => {
                 <div class="flex items-center justify-between">
                   <div class="space-y-0.5">
                     <Label for="searchCacheEnabled">启用搜索缓存</Label>
-                    <p class="text-sm text-muted-foreground">是否将热门搜索结果缓存到 Redis</p>
+                    <p class="text-sm text-muted-foreground">是否将热门搜索结果缓存起来（优先 Redis，未配置时走进程内内存）</p>
                   </div>
                   <Switch id="searchCacheEnabled" v-model="settings.searchCacheEnabled" />
                 </div>
@@ -1112,7 +1112,7 @@ onMounted(() => {
                         <li>启用后，热门搜索关键词的结果将被缓存</li>
                         <li>缓存命中时响应速度可提升 80-90%</li>
                         <li>首次搜索后，相同关键词将直接返回缓存结果</li>
-                        <li>需要配置 Redis 才能使用此功能</li>
+                        <li>未配置 Redis 时自动改用进程内内存缓存（重启清零）</li>
                       </ul>
                     </div>
                   </div>
