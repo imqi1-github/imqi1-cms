@@ -7,7 +7,7 @@ metadata:
 
 2026-11 起，**页面整页缓存的主战场从「Nitro + Redis ISR」换成「CDN 边缘缓存」**，Redis 变成**可选**组件（生产可以不装）。用户 CDN 用 **腾讯云 EdgeOne**。
 
-**最终策略（2026-11 定，用户决定「不要刷新额度」）**：**内容变新不靠刷新接口，靠三层自动收敛**——① 源站缓存层（`build.pageCacheSeconds`，默认 **1800 秒** = 原来 Redis ISR 的时长）：配了 Redis 用 Redis，没配就用**文件缓存** `.nitro/cache`（都不需要外部组件）；② 边缘缓存 TTL 跟随源站；③ **ETag/304**（`server/plugins/etag.ts`）。边缘「缓存预刷新」（控制台开关，全套餐免费，语义=**TTL 的最后 P% 内每个请求都异步回源验证**，默认 90%）回源时命中源站缓存 → **只回 304、不重渲染**。**内容变更时要精确清掉源站缓存键**（`invalidateContentCaches` → 走 Nitro storage API，Redis/文件驱动通用）——这是原「主动清 Redis 键」的等价物，缺它边缘验证拿到的还是旧副本、变化传不上去。⇒ **源站渲染频率 = 每页每 30 分钟 + 每次变更各一次（与原 Redis 方案一致），额度 0，内容在下一个请求内变新**。
+**最终策略（2026-11 定，用户决定「不要刷新额度」）**：**内容变新不靠刷新接口，靠三层自动收敛**——① 源站缓存层（`build.pageCacheSeconds`，**默认 1800 秒** = 原来 Redis ISR 的时长；曾试过 60 秒，实测边缘传播从 25–37 秒降到 ~9 秒，但用户最终选择回到 1800）：配了 Redis 用 Redis，没配就用**文件缓存** `.nitro/cache`（都不需要外部组件）；② 边缘缓存 TTL 跟随源站；③ **ETag/304**（`server/plugins/etag.ts`）。边缘「缓存预刷新」（控制台开关，全套餐免费，语义=**TTL 的最后 P% 内每个请求都异步回源验证**，默认 90%）回源时命中源站缓存 → **只回 304、不重渲染**。**内容变更时要精确清掉源站缓存键**（`invalidateContentCaches` → 走 Nitro storage API，Redis/文件驱动通用）——这是原「主动清 Redis 键」的等价物，缺它边缘验证拿到的还是旧副本、变化传不上去。⇒ **源站渲染频率 = 每页每 30 分钟 + 每次变更各一次（与原 Redis 方案一致），额度 0，内容在下一个请求内变新**。
 
 **源站缓存层的精确失效（`server/utils/content-cache.ts` 的 `clearSourceCache`）**：走 `useStorage("cache")` 而非裸 Redis SCAN——**驱动无关**（Redis 关掉后文件缓存照样能精确失效）。键形两套驱动不同：Redis `nitro:routes:_:<frag>.<hash>.json`、文件 `nitro/routes/_/<frag>.<hash>.json`；且**文件驱动的 `getKeys` 无视 base 返回全部键**（Redis 驱动才按 base 过滤）→ 实现要自己再筛缓存组（`isRouteCacheKey`）。键里的片段是**路径**的转义（`/content/cat/slug` → `contentcatslug`），路由片段（`/content/**` → `content`）只是它的**前缀** → 匹配用 `startsWith`。
 

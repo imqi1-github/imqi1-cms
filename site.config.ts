@@ -59,9 +59,9 @@ export const siteConfig = defineSiteConfig({
     brotliCompression: true,
     statsHtml: false,
     // 页面缓存时长（秒）：源站 ISR 与 CDN 边缘缓存都用这个值。
-    // 它同时是「边缘多久回源验证一次」的基数（缓存预刷新按它的百分比触发，填 1% 即 0.6 秒起
-    // 每个请求都验证）→ 60 秒 = 内容变更后下一个请求就能看到；120 秒会让延迟翻倍。
-    pageCacheSeconds: 60,
+    // 1800 = 原来的 Redis ISR 时长：源站每页每 30 分钟重渲染一次（内容变更时额外一次，
+    // 因为变更会精确清掉对应缓存键）。边缘靠缓存预刷新 + ETag 在节点侧收敛。
+    pageCacheSeconds: 1800,
     // Redis：仅生产构建生效（开发恒不启用），改完需重新打包；不启用时 ISR 退文件系统、搜索缓存关闭
     redis: {
       enabled: false,
