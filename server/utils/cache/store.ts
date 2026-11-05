@@ -5,7 +5,7 @@
  * 页面缓存不在这里——页面缓存已迁到 CDN 边缘缓存，见 `server/utils/cdn/`。
  */
 
-import { memoryDel, memoryExpire, memoryGet, memoryIncr, memorySetex, memoryTtl } from "./memory-store";
+import { memoryClearByPrefix, memoryClearBySubstring, memoryDel, memoryExpire, memoryGet, memoryIncr, memorySetex, memoryTtl } from "./memory-store";
 
 import { redis } from "#server/utils/redis";
 
@@ -104,4 +104,51 @@ export async function cacheTtl(key: string): Promise<number> {
     }
   }
   return memoryTtl(key);
+}
+
+/** SCAN 遍历 + UNLINK 非阻塞删除（Redis 专用；未配置 Redis 时返回 0） */
+export async function scanAndUnlink(pattern: string): Promise<number> {
+  if (!redis) return 0;
+  let cursor = "0";
+  let removed = 0;
+  do {
+    const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200);
+    cursor = next;
+    if (keys.length > 0) {
+      await redis.unlink(...keys);
+      removed += keys.length;
+    }
+  } while (cursor !== "0");
+  return removed;
+}
+
+/** 只计数不删除：SCAN 遍历匹配键数（MCP get_cache_info 按前缀统计用） */
+export async function countKeysByPattern(pattern: string): Promise<number> {
+  if (!redis) return 0;
+  let cursor = "0";
+  let count = 0;
+  do {
+    const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200);
+    cursor = next;
+    count += keys.length;
+  } while (cursor !== "0");
+  return count;
+}
+
+/** 按前缀批量清理：Redis 走 SCAN，未配置 Redis 时回落进程内内存 */
+export async function cacheClearByPrefix(prefixes: string[]): Promise<number> {
+  if (cacheDisabled()) return 0;
+  if (redis) {
+    let removed = 0;
+    for (const prefix of prefixes) removed += await scanAndUnlink(`${prefix}*`);
+    return removed;
+  }
+  return memoryClearByPrefix(prefixes);
+}
+
+/** 按子串清理（运维按关键词清键） */
+export async function cacheClearBySubstring(substring: string): Promise<number> {
+  if (cacheDisabled()) return 0;
+  if (redis) return await scanAndUnlink(`*${substring}*`);
+  return memoryClearBySubstring(substring);
 }

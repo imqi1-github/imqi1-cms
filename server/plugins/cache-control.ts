@@ -23,14 +23,14 @@ export default defineNitroPlugin((nitroApp) => {
     if (process.env.NODE_ENV !== "production") return;
 
     const path = getRequestPath(event);
-    const isPagePath = isCdnCachedPage(path);
-    const isApiPath = isBrowserRevalidateApi(path);
-    if (!isPagePath && !isApiPath) return;
-    // 4xx/5xx 不进长缓存（例如不存在的文章）：显式 no-store，避免 404 被边缘缓存后一直 404
+    // 错误响应一律 no-store（不限路径）：边缘「默认缓存」开启时，无 Cache-Control 的 4xx/5xx 会被缓存半小时
     if (getResponseStatus(event) >= 400) {
       setResponseHeader(event, "cache-control", "no-store");
       return;
     }
+    const isPagePath = isCdnCachedPage(path);
+    const isApiPath = isBrowserRevalidateApi(path);
+    if (!isPagePath && !isApiPath) return;
     // admin / login 等已显式 no-store，不要覆盖
     if (String(getResponseHeader(event, "cache-control") ?? "").includes("no-store")) return;
 

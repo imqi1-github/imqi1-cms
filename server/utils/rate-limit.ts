@@ -98,3 +98,10 @@ export async function consumeRateLimit(opts: ConsumeRateLimitOptions): Promise<C
   }
   return { allowed: true, count: rec.count, retryAfterMs: 0 };
 }
+
+/** 清空内存兜底计数（无 Redis 时的运维清理入口：误伤限流后立即解除） */
+export function clearMemoryRateLimits(): number {
+  const removed = memoryStore.size;
+  memoryStore.clear();
+  return removed;
+}

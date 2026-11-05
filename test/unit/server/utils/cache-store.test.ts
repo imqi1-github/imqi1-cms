@@ -4,7 +4,7 @@ import "#test/helpers/nitro-globals";
 
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { cacheExpire, cacheGet, cacheIncr, cacheSetex, cacheTtl } from "#server/utils/cache/store";
+import { cacheClearByPrefix, cacheClearBySubstring, cacheExpire, cacheGet, cacheIncr, cacheSetex, cacheTtl } from "#server/utils/cache/store";
 
 const ORIGINAL_ENV = process.env.NODE_ENV;
 
@@ -38,5 +38,27 @@ describe("缓存门面", () => {
     const ttl = await cacheTtl(key);
     expect(ttl).toBeGreaterThan(0);
     expect(ttl).toBeLessThanOrEqual(30);
+  });
+
+  // 回归：不装 Redis 时搜索/足迹/限流计数都在内存里，运维清理必须仍能生效
+  test("按前缀清理：内存后端清掉匹配的键，不动其它键", async () => {
+    process.env.NODE_ENV = "production";
+    const stamp = Date.now();
+    await cacheSetex(`search:q${stamp}`, 60, "v");
+    await cacheSetex(`custom:footprint${stamp}`, 60, "v");
+    const cleared = await cacheClearByPrefix(["search:"]);
+    expect(cleared).toBe(1);
+    expect(await cacheGet(`search:q${stamp}`)).toBeNull();
+    expect(await cacheGet(`custom:footprint${stamp}`)).toBe("v");
+  });
+
+  test("按子串清理：内存后端按包含关系删键", async () => {
+    process.env.NODE_ENV = "production";
+    const stamp = Date.now();
+    await cacheSetex(`kw-${stamp}-a`, 60, "v");
+    await cacheSetex(`kw-${stamp}-b`, 60, "v");
+    const cleared = await cacheClearBySubstring(`kw-${stamp}`);
+    expect(cleared).toBe(2);
+    expect(await cacheGet(`kw-${stamp}-a`)).toBeNull();
   });
 });

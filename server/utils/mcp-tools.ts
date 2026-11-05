@@ -29,7 +29,10 @@ import { parseCovers } from "./covers";
 import { getSiteBaseUrl } from "./feed";
 import { redis } from "./redis";
 import { dateKey, dayShardFiles, logsDir, log } from "./log";
-import { countKeysByPattern, invalidateContentCaches, scanAndUnlink } from "./content-cache";
+import { invalidateContentCaches } from "./content-cache";
+import { cacheClearByPrefix, cacheClearBySubstring, countKeysByPattern } from "./cache/store";
+import { clearMemoryLoginLocks } from "./login-rate-limit";
+import { clearMemoryRateLimits } from "./rate-limit";
 import { createCdnProvider, purgeCdnRoutes } from "./cdn";
 import { detectDocker, getBuildHash } from "./runtime-info";
 
@@ -1452,7 +1455,7 @@ function registerOpsTools(server: McpServer): void {
         let note: string | undefined;
 
         if (target === "cdn") {
-          const result = await purgeCdnRoutes();
+          const result = await purgeCdnRoutes([], "MCP 手动");
           cleared = result?.requested ?? 0;
           note = result
             ? `已提交 CDN 刷新：${result.requested} 个目标${result.taskId ? `（任务 ${result.taskId}）` : ""}`
@@ -1463,19 +1466,23 @@ function registerOpsTools(server: McpServer): void {
           cleared = -1;
           note = "已清整组源站页面缓存，并触发一次防抖边缘刷新";
         } else {
-          if (!redis) return opsText({ target, cleared: 0, note: "未配置 Redis，无需清理" });
           if (target === "search") {
-            cleared = await scanAndUnlink("search:*");
+            cleared = await cacheClearByPrefix(["search:"]);
           } else if (target === "footprint") {
-            cleared = await scanAndUnlink("custom:footprint");
+            cleared = await cacheClearByPrefix(["custom:footprint"]);
           } else if (target === "rl") {
-            cleared = await scanAndUnlink("rl:*");
+            // 限流计数分散在三处：中间件（rl:）、登录锁定（login:）、点赞限速（likes:）
+            cleared =
+              (await cacheClearByPrefix(["rl:", "login:", "likes:"]))
+              + clearMemoryRateLimits()
+              + clearMemoryLoginLocks();
             note = "已清限流计数键（误伤的 429 立即解除）";
           } else {
             const safe = (keyword ?? "").replace(/[\\*?[\]]/g, "");
             if (!safe) return opsError("keyword_required", { note: "target=keyword 时须提供不含通配符的子串" });
-            cleared = await scanAndUnlink(`*${safe}*`);
+            cleared = await cacheClearBySubstring(safe);
           }
+          if (cleared === 0) note = note ?? "没有匹配的缓存键";
         }
 
         log.audit("MCP 清理缓存", { target, keyword: keyword ?? undefined, cleared });

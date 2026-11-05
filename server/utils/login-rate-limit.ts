@@ -111,3 +111,10 @@ export async function hasRecentFailures(ip: string): Promise<boolean> {
   const rec = records.get(ip);
   return !!rec && rec.failures > 0;
 }
+
+/** 清空内存兜底的失败计数与锁定（无 Redis 时的运维清理入口：误锁后立即解除） */
+export function clearMemoryLoginLocks(): number {
+  const removed = records.size;
+  records.clear();
+  return removed;
+}

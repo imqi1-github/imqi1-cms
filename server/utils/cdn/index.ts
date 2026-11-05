@@ -168,8 +168,11 @@ export async function runCdnPurge(
  *
  * 路由用 shared/constants.ts 里那组失效路由常量（Nitro 匹配串，如 `/content/**`）。
  * 未启用 CDN 时返回 null；失败只记日志不抛——刷新失败不该影响写库。
+ *
+ * @param routes 路由列表；空/缺省 = 全站页面（根目录前缀）
+ * @param source 日志来源标记（自动刷新 / 人工触发），用于事后归因额度
  */
-export async function purgeCdnRoutes(routes?: string[]): Promise<CdnPurgeResult | null> {
+export async function purgeCdnRoutes(routes?: string[], source = "自动"): Promise<CdnPurgeResult | null> {
   const provider = createCdnProvider();
   if (!provider?.isEnabled()) {
     warnNotConfigured();
@@ -179,7 +182,7 @@ export async function purgeCdnRoutes(routes?: string[]): Promise<CdnPurgeResult 
 
   try {
     return await runCdnPurge(provider, () => provider.purgeRoutes(routes ?? []), {
-      来源: "自动",
+      来源: source,
       路由: routes?.length ? routes.join(",") : "(全站)",
     });
   } catch (error) {

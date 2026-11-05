@@ -87,6 +87,30 @@ export async function memoryClear(): Promise<void> {
   store.clear();
 }
 
+/** 按前缀批量删除（运维清理用；Redis 后端走 SCAN） */
+export function memoryClearByPrefix(prefixes: string[]): number {
+  let removed = 0;
+  for (const key of [...store.keys()]) {
+    if (prefixes.some(prefix => key.startsWith(prefix))) {
+      store.delete(key);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
+/** 按子串删除（运维按关键词清理用） */
+export function memoryClearBySubstring(substring: string): number {
+  let removed = 0;
+  for (const key of [...store.keys()]) {
+    if (key.includes(substring)) {
+      store.delete(key);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 /** 容量超限时清扫：先删过期项，仍超限则按插入序丢最旧 */
 function sweep(): void {
   const now = Date.now();

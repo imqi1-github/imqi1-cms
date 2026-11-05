@@ -63,4 +63,18 @@ metadata:
 
 **生产实测踩坑（2026-11-05）**：① Nuxt payload 缓存的键是 URL，unstorage `normalizeKey` 在 `?` 处截断 → 根路径带查询串（`/?utm=…`）得到空键，fs 驱动会 `open` 目录本身 → `EISDIR`/`ENOTDIR` 全站 500；修复=在 `nuxt.config` 的 `nitro.storage` 给 `cache:nuxt:payload` 单独挂 `{driver:"memory"}`（route 缓存仍走 fs/redis）。② h3 的 `event.path` 带 `?query`，`server/utils/cache-routes.ts` 匹配前必须 `split("?")[0]`，否则带查询串的页面/API 全部跳过头改写。③ `cache-reset` 的启动清缓存是异步的，日志里 `Listening` 先出现；它与启动瞬间的请求并发会写坏 `.nitro/cache` 目录，已把清缓存改成 await（Nitro 插件不阻塞监听，真正兜底是 ①）。④ 生产是 nginx → Node 3000；宝塔 Node 项目用 `/www/wwwroot/glass/132_start.sh` 裸 `nohup` 启动（无 pm2/systemd），重启=杀旧 PID + 跑该脚本；宝塔 API 有 IP 白名单，本机/服务器 IP 都可能被拒。⑤ 验证响应头要 `curl --resolve imqi1.com:443:127.0.0.1` 走 nginx HTTPS；直接 `127.0.0.1:3000` 会因 Host 不匹配让 `/api/*` 返回 404。⑥ 生产库名 `imqi1cms`（不是本地 `.env` 的 `imqi1`），服务器没有 psql 客户端，可用 `/www/wwwroot/glass/node_modules/pg` + `132_start.sh` 里的 DB_* 查。
 
+**EdgeOne 控制台规则现状（2026-11-05 站主手改，已上线验证）**：`rule-3x0l48u2xkel`（host=imqi1.com，优先级 1）主分支 = `Cache.FollowOrigin{DefaultCache:on, DefaultCacheStrategy:off, DefaultCacheTime:1800}` + `CachePrefresh 1%`；子规则 `/admin/**`、`/login`、`/api/*` = `FollowOrigin{DefaultCache:off}`（**别动**，否则 csrf/token 被缓存 + 剥 Set-Cookie → 登录必 403）。⇒ 源站下发的 `s-maxage`（列表页 60 / 内容页 21600）**这才真正在边缘生效**：改之前是「强制 TTL 1800 + IgnoreCacheControl=on」，两级设计全废（实测 `Age` 涨到 736s）；改之后首页 `Age` 每 60s 复位一次（MISS→RefreshHit→Age 31 循环）✓。**改控制台规则后必须实测 `Age` 是否复位**，否则源站的 TTL 白改。查规则用 `DescribeL7AccRules`、查额度用 `DescribeContentQuota`（腾讯云 teo 2022-09-01，TC3 签名，用仓库自带的 `server/utils/cdn/tencent-signature.ts` 即可调）。
+
+**边缘 CacheKey 含查询串**（zone 级 `CacheKey.QueryString.Switch=off`）→ **别改成「忽略查询串」**：`/category/**?page=N`、`/tag/**?page=N` 的 SSR 输出随分页参数变，忽略会把第 2 页返回成第 1 页。
+
+**边缘「默认缓存」开启后，任何没有 Cache-Control 的响应都会被缓存 1800s** → 源站必须给**所有** 4xx/5xx 下发 `no-store`（不能只管「已缓存路径」）：否则一次偶发 500/404 会被边缘缓存半小时。`server/plugins/cache-control.ts` 已把状态判断提到路径判断之前（实测修复前 404 是 MISS→HIT，修复后两次都 MISS + no-store）。
+
+**源站缓存键含完整 URL**（Nitro `hash(原始URL)`，`nitropack/dist/runtime/internal/cache.mjs`）→ 爬虫推广参数（`?source=…`）会各自生成一份 ~200KB 缓存文件 + 一次整页渲染。已加 `server/middleware/cache-key.ts`：只保留会改变 SSR 输出的参数（`page`/`view`/`source`/`type`），其余剥掉 → 同一路由共用一份缓存（实测 3 个不同推广参数的首页请求后仍只有 1 个 `index.*` 文件）。**分页/视图类参数绝不能剥**。
+
+**刷新日志的来源标记**：`purgeCdnUrls(urls, "自动")` / `purgeCdnRoutes(routes, source)` → 写库触发=自动、后台=后台手动、MCP=MCP 手动。以前自动刷新全被记成「手动」（`purgeCdnUrls` 的 source 默认值），额度无法归因。
+
+**MCP `clear_cache` 不再依赖 Redis**：无 Redis 时搜索/足迹/限流计数都在进程内内存（`server/utils/cache/store.ts` 的内存回落），已改走 `cacheClearByPrefix`/`cacheClearBySubstring`（Redis SCAN / 内存遍历）；限流还要清 `server/utils/rate-limit.ts` 与 `login-rate-limit.ts` 各自的私有内存表（Redis 模式下键分别是 `rl:*`、`login:*`、点赞 `likes:*`）。后台「缓存管理」页仍按 Redis 灰显（那里清的就是 Redis 键，保持原样）。
+
+**生产库 `contents.comment_num` 漂移**：旧的 `comments/[id].patch` RMW race 留下过偏差（cid 836/1016 各差 2，2026-11-05 已按 `status=1` 实际条数重算修正；`comment_num` 只在后台展示，前台不显示）。重算 SQL：`WITH s AS (SELECT cid,count(*) n FROM comments WHERE status=1 GROUP BY cid) UPDATE contents c SET comment_num=s.n FROM s WHERE s.cid=c.cid AND c.comment_num<>s.n`。绕过应用直接改库**不会触发缓存失效** → 改完要 `clear_cache target=pages`。
+
 相关：[[redis-build-baked-docker-ondemand]]、[[nitro-route-cache-key-colon]]、[[admin-write-api-csrf-required]]、[[post-change-lint-chain]]
