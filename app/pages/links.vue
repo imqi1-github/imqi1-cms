@@ -21,7 +21,10 @@ const showLinkUrlInput = computed(() => siteSettings.value?.linkAutoApprove === 
 const { data: linksData, pending, error } = await useFetch("/api/links", {
   headers: getInternalRequestHeaders(),
 });
-const links = computed(() => linksData.value?.data || []);
+// useFetch 的 data 是 shallowRef：直接改 linksData.value.data 不触发重渲染。
+// 客户端单独用 ref 承载洗牌后的顺序（SSR 为 null → 用服务端稳定顺序，水合后再打乱）。
+const shuffledLinks = ref<LinkItem[] | null>(null);
+const links = computed(() => shuffledLinks.value ?? linksData.value?.data ?? []);
 
 // 头像加载失败的友链 id 集合。不直接改 link.avatar（那是 useFetch 回来的不可变数据），改用本地状态触发字母回退。
 const failedAvatarIds = ref<Set<number>>(new Set());
@@ -412,6 +415,16 @@ let lightboxEl: HTMLElement | null = null;
 
 // 初始化灯箱容器与友链检测
 onMounted(async () => {
+  // 每次进页/刷新随机顺序：SSR HTML 与边缘缓存保持稳定，水合后再打乱
+  const sourceLinks = linksData.value?.data;
+  if (sourceLinks?.length) {
+    const shuffled = [...sourceLinks];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    }
+    shuffledLinks.value = shuffled;
+  }
   lightboxEl = lightboxContainer.value;
   register(lightboxEl);
   // 预取 CSRF token（写接口 /api/links、/api/links/patch 需在 body 带上）。

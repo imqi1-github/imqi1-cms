@@ -2,6 +2,7 @@ import { getUser } from "#server/lib/auth";
 import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { metaContentPaths } from "#server/utils/content-urls";
 import { CSRF_HEADER, TAG_CACHE_ROUTES  } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -59,6 +60,12 @@ export default defineEventHandler(async event => {
       });
     }
 
+    // 删除后关系已清，文章 URL 必须删除前算好
+    const contentPaths = await metaContentPaths(
+      tagId,
+      tagToDelete.slug ? `/tag/${encodeURIComponent(tagToDelete.slug)}` : null,
+    );
+
     // 删关系 + 删主表需原子：任一步失败整体回滚，避免「关系已清、标签残留」的半完成态
     await prisma.$transaction([
       prisma.contentrelations.deleteMany({ where: { mid: tagId } }),
@@ -66,7 +73,7 @@ export default defineEventHandler(async event => {
     ]);
 
     // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES }).catch(err => console.error("[cache] 标签删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 标签删除失效缓存失败", err));
 
     await logAdminAudit({
 

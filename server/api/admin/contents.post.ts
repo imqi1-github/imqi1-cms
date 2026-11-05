@@ -165,7 +165,7 @@ export default defineEventHandler(async event => {
   }
 
   // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-  void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
+  void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentCids: [contentRecord.cid] }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
 
   // 前端保存后只需 cid（跳转/关联），不再回查全字段（含正文）。
   await logAdminAudit({

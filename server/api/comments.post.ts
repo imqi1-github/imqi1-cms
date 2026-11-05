@@ -301,8 +301,10 @@ export default defineTypedApiHandler(
         message = "评论提交成功，请等待审核";
       }
 
-      // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-      void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 评论提交失效缓存失败", err));
+      // 仅已发布评论改变公开数据/计数；待审核评论不对外可见，跳过可省刷新额度
+      if (commentStatus === 1) {
+        void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES, contentCids: [Number(cid)] }).catch(err => console.error("[cache] 评论提交失效缓存失败", err));
+      }
 
       return {
         code: 200,

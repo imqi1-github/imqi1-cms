@@ -102,6 +102,77 @@ export const CSRF_HEADER = "x-csrf-token";
 /** 公开接口的 CDN 缓存头：CDN 与浏览器同 TTL（5 分钟） */
 export const PUBLIC_CACHE_CONTROL = "public, max-age=300, s-maxage=300";
 
+/**
+ * 走 CDN 边缘缓存的页面（nuxt.config 的 routeRules 与响应头插件共用）。
+ * ⚠️ 这些页面的 SSR HTML 必须与登录态无关——边缘缓存的是同一份 HTML 给所有人。
+ */
+export const CDN_CACHED_ROUTES = [
+  "/",
+  "/archiving",
+  "/category/**",
+  "/content/**",
+  "/tag/**",
+  "/subscribes",
+  "/changelogs",
+  "/agreement",
+  "/sitemap",
+  "/sitemap.xml",
+  "/about",
+  "/map",
+  "/links",
+  "/messages",
+];
+
+/**
+ * 列表/统计页：内嵌评论数、文章数等「会随评论/文章变动」的聚合数据。
+ *
+ * 边缘 TTL 短（见 build.listPageCacheSeconds），写库时**不提交边缘刷新**——
+ * 靠 TTL 自然过期收敛，把 EdgeOne 刷新额度留给内容页。
+ * 源站缓存仍按 build.pageCacheSeconds（长），写库时照旧删对应缓存键。
+ */
+export const LIST_PAGE_ROUTES = [
+  "/",
+  "/category/**",
+  "/tag/**",
+  "/archiving",
+  "/about",
+  "/sitemap",
+];
+
+/** 内容页：改动频率低、需要长边缘缓存，靠写库后精确 URL 刷新保持新鲜 */
+export const CONTENT_PAGE_ROUTES = [
+  "/content/**",
+  "/subscribes",
+  "/changelogs",
+  "/agreement",
+  "/sitemap.xml",
+  "/map",
+  "/links",
+  "/messages",
+];
+
+/** 变化很少的公开接口：加源站缓存（无 Redis 时文件缓存），并由边缘缓存 */
+export const PUBLIC_STATIC_API_ROUTES = [
+  "/api/categories",
+  "/api/tags",
+  "/api/site",
+  "/api/travels",
+  "/api/subscribes",
+  "/api/changelogs",
+  "/api/blog-network",
+];
+
+/** 浏览器必须每次向边缘验证的公开接口（含未进 routeRules 的） */
+export const BROWSER_REVALIDATE_API_ROUTES = [
+  ...PUBLIC_STATIC_API_ROUTES,
+  "/api/home-data",
+  "/api/likes/counts",
+  "/api/footprint",
+];
+
+/** 相关文章接口按 cid 动态取，单独按前缀匹配 */
+export const BROWSER_REVALIDATE_API_PREFIXES = ["/api/related-contents/"];
+
 /** 不带 s-maxage 的版本：RSS / sitemap / 二维码等不经 CDN 分层、只由浏览器直接取的响应 */
 export const PUBLIC_CACHE_CONTROL_SHORT = "public, max-age=300";
 
@@ -166,23 +237,30 @@ export const SUBSCRIBE_CACHE_ROUTES = ["/", "/subscribes", "/map"];
 /** 更新日志变更 → 首页 + 更新日志页 */
 export const CHANGELOG_CACHE_ROUTES = ["/", "/changelogs"];
 
-/** 评论变更 → 首页 + 分类/标签列表 + 文章详情 + 归档（评论数会变） */
-export const COMMENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/content/**", "/archiving"];
+/** 评论变更 → 只影响内嵌评论数的列表/统计页（首页 + 分类/标签列表 + 归档 + 关于 + 站点地图）
+ *
+ * 这些页面的边缘 TTL 短（build.listPageCacheSeconds），写库时清掉源站缓存键即可，
+ * **不提交边缘刷新**（否则每次评论都要刷这几个固定 URL，额度白烧）。
+ * 文章详情页不在此列：它的评论列表是客户端实时拉 /api/comments（该接口无缓存头，
+ * 边缘不缓存），SSR 里不内嵌评论数。 */
+export const COMMENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"];
 
 /** 文章增删改 → 首页 + 分类/标签列表 + 文章详情 + 归档 + 站点地图 + 独立页面
  * 独立页面（type=1，contents 表里 status=1 的页面）共用此接口增删改，
  * 但渲染到独立路径（/agreement、/messages…），必须把它们列出来才会失效 ISR。
- * 新增独立页面时也要同步加到这里，否则 ISR 缓存永远不失效。 */
-export const CONTENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap", "/agreement", "/messages"];
+ * 新增独立页面时也要同步加到这里，否则 ISR 缓存永远不失效。
+ * /sitemap.xml 是内容页（文章增删改要改它），不能跟 /sitemap 一起按列表页跳过。 */
+export const CONTENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap", "/sitemap.xml", "/about", "/agreement", "/messages"];
 
-/** 分类变更 → 首页 + 分类列表 + 文章详情 + 归档 + 站点地图（标签不受影响，故不含 /tag/**） */
-export const CATEGORY_CACHE_ROUTES = ["/", "/category/**", "/content/**", "/archiving", "/sitemap"];
+/** 分类变更 → 首页 + 分类列表 + 文章详情 + 归档 + 站点地图（标签不受影响，故不含 /tag/**）
+ * 分类 slug 改了会改文章 URL → /sitemap.xml 也要刷新 */
+export const CATEGORY_CACHE_ROUTES = ["/", "/category/**", "/content/**", "/archiving", "/sitemap", "/sitemap.xml", "/about"];
 
 /** 标签变更 → 首页 + 标签列表 + 文章详情 + 归档 + 站点地图 */
-export const TAG_CACHE_ROUTES = ["/", "/tag/**", "/content/**", "/archiving", "/sitemap"];
+export const TAG_CACHE_ROUTES = ["/", "/tag/**", "/content/**", "/archiving", "/sitemap", "/about"];
 
 /** 旅行足迹变更 → 首页 + 地图 + 关于页 */
 export const TRAVEL_CACHE_ROUTES = ["/", "/map", "/about"];
 
-/** 只影响文章详情页：附件/用户资料变更（列表页不展示这些字段，无需一起清） */
-export const CONTENT_DETAIL_CACHE_ROUTES = ["/content/**"];
+/** 只影响文章/独立页详情：附件/用户资料变更（列表页不展示这些字段） */
+export const CONTENT_DETAIL_CACHE_ROUTES = ["/content/**", "/agreement", "/messages"];

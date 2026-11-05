@@ -88,7 +88,7 @@ export default defineEventHandler(async event => {
     });
 
     // 内容关联分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 内容分类关联失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 内容分类关联失效缓存失败", err));
 
     return {
       success: true,

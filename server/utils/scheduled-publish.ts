@@ -51,7 +51,7 @@ export async function runScheduledPublish(now: Date = new Date()): Promise<Sched
   );
 
   // 失效 ISR 缓存：发布影响首页/分类/标签/详情/归档/站点地图，与 article CRUD 一致
-  void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err =>
+  void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentCids: cids }).catch(err =>
     console.error("[cache] 定时发布失效缓存失败", err),
   );
 

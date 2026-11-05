@@ -264,7 +264,7 @@ export default defineEventHandler(async event => {
 
     // 上传时关联了文章 → 影响文章详情 /content/** 的附件渲染；未关联内容（cid 为空）则无需失效
     if (cid !== null) {
-      void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
+      void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
     }
 
     return {

@@ -104,8 +104,9 @@ export default defineEventHandler(async event => {
       },
     });
 
-    // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类创建失效缓存失败", err));
+    // 新建分类不影响已有文章页，只刷分类页本身，避免目录刷新
+    const contentPaths = category.slug ? [`/category/${encodeURIComponent(category.slug)}`] : [];
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 分类创建失效缓存失败", err));
 
     await logAdminAudit({
 

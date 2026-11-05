@@ -96,7 +96,7 @@ export default defineEventHandler(async event => {
     })
 
     // 附件标题/关联变更 → 影响相关文章详情 /content/** 渲染
-    void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES }).catch(err => console.error('[cache] 附件更新失效缓存失败', err))
+    void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES, contentCids: cidList ?? undefined }).catch(err => console.error('[cache] 附件更新失效缓存失败', err))
 
     return {
       success: true,

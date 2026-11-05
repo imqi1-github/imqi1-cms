@@ -1,4 +1,4 @@
-// 页面缓存策略：源站缓存层（文件/Redis）+ 边缘缓存 + ETag；自动刷新默认关闭。
+// 页面缓存策略：源站缓存层（文件/Redis）+ 长边缘 TTL + 写库自动刷新。
 import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, test } from "bun:test";
@@ -13,20 +13,22 @@ afterEach(() => {
 });
 
 describe("自动刷新开关", () => {
-  test("默认关闭（内容靠 TTL + 缓存预刷新收敛，不消耗刷新额度）", () => {
+  test("默认开启（写库后精确 URL 刷新，一次编辑只花少量 URL 额度）", () => {
     Reflect.deleteProperty(process.env, "CDN_AUTO_PURGE");
-    expect(isAutoPurgeEnabled()).toBe(false);
-  });
-
-  test("显式设为 1 才开", () => {
-    process.env.CDN_AUTO_PURGE = "1";
     expect(isAutoPurgeEnabled()).toBe(true);
   });
 
-  test("其他取值都算关", () => {
-    for (const v of ["", "0", "true", "yes"]) {
+  test("CDN_AUTO_PURGE=0 / false 关闭", () => {
+    for (const v of ["0", "false", "FALSE"]) {
       process.env.CDN_AUTO_PURGE = v;
       expect(isAutoPurgeEnabled()).toBe(false);
+    }
+  });
+
+  test("其他取值（含空串、1、true）都算开启", () => {
+    for (const v of ["", "1", "true", "yes"]) {
+      process.env.CDN_AUTO_PURGE = v;
+      expect(isAutoPurgeEnabled()).toBe(true);
     }
   });
 });
@@ -38,10 +40,12 @@ describe("nuxt.config 的页面缓存规则", () => {
     expect(config).toContain('base: "cache"');
   });
 
-  test("源站与边缘用同一个时长（build.pageCacheSeconds）", () => {
+  test("源站缓存用长时长（build.pageCacheSeconds），边缘按页面类型分档", () => {
     expect(config).toContain("siteConfig.build.pageCacheSeconds");
     expect(config).toContain("maxAge: PAGE_CACHE_SECONDS");
-    expect(config).toContain("s-maxage=${PAGE_CACHE_SECONDS}");
+    // 列表/统计页：边缘 TTL 短（listPageCacheSeconds），源站缓存仍是长的
+    expect(config).toContain("siteConfig.build.listPageCacheSeconds");
+    expect(config).toContain("LIST_PAGE_ROUTES.includes(path)");
   });
 
   test("敏感路径一律 no-store，绝不进边缘缓存", () => {

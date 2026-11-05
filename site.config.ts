@@ -58,10 +58,13 @@ export const siteConfig = defineSiteConfig({
   build: {
     brotliCompression: true,
     statsHtml: false,
-    // 页面缓存时长（秒）：源站 ISR 与 CDN 边缘缓存都用这个值。
-    // 1800 = 原来的 Redis ISR 时长：源站每页每 30 分钟重渲染一次（内容变更时额外一次，
-    // 因为变更会精确清掉对应缓存键）。边缘靠缓存预刷新 + ETag 在节点侧收敛。
-    pageCacheSeconds: 1800,
+    // 页面缓存时长（秒）：源站缓存与 CDN 边缘缓存都用这个值。
+    // 内容变更靠写库后的精确失效传播，不靠 TTL，所以可以设得很长（6 小时）。
+    pageCacheSeconds: 21600,
+    // 列表/统计页的边缘 TTL（秒）：首页/分类/标签/归档/关于/站点地图内嵌评论数等聚合数据，
+    // 写库后不提交边缘刷新，靠这个短 TTL 自然收敛（把刷新额度留给内容页）。
+    // 源站缓存仍按 pageCacheSeconds（长），写库时照旧删对应缓存键。
+    listPageCacheSeconds: 60,
     // Redis：仅生产构建生效（开发恒不启用），改完需重新打包；不启用时 ISR 退文件系统、搜索缓存关闭
     redis: {
       enabled: false,

@@ -372,33 +372,34 @@ MINI_API_SECRET="your_random_secret"
 
 页面缓存的主战场是 CDN 边缘：源站只负责渲染，HTML 缓存在 EdgeOne 节点。
 
-**内容怎么变新**：不调刷新接口（零额度），靠三层配合收敛——
+**内容怎么变新**：长 TTL + 写库主动失效——
 
-1. **源站缓存层**（`build.pageCacheSeconds`，默认 **1800 秒** = 原来 Redis ISR 的时长）：配了 Redis 用 Redis，没配就用文件缓存（`.nitro/cache`），**都不需要额外组件**。**内容变更时会精确清掉对应缓存键**（`invalidateContentCaches`，走 Nitro storage API，两种驱动通用）——这是原来「主动清 Redis 键」的等价物；
-2. **边缘缓存**：TTL 与源站一致（30 分钟），命中就发；
-3. **ETag/304**：边缘按控制台的**缓存预刷新百分比**回源验证，命中 ETag 就只回 304、**不重渲染**——源站渲染频率仍是「每页每 30 分钟 + 每次变更各一次」，与原 Redis 方案一致。
+1. **源站缓存层**（`build.pageCacheSeconds`，默认 **21600 秒 / 6 小时**）：配了 Redis 用 Redis，没配就用文件缓存（`.nitro/cache`），**都不需要额外组件**。内容变更时会精确清掉对应缓存键（`invalidateContentCaches`，走 Nitro storage API，两种驱动通用）；
+2. **边缘缓存**：TTL 与源站一致（6 小时），命中就直接返回，源站几乎零压力；
+3. **写库主动失效**：写库后 5 秒防抖，把受影响路由展开成**精确 URL** 提交 EdgeOne 刷新（URL 池 1000/天；只有分类/标签重命名这类批量变更才退回目录刷新）。一次编辑会话通常只消耗十几个 URL 额度，不烧 50/天 的目录池；
+4. **浏览器**：`max-age=0`，每次导航都向边缘验证，不会吃本地旧副本。
 
-所以：**渲染频率和原方案一样，额度消耗为 0，内容在下一个请求内变新**。`CDN_AUTO_PURGE=1`（默认关）才会额外调 EdgeOne 刷新接口让边缘立刻失效——需要时再开。**不接 CDN 也能跑**（页面实时 SSR），只是没有边缘加速。
+`CDN_AUTO_PURGE=0` 可关闭自动刷新；关闭后靠 TTL + 预刷新收敛。**不接 CDN 也能跑**（页面实时 SSR），只是没有边缘加速。
 
 **① EdgeOne 侧准备**
 
 1. 站点接入域名 `imqi1.com`（加速域名），拿到 **ZoneId**（形如 `zone-xxxxxxxx`）；
 2. 缓存规则里放行 HTML 文档（缓存时长与源站 `s-maxage` 一致，见下文「缓存时长」），并**放行 `/admin`、`/login`、`/api/auth`、`/api/admin` 不缓存**；
-3. **打开缓存预刷新**（站点加速 → 缓存配置 → 缓存预刷新）：百分比 = **从 TTL 的百分之几开始验证**，所以**数值越小越早验证、内容越新**（示例：TTL 10 秒、填 80%，则第 8–10 秒才验证）。**想尽快看到内容变更就调 1%**（TTL 1800 秒 → 18 秒后开始验证）；调大则更省源站回源、但内容更旧。源站认 ETag 就只回 304，**全套餐免费**；
-4. 密钥用腾讯云 API 密钥（SecretId / SecretKey）——只有要开自动刷新才需要（`CDN_AUTO_PURGE=1`）；该账号需有 EdgeOne 刷新权限（`QcloudTEOFullAccess`，或自定义策略只授 `teo:CreatePurgeTask`）。
+3. **缓存预刷新**（站点加速 → 缓存配置 → 缓存预刷新）只作兜底：长 TTL + 主动失效下不需要它，建议**关闭或填 90–99%**（百分比是「从 TTL 的百分之几开始验证」，填 1% 会让每个请求都回源）；源站认 ETag 时只回 304，全套餐免费；
+4. 密钥用腾讯云 API 密钥（SecretId / SecretKey）——自动刷新默认开启，需要这组密钥（`CDN_AUTO_PURGE=0` 可关）；该账号需有 EdgeOne 刷新权限（`QcloudTEOFullAccess`，或自定义策略只授 `teo:CreatePurgeTask`）。
 
 **② 服务器运行环境变量**（运行时读取，改完重启服务即可，不用重新打包）：
 
 ```shell
-# 只有「写库后自动刷新 CDN」才需要这些（默认不刷新，内容靠 TTL + 缓存预刷新收敛）
+# 写库后自动刷新（默认开启）需要这些
 # EDGEONE_ZONE_ID="zone-xxxxxxxx"      # EdgeOne 站点 ID
 # EDGEONE_SECRET_ID="your_secret_id"  # 腾讯云 API 密钥（与 COS 同账号可填同一对）
 # EDGEONE_SECRET_KEY="your_secret_key"
 # EDGEONE_REGION=""                  # 可选，EdgeOne 地域，如 ap-guangzhou
 # EDGEONE_API_HOST=""                # 可选，国际站填 teo.intl.tencentcloudapi.com
 # CDN_PROVIDER="edgeone"             # 可选，配齐 ZoneId + 密钥时自动识别
-# CDN_AUTO_PURGE="1"                 # 可选，写库后自动刷新（会消耗刷新额度）
-# CDN_PURGE_SCOPE="site"             # 可选，site=任何变更都合并成根目录一条刷新（省额度、多回源）
+# CDN_AUTO_PURGE="0"                 # 可选，=0 关闭写库自动刷新（默认开启）
+# CDN_PURGE_SCOPE="route"            # 可选，route=按路由精确展开（默认）；site=合并成根目录一条
 ```
 
 > 命名口径：**厂商专属的用 `EDGEONE_` 前缀**（对齐 `COS_SECRET_ID` 的模式），**与厂商无关的用 `CDN_` 前缀**（换一家 CDN 时这几个不用动）。

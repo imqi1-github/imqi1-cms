@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { metaContentPaths } from "#server/utils/content-urls";
 import { CATEGORY_CACHE_ROUTES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -123,6 +124,12 @@ export default defineEventHandler(async event => {
       }
     }
 
+    // 改名/改 slug 前先算出受影响文章 URL（改 slug 后旧 URL 会 404，必须一起失效）
+    const contentPaths = await metaContentPaths(
+      mid,
+      existingCategory.slug ? `/category/${encodeURIComponent(existingCategory.slug)}` : null,
+    );
+
     // 更新分类。区分「未提供」与「清空」：字段为 undefined 时保留原值，显式空串才算清空，
     // 避免只改 name 而未传 slug/desc 时被整体置 null（部分更新丢数据）
     const category = await prisma.metas.update({
@@ -134,8 +141,9 @@ export default defineEventHandler(async event => {
       },
     });
 
+    if (category.slug) contentPaths.push(`/category/${encodeURIComponent(category.slug)}`);
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
 
     await logAdminAudit({
 

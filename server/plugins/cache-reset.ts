@@ -15,8 +15,9 @@ import { log } from "#server/utils/log";
  *
  * 可用 `CDN_PURGE_ON_STARTUP=0` 关掉边缘刷新（额度极紧时）。
  */
-export default defineNitroPlugin(() => {
-  void resetSourceCache();
+export default defineNitroPlugin(async () => {
+  // 必须等清空完成再开始监听：清缓存与启动瞬间的请求并发会把 nuxt/payload 写成文件（ENOTDIR 500）
+  await resetSourceCache();
   void resetEdgeCache();
 });
 

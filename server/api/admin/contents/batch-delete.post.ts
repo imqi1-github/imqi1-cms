@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { contentUrlPaths } from "#server/utils/content-urls";
 import { CONTENT_CACHE_ROUTES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -59,6 +60,21 @@ export default defineEventHandler(async event => {
     });
     const affectedAttachmentIds = affectedAttachments.map(attachment => attachment.aid);
 
+    // 删除后 cid 已查不到，URL 必须删除前算好，避免退回目录刷新
+    const contentsToDelete = (await prisma.contents.findMany({
+      where: { cid: { in: cidList } },
+      select: {
+        cid: true,
+        slug: true,
+        type: true,
+        contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+      },
+    })) ?? [];
+    const contentPaths = contentsToDelete.flatMap(row => [
+      ...contentUrlPaths(row),
+      `/api/related-contents/${row.cid}`,
+    ]);
+
     // 四个 deleteMany 包进事务：任一步失败整体回滚，避免「关系/评论/附件已删而文章还在」的脏状态
     await prisma.$transaction([
       prisma.contentrelations.deleteMany({
@@ -87,7 +103,7 @@ export default defineEventHandler(async event => {
     await deleteOrphanAttachments(affectedAttachmentIds);
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
 
     await logAdminAudit({
 

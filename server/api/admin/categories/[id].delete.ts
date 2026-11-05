@@ -2,6 +2,7 @@ import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { metaContentPaths } from "#server/utils/content-urls";
 import { CSRF_HEADER, CATEGORY_CACHE_ROUTES  } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -42,6 +43,16 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    // 删除后关系已迁移，文章 URL 必须删除前算好（旧分类 slug 下的地址会 404）
+    const categoryBeforeDelete = await prisma.metas.findFirst({
+      where: { mid: categoryId, type: "category" },
+      select: { slug: true },
+    });
+    const contentPaths = await metaContentPaths(
+      categoryId,
+      categoryBeforeDelete?.slug ? `/category/${encodeURIComponent(categoryBeforeDelete.slug)}` : null,
+    );
+
     // 整个迁移+删除序列包进事务：中途任何一步失败可回滚，避免「部分文章已迁到目标分类、主类却没删」不一致
     await prisma.$transaction(async tx => {
       // 串行化并发删除：先对全部分类行加排他锁（SELECT ... FOR UPDATE），
@@ -129,7 +140,7 @@ export default defineEventHandler(async event => {
     });
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
 
     await logAdminAudit({
 

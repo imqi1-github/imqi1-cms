@@ -11,6 +11,8 @@ export default defineEventHandler(async () => {
           { isModification: true, modificationStatus: "approved" }
         ]
       },
+      // 固定基础顺序：洗牌结果才可复现（否则同一天两次查询也可能不同）
+      orderBy: { id: "asc" },
       // 只下发前台展示所需字段，enabled/isModification/modificationStatus/originalLinkId 等
       // 内部审核字段不对外暴露。
       select: {
@@ -22,12 +24,7 @@ export default defineEventHandler(async () => {
       },
     });
 
-    // 随机打乱数组顺序 (Fisher-Yates 洗牌算法)
-    for (let i = links.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [links[i]!, links[j]!] = [links[j]!, links[i]!];
-    }
-
+    // 服务端保持稳定顺序（前端水合后再随机打乱）→ SSR HTML/ETag 稳定，边缘缓存才有效
     return {
       code: 200,
       message: "获取友链列表成功",

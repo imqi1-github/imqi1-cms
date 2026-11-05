@@ -44,7 +44,7 @@ export default defineEventHandler(async event => {
   try {
     // 删除评论 + 逐文章回减计数需原子：否则中途某步抛错（文章被删/B 更新失败）评论已删、计数没跟上，
     // batch 跨多篇影响面大；包进 $transaction 保证同成功同失败
-    await prisma.$transaction(async tx => {
+    const affectedCids = await prisma.$transaction(async tx => {
       // 获取要删除的评论信息（用于更新文章计数）
       const commentsToDelete = await tx.comments.findMany({
         where: {
@@ -78,10 +78,12 @@ export default defineEventHandler(async event => {
           });
         }
       }
+
+      return [...new Set(commentsToDelete.map(c => c.cid))];
     });
 
     // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES }).catch(err => console.error("[cache] 评论批量删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES, contentCids: affectedCids }).catch(err => console.error("[cache] 评论批量删除失效缓存失败", err));
 
     await logAdminAudit({
 

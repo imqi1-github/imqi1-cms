@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { contentUrlPaths } from "#server/utils/content-urls";
 import { logAdminAudit } from "#server/utils/audit";
 import { CSRF_HEADER, CONTENT_CACHE_ROUTES  } from "#shared/constants";
 
@@ -47,7 +48,14 @@ export default defineEventHandler(async event => {
   try {
     const target = await prisma.contents.findUnique({
       where: { cid: contentId },
-      select: { cid: true, title: true, status: true, type: true },
+      select: {
+        cid: true,
+        title: true,
+        status: true,
+        type: true,
+        slug: true,
+        contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+      },
     });
 
     const affectedAttachments = await prisma.contentattachments.findMany({
@@ -61,8 +69,11 @@ export default defineEventHandler(async event => {
 
     await deleteOrphanAttachments(affectedAttachments.map(attachment => attachment.aid));
 
-    // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
+    // 删除后 cid 已查不到，URL 必须删除前算好，避免退回目录刷新
+    const contentPaths = target
+      ? [...contentUrlPaths(target), `/api/related-contents/${contentId}`]
+      : [];
+    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
 
     logAdminAudit({
       actor: { uid: user.uid, name: user.name },

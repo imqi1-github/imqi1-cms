@@ -1434,7 +1434,7 @@ function registerOpsTools(server: McpServer): void {
   server.registerTool(
     "clear_cache",
     {
-      description: "【运维】清缓存（清后自动重建）。target=pages 清源站页面缓存（自动刷新 CDN 默认关闭，需立即生效请用 cdn）/ cdn 只刷新 CDN 边缘 / search 搜索缓存 / footprint 访客足迹缓存 / rl 限流计数键（误伤解除）/ keyword 按键名子串。须 confirm:true。",
+      description: "【运维】清缓存（清后自动重建）。target=pages 清源站页面缓存（同时触发一次防抖边缘刷新）/ cdn 只刷新 CDN 边缘 / search 搜索缓存 / footprint 访客足迹缓存 / rl 限流计数键（误伤解除）/ keyword 按键名子串。须 confirm:true。",
       inputSchema: z.object({
         token: opsTokenSchema,
         target: z.enum(["pages", "cdn", "search", "footprint", "rl", "keyword"]).describe("清理目标"),
@@ -1461,7 +1461,7 @@ function registerOpsTools(server: McpServer): void {
           // 清整组源站页面缓存；-1 = 全组不计数（与 admin 端语义一致）
           await invalidateContentCaches();
           cleared = -1;
-          note = "已清整组源站页面缓存（CDN 自动刷新默认关闭，要立刻刷边缘请用 target=cdn）";
+          note = "已清整组源站页面缓存，并触发一次防抖边缘刷新";
         } else {
           if (!redis) return opsText({ target, cleared: 0, note: "未配置 Redis，无需清理" });
           if (target === "search") {

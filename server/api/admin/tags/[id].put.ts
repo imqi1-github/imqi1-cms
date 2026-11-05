@@ -3,6 +3,7 @@ import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateMetaData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { metaContentPaths } from "#server/utils/content-urls";
 import { TAG_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
@@ -59,6 +60,16 @@ export default defineEventHandler(async event => {
   validateMetaData({ name, slug, desc });
 
   try {
+    // 改名/改 slug 前先算出受影响文章 URL（改 slug 后旧标签页会 404，必须一起失效）
+    const existingTag = await prisma.metas.findFirst({
+      where: { mid, type: "tag" },
+      select: { slug: true },
+    });
+    const contentPaths = await metaContentPaths(
+      mid,
+      existingTag?.slug ? `/tag/${encodeURIComponent(existingTag.slug)}` : null,
+    );
+
     // updateMany 限定 type='tag'：metas 表同表装 category/tag，避免按 mid 直更误改同表分类
     const result = await prisma.metas.updateMany({
       where: { mid, type: "tag" },
@@ -76,8 +87,9 @@ export default defineEventHandler(async event => {
     }
 
     const tag = await prisma.metas.findUnique({ where: { mid } });
+    if (tag?.slug) contentPaths.push(`/tag/${encodeURIComponent(tag.slug)}`);
     // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES }).catch(err => console.error("[cache] 标签更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 标签更新失效缓存失败", err));
     // 约定1 白名单：响应节点逐字段构造（与 GET 一致），不整行返回
     return tag
       ? { mid: tag.mid, name: tag.name, slug: tag.slug, desc: tag.desc, type: tag.type }

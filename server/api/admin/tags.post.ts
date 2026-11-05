@@ -52,8 +52,9 @@ export default defineEventHandler(async event => {
         type: "tag",
       },
     });
-    // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES }).catch(err => console.error("[cache] 标签创建失效缓存失败", err));
+    // 新建标签不影响已有文章页，只刷标签页本身，避免目录刷新
+    const contentPaths = tag.slug ? [`/tag/${encodeURIComponent(tag.slug)}`] : [];
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 标签创建失效缓存失败", err));
     return tag;
   } catch (error) {
     // P2002 重名是预期 4xx，不打印完整堆栈

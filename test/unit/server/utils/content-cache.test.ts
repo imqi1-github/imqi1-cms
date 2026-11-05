@@ -18,6 +18,7 @@ g.useStorage = () => ({
 });
 
 const { invalidateContentCaches } = await import("#server/utils/content-cache");
+const { contentUrlPaths } = await import("#server/utils/content-urls");
 
 beforeEach(() => {
   store.clear();
@@ -56,5 +57,31 @@ describe("invalidateContentCaches", () => {
     store.set("nitro/routes/_/index.abc123.json", "{}");
     await invalidateContentCaches({ routes: ["/content/**"] });
     expect(removed).toEqual(["nitro/routes/_/contentcatslug.def456.json"]);
+  });
+});
+
+describe("contentUrlPaths（通配路由展开成精确 URL）", () => {
+  test("文章 → 文章页 + 分类页 + 标签页", () => {
+    expect(
+      contentUrlPaths({
+        cid: 1,
+        slug: "hello",
+        type: 0,
+        contentrelations: [
+          { metas: { slug: "note", type: "category" } },
+          { metas: { slug: "js", type: "tag" } },
+        ],
+      }),
+    ).toEqual(["/content/note/hello", "/category/note", "/tag/js"]);
+  });
+
+  test("无分类 → uncategorized；无 slug → cid", () => {
+    expect(contentUrlPaths({ cid: 42, slug: null, type: 0, contentrelations: [] })).toEqual([
+      "/content/uncategorized/42",
+    ]);
+  });
+
+  test("独立页面（type=1）→ 根路径", () => {
+    expect(contentUrlPaths({ cid: 7, slug: "agreement", type: 1, contentrelations: [] })).toEqual(["/agreement"]);
   });
 });

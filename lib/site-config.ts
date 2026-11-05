@@ -66,6 +66,13 @@ export interface SiteBuildConfig {
    * 值越小源站重渲染越频繁、内容越新；值越大越省源站、内容可能旧更久。
    */
   pageCacheSeconds: number;
+  /**
+   * 列表/统计页的边缘 TTL（秒）：首页/分类/标签/归档/关于/站点地图。
+   *
+   * 这些页面内嵌评论数等聚合数据，写库后不提交边缘刷新，靠这个短 TTL 自然收敛，
+   * 把 EdgeOne 刷新额度留给内容页。源站缓存仍按 pageCacheSeconds（长）。
+   */
+  listPageCacheSeconds: number;
 }
 
 /**

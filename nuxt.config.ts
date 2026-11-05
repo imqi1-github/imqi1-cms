@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import { visualizer } from "rollup-plugin-visualizer";
 
 import { siteConfig } from "./site.config";
+import { CDN_CACHED_ROUTES, LIST_PAGE_ROUTES, PUBLIC_STATIC_API_ROUTES } from "./shared/constants";
 import { getRedisConfig } from "./shared/redis-config";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -43,56 +44,32 @@ const ISR_CACHE_SECONDS = 60 * 30;
 // 它同时决定：① 内容的新鲜度上界（源站 ISR 与边缘缓存都用这个时长）；
 // ② 边缘「缓存预刷新」回源验证时命中源站 ISR → 只回 304、不重渲染（否则预刷新会把源站打满）。
 const PAGE_CACHE_SECONDS = siteConfig.build.pageCacheSeconds;
-const cdnPageCacheControl = `public, max-age=0, s-maxage=${PAGE_CACHE_SECONDS}`;
-
-// 变化很少、且不含用户态的公开接口：加源站缓存。
-// 边缘的缓存预刷新会频繁回源验证，源站这边命中缓存（几毫秒）就不必每次跑 DB。
-// 刻意不列列表类/计数类（home-data、comments、likes/counts…）：那些变化快，进缓存会让前台看到滞后数据。
-const PUBLIC_STATIC_API_ROUTES = [
-  "/api/categories",
-  "/api/tags",
-  "/api/site",
-  "/api/travels",
-  "/api/subscribes",
-  "/api/changelogs",
-  "/api/blog-network",
-];
-
-// 走 CDN 边缘缓存的页面。/search 排除：SSR 结果随查询词变化，边缘会堆一堆一次性条目，
-// 且刷新接口不支持通配符 URL，没法按路由把带查询串的变体刷掉。
-//
-// ⚠️ 这些页面的 SSR HTML 必须与登录态无关——边缘缓存的是同一份 HTML 给所有人。
-// 按登录态变化的 UI 一律放 <ClientOnly>（水合后才渲染），别在页面 setup 里服务端读会话再渲染。
-const CDN_CACHED_ROUTES = [
-  "/",
-  "/archiving",
-  "/category/**",
-  "/content/**",
-  "/tag/**",
-  "/subscribes",
-  "/changelogs",
-  "/agreement",
-  "/sitemap",
-  "/sitemap.xml",
-  "/about",
-  "/map",
-  "/links",
-  "/messages",
-];
+// 列表/统计页的缓存时长（源站 + 边缘都用它）：短 TTL 让评论数等聚合数据尽快收敛
+const LIST_PAGE_SECONDS = siteConfig.build.listPageCacheSeconds;
 
 // 每条页面规则 = 源站 ISR（配了 Redis 才有）+ CDN 边缘缓存头
+//
+// 列表/统计页（首页/分类/标签/归档/关于/站点地图）内嵌评论数等聚合数据，
+// 写库后不提交边缘刷新，靠**边缘 TTL 短**收敛。
+// 源站缓存保持长（pageCacheSeconds）：写库时删掉对应缓存键，下次回源即重新渲染，
+// 源站渲染频率不变；边缘 TTL 短只是让边缘更频繁地来问一次（命中源站缓存，很便宜）。
 const pageCacheRules = Object.fromEntries(
-  CDN_CACHED_ROUTES.map(path => [
-    path,
-    {
-      // 源站缓存层：配了 Redis 用 Redis，没配就用文件缓存（.nitro/cache）——都不需要额外组件。
-      // 它是边缘预刷新的前提：边缘的条件请求命中它 → 304 不重渲染；没有它，预刷新每次都重渲染。
-      ...(redisConfig
-        ? { isr: PAGE_CACHE_SECONDS, cache: { maxAge: PAGE_CACHE_SECONDS, base: "redis" } }
-        : { cache: { maxAge: PAGE_CACHE_SECONDS, base: "cache" } }),
-      ...(isProduction ? { headers: { "Cache-Control": cdnPageCacheControl } } : {}),
-    },
-  ]),
+  CDN_CACHED_ROUTES.map(path => {
+    const edgeMaxAge = LIST_PAGE_ROUTES.includes(path) ? LIST_PAGE_SECONDS : PAGE_CACHE_SECONDS;
+    return [
+      path,
+      {
+        // 源站缓存层：配了 Redis 用 Redis，没配就用文件缓存（.nitro/cache）——都不需要额外组件。
+        // 开发环境不挂缓存（改了数据要立刻能看到），与 server/utils/cache/store.ts 的口径一致。
+        ...(isProduction
+          ? redisConfig
+            ? { isr: PAGE_CACHE_SECONDS, cache: { maxAge: PAGE_CACHE_SECONDS, base: "redis" } }
+            : { cache: { maxAge: PAGE_CACHE_SECONDS, base: "cache" } }
+          : {}),
+        ...(isProduction ? { headers: { "Cache-Control": `public, max-age=0, s-maxage=${edgeMaxAge}` } } : {}),
+      },
+    ];
+  }),
 );
 
 export default defineNuxtConfig({
@@ -496,6 +473,10 @@ export default defineNuxtConfig({
       openAPI: false,
     },
     storage: {
+      // Nuxt 的 payload 缓存用 URL 做键，unstorage normalizeKey 会在 ? 处截断：
+      // 根路径带查询串（/?utm=…）得到空键，fs 驱动会去 open 目录本身 → EISDIR 500。
+      // 换成 memory 驱动即可（内存键允许空串），不影响页面缓存。
+      "cache:nuxt:payload": { driver: "memory" },
       redis: redisConfig
         ? {
             driver: "redis",

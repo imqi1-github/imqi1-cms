@@ -191,17 +191,20 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
     expect(CHANGELOG_CACHE_ROUTES).toEqual(["/", "/changelogs"]);
   });
 
-  test("COMMENT 改 → 首页 + 列表 + 详情 + 归档(评论数会变)", () => {
+  test("COMMENT 改 → 只影响内嵌评论数的列表/统计页（边缘 TTL 短，不刷边缘）", () => {
     expect(COMMENT_CACHE_ROUTES).toEqual([
       "/",
       "/category/**",
       "/tag/**",
-      "/content/**",
       "/archiving",
+      "/about",
+      "/sitemap",
     ]);
+    // 文章详情页不在此列：评论列表由客户端实时拉 /api/comments（无缓存头 → 边缘不缓存）
+    expect(COMMENT_CACHE_ROUTES).not.toContain("/content/**");
   });
 
-  test("CONTENT 改 → 比 COMMENT 多 /sitemap + 独立页面", () => {
+  test("CONTENT 改 → 首页 + 列表 + 详情 + 归档 + sitemap/关于 + 独立页面", () => {
     expect(CONTENT_CACHE_ROUTES).toEqual([
       "/",
       "/category/**",
@@ -209,20 +212,22 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
       "/archiving",
       "/content/**",
       "/sitemap",
+      "/sitemap.xml",
+      "/about",
       "/agreement",
       "/messages",
     ]);
-    // 改动比 COMMENT 多的:归档与 sitemap
-    expect(CONTENT_CACHE_ROUTES.length).toBeGreaterThan(COMMENT_CACHE_ROUTES.length);
   });
 
-  test("CATEGORY 改 → 不含 /tag/**(标签不受影响)", () => {
+  test("CATEGORY 改 → 不含 /tag/**(标签不受影响)；分类 slug 改会改文章 URL → 带 /sitemap.xml", () => {
     expect(CATEGORY_CACHE_ROUTES).toEqual([
       "/",
       "/category/**",
       "/content/**",
       "/archiving",
       "/sitemap",
+      "/sitemap.xml",
+      "/about",
     ]);
     expect(CATEGORY_CACHE_ROUTES).not.toContain("/tag/**");
   });
@@ -234,6 +239,7 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
       "/content/**",
       "/archiving",
       "/sitemap",
+      "/about",
     ]);
     expect(TAG_CACHE_ROUTES).not.toContain("/category/**");
   });
@@ -242,8 +248,8 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
     expect(TRAVEL_CACHE_ROUTES).toEqual(["/", "/map", "/about"]);
   });
 
-  test("附件/用户资料只影响文章详情页", () => {
-    expect(CONTENT_DETAIL_CACHE_ROUTES).toEqual(["/content/**"]);
+  test("附件/用户资料只影响文章/独立页详情", () => {
+    expect(CONTENT_DETAIL_CACHE_ROUTES).toEqual(["/content/**", "/agreement", "/messages"]);
   });
 
   test("9 组 ISR 路由集齐(原文逐一手抄,改一处漏一处风险)", () => {

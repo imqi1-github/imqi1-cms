@@ -44,15 +44,14 @@ export function isCdnDisabledByEnv(): boolean {
 }
 
 /**
- * 自动刷新默认关闭。
+ * 写库后自动刷新边缘缓存：默认开启，CDN_AUTO_PURGE=0 关闭。
  *
- * 日常内容更新靠「边缘缓存预刷新 + 源站 ETag」在 TTL 内自动收敛，不消耗 CDN 刷新额度
- * （额度按天计，目录刷新池往往只有几十个）。
- * 确实需要「改完立刻生效」时，再显式打开：CDN_AUTO_PURGE=1。
+ * 刷新前做了 5 秒防抖 + 精确 URL 展开，一次编辑会话只消耗少量 URL 额度；
  * 后台手动刷新与 MCP 的 target=cdn 不受此开关限制（那是明确的人工动作）。
  */
 export function isAutoPurgeEnabled(): boolean {
-  return (process.env.CDN_AUTO_PURGE || "").trim() === "1";
+  const raw = (process.env.CDN_AUTO_PURGE || "").trim().toLowerCase();
+  return raw !== "0" && raw !== "false";
 }
 
 /**
@@ -190,7 +189,7 @@ export async function purgeCdnRoutes(routes?: string[]): Promise<CdnPurgeResult 
 }
 
 /** 按精确 URL 列表刷新 */
-export async function purgeCdnUrls(urls: string[]): Promise<CdnPurgeResult | null> {
+export async function purgeCdnUrls(urls: string[], source = "手动"): Promise<CdnPurgeResult | null> {
   const provider = createCdnProvider();
   if (!provider?.isEnabled()) {
     warnNotConfigured();
@@ -198,7 +197,7 @@ export async function purgeCdnUrls(urls: string[]): Promise<CdnPurgeResult | nul
   }
 
   try {
-    return await runCdnPurge(provider, () => provider.purgeUrls(urls), { 来源: "手动" });
+    return await runCdnPurge(provider, () => provider.purgeUrls(urls), { 来源: source });
   } catch (error) {
     log.error("[cdn] 刷新失败", { error });
     return null;
