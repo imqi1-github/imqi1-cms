@@ -10,7 +10,8 @@ import {
 } from "#server/utils/cdn";
 import { siteConfig } from "~~/site.config";
 import { contentListPagePaths, contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
-import { CONTENT_PAGE_SIZE_DEFAULT, FOOTPRINT_CACHE_KEY } from "#shared/constants";
+import type { ContentRow } from "#server/utils/content-urls";
+import { CONTENT_PAGE_SIZE_DEFAULT, FOOTPRINT_CACHE_KEY, LIST_PAGE_ROUTES } from "#shared/constants";
 import { cacheDel } from "#server/utils/cache/store";
 import { isListPageRoute } from "#shared/cache-routes";
 import { clearSourceCache } from "#server/utils/source-cache";
@@ -33,9 +34,24 @@ import type { InvalidateContentCachesOptions } from "#server/types/utils/content
  * 注意：invalidation 是 best-effort，调用方应自行 `.catch()`，不要让缓存层抖动影响写库本身。
  */
 export async function invalidateContentCaches(opts: InvalidateContentCachesOptions = {}): Promise<void> {
-  const cleared = await clearSourceCache({ routes: opts.routes, paths: opts.sourcePaths });
+  // 受影响文章的当前行：文章页路径 + 「它所在的那一页」，一次查出来供源站与边缘两处共用
+  const rows = opts.contentCids?.length ? await loadContentRows(opts.contentCids) : [];
+  const listPagePaths = rows.length ? await contentListPagePaths(rows, await listPageSize()) : [];
+
+  // 源站缓存失效：
+  // - 计数类变更（评论/点赞）只改数字、不动列表结构 → 列表页只清「文章所在的那一页」
+  //   （分类/标签的分页变体共用同一个路径片段，按路由清只能整组清 → 代价是每次评论
+  //    把几十个列表页的缓存全废掉、逐个重渲染）
+  // - 内容类变更（增删改/改分类）会让后续页码位移 → 列表页必须整组清
+  const sourceRoutes = opts.countOnly ? dropPaginatedListRoutes(opts.routes) : opts.routes;
+  const cleared = await clearSourceCache({
+    routes: sourceRoutes,
+    paths: opts.sourcePaths,
+    exactPaths: opts.countOnly ? expandNeighborPages(listPagePaths) : undefined,
+  });
   log.cache("invalidate", {
-    routes: opts.routes?.length ? opts.routes.join(",") : (opts.sourcePaths?.length ? "(精确路径)" : "(all)"),
+    routes: sourceRoutes?.length ? sourceRoutes.join(",") : (opts.sourcePaths?.length ? "(精确路径)" : "(all)"),
+    精确列表页: opts.countOnly ? listPagePaths.join(",") : undefined,
     cleared,
   });
 
@@ -43,7 +59,45 @@ export async function invalidateContentCaches(opts: InvalidateContentCachesOptio
   // countOnly 目前唯一的来源就是评论写接口（增删/审核），故在这里一并清掉。
   if (opts.countOnly) await clearFootprintCache();
 
-  scheduleCdnPurge(opts);
+  scheduleCdnPurge(opts, rows, listPagePaths);
+}
+
+/**
+ * 去掉「分页变体无限」的列表路由族（/category/**、/tag/**）。
+ *
+ * 计数类变更用精确路径清「文章所在的那一页」代替整组清；固定页（/、/about、/sitemap…）
+ * 本身只有一份，仍按路由清。
+ */
+function dropPaginatedListRoutes(routes?: string[]): string[] | undefined {
+  if (!routes) return routes;
+  return routes.filter(route => !PAGINATED_LIST_ROUTES.includes(route));
+}
+
+/**
+ * 把「文章所在的那一页」展开成它与相邻两页。
+ *
+ * 位次是按 create_time 算的，同一秒创建的两篇文章并列 → 位次可能差 1
+ * → 只清算出的那一页会漏掉并列那篇所在的页（列表卡片上的评论数/点赞数会挂满源站 TTL）。
+ * 多清两个邻页的代价远小于整组清（一次评论 ~9 个键 vs 46 个）。
+ */
+function expandNeighborPages(paths: string[]): string[] {
+  const out = new Set<string>();
+  for (const path of paths) {
+    const match = path.match(/^(\/[^?]+)\?page=(\d+)$/);
+    if (!match) {
+      // 第 1 页是裸路径（?page=1 被规范化掉），它的邻居只有第 2 页
+      out.add(path);
+      out.add(`${path}?page=2`);
+      continue;
+    }
+    const base = match[1]!;
+    const page = Number(match[2]);
+    for (const neighbour of [page - 1, page, page + 1]) {
+      // 第 1 页规范化后是裸路径
+      out.add(neighbour <= 1 ? base : `${base}?page=${neighbour}`);
+    }
+  }
+  return [...out];
 }
 
 /** 清访客分布聚合缓存（custom:footprint）；失败不影响写库 */
@@ -75,8 +129,18 @@ const API_URLS_BY_ROUTE: Record<string, string[]> = {
 /** 边缘刷新防抖：编辑器 2 秒自动保存会连续写库，合并成一次提交 */
 const PURGE_DEBOUNCE_MS = 5_000;
 
+/**
+ * 分页变体无限的列表路由族（/category/**、/tag/**）。
+ *
+ * 它们的缓存键按路径片段（16 字符前缀）归组 → 按路由清只能整组清。
+ * 计数类变更改用精确路径清「文章所在的那一页」，把这些整组路由从源站清理范围里剔除。
+ */
+const PAGINATED_LIST_ROUTES = LIST_PAGE_ROUTES.filter(route => route.endsWith("/**"));
+
 let purgeTimer: ReturnType<typeof setTimeout> | null = null;
 const pendingCids = new Set<number>();
+const pendingRows = new Map<number, ContentRow>();
+const pendingListPages = new Set<string>();
 const pendingPaths = new Set<string>();
 const pendingRoutes = new Set<string>();
 const pendingEdgeRoutes = new Set<string>();
@@ -88,7 +152,7 @@ let pendingEdgeRoutesGiven = false;
 let pendingCountOnly = true;
 
 /** 累积本次变更并重置防抖计时器（不 await：刷新异步执行，失败不影响写库） */
-function scheduleCdnPurge(opts: InvalidateContentCachesOptions): void {
+function scheduleCdnPurge(opts: InvalidateContentCachesOptions, rows: ContentRow[], listPagePaths: string[]): void {
   if (!isAutoPurgeEnabled()) return;
   if (!isCdnEnabled()) {
     // 忘配密钥时内容不会即时更新，必须留痕（否则全程静默）
@@ -99,6 +163,8 @@ function scheduleCdnPurge(opts: InvalidateContentCachesOptions): void {
   for (const cid of opts.contentCids ?? []) {
     if (Number.isInteger(cid) && cid > 0) pendingCids.add(cid);
   }
+  for (const row of rows) pendingRows.set(row.cid, row);
+  for (const path of listPagePaths) pendingListPages.add(path);
   for (const path of opts.contentPaths ?? []) pendingPaths.add(path);
   for (const path of opts.edgePaths ?? []) pendingEdgePaths.add(path);
   for (const dir of opts.edgeDirectories ?? []) pendingEdgeDirectories.add(dir);
@@ -127,6 +193,8 @@ function scheduleCdnPurge(opts: InvalidateContentCachesOptions): void {
 /** 防抖到点后执行一次刷新：精确 URL 走 URL 池，展开不了的才退回目录 */
 async function flushCdnPurge(): Promise<void> {
   const cids = [...pendingCids];
+  const rows = [...pendingRows.values()];
+  const listPagePaths = [...pendingListPages];
   const paths = [...pendingPaths];
   const routes = [...pendingRoutes];
   const edgeRoutes = [...pendingEdgeRoutes];
@@ -135,6 +203,8 @@ async function flushCdnPurge(): Promise<void> {
   const edgeRoutesGiven = pendingEdgeRoutesGiven;
   const countOnly = pendingCountOnly;
   pendingCids.clear();
+  pendingRows.clear();
+  pendingListPages.clear();
   pendingPaths.clear();
   pendingRoutes.clear();
   pendingEdgeRoutes.clear();
@@ -148,7 +218,7 @@ async function flushCdnPurge(): Promise<void> {
   if (!hasTargets || isCdnQuotaExhausted()) return;
 
   try {
-    const { urls, directories } = await resolvePurgeTargets(cids, paths, routes, edgeRoutes, edgePaths, edgeDirectories, countOnly, edgeRoutesGiven);
+    const { urls, directories } = await resolvePurgeTargets(cids, rows, listPagePaths, paths, routes, edgeRoutes, edgePaths, edgeDirectories, countOnly, edgeRoutesGiven);
     if (urls.length) {
       await purgeCdnUrls(urls, "自动");
     }
@@ -176,6 +246,8 @@ async function flushCdnPurge(): Promise<void> {
  */
 async function resolvePurgeTargets(
   cids: number[],
+  rows: ContentRow[],
+  listPagePaths: string[],
   contentPaths: string[],
   routes: string[],
   edgeRoutes: string[],
@@ -208,20 +280,9 @@ async function resolvePurgeTargets(
   }
 
   let unresolved = false;
-  let pagePaths: string[] = [];
   if (cids.length) {
-    const rows = await prisma.contents.findMany({
-      where: { cid: { in: cids } },
-      select: {
-        cid: true,
-        slug: true,
-        type: true,
-        create_time: true,
-        contentrelations: { select: { metas: { select: { mid: true, slug: true, type: true } } } },
-      },
-    });
-    const found = new Set(rows.map(row => row.cid));
-    unresolved = cids.some(cid => !found.has(cid));
+    // 行已在 invalidateContentCaches 里查好（源站的精确失效也要用），这里直接复用
+    unresolved = cids.some(cid => !rows.some(row => row.cid === cid));
     for (const row of rows) {
       // 纯计数变更不刷文章页/分类页裸 URL（评论列表是客户端拉的，文章页没有计数徽章）
       if (!skipRouteTargets) {
@@ -230,10 +291,9 @@ async function resolvePurgeTargets(
         }
       }
     }
-    // 列表页：这篇文章所在的分类/标签页（第几页）→ 评论数、更新时间都在那一张卡片上
-    pagePaths = await contentListPagePaths(rows, await listPageSize());
   }
-  for (const path of pagePaths) urls.add(toUrl(path));
+  // 列表页：这篇文章所在的分类/标签页（第几页）→ 评论数、更新时间都在那一张卡片上
+  for (const path of listPagePaths) urls.add(toUrl(path));
 
   // 有具体内容路径/cid 时，`/content/**` 等通配不再刷目录
   const hasContentResolution = usablePaths.length > 0 || edgePaths.length > 0 || (cids.length > 0 && !unresolved);
@@ -270,6 +330,26 @@ async function resolvePurgeTargets(
   }
 
   return { urls: [...urls], directories: [...directories] };
+}
+
+/**
+ * 查受影响文章的当前行（文章页路径 + 位次计算一次搞定）。
+ *
+ * 源站的精确失效与边缘的精确刷新共用这一份行 → 一条评论只查一次库。
+ */
+async function loadContentRows(cids: number[]): Promise<ContentRow[]> {
+  const valid = cids.filter(cid => Number.isInteger(cid) && cid > 0);
+  if (!valid.length) return [];
+  return await prisma.contents.findMany({
+    where: { cid: { in: valid } },
+    select: {
+      cid: true,
+      slug: true,
+      type: true,
+      create_time: true,
+      contentrelations: { select: { metas: { select: { mid: true, slug: true, type: true } } } },
+    },
+  });
 }
 
 /**

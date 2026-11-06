@@ -74,6 +74,10 @@ mock.module("#server/utils/prisma", () => ({
 }));
 
 const { invalidateContentCaches } = await import("#server/utils/content-cache");
+const { exactKeySuffix } = await import("#server/utils/source-cache");
+
+/** 用生产实现构造源站缓存键（测试与生产同源，避免各写一套） */
+const keyOf = (url: string) => `nitro:routes:_:${exactKeySuffix(url)}`;
 
 /** 防抖 5 秒；测试里等它过去（留出余量但不超 bun 默认 5s 超时） */
 const wait = () => new Promise(resolve => setTimeout(resolve, 5_300));
@@ -186,6 +190,38 @@ describe("源站缓存失效粒度", () => {
       "nitro:routes:_:contentlifeworld.bbbb.json",
       "nitro:routes:_:contentnotehello.aaaa.json",
     ]);
+  }, 15_000);
+
+  test("计数类变更只清「文章所在的那一页」±1，其它分类页的缓存不动", async () => {
+    storageKeys.push(
+      // 文章所在的那一页（位次 21 / 每页 12 → 第 2 页）及其邻页
+      keyOf("/category/note?page=2"),
+      // 第 1 页在源站缓存里的形态是**裸路径**（?page=1 被 cache-key.ts 规范化掉了）
+      keyOf("/category/note"),
+      keyOf("/category/note?page=3"),
+      // 标签页所在的那一页
+      keyOf("/tag/js?page=2"),
+      // 无关的分类页
+      keyOf("/category/tech?page=2"),
+      keyOf("/category/tech"),
+      // 首页（固定页）
+      keyOf("/"),
+    );
+    await invalidateContentCaches({
+      routes: ["/", "/category/**", "/tag/**", "/about", "/sitemap"],
+      contentCids: [1024],
+      countOnly: true,
+    });
+    await wait();
+    // 所在的那一页 ±1（覆盖同秒并列导致的位次差 1）+ 首页
+    expect(removedKeys).toContain(keyOf("/category/note?page=2"));
+    expect(removedKeys).toContain(keyOf("/category/note"));
+    expect(removedKeys).toContain(keyOf("/category/note?page=3"));
+    expect(removedKeys).toContain(keyOf("/tag/js?page=2"));
+    expect(removedKeys).toContain(keyOf("/"));
+    // 别的分类页一个都不该动
+    expect(removedKeys).not.toContain(keyOf("/category/tech?page=2"));
+    expect(removedKeys).not.toContain(keyOf("/category/tech"));
   }, 15_000);
 });
 

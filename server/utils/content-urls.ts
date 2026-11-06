@@ -208,6 +208,12 @@ export interface ListPositionRow {
   contentrelations: { metas: { mid: number; slug: string | null; type: string } }[];
 }
 
+/** 失效计算共用的文章行：文章路径 + 位次计算一次查出来 */
+export interface ContentRow extends ListPositionRow {
+  slug: string | null;
+  type: number;
+}
+
 /**
  * 文章在它所属分类/标签列表里**所在那一页**的路径。
  *

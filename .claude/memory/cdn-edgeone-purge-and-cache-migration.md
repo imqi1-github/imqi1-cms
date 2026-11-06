@@ -159,3 +159,32 @@ metadata:
 ### 遗留（不阻塞，供后续）
 - **列表页的源站缓存仍是粗粒度清**：一次评论会清掉首页+全部分类页+全部标签页+归档+关于+站点地图的源站缓存（→ 各自下一次访问重渲染一次，约 22 次）。文章页已改精确，但列表页要精确就得把「文章所在的那一页」的位次计算提到写库那一刻，与内容类变更（页码会位移、必须整组清）语义不同，故没动。
 - **`/map?place=N` 的标题**：`place` 登记在 SIGNIFICANT_QUERY_PARAMS ✓，但 `/map` 是 15 秒短 TTL 档 → 改名后地图页标题最多滞后 15 秒（可接受）。
+
+---
+
+## 2026-11-06 列表页源站缓存的精确失效（把遗留项做掉）
+
+**为什么原来只能粗粒度清**：Nitro 的源站缓存键 = `<frag>.<hash>.json`，`frag` = 路径去非词字符后**截 16 字符**（`/category/**` → `category`）→ **所有分类页的所有分页变体共用一个 frag**，按路由清只能整组清。而 `hash` 部分当时算不出来 ⇒ 没法只删「第 2 页」那一条。
+
+**关键突破：hash 可以自己算**。Nitro 的 `hash(url)` = `digest(url).replace(/[-_]/g,"").slice(0,10)`，`digest` 来自 **ohash**（nitropack 的传递依赖）。⇒ 加上 `ohash` 直接依赖（锁 2.0.12）就能逐字符复现缓存键，**精确失效不需要改 nitro 配置、不需要 getKey 活到运行时**。
+
+**实测验证（生产构建 + 真库，2026-11-06）**：
+- 生产服务器请求 `/category/note?page=2` → 生成键 `categorynote.0S8nTpq2pW.json`；`exactKeySuffix("/category/note?page=2")` 算出**逐字符相同**的键 ✓
+- 带 `?utm_source=weibo` 的请求 → **301 规范化**，不产生第二条键（`cache-key.ts` 生产生效）⇒ 精确删除能覆盖带推广参数的访问 ✓
+- 用生产同源的 `clearSourceCache({routes:[], exactPaths:["/category/note?page=2"]})` → 真实键被精确删掉 ✓
+- 键后缀匹配（`key.endsWith(suffix)`）对 Redis（`nitro:routes:_:`）与文件（`nitro/routes/_/`）两种驱动通用 ✓
+
+**实现**：
+- `server/utils/source-cache.ts` 的 `clearSourceCache` 新增 `exactPaths`（完整 URL 含查询串）→ 构造精确键；`exactKeySuffix` 已导出。
+- `server/utils/content-cache.ts`：`countOnly: true`（计数类变更）⇒ 源站缓存**只清「文章所在的那一页」**（`contentListPagePaths` 算出的精确 URL），不再清 `/category/**` `/tag/**` 整组；固定页（/、/about、/sitemap）仍按路由清。
+- **精确清要连邻页 ±1**：位次按 create_time 算，同秒创建的两篇并列 → 位次可能差 1（实测真库确实有）⇒ 只清算出的那一页会漏掉并列那篇所在的页（评论数挂满 6h）。`expandNeighborPages()` 展开 N-1/N/N+1（**第 1 页是裸路径**，`?page=1` 被规范化掉了）。
+- 路由集合按变更类型拆开（查过各页实际渲染了什么）：`COMMENT_CACHE_ROUTES` = /、/category/**、/tag/**、/about、/sitemap（**去掉 /archiving**：它渲染 like_num 不是评论数）；`LIKES_CACHE_ROUTES` = /、/category/**、/tag/**、/archiving（**去掉 /about、/sitemap**：统计项无点赞、站点地图只列最近评论）。
+- 源站的「精确失效」与边缘的「精确刷新」现在共用同一次查库（`loadContentRows` + `contentListPagePaths` 一次算完，flush 不再重查）。
+
+**效果**：一次评论的源站缓存失效从 ≈46 条（16 分类页变体 + 26 标签页变体 + 4 固定页）降到 ≈9 条（分类/标签各 3 页 ±1 + 3 固定页），无关分类页的缓存不再被废掉。
+
+**页码计算的正确性已实测**（dev server + 真库 26 篇抽样）：正向 29/29 全中（算出的页一定含该文章）；反向的少数例外是同秒并列 ⇒ 用 ±1 邻页兜住。
+
+⚠️ **golden vector 测试是这套方案的安全网**：`test/unit/server/utils/source-cache.test.ts` 用真实存在的键锁定算法（`/category/note?page=2` → `categorynote.0S8nTpq2pW.json`）。ohash/nitro 升级导致算法漂移时**这条测试会先红**，而不是让精确失效静默失效（旧评论数挂 6 小时）。
+
+⚠️ **内容类变更仍必须整组清**：新增/删除文章、改分类归属、改发布状态 → 后续页码整体位移 ⇒ 分类/标签目录要整组清（走 `edgeDirectories` + 源站的 `/category/**` 路由）。精确化只适用于「只改数字、列表结构不变」的计数类变更。

@@ -3,7 +3,7 @@ import { computeLikeFingerprint, isLikeRateLimited } from "#server/utils/likes";
 import { getClientIp } from "#server/utils/client-ip";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentArticlePaths } from "#server/utils/content-urls";
-import { COMMENT_CACHE_ROUTES } from "#shared/constants";
+import { LIKES_CACHE_ROUTES } from "#shared/constants";
 import type { LikeToggleResponse } from "#server/types/apis/content/likes";
 
 /** 文章自身的站内路径（用于边缘刷新） */
@@ -130,10 +130,12 @@ export default defineEventHandler(async event => {
 
     // 点赞数会渲染进文章页 SSR HTML（likeCount）→ 这篇文章页必须刷新，否则 6 小时内一直显示旧数。
     // 文章页按**精确路径**失效：按 /content/** 通配清会把全站文章页逼出 Shiki 重渲染。
-    // 列表页角标：清源站缓存即可（边缘 15 秒短 TTL 会重新回源取到新渲染），不刷边缘（省额度）。
+    // 列表页角标：countOnly 让源站只清「文章所在的那一页」（精确键），边缘 15 秒短 TTL 收敛，不刷边缘。
     const articlePaths = await articlePathsOf(cid);
     void invalidateContentCaches({
-      routes: COMMENT_CACHE_ROUTES,
+      routes: LIKES_CACHE_ROUTES,
+      countOnly: true,
+      contentCids: [cid],
       sourcePaths: articlePaths,
       edgeRoutes: [],
       edgePaths: articlePaths,

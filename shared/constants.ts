@@ -255,13 +255,20 @@ export const SUBSCRIBE_CACHE_ROUTES = ["/", "/subscribes", "/map"];
 /** 更新日志变更 → 首页 + 更新日志页 */
 export const CHANGELOG_CACHE_ROUTES = ["/", "/changelogs"];
 
-/** 评论变更 → 只影响内嵌评论数的列表/统计页（首页 + 分类/标签列表 + 归档 + 关于 + 站点地图）
+/** 评论变更 → 只影响内嵌评论数的列表/统计页（首页 + 分类/标签列表 + 关于 + 站点地图）
  *
  * 这些页面的边缘 TTL 短（build.listPageCacheSeconds），写库时清掉源站缓存键即可，
  * **不提交边缘刷新**（否则每次评论都要刷这几个固定 URL，额度白烧）。
  * 文章详情页不在此列：它的评论列表是客户端实时拉 /api/comments（该接口无缓存头，
- * 边缘不缓存），SSR 里不内嵌评论数。 */
-export const COMMENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"];
+ * 边缘不缓存），SSR 里不内嵌评论数。
+ * 归档页不在此列：它渲染的是 like_num（点赞数）而非评论数。 */
+export const COMMENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/about", "/sitemap"];
+
+/** 点赞变更 → 内嵌点赞数的页面（首页 + 分类/标签列表 + 归档）
+ *
+ * 文章页的 likeCount 由点赞接口单独精确刷新（sourcePaths + edgePaths），这里只管列表页。
+ * 关于页与站点地图不显示点赞数（前者统计项无点赞、后者只列最近评论）→ 不在列。 */
+export const LIKES_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving"];
 
 /** 文章增删改 → 首页 + 分类/标签列表 + 文章详情 + 归档 + 站点地图 + 独立页面
  * 独立页面（type=1，contents 表里 status=1 的页面）共用此接口增删改，

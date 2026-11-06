@@ -26,6 +26,7 @@ import {
   DEFAULT_SMTP_PORT,
   DEFAULT_UPLOAD_LOCATION,
   LINKS_CACHE_ROUTES,
+  LIKES_CACHE_ROUTES,
   MAX_ATTACHMENT_BYTES,
   MAX_COMMENT_LENGTH,
   MAX_LIVE_PHOTO_BYTES,
@@ -196,12 +197,27 @@ describe("ISR 缓存失效路由集(改了数据 → 影响哪些前台页)", ()
       "/",
       "/category/**",
       "/tag/**",
-      "/archiving",
       "/about",
       "/sitemap",
     ]);
     // 文章详情页不在此列：评论列表由客户端实时拉 /api/comments（无缓存头 → 边缘不缓存）
     expect(COMMENT_CACHE_ROUTES).not.toContain("/content/**");
+    // 归档页渲染的是点赞数（like_num）而非评论数 → 评论变更与它无关
+    expect(COMMENT_CACHE_ROUTES).not.toContain("/archiving");
+  });
+
+  test("LIKES 改 → 内嵌点赞数的页面（归档页显示 like_num）", () => {
+    expect(LIKES_CACHE_ROUTES).toEqual([
+      "/",
+      "/category/**",
+      "/tag/**",
+      "/archiving",
+    ]);
+    // 关于页统计项没有点赞、站点地图只列最近评论 → 点赞变更与它们无关
+    expect(LIKES_CACHE_ROUTES).not.toContain("/about");
+    expect(LIKES_CACHE_ROUTES).not.toContain("/sitemap");
+    // 文章页的 likeCount 走 sourcePaths/edgePaths 精确失效，不靠整组路由
+    expect(LIKES_CACHE_ROUTES).not.toContain("/content/**");
   });
 
   test("CONTENT 改 → 首页 + 列表 + 详情 + 归档 + sitemap/关于 + 独立页面", () => {

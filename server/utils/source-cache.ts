@@ -1,3 +1,5 @@
+import { digest } from "ohash";
+
 import { log } from "#server/utils/log";
 
 /**
@@ -42,13 +44,33 @@ export interface ClearSourceCacheOptions {
   routes?: string[];
   /** 精确到具体页面路径（与 routes 取并集）；用于「只影响某几篇文章页」的变更 */
   paths?: string[];
+  /**
+   * 精确到**完整 URL**（含查询串）的缓存键，如 `/category/note?page=2`。
+   *
+   * 列表页的分页变体共用同一个路径片段（frag 只有 16 字符且是前缀语义），
+   * 按路由清只能整组清；这里直接构造出那一条的确切键 → 只清「文章所在的那一页」。
+   */
+  exactPaths?: string[];
+}
+
+/**
+ * 构造精确缓存键的后缀 `<frag>.<hash>.json`（与 Nitro cachedEventHandler 的 getKey 对齐）。
+ *
+ * frag = escapeKey(decodeURI(pathname)).slice(0,16)、hash = digest(完整URL) 去 -_ 取 10 位。
+ * 两种存储驱动的键前缀不同（Redis `nitro:routes:_:` / 文件 `nitro/routes/_/`），
+ * 故按「后缀」匹配，两种驱动通用。
+ */
+export function exactKeySuffix(url: string): string {
+  const pathname = url.split("?")[0] || "/";
+  const hash = digest(url).replace(/[-_]/g, "").slice(0, 10);
+  return `${pathFrag(pathname)}.${hash}.json`;
 }
 
 /**
  * 清掉源站缓存层里受影响的缓存键。
  *
- * - `routes` 不传且 `paths` 为空 → 清整组（站点设置 / 数据导入这类全局变更）。
- * - `routes` 传空数组 → 不按路由清（配合 `paths` 精确清）。
+ * - `routes` 不传且 `paths`/`exactPaths` 为空 → 清整组（站点设置 / 数据导入这类全局变更）。
+ * - `routes` 传空数组 → 不按路由清（配合 `paths`/`exactPaths` 精确清）。
  * - 任何情况下都清 `api*` 键：接口缓存随写库一起失效，否则边缘回源拿到旧 JSON。
  */
 export async function clearSourceCache(opts: ClearSourceCacheOptions = {}): Promise<number> {
@@ -59,13 +81,16 @@ export async function clearSourceCache(opts: ClearSourceCacheOptions = {}): Prom
 
   const routeFrags = opts.routes?.map(pathFrag) ?? null;
   const pathFrags = opts.paths?.length ? opts.paths.map(pathFrag) : null;
-  // routes 与 paths 都没给 = 全站失效
-  const clearAll = routeFrags === null && !pathFrags;
+  const exactSuffixes = opts.exactPaths?.length ? opts.exactPaths.map(exactKeySuffix) : null;
+  // routes 与精确路径都没给 = 全站失效
+  const clearAll = routeFrags === null && !pathFrags && !exactSuffixes;
 
   const targets = keys.filter((key) => {
     const frag = keyFrag(key);
     if (frag.startsWith("api")) return true;
     if (clearAll) return true;
+    // 精确键：后缀完全一致才算命中（frag 截断导致的歧义不影响这一层）
+    if (exactSuffixes?.some(suffix => key.endsWith(suffix))) return true;
     // 片段最多 16 字符：超长路径会截断，两条长路径可能共用一个片段 → 多清一个页面，
     // 代价是多渲染一次，可接受；漏清会让旧内容挂满整个 TTL。
     if (pathFrags?.some(prefix => frag.startsWith(prefix))) return true;
