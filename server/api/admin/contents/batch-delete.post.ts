@@ -4,7 +4,6 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentUrlPaths, relatedContentPagePaths, RELATED_REFRESH_BATCH_CAP } from "#server/utils/content-urls";
-import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
@@ -117,7 +116,10 @@ export default defineEventHandler(async event => {
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
     // 批量删除 → 后续文章页码整体位移 → 刷整个列表目录
-    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentPaths, edgeDirectories: LIST_EDGE_DIRECTORIES }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
+    void invalidateContentCaches({
+      scopes: ["article", "card", "related", "listDir"],
+      contentPaths,
+    }).catch(err => console.error("[cache] 文章批量删除失效缓存失败", err));
 
     await logAdminAudit({
 

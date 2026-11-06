@@ -9,14 +9,33 @@ import {
   warnCdnNotConfigured,
 } from "#server/utils/cdn";
 import { siteConfig } from "~~/site.config";
-import { contentListPagePaths, contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
+import { contentArticlePaths, contentListPagePaths, contentTaxonomyPaths, contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
 import type { ContentRow } from "#server/utils/content-urls";
-import { CONTENT_PAGE_SIZE_DEFAULT, FOOTPRINT_CACHE_KEY, LIST_PAGE_ROUTES } from "#shared/constants";
+import { CONTENT_PAGE_SIZE_DEFAULT, FOOTPRINT_CACHE_KEY, LIST_EDGE_DIRECTORIES, LIST_PAGE_ROUTES } from "#shared/constants";
 import { cacheDel } from "#server/utils/cache/store";
 import { isListPageRoute } from "#shared/cache-routes";
 import { clearSourceCache } from "#server/utils/source-cache";
 import { CHANGELOG_TYPES } from "#shared/changelog";
-import type { InvalidateContentCachesOptions } from "#server/types/utils/content-cache";
+import type { ContentScope, InvalidateContentCachesOptions } from "#server/types/utils/content-cache";
+
+/**
+ * 展示面 → 该族包含的页面（路由通配）与公开接口。
+ *
+ * 「文章所在的那一页」不在这里：它是**精确路径**（按文章算出来的 ?page=N），
+ * 走 contentListPagePaths，与路由通配分开处理。
+ */
+const SCOPE_ROUTES: Record<ContentScope, string[]> = {
+  // 文章页走精确路径（改 slug 后的旧地址也在其中），不按 /content/** 整目录刷
+  article: [],
+  // 显示文章卡片的页：标题/摘要/封面/日期/计数变了才需要刷
+  card: ["/", "/archiving", "/sitemap", "/sitemap.xml", "/api/home-data"],
+  // 「相关文章」卡片在别的文章页上 → 走精确路径
+  related: [],
+  // 列表目录：文章进出列表或归属变化 → 后续页码位移
+  listDir: [],
+  // 与文章无关的固定页与公开接口
+  fixed: ["/about", "/agreement", "/messages", "/api/travels", "/api/blog-network", "/api/categories", "/api/tags"],
+};
 
 /**
  * 内容变更后立即失效相关缓存 —— 可复用的基建。
@@ -28,7 +47,7 @@ import type { InvalidateContentCachesOptions } from "#server/types/utils/content
  *     真实 Redis 键是 `nitro:routes:_:<pathFrag>.<hash>.json`（见 [[nitro-route-cache-key-colon]]）。
  *     页面键与公开 API 键都在这一组，写库时一起删掉。
  *   - 边缘缓存：按路由展开成**精确 URL** 后刷新（URL 池 1000/天）；只有 `/content/**` 等
- *     通配无法展开时才退回目录刷新（目录池仅 50/天）。提交前做 5 秒防抖，
+ *     通配无法展开时才退回目录刷新（目录池仅 50/天）。提交前做 2 秒防抖，
  *     编辑器自动保存的连续写库只会合并成一次刷新。
  *
  * 注意：invalidation 是 best-effort，调用方应自行 `.catch()`，不要让缓存层抖动影响写库本身。
@@ -38,18 +57,31 @@ export async function invalidateContentCaches(opts: InvalidateContentCachesOptio
   const rows = opts.contentCids?.length ? await loadContentRows(opts.contentCids) : [];
   const listPagePaths = rows.length ? await contentListPagePaths(rows, await listPageSize()) : [];
 
-  // 源站缓存失效：
+  // 按展示面展开路由（不传 scopes = 保守全刷，沿用调用方给的 routes）
+  const scopeRoutes = opts.scopes?.length ? opts.scopes.flatMap(scope => SCOPE_ROUTES[scope]) : opts.routes;
+  const scopeDirs = opts.scopes?.includes("listDir") ? LIST_EDGE_DIRECTORIES : opts.edgeDirectories;
+
+  // 源站缓存失效（与边缘同口径：边缘刷了哪条，源站就得清哪条，否则回源 304 → 旧内容复活）：
   // - 计数类变更（评论/点赞）只改数字、不动列表结构 → 列表页只清「文章所在的那一页」
   //   （分类/标签的分页变体共用同一个路径片段，按路由清只能整组清 → 代价是每次评论
   //    把几十个列表页的缓存全废掉、逐个重渲染）
   // - 内容类变更（增删改/改分类）会让后续页码位移 → 列表页必须整组清
-  const sourceRoutes = opts.countOnly ? dropPaginatedListRoutes(opts.routes) : opts.routes;
+  const sourceRoutes = opts.countOnly ? dropPaginatedListRoutes(scopeRoutes) : scopeRoutes;
+  // 源站必须清掉「边缘要刷的每一条」的缓存键，否则边缘回源时源站命中旧缓存回 304 → 旧内容复活。
+  // 这里按页面级（frag 前缀）清：文章页的片段唯一，分类/标签页连带清该族（比边缘多，但不会漏）。
+  const sourcePaths = [
+    ...(opts.sourcePaths ?? []),
+    ...(opts.contentPaths ?? []),
+    ...rows.flatMap(row => (scopesHas(opts.scopes, "article") ? contentArticlePaths(row) : [])),
+    ...rows.flatMap(row => (scopesHas(opts.scopes, "card") ? contentTaxonomyPaths(row) : [])),
+  ];
   const cleared = await clearSourceCache({
     routes: sourceRoutes,
-    paths: opts.sourcePaths,
+    paths: sourcePaths,
     exactPaths: opts.countOnly ? expandNeighborPages(listPagePaths) : undefined,
   });
   log.cache("invalidate", {
+    scopes: opts.scopes?.join(","),
     routes: sourceRoutes?.length ? sourceRoutes.join(",") : (opts.sourcePaths?.length ? "(精确路径)" : "(all)"),
     精确列表页: opts.countOnly ? listPagePaths.join(",") : undefined,
     cleared,
@@ -59,7 +91,12 @@ export async function invalidateContentCaches(opts: InvalidateContentCachesOptio
   // countOnly 目前唯一的来源就是评论写接口（增删/审核），故在这里一并清掉。
   if (opts.countOnly) await clearFootprintCache();
 
-  scheduleCdnPurge(opts, rows, listPagePaths);
+  scheduleCdnPurge({ ...opts, routes: scopeRoutes, edgeDirectories: scopeDirs }, rows, listPagePaths);
+}
+
+/** scopes 未传 = 保守全刷（视为包含所有展示面）；传了才按族挑 */
+function scopesHas(scopes: ContentScope[] | undefined, scope: ContentScope): boolean {
+  return !scopes?.length || scopes.includes(scope);
 }
 
 /**
@@ -126,8 +163,13 @@ const API_URLS_BY_ROUTE: Record<string, string[]> = {
   "/links": ["/api/blog-network"],
 };
 
-/** 边缘刷新防抖：编辑器 2 秒自动保存会连续写库，合并成一次提交 */
-const PURGE_DEBOUNCE_MS = 5_000;
+/**
+ * 边缘刷新防抖：编辑器 2 秒自动保存会连续写库，合并成一次提交。
+ *
+ * 2 秒 = 与自动保存的空闲间隔对齐：停止输入 → 2 秒后存一次 → 再 2 秒后提交刷新，
+ * 改完约 2~4 秒可见（额度已按展示面精确化，省下来的正好换这个时效）。
+ */
+const PURGE_DEBOUNCE_MS = 2_000;
 
 /**
  * 分页变体无限的列表路由族（/category/**、/tag/**）。
@@ -146,6 +188,7 @@ const pendingRoutes = new Set<string>();
 const pendingEdgeRoutes = new Set<string>();
 const pendingEdgePaths = new Set<string>();
 const pendingEdgeDirectories = new Set<string>();
+const pendingScopes = new Set<ContentScope>();
 let pendingEdgeRoutesGiven = false;
 // 「本窗口内到目前为止全是纯计数变更」：初始 true（空窗口），出现任意内容类变更即置 false。
 // 不能只置 true 不置 false —— 评论和文章保存落在同一个 5 秒窗口时，文章页 URL 会被误跳过。
@@ -165,6 +208,7 @@ function scheduleCdnPurge(opts: InvalidateContentCachesOptions, rows: ContentRow
   }
   for (const row of rows) pendingRows.set(row.cid, row);
   for (const path of listPagePaths) pendingListPages.add(path);
+  for (const scope of opts.scopes ?? []) pendingScopes.add(scope);
   for (const path of opts.contentPaths ?? []) pendingPaths.add(path);
   for (const path of opts.edgePaths ?? []) pendingEdgePaths.add(path);
   for (const dir of opts.edgeDirectories ?? []) pendingEdgeDirectories.add(dir);
@@ -202,6 +246,7 @@ async function flushCdnPurge(): Promise<void> {
   const edgeDirectories = [...pendingEdgeDirectories];
   const edgeRoutesGiven = pendingEdgeRoutesGiven;
   const countOnly = pendingCountOnly;
+  const scopes = pendingScopes.size ? [...pendingScopes] : undefined;
   pendingCids.clear();
   pendingRows.clear();
   pendingListPages.clear();
@@ -212,13 +257,14 @@ async function flushCdnPurge(): Promise<void> {
   pendingEdgeDirectories.clear();
   pendingEdgeRoutesGiven = false;
   pendingCountOnly = true;
+  pendingScopes.clear();
 
   // 任何一类目标存在就要提交：只看 cids/paths/routes 会让「只传 edgePaths」的变更（点赞）整段跳过
   const hasTargets = cids.length || paths.length || routes.length || edgePaths.length || edgeDirectories.length;
   if (!hasTargets || isCdnQuotaExhausted()) return;
 
   try {
-    const { urls, directories } = await resolvePurgeTargets(cids, rows, listPagePaths, paths, routes, edgeRoutes, edgePaths, edgeDirectories, countOnly, edgeRoutesGiven);
+    const { urls, directories } = await resolvePurgeTargets(cids, rows, listPagePaths, paths, routes, edgeRoutes, edgePaths, edgeDirectories, countOnly, edgeRoutesGiven, scopes);
     if (urls.length) {
       await purgeCdnUrls(urls, "自动");
     }
@@ -255,6 +301,7 @@ async function resolvePurgeTargets(
   edgeDirectories: string[],
   countOnly: boolean,
   edgeRoutesGiven: boolean,
+  scopes?: ContentScope[],
 ): Promise<{ urls: string[]; directories: string[] }> {
   const base = (process.env.CDN_PURGE_BASE_URL || siteConfig.site.url).replace(/\/+$/, "");
   const urls = new Set<string>();
@@ -286,14 +333,23 @@ async function resolvePurgeTargets(
     for (const row of rows) {
       // 纯计数变更不刷文章页/分类页裸 URL（评论列表是客户端拉的，文章页没有计数徽章）
       if (!skipRouteTargets) {
-        for (const path of contentUrlPaths(row)) {
+        // 按展示面挑路径：文章页（article）与显示卡片的分类/标签页（card）分开
+        const paths = scopes?.length
+          ? [
+            ...(scopes.includes("article") ? contentArticlePaths(row) : []),
+            ...(scopes.includes("card") ? contentTaxonomyPaths(row) : []),
+          ]
+          : contentUrlPaths(row);
+        for (const path of paths) {
           if (keep(path)) urls.add(toUrl(path));
         }
       }
     }
   }
   // 列表页：这篇文章所在的分类/标签页（第几页）→ 评论数、更新时间都在那一张卡片上
-  for (const path of listPagePaths) urls.add(toUrl(path));
+  if (countOnly || !scopes?.length || scopes.includes("card")) {
+    for (const path of listPagePaths) urls.add(toUrl(path));
+  }
 
   // 有具体内容路径/cid 时，`/content/**` 等通配不再刷目录
   const hasContentResolution = usablePaths.length > 0 || edgePaths.length > 0 || (cids.length > 0 && !unresolved);
@@ -322,7 +378,8 @@ async function resolvePurgeTargets(
 
   // 相关文章按 cid 单独缓存，文章/评论/附件变更时一并刷新。
   // 边缘缓存键含查询串：文章页实际请求的是 `?limit=3`，裸 URL 刷的是另一条条目。
-  if (!skipRouteTargets) {
+  // 它属于「相关文章」展示面：卡片字段没变时（只改正文）这个接口的输出也没变 → 不刷。
+  if (!skipRouteTargets && (!scopes?.length || scopes.includes("related"))) {
     for (const cid of cids) {
       urls.add(toUrl(`/api/related-contents/${cid}`));
       urls.add(toUrl(`/api/related-contents/${cid}?limit=3`));

@@ -5,9 +5,45 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { contentTagMids, contentUrlPaths, relatedContentPagePaths } from "#server/utils/content-urls";
-import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
+import { contentArticlePaths, contentTagMids, contentTaxonomyPaths, relatedContentPagePaths } from "#server/utils/content-urls";
+import type { ContentScope } from "#server/types/utils/content-cache";
 import { logAdminAudit } from "#server/utils/audit";
+
+/**
+ * 本次更新实际影响了哪些展示面（决定边缘刷哪些页面）。
+ *
+ * - 只改正文 → 只刷文章页：列表卡片上的日期是相对时间（hydration 后客户端自纠正），
+ *   正文也不出现在任何卡片上 → 其余页面一个字节都不会变。
+ * - 改标题/摘要/封面 → 卡片上显示着这些字段 → 所有显示卡片的地方 + 引用它的「相关文章」卡片都要刷。
+ * - 改发布状态/创建时间 → 文章进出列表、列表排序变化 → 后续页码位移 → 刷列表目录。
+ * - 改类型 → 独立页面的路径变了 → 关于/协议/留言板那几个固定页要刷。
+ */
+function scopesOfUpdate(
+  existing: { title: string; desc: string | null; covers: unknown; many_covers: boolean | null; status: number; type: number; create_time: Date | null },
+  next: { title?: unknown; desc?: unknown; covers?: unknown; manyCovers?: unknown; statusNum?: number; typeNum?: number; publishDate?: unknown },
+): ContentScope[] {
+  const scopes = new Set<ContentScope>(["article"]);
+  const changed = (before: unknown, after: unknown): boolean =>
+    after !== undefined && after !== null && before !== after;
+
+  if (changed(existing.title, next.title)
+    || changed(existing.desc, next.desc)
+    || changed(existing.covers, next.covers)
+    || changed(existing.many_covers, next.manyCovers)) {
+    scopes.add("card");
+    scopes.add("related");
+  }
+  if (next.statusNum !== undefined && next.statusNum !== existing.status) {
+    scopes.add("card");
+    scopes.add("listDir");
+  }
+  if (next.publishDate && existing.create_time && new Date(next.publishDate as string).getTime() !== existing.create_time.getTime()) {
+    scopes.add("card");
+    scopes.add("listDir");
+  }
+  if (next.typeNum !== undefined && next.typeNum !== existing.type) scopes.add("fixed");
+  return [...scopes];
+}
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -186,20 +222,24 @@ export default defineEventHandler(async event => {
       data: updateData,
     });
 
-    // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    // 旧路径一并失效：改了 slug/分类/类型后旧地址仍是边缘缓存里的旧 HTML（内容页 TTL 6 小时）
-    // 别人页上的「相关文章」卡片（SSR 内嵌标题/封面）也要跟着变：新旧标签都参与反查（并集即超集）
+    // 按「这次实际改了什么」决定刷哪些页面：只改正文只要刷文章页 1 个 URL
     const oldTagMids = (existing.contentrelations ?? [])
       .filter(relation => relation.metas.type === "tag")
       .map(relation => relation.metas.mid);
-    const relatedPages = await relatedContentPagePaths(cid, [...oldTagMids, ...await contentTagMids(cid)])
-      .catch(() => []);
+    const scopes = scopesOfUpdate(existing, { title, desc, covers, manyCovers, statusNum, typeNum, publishDate });
+    // 别人页上的「相关文章」卡片（SSR 内嵌标题/封面/描述）→ 只有卡片字段变了才需要反查
+    const relatedPages = scopes.includes("related")
+      ? await relatedContentPagePaths(cid, [...oldTagMids, ...await contentTagMids(cid)]).catch(() => [])
+      : [];
     void invalidateContentCaches({
-      routes: CONTENT_CACHE_ROUTES,
+      scopes,
       contentCids: [cid],
-      contentPaths: [...contentUrlPaths(existing), ...relatedPages],
-      // 发布状态变化（发布/取消发布）→ 该文章进出列表，后续文章页码位移 → 刷整个列表目录
-      edgeDirectories: statusNum !== undefined && statusNum !== existing.status ? LIST_EDGE_DIRECTORIES : undefined,
+      // 旧路径一并失效：改了 slug/分类/类型后旧地址仍是边缘缓存里的旧 HTML（内容页 TTL 6 小时）
+      contentPaths: [
+        ...(scopes.includes("article") ? contentArticlePaths(existing) : []),
+        ...(scopes.includes("card") ? contentTaxonomyPaths(existing) : []),
+        ...relatedPages,
+      ],
     }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));
 
     // 前端保存后只需 cid，不再回查全字段（含正文）。

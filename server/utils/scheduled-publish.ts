@@ -3,7 +3,6 @@ import { invalidateContentCaches } from "./content-cache";
 import { contentTagMids, relatedContentPagePaths } from "./content-urls";
 import { log } from "./log";
 
-import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 
 /**
  * 定时发布 worker：从 contents 表扫「scheduled_at <= now 且 status=0」的行，置 status=1。
@@ -60,10 +59,9 @@ export async function runScheduledPublish(now: Date = new Date()): Promise<Sched
       .catch(() => [])),
   )).flat();
   void invalidateContentCaches({
-    routes: CONTENT_CACHE_ROUTES,
+    scopes: ["article", "card", "related", "listDir"],
     contentCids: cids,
     contentPaths: relatedPages,
-    edgeDirectories: LIST_EDGE_DIRECTORIES,
   }).catch(err => console.error("[cache] 定时发布失效缓存失败", err));
 
   return { publishedCids: cids, scannedAt: now };

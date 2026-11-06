@@ -3,7 +3,6 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentArticlePaths } from "#server/utils/content-urls";
-import { CATEGORY_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -107,10 +106,9 @@ export default defineEventHandler(async event => {
     // 旧分类的文章 URL 也要失效：换了主分类后旧地址仍是边缘缓存里的旧 HTML
     // 换分类 → 该文章在分类列表里的位置变了，后续文章页码位移 → 刷整个分类目录
     void invalidateContentCaches({
-      routes: CATEGORY_CACHE_ROUTES,
+      scopes: ["article", "card", "listDir"],
       contentCids: [cid],
       contentPaths: oldArticlePaths,
-      edgeDirectories: ["/category/**"],
     }).catch(err => console.error("[cache] 内容分类关联失效缓存失败", err));
 
     return {

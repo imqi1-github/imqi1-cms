@@ -7,7 +7,7 @@ import { invalidateContentCaches } from "#server/utils/content-cache";
 import prisma, { isPrismaNotFoundError } from "#server/utils/prisma";
 import { logAdminAudit } from "#server/utils/audit";
 import { log } from "#server/utils/log";
-import { CSRF_HEADER, CONTENT_DETAIL_CACHE_ROUTES  } from "#shared/constants";
+import { CSRF_HEADER } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
@@ -99,7 +99,7 @@ export default defineEventHandler(async event => {
       });
 
       // 取消某文章的附件关联 → 影响该文章详情 /content/** 渲染
-      void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES, contentCids: [unlinkCid] }).catch(err => console.error("[cache] 附件取消关联失效缓存失败", err));
+      void invalidateContentCaches({ scopes: ["article"], contentCids: [unlinkCid] }).catch(err => console.error("[cache] 附件取消关联失效缓存失败", err));
 
       return {
         success: true,
@@ -123,7 +123,7 @@ export default defineEventHandler(async event => {
 
     // 全局删除附件（级联取消所有关联）→ 影响引用它的文章详情 /content/** 渲染
     void invalidateContentCaches({
-      routes: CONTENT_DETAIL_CACHE_ROUTES,
+      scopes: ["article"],
       contentCids: attachment.contentattachments.map(relation => relation.cid),
     }).catch(err => console.error("[cache] 附件删除失效缓存失败", err));
 

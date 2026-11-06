@@ -188,3 +188,32 @@ metadata:
 ⚠️ **golden vector 测试是这套方案的安全网**：`test/unit/server/utils/source-cache.test.ts` 用真实存在的键锁定算法（`/category/note?page=2` → `categorynote.0S8nTpq2pW.json`）。ohash/nitro 升级导致算法漂移时**这条测试会先红**，而不是让精确失效静默失效（旧评论数挂 6 小时）。
 
 ⚠️ **内容类变更仍必须整组清**：新增/删除文章、改分类归属、改发布状态 → 后续页码整体位移 ⇒ 分类/标签目录要整组清（走 `edgeDirectories` + 源站的 `/category/**` 路由）。精确化只适用于「只改数字、列表结构不变」的计数类变更。
+
+---
+
+## 2026-11-06 边缘刷新按「展示面」精确展开（额度从 18 → 2）
+
+**问题**：所有文章变更都刷同一套页面（首页/归档/关于/协议/留言板/站点地图 + 5 个接口 + 平均 8.5 个「相关文章」页 ≈ **18~30 个 URL**），但**只改正文时那些页面一个字节都没变** → 白刷 ~87% 的额度。而额度只有 1000/天：一天改 3 篇文章（每篇 2 遍）+ 200 条评论 ≈ **940** → 卡在边缘，改两篇长文就爆 → 爆了当天不再刷新 → 内容页挂 6 小时。
+
+**做法：按「展示面」（scope）声明影响面**（`server/types/utils/content-cache.d.ts` 的 `ContentScope`）：
+
+| scope | 含义 | 刷什么 |
+|---|---|---|
+| `article` | 文章详情页（含改 slug 后的旧地址） | 精确文章页 URL |
+| `card` | 显示文章卡片的页 | 文章所在的分类/标签页（精确）+ 首页/归档/站点地图 + /api/home-data |
+| `related` | 引用了这篇文章的「相关文章」卡片 | 按同一套排序规则反查出来的页（平均 8.5） |
+| `listDir` | 文章进出列表 → 后续页码位移 | 2 条路径前缀刷新目标 |
+| `fixed` | 与文章无关的固定页与接口 | 关于/协议/留言板 + travels/blog-network/categories/tags |
+
+**实测（真库 + 真代码路径）**：改正文 **18 → 2 个 URL**；改标题 18 → 9~11；新建文章 11 + 2 目录；评论 2（不变）。
+
+**只改正文不用刷列表页的理由**：卡片上的日期是**相对时间**（`formatDate`，hydration 后客户端自纠正），正文也不出现在任何卡片上 → SSR HTML 的差异只有几秒的相对时间偏差，用户看不到。
+
+**⚠️ 差点踩的坑（已修）**：scopes 精确化后 `/content/**` 不再进源站清理范围 → **边缘刷了文章页、源站却是旧 HTML → 回源发 If-None-Match → 源站回 304 → 旧正文复活**。
+⇒ 铁律不变：**边缘刷了哪条，源站就得清哪条**。现在源站清理 = `scopeRoutes` + `sourcePaths` + `contentPaths` + 由 cids 展开的文章页/分类标签页（页面级 frag 前缀匹配，比边缘粗但绝不漏）。`test/unit/server/utils/content-cache-purge.test.ts` 有专门用例锁这条不变式。
+
+**防抖 5 秒 → 2 秒**（与自动保存的 2 秒空闲间隔对齐）：改完 **2~4 秒可见**（原 5~10 秒）。额度因 ① 降了 ~87%，完全撑得住。`PURGE_DEBOUNCE_MS` 改 2 秒时，测试里的 `wait()` 也要从 5300 改 2300。
+
+**没改 scopes 的调用点 = 保守全刷**（不传 scopes 时 `scopesHas()` 视为包含所有族）→ 没改造的调用点行为不变。已改的：文章增删改/批量删/定时发布（article+card+related+listDir）、改分类归属（article+card+listDir）、改标签归属（同上）、附件增删改（只 article——封面角标来自 `contents.covers`，不受附件增删影响）。**保留老行为的**：分类/标签改名（`/content/**` 整组——slug 在文章 URL 里）、用户资料（作者名进每篇文章的 SEO meta）、类 4 的独立页面。
+
+**新增守卫** `test/unit/app/cache-scope-coverage.test.ts`：扫描 `app/pages/**` 里渲染了文章卡片字段（`commentsNum`/`likesCount`/`like_num`/`content.title`/`content.desc`/`content.covers`）的页面，断言它们都落在已登记的展示面里 → **将来新增页面忘了登记，CI 就红**（漏登记 = 那一处挂 6 小时）。它当场抓出了 `/subscribes`（显示的是订阅源自己的文章，不归 contents 的卡片展示面管）。页面文件→路由的映射抽到 `test/helpers/page-route.ts`。

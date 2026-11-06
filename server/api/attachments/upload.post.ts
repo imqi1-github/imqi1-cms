@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import * as fs from "fs/promises";
 import * as path from "path";
 
-import { MAX_ATTACHMENT_BYTES, MAX_LIVE_PHOTO_BYTES, CONTENT_DETAIL_CACHE_ROUTES  } from "#shared/constants";
+import { MAX_ATTACHMENT_BYTES, MAX_LIVE_PHOTO_BYTES } from "#shared/constants";
 import { getUser } from "#server/lib/auth";
 import type { AttachmentUploadLocation, LocalUploadResult } from "#server/types/apis/upload-strategy";
 import { createAttachmentMetadata } from "#server/utils/attachmentMetadata";
@@ -264,7 +264,7 @@ export default defineEventHandler(async event => {
 
     // 上传时关联了文章 → 影响文章详情 /content/** 的附件渲染；未关联内容（cid 为空）则无需失效
     if (cid !== null) {
-      void invalidateContentCaches({ routes: CONTENT_DETAIL_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
+      void invalidateContentCaches({ scopes: ["article"], contentCids: [cid] }).catch(err => console.error("[cache] 附件上传失效缓存失败", err));
     }
 
     return {

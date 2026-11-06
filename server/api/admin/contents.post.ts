@@ -4,7 +4,6 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentTagMids, relatedContentPagePaths } from "#server/utils/content-urls";
-import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
@@ -171,10 +170,9 @@ export default defineEventHandler(async event => {
   const relatedPages = await relatedContentPagePaths(contentRecord.cid, await contentTagMids(contentRecord.cid))
     .catch(() => []);
   void invalidateContentCaches({
-    routes: CONTENT_CACHE_ROUTES,
+    scopes: ["article", "card", "related", "listDir"],
     contentCids: [contentRecord.cid],
     contentPaths: relatedPages,
-    edgeDirectories: LIST_EDGE_DIRECTORIES,
   }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
 
   // 前端保存后只需 cid（跳转/关联），不再回查全字段（含正文）。

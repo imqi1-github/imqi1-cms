@@ -2,7 +2,6 @@ import { getUser } from "#server/lib/auth";
 import { prisma } from "#server/utils/prisma";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { TAG_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   const user = await getUser(event);
@@ -91,7 +90,7 @@ export default defineEventHandler(async event => {
 
     // 内容关联标签变更 → 立即失效首页/标签/内容 ISR 缓存（best-effort）
     // 换标签 → 该文章在标签列表里的位置变了，后续文章页码位移 → 刷整个标签目录
-    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentCids: [cid], edgeDirectories: ["/tag/**"] }).catch(err => console.error("[cache] 内容标签关联失效缓存失败", err));
+    void invalidateContentCaches({ scopes: ["article", "card", "listDir"], contentCids: [cid] }).catch(err => console.error("[cache] 内容标签关联失效缓存失败", err));
 
     return {
       success: true,

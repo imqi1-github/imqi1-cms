@@ -79,8 +79,8 @@ const { exactKeySuffix } = await import("#server/utils/source-cache");
 /** 用生产实现构造源站缓存键（测试与生产同源，避免各写一套） */
 const keyOf = (url: string) => `nitro:routes:_:${exactKeySuffix(url)}`;
 
-/** 防抖 5 秒；测试里等它过去（留出余量但不超 bun 默认 5s 超时） */
-const wait = () => new Promise(resolve => setTimeout(resolve, 5_300));
+/** 防抖 2 秒；测试里等它过去（留出余量） */
+const wait = () => new Promise(resolve => setTimeout(resolve, 2_300));
 
 beforeEach(() => {
   purgedUrls.length = 0;
@@ -190,6 +190,23 @@ describe("源站缓存失效粒度", () => {
       "nitro:routes:_:contentlifeworld.bbbb.json",
       "nitro:routes:_:contentnotehello.aaaa.json",
     ]);
+  }, 15_000);
+
+  test("边缘刷了哪条，源站就清了哪条（否则回源 304 → 旧内容复活）", async () => {
+    storageKeys.push(
+      keyOf("/content/note/hello"),
+      keyOf("/category/tech"),
+    );
+    await invalidateContentCaches({
+      scopes: ["article", "card"],
+      contentCids: [1024],
+      contentPaths: ["/content/note/hello"],
+    });
+    await wait();
+    // 文章页的源站键必须被清（边缘刷了它）
+    expect(removedKeys).toContain(keyOf("/content/note/hello"));
+    // 无关分类页不该被牵连
+    expect(removedKeys).not.toContain(keyOf("/category/tech"));
   }, 15_000);
 
   test("计数类变更只清「文章所在的那一页」±1，其它分类页的缓存不动", async () => {
