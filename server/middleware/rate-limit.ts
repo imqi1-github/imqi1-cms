@@ -47,8 +47,9 @@ const RULES: RateRule[] = [
   { method: "GET", prefix: "/api/repo", limit: 30, windowSec: 60, keyHint: "repo:get" },
   // 友链申请：每小时 3 次（防 spam）
   // 额度可用环境变量放宽：E2E 会反复跑这套用例（同一 IP 连着跑几轮必然撞上限），
-  // 用例侧另有「429 → 跳过」兜底，这里放宽只是让首轮也能真跑通
-  { method: "POST", prefix: "/api/links", limit: Number(process.env.RATE_LIMIT_LINKS_APPLY) || 3, windowSec: 3600, keyHint: "links:apply" },
+  // 用例侧另有「429 → 跳过」兜底，这里放宽只是让首轮也能真跑通。
+  // 生产恒用 3：/api/links 是公开写接口（无登录、无验证码），额度放大等于放开垃圾申请 + 邮件轰炸。
+  { method: "POST", prefix: "/api/links", limit: linksApplyLimit(), windowSec: 3600, keyHint: "links:apply" },
   // 邮件相关：每小时 10 次（防发件耗尽）
   { method: "POST", prefix: "/api/admin/mail/", limit: 10, windowSec: 3600, keyHint: "admin:mail" },
 ];
@@ -59,6 +60,14 @@ function matchRule(method: string, path: string): RateRule | null {
     if (path.startsWith(rule.prefix)) return rule;
   }
   return null;
+}
+
+/** 友链申请的小时额度：生产恒 3，非生产可用环境变量放宽（上限 100） */
+function linksApplyLimit(): number {
+  if (process.env.NODE_ENV === "production") return 3;
+  const raw = Number(process.env.RATE_LIMIT_LINKS_APPLY);
+  if (!Number.isInteger(raw) || raw <= 0) return 3;
+  return Math.min(raw, 100);
 }
 
 export default defineEventHandler(async event => {

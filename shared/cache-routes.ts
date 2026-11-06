@@ -3,11 +3,29 @@ import {
   BROWSER_REVALIDATE_API_ROUTES,
   CDN_CACHED_ROUTES,
   LIST_PAGE_ROUTES,
-} from "#shared/constants";
+} from "./constants";
+
+/**
+ * 缓存路由判定（app 与 nitro 共用同一份）。
+ *
+ * 放在 shared 是因为 **nuxt.config 的 routeRules 与运行时的响应头插件都要用**：
+ * 两边若各写一套（一个精确相等、一个模式匹配），同一页面会被判成不同 TTL 档位。
+ */
 
 /** 去掉查询串：h3 的 event.path 可能带 `?query`，不剥会让所有匹配失效 */
 function pathname(path: string): string {
   return path.split("?")[0] || "/";
+}
+
+/**
+ * 路由匹配串取样例路径（`/category/**` → `/category`）。
+ *
+ * 匹配串按「路径」语义匹配时匹配不上自己（`/category/**` 不等于 `/category/**` 的前缀），
+ * 判定「这一族页面是不是列表页 / 有没有进边缘」时要用样例路径，
+ * 这样「具体路径」与「路由匹配串」两种入参走同一份清单，不会分叉成两套档位。
+ */
+export function routeSamplePath(route: string): string {
+  return route.endsWith("/**") ? (route.slice(0, -3) || "/") : route;
 }
 
 /** 路径是否命中 Nitro 风格的 `/**` 路由匹配串 */
@@ -23,7 +41,8 @@ export function matchesRoutePattern(path: string, route: string): boolean {
 
 /** 是否走 CDN 边缘缓存的页面 */
 export function isCdnCachedPage(path: string): boolean {
-  return CDN_CACHED_ROUTES.some(route => matchesRoutePattern(path, route));
+  const sample = routeSamplePath(pathname(path));
+  return CDN_CACHED_ROUTES.some(route => matchesRoutePattern(sample, route));
 }
 
 /**
@@ -33,7 +52,17 @@ export function isCdnCachedPage(path: string): boolean {
  * 靠 TTL 自然过期收敛，把 EdgeOne 刷新额度留给内容页。
  */
 export function isListPageRoute(path: string): boolean {
-  return LIST_PAGE_ROUTES.some(route => matchesRoutePattern(path, route));
+  const sample = routeSamplePath(pathname(path));
+  return LIST_PAGE_ROUTES.some(route => matchesRoutePattern(sample, route));
+}
+
+/**
+ * 路由**匹配串**是否属于列表页档（给 nuxt.config 的 routeRules 定 TTL 用）。
+ *
+ * 与 isListPageRoute 共用同一份 LIST_PAGE_ROUTES，避免「配置里算长 TTL、运行时算短 TTL」。
+ */
+export function isListPageRoutePattern(route: string): boolean {
+  return isListPageRoute(route);
 }
 
 /**
@@ -52,7 +81,7 @@ export const SIGNIFICANT_QUERY_PARAMS: Record<string, string[]> = {
 
 /** 该路径下需要保留的查询参数名 */
 export function significantQueryParams(path: string): string[] {
-  const p = pathname(path);
+  const p = routeSamplePath(pathname(path));
   for (const [pattern, params] of Object.entries(SIGNIFICANT_QUERY_PARAMS)) {
     if (matchesRoutePattern(p, pattern)) return params;
   }

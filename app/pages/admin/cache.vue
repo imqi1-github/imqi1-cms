@@ -107,14 +107,14 @@ async function clearAll() {
   }
 }
 
-async function clearPreset(keyword: string, label: string) {
+async function clearPreset(keyword: string, label: string, route: string) {
   if (!csrfToken.value) {
     toast.error({ message: "会话已失效，请刷新页面后重试" });
     return;
   }
   clearingPreset.value = keyword;
   try {
-    await postClear({ csrfToken: csrfToken.value, action: "preset", value: keyword }, `已清理${label}缓存`);
+    await postClear({ csrfToken: csrfToken.value, action: "preset", value: keyword, route }, `已清理${label}缓存`);
   } catch (rawError: unknown) {
     toast.error({ message: "清理失败", error: rawError, description: "请稍后重试" });
   } finally {
@@ -549,7 +549,7 @@ async function checkCdnStatus() {
                 variant="outline"
                 :disabled="clearingPreset !== null"
                 :title="cat.desc"
-                @click="clearPreset(cat.keyword, cat.label)"
+                @click="clearPreset(cat.keyword, cat.label, cat.route)"
               >
                 <Icon
                   v-if="clearingPreset === cat.keyword"

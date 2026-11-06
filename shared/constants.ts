@@ -186,6 +186,9 @@ export const BROWSER_REVALIDATE_API_PREFIXES = ["/api/related-contents/"];
 /** 不带 s-maxage 的版本：RSS / sitemap / 二维码等不经 CDN 分层、只由浏览器直接取的响应 */
 export const PUBLIC_CACHE_CONTROL_SHORT = "public, max-age=300";
 
+/** 访客分布聚合缓存的键（footprint.get.ts 写入，评论写库时清除） */
+export const FOOTPRINT_CACHE_KEY = "custom:footprint";
+
 /** 访客分布（custom:footprint）聚合缓存 TTL（秒）：10 分钟
  *
  * 它是「已发布评论」的派生聚合（IP → 城市 → 去重），每次重算要扫全部评论 + 本地 ipdb 查表，
@@ -259,13 +262,6 @@ export const CHANGELOG_CACHE_ROUTES = ["/", "/changelogs"];
  * 文章详情页不在此列：它的评论列表是客户端实时拉 /api/comments（该接口无缓存头，
  * 边缘不缓存），SSR 里不内嵌评论数。 */
 export const COMMENT_CACHE_ROUTES = ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"];
-
-/**
- * 点赞变更 → 列表页角标 + 文章详情页（SSR HTML 内嵌点赞数，边缘 TTL 长，必须精确刷新）
- *
- * 边缘只刷文章页 URL（列表页靠 60 秒短 TTL 收敛），故配 edgeRoutes: [] + edgePaths。
- */
-export const LIKES_CACHE_ROUTES = [...COMMENT_CACHE_ROUTES, "/content/**"];
 
 /** 文章增删改 → 首页 + 分类/标签列表 + 文章详情 + 归档 + 站点地图 + 独立页面
  * 独立页面（type=1，contents 表里 status=1 的页面）共用此接口增删改，

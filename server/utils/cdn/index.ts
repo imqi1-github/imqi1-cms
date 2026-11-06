@@ -206,8 +206,8 @@ export async function purgeCdnRoutes(routes?: string[], source = "自动"): Prom
   }
 }
 
-/** 按精确 URL 列表刷新 */
-export async function purgeCdnUrls(urls: string[], source = "手动"): Promise<CdnPurgeResult | null> {
+/** 按精确 URL 列表刷新（默认来源=自动，与 purgeCdnRoutes 同口径；后台/MCP 会显式传来源） */
+export async function purgeCdnUrls(urls: string[], source = "自动"): Promise<CdnPurgeResult | null> {
   const provider = createCdnProvider();
   if (!provider?.isEnabled()) {
     warnNotConfigured();

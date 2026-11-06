@@ -6,6 +6,7 @@ import { clearMemoryLoginLocks } from "#server/utils/login-rate-limit";
 import { clearMemoryRateLimits } from "#server/utils/rate-limit";
 import { clearSourceCacheByKeyword } from "#server/utils/source-cache";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { purgeCdnRoutes } from "#server/utils/cdn";
 import type { CacheClearBody, CacheClearResponse } from "#server/types/apis/cache";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -14,11 +15,12 @@ import { logAdminAudit } from "#server/utils/audit";
  *
  * 三层缓存各有各的键空间：源站页面缓存（Nitro 缓存组，Redis 或文件）、
  * 短期缓存（搜索/足迹/限流，Redis 或进程内内存）、CDN 边缘缓存（不在本进程，走刷新接口）。
- * 这里能清前两层；边缘缓存走 /api/admin/cache/cdn-purge。
+ * 这里能清前两层；清页面缓存时连带提交一次边缘刷新（否则线上仍是旧 HTML），
+ * 更精细的边缘刷新走 /api/admin/cache/cdn-purge。
  */
 export default defineEventHandler(async event => {
   const body = await readBody<CacheClearBody>(event);
-  const { csrfToken, action, value } = body ?? {};
+  const { csrfToken, action, value, route } = body ?? {};
 
   // CSRF 验证
   if (!validateCsrfToken(event, csrfToken)) {
@@ -53,7 +55,7 @@ export default defineEventHandler(async event => {
         success: true,
         matched: -1,
         cleared: -1,
-        note: "已清空源站缓存与进程内短期缓存，并提交一次 CDN 边缘刷新（边缘缓存需另行刷新）",
+        note: "已清空源站缓存与进程内短期缓存，并提交一次 CDN 边缘刷新",
       } satisfies CacheClearResponse;
     }
 
@@ -93,7 +95,13 @@ export default defineEventHandler(async event => {
       const others = await cacheClearBySubstring(safe);
       if (others < 0) return redisUnavailable();
       const total = pages + others;
-      return clearedResponse(total, "没有匹配该关键词的缓存键");
+      // 手动清理是明确动作：只清源站不清边缘，线上仍是旧 HTML（内容页 6 小时）。预设带路由就精确刷，
+      // 自由关键词不知道影响面 → 整站一条目录前缀（目录池 50/天，人工低频可接受）。
+      const edgeRoute = typeof route === "string" && route.trim() ? route.trim() : "";
+      const purged = await purgeCdnRoutes(edgeRoute ? [edgeRoute] : [], "后台手动");
+      const response = clearedResponse(total, "没有匹配该关键词的缓存键");
+      if (purged && !purged.success) response.note = `${response.note ?? ""}（边缘刷新失败：${purged.error ?? "未知错误"}）`.trim();
+      return response;
     }
 
     throw createError({ statusCode: 400, message: "未知的操作类型" });

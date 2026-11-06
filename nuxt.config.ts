@@ -3,7 +3,8 @@ import { randomBytes } from "crypto";
 import { visualizer } from "rollup-plugin-visualizer";
 
 import { siteConfig } from "./site.config";
-import { CDN_CACHED_ROUTES, LIST_PAGE_ROUTES, PUBLIC_STATIC_API_ROUTES } from "./shared/constants";
+import { CDN_CACHED_ROUTES, PUBLIC_STATIC_API_ROUTES } from "./shared/constants";
+import { isListPageRoutePattern } from "./shared/cache-routes";
 import { getRedisConfig } from "./shared/redis-config";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -55,7 +56,9 @@ const LIST_PAGE_SECONDS = siteConfig.build.listPageCacheSeconds;
 // 源站渲染频率不变；边缘 TTL 短只是让边缘更频繁地来问一次（命中源站缓存，很便宜）。
 const pageCacheRules = Object.fromEntries(
   CDN_CACHED_ROUTES.map(path => {
-    const edgeMaxAge = LIST_PAGE_ROUTES.includes(path) ? LIST_PAGE_SECONDS : PAGE_CACHE_SECONDS;
+    // 档位判定与运行时的响应头插件走同一份实现（shared/cache-routes），
+    // 否则两套逻辑分叉时同一页面会被下发不同 TTL
+    const edgeMaxAge = isListPageRoutePattern(path) ? LIST_PAGE_SECONDS : PAGE_CACHE_SECONDS;
     return [
       path,
       {

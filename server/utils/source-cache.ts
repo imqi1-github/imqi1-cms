@@ -23,26 +23,53 @@ function keyFrag(key: string): string {
   return segment.replace(/\.[^.]+\.json$/, "");
 }
 
-// 与 Nitro 内部 cachedEventHandler 的 getKey/escapeKey 对齐：去掉非词字符、截取前 16 个字符；
-// 空则回退 "index"（根路径 "/" 的页面缓存键片段即为 index）。
-// 注意：键里的片段是**路径**的转义（/content/cat/slug → contentcatslug），路由片段只是它的前缀。
-function routeFrag(route: string): string {
-  return String(route).replace(/\W/g, "").slice(0, 16) || "index";
+// 与 Nitro 内部 cachedEventHandler 的 getKey/escapeKey 对齐：先 decodeURI 再剥非词字符、
+// 截取前 16 个字符；空则回退 "index"（根路径 "/" 的页面缓存键片段即为 index）。
+// decodeURI 不能省：中文 slug 未解码时 `\W` 只留下百分号转义片段，与实际键对不上。
+// 注意：片段是**路径**的转义（/content/cat/slug → contentcatslug），路由片段只是它的前缀。
+function pathFrag(path: string): string {
+  let decoded = path;
+  try {
+    decoded = decodeURI(path);
+  } catch {
+    // 非法百分号转义：保持原样，退化成前缀匹配（宁可多清，不漏清）
+  }
+  return decoded.replace(/\W/g, "").slice(0, 16) || "index";
 }
 
-/** 清掉源站缓存层里受影响路由的缓存键（routes 省略 = 清整组） */
-export async function clearSourceCache(routes?: string[]): Promise<number> {
+export interface ClearSourceCacheOptions {
+  /** 按路由匹配串清（`/content/**` 这种前缀语义）；**不传** = 清整组 */
+  routes?: string[];
+  /** 精确到具体页面路径（与 routes 取并集）；用于「只影响某几篇文章页」的变更 */
+  paths?: string[];
+}
+
+/**
+ * 清掉源站缓存层里受影响的缓存键。
+ *
+ * - `routes` 不传且 `paths` 为空 → 清整组（站点设置 / 数据导入这类全局变更）。
+ * - `routes` 传空数组 → 不按路由清（配合 `paths` 精确清）。
+ * - 任何情况下都清 `api*` 键：接口缓存随写库一起失效，否则边缘回源拿到旧 JSON。
+ */
+export async function clearSourceCache(opts: ClearSourceCacheOptions = {}): Promise<number> {
   const storage = useStorage("cache");
   // 文件驱动的 getKeys 会无视 base 返回全部键（Redis 驱动才按 base 过滤），所以自己再筛一遍缓存组
   const keys = (await storage.getKeys("nitro:routes")).filter(isRouteCacheKey);
   if (!keys.length) return 0;
 
-  const frags = routes?.length ? routes.map(routeFrag) : null;
+  const routeFrags = opts.routes?.map(pathFrag) ?? null;
+  const pathFrags = opts.paths?.length ? opts.paths.map(pathFrag) : null;
+  // routes 与 paths 都没给 = 全站失效
+  const clearAll = routeFrags === null && !pathFrags;
+
   const targets = keys.filter((key) => {
     const frag = keyFrag(key);
-    // API 缓存键（apisite / apicategories…）变化快，任何写库都一并清掉
     if (frag.startsWith("api")) return true;
-    return frags ? frags.some(fragPrefix => frag.startsWith(fragPrefix)) : true;
+    if (clearAll) return true;
+    // 片段最多 16 字符：超长路径会截断，两条长路径可能共用一个片段 → 多清一个页面，
+    // 代价是多渲染一次，可接受；漏清会让旧内容挂满整个 TTL。
+    if (pathFrags?.some(prefix => frag.startsWith(prefix))) return true;
+    return routeFrags?.some(prefix => frag.startsWith(prefix)) ?? false;
   });
 
   for (const key of targets) {

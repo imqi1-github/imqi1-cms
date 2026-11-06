@@ -108,3 +108,54 @@ metadata:
 **生产库 `contents.comment_num` 漂移**：旧的 `comments/[id].patch` RMW race 留下过偏差（cid 836/1016 各差 2，2026-11-05 已按 `status=1` 实际条数重算修正；`comment_num` 只在后台展示，前台不显示）。重算 SQL：`WITH s AS (SELECT cid,count(*) n FROM comments WHERE status=1 GROUP BY cid) UPDATE contents c SET comment_num=s.n FROM s WHERE s.cid=c.cid AND c.comment_num<>s.n`。绕过应用直接改库**不会触发缓存失效** → 改完要 `clear_cache target=pages`。
 
 相关：[[redis-build-baked-docker-ondemand]]、[[nitro-route-cache-key-colon]]、[[admin-write-api-csrf-required]]、[[post-change-lint-chain]]
+
+---
+
+## 2026-11-06 全面复核后的修复（10 条功能 + 3 条安全）
+
+**复核方法**：逐条读代码 + 用真库量化（本库 156 篇文章 / 4 分类 / 18 标签 / 单标签最多 30 篇 / 1029 条评论），修前对每条重新验证一遍。
+
+### 【最重要的认知】源站缓存 TTL 才是列表页的新鲜度硬上限
+边缘 TTL（列表页 15s）只决定「多久回源一次」。回源时源站若命中**源站缓存**（TTL 6h）就返回旧 HTML → 边缘继续用旧的。⇒ **凡是把评论数/点赞数渲染进列表卡片的路由，源站缓存必须在写库时清掉**，否则那个数字会挂满 6 小时（不是 15 秒）。这也解释了为什么 `COMMENT_CACHE_ROUTES` 要含 `/category/**` `/tag/**` `/archiving` `/about` `/sitemap` —— 粗粒度清源站是**正确性需要**，不是省事；真正要避免的是清到**文章页**（Shiki 全量重渲染）。
+
+### P1 点赞清空全站文章页源站缓存（已修）
+`LIKES_CACHE_ROUTES` 含 `/content/**` → 源站缓存按 frag 前缀匹配（`/content/**` → `content`）→ **一次点赞清掉所有文章页的源站缓存** → 边缘每次回源验证都要全量重渲染（Shiki + DB）。旧代码注释里明确避开的坑，迁边缘缓存后又踩回来了。
+修法：`clearSourceCache` 支持 `paths` 精确失效（`server/utils/source-cache.ts`），点赞改传 `sourcePaths: [文章页]`；`LIKES_CACHE_ROUTES` 整个常量删除（它唯一的用处就是那个 `/content/**`）。**注意路由集合里没有 `/content/**` 时，源站缓存不会碰文章页**。
+⚠️ frag 匹配是**前缀**语义且只取 16 字符：两条长路径可能共用片段 → 多清一个页面（可接受），漏清则挂满 TTL。中文 slug 必须先 `decodeURI` 再剥非词字符，否则片段对不上。
+
+### P2 countOnly 在 5 秒防抖窗口内是「粘」的（已修）
+原来 `pendingCountOnly` 只会被置 true 不置 false → 评论（countOnly）与文章保存同窗时，整窗按计数类处理 → **文章自身的 URL 被 skipRouteTargets 跳过**。改成三态（初始 true = 「本窗全是计数变更」，出现内容类变更即置 false）。
+
+### P3 读者地图不随评论更新（已修）
+`/api/footprint` 的聚合缓存在 `custom:footprint`（TTL 600s = 读者地图的新鲜度**硬上限**，刷边缘也不会更新得更早），而评论写接口没人删这个键 → 新读者落点最多 10 分钟才出现。已在 `invalidateContentCaches` 里按 `countOnly` 一并清（countOnly 目前的唯一来源就是评论写接口）。
+
+### P4 别人页上的「相关文章」卡片不随本文更新（已修）
+文章页 SSR **内嵌**相关文章卡片（标题/封面/描述，Nuxt 的 `useAsyncData` 走 `onServerPrefetch`，即使没 `await` 也会等它 → 确实进 HTML）。改 B 的标题只刷 B 自己的 URL → A 页上 B 的旧标题挂满 6 小时。
+修法：`server/utils/content-urls.ts` 的 `relatedContentPagePaths(cid, tagMids)` 按 **`/api/related-contents` 的同一套排序规则**反查（标签池并集取 20 → 相关度 → 时间 → top3）出真正会展示它的那几页，一并刷边缘。实测本库 156 篇逐篇与暴力模拟**完全一致**（458 页 vs 458 页，0 不一致），单次均 9ms。调用点：文章新建/更新/删除（删除要**在删前**算，删完就查不到引用关系）/批量删除（>20 篇跳过）/定时发布。
+
+### P5 后台手动清理不刷边缘（已修）
+「按类别/关键词清理」只清源站 → 站主清完线上仍是旧 HTML 6 小时。改为一并提交边缘刷新：预设带 `route` 就精确刷该路由，自由关键词刷整站一条目录前缀（目录池 50/天，人工低频）。
+
+### P6 空转守卫漏看边缘目标（已修）
+`flushCdnPurge` 的 `if (!cids.length && !paths.length && !routes.length) return` 不看 `edgePaths`/`edgeDirectories` → 「只传 edgePaths」的变更整段跳过。已把边缘目标纳入判断。
+
+### P7 TTL 档位两套判定逻辑（已修）
+`nuxt.config.ts` 用 `LIST_PAGE_ROUTES.includes(path)`（**精确相等**），运行时用 `isListPageRoute()`（**模式匹配**）→ 今天一致，改着改着就分叉成同一页面两个 TTL。已把整套路由判定提到 **`shared/cache-routes.ts`**（app/nitro/nuxt.config 共用），并加 `routeSamplePath()`（`/category/**` → `/category`）让「具体路径」与「路由匹配串」两种入参走同一份清单。**shared 内部要用相对导入**（`./constants`）：`#shared` 别名在 nuxt.config 的 jiti 加载阶段不可解析。
+
+### P8 related-contents 刷新 URL 少了 `?limit=3`（已修）
+边缘缓存键含查询串 → 文章页实际请求 `/api/related-contents/{cid}?limit=3`，刷的是裸 URL → 刷中的不是实际那条（当前 `/api/*` 在 EdgeOne 控制台是 DefaultCache:off 暂无害，规则一改就中招）。
+
+### P9 `metaContentPaths` 返回得太宽（**故意不改**）
+分类/标签改名时它返回「文章页 + 该文章所有分类/标签页」的并集，一次改名可能刷 200 条 URL。收窄要做「精确到文章所在的那一页」，而位次计算有 create_time 并列差 1 的风险 → **宁多刷不漏刷**，保持现状。
+
+### P10 刷新来源默认值不一致（已修）
+`purgeCdnUrls` 默认「手动」、`purgeCdnRoutes` 默认「自动」→ 新增调用点容易把自动刷新记成手动、额度无法归因。统一为「自动」。
+
+### 安全侧三条
+- **S1 `RATE_LIMIT_LINKS_APPLY` 可放大公开写接口额度**：E2E 的 playwright.config 把它设成 100；抄进生产 .env 就等于放开 `/api/links` 垃圾申请 + 邮件轰炸，负值还会让接口永久 429。已改成**生产恒 3**，非生产才放宽且上限 100。
+- **S2 `cdn-purge` 的 action=urls 无条数上限**：超额部分按额度截断后仍串行分批提交（每批 15s 超时）→ 接口长时间挂着 + 白烧额度。已加 500 条上限。**不构成 SSRF**（服务端只把 URL 放进 body 转给腾讯云，从不对它发请求；EdgeOne 只收本 zone 目标）。
+- **S3 查询串白名单漏登记 = 串页**（本仓库生产真实发生过：/map 的 place 漏登记 → 全站标题变成「中街」）。已加守卫单测 `test/unit/app/ssr-user-independent-invariant.test.ts`：「边缘缓存页读到的 query 参数必须都已登记在 SIGNIFICANT_QUERY_PARAMS」。**新增 SSR 参数时必须同时登记**。
+
+### 遗留（不阻塞，供后续）
+- **列表页的源站缓存仍是粗粒度清**：一次评论会清掉首页+全部分类页+全部标签页+归档+关于+站点地图的源站缓存（→ 各自下一次访问重渲染一次，约 22 次）。文章页已改精确，但列表页要精确就得把「文章所在的那一页」的位次计算提到写库那一刻，与内容类变更（页码会位移、必须整组清）语义不同，故没动。
+- **`/map?place=N` 的标题**：`place` 登记在 SIGNIFICANT_QUERY_PARAMS ✓，但 `/map` 是 15 秒短 TTL 档 → 改名后地图页标题最多滞后 15 秒（可接受）。

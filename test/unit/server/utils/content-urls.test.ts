@@ -6,6 +6,22 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 let relationCount = 0;
 let laterCount = 0;
 const relationRows: unknown[] = [];
+/** 相关文章反查用的文章表（cid / slug / create_time / 标签 mid / 分类 slug） */
+let articleRows: {
+  cid: number;
+  slug: string;
+  type: number;
+  create_time: Date;
+  contentrelations: { metas: { mid: number; slug: string; type: string } }[];
+}[] = [];
+
+/** 反查用到的查询形状（只 mock 用到的三个 where 组合） */
+interface MockFindManyArgs {
+  where?: {
+    cid?: { not?: number; in?: number[] };
+    contentrelations?: { some?: { mid?: number | { in?: number[] } } };
+  };
+}
 
 mock.module("#server/utils/prisma", () => ({
   prisma: {
@@ -15,16 +31,45 @@ mock.module("#server/utils/prisma", () => ({
     },
     contents: {
       count: async () => laterCount,
+      findUnique: async ({ where }: { where: { cid: number } }) =>
+        articleRows.find(row => row.cid === where.cid) ?? null,
+      findMany: async (args: MockFindManyArgs) => {
+        const where = args?.where ?? {};
+        const byCreateTime = (list: typeof articleRows) =>
+          [...list].sort((a, b) => b.create_time.getTime() - a.create_time.getTime());
+        const midFilter = where.contentrelations?.some?.mid;
+        // ① 候选：共享标签（mid.in）且排除自己
+        if (midFilter && typeof midFilter !== "number" && Array.isArray(midFilter.in)) {
+          const mids = midFilter.in;
+          return articleRows
+            .filter(row => row.cid !== where.cid?.not)
+            .filter(row => row.contentrelations.some(rel => rel.metas.type === "tag" && mids.includes(rel.metas.mid)));
+        }
+        // ② 单标签的最近 20 篇（候选池组成单元）
+        if (typeof midFilter === "number") {
+          const mid = midFilter;
+          return byCreateTime(
+            articleRows.filter(row => row.contentrelations.some(rel => rel.metas.type === "tag" && rel.metas.mid === mid)),
+          ).slice(0, 20).map(row => ({ cid: row.cid }));
+        }
+        // ③ 候选池成员补齐字段
+        if (Array.isArray(where.cid?.in)) {
+          const cids = where.cid.in;
+          return articleRows.filter(row => cids.includes(row.cid));
+        }
+        return [];
+      },
     },
   },
 }));
 
-const { contentArticlePaths, contentListPagePaths, contentUrlPaths, metaContentPaths } = await import("#server/utils/content-urls");
+const { contentArticlePaths, contentListPagePaths, contentUrlPaths, metaContentPaths, relatedContentPagePaths } = await import("#server/utils/content-urls");
 
 beforeEach(() => {
   relationCount = 0;
   laterCount = 0;
   relationRows.length = 0;
+  articleRows = [];
 });
 
 describe("内容 URL 枚举", () => {
@@ -122,5 +167,41 @@ describe("contentListPagePaths（文章所在的那一页）", () => {
   test("没有分类/标签关系 → 不产出路径", async () => {
     laterCount = 0;
     expect(await contentListPagePaths([{ cid: 1, create_time: new Date(), contentrelations: [] }], 12)).toEqual([]);
+  });
+});
+
+describe("relatedContentPagePaths（谁会在「相关文章」里引用这篇文章）", () => {
+  /** 造一篇：tagMid 标签 + note 分类 */
+  const article = (cid: number, slug: string, day: number) => ({
+    cid,
+    slug,
+    type: 0,
+    create_time: new Date(`2026-01-${String(day).padStart(2, "0")}T00:00:00Z`),
+    contentrelations: [
+      { metas: { mid: 10, slug: "t", type: "tag" } },
+      { metas: { mid: 1, slug: "note", type: "category" } },
+    ],
+  });
+
+  test("最新的一篇会被所有同标签文章的「相关文章」引用", async () => {
+    articleRows = [article(1, "x", 10), article(2, "a", 9), article(3, "b", 8)];
+    const paths = await relatedContentPagePaths(1, [10]);
+    expect(paths.sort()).toEqual(["/content/note/a", "/content/note/b"]);
+  });
+
+  test("最旧的一篇排不进任何人的 top3 → 没有页面需要刷新", async () => {
+    articleRows = [
+      article(1, "x", 1),
+      article(2, "a", 10),
+      article(3, "b", 9),
+      article(4, "c", 8),
+      article(5, "d", 7),
+    ];
+    expect(await relatedContentPagePaths(1, [10])).toEqual([]);
+  });
+
+  test("没有标签 → 谁都不会引用它", async () => {
+    articleRows = [article(1, "x", 10), article(2, "a", 9)];
+    expect(await relatedContentPagePaths(1, [])).toEqual([]);
   });
 });

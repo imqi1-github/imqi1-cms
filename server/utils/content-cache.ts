@@ -10,8 +10,9 @@ import {
 } from "#server/utils/cdn";
 import { siteConfig } from "~~/site.config";
 import { contentListPagePaths, contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
-import { CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
-import { isListPageRoute } from "#server/utils/cache-routes";
+import { CONTENT_PAGE_SIZE_DEFAULT, FOOTPRINT_CACHE_KEY } from "#shared/constants";
+import { cacheDel } from "#server/utils/cache/store";
+import { isListPageRoute } from "#shared/cache-routes";
 import { clearSourceCache } from "#server/utils/source-cache";
 import { CHANGELOG_TYPES } from "#shared/changelog";
 import type { InvalidateContentCachesOptions } from "#server/types/utils/content-cache";
@@ -32,13 +33,26 @@ import type { InvalidateContentCachesOptions } from "#server/types/utils/content
  * 注意：invalidation 是 best-effort，调用方应自行 `.catch()`，不要让缓存层抖动影响写库本身。
  */
 export async function invalidateContentCaches(opts: InvalidateContentCachesOptions = {}): Promise<void> {
-  const cleared = await clearSourceCache(opts.routes);
+  const cleared = await clearSourceCache({ routes: opts.routes, paths: opts.sourcePaths });
   log.cache("invalidate", {
-    routes: opts.routes?.length ? opts.routes.join(",") : "(all)",
+    routes: opts.routes?.length ? opts.routes.join(",") : (opts.sourcePaths?.length ? "(精确路径)" : "(all)"),
     cleared,
   });
 
+  // 访客分布是「已发布评论」的派生聚合，聚合缓存 TTL 10 分钟是它的新鲜度硬上限；
+  // countOnly 目前唯一的来源就是评论写接口（增删/审核），故在这里一并清掉。
+  if (opts.countOnly) await clearFootprintCache();
+
   scheduleCdnPurge(opts);
+}
+
+/** 清访客分布聚合缓存（custom:footprint）；失败不影响写库 */
+async function clearFootprintCache(): Promise<void> {
+  try {
+    await cacheDel(FOOTPRINT_CACHE_KEY);
+  } catch (error) {
+    log.error("[footprint] 缓存清理失败", { error });
+  }
 }
 
 /**
@@ -69,7 +83,9 @@ const pendingEdgeRoutes = new Set<string>();
 const pendingEdgePaths = new Set<string>();
 const pendingEdgeDirectories = new Set<string>();
 let pendingEdgeRoutesGiven = false;
-let pendingCountOnly = false;
+// 「本窗口内到目前为止全是纯计数变更」：初始 true（空窗口），出现任意内容类变更即置 false。
+// 不能只置 true 不置 false —— 评论和文章保存落在同一个 5 秒窗口时，文章页 URL 会被误跳过。
+let pendingCountOnly = true;
 
 /** 累积本次变更并重置防抖计时器（不 await：刷新异步执行，失败不影响写库） */
 function scheduleCdnPurge(opts: InvalidateContentCachesOptions): void {
@@ -93,12 +109,12 @@ function scheduleCdnPurge(opts: InvalidateContentCachesOptions): void {
   }
   if (opts.routes?.length) {
     for (const route of opts.routes) pendingRoutes.add(route);
-  } else {
-    // 没传路由 = 全站失效（站点设置 / 数据导入）
+  } else if (opts.routes === undefined) {
+    // 完全不传路由 = 全站失效（站点设置 / 数据导入）；显式传 [] = 不按路由刷
     pendingRoutes.add("/**");
   }
-  // 显式声明纯计数变更 → 不刷边缘（调用方最清楚自己的变更性质）
-  if (opts.countOnly) pendingCountOnly = true;
+  // 只有整窗全是纯计数变更才按计数类处理（调用方最清楚自己的变更性质）
+  if (!opts.countOnly) pendingCountOnly = false;
 
   if (purgeTimer) clearTimeout(purgeTimer);
   purgeTimer = setTimeout(() => {
@@ -125,9 +141,11 @@ async function flushCdnPurge(): Promise<void> {
   pendingEdgePaths.clear();
   pendingEdgeDirectories.clear();
   pendingEdgeRoutesGiven = false;
-  pendingCountOnly = false;
+  pendingCountOnly = true;
 
-  if ((!cids.length && !paths.length && !routes.length) || isCdnQuotaExhausted()) return;
+  // 任何一类目标存在就要提交：只看 cids/paths/routes 会让「只传 edgePaths」的变更（点赞）整段跳过
+  const hasTargets = cids.length || paths.length || routes.length || edgePaths.length || edgeDirectories.length;
+  if (!hasTargets || isCdnQuotaExhausted()) return;
 
   try {
     const { urls, directories } = await resolvePurgeTargets(cids, paths, routes, edgeRoutes, edgePaths, edgeDirectories, countOnly, edgeRoutesGiven);
@@ -242,9 +260,13 @@ async function resolvePurgeTargets(
   // 显式指定的目录前缀（结构性变更：文章增删会让后续页码整体位移 → 刷整个列表目录）
   for (const dir of edgeDirectories) directories.add(dir);
 
-  // 相关文章按 cid 单独缓存，文章/评论/附件变更时一并刷新
+  // 相关文章按 cid 单独缓存，文章/评论/附件变更时一并刷新。
+  // 边缘缓存键含查询串：文章页实际请求的是 `?limit=3`，裸 URL 刷的是另一条条目。
   if (!skipRouteTargets) {
-    for (const cid of cids) urls.add(toUrl(`/api/related-contents/${cid}`));
+    for (const cid of cids) {
+      urls.add(toUrl(`/api/related-contents/${cid}`));
+      urls.add(toUrl(`/api/related-contents/${cid}?limit=3`));
+    }
   }
 
   return { urls: [...urls], directories: [...directories] };

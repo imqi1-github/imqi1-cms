@@ -3,7 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { contentUrlPaths } from "#server/utils/content-urls";
+import { contentUrlPaths, relatedContentPagePaths, RELATED_REFRESH_BATCH_CAP } from "#server/utils/content-urls";
 import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -67,13 +67,26 @@ export default defineEventHandler(async event => {
         cid: true,
         slug: true,
         type: true,
-        contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+        contentrelations: { select: { metas: { select: { mid: true, slug: true, type: true } } } },
       },
     })) ?? [];
+    // 删除前反查相关文章页（删完就查不到引用关系了）。
+    // 反查是逐篇模拟排序，批量删除量大时跳过（列表目录已整组刷新，相关卡片靠边缘 TTL 收敛）
+    const relatedPages = contentsToDelete.length > RELATED_REFRESH_BATCH_CAP
+      ? []
+      : (await Promise.all(
+        contentsToDelete.map((row) => {
+          const tagMids = (row.contentrelations ?? [])
+            .filter(relation => relation.metas.type === "tag")
+            .map(relation => relation.metas.mid);
+          return relatedContentPagePaths(row.cid, tagMids).catch(() => []);
+        }),
+      )).flat();
+
     const contentPaths = contentsToDelete.flatMap(row => [
       ...contentUrlPaths(row),
       `/api/related-contents/${row.cid}`,
-    ]);
+    ]).concat(relatedPages);
 
     // 四个 deleteMany 包进事务：任一步失败整体回滚，避免「关系/评论/附件已删而文章还在」的脏状态
     await prisma.$transaction([

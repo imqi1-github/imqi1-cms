@@ -13,6 +13,8 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
+import { isCdnCachedPage, significantQueryParams } from "#shared/cache-routes";
+
 /** 递归收集 app/ 下的 .vue / .ts 源码 */
 function collectAppSources(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -82,6 +84,44 @@ describe("routeRules 的 CDN 缓存边界", () => {
     // 边缘 TTL 按页面类型分档：内容页用 pageCacheSeconds，列表/统计页用 listPageCacheSeconds
     expect(config).toContain("siteConfig.build.pageCacheSeconds");
     expect(config).toContain("siteConfig.build.listPageCacheSeconds");
-    expect(config).toContain("LIST_PAGE_ROUTES.includes(path)");
+    // 档位判定必须与运行时共用同一份实现（shared/cache-routes），不能各写一套
+    expect(config).toContain("isListPageRoutePattern(path)");
   });
 });
+
+describe("边缘缓存页面的 query 参数登记", () => {
+  /**
+   * 源站缓存键只保留「会影响 SSR 输出」的 query 参数（SIGNIFICANT_QUERY_PARAMS）。
+   * 漏登记 = 同一个缓存键返回不同内容（生产真实发生过：/map 的 place 漏登记，
+   * 全站标题变成「中街」）。这里用源码字面量守住：边缘缓存页读到的参数必须已登记。
+   */
+  test("边缘缓存页读到的 query 参数都已登记", () => {
+    const hits: string[] = [];
+    for (const file of collectAppSources("app/pages")) {
+      const route = pageRoute(file);
+      if (!isCdnCachedPage(route)) continue;
+      const src = readFileSync(file, "utf8");
+      const params = new Set<string>();
+      for (const match of src.matchAll(/route\.query\.([A-Za-z_$][\w$]*)/g)) params.add(match[1]!);
+      for (const match of src.matchAll(/route\.query\[\s*["']([A-Za-z_$][\w$]*)["']\s*\]/g)) params.add(match[1]!);
+      const registered = significantQueryParams(route);
+      for (const param of params) {
+        if (!registered.includes(param)) hits.push(`${file} 读了未登记的 query 参数 ${param}（路由 ${route}）`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+});
+
+/** app/pages 下的页面文件 → 路由（动态段折叠成 /**，index 段去掉） */
+function pageRoute(file: string): string {
+  const rel = file.replace(/\\/g, "/").replace(/^app\/pages\//, "").replace(/\.vue$/, "");
+  if (rel === "index") return "/";
+  const segments = rel.split("/").filter(segment => segment !== "index");
+  const staticSegments = segments.filter(segment => !segment.startsWith("["));
+  if (staticSegments.length !== segments.length) {
+    const prefix = staticSegments.join("/");
+    return prefix ? `/${prefix}/**` : "/**";
+  }
+  return `/${segments.join("/")}`;
+}

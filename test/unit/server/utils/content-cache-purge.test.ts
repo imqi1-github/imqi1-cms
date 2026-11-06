@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 const purgedUrls: string[][] = [];
 const purgedRoutes: string[][] = [];
+const deletedCacheKeys: string[] = [];
 
 mock.module("#server/utils/cdn", () => ({
   isAutoPurgeEnabled: () => true,
@@ -23,10 +24,22 @@ mock.module("#server/utils/cdn", () => ({
   },
 }));
 
+// 访客分布聚合缓存：评论变更时要清掉（它的 TTL 是读者地图的新鲜度硬上限）
+mock.module("#server/utils/cache/store", () => ({
+  cacheDel: async (key: string) => {
+    deletedCacheKeys.push(key);
+  },
+}));
+
+// 源站缓存层：记录被删掉的键，用来验证「精确路径失效」
+const storageKeys: string[] = [];
+const removedKeys: string[] = [];
 const g = globalThis as unknown as { useStorage?: unknown };
 g.useStorage = () => ({
-  getKeys: async () => [],
-  removeItem: async () => undefined,
+  getKeys: async () => [...storageKeys],
+  removeItem: async (key: string) => {
+    removedKeys.push(key);
+  },
 });
 
 // 文章 URL 展开要查 DB：给 cid 1024 一条带分类/标签的记录
@@ -68,6 +81,9 @@ const wait = () => new Promise(resolve => setTimeout(resolve, 5_300));
 beforeEach(() => {
   purgedUrls.length = 0;
   purgedRoutes.length = 0;
+  deletedCacheKeys.length = 0;
+  removedKeys.length = 0;
+  storageKeys.length = 0;
 });
 
 describe("边缘刷新目标", () => {
@@ -126,12 +142,100 @@ describe("边缘刷新目标", () => {
 
   test("点赞：只刷文章页（列表页靠短 TTL 收敛，省额度）", async () => {
     await invalidateContentCaches({
-      routes: ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap", "/content/**"],
+      routes: ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"],
       edgeRoutes: [],
       edgePaths: ["/content/note/hello"],
     });
     await wait();
     const urls = purgedUrls.flat();
     expect(urls).toEqual(["https://imqi1.com/content/note/hello"]);
+  }, 15_000);
+});
+
+describe("源站缓存失效粒度", () => {
+  test("点赞只清被赞那一篇的源站缓存，不按 /content/** 通配清全站文章页", async () => {
+    storageKeys.push(
+      "nitro:routes:_:contentnotehello.aaaa.json",
+      "nitro:routes:_:contentlifeworld.bbbb.json",
+      "nitro:routes:_:index.cccc.json",
+    );
+    await invalidateContentCaches({
+      routes: ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"],
+      sourcePaths: ["/content/note/hello"],
+      edgeRoutes: [],
+      edgePaths: ["/content/note/hello"],
+    });
+    await wait();
+    // 列表页源站缓存照旧清（角标靠 15 秒短 TTL 收敛），但另一篇文章页不能被牵连
+    expect(removedKeys).toContain("nitro:routes:_:index.cccc.json");
+    expect(removedKeys).toContain("nitro:routes:_:contentnotehello.aaaa.json");
+    expect(removedKeys).not.toContain("nitro:routes:_:contentlifeworld.bbbb.json");
+  }, 15_000);
+
+  test("内容变更仍按路由清（含 /content/** 整组），保证旧路径/列表页一起失效", async () => {
+    storageKeys.push(
+      "nitro:routes:_:contentnotehello.aaaa.json",
+      "nitro:routes:_:contentlifeworld.bbbb.json",
+    );
+    await invalidateContentCaches({
+      routes: ["/", "/category/**", "/content/**"],
+      contentCids: [1024],
+    });
+    await wait();
+    expect(removedKeys.sort()).toEqual([
+      "nitro:routes:_:contentlifeworld.bbbb.json",
+      "nitro:routes:_:contentnotehello.aaaa.json",
+    ]);
+  }, 15_000);
+});
+
+describe("防抖窗口内的变更合并", () => {
+  test("评论（纯计数）与文章保存同窗 → 文章页 URL 不能被跳过", async () => {
+    await invalidateContentCaches({
+      routes: ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"],
+      contentCids: [1024],
+      countOnly: true,
+    });
+    await invalidateContentCaches({
+      routes: ["/", "/category/**", "/tag/**", "/archiving", "/content/**", "/sitemap", "/about"],
+      contentCids: [1024],
+    });
+    await wait();
+    const urls = purgedUrls.flat();
+    // 内容类变更的文章页必须在刷新列表里（countOnly 不能把整窗降级）
+    expect(urls.some(u => u.endsWith("/content/note/hello"))).toBe(true);
+    expect(urls.some(u => /^https:\/\/imqi1\.com\/$/.test(u))).toBe(true);
+  }, 15_000);
+
+  test("整窗只有评论变更 → 固定页仍不刷（省额度）", async () => {
+    await invalidateContentCaches({
+      routes: ["/", "/category/**", "/tag/**", "/archiving", "/about", "/sitemap"],
+      contentCids: [1024],
+      countOnly: true,
+    });
+    await wait();
+    const urls = purgedUrls.flat();
+    expect(urls.some(u => /^https:\/\/imqi1\.com\/$/.test(u))).toBe(false);
+  }, 15_000);
+});
+
+describe("访客分布聚合缓存", () => {
+  test("评论变更（countOnly）清掉 custom:footprint（读者地图的新鲜度硬上限）", async () => {
+    await invalidateContentCaches({
+      routes: ["/", "/category/**"],
+      contentCids: [1024],
+      countOnly: true,
+    });
+    await wait();
+    expect(deletedCacheKeys).toContain("custom:footprint");
+  }, 15_000);
+
+  test("内容类变更不碰访客分布缓存", async () => {
+    await invalidateContentCaches({
+      routes: ["/", "/content/**"],
+      contentCids: [1024],
+    });
+    await wait();
+    expect(deletedCacheKeys).not.toContain("custom:footprint");
   }, 15_000);
 });

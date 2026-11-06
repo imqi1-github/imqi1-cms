@@ -13,7 +13,7 @@
 import { getRequestPath, getResponseHeader, getResponseStatus, setResponseHeader } from "h3";
 
 import { apiCacheControl, pageCacheControl } from "#server/utils/cache-control";
-import { isBrowserRevalidateApi, isCdnCachedPage } from "#server/utils/cache-routes";
+import { isBrowserRevalidateApi, isCdnCachedPage } from "#shared/cache-routes";
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("beforeResponse", (event) => {

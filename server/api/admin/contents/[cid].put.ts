@@ -5,7 +5,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { contentUrlPaths } from "#server/utils/content-urls";
+import { contentTagMids, contentUrlPaths, relatedContentPagePaths } from "#server/utils/content-urls";
 import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -99,7 +99,7 @@ export default defineEventHandler(async event => {
   const existing = await prisma.contents.findUnique({
     where: { cid },
     include: {
-      contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+      contentrelations: { select: { metas: { select: { mid: true, slug: true, type: true } } } },
     },
   });
 
@@ -188,10 +188,16 @@ export default defineEventHandler(async event => {
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
     // 旧路径一并失效：改了 slug/分类/类型后旧地址仍是边缘缓存里的旧 HTML（内容页 TTL 6 小时）
+    // 别人页上的「相关文章」卡片（SSR 内嵌标题/封面）也要跟着变：新旧标签都参与反查（并集即超集）
+    const oldTagMids = (existing.contentrelations ?? [])
+      .filter(relation => relation.metas.type === "tag")
+      .map(relation => relation.metas.mid);
+    const relatedPages = await relatedContentPagePaths(cid, [...oldTagMids, ...await contentTagMids(cid)])
+      .catch(() => []);
     void invalidateContentCaches({
       routes: CONTENT_CACHE_ROUTES,
       contentCids: [cid],
-      contentPaths: contentUrlPaths(existing),
+      contentPaths: [...contentUrlPaths(existing), ...relatedPages],
       // 发布状态变化（发布/取消发布）→ 该文章进出列表，后续文章页码位移 → 刷整个列表目录
       edgeDirectories: statusNum !== undefined && statusNum !== existing.status ? LIST_EDGE_DIRECTORIES : undefined,
     }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));

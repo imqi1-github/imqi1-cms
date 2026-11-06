@@ -1,7 +1,7 @@
 // 列表/统计页识别：决定「边缘 TTL 短 + 写库时不刷边缘」的页面范围。
 import { describe, expect, test } from "bun:test";
 
-import { canonicalSearch, isListPageRoute, significantQueryParams } from "#server/utils/cache-routes";
+import { canonicalSearch, isListPageRoute, significantQueryParams } from "#shared/cache-routes";
 
 describe("isListPageRoute", () => {
   test("列表/统计页：内嵌评论数等聚合数据，边缘 TTL 短", () => {

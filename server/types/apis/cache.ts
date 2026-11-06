@@ -4,6 +4,8 @@ export interface CacheClearBody {
   csrfToken: string;
   action: CacheClearAction;
   value?: string;
+  /** action=preset：该类别对应的站内路由（Nitro 匹配串），清源站缓存后连带刷边缘 */
+  route?: string;
 }
 
 export interface CacheClearResponse {

@@ -45,7 +45,8 @@ describe("nuxt.config 的页面缓存规则", () => {
     expect(config).toContain("maxAge: PAGE_CACHE_SECONDS");
     // 列表/统计页：边缘 TTL 短（listPageCacheSeconds），源站缓存仍是长的
     expect(config).toContain("siteConfig.build.listPageCacheSeconds");
-    expect(config).toContain("LIST_PAGE_ROUTES.includes(path)");
+    // 档位判定与运行时共用同一份实现（shared/cache-routes），避免两套逻辑分叉
+    expect(config).toContain("isListPageRoutePattern(path)");
   });
 
   test("敏感路径一律 no-store，绝不进边缘缓存", () => {

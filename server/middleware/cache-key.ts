@@ -1,6 +1,6 @@
 import { getQuery, getRequestPath } from "h3";
 
-import { canonicalSearch, isCdnCachedPage } from "#server/utils/cache-routes";
+import { canonicalSearch, isCdnCachedPage } from "#shared/cache-routes";
 
 /**
  * 归一化源站缓存键里的查询串。

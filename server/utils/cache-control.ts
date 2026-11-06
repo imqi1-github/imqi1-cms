@@ -5,7 +5,7 @@
  */
 
 import { siteConfig } from "~~/site.config";
-import { isBrowserRevalidateApi, isCdnCachedPage, isListPageRoute } from "#server/utils/cache-routes";
+import { isBrowserRevalidateApi, isCdnCachedPage, isListPageRoute } from "#shared/cache-routes";
 
 const PAGE_S_MAXAGE = siteConfig.build.pageCacheSeconds;
 const LIST_S_MAXAGE = siteConfig.build.listPageCacheSeconds;

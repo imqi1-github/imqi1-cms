@@ -1,6 +1,6 @@
 import { getQuery, getRequestPath, sendRedirect, setResponseHeader } from "h3";
 
-import { canonicalSearch, isCdnCachedPage } from "#server/utils/cache-routes";
+import { canonicalSearch, isCdnCachedPage } from "#shared/cache-routes";
 
 /**
  * 把带推广参数的请求规范化到「唯一 URL」。

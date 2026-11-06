@@ -3,6 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { contentTagMids, relatedContentPagePaths } from "#server/utils/content-urls";
 import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
@@ -166,9 +167,13 @@ export default defineEventHandler(async event => {
 
   // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
   // 新增文章会让它之后的文章在列表里整体位移（页码变化）→ 刷整个列表目录（低频操作，2 个目录额度）
+  // 新文章可能进入别人页上的「相关文章」卡片（SSR 内嵌）→ 反查真正会展示它的那几页一并刷新
+  const relatedPages = await relatedContentPagePaths(contentRecord.cid, await contentTagMids(contentRecord.cid))
+    .catch(() => []);
   void invalidateContentCaches({
     routes: CONTENT_CACHE_ROUTES,
     contentCids: [contentRecord.cid],
+    contentPaths: relatedPages,
     edgeDirectories: LIST_EDGE_DIRECTORIES,
   }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
 

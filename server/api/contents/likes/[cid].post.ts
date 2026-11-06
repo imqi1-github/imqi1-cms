@@ -3,7 +3,7 @@ import { computeLikeFingerprint, isLikeRateLimited } from "#server/utils/likes";
 import { getClientIp } from "#server/utils/client-ip";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentArticlePaths } from "#server/utils/content-urls";
-import { LIKES_CACHE_ROUTES } from "#shared/constants";
+import { COMMENT_CACHE_ROUTES } from "#shared/constants";
 import type { LikeToggleResponse } from "#server/types/apis/content/likes";
 
 /** 文章自身的站内路径（用于边缘刷新） */
@@ -128,12 +128,15 @@ export default defineEventHandler(async event => {
       },
     };
 
-    // 点赞数会渲染进文章页 SSR HTML（likeCount）→ 文章页必须精确刷新，否则 6 小时内一直显示旧数
-    // 列表页角标靠 60 秒短 TTL 收敛（清源站缓存即可，不必刷边缘，省额度）
+    // 点赞数会渲染进文章页 SSR HTML（likeCount）→ 这篇文章页必须刷新，否则 6 小时内一直显示旧数。
+    // 文章页按**精确路径**失效：按 /content/** 通配清会把全站文章页逼出 Shiki 重渲染。
+    // 列表页角标：清源站缓存即可（边缘 15 秒短 TTL 会重新回源取到新渲染），不刷边缘（省额度）。
+    const articlePaths = await articlePathsOf(cid);
     void invalidateContentCaches({
-      routes: LIKES_CACHE_ROUTES,
+      routes: COMMENT_CACHE_ROUTES,
+      sourcePaths: articlePaths,
       edgeRoutes: [],
-      edgePaths: await articlePathsOf(cid),
+      edgePaths: articlePaths,
     }).catch(err => console.error("[cache] 点赞失效缓存失败", err));
 
     return payload;

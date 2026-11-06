@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { invalidateContentCaches } from "./content-cache";
+import { contentTagMids, relatedContentPagePaths } from "./content-urls";
 import { log } from "./log";
 
 import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
@@ -52,9 +53,18 @@ export async function runScheduledPublish(now: Date = new Date()): Promise<Sched
 
   // 失效 ISR 缓存：发布影响首页/分类/标签/详情/归档/站点地图，与 article CRUD 一致
   // 批量发布 → 列表页码位移 → 刷整个列表目录
-  void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentCids: cids, edgeDirectories: LIST_EDGE_DIRECTORIES }).catch(err =>
-    console.error("[cache] 定时发布失效缓存失败", err),
-  );
+  // 刚发布的文章开始进入别人页上的「相关文章」卡片 → 反查这些页一并刷新
+  const relatedPages = (await Promise.all(
+    cids.map(cid => contentTagMids(cid)
+      .then(tagMids => relatedContentPagePaths(cid, tagMids))
+      .catch(() => [])),
+  )).flat();
+  void invalidateContentCaches({
+    routes: CONTENT_CACHE_ROUTES,
+    contentCids: cids,
+    contentPaths: relatedPages,
+    edgeDirectories: LIST_EDGE_DIRECTORIES,
+  }).catch(err => console.error("[cache] 定时发布失效缓存失败", err));
 
   return { publishedCids: cids, scannedAt: now };
 }

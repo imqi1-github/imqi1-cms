@@ -4,7 +4,7 @@ import { validateCsrfToken } from "#server/utils/csrf";
 import { logAdminAudit } from "#server/utils/audit";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentArticlePaths } from "#server/utils/content-urls";
-import { CSRF_HEADER, LIKES_CACHE_ROUTES } from "#shared/constants";
+import { COMMENT_CACHE_ROUTES, CSRF_HEADER } from "#shared/constants";
 
 /** 文章自身的站内路径（用于边缘刷新） */
 async function articlePathsOf(cid: number): Promise<string[]> {
@@ -60,11 +60,13 @@ export default defineEventHandler(async event => {
 
     await prisma.likes.delete({ where: { id } });
 
-    // 点赞数进了文章页 SSR HTML → 文章页要精确刷新；列表角标靠 60 秒短 TTL 收敛
+    // 点赞数进了文章页 SSR HTML → 只精确刷新这一篇；列表角标清源站缓存、靠 15 秒短 TTL 收敛
+    const articlePaths = await articlePathsOf(cid);
     void invalidateContentCaches({
-      routes: LIKES_CACHE_ROUTES,
+      routes: COMMENT_CACHE_ROUTES,
+      sourcePaths: articlePaths,
       edgeRoutes: [],
-      edgePaths: await articlePathsOf(cid),
+      edgePaths: articlePaths,
     }).catch(err => console.error("[cache] 点赞删除失效缓存失败", err));
 
     logAdminAudit({

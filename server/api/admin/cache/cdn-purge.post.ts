@@ -12,6 +12,10 @@ import type { CdnPurgeBody, CdnPurgeResponse } from "#server/types/apis/cache";
  * 写库后已自动刷新受影响的页面（见 server/utils/content-cache.ts），这里是给运营手动兜底：
  * 改了站外配置、发现某个页面没更新、或换 CDN 规则后想立刻生效时用。
  */
+
+/** 单次刷新的目标条数上限：再多就分批串行提交，接口会长时间挂着且白烧当天额度 */
+const MAX_PURGE_TARGETS = 500;
+
 export default defineEventHandler(async event => {
   const body = await readBody<CdnPurgeBody>(event);
   const { csrfToken, action, routes, urls, jobId } = body ?? {};
@@ -84,6 +88,11 @@ async function runPurge(
     if (!list.length) {
       throw createError({ statusCode: 400, message: "请填写要刷新的 URL" });
     }
+    // 条数上限：超额部分会被 provider 按当日额度截断，剩下的仍按批串行提交（每批 15s 超时），
+    // 条数一大后台请求就长时间挂着，还白烧当天额度
+    if (list.length > MAX_PURGE_TARGETS) {
+      throw createError({ statusCode: 400, message: `一次最多刷新 ${MAX_PURGE_TARGETS} 个目标` });
+    }
     // EdgeOne 的精确 URL 必须带协议，否则任务会被判非法目标
     const invalid = list.filter(url => !/^https?:\/\//i.test(url));
     if (invalid.length) {
@@ -96,6 +105,9 @@ async function runPurge(
     const list = toStringList(routes);
     if (!list.length) {
       throw createError({ statusCode: 400, message: "请选择要刷新的页面" });
+    }
+    if (list.length > MAX_PURGE_TARGETS) {
+      throw createError({ statusCode: 400, message: `一次最多刷新 ${MAX_PURGE_TARGETS} 个目标` });
     }
     return runCdnPurge(provider, () => provider.purgeRoutes(list), { 来源: "后台手动", 路由: list.join(",") });
   }

@@ -3,7 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { contentUrlPaths } from "#server/utils/content-urls";
+import { contentTagMids, contentUrlPaths, relatedContentPagePaths } from "#server/utils/content-urls";
 import { logAdminAudit } from "#server/utils/audit";
 import { CSRF_HEADER, CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 
@@ -63,6 +63,9 @@ export default defineEventHandler(async event => {
       select: { aid: true },
     });
 
+    // 删除前反查：别人页上的「相关文章」卡片还挂着这篇文章，删完就查不到引用关系了
+    const relatedPages = await relatedContentPagePaths(contentId, await contentTagMids(contentId)).catch(() => []);
+
     await prisma.contents.delete({
       where: { cid: contentId },
     });
@@ -71,8 +74,8 @@ export default defineEventHandler(async event => {
 
     // 删除后 cid 已查不到，URL 必须删除前算好，避免退回目录刷新
     const contentPaths = target
-      ? [...contentUrlPaths(target), `/api/related-contents/${contentId}`]
-      : [];
+      ? [...contentUrlPaths(target), `/api/related-contents/${contentId}`, ...relatedPages]
+      : relatedPages;
     // 删除文章 → 后续文章页码整体位移 → 刷整个列表目录
     void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentPaths, edgeDirectories: LIST_EDGE_DIRECTORIES }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
 
