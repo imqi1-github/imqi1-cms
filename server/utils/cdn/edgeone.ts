@@ -13,6 +13,7 @@
 import { CdnProviderBase, type CdnProviderOptions } from "./base";
 import { signTencentCloudRequest } from "./tencent-signature";
 
+import { log } from "#server/utils/log";
 import type { CdnPurgeOptions, CdnPurgeResult, CdnQuotaBucket, CdnQuotaInfo } from "#server/types/utils/cdn";
 
 const SERVICE = "teo";
@@ -73,6 +74,18 @@ const QUOTA_CACHE_MS = 60_000;
 /** 额度快照（模块级，跨 provider 实例共享同一份，避免每个请求都打配额接口） */
 let quotaSnapshot: { at: number; info: CdnQuotaInfo } | null = null;
 
+/**
+ * 部分提交时的轮转游标（累计已提交的目标数）。
+ *
+ * 额度不足时若每次都提交同一批目标的前 N 个，后面的目标会**永远刷不到**：
+ * 内容挂满边缘 TTL，而提交是成功的 → 没有任何告警，只能靠肉眼发现个别页面不更新。
+ * 轮转后每个目标都有机会被刷到。
+ */
+let purgeCursor = 0;
+
+/** 额度预警：剩余不足 20% 时每天告警一次（别等到耗尽才发现内容不更新了） */
+let lowQuotaWarnedDay = "";
+
 /** 重置额度快照缓存（测试用；改了站点/套餐也应调） */
 export function resetCdnQuotaCache(): void {
   quotaSnapshot = null;
@@ -83,6 +96,41 @@ function quotaBucketFor(quota: CdnQuotaInfo, type: EdgeOnePurgeType): CdnQuotaBu
   if (type === "purge_url") return quota.url;
   if (type === "purge_all") return quota.all;
   return quota.prefix;
+}
+
+/** 额度池的中文名（告警用） */
+const BUCKET_LABEL: Record<EdgeOnePurgeType, string> = {
+  purge_url: "URL",
+  purge_prefix: "目录",
+  purge_host: "主机",
+  purge_all: "整站",
+};
+
+/**
+ * 额度预警：剩余不足 20% 时每天告警一次。
+ *
+ * 额度用尽后当天的内容变更**不再即时生效**（内容页挂到边缘 TTL 到期），
+ * 等到用尽才发现就晚了 → 提前留痕，留出人工介入的窗口。
+ */
+function warnLowQuota(quota: CdnQuotaInfo): void {
+  const day = new Date().toISOString().slice(0, 10);
+  if (lowQuotaWarnedDay === day) return;
+  const buckets: [EdgeOnePurgeType, CdnQuotaBucket | null][] = [
+    ["purge_url", quota.url],
+    ["purge_prefix", quota.prefix],
+    ["purge_all", quota.all],
+  ];
+  for (const [type, bucket] of buckets) {
+    if (!bucket || !bucket.daily) continue;
+    const ratio = bucket.dailyAvailable / bucket.daily;
+    if (ratio > 0.2) continue;
+    lowQuotaWarnedDay = day;
+    log.error(
+      `[cdn] 刷新额度即将耗尽：${BUCKET_LABEL[type]}池剩余 ${bucket.dailyAvailable}/${bucket.daily}（${(ratio * 100).toFixed(0)}%）`,
+      { note: "额度用尽后当天的内容变更不再即时生效（内容页挂到边缘 TTL 到期），可在后台「缓存管理」手动刷新" },
+    );
+    return;
+  }
 }
 
 export class EdgeOneCdnProvider extends CdnProviderBase {
@@ -166,7 +214,10 @@ export class EdgeOneCdnProvider extends CdnProviderBase {
     if (quotaSnapshot && now - quotaSnapshot.at < QUOTA_CACHE_MS) return quotaSnapshot.info;
     try {
       const info = await this.describeQuota();
-      if (info) quotaSnapshot = { at: now, info };
+      if (info) {
+        quotaSnapshot = { at: now, info };
+        warnLowQuota(info);
+      }
       return info;
     } catch {
       return null;
@@ -192,12 +243,17 @@ export class EdgeOneCdnProvider extends CdnProviderBase {
     const bucket = quota ? quotaBucketFor(quota, type) : null;
     const batchSize = Math.max(1, Math.min(this.batchSize, bucket?.batch ?? this.batchSize));
 
-    // 额度预检：不够就只提交额度内的部分（整批提交会被拒，全部落空更糟）
+    // 额度预检：不够就只提交额度内的部分（整批提交会被拒，全部落空更糟）。
+    // **轮转**：每次都取前 N 个会让同一批目标永远排在前面、后面的永远刷不到
+    // （内容挂满 TTL，且提交是成功的、没有告警）。用累计游标保证轮着来。
     let submitTargets = targets;
     let truncated = 0;
     if (bucket && type !== "purge_all" && targets.length > bucket.dailyAvailable) {
       truncated = targets.length - bucket.dailyAvailable;
-      submitTargets = targets.slice(0, bucket.dailyAvailable);
+      const start = purgeCursor % targets.length;
+      const rotated = [...targets.slice(start), ...targets.slice(0, start)];
+      submitTargets = rotated.slice(0, bucket.dailyAvailable);
+      purgeCursor = (start + submitTargets.length) % targets.length;
     }
 
     if (!submitTargets.length && targets.length) {
@@ -235,7 +291,7 @@ export class EdgeOneCdnProvider extends CdnProviderBase {
     const notes: string[] = [];
     if (jobIds.length > 1) notes.push(`分 ${batches.length} 批提交`);
     if (truncated > 0) {
-      notes.push(`今日额度不足，仅刷新 ${submitTargets.length} 个目标（${truncated} 个未提交，将由 TTL 自然更新）`);
+      notes.push(`今日额度不足，仅刷新 ${submitTargets.length} 个目标（${truncated} 个未提交，将由 TTL 自然更新；已轮转，下次变更优先刷未提交过的目标）`);
     }
 
     return {

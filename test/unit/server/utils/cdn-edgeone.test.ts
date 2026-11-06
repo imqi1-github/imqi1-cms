@@ -177,6 +177,26 @@ describe("EdgeOne 刷新额度（套餐按天计，单位是资源条目数）",
     expect((purgeTasks()[0]!.payload.Targets as string[]).length).toBe(1);
   });
 
+  test("额度不足时轮转提交：同一批目标不会被反复跳过（后面的目标也有机会刷到）", async () => {
+    quotaBody = {
+      Response: {
+        PurgeQuota: [
+          { Type: "purge_url", Batch: 500, Daily: 1000, DailyAvailable: 1 },
+          { Type: "purge_prefix", Batch: 50, Daily: 50, DailyAvailable: 0 },
+        ],
+      },
+    };
+    const urls = ["https://imqi1.com/a", "https://imqi1.com/b", "https://imqi1.com/c"];
+    const provider = makeProvider();
+    await provider.purgeUrls(urls);
+    const first = (purgeTasks()[0]!.payload.Targets as string[])[0];
+    await provider.purgeUrls(urls);
+    const second = (purgeTasks()[1]!.payload.Targets as string[])[0];
+    // 每次都取前 N 个 → 后面的目标永远刷不到（内容挂满 TTL 且没有任何告警）
+    expect(second).not.toBe(first);
+    expect(urls).toContain(second);
+  });
+
   test("额度为 0 时不提交任务，并给出可读原因", async () => {
     quotaBody = {
       Response: {

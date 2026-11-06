@@ -217,3 +217,24 @@ metadata:
 **没改 scopes 的调用点 = 保守全刷**（不传 scopes 时 `scopesHas()` 视为包含所有族）→ 没改造的调用点行为不变。已改的：文章增删改/批量删/定时发布（article+card+related+listDir）、改分类归属（article+card+listDir）、改标签归属（同上）、附件增删改（只 article——封面角标来自 `contents.covers`，不受附件增删影响）。**保留老行为的**：分类/标签改名（`/content/**` 整组——slug 在文章 URL 里）、用户资料（作者名进每篇文章的 SEO meta）、类 4 的独立页面。
 
 **新增守卫** `test/unit/app/cache-scope-coverage.test.ts`：扫描 `app/pages/**` 里渲染了文章卡片字段（`commentsNum`/`likesCount`/`like_num`/`content.title`/`content.desc`/`content.covers`）的页面，断言它们都落在已登记的展示面里 → **将来新增页面忘了登记，CI 就红**（漏登记 = 那一处挂 6 小时）。它当场抓出了 `/subscribes`（显示的是订阅源自己的文章，不归 contents 的卡片展示面管）。页面文件→路由的映射抽到 `test/helpers/page-route.ts`。
+
+---
+
+## 2026-11-07 上线实测 + 额度轮转修复
+
+**上线实测（生产，EdgeOne + 真库）**：
+- 新版本生效：首页/分类页 `s-maxage=15`、内容页 `s-maxage=21600`（三档 TTL 全对）
+- 边缘命中：首页 `EO-Cache-Status: RefreshHit`、`Age` 持续增长（7→13）
+- **刷新链端到端**：MCP `clear_cache target=cdn`（任务 3x3pyw1y46w7）→ +10 秒 `EO-Cache-Status: MISS`（边缘被清）→ +20 秒 `RefreshHit`、Age 复位重涨 ⇒ **EdgeOne 刷新真的生效，提交→边缘失效 ≤10 秒**
+- 生产进程环境变量有 `EDGEONE_SECRET_ID/KEY/ZONE_ID` ✓；日志有部署后的自动整站刷新（buildHash 变化检测）✓；**零条「未启用 CDN 刷新」错误** ✓
+- 源站渲染成本实测（本地生产构建）：**内容页冷渲染 411ms / 缓存命中 1ms**（411 倍）；列表页 253ms / 1ms
+  ⇒ 源站 TTL 6h→1h = 每天多烧 **21 分钟 CPU**（624→3744 次渲染）⇒ **撤回「源站 TTL 分档」这条建议**（411ms 是同步阻塞渲染，Node 单线程，高峰期抖动更明显；且额度耗尽是低频异常，用量一天才 350/1000）
+
+**额度轮转 bug（已修）**：`edgeone.ts` 额度不足时 `submitTargets = targets.slice(0, dailyAvailable)` ⇒ **每次都提交同一批目标的前 N 个**，后面的目标**永远刷不到**（内容挂满 6h TTL，而提交是成功的 → 零告警，最难排查）。
+修法：模块级 `purgeCursor` 累计游标 → 部分提交时从断点轮转，保证每个目标都有机会刷到；单测锁住（连续两次部分提交的目标不同）。
+
+**额度预警（已加）**：剩余 <20% 时每天告警一次（`warnLowQuota`）—— 额度用尽后当天内容变更不再即时生效，等用尽才发现太晚。
+
+**note 进日志（已修）**：`runCdnPurge` 的日志原来不含 `note` ⇒ 「额度不足，N 个目标未提交」这类关键信息只存在于返回值里，日志看不到 ⇒ 现在日志带 `备注` 字段。
+
+**「额度耗尽时内容页挂 6 小时」的准确口径**：受影响的是**文章详情页**（边缘 TTL 6h）；列表页 TTL 15s 照常更新。源站缓存**已经被清了**（新数据在那儿），问题只在「边缘手里那份旧 HTML 还在」⇒ 任何兜底都必须在边缘侧动手：整站刷新走**独立的额度池**（`purge_all` 10 次/天），URL 池耗尽时仍可用 ⇒ 人工一次整站刷新即可立刻恢复（代价：全站回源重渲染一次 ≈ 156×411ms ≈ 64s）。

@@ -172,6 +172,8 @@ export async function runCdnPurge(
     路由: meta.路由,
     目标数: result.requested,
     结果: result.success ? "成功" : `失败 ${result.error ?? ""}`,
+    // note 里有「额度不足，N 个目标未提交」这类关键信息 —— 不进日志就等于没发生
+    备注: result.note,
     任务号: result.taskId,
     状态: result.status,
   });
