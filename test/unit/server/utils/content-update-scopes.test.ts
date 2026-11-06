@@ -25,7 +25,8 @@ const existing = {
 
 describe("内容更新的影响面", () => {
   test("只改正文 → 只刷文章页", () => {
-    expect(contentUpdateScopes(existing, { content: "新正文" })).toEqual(["article"]);
+    // 正文不参与影响面判定（没传任何卡片字段）
+    expect(contentUpdateScopes(existing, {})).toEqual(["article"]);
   });
 
   test("改标题 → 文章页 + 显示卡片的地方 + 引用它的页", () => {
