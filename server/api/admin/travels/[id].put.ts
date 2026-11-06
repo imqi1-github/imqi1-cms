@@ -90,6 +90,12 @@ export default defineEventHandler(async event => {
       });
     }
 
+    // 旧关联文章：改名/改关联后旧文章页也要失效（文章页渲染了地点名）
+    const oldCids = ((await prisma.contenttravels.findMany({
+      where: { travel_id: id },
+      select: { cid: true },
+    })) ?? []).map(row => row.cid);
+
     // 更新地点基础字段 + 关联全量同步需原子：任一步失败整体回滚，避免「主信息已改、关联未同步」
     await prisma.$transaction(async tx => {
       await tx.travels.update({
@@ -124,7 +130,11 @@ export default defineEventHandler(async event => {
     });
 
     // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES }).catch(err => console.error("[cache] 旅行更新失效缓存失败", err));
+    // 关联文章页渲染了地点名/关联列表 → 一并失效（旧关联也要）
+    void invalidateContentCaches({
+      routes: TRAVEL_CACHE_ROUTES,
+      contentCids: Array.from(new Set([...oldCids, ...(Array.isArray(cids) ? cids.map(Number).filter(n => Number.isInteger(n) && n > 0) : [])])),
+    }).catch(err => console.error("[cache] 旅行更新失效缓存失败", err));
 
     return { success: true };
   } catch (error) {

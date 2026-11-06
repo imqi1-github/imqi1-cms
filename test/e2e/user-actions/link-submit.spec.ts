@@ -22,7 +22,12 @@ test("游客申请友链(检测失败后强制提交)", async ({ page, request }
     // 未开启 → 直接入库待审核。toast 4s 自动消失,不能串行等待,必须 or() 竞速
     const toast = page.getByText("申请友链成功");
     const forceBtn = page.getByRole("button", { name: "仍然提交" });
-    await expect(toast.or(forceBtn)).toBeVisible({ timeout: 20_000 });
+    // 公开申请接口限流:每 IP 每小时 3 次 → 反复跑套件会撞上,属环境额度而非功能缺陷
+    const rateLimited = page.getByText("请求过于频繁");
+    await expect(toast.or(forceBtn).or(rateLimited)).toBeVisible({ timeout: 20_000 });
+    if (await rateLimited.isVisible()) {
+      test.skip(true, "友链申请接口本小时额度已用尽（每 IP 3 次），跳过");
+    }
     if (await forceBtn.isVisible()) {
       await forceBtn.click();
       await expect(toast).toBeVisible({ timeout: 20_000 });

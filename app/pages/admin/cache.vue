@@ -441,32 +441,31 @@ async function checkCdnStatus() {
         </Card>
       </section>
 
-      <!-- ============ 分组二：源站缓存（Redis） ============ -->
+      <!-- ============ 分组二：源站缓存 ============ -->
       <section class="space-y-3">
         <h3 class="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Icon name="lucide:database" class="size-4" />
-          源站缓存（Redis）
+          源站缓存
         </h3>
-        <!-- 不可用原因：只说一次，四张卡共用 -->
+        <!-- 未配置 Redis 时说明缓存落到哪：文件缓存 + 进程内内存，仍可手动清 -->
         <div
           v-if="!redisReady"
           class="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-muted-foreground"
         >
           <Icon name="lucide:info" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <p>
-            未配置 Redis，以下操作全部不可用：它们清的是 Redis 里的键。当前源站缓存改走文件缓存
-            （<code>.nitro/cache</code>），由内容变更自动失效，无需手动清理；
-            <strong>CDN 边缘缓存不受影响</strong>。
+            未配置 Redis：页面缓存落在文件缓存（<code>.nitro/cache</code>），搜索/足迹等短期缓存落在进程内内存，
+            下面的清理依然可用；<strong>CDN 边缘缓存请用上方「CDN 边缘缓存」分组刷新</strong>。
           </p>
         </div>
 
         <!-- 一键清空 -->
-        <Card :class="{ 'opacity-60': !redisReady }">
+        <Card>
           <CardHeader>
             <CardTitle>一键清空</CardTitle>
             <CardDescription>
-              清空整个 Redis 数据库（FLUSHDB），包含源站缓存与各类计数；不影响 CDN 边缘缓存
-              <span v-if="!redisReady" class="ml-1 text-amber-600 dark:text-amber-400">（未配置 Redis）</span>
+              清空整个 Redis 数据库（FLUSHDB）+ 源站页面缓存 + 进程内计数，并提交一次 CDN 边缘刷新
+              <span v-if="!redisReady" class="ml-1 text-amber-600 dark:text-amber-400">（未配置 Redis：只清文件缓存与进程内缓存）</span>
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
@@ -476,7 +475,7 @@ async function checkCdnStatus() {
                 此操作会清空<strong class="text-destructive">所有</strong> Redis 数据，包括页面缓存、搜索缓存、图标缓存等。图标与页面在访问后会自动重建，但操作不可撤销，请谨慎。
               </div>
             </div>
-            <Button variant="destructive" :disabled="!redisReady || clearingAll" @click="showAllDialog = true">
+            <Button variant="destructive" :disabled="clearingAll" @click="showAllDialog = true">
               <Icon
                 :name="clearingAll ? 'lucide:loader-2' : 'lucide:trash-2'"
                 :class="{ 'animate-spin': clearingAll }"
@@ -488,12 +487,11 @@ async function checkCdnStatus() {
         </Card>
 
         <!-- 自定义缓存（非 ISR）：前台接口自己写的缓存，由这里统一管理 -->
-        <Card :class="{ 'opacity-60': !redisReady }">
+        <Card>
           <CardHeader>
             <CardTitle>自定义缓存（非 ISR）</CardTitle>
             <CardDescription>
               前台各接口自己写入、非 Nuxt 页面缓存的缓存：搜索关键词结果、足迹地理位置
-              <span v-if="!redisReady" class="ml-1 text-amber-600 dark:text-amber-400">（未配置 Redis）</span>
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
@@ -505,7 +503,7 @@ async function checkCdnStatus() {
                   热门关键词的结果缓存为 <code>search:&lt;关键词&gt;:&lt;类型&gt;</code>，内容更新后清除
                 </p>
               </div>
-              <Button variant="outline" :disabled="!redisReady || clearingSearch" @click="clearSearchCache">
+              <Button variant="outline" :disabled="clearingSearch" @click="clearSearchCache">
                 <Icon
                   :name="clearingSearch ? 'lucide:loader-2' : 'lucide:eraser'"
                   :class="{ 'animate-spin': clearingSearch }"
@@ -523,7 +521,7 @@ async function checkCdnStatus() {
                   访客分布聚合（<code>custom:footprint</code>），访客分布更新后清除
                 </p>
               </div>
-              <Button variant="outline" :disabled="!redisReady || clearingFootprint" @click="clearFootprint">
+              <Button variant="outline" :disabled="clearingFootprint" @click="clearFootprint">
                 <Icon
                   :name="clearingFootprint ? 'lucide:loader-2' : 'lucide:map'"
                   :class="{ 'animate-spin': clearingFootprint }"
@@ -536,12 +534,11 @@ async function checkCdnStatus() {
         </Card>
 
         <!-- 按类别清理 -->
-        <Card :class="{ 'opacity-60': !redisReady }">
+        <Card>
           <CardHeader>
             <CardTitle>按类别清理</CardTitle>
             <CardDescription>
-              只清理某一类前台页面的 ISR 缓存，不影响其他类别
-              <span v-if="!redisReady" class="ml-1 text-amber-600 dark:text-amber-400">（未配置 Redis）</span>
+              只清理某一类前台页面的源站缓存，不影响其他类别
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -550,7 +547,7 @@ async function checkCdnStatus() {
                 v-for="cat in categories"
                 :key="cat.keyword"
                 variant="outline"
-                :disabled="!redisReady || clearingPreset !== null"
+                :disabled="clearingPreset !== null"
                 :title="cat.desc"
                 @click="clearPreset(cat.keyword, cat.label)"
               >
@@ -567,12 +564,11 @@ async function checkCdnStatus() {
         </Card>
 
         <!-- 自定义关键词 -->
-        <Card :class="{ 'opacity-60': !redisReady }">
+        <Card>
           <CardHeader>
             <CardTitle>自定义关键词</CardTitle>
             <CardDescription>
               按键名子串匹配删除（类似宝塔面板搜键），会删除所有键名包含该词的缓存
-              <span v-if="!redisReady" class="ml-1 text-amber-600 dark:text-amber-400">（未配置 Redis）</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -580,10 +576,9 @@ async function checkCdnStatus() {
               <Input
                 v-model="customKeyword"
                 placeholder="例如 sitemap、content、about"
-                :disabled="!redisReady"
                 @keyup.enter="clearKeyword"
               />
-              <Button :disabled="!redisReady || clearingKeyword" @click="clearKeyword">
+              <Button :disabled="clearingKeyword" @click="clearKeyword">
                 <Icon
                   :name="clearingKeyword ? 'lucide:loader-2' : 'lucide:search'"
                   :class="{ 'animate-spin': clearingKeyword }"

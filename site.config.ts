@@ -58,17 +58,10 @@ export const siteConfig = defineSiteConfig({
   build: {
     brotliCompression: true,
     statsHtml: false,
-    // 页面缓存时长（秒）：源站缓存与 CDN 边缘缓存都用这个值。
-    // 内容变更靠写库后的精确失效传播，不靠 TTL，所以可以设得很长（6 小时）。
     pageCacheSeconds: 21600,
-    // 列表/统计页的边缘 TTL（秒）：首页/分类/标签/归档/关于/站点地图内嵌评论数等聚合数据，
-    // 写库后不提交边缘刷新，靠这个短 TTL 自然收敛（把刷新额度留给内容页）。
-    // 源站缓存仍按 pageCacheSeconds（长），写库时照旧删对应缓存键。
-    listPageCacheSeconds: 60,
-    // Redis：仅生产构建生效（开发恒不启用），改完需重新打包；不启用时 ISR 退文件系统、搜索缓存关闭
+    listPageCacheSeconds: 15,
     redis: {
       enabled: false,
-      // 本机部署填 127.0.0.1；Docker 部署由构建参数覆盖，改这里对 Docker 无效
       host: "127.0.0.1",
       port: 6379,
       db: 0,

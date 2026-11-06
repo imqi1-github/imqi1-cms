@@ -2,7 +2,23 @@ import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { logAdminAudit } from "#server/utils/audit";
-import { CSRF_HEADER } from "#shared/constants";
+import { invalidateContentCaches } from "#server/utils/content-cache";
+import { contentArticlePaths } from "#server/utils/content-urls";
+import { CSRF_HEADER, LIKES_CACHE_ROUTES } from "#shared/constants";
+
+/** 文章自身的站内路径（用于边缘刷新） */
+async function articlePathsOf(cid: number): Promise<string[]> {
+  const rows = (await prisma.contents.findMany({
+    where: { cid },
+    select: {
+      cid: true,
+      slug: true,
+      type: true,
+      contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+    },
+  })) ?? [];
+  return rows.flatMap(row => contentArticlePaths(row));
+}
 
 /**
  * DELETE /api/admin/likes/[cid]/[id] —— 后台单条删除点赞（清理刷赞 / 误操作 / 测试残留）。
@@ -44,8 +60,12 @@ export default defineEventHandler(async event => {
 
     await prisma.likes.delete({ where: { id } });
 
-    // 同 likes/[cid].post：不再失效页面缓存（整组 /content/** 清空会逼出 Shiki 全量重渲染），
-    // 前台数字由详情页挂载刷新 / 列表角标 ISR 窗口内收敛；后台数字本接口 no-store 实时。
+    // 点赞数进了文章页 SSR HTML → 文章页要精确刷新；列表角标靠 60 秒短 TTL 收敛
+    void invalidateContentCaches({
+      routes: LIKES_CACHE_ROUTES,
+      edgeRoutes: [],
+      edgePaths: await articlePathsOf(cid),
+    }).catch(err => console.error("[cache] 点赞删除失效缓存失败", err));
 
     logAdminAudit({
       actor: { uid: user.uid, name: user.name },

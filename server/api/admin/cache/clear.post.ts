@@ -1,44 +1,21 @@
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { redis } from "#server/utils/redis";
+import { cacheClearByPrefix, cacheClearBySubstring } from "#server/utils/cache/store";
+import { clearMemoryLoginLocks } from "#server/utils/login-rate-limit";
+import { clearMemoryRateLimits } from "#server/utils/rate-limit";
+import { clearSourceCacheByKeyword } from "#server/utils/source-cache";
+import { invalidateContentCaches } from "#server/utils/content-cache";
 import type { CacheClearBody, CacheClearResponse } from "#server/types/apis/cache";
 import { logAdminAudit } from "#server/utils/audit";
 
-// SCAN 游标遍历 + UNLINK 非阻塞删除，避免大 key 阻塞 Redis
-// redis 网络断开/连接错误时,scan 抛错 → catch + 返回 -1(哨兵值)让上层区分"网络故障"
-// 与"没找到任何 key"返 0 区分(0 = 真没匹配;-1 = redis 不可用)
-async function scanAndUnlink(pattern: string): Promise<number> {
-  if (!redis) {
-    return 0;
-  }
-  try {
-    let cursor = "0";
-    let removed = 0;
-    do {
-      const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200);
-      cursor = next;
-      if (keys.length > 0) {
-        await redis.unlink(...keys);
-        removed += keys.length;
-      }
-    } while (cursor !== "0");
-    return removed;
-  } catch (error) {
-    console.error("[cache/clear] scanAndUnlink 失败:", error);
-    return -1; // -1 = redis 不可用
-  }
-}
-
-// 按关键词子串匹配删除（与宝塔面板搜键一致）：删除所有键名包含该词的缓存
-async function clearBySubstring(keyword: string): Promise<number> {
-  // 去掉通配符，避免注入异常 pattern
-  const safe = keyword.replace(/[\\*?[\]]/g, "");
-  if (!safe) {
-    return 0;
-  }
-  return scanAndUnlink(`*${safe}*`);
-}
-
+/**
+ * 后台缓存清理。
+ *
+ * 三层缓存各有各的键空间：源站页面缓存（Nitro 缓存组，Redis 或文件）、
+ * 短期缓存（搜索/足迹/限流，Redis 或进程内内存）、CDN 边缘缓存（不在本进程，走刷新接口）。
+ * 这里能清前两层；边缘缓存走 /api/admin/cache/cdn-purge。
+ */
 export default defineEventHandler(async event => {
   const body = await readBody<CacheClearBody>(event);
   const { csrfToken, action, value } = body ?? {};
@@ -60,19 +37,13 @@ export default defineEventHandler(async event => {
     });
   }
 
-  // Redis 未配置
-  if (!redis) {
-    return {
-      success: false,
-      matched: 0,
-      cleared: 0,
-      message: "未配置 Redis 连接，无需清理",
-    } satisfies CacheClearResponse;
-  }
-
   try {
     if (action === "all") {
-      await redis.flushdb();
+      if (redis) await redis.flushdb();
+      // 源站页面缓存清空 + 触发一次边缘刷新（否则边缘仍是旧 HTML）
+      await invalidateContentCaches();
+      clearMemoryRateLimits();
+      clearMemoryLoginLocks();
       await logAdminAudit({
         actor: { uid: user.uid, name: user.name },
         action: "cache.clear",
@@ -82,50 +53,23 @@ export default defineEventHandler(async event => {
         success: true,
         matched: -1,
         cleared: -1,
-        note: "已清空整个 Redis 数据库（含图标缓存，页面访问后会自动重建）",
+        note: "已清空源站缓存与进程内短期缓存，并提交一次 CDN 边缘刷新（边缘缓存需另行刷新）",
       } satisfies CacheClearResponse;
     }
 
-    // 仅清自定义搜索缓存：search.get.ts 写入的 search:${q}:${type} 键，前缀精确匹配，
-    // 不碰 Nuxt 页面/ISR 缓存（与缓存管理页"搜索"预设的 *search* 子串匹配区分开）
+    // 仅清自定义搜索缓存：search.get.ts 写入的 search:${q}:${type} 键（前缀精确匹配）
     if (action === "search") {
-      const total = await scanAndUnlink("search:*");
-      if (total === -1) {
-        return {
-          success: false,
-          matched: -1,
-          cleared: -1,
-          message: "Redis 不可用,无法执行清理",
-        } satisfies CacheClearResponse;
-      }
-      return {
-        success: true,
-        matched: total,
-        cleared: total,
-        note: total === 0 ? "没有匹配的搜索缓存键" : undefined,
-      } satisfies CacheClearResponse;
+      const total = await cacheClearByPrefix(["search:"]);
+      return clearedResponse(total, "没有匹配的搜索缓存键");
     }
 
-    // 自定义缓存：足迹地理位置等（footprint.get.ts 写入 custom:* 前缀，非 ISR）
+    // 自定义缓存：足迹地理位置等（footprint.get.ts 写入 custom:footprint 前缀，非 ISR）
     if (action === "footprint") {
-      const total = await scanAndUnlink("custom:footprint");
-      if (total === -1) {
-        return {
-          success: false,
-          matched: -1,
-          cleared: -1,
-          message: "Redis 不可用,无法执行清理",
-        } satisfies CacheClearResponse;
-      }
-      return {
-        success: true,
-        matched: total,
-        cleared: total,
-        note: total === 0 ? "没有匹配的足迹缓存键" : undefined,
-      } satisfies CacheClearResponse;
+      const total = await cacheClearByPrefix(["custom:footprint"]);
+      return clearedResponse(total, "没有匹配的足迹缓存键");
     }
 
-    // preset 与 keyword 都按键名子串匹配删除
+    // preset 与 keyword 都按键名子串匹配删除（源站页面缓存 + 进程内短期缓存）
     if (action === "preset" || action === "keyword") {
       // readBody 仅类型标注无运行时校验：value 可能是数字/对象/数组，直接 .trim() 会抛 TypeError
       const keyword = typeof value === "string" ? value.trim() : "";
@@ -135,21 +79,21 @@ export default defineEventHandler(async event => {
           message: action === "preset" ? "未知的缓存类别" : "请输入关键词",
         });
       }
-      const total = await clearBySubstring(keyword);
-      if (total === -1) {
+      // 剥掉通配符：关键词是子串匹配，不是 glob，传 * 会误删一批键
+      const safe = keyword.replace(/[\\*?[\]]/g, "");
+      if (!safe) {
         return {
-          success: false,
-          matched: -1,
-          cleared: -1,
-          message: "Redis 不可用,无法执行清理",
+          success: true,
+          matched: 0,
+          cleared: 0,
+          note: "关键词只含通配符，未清理任何键",
         } satisfies CacheClearResponse;
       }
-      return {
-        success: true,
-        matched: total,
-        cleared: total,
-        note: total === 0 ? "没有匹配该关键词的缓存键" : undefined,
-      } satisfies CacheClearResponse;
+      const pages = await clearSourceCacheByKeyword(safe);
+      const others = await cacheClearBySubstring(safe);
+      if (others < 0) return redisUnavailable();
+      const total = pages + others;
+      return clearedResponse(total, "没有匹配该关键词的缓存键");
     }
 
     throw createError({ statusCode: 400, message: "未知的操作类型" });
@@ -162,3 +106,24 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 500, message: "缓存清理失败" });
   }
 });
+
+/** 清理结果响应（-1 = Redis 不可用，降级提示而不是报成功） */
+function clearedResponse(total: number, emptyNote: string): CacheClearResponse {
+  if (total < 0) return redisUnavailable();
+  return {
+    success: true,
+    matched: total,
+    cleared: total,
+    note: total === 0 ? emptyNote : undefined,
+  };
+}
+
+/** Redis 不可用时的降级响应 */
+function redisUnavailable(): CacheClearResponse {
+  return {
+    success: false,
+    matched: -1,
+    cleared: -1,
+    message: "Redis 不可用,无法执行清理",
+  };
+}

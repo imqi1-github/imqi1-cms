@@ -3,7 +3,7 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { CONTENT_CACHE_ROUTES } from "#shared/constants";
+import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
@@ -165,7 +165,12 @@ export default defineEventHandler(async event => {
   }
 
   // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-  void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentCids: [contentRecord.cid] }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
+  // 新增文章会让它之后的文章在列表里整体位移（页码变化）→ 刷整个列表目录（低频操作，2 个目录额度）
+  void invalidateContentCaches({
+    routes: CONTENT_CACHE_ROUTES,
+    contentCids: [contentRecord.cid],
+    edgeDirectories: LIST_EDGE_DIRECTORIES,
+  }).catch(err => console.error("[cache] 文章创建失效缓存失败", err));
 
   // 前端保存后只需 cid（跳转/关联），不再回查全字段（含正文）。
   await logAdminAudit({

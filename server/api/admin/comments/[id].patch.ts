@@ -148,7 +148,7 @@ export default defineEventHandler(async event => {
     });
 
     // 评论（含数）变更 → 立即失效首页/分类/标签/详情/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES, contentCids: [comment.cid] }).catch(err => console.error("[cache] 评论审核失效缓存失败", err));
+    void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES, contentCids: [comment.cid], countOnly: true }).catch(err => console.error("[cache] 评论审核失效缓存失败", err));
 
     await logAdminAudit({
 

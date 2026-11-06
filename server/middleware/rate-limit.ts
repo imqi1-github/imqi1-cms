@@ -46,7 +46,9 @@ const RULES: RateRule[] = [
   // 仓库卡片代理：回源 GitHub/Gitee 配额全站共享，防借道刷爆（缓存 24h，正常流量打不到上游）
   { method: "GET", prefix: "/api/repo", limit: 30, windowSec: 60, keyHint: "repo:get" },
   // 友链申请：每小时 3 次（防 spam）
-  { method: "POST", prefix: "/api/links", limit: 3, windowSec: 3600, keyHint: "links:apply" },
+  // 额度可用环境变量放宽：E2E 会反复跑这套用例（同一 IP 连着跑几轮必然撞上限），
+  // 用例侧另有「429 → 跳过」兜底，这里放宽只是让首轮也能真跑通
+  { method: "POST", prefix: "/api/links", limit: Number(process.env.RATE_LIMIT_LINKS_APPLY) || 3, windowSec: 3600, keyHint: "links:apply" },
   // 邮件相关：每小时 10 次（防发件耗尽）
   { method: "POST", prefix: "/api/admin/mail/", limit: 10, windowSec: 3600, keyHint: "admin:mail" },
 ];

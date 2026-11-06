@@ -19,7 +19,7 @@ metadata:
 - 开发环境不挂 routeRules 页面缓存、不下发边缘头（与 `cacheDisabled()` 同口径）。
 - **实测额度（2026-11-05 生产）**：URL 池 1000/天、目录池 50/天、整站 10/天。按「2 篇文章 + 200 评论 + 其他」估算：文章 2×~15 + 评论 200×**0** + 其他 ~30 ≈ **60 URL/天**（余量 16 倍）；若评论也刷那 6 个固定 URL，单这一项就 1200 → 直接超限。
 
-**源站缓存层的精确失效（`server/utils/content-cache.ts` 的 `clearSourceCache`）**：走 `useStorage("cache")` 而非裸 Redis SCAN——**驱动无关**（Redis 关掉后文件缓存照样能精确失效）。键形两套驱动不同：Redis `nitro:routes:_:<frag>.<hash>.json`、文件 `nitro/routes/_/<frag>.<hash>.json`；且**文件驱动的 `getKeys` 无视 base 返回全部键**（Redis 驱动才按 base 过滤）→ 实现要自己再筛缓存组（`isRouteCacheKey`）。键里的片段是**路径**的转义（`/content/cat/slug` → `contentcatslug`），路由片段（`/content/**` → `content`）只是它的**前缀** → 匹配用 `startsWith`。
+**源站缓存层的精确失效（`server/utils/source-cache.ts` 的 `clearSourceCache`）**：走 `useStorage("cache")` 而非裸 Redis SCAN——**驱动无关**（Redis 关掉后文件缓存照样能精确失效）。键形两套驱动不同：Redis `nitro:routes:_:<frag>.<hash>.json`、文件 `nitro/routes/_/<frag>.<hash>.json`；且**文件驱动的 `getKeys` 无视 base 返回全部键**（Redis 驱动才按 base 过滤）→ 实现要自己再筛缓存组（`isRouteCacheKey`）。键里的片段是**路径**的转义（`/content/cat/slug` → `contentcatslug`），路由片段（`/content/**` → `content`）只是它的**前缀** → 匹配用 `startsWith`。⚠️ 这个模块**独立于 `content-cache.ts`**：单测大量 `mock.module("#server/utils/content-cache")` 只提供 `invalidateContentCaches`，新导出放这里才不会把那些用例打成 SyntaxError（导出对不上）。
 
 **源站缓存失效的生产验证**：`REDIS_ENABLED=false` 构建 + 生产运行 → 请求页面生成 `.nitro/cache/nitro/routes/_/<frag>.<hash>.json` → 调 MCP `clear_cache target=pages` → **3 个缓存文件被删**、日志 `[缓存] [INFO] invalidate routes=(all) cleared=3` ✓（MCP 端点要带 `Accept: application/json, text/event-stream`，否则 406；生产 cookie 是 secure 的，http 下 curl 不会带 → 走不了后台写接口的 CSRF）。
 
@@ -30,6 +30,22 @@ metadata:
 **主动刷新（EdgeOne API）默认开启**：写库后 5 秒防抖，精确 URL 走 URL 池、无法展开才退回目录池；`CDN_AUTO_PURGE=0` 关闭。后台手动刷新与 MCP `target=cdn` 不受此开关限制（人工动作）。
 
 **分层现状**：CDN 边缘缓存 HTML（源站只渲染）→ 源站缓存层（`nuxt.config.ts` 的 `pageCacheRules`：Redis 或文件）→ 短期缓存与计数（`server/utils/cache/store.ts`：Redis 优先、异常或未启用回落**进程内内存** `server/utils/cache/memory-store.ts`）。计数器（限流 rl:/、登录锁定、点赞限速、错误通知去重）**CDN 换不了**，靠内存版即可（单实例部署够用）。**开发环境恒不启用缓存**（`cacheDisabled()` 判 `NODE_ENV === "development"`）：本地要能立刻看到刚改的数据，开了缓存就搜到旧结果——e2e 搜索用例（造文章→搜标题）就是被这条抓出来的；**测试环境保持启用**（单测要断言缓存读写确实发生）。`memoryExpire(key, ttlSec)` **两个参数都要传**（漏传 ttlSec → expiresAt=NaN → 键永不过期）。
+
+**列表页分页变体：改为「精确刷文章所在的那一页」（2026-11-06 定，取代"只能靠 TTL"）**：分类/标签列表按 `content.create_time desc` 分页，一篇文章只落在**一页**上 ⇒ 位次 = 「同 mid 中 create_time 更晚的文章数 + 1」，页码 = ⌈位次 / 每页条数⌉（`server/utils/content-urls.ts` 的 `contentListPagePaths`，每页条数读 `informations.contentPageSize`，**必须与前台分页同值**否则页码算错）。于是：
+- 文章保存（标题/摘要/封面/正文/更新时间在卡片上）→ 刷**那一页** → 不再出现「第 1 页新、第 2 页旧」；
+- **评论增删/审核（countOnly）→ 也只刷那一页**（评论数就在卡片上）→ 评论数从 ≤15 秒变成**秒级**，约 1~2 URL/次、200 评论/天 ≈ 200~400 URL，仍在 1000/天 预算内；`countOnly` 不再刷路由派生的固定页（/、/about…）；
+- 结构性变更（新增/删除/批量删除文章、发布状态变化、改分类/标签归属、定时发布）→ 后续文章页码整体位移 → **刷整个列表目录**（`shared/constants.ts` 的 `LIST_EDGE_DIRECTORIES = ["/category/**","/tag/**"]`，2 个目录额度/次，低频；目录池 50/天）。
+`invalidateContentCaches` 新增 `edgeDirectories` 参数承载后者。**代价**：每次写库多 1~2 次 `contents.count`（走 create_time 索引）；`create_time` 并列时位次可能差 1 → 由列表页短 TTL 兜底。
+**分页参数归一化**：`?page=1` / `?page=abc` / `?page=0`（后端都回退第 1 页）在 `canonicalSearch` 里一律剥掉并 301 到裸路径 → 「第 1 页」只有一条缓存键。`?page>=2` 保留（越界如 `?page=999` 也保留，由前端水合后 `router.replace` 钳制）。
+
+**列表页 TTL 仍保留 15 秒作兜底**（`build.listPageCacheSeconds`）：它覆盖的是「算错页 / 并列位次 / 爬虫扫出的任意 `?page=N` / 首页与关于页」这些精确刷新够不到的情况。降 TTL 的代价靠 304（见上）压到几乎为零。
+
+**「是否纯计数」必须显式声明，不能靠"路由里全是列表页"猜（2026-11-06）**：原启发式是"routes 全是列表页 → 跳过边缘刷新"；但**列表页档位与是否要刷边缘是两件事**（`/map` 挪进列表页档后，足迹变更会被误判成纯计数 → 文章页与地图页都不刷）。现在 `invalidateContentCaches` 的 `countOnly` 由调用方显式传（评论 5 个写接口都传了 `countOnly: true`），启发式已删。**/map 归入短 TTL 档**（15 秒）：它内嵌访客分布/足迹/博客网络，且 `?place=N` 的标题依赖地点名（改名后要跟着变）→ 不再展开它的 29 个查询串变体（短 TTL 已覆盖，省额度）。
+
+**访客分布（读者地图）的粒度由源站聚合缓存决定，不是边缘 TTL**：`server/api/footprint.get.ts` 的聚合缓存（键 `custom:footprint`）TTL 已从 1 小时降到 **10 分钟**（`shared/constants.ts` 的 `FOOTPRINT_CACHE_TTL`；本地 qqwry ipdb 查表、无外部调用，重算成本可忽略）→ 读者地图 ≤10 分钟新鲜。⚠️ 该常量此前在 handler 里**私藏了一份写死的 3600**（与 shared 各存一份 → 改 shared 不生效）→ 已统一引 shared。边缘侧 `/api/footprint` 是 60 秒、`/map?view=footprint` 随 /map 走 15 秒档，但**聚合缓存是硬上限**（刷边缘也不会更新得更早）。
+
+**全站"SSR 内嵌派生数据"的时效审计（2026-11-06，结论）**：评论数（列表页 ≤15s）、评论列表（文章页/留言板：客户端拉，实时）、点赞数（文章页：精确刷新，秒级；列表页 ≤15s）、访客分布（≤10min）、足迹/博客网络（≤15s）、文章数与统计（≤15s）、热力图（客户端拉，≤60s）、友链/订阅/日志/独立页/文章详情（精确刷新，秒级）、RSS（≤5min，设计如此）。⇒ **评论数是最后一处"只能靠 TTL"的**；其余要么精确刷新、要么本来就是客户端实时。
+
 
 **CDN 抽象层 `server/utils/cdn/`**（接别家 CDN 只需继承 `CdnProviderBase` 实现 `purgeUrls` + `isEnabled`）：类型在 **`server/types/utils/cdn.d.ts`**（provider 契约、刷新结果、刷新目标，按仓库规则4 放独立类型文件）/ `base.ts`（公共父类：路由→目标转换、目录/Host 刷新的默认兜底、多结果合并）/`route-url.ts`（路由→刷新目标映射）/`edgeone.ts`（EdgeOne 实现）/`tencent-signature.ts`（TC3 签名）/`index.ts`（工厂 + `purgeCdnRoutes`/`purgeCdnUrls`，按 `CDN_PROVIDER`/`EDGEONE_ZONE_ID`/`EDGEONE_SECRET_*` 选实现（**命名口径：厂商专属用 `EDGEONE_` 前缀**——对齐 `COS_SECRET_ID` 的模式，不用 `TENCENTCLOUD_*` 那看着像通用变量的；与厂商无关的用 `CDN_` 前缀，换一家 CDN 时后者不动），未配置返回 null 即整段跳过）。密钥走**运行时环境变量**，不烘焙进产物。
 
@@ -47,7 +63,7 @@ metadata:
 
 **路由 → 刷新目标映射（`route-url.ts`）**：`/xxx/**` → 目录前缀（`https://域名/xxx/`），精确页 → 完整 URL，`/**` 与空列表 → 根目录前缀（= 全站页面）。`/search` **不进边缘缓存**（SSR 结果随查询词变化，边缘会堆一次性条目，且通配刷不掉带查询串的变体）。
 
-**触发链路**：写库后走 `server/utils/content-cache.ts` 的 `invalidateContentCaches({ routes, contentCids })`——清源站页面键 + `api*` 键，并 `scheduleCdnPurge` 防抖 5 秒；flush 时按 cid 查 `contents.slug` + `contentrelations.metas` 生成精确 URL（文章页/分类页/标签页/独立页面 + 相关 API），查不到 cid（删除）或批量变更才退回目录刷新。**纯计数变更（评论：路由集全是列表页）整段跳过边缘刷新**（`countOnly`）→ 0 额度、60 秒内靠 TTL 收敛。调用点在文章/评论/附件/分类标签关联等写接口传了 `contentCids`；其余不传的走目录兜底。后台手动刷新：`POST /api/admin/cache/cdn-purge`（action=all/routes/urls/zone/status）+ 后台「缓存管理 → CDN 边缘缓存」；MCP `clear_cache` 的 `target=pages` 现在也会触发一次防抖边缘刷新，`target=cdn` 立即刷。**EdgeOne 刷新是异步的**（只返回 JobId），`describeTask(jobId)` 查状态。
+**触发链路**：写库后走 `server/utils/content-cache.ts` 的 `invalidateContentCaches({ routes, contentCids })`——清源站页面键 + `api*` 键，并 `scheduleCdnPurge` 防抖 5 秒；flush 时按 cid 查 `contents.slug` + `contentrelations.metas` 生成精确 URL（文章页/分类页/标签页/独立页面 + 相关 API），查不到 cid（删除）或批量变更才退回目录刷新。**纯计数变更（评论：路由集全是列表页）整段跳过边缘刷新**（显式传 `countOnly: true`）→ 0 额度、60 秒内靠 TTL 收敛。调用点在文章/评论/附件/分类标签关联等写接口传了 `contentCids`；其余不传的走目录兜底。新增参数：`edgeRoutes`（显式指定边缘刷新的路由，传 `[]` = 只刷 `edgePaths`；不传 = 沿用 `routes`）与 `edgePaths`（具体路径）→ 用来把「源站缓存要清的路由」与「边缘要刷的路由」解耦（点赞只刷文章页即 `edgeRoutes: []` + `edgePaths: [文章URL]`）。后台手动刷新：`POST /api/admin/cache/cdn-purge`（action=all/routes/urls/zone/status）+ 后台「缓存管理 → CDN 边缘缓存」；MCP `clear_cache` 的 `target=pages` 现在也会触发一次防抖边缘刷新，`target=cdn` 立即刷。**EdgeOne 刷新是异步的**（只返回 JobId），`describeTask(jobId)` 查状态。**未配置 CDN 时自动刷新路径也要告警**（`warnCdnNotConfigured()`）——否则忘配密钥全程静默，内容不即时更新没人知道。
 
 **日志口径（`server/utils/cdn/index.ts` 的 `runCdnPurge` 统一出口，自动刷新与后台手动刷新都走它）**：`log.cache("CDN 刷新", {provider, 来源(自动/后台手动), 路由, 目标数, 结果(成功/失败 …), 任务号, 状态})` → 落 `logs/缓存/`；状态查询单独一行 `log.cache("CDN 刷新状态", …)` 便于区分；额度耗尽 `log.error` 一次（当天不再自动刷新）；provider 抛异常 `log.error("[cdn] 刷新失败")`；**未配置 CDN 时只 `log.error` 一次**（否则忘配密钥会全程静默，内容不即时更新也没人知道）。日志字段值含空格会被日志工具 JSON 引号包住（`结果="失败 …"`），断言时别直接 `toContain("结果=失败")`。
 
@@ -55,7 +71,13 @@ metadata:
 
 **EdgeOne 缓存策略实测（2026-11）**：① 「自定义规则 + 强制 TTL」模式**无视源站的 `no-store`**（会把 `/api/csrf/token` 缓存掉、且剥掉 Set-Cookie → 登录必然 403「CSRF token 验证失败」；请求侧带 `Cache-Control: no-cache` 也**无效**）；② 切「**遵循源站 Cache-Control**」后：敏感接口（源站已发 no-store 的 csrf/token、captcha/image、auth/verify、attachments/list）→ MISS ✓ 不缓存 ✓，公开接口（`public, max-age=300, s-maxage=300`）→ HIT ✓。⇒ **边缘规则要用「遵循源站」，别用强制 TTL 的自定义规则**。③ **缓存预刷新百分比的语义极易搞反**：它是「**从 TTL 的第百分之几开始**回源验证」，**数值越小越早验证**（官方例：TTL 10 秒、填 80% → 第 8–10 秒才验证）。⚠️ 早前误判为「越大越频繁」并建议设 99%，实测（2026-11-05 生产）：`/about` 的 `Age` 42→62→82 秒一路递增、源站访问日志**完全没有页面请求** → 99% 等于「TTL 快到期才验证」，内容变更最坏要等整个 TTL（1800 秒）才生效。要快就填 **1%**（1800s → 18 秒后每个请求都验）；验证生效时边缘返回 `RefreshHit`。→ 客户端延迟大降（API 250–760ms → 160ms ≈ 纯 POP）但**源站 DB 照跑**；页面侧靠源站 ISR+ETag 让验证只花 3ms ✓，API 侧必须自己加源站缓存（`nuxt.config.ts` 的 `PUBLIC_STATIC_API_ROUTES`：categories/tags/site/travels/subscribes/changelogs/blog-network，60 秒）才不让每次验证都跑 DB。④ `/api/heatmap`、`/feed/**` 原先只在有 Redis 时才挂缓存 → 关掉 Redis 就每次全表扫 ✓ 已修为 base 按 redis/cache 自适应 ✓。
 
-**响应头最终由 `server/plugins/cache-control.ts` 决定**：routeRules 的 headers 会被 Nitro 缓存处理器覆盖（写死 `max-age=<源站 TTL>`），所以页面 `public, max-age=0, s-maxage=21600`、公开 API `max-age=0, s-maxage=60` 都在 `beforeResponse` 钩子里改写；4xx/5xx 改 `no-store`。`/login`、`/admin/**`、`/api/auth/**`、`/api/admin/**` 仍由 routeRules 下发 `no-store`，插件不碰。生产环境 `server/middleware/cache-conditional.ts` 会剥离缓存路径的条件请求头，防止源站 304 把长 TTL 写回 CDN。
+**响应头最终由 `server/plugins/cache-control.ts` 决定**：routeRules 的 headers 会被 Nitro 缓存处理器覆盖（写死 `max-age=<源站 TTL>`），所以页面 `public, max-age=0, s-maxage=21600`、公开 API `max-age=0, s-maxage=60` 都在 `beforeResponse` 钩子里改写；4xx/5xx 改 `no-store`。`/login`、`/admin/**`、`/api/auth/**`、`/api/admin/**` 仍由 routeRules 下发 `no-store`，插件不碰。
+
+**304 的缓存头要单独修（2026-11-06）**：Nitro 命中条件请求时直接回 304，而 **304 走不到 `beforeResponse` 钩子**（h3 在 `event.handled` 时跳过 `onBeforeResponse`）→ 304 会带着 `max-age=<源站 TTL>`（6 小时）出去，把边缘 TTL 顶回去、内容 6 小时不更新。⇒ ① 原来的 `server/middleware/cache-conditional.ts`（生产剥掉 If-None-Match 防这个坑）**已删除**；② 改由 `server/middleware/cache-304.ts` 在 `res.writeHead` 里按路径改写成该路径真正的边缘 TTL（纯逻辑在 `server/utils/cache-control.ts`）。改完源站就能正常回 304：边缘/浏览器的重新验证**只传头不传正文** → 列表页 TTL 可以从 60 秒降到 15 秒而回源流量几乎不涨（评论数等聚合数据的可见延迟从 ≤60 秒降到 ≤15 秒）。实测（本地生产构建）：首页 `GET` → `etag` + `s-maxage=15`；带 `If-None-Match` 再取 → `304` + `cache-control: public, max-age=0, s-maxage=15` + 无正文 ✓；内容页 304 → `s-maxage=21600` ✓。
+
+**动态接口要源站显式 no-store（别只靠 EdgeOne 控制台规则）**：`/api/comments`、`/api/search`、`/api/check-link`、`/api/contents/likes/**` 已在 routeRules 里显式 `no-store`——其中 `/api/contents/likes/[cid]` 的 `liked` 是**按访客指纹算的**，一旦边缘规则丢失/重建 zone 而缓存住，第一个访客的 `liked=true` 会被发给所有人（边缘默认缓存 1800s）。同理，任何**与访客或实时状态相关**的接口都要源站自己声明 no-store，别依赖控制台那条 `/api/*` 子规则。
+
+**dev 与 Redis 两种后端的缓存门控（2026-11-05 修）**：`/feed/**`、`/api/heatmap`、`PUBLIC_STATIC_API_ROUTES` 的源站缓存规则原先**没被 `isProduction` 门控**（dev 下就有文件缓存 → 本地看不到刚改的数据，与「开发恒不启用缓存」冲突），且**配了 Redis 时整段被跳过**（公开静态 API 没有源站缓存 → 边缘 1% 预刷新直接打 DB）。现在统一：dev 一律不挂；生产两种后端都挂（`base: redisConfig ? "redis" : "cache"`）。
 
 **边缘缓存 HTML 的前提：SSR HTML 必须与登录态无关**（已实测：匿名 vs 已登录抓首页 SSR HTML **逐字节相同**，唯一差异是 payload 里的 `timeSsrStart` 时间戳）。原因：所有按登录态变化的 UI 都在 `<ClientOnly>` 里（页脚「后台管理」、文章页「编辑此文章」、地图页「编辑足迹」、评论区的登录态、changelogs/links/subscribes 的后台入口）——`<ClientOnly>` 的内容不进 SSR HTML；`useAuth()` 的 `checkAuthStatus()` 被 `import.meta.client` 门控、`auth.client.ts` 是 client-only 插件 → SSR 阶段 `isLoggedIn` 恒 false；前端**零 `useCookie`**（SSR 不读会话）；全局中间件 `auth.global.ts` 只管 `/admin`（已 no-store）；评论列表是客户端 `fetch`（不是 SSR `useFetch`）。**以后在页面 setup 里服务端读会话并渲染用户态就会把 A 的 HTML 发给 B**，这类 UI 必须继续放 `<ClientOnly>`。
 
@@ -69,7 +91,15 @@ metadata:
 
 **边缘「默认缓存」开启后，任何没有 Cache-Control 的响应都会被缓存 1800s** → 源站必须给**所有** 4xx/5xx 下发 `no-store`（不能只管「已缓存路径」）：否则一次偶发 500/404 会被边缘缓存半小时。`server/plugins/cache-control.ts` 已把状态判断提到路径判断之前（实测修复前 404 是 MISS→HIT，修复后两次都 MISS + no-store）。
 
-**源站缓存键含完整 URL**（Nitro `hash(原始URL)`，`nitropack/dist/runtime/internal/cache.mjs`）→ 爬虫推广参数（`?source=…`）会各自生成一份 ~200KB 缓存文件 + 一次整页渲染。已加 `server/middleware/cache-key.ts`：只保留会改变 SSR 输出的参数（`page`/`view`/`source`/`type`），其余剥掉 → 同一路由共用一份缓存（实测 3 个不同推广参数的首页请求后仍只有 1 个 `index.*` 文件）。**分页/视图类参数绝不能剥**。
+**源站缓存键含完整 URL**（Nitro `hash(原始URL)`，`nitropack/dist/runtime/internal/cache.mjs`）→ 爬虫推广参数（`?source=…`）会各自生成一份 ~200KB 缓存文件 + 一次整页渲染。已加 `server/middleware/cache-key.ts`：只保留会改变 SSR 输出的参数，其余剥掉 → 同一路由共用一份缓存（实测 3 个不同推广参数的首页请求后仍只有 1 个 `index.*` 文件）。**分页/视图类参数绝不能剥**。参数登记表在 `server/utils/cache-routes.ts` 的 `SIGNIFICANT_QUERY_PARAMS`（cache-key 与规范化跳转共用）。
+
+**查询串变体 = 独立的边缘缓存条目（2026-11-05 生产实测后修，最易漏）**：实测 `/content/note/1024` MISS → `/content/note/1024?utm_source=test` **也 MISS**（不是同一条）→ 再访问 HIT ⇒ **带推广参数的 URL 是独立条目**，而刷新只提交裸 URL ⇒ 带参链接的内容永远不更新（内容页 TTL 6 小时）。两端修：① `server/middleware/cache-canonical.ts` 把「不影响 SSR 输出的参数」剥掉并 **301** 到规范 URL → 边缘只存一条，精确刷新即覆盖（仅生产生效；`canonicalSearch()` 固定参数顺序 → 同一页面只有一条缓存键）；② 刷新侧 `content-cache.ts` 的 `queryVariants()` 把**可枚举**变体逐个刷（/map 的 view×place、/subscribes 的 source、/changelogs 的 type）；**分页 `?page=N` 变体无限 → 列表页只能靠 60 秒短 TTL 收敛**（精确刷列表页本来就不可能）。
+
+⚠️ **登记表漏一个参数 = 源站缓存串页（生产真实发生过）**：`/map` 的 `place` 决定 `<title>`，漏登记时 `/map?view=travels&place=5` 渲染出的「中街 - 我的足迹」被缓存成 `/map?view=travels` 的标题 → 所有人打开都是"中街"。**新增任何 SSR 读取的 query 参数，必须同时登记进 `SIGNIFICANT_QUERY_PARAMS`**（`/category/**`=page、`/tag/**`=page、`/map`=view+place、`/subscribes`=source、`/changelogs`=type）。
+
+**写库失效的四个补漏（2026-11-05 修）**：① **旧 URL**：改 slug/主分类/类型后旧地址仍是边缘缓存里的旧 HTML（取消发布更是继续对外提供下线文章）→ 更新类接口要在写库**前**用旧记录算 `contentUrlPaths()` 一起传 `contentPaths`（删除类接口本来就做了）；② **点赞**：`/api/contents/likes/[cid].get` 的 `likeCount` 会渲染进文章页 SSR HTML → 点赞要刷文章页 URL（列表页角标靠 60 秒 TTL），配 `edgeRoutes: []` + `edgePaths`（`invalidateContentCaches` 新增这两个参数，用来把「源站缓存要清的路由」与「边缘要刷的路由」解耦）；③ **旅行足迹**：文章页渲染关联地点 → travels 增删改要传关联文章的 cid；④ **metaContentPaths 超阈值返回 null**（不是空数组）——返回空数组时调用方再 push 一条新路径会让「目录刷新兜底」被跳过 → 旧文章 URL 不刷。
+
+**额度熔断与部分提交（2026-11-05 修）**：额度用尽的熔断标记按**天**复位（原来进程内永不复位，实际是"到下次重启前都不刷新"）；额度不够时**只提交额度内的部分**并注明未提交数量（原来整批拒绝 → 全部落空更糟）；EdgeOne API 调用加 15 秒超时。
 
 **刷新日志的来源标记**：`purgeCdnUrls(urls, "自动")` / `purgeCdnRoutes(routes, source)` → 写库触发=自动、后台=后台手动、MCP=MCP 手动。以前自动刷新全被记成「手动」（`purgeCdnUrls` 的 source 默认值），额度无法归因。
 

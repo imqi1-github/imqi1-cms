@@ -90,7 +90,8 @@ export default defineEventHandler(async event => {
     });
 
     // 内容关联标签变更 → 立即失效首页/标签/内容 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 内容标签关联失效缓存失败", err));
+    // 换标签 → 该文章在标签列表里的位置变了，后续文章页码位移 → 刷整个标签目录
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentCids: [cid], edgeDirectories: ["/tag/**"] }).catch(err => console.error("[cache] 内容标签关联失效缓存失败", err));
 
     return {
       success: true,

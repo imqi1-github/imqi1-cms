@@ -35,11 +35,17 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    // 删除前的关联文章：文章页渲染了地点信息，删除后要失效
+    const oldCids = ((await prisma.contenttravels.findMany({
+      where: { travel_id: id },
+      select: { cid: true },
+    })) ?? []).map(row => row.cid);
+
     await prisma.travels.delete({
       where: { id },
     });
     // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES }).catch(err => console.error("[cache] 旅行删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES, contentCids: oldCids }).catch(err => console.error("[cache] 旅行删除失效缓存失败", err));
     return { success: true };
   } catch (error) {
     // 删除不存在的地点（预期 404，先于 console.error，免得打印预期 4xx 堆栈）

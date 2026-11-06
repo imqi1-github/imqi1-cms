@@ -630,29 +630,39 @@ export default defineNuxtConfig({
 
     // Feed（RSS）：5 分钟缓存，防订阅器轮询每次全表扫 content 大字段；
     // 新文章上线最多延迟 5 分钟出现在订阅端，可接受
+    // 开发环境不挂缓存：本地改完要立刻看到（与 server/utils/cache/store.ts 同口径）
     "/feed/**": {
-      cache: { maxAge: 300, base: redisConfig ? "redis" : "cache" },
-      ...(isProduction ? { headers: { "Cache-Control": "public, max-age=300, s-maxage=300" } } : {}),
+      ...(isProduction
+        ? {
+            cache: { maxAge: 300, base: redisConfig ? "redis" : "cache" },
+            headers: { "Cache-Control": "public, max-age=300, s-maxage=300" },
+          }
+        : {}),
     },
 
     // 热力图聚合（全量文章+已审核评论按天聚合）：60s 缓存，
     // query 进缓存键，分类/标签筛选组合各自独立；数据滞后 ≤1 分钟可接受
     "/api/heatmap": {
-      cache: { maxAge: 60, base: redisConfig ? "redis" : "cache" },
-      ...(isProduction ? { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } } : {}),
+      ...(isProduction
+        ? {
+            cache: { maxAge: 60, base: redisConfig ? "redis" : "cache" },
+            headers: { "Cache-Control": "public, max-age=60, s-maxage=60" },
+          }
+        : {}),
     },
 
     // 变化很少的公开接口：加源站缓存，配合 ETag → 边缘预刷新回源验证只命中缓存（几毫秒），
     // 不必每次跑 DB。刻意只列「读公开数据、变化很少」的接口：
     // 列表类/计数类（home-data、comments、likes/counts…）变化快，不进缓存，避免前台看到滞后数据。
-    ...(redisConfig
-      ? {}
-      : Object.fromEntries(
+    // Redis 与文件两种后端都要挂：否则配了 Redis 时这些接口没有源站缓存，边缘预刷新会直接打 DB。
+    ...(isProduction
+      ? Object.fromEntries(
           PUBLIC_STATIC_API_ROUTES.map(path => [
             path,
-            { cache: { maxAge: 60, base: "cache" } },
+            { cache: { maxAge: 60, base: redisConfig ? "redis" : "cache" } },
           ]),
-        )),
+        )
+      : {}),
 
     // 登录页面禁用 SSR，避免 hydration 不匹配；登录页绝不能进 CDN 缓存
     "/login": {
@@ -672,6 +682,21 @@ export default defineNuxtConfig({
       ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },
     "/api/admin/**": {
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
+
+    // 动态/与访客相关的接口：源站显式 no-store，不依赖边缘控制台规则兜底
+    // （/api/contents/likes/** 的 liked 按访客指纹算；/api/comments 实时；/api/search 按查询词；/api/check-link 实时探测）
+    "/api/comments": {
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
+    "/api/search": {
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
+    "/api/check-link": {
+      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
+    },
+    "/api/contents/likes/**": {
       ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },
     ...(isProduction &&

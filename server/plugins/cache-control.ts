@@ -7,15 +7,13 @@
  *
  * 必须用 beforeResponse 钩子：Nitro 的缓存处理器会写死 `max-age=<源站 TTL>`，
  * routeRules 的 headers 会被它覆盖，只有响应发出前能改回来。
+ *
+ * 304 走不到这个钩子（h3 在 event.handled 时跳过），由 `server/middleware/cache-304.ts` 单独修。
  */
 import { getRequestPath, getResponseHeader, getResponseStatus, setResponseHeader } from "h3";
 
-import { siteConfig } from "~~/site.config";
-import { isBrowserRevalidateApi, isCdnCachedPage, isListPageRoute } from "#server/utils/cache-routes";
-
-const PAGE_S_MAXAGE = siteConfig.build.pageCacheSeconds;
-const LIST_S_MAXAGE = siteConfig.build.listPageCacheSeconds;
-const API_S_MAXAGE = 60;
+import { apiCacheControl, pageCacheControl } from "#server/utils/cache-control";
+import { isBrowserRevalidateApi, isCdnCachedPage } from "#server/utils/cache-routes";
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("beforeResponse", (event) => {
@@ -36,12 +34,11 @@ export default defineNitroPlugin((nitroApp) => {
 
     const contentType = String(getResponseHeader(event, "content-type") ?? "");
     if (isPagePath && (contentType.includes("text/html") || path === "/sitemap.xml")) {
-      const sMaxage = isListPageRoute(path) ? LIST_S_MAXAGE : PAGE_S_MAXAGE;
-      setResponseHeader(event, "cache-control", `public, max-age=0, s-maxage=${sMaxage}`);
+      setResponseHeader(event, "cache-control", pageCacheControl(path));
       return;
     }
     if (isApiPath) {
-      setResponseHeader(event, "cache-control", `public, max-age=0, s-maxage=${API_S_MAXAGE}`);
+      setResponseHeader(event, "cache-control", apiCacheControl());
     }
   });
 });

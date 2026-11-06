@@ -141,9 +141,11 @@ export default defineEventHandler(async event => {
       },
     });
 
-    if (category.slug) contentPaths.push(`/category/${encodeURIComponent(category.slug)}`);
+    // 关联文章太多时 metaContentPaths 返回 null → 留空让刷新侧退回目录刷新（否则旧文章 URL 不刷）
+    const paths = contentPaths ? [...contentPaths] : [];
+    if (contentPaths && category.slug) paths.push(`/category/${encodeURIComponent(category.slug)}`);
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths: paths }).catch(err => console.error("[cache] 分类更新失效缓存失败", err));
 
     await logAdminAudit({
 

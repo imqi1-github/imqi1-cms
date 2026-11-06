@@ -106,7 +106,8 @@ export default defineEventHandler(async event => {
   }
 
   // 旅行足迹变更 → 立即失效首页/地图/关于 ISR 缓存（best-effort）
-  void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES }).catch(err => console.error("[cache] 旅行创建失效缓存失败", err));
+  // 关联文章页也会渲染地点信息 → 一并失效文章页
+  void invalidateContentCaches({ routes: TRAVEL_CACHE_ROUTES, contentCids: cidList }).catch(err => console.error("[cache] 旅行创建失效缓存失败", err));
 
   return { success: true };
 });

@@ -80,15 +80,20 @@ async function runPurge(
   jobId: string | undefined,
 ) {
   if (action === "urls") {
-    const list = (urls ?? []).map(u => u.trim()).filter(Boolean);
+    const list = toStringList(urls);
     if (!list.length) {
       throw createError({ statusCode: 400, message: "请填写要刷新的 URL" });
+    }
+    // EdgeOne 的精确 URL 必须带协议，否则任务会被判非法目标
+    const invalid = list.filter(url => !/^https?:\/\//i.test(url));
+    if (invalid.length) {
+      throw createError({ statusCode: 400, message: `URL 必须以 http:// 或 https:// 开头：${invalid[0]}` });
     }
     return runCdnPurge(provider, () => provider.purgeUrls(list), { 来源: "后台手动", 路由: `URL×${list.length}` });
   }
 
   if (action === "routes") {
-    const list = (routes ?? []).map(r => r.trim()).filter(Boolean);
+    const list = toStringList(routes);
     if (!list.length) {
       throw createError({ statusCode: 400, message: "请选择要刷新的页面" });
     }
@@ -136,4 +141,10 @@ async function runPurge(
 
   log.error("[cache/cdn-purge] 未知操作类型", { action });
   throw createError({ statusCode: 400, message: "未知的操作类型" });
+}
+
+/** 请求体里的数组参数做运行时校验：非字符串元素直接丢弃（readBody 无类型保证） */
+function toStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string").map(item => item.trim()).filter(Boolean);
 }

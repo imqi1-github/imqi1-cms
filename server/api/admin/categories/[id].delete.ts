@@ -140,7 +140,7 @@ export default defineEventHandler(async event => {
     });
 
     // 分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
+    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentPaths: contentPaths ?? [] }).catch(err => console.error("[cache] 分类删除失效缓存失败", err));
 
     await logAdminAudit({
 

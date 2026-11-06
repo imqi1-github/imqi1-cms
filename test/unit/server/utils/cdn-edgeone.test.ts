@@ -161,7 +161,7 @@ describe("EdgeOneCdnProvider", () => {
 });
 
 describe("EdgeOne 刷新额度（套餐按天计，单位是资源条目数）", () => {
-  test("额度不足时不提交任务，并给出可读原因", async () => {
+  test("额度不足时只提交额度内的部分，并说明未提交数量", async () => {
     quotaBody = {
       Response: {
         PurgeQuota: [
@@ -171,8 +171,24 @@ describe("EdgeOne 刷新额度（套餐按天计，单位是资源条目数）",
       },
     };
     const result = await makeProvider().purgeUrls(["https://imqi1.com/a", "https://imqi1.com/b"]);
+    expect(result.success).toBe(true);
+    expect(result.note).toContain("额度不足");
+    expect(purgeTasks().length).toBe(1);
+    expect((purgeTasks()[0]!.payload.Targets as string[]).length).toBe(1);
+  });
+
+  test("额度为 0 时不提交任务，并给出可读原因", async () => {
+    quotaBody = {
+      Response: {
+        PurgeQuota: [
+          { Type: "purge_url", Batch: 500, Daily: 1000, DailyAvailable: 0 },
+          { Type: "purge_prefix", Batch: 50, Daily: 50, DailyAvailable: 0 },
+        ],
+      },
+    };
+    const result = await makeProvider().purgeUrls(["https://imqi1.com/a"]);
     expect(result.success).toBe(false);
-    expect(result.error).toContain("额度不足");
+    expect(result.error).toContain("额度");
     expect(purgeTasks().length).toBe(0);
   });
 

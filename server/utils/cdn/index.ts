@@ -107,24 +107,39 @@ export function isCdnEnabled(): boolean {
  * 刷新额度耗尽的熔断状态。
  *
  * CDN 套餐的刷新额度是按天的，用尽后继续提交只会一直报错。此时当天不再尝试刷新，
- * 内容靠边缘缓存 TTL 自然更新（见 site.config build.cdnCacheSeconds）。
+ * 内容靠边缘缓存 TTL 自然更新（见 site.config build.listPageCacheSeconds）。
  */
-let quotaExhaustedAt = 0;
+let quotaExhaustedDay = "";
+
+/** 今天的日期键（额度按天计，跨天要复位） */
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /** 额度是否已耗尽（当天不再尝试刷新） */
 export function isCdnQuotaExhausted(): boolean {
-  return quotaExhaustedAt > 0;
+  if (!quotaExhaustedDay) return false;
+  if (quotaExhaustedDay !== todayKey()) {
+    quotaExhaustedDay = "";
+    return false;
+  }
+  return true;
 }
 
 /** 额度耗尽时记下状态并只警告一次 */
 function markQuotaExhausted(error: string): void {
-  if (quotaExhaustedAt > 0) return;
-  quotaExhaustedAt = Date.now();
+  if (quotaExhaustedDay === todayKey()) return;
+  quotaExhaustedDay = todayKey();
   log.error("[cdn] 刷新额度已耗尽，当天不再自动刷新；内容将在边缘缓存 TTL 到期后自动更新", { error });
 }
 
 /** 未配置 CDN 时只告警一次：否则忘配密钥会全程静默，内容不即时更新也没人知道 */
 let notConfiguredWarned = false;
+
+/** 未配置 CDN 刷新时的告警（自动刷新路径也要调，否则忘配密钥会全程静默） */
+export function warnCdnNotConfigured(): void {
+  warnNotConfigured();
+}
 
 function warnNotConfigured(): void {
   if (notConfiguredWarned || isCdnDisabledByEnv()) return;

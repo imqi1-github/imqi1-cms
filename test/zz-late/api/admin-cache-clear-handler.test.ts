@@ -1,13 +1,13 @@
 /**
  * server/api/admin/cache/clear.post.ts:
  *  - CSRF/auth 守卫
- *  - redis 未配置 → 静默 false + message
- *  - action=search → 精确前缀 scanAndUnlink("search:*")
- *  - action=footprint → 精确 scanAndUnlink("custom:footprint")
- *  - action=all → flushdb 返 matched=-1
+ *  - redis 未配置 → 走进程内内存兜底，仍可清理
+ *  - action=search → 前缀 scan "search:*"
+ *  - action=footprint → 前缀 scan "custom:footprint*"
+ *  - action=all → flushdb + 清源站页面缓存 + 触发边缘刷新，返 matched=-1
  *  - action=keyword/preset → 按子串匹配(value trim,过滤通配符)
  *  - value 非字符串 → 400(防 TypeError)
- *  - redis 抛错(非 statusCode) → 500
+ *  - redis 抛错(非 statusCode) → 降级 success:false
  *  - 异常带 statusCode → 原样抛(不被吞成 500)
  */
 import "#test/helpers/nitro-globals";
@@ -79,18 +79,17 @@ describe("admin cache/clear:CSRF/auth 守卫", () => {
 });
 
 describe("admin cache/clear:redis 未配置", () => {
-  test("redis=null → {success:false, matched:0, cleared:0, message}", async () => {
+  test("redis=null → 仍可清理（源站页面缓存 + 进程内内存兜底）", async () => {
     redisImpl = null;
     mock.module("#server/utils/redis", () => ({ redis: null }));
     const cookie = await authedCookie();
     const res = await callAdmin(clearHandler, {
       method: "POST", cookie,
       body: { csrfToken: CSRF_TOKEN, action: "all" },
-    }) as { success: boolean; matched: number; cleared: number; message?: string };
-    expect(res.success).toBe(false);
-    expect(res.matched).toBe(0);
-    expect(res.cleared).toBe(0);
-    expect(res.message).toContain("Redis");
+    }) as { success: boolean; matched: number; cleared: number; note?: string };
+    expect(res.success).toBe(true);
+    expect(res.matched).toBe(-1);
+    expect(res.cleared).toBe(-1);
   });
 });
 
@@ -141,7 +140,7 @@ describe("admin cache/clear:action 路由", () => {
     expect(res.note).toContain("没有匹配");
   });
 
-  test("action=footprint → 精确键 'custom:footprint'", async () => {
+  test("action=footprint → 前缀 scan 'custom:footprint*'", async () => {
     redisImpl = makeFakeRedis();
     redisImpl.pushScan("0", ["custom:footprint"]);
     mock.module("#server/utils/redis", () => ({ redis: redisImpl!.redis }));
@@ -151,7 +150,7 @@ describe("admin cache/clear:action 路由", () => {
       body: { csrfToken: CSRF_TOKEN, action: "footprint" },
     });
     const scanCall = redisImpl.calls.find(c => c.method === "scan");
-    expect(scanCall?.args).toContain("custom:footprint");
+    expect(scanCall?.args).toContain("custom:footprint*");
   });
 
   test("action=keyword → value 走 clearBySubstring(pattern = `*${value}*`)", async () => {

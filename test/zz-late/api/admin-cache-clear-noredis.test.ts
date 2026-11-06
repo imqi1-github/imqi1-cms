@@ -5,7 +5,7 @@ import { mockSharedPrisma } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
 
-// mock redis = null,触发 cache/clear.post 的「未配置 Redis」分支
+// mock redis = null：短期缓存（搜索/足迹/限流）落进程内内存，页面缓存走文件驱动
 mock.module("#server/utils/redis", () => ({ redis: null }));
 
 const handler = (await import("#server/api/admin/cache/clear.post")).default;
@@ -13,27 +13,26 @@ const handler = (await import("#server/api/admin/cache/clear.post")).default;
 beforeEach(() => { /* redis 固定为 null */ });
 
 describe("admin/cache/clear.post 无 Redis 配置分支", () => {
-  test("action=all → success:false matched:0 cleared:0", async () => {
+  test("action=all → 清源站缓存并触发边缘刷新，matched=-1", async () => {
     const cookie = await loginSessionCookie();
     const r = await callAdmin(handler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "all" },
-    }) as { success: boolean; matched: number; cleared: number; message: string };
-    expect(r.success).toBe(false);
-    expect(r.matched).toBe(0);
-    expect(r.cleared).toBe(0);
-    expect(String(r.message)).toContain("无需清理");
+    }) as { success: boolean; matched: number; cleared: number; note?: string };
+    expect(r.success).toBe(true);
+    expect(r.matched).toBe(-1);
+    expect(r.cleared).toBe(-1);
   });
 
-  test("action=search → 同上", async () => {
+  test("action=search → 走进程内内存清理", async () => {
     const cookie = await loginSessionCookie();
     const r = await callAdmin(handler, {
       method: "POST",
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "search" },
     }) as { success: boolean };
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
   });
 
   test("action=keyword → 同上", async () => {
@@ -43,7 +42,7 @@ describe("admin/cache/clear.post 无 Redis 配置分支", () => {
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "keyword", value: "test" },
     }) as { success: boolean };
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
   });
 
   test("action=footprint → 同上", async () => {
@@ -53,7 +52,7 @@ describe("admin/cache/clear.post 无 Redis 配置分支", () => {
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "footprint" },
     }) as { success: boolean };
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
   });
 
   test("action=preset → 同上", async () => {
@@ -63,7 +62,7 @@ describe("admin/cache/clear.post 无 Redis 配置分支", () => {
       cookie: cookie + "; csrf_token=" + CSRF_TOKEN,
       body: { csrfToken: CSRF_TOKEN, action: "preset", value: "search" },
     }) as { success: boolean };
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
   });
 
   test("无 CSRF → 403(在 redis null 检查之前)", async () => {

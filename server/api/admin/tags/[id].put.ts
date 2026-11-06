@@ -87,9 +87,9 @@ export default defineEventHandler(async event => {
     }
 
     const tag = await prisma.metas.findUnique({ where: { mid } });
-    if (tag?.slug) contentPaths.push(`/tag/${encodeURIComponent(tag.slug)}`);
+    if (contentPaths && tag?.slug) contentPaths.push(`/tag/${encodeURIComponent(tag.slug)}`);
     // 标签变更 → 立即失效首页/标签/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 标签更新失效缓存失败", err));
+    void invalidateContentCaches({ routes: TAG_CACHE_ROUTES, contentPaths: contentPaths ?? [] }).catch(err => console.error("[cache] 标签更新失效缓存失败", err));
     // 约定1 白名单：响应节点逐字段构造（与 GET 一致），不整行返回
     return tag
       ? { mid: tag.mid, name: tag.name, slug: tag.slug, desc: tag.desc, type: tag.type }

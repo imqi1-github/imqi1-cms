@@ -1,5 +1,5 @@
 import { commentAvatarUrl } from "#server/utils/comment-avatar";
-import { UNBOUNDED_TAKE_FALLBACK, PUBLIC_CACHE_CONTROL  } from "#shared/constants";
+import { UNBOUNDED_TAKE_FALLBACK, PUBLIC_CACHE_CONTROL, FOOTPRINT_CACHE_TTL } from "#shared/constants";
 import { resolveCity } from "#server/utils/ip-location";
 import { prisma } from "#server/utils/prisma";
 import { cacheGet, cacheSetex } from "#server/utils/cache/store";
@@ -10,7 +10,6 @@ import type { IdStatus, FootprintPayload } from "#server/types/apis/footprint";
 // 自定义缓存（非 ISR）：整个响应聚合成一条，避免每次请求重跑全量 IP 归属地解析。
 // 键前缀 custom:* 由「缓存管理 → 自定义缓存」面板统一清理。
 const FOOTPRINT_CACHE_KEY = "custom:footprint";
-const FOOTPRINT_CACHE_TTL = 3600; // 1 小时
 
 /**
  * 读者足迹（访客分布）聚合端点

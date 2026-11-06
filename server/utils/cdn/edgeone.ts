@@ -20,6 +20,8 @@ const VERSION = "2022-09-01";
 const DEFAULT_HOST = "teo.tencentcloudapi.com";
 /** 单次提交条数：按最保守套餐（免费版目录刷新 50 条/次）取值 */
 const DEFAULT_BATCH_SIZE = 50;
+/** API 请求超时（毫秒）：避免后台手动刷新/状态查询挂住请求 */
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export type EdgeOnePurgeType = "purge_url" | "purge_prefix" | "purge_host" | "purge_all";
 
@@ -190,17 +192,24 @@ export class EdgeOneCdnProvider extends CdnProviderBase {
     const bucket = quota ? quotaBucketFor(quota, type) : null;
     const batchSize = Math.max(1, Math.min(this.batchSize, bucket?.batch ?? this.batchSize));
 
-    // 额度预检：不够就别提交（提交会被拒，且整批都不执行）
+    // 额度预检：不够就只提交额度内的部分（整批提交会被拒，全部落空更糟）
+    let submitTargets = targets;
+    let truncated = 0;
     if (bucket && type !== "purge_all" && targets.length > bucket.dailyAvailable) {
+      truncated = targets.length - bucket.dailyAvailable;
+      submitTargets = targets.slice(0, bucket.dailyAvailable);
+    }
+
+    if (!submitTargets.length && targets.length) {
       return {
         provider: this.name,
         success: false,
         requested: targets.length,
-        error: `今日刷新额度不足（${type === "purge_url" ? "URL" : "目录"}剩余 ${bucket.dailyAvailable}，本次需要 ${targets.length}），内容将在边缘缓存 TTL 到期后自动更新`,
+        error: `今日刷新额度已用尽（${type === "purge_url" ? "URL" : "目录"}剩余 0），内容将在边缘缓存 TTL 到期后自动更新`,
       };
     }
 
-    const batches = type === "purge_all" ? [[]] : chunk(targets, batchSize);
+    const batches = type === "purge_all" ? [[]] : chunk(submitTargets, batchSize);
     const jobIds: string[] = [];
     const failures: string[] = [];
 
@@ -223,13 +232,19 @@ export class EdgeOneCdnProvider extends CdnProviderBase {
       }
     }
 
+    const notes: string[] = [];
+    if (jobIds.length > 1) notes.push(`分 ${batches.length} 批提交`);
+    if (truncated > 0) {
+      notes.push(`今日额度不足，仅刷新 ${submitTargets.length} 个目标（${truncated} 个未提交，将由 TTL 自然更新）`);
+    }
+
     return {
       provider: this.name,
       success: failures.length === 0,
       requested: targets.length,
       taskId: jobIds[0],
       error: failures.length ? failures.join("; ") : undefined,
-      note: jobIds.length > 1 ? `分 ${batches.length} 批提交` : undefined,
+      note: notes.length ? notes.join("；") : undefined,
     };
   }
 
@@ -249,6 +264,7 @@ export class EdgeOneCdnProvider extends CdnProviderBase {
       method: "POST",
       headers: signed.headers,
       body: signed.body,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     const text = await res.text();
     if (!res.ok) {

@@ -15,3 +15,7 @@ metadata:
 - 给 globalThis 加属性时：`declare global { var x: T }`（非可选）+ 文件末尾 `export {}` 让文件成 module
 - 不要写 `| undefined`，即便属性在某些环境"可能"不存在
 - 无类型 npm 包的 declare module 参照 `shared/bcryptjs.d.ts` / `shared/meting-core.d.ts` / `shared/markdown-it-container.d.ts` 放 shared/ 下（shared/**/*.d.ts 被 .nuxt/tsconfig.app.json 显式 include）
+
+**同一污染的另一面：test 文件 import server 的 Nitro 插件/中间件 → 反而把 server 工程自身的类型检查搞挂**（2026-11-06 实测）：test/tsconfig.json 的 `paths` 把 `#server/*` 映射到 `../server/*`，于是 `await import("#server/plugins/cache-control")` 会让该文件**在 test 工程里再编译一遍**；test 工程的 `types: ["bun-types"]` 不含 Nuxt/Nitro 的类型增强 → `nitroApp.hooks.hook("beforeResponse", cb)` 的 cb 形参被推成 `{ body: unknown }`（render:response 的签名）→ **server 工程跟着报一堆 TS2345**（错误信息里看不出是 test 工程引起的，只显示 `server/plugins/xxx.ts`）。
+→ **纯逻辑放 `server/utils/`（不依赖 Nitro 类型），test 只 import util**；需要 Nitro 类型的插件/中间件不要被 test 直接 import。
+→ 排查手法：把新 test 文件移走再跑 `bunx nuxi typecheck`，若错误消失就是这个原因（不是代码写错）。

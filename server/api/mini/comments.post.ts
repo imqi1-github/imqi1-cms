@@ -217,7 +217,7 @@ export default defineEventHandler(async event => {
 
     // 仅已发布评论改变公开数据/计数；待审核评论不对外可见，跳过可省刷新额度
     if (commentStatus === 1) {
-      void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 迷你端评论失效缓存失败", err));
+      void invalidateContentCaches({ routes: COMMENT_CACHE_ROUTES, contentCids: [cid], countOnly: true }).catch(err => console.error("[cache] 迷你端评论失效缓存失败", err));
     }
 
     return {

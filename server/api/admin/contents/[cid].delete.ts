@@ -5,7 +5,7 @@ import { deleteOrphanAttachments } from "#server/utils/attachment-cleanup";
 import { invalidateContentCaches } from "#server/utils/content-cache";
 import { contentUrlPaths } from "#server/utils/content-urls";
 import { logAdminAudit } from "#server/utils/audit";
-import { CSRF_HEADER, CONTENT_CACHE_ROUTES  } from "#shared/constants";
+import { CSRF_HEADER, CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   // 验证用户登录
@@ -73,7 +73,8 @@ export default defineEventHandler(async event => {
     const contentPaths = target
       ? [...contentUrlPaths(target), `/api/related-contents/${contentId}`]
       : [];
-    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentPaths }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
+    // 删除文章 → 后续文章页码整体位移 → 刷整个列表目录
+    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentPaths, edgeDirectories: LIST_EDGE_DIRECTORIES }).catch(err => console.error("[cache] 文章删除失效缓存失败", err));
 
     logAdminAudit({
       actor: { uid: user.uid, name: user.name },

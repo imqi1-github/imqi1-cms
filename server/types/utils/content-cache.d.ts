@@ -14,4 +14,12 @@ export interface InvalidateContentCachesOptions {
   contentCids?: number[];
   /** 已确定的具体站内路径（如删除前查到的文章页/分类页），优先于通配目录刷新 */
   contentPaths?: string[];
+  /** 显式的边缘刷新路由；传空数组 = 只刷 edgePaths，不刷路由 */
+  edgeRoutes?: string[];
+  /** 显式的边缘刷新路径（相对路径），与路由展开的结果合并提交 */
+  edgePaths?: string[];
+  /** 显式的边缘目录前缀（结构性变更：文章增删会让列表页码整体位移 → 刷整个列表目录） */
+  edgeDirectories?: string[];
+  /** 纯计数类变更（评论增删）：不刷路由派生的固定页，只刷「文章所在的那一页」 */
+  countOnly?: boolean;
 }

@@ -6,10 +6,14 @@ import {
   isCdnQuotaExhausted,
   purgeCdnRoutes,
   purgeCdnUrls,
+  warnCdnNotConfigured,
 } from "#server/utils/cdn";
 import { siteConfig } from "~~/site.config";
-import { contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
+import { contentListPagePaths, contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
+import { CONTENT_PAGE_SIZE_DEFAULT } from "#shared/constants";
 import { isListPageRoute } from "#server/utils/cache-routes";
+import { clearSourceCache } from "#server/utils/source-cache";
+import { CHANGELOG_TYPES } from "#shared/changelog";
 import type { InvalidateContentCachesOptions } from "#server/types/utils/content-cache";
 
 /**
@@ -38,55 +42,6 @@ export async function invalidateContentCaches(opts: InvalidateContentCachesOptio
 }
 
 /**
- * 清掉源站缓存层里受影响路由的缓存键。
- *
- * 走 Nitro storage API（`cache` mount：配了 Redis 是 redis 驱动，没配就是文件驱动 ./.nitro/cache），
- * **驱动无关**。公开 API 的源站缓存也在这组里，写库时必须一起清，否则边缘回源拿到的仍是旧 JSON。
- */
-async function clearSourceCache(routes?: string[]): Promise<number> {
-  const storage = useStorage("cache");
-  // 文件驱动的 getKeys 会无视 base 返回全部键（Redis 驱动才按 base 过滤），所以自己再筛一遍缓存组
-  const keys = (await storage.getKeys("nitro:routes")).filter(isRouteCacheKey);
-  if (!keys.length) return 0;
-
-  const frags = routes?.length ? routes.map(routeFrag) : null;
-  const targets = keys.filter((key) => {
-    const frag = keyFrag(key);
-    // API 缓存键（apisite / apicategories…）变化快，任何写库都一并清掉
-    if (frag.startsWith("api")) return true;
-    return frags ? frags.some(fragPrefix => frag.startsWith(fragPrefix)) : true;
-  });
-
-  for (const key of targets) {
-    await storage.removeItem(key);
-  }
-  return targets.length;
-}
-
-/** 是否是页面/接口缓存组的键（排除图标缓存等其他缓存组） */
-function isRouteCacheKey(key: string): boolean {
-  return key.startsWith("nitro:routes") || key.startsWith("nitro/routes");
-}
-
-/**
- * 从缓存键里取出路由片段。
- *
- * 键形：Redis 驱动 `nitro:routes:_:<frag>.<hash>.json`、文件驱动 `nitro/routes/_/<frag>.<hash>.json`
- * （同一把键，两种驱动只是分隔符不同）。
- */
-function keyFrag(key: string): string {
-  const segment = key.split(/[:/]/).pop() ?? "";
-  return segment.replace(/\.[^.]+\.json$/, "");
-}
-
-// 与 Nitro 内部 cachedEventHandler 的 getKey/escapeKey 对齐：去掉非词字符、截取前 16 个字符；
-// 空则回退 "index"（根路径 "/" 的页面缓存键片段即为 index）。
-// 注意：键里的片段是**路径**的转义（/content/cat/slug → contentcatslug），路由片段只是它的前缀。
-function routeFrag(route: string): string {
-  return String(route).replace(/\W/g, "").slice(0, 16) || "index";
-}
-
-/**
  * 路由 → 受影响的公开 API（这些接口也在边缘缓存，页面刷新后接口不能还是旧 JSON）。
  *
  * 这些接口的边缘 TTL 已是 60 秒（API_S_MAXAGE），本身就会自然收敛；
@@ -105,28 +60,45 @@ const API_URLS_BY_ROUTE: Record<string, string[]> = {
 
 /** 边缘刷新防抖：编辑器 2 秒自动保存会连续写库，合并成一次提交 */
 const PURGE_DEBOUNCE_MS = 5_000;
-/** 单次最多提交的 URL 数（免费版单次 500） */
-const PURGE_URL_LIMIT = 500;
 
 let purgeTimer: ReturnType<typeof setTimeout> | null = null;
 const pendingCids = new Set<number>();
 const pendingPaths = new Set<string>();
 const pendingRoutes = new Set<string>();
+const pendingEdgeRoutes = new Set<string>();
+const pendingEdgePaths = new Set<string>();
+const pendingEdgeDirectories = new Set<string>();
+let pendingEdgeRoutesGiven = false;
+let pendingCountOnly = false;
 
 /** 累积本次变更并重置防抖计时器（不 await：刷新异步执行，失败不影响写库） */
 function scheduleCdnPurge(opts: InvalidateContentCachesOptions): void {
-  if (!isAutoPurgeEnabled() || !isCdnEnabled()) return;
+  if (!isAutoPurgeEnabled()) return;
+  if (!isCdnEnabled()) {
+    // 忘配密钥时内容不会即时更新，必须留痕（否则全程静默）
+    warnCdnNotConfigured();
+    return;
+  }
 
   for (const cid of opts.contentCids ?? []) {
     if (Number.isInteger(cid) && cid > 0) pendingCids.add(cid);
   }
   for (const path of opts.contentPaths ?? []) pendingPaths.add(path);
+  for (const path of opts.edgePaths ?? []) pendingEdgePaths.add(path);
+  for (const dir of opts.edgeDirectories ?? []) pendingEdgeDirectories.add(dir);
+  if (opts.edgeRoutes) {
+    // 显式指定（含空数组）= 调用方自己决定刷哪些边缘路由
+    pendingEdgeRoutesGiven = true;
+    for (const route of opts.edgeRoutes) pendingEdgeRoutes.add(route);
+  }
   if (opts.routes?.length) {
     for (const route of opts.routes) pendingRoutes.add(route);
   } else {
     // 没传路由 = 全站失效（站点设置 / 数据导入）
     pendingRoutes.add("/**");
   }
+  // 显式声明纯计数变更 → 不刷边缘（调用方最清楚自己的变更性质）
+  if (opts.countOnly) pendingCountOnly = true;
 
   if (purgeTimer) clearTimeout(purgeTimer);
   purgeTimer = setTimeout(() => {
@@ -141,16 +113,26 @@ async function flushCdnPurge(): Promise<void> {
   const cids = [...pendingCids];
   const paths = [...pendingPaths];
   const routes = [...pendingRoutes];
+  const edgeRoutes = [...pendingEdgeRoutes];
+  const edgePaths = [...pendingEdgePaths];
+  const edgeDirectories = [...pendingEdgeDirectories];
+  const edgeRoutesGiven = pendingEdgeRoutesGiven;
+  const countOnly = pendingCountOnly;
   pendingCids.clear();
   pendingPaths.clear();
   pendingRoutes.clear();
+  pendingEdgeRoutes.clear();
+  pendingEdgePaths.clear();
+  pendingEdgeDirectories.clear();
+  pendingEdgeRoutesGiven = false;
+  pendingCountOnly = false;
 
   if ((!cids.length && !paths.length && !routes.length) || isCdnQuotaExhausted()) return;
 
   try {
-    const { urls, directories } = await resolvePurgeTargets(cids, paths, routes);
+    const { urls, directories } = await resolvePurgeTargets(cids, paths, routes, edgeRoutes, edgePaths, edgeDirectories, countOnly, edgeRoutesGiven);
     if (urls.length) {
-      await purgeCdnUrls(urls.slice(0, PURGE_URL_LIMIT), "自动");
+      await purgeCdnUrls(urls, "自动");
     }
     if (directories.length) {
       await purgeCdnRoutes(directories);
@@ -166,80 +148,150 @@ async function flushCdnPurge(): Promise<void> {
  * 优先用**具体 URL**（URL 池 1000/天）；只有展开不了或超过阈值（一次分类重命名可能
  * 涉及上千篇文章）时才退回目录刷新（目录池 50/天）。
  *
- * **列表/统计页按变更类型区别对待**：
- *   - 纯计数类变更（评论增删/审核）：不刷。它们边缘 TTL 短（build.listPageCacheSeconds），
- *     写库时源站缓存键已删掉，下次回源渲染出的就是新数据 → 60 秒内自然收敛。
- *     200 条评论/天若每次都刷这 6 个固定 URL，光这一项就吃掉 1200 个 URL 额度。
- *   - 内容类变更（文章增删改等）：连带刷新。首页/分类页的卡片也展示该文章，
- *     用户改完期望秒级看到。
+ * **列表页的刷新粒度**：分类/标签列表按分页拆成无限多变体（?page=N），
+ * 逐个刷不可行、刷目录又太贵（目录池 50/天）→ 改为**精确刷「这篇文章所在的那一页」**
+ * （页码可枚举：按 create_time 排序的位次 ÷ 每页条数），一次变更 1~3 个 URL。
+ * 列表页因此不再出现「第 1 页已更新、第 2 页还是旧的」的不一致。
+ *
+ * **纯计数类变更**（评论增删/审核）：只刷「文章所在的那一页」（评论数在那一页的卡片上），
+ * 不刷路由派生的固定页（/、/about…）→ 200 条评论/天 ≈ 200~600 个 URL，仍在预算内。
  */
 async function resolvePurgeTargets(
   cids: number[],
   contentPaths: string[],
   routes: string[],
+  edgeRoutes: string[],
+  edgePaths: string[],
+  edgeDirectories: string[],
+  countOnly: boolean,
+  edgeRoutesGiven: boolean,
 ): Promise<{ urls: string[]; directories: string[] }> {
   const base = (process.env.CDN_PURGE_BASE_URL || siteConfig.site.url).replace(/\/+$/, "");
   const urls = new Set<string>();
   const directories = new Set<string>();
   const toUrl = (path: string) => `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
+  // 边缘刷新的路由集合：显式指定优先（edgeRoutes），否则沿用 routes
+  const purgeRoutes = edgeRoutesGiven ? edgeRoutes : routes;
   // 本次变更是否影响内容页 → 是则连带刷新列表页（否则只靠短 TTL 收敛）
-  const purgeListPages = routes.some(route => !isListPageRoute(route));
+  const purgeListPages = purgeRoutes.some(route => !isListPageRoute(route));
   const keep = (path: string) => purgeListPages || !isListPageRoute(path);
-  // 纯计数类变更（评论）：列表页靠短 TTL 收敛，文章页的评论列表由客户端实时拉（/api/comments 无缓存头）
-  // → 完全不提交边缘刷新，200 条评论/天 = 0 个额度
-  const countOnly = !purgeListPages;
+  // 纯计数类变更（评论）：不刷路由派生的固定页，只刷「文章所在的那一页」
+  const skipRouteTargets = countOnly;
 
   // 超过阈值不展开，交给目录刷新兜底（避免一次分类重命名吃掉上千 URL 额度）
-  const usablePaths = countOnly ? [] : contentPaths.length <= PURGE_CONTENT_URL_LIMIT ? contentPaths : [];
+  const usablePaths = contentPaths.length <= PURGE_CONTENT_URL_LIMIT ? contentPaths : [];
   for (const path of usablePaths) {
+    if (keep(path)) urls.add(toUrl(path));
+  }
+  // 显式指定的边缘路径（如点赞只刷文章页）
+  for (const path of edgePaths) {
     if (keep(path)) urls.add(toUrl(path));
   }
 
   let unresolved = false;
-  if (cids.length && !countOnly) {
+  let pagePaths: string[] = [];
+  if (cids.length) {
     const rows = await prisma.contents.findMany({
       where: { cid: { in: cids } },
       select: {
         cid: true,
         slug: true,
         type: true,
-        contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+        create_time: true,
+        contentrelations: { select: { metas: { select: { mid: true, slug: true, type: true } } } },
       },
     });
     const found = new Set(rows.map(row => row.cid));
     unresolved = cids.some(cid => !found.has(cid));
     for (const row of rows) {
-      for (const path of contentUrlPaths(row)) {
-        if (keep(path)) urls.add(toUrl(path));
+      // 纯计数变更不刷文章页/分类页裸 URL（评论列表是客户端拉的，文章页没有计数徽章）
+      if (!skipRouteTargets) {
+        for (const path of contentUrlPaths(row)) {
+          if (keep(path)) urls.add(toUrl(path));
+        }
       }
     }
+    // 列表页：这篇文章所在的分类/标签页（第几页）→ 评论数、更新时间都在那一张卡片上
+    pagePaths = await contentListPagePaths(rows, await listPageSize());
   }
+  for (const path of pagePaths) urls.add(toUrl(path));
 
   // 有具体内容路径/cid 时，`/content/**` 等通配不再刷目录
-  const hasContentResolution = usablePaths.length > 0 || (cids.length > 0 && !unresolved);
+  const hasContentResolution = usablePaths.length > 0 || edgePaths.length > 0 || (cids.length > 0 && !unresolved);
 
-  for (const route of routes) {
+  for (const route of purgeRoutes) {
     if (route === "/**") {
       directories.add("/**");
       continue;
     }
-    // 纯计数变更（评论）：列表页与其数据源接口都靠 60 秒 TTL 自然收敛，不刷边缘
-    if (countOnly) continue;
+    // 纯计数变更（评论）：固定页与其数据源接口靠短 TTL 自然收敛，不刷边缘
+    if (skipRouteTargets) continue;
     if (route.endsWith("/**")) {
       if (!hasContentResolution) directories.add(route);
     } else {
       urls.add(toUrl(route));
       // /sitemap 页面与 /sitemap.xml 是两个路径，但属于同一份数据
       if (route === "/sitemap") urls.add(toUrl("/sitemap.xml"));
+      // 边缘缓存键含查询串：/subscribes?source=…、/changelogs?type=… 等变体是独立条目，必须逐个刷
+      for (const variant of await queryVariants(route)) urls.add(toUrl(variant));
     }
     for (const apiPath of API_URLS_BY_ROUTE[route] ?? []) urls.add(toUrl(apiPath));
   }
 
+  // 显式指定的目录前缀（结构性变更：文章增删会让后续页码整体位移 → 刷整个列表目录）
+  for (const dir of edgeDirectories) directories.add(dir);
+
   // 相关文章按 cid 单独缓存，文章/评论/附件变更时一并刷新
-  if (!countOnly) {
+  if (!skipRouteTargets) {
     for (const cid of cids) urls.add(toUrl(`/api/related-contents/${cid}`));
   }
 
   return { urls: [...urls], directories: [...directories] };
+}
+
+/**
+ * 列表页每页条数（站点设置，与前台分页用同一个值，否则算出的页码会错）。
+ *
+ * 直接读 informations 行、不走 getSiteSettings：后者会拉进 #shared/html → isomorphic-dompurify，
+ * 把 jsdom 拖进缓存模块的依赖链（单测里 jsdom 加载失败会连带打挂无关用例）。
+ */
+async function listPageSize(): Promise<number> {
+  try {
+    const row = await prisma.informations.findUnique({
+      where: { key: "contentPageSize" },
+      select: { value: true },
+    });
+    const size = Number(row?.value);
+    return Number.isInteger(size) && size > 0 ? size : CONTENT_PAGE_SIZE_DEFAULT;
+  } catch (error) {
+    log.error("[cdn] 读取每页条数失败，按默认值算", { error });
+    return CONTENT_PAGE_SIZE_DEFAULT;
+  }
+}
+
+/**
+ * 内容页的查询串变体（边缘缓存键含查询串，变体是独立条目）。
+ *
+ * 只处理**可枚举**的变体：/subscribes 的 source、/changelogs 的 type。
+ * /map 的变体（view/place）不用展开——它已归入短 TTL 档（列表页档），15 秒内自然收敛。
+ * 分页参数（/category/x?page=N）数量不可枚举，同样靠列表页短 TTL 收敛。
+ */
+async function queryVariants(route: string): Promise<string[]> {
+  try {
+    if (route === "/subscribes") {
+      const subscribes = await prisma.subscribes.findMany({
+        select: { id: true },
+        take: PURGE_CONTENT_URL_LIMIT,
+      });
+      return subscribes.map(sub => `/subscribes?source=${sub.id}`);
+    }
+    if (route === "/changelogs") {
+      return CHANGELOG_TYPES.map(type => `/changelogs?type=${encodeURIComponent(type)}`);
+    }
+    return [];
+  } catch (error) {
+    log.error("[cdn] 查询变体失败", { error });
+    return [];
+  }
 }

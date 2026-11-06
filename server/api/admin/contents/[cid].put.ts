@@ -5,7 +5,8 @@ import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { validateContentData } from "#server/utils/validation";
 import { invalidateContentCaches } from "#server/utils/content-cache";
-import { CONTENT_CACHE_ROUTES } from "#shared/constants";
+import { contentUrlPaths } from "#server/utils/content-urls";
+import { CONTENT_CACHE_ROUTES, LIST_EDGE_DIRECTORIES } from "#shared/constants";
 import { logAdminAudit } from "#server/utils/audit";
 
 export default defineEventHandler(async event => {
@@ -94,9 +95,12 @@ export default defineEventHandler(async event => {
   // 验证字段长度
   validateContentData({ title, slug });
 
-  // 检查文章是否存在
+  // 检查文章是否存在（连分类/标签关系一起取：改 slug/分类后旧 URL 必须一起失效）
   const existing = await prisma.contents.findUnique({
     where: { cid },
+    include: {
+      contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+    },
   });
 
   if (!existing) {
@@ -183,7 +187,14 @@ export default defineEventHandler(async event => {
     });
 
     // 文章变更 → 立即失效首页/分类/标签/归档/详情 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CONTENT_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));
+    // 旧路径一并失效：改了 slug/分类/类型后旧地址仍是边缘缓存里的旧 HTML（内容页 TTL 6 小时）
+    void invalidateContentCaches({
+      routes: CONTENT_CACHE_ROUTES,
+      contentCids: [cid],
+      contentPaths: contentUrlPaths(existing),
+      // 发布状态变化（发布/取消发布）→ 该文章进出列表，后续文章页码位移 → 刷整个列表目录
+      edgeDirectories: statusNum !== undefined && statusNum !== existing.status ? LIST_EDGE_DIRECTORIES : undefined,
+    }).catch(err => console.error("[cache] 文章更新失效缓存失败", err));
 
     // 前端保存后只需 cid，不再回查全字段（含正文）。
     await logAdminAudit({

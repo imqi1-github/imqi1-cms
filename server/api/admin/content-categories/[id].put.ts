@@ -2,6 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { getUser } from "#server/lib/auth";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { invalidateContentCaches } from "#server/utils/content-cache";
+import { contentArticlePaths } from "#server/utils/content-urls";
 import { CATEGORY_CACHE_ROUTES } from "#shared/constants";
 
 export default defineEventHandler(async event => {
@@ -61,6 +62,21 @@ export default defineEventHandler(async event => {
       throw createError({ statusCode: 404, message: "文章不存在" });
     }
 
+    // 改分类前记下旧文章 URL（文章 URL 含主分类 slug，换分类后旧地址要一起失效）
+    const before = await prisma.contents.findUnique({
+      where: { cid },
+      select: {
+        cid: true,
+        slug: true,
+        type: true,
+        contentrelations: {
+          where: { metas: { type: "category" } },
+          select: { metas: { select: { slug: true, type: true } } },
+        },
+      },
+    });
+    const oldArticlePaths = before ? contentArticlePaths(before) : [];
+
     // 预检每个 mid 的 metas.type 为 'category'：否则分类编辑器误传标签 mid 会静默给文章加标签关系
     const categoryIdSet = new Set(validCategoryIds);
     if (categoryIdSet.size > 0) {
@@ -88,7 +104,14 @@ export default defineEventHandler(async event => {
     });
 
     // 内容关联分类变更 → 立即失效首页/分类/内容/归档 ISR 缓存（best-effort）
-    void invalidateContentCaches({ routes: CATEGORY_CACHE_ROUTES, contentCids: [cid] }).catch(err => console.error("[cache] 内容分类关联失效缓存失败", err));
+    // 旧分类的文章 URL 也要失效：换了主分类后旧地址仍是边缘缓存里的旧 HTML
+    // 换分类 → 该文章在分类列表里的位置变了，后续文章页码位移 → 刷整个分类目录
+    void invalidateContentCaches({
+      routes: CATEGORY_CACHE_ROUTES,
+      contentCids: [cid],
+      contentPaths: oldArticlePaths,
+      edgeDirectories: ["/category/**"],
+    }).catch(err => console.error("[cache] 内容分类关联失效缓存失败", err));
 
     return {
       success: true,

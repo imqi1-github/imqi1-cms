@@ -34,6 +34,7 @@ export default defineConfig({
     cwd: ROOT,
     reuseExistingServer: true,
     timeout: 120_000,
-    env: { ...process.env, PORT: String(PORT) },
+    // 放宽友链申请的每小时额度：E2E 反复跑这套用例会撞上默认的 3 次/IP 上限
+    env: { ...process.env, PORT: String(PORT), RATE_LIMIT_LINKS_APPLY: "100" },
   },
 });

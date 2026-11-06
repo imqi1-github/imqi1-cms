@@ -1,7 +1,24 @@
 import { prisma, isPrismaNotFoundError, isPrismaUniqueConstraintError } from "#server/utils/prisma";
 import { computeLikeFingerprint, isLikeRateLimited } from "#server/utils/likes";
 import { getClientIp } from "#server/utils/client-ip";
+import { invalidateContentCaches } from "#server/utils/content-cache";
+import { contentArticlePaths } from "#server/utils/content-urls";
+import { LIKES_CACHE_ROUTES } from "#shared/constants";
 import type { LikeToggleResponse } from "#server/types/apis/content/likes";
+
+/** 文章自身的站内路径（用于边缘刷新） */
+async function articlePathsOf(cid: number): Promise<string[]> {
+  const rows = (await prisma.contents.findMany({
+    where: { cid },
+    select: {
+      cid: true,
+      slug: true,
+      type: true,
+      contentrelations: { select: { metas: { select: { slug: true, type: true } } } },
+    },
+  })) ?? [];
+  return rows.flatMap(row => contentArticlePaths(row));
+}
 
 /**
  * POST /api/contents/likes/:cid —— 点赞（公开写，幂等）。
@@ -111,10 +128,13 @@ export default defineEventHandler(async event => {
       },
     };
 
-    // 点赞不再失效页面缓存：/content/** 是整组匹配，一个赞会清掉全部文章页 ISR，
-    // 下一个访问者就要重跑 Shiki 全量渲染（30 分钟 ISR 形同虚设）。点赞数展示的正确性
-    // 由客户端兜底：详情页挂载时 refreshLike() 拉实时数，列表角标滞后 ≤1 个 ISR 窗口（虚荣数字可接受）。
-    // /api/likes/counts 无服务端缓存（仅后台带 ?t= 破缓存调用），无需失效。
+    // 点赞数会渲染进文章页 SSR HTML（likeCount）→ 文章页必须精确刷新，否则 6 小时内一直显示旧数
+    // 列表页角标靠 60 秒短 TTL 收敛（清源站缓存即可，不必刷边缘，省额度）
+    void invalidateContentCaches({
+      routes: LIKES_CACHE_ROUTES,
+      edgeRoutes: [],
+      edgePaths: await articlePathsOf(cid),
+    }).catch(err => console.error("[cache] 点赞失效缓存失败", err));
 
     return payload;
   } catch (error) {
