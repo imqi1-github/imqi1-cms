@@ -60,12 +60,19 @@ export interface SiteBuildConfig {
   /** Redis 连接配置（仅生产构建生效，开发环境恒不启用） */
   redis: RedisBuildConfig;
   /**
-   * 页面缓存时长（秒）：源站 ISR 与 CDN 边缘缓存共用。
+   * 源站页面缓存时长（秒）：Nitro routeRules 的 `cache.maxAge`，只决定源站多久重渲染一次。
    *
-   * 它是内容的新鲜度上界——不发刷新请求，靠边缘的「缓存预刷新 + 源站 ETag」在 TTL 内自动收敛。
-   * 值越小源站重渲染越频繁、内容越新；值越大越省源站、内容可能旧更久。
+   * 边缘到期回源验证时，源站缓存还在就只回 304（ETag），不重渲染 ⇒ 这个值放大不增加
+   * 边缘侧的旧内容时间，只降低源站渲染频率。边缘新鲜度由 edgeCacheSeconds 决定。
    */
   pageCacheSeconds: number;
+  /**
+   * 内容页的边缘缓存时长（秒）：文章详情/友链/订阅/更新日志等。
+   *
+   * 写库后会精确刷新对应 URL；这个 TTL 是「刷新没成功」时的兜底上界（如额度耗尽、CDN 未配）。
+   * 边缘到期回源验证命中源站缓存只回 304，所以它可以远小于 pageCacheSeconds。
+   */
+  edgeCacheSeconds: number;
   /**
    * 列表/统计页的边缘 TTL（秒）：首页/分类/标签/归档/关于/站点地图。
    *

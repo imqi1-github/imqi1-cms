@@ -16,7 +16,7 @@ export default defineEventHandler(async event => {
       limit = Math.min(30, Math.max(1, Math.floor(Number(limitRaw) || 30)));
     }
 
-    // 设置缓存头：CDN和浏览器缓存5分钟
+    // 设置缓存头：浏览器每次验证，边缘缓存 60 秒（PUBLIC_CACHE_CONTROL）
     setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
     const contents = await getSubscribePosts();

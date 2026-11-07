@@ -2,7 +2,7 @@ import { prisma } from "#server/utils/prisma";
 import { PUBLIC_LIMIT_MAX, PUBLIC_CACHE_CONTROL  } from "#shared/constants";
 
 export default defineEventHandler(async event => {
-  // 设置缓存头 - CDN 和浏览器缓存 5 分钟
+  // 设置缓存头：浏览器每次验证，边缘缓存 60 秒（PUBLIC_CACHE_CONTROL）
   setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
   try {

@@ -59,6 +59,7 @@ export const siteConfig = defineSiteConfig({
     brotliCompression: true,
     statsHtml: false,
     pageCacheSeconds: 21600,
+    edgeCacheSeconds: 3600,
     listPageCacheSeconds: 15,
     redis: {
       enabled: false,

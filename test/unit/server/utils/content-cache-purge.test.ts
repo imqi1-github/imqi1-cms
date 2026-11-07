@@ -25,9 +25,14 @@ mock.module("#server/utils/cdn", () => ({
 }));
 
 // 访客分布聚合缓存：评论变更时要清掉（它的 TTL 是读者地图的新鲜度硬上限）
+// 搜索短缓存：任何写库都要清（搜索结果是 contents/metas/comments 的派生视图）
 mock.module("#server/utils/cache/store", () => ({
   cacheDel: async (key: string) => {
     deletedCacheKeys.push(key);
+  },
+  cacheClearByPrefix: async (prefixes: string[]) => {
+    deletedCacheKeys.push(...prefixes.map(prefix => `${prefix}*`));
+    return 0;
   },
 }));
 

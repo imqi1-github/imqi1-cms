@@ -11,7 +11,7 @@
  * 不破坏既有接口契约，单加 likesCount 字段会让旧 fixture / 前端期望变化。
  * 单独批量接口让前端只在用得到点赞数的页面发起，无感接入。
  *
- * 缓存：默认 5 分钟 CDN/浏览器（与 PUBLIC_CACHE_CONTROL 一致）。点赞 POST 后失效此路由即可。
+ * 缓存：浏览器每次验证、边缘 60 秒（PUBLIC_CACHE_CONTROL）。点赞 POST 后失效此路由即可。
  */
 import { prisma } from "#server/utils/prisma";
 import { PUBLIC_CACHE_CONTROL } from "#shared/constants";

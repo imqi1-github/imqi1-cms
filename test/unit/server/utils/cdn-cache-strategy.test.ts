@@ -42,6 +42,7 @@ describe("nuxt.config 的页面缓存规则", () => {
 
   test("源站缓存用长时长（build.pageCacheSeconds），边缘按页面类型分档", () => {
     expect(config).toContain("siteConfig.build.pageCacheSeconds");
+    expect(config).toContain("siteConfig.build.edgeCacheSeconds");
     expect(config).toContain("maxAge: PAGE_CACHE_SECONDS");
     // 列表/统计页：边缘 TTL 短（listPageCacheSeconds），源站缓存仍是长的
     expect(config).toContain("siteConfig.build.listPageCacheSeconds");

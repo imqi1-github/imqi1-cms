@@ -28,7 +28,7 @@ export default defineEventHandler(async event => {
     }
     const contentId = rawContentId;
 
-    // 设置缓存头：CDN和浏览器缓存5分钟
+    // 设置缓存头：浏览器每次验证，边缘缓存 60 秒（PUBLIC_CACHE_CONTROL）
     setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
     // 获取当前文章的标签

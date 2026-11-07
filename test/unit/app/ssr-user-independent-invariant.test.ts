@@ -81,8 +81,9 @@ describe("routeRules 的 CDN 缓存边界", () => {
 
   test("页面路由下发 s-maxage（浏览器不缓存、边缘缓存）", () => {
     expect(config).toMatch(/s-maxage=\$\{edgeMaxAge\}/);
-    // 边缘 TTL 按页面类型分档：内容页用 pageCacheSeconds，列表/统计页用 listPageCacheSeconds
+    // 源站用 pageCacheSeconds（长），边缘按页面类型分档：内容页 edgeCacheSeconds、列表/统计页 listPageCacheSeconds
     expect(config).toContain("siteConfig.build.pageCacheSeconds");
+    expect(config).toContain("siteConfig.build.edgeCacheSeconds");
     expect(config).toContain("siteConfig.build.listPageCacheSeconds");
     // 档位判定必须与运行时共用同一份实现（shared/cache-routes），不能各写一套
     expect(config).toContain("isListPageRoutePattern(path)");

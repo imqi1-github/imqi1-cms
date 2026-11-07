@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
-import { FOOTPRINT_CACHE_TTL } from "#shared/constants";
+import { FOOTPRINT_CACHE_TTL, PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 mockSharedPrisma();
 
@@ -172,9 +172,9 @@ describe("footprint.get(访客分布)", () => {
     expect(raw).not.toContain("M@X.com");
     expect(raw).not.toContain("9.9.9.9");
     expect(raw).not.toContain("1.1.1.1");
-    // 自定义缓存写入,TTL 1 小时
+    // 自定义缓存写入,TTL 10 分钟
     expect(lastSetex).toMatchObject({ key: "custom:footprint", ttl: FOOTPRINT_CACHE_TTL });
-    expect(headers["cache-control"]).toContain("max-age=300");
+    expect(headers["cache-control"]).toBe(PUBLIC_CACHE_CONTROL);
   });
 
   test("缓存命中直接返回,不再查库", async () => {
@@ -263,7 +263,7 @@ describe("blog-network.get(博客网络)", () => {
     expect(r.data.overseas).toBe(1);
     expect(r.data.unknown).toBe(1);
     expect(JSON.stringify(r)).not.toContain("2.2.2.2");
-    expect(headers["cache-control"]).toContain("max-age=300");
+    expect(headers["cache-control"]).toBe(PUBLIC_CACHE_CONTROL);
   });
 
   test("www. 前缀归一化参与去重(域名走 DNS mock)", async () => {
@@ -302,7 +302,7 @@ describe("travels.get(公开地点)", () => {
     expect(r.data[0]!.contents).toEqual([{ url: "/content/note/a", title: "甲", coverCount: 2, manyCovers: true }]);
     expect(r.data[1]!.contents[0]!.manyCovers).toBe(false);
     expect(JSON.stringify(r)).not.toContain('"enabled"');
-    expect(headers["cache-control"]).toContain("max-age=300");
+    expect(headers["cache-control"]).toBe(PUBLIC_CACHE_CONTROL);
   });
 
   test("DB 异常 → 500", async () => {

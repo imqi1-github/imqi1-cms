@@ -8,7 +8,7 @@ import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 export default defineEventHandler(async event => {
   try {
-    // 设置缓存头：CDN和浏览器缓存5分钟
+    // 设置缓存头：浏览器每次验证，边缘缓存 60 秒（PUBLIC_CACHE_CONTROL）
     setHeader(event, "Cache-Control", PUBLIC_CACHE_CONTROL);
 
     // ========== 优化：先查询一次图片分类信息，后续复用 ==========

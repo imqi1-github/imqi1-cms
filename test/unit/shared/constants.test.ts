@@ -168,9 +168,10 @@ describe("CSRF / 错误码常量", () => {
 });
 
 describe("公开接口缓存头", () => {
-  test("含 s-maxage 的 5 分钟 CDN 缓存", () => {
-    expect(PUBLIC_CACHE_CONTROL).toBe("public, max-age=300, s-maxage=300");
+  test("浏览器每次验证、边缘 60 秒", () => {
+    expect(PUBLIC_CACHE_CONTROL).toBe("public, max-age=0, s-maxage=60");
     expect(PUBLIC_CACHE_CONTROL).toContain("s-maxage");
+    expect(PUBLIC_CACHE_CONTROL).toContain("max-age=0");
   });
 
   test("不带 s-maxage 的浏览器直接缓存版", () => {

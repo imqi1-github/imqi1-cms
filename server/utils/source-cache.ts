@@ -71,7 +71,8 @@ export function exactKeySuffix(url: string): string {
  *
  * - `routes` 不传且 `paths`/`exactPaths` 为空 → 清整组（站点设置 / 数据导入这类全局变更）。
  * - `routes` 传空数组 → 不按路由清（配合 `paths`/`exactPaths` 精确清）。
- * - 任何情况下都清 `api*` 键：接口缓存随写库一起失效，否则边缘回源拿到旧 JSON。
+ * - 任何情况下都清 `api*` 与 `search*` 键：两者都是数据库的派生视图，写库后必须一起失效，
+ *   否则边缘回源拿到旧 JSON / 旧搜索结果。
  */
 export async function clearSourceCache(opts: ClearSourceCacheOptions = {}): Promise<number> {
   const storage = useStorage("cache");
@@ -87,7 +88,8 @@ export async function clearSourceCache(opts: ClearSourceCacheOptions = {}): Prom
 
   const targets = keys.filter((key) => {
     const frag = keyFrag(key);
-    if (frag.startsWith("api")) return true;
+    // 接口缓存与搜索页缓存都是数据库的派生视图，写库后一并失效（边缘回源不能拿到旧 JSON / 旧结果）
+    if (frag.startsWith("api") || frag.startsWith("search")) return true;
     if (clearAll) return true;
     // 精确键：后缀完全一致才算命中（frag 截断导致的歧义不影响这一层）
     if (exactSuffixes?.some(suffix => key.endsWith(suffix))) return true;

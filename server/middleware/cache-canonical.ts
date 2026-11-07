@@ -6,7 +6,7 @@ import { canonicalSearch, isCdnCachedPage } from "#shared/cache-routes";
  * 把带推广参数的请求规范化到「唯一 URL」。
  *
  * 边缘缓存键含查询串：`/content/x?utm_source=weibo` 与 `/content/x` 是两条独立缓存，
- * 而刷新只提交裸 URL → 带参链接的内容永远不更新（内容页 TTL 6 小时）。
+ * 而刷新只提交裸 URL → 带参链接的内容永远不更新（内容页边缘 TTL）。
  * 这里把不影响 SSR 的参数剥掉并 301 到规范 URL，边缘只存一条缓存，精确刷新即可覆盖。
  */
 export default defineEventHandler(async (event) => {

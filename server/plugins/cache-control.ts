@@ -1,6 +1,6 @@
 /**
  * 浏览器一律不缓存、每次向边缘验证；边缘 TTL 分两档：
- *   - 内容页（文章详情/友链/订阅/…）：site.config 的 pageCacheSeconds（长），
+ *   - 内容页（文章详情/友链/订阅/…）：site.config 的 edgeCacheSeconds（默认 1 小时），
  *     靠写库后的精确 URL 刷新保持新鲜；
  *   - 列表/统计页（首页/分类/标签/归档/关于/站点地图）：listPageCacheSeconds（短），
  *     内嵌评论数等聚合数据靠 TTL 自然收敛，写库后不提交边缘刷新。

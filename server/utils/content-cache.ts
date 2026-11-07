@@ -12,7 +12,7 @@ import { siteConfig } from "~~/site.config";
 import { contentArticlePaths, contentListPagePaths, contentTaxonomyPaths, contentUrlPaths, PURGE_CONTENT_URL_LIMIT } from "#server/utils/content-urls";
 import type { ContentRow } from "#server/utils/content-urls";
 import { CONTENT_PAGE_SIZE_DEFAULT, FOOTPRINT_CACHE_KEY, LIST_EDGE_DIRECTORIES, LIST_PAGE_ROUTES } from "#shared/constants";
-import { cacheDel } from "#server/utils/cache/store";
+import { cacheClearByPrefix, cacheDel } from "#server/utils/cache/store";
 import { isListPageRoute } from "#shared/cache-routes";
 import { clearSourceCache } from "#server/utils/source-cache";
 import { CHANGELOG_TYPES } from "#shared/changelog";
@@ -91,6 +91,10 @@ export async function invalidateContentCaches(opts: InvalidateContentCachesOptio
   // countOnly 目前唯一的来源就是评论写接口（增删/审核），故在这里一并清掉。
   if (opts.countOnly) await clearFootprintCache();
 
+  // 搜索结果是 contents / metas / comments 的派生视图（三个 type 各一份短缓存）：
+  // 写库后不清，改完文章或评论要等 searchCacheExpire（默认 5 分钟）才搜得到。
+  await clearSearchCache();
+
   scheduleCdnPurge({ ...opts, routes: scopeRoutes, edgeDirectories: scopeDirs }, rows, listPagePaths);
 }
 
@@ -135,6 +139,15 @@ function expandNeighborPages(paths: string[]): string[] {
     }
   }
   return [...out];
+}
+
+/** 清短期搜索缓存（search:<q>:<type>）；失败不影响写库 */
+async function clearSearchCache(): Promise<void> {
+  try {
+    await cacheClearByPrefix(["search:"]);
+  } catch (error) {
+    log.error("[search] 缓存清理失败", { error });
+  }
 }
 
 /** 清访客分布聚合缓存（custom:footprint）；失败不影响写库 */
@@ -191,7 +204,7 @@ const pendingEdgeDirectories = new Set<string>();
 const pendingScopes = new Set<ContentScope>();
 let pendingEdgeRoutesGiven = false;
 // 「本窗口内到目前为止全是纯计数变更」：初始 true（空窗口），出现任意内容类变更即置 false。
-// 不能只置 true 不置 false —— 评论和文章保存落在同一个 5 秒窗口时，文章页 URL 会被误跳过。
+// 不能只置 true 不置 false —— 评论和文章保存落在同一个 2 秒窗口时，文章页 URL 会被误跳过。
 let pendingCountOnly = true;
 
 /** 累积本次变更并重置防抖计时器（不 await：刷新异步执行，失败不影响写库） */

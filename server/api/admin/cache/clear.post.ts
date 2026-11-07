@@ -95,7 +95,7 @@ export default defineEventHandler(async event => {
       const others = await cacheClearBySubstring(safe);
       if (others < 0) return redisUnavailable();
       const total = pages + others;
-      // 手动清理是明确动作：只清源站不清边缘，线上仍是旧 HTML（内容页 6 小时）。预设带路由就精确刷，
+      // 手动清理是明确动作：只清源站不清边缘，线上仍是旧 HTML（直到内容页边缘 TTL 到期）。预设带路由就精确刷，
       // 自由关键词不知道影响面 → 整站一条目录前缀（目录池 50/天，人工低频可接受）。
       const edgeRoute = typeof route === "string" && route.trim() ? route.trim() : "";
       const purged = await purgeCdnRoutes(edgeRoute ? [edgeRoute] : [], "后台手动");

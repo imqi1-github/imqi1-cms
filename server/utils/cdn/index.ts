@@ -46,7 +46,7 @@ export function isCdnDisabledByEnv(): boolean {
 /**
  * 写库后自动刷新边缘缓存：默认开启，CDN_AUTO_PURGE=0 关闭。
  *
- * 刷新前做了 5 秒防抖 + 精确 URL 展开，一次编辑会话只消耗少量 URL 额度；
+ * 刷新前做了 2 秒防抖 + 精确 URL 展开，一次编辑会话只消耗少量 URL 额度；
  * 后台手动刷新与 MCP 的 target=cdn 不受此开关限制（那是明确的人工动作）。
  */
 export function isAutoPurgeEnabled(): boolean {
@@ -107,7 +107,7 @@ export function isCdnEnabled(): boolean {
  * 刷新额度耗尽的熔断状态。
  *
  * CDN 套餐的刷新额度是按天的，用尽后继续提交只会一直报错。此时当天不再尝试刷新，
- * 内容靠边缘缓存 TTL 自然更新（见 site.config build.listPageCacheSeconds）。
+ * 内容靠边缘缓存 TTL 自然更新（见 site.config build.edgeCacheSeconds）。
  */
 let quotaExhaustedDay = "";
 

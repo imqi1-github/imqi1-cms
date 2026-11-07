@@ -7,7 +7,7 @@ import { cacheControlFor304 } from "#server/utils/cache-control";
  *
  * Nitro 的缓存处理器命中条件请求（If-None-Match）时直接回 304，而 304 走不到
  * `beforeResponse` 钩子（h3 在 event.handled 时跳过它）→ 304 会带着
- * `max-age=<源站 TTL>`（6 小时）出去，把边缘 TTL 顶回去，内容 6 小时不更新。
+ * `s-maxage=<源站 TTL>`（数小时）出去，把边缘 TTL 顶回源站时长。
  *
  * 这里在响应头发出去前（writeHead）按路径改写成该路径真正的边缘 TTL：
  * 列表页短 TTL、内容页长 TTL。改完之后源站可以正常回 304：

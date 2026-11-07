@@ -198,7 +198,7 @@ export default defineEventHandler(async event => {
     void invalidateContentCaches({
       scopes,
       contentCids: [cid],
-      // 旧路径一并失效：改了 slug/分类/类型后旧地址仍是边缘缓存里的旧 HTML（内容页 TTL 6 小时）
+      // 旧路径一并失效：改了 slug/分类/类型后旧地址仍是边缘缓存里的旧 HTML（直到边缘 TTL 到期）
       contentPaths: [
         ...(scopes.includes("article") ? contentArticlePaths(existing) : []),
         ...(scopes.includes("card") ? contentTaxonomyPaths(existing) : []),

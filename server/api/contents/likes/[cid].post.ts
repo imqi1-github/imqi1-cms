@@ -128,7 +128,7 @@ export default defineEventHandler(async event => {
       },
     };
 
-    // 点赞数会渲染进文章页 SSR HTML（likeCount）→ 这篇文章页必须刷新，否则 6 小时内一直显示旧数。
+    // 点赞数会渲染进文章页 SSR HTML（likeCount）→ 这篇文章页必须刷新，否则边缘 TTL 内一直显示旧数。
     // 文章页按**精确路径**失效：按 /content/** 通配清会把全站文章页逼出 Shiki 重渲染。
     // 列表页角标：countOnly 让源站只清「文章所在的那一页」（精确键），边缘 15 秒短 TTL 收敛，不刷边缘。
     const articlePaths = await articlePathsOf(cid);

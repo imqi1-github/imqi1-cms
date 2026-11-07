@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
+import { PUBLIC_CACHE_CONTROL } from "#shared/constants";
 
 mockSharedPrisma();
 
@@ -217,7 +218,7 @@ describe("home-data.get", () => {
     expect(r.data.photoContents[0]!.covers[0]!.width).toBe(640);
     expect(r.data.subscribePosts).toHaveLength(3);
     expect(r.data.changelogs[0]!.content[0]!.html).toContain("<strong>修复甲</strong>");
-    expect(headers["cache-control"]).toContain("max-age=300");
+    expect(headers["cache-control"]).toBe(PUBLIC_CACHE_CONTROL);
     // 排除图片分类:最新6与分区查询都要带 photoCategory 过滤
     expect(seenContentFindMany[0]!.where).toMatchObject({ type: 0, status: 1 });
   });
@@ -245,7 +246,7 @@ describe("subscribes.get", () => {
     const r = (await subscribesHandler(event)) as unknown as { success: boolean; data: unknown[] };
     expect(r.success).toBe(true);
     expect(r.data).toHaveLength(3);
-    expect(headers["cache-control"]).toContain("max-age=300");
+    expect(headers["cache-control"]).toBe(PUBLIC_CACHE_CONTROL);
   });
 
   test("limit 截断/钳制/非法回落", async () => {
@@ -380,7 +381,7 @@ describe("changelogs.get", () => {
     const { event, headers } = evh("10.5.5.3", "/api/changelogs?limit=abc");
     await changelogsHandler(event);
     expect(seenChangelogArgs.at(-1)!.take).toBe(1);
-    expect(headers["cache-control"]).toContain("max-age=300");
+    expect(headers["cache-control"]).toBe(PUBLIC_CACHE_CONTROL);
   });
 });
 

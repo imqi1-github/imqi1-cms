@@ -40,11 +40,13 @@ const publicCdnAsset = (p: string) =>
     : p;
 const nitroIgnore = siteConfig.features.miniApi ? [] : ["api/mini/**"];
 const redisConfig = getRedisConfig();
-const ISR_CACHE_SECONDS = 60 * 30;
-// 页面缓存时长（site.config build.pageCacheSeconds，默认 60 秒）。
-// 它同时决定：① 内容的新鲜度上界（源站 ISR 与边缘缓存都用这个时长）；
-// ② 边缘「缓存预刷新」回源验证时命中源站 ISR → 只回 304、不重渲染（否则预刷新会把源站打满）。
+const SEARCH_PAGE_CACHE_SECONDS = 60 * 5;
+// 源站页面缓存时长（site.config build.pageCacheSeconds，默认 6 小时）。
+// 它只决定源站多久重渲染一次：边缘「缓存预刷新」回源验证时若命中源站缓存 → 只回 304。
+// 边缘侧的新鲜度上界是 build.edgeCacheSeconds（默认 1 小时），两者刻意分开。
 const PAGE_CACHE_SECONDS = siteConfig.build.pageCacheSeconds;
+// 内容页的边缘 TTL（远小于源站）：边缘到期回源验证命中源站缓存只回 304，不增加渲染量
+const EDGE_CACHE_SECONDS = siteConfig.build.edgeCacheSeconds;
 // 列表/统计页的缓存时长（源站 + 边缘都用它）：短 TTL 让评论数等聚合数据尽快收敛
 const LIST_PAGE_SECONDS = siteConfig.build.listPageCacheSeconds;
 
@@ -58,7 +60,7 @@ const pageCacheRules = Object.fromEntries(
   CDN_CACHED_ROUTES.map(path => {
     // 档位判定与运行时的响应头插件走同一份实现（shared/cache-routes），
     // 否则两套逻辑分叉时同一页面会被下发不同 TTL
-    const edgeMaxAge = isListPageRoutePattern(path) ? LIST_PAGE_SECONDS : PAGE_CACHE_SECONDS;
+    const edgeMaxAge = isListPageRoutePattern(path) ? LIST_PAGE_SECONDS : EDGE_CACHE_SECONDS;
     return [
       path,
       {
@@ -623,10 +625,10 @@ export default defineNuxtConfig({
     ...pageCacheRules,
 
     // 搜索页：SSR 结果随查询词变化，只在源站缓存（配了 Redis 才有），不进 CDN 边缘缓存
-    // （不进边缘 → 不受边缘 TTL 约束，源站 ISR 仍用原时长）
+    // TTL 对齐站内搜索的短缓存（默认 5 分钟）：写库也会清掉这类键，这里只是兜底上界
     "/search": {
       ...(redisConfig
-        ? { isr: ISR_CACHE_SECONDS, cache: { maxAge: ISR_CACHE_SECONDS, base: "redis" } }
+        ? { isr: SEARCH_PAGE_CACHE_SECONDS, cache: { maxAge: SEARCH_PAGE_CACHE_SECONDS, base: "redis" } }
         : {}),
       ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },

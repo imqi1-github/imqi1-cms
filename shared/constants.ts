@@ -99,8 +99,11 @@ export const CSRF_HEADER = "x-csrf-token";
 
 // ==================== 缓存 ====================
 
-/** 公开接口的 CDN 缓存头：CDN 与浏览器同 TTL（5 分钟） */
-export const PUBLIC_CACHE_CONTROL = "public, max-age=300, s-maxage=300";
+/** 公开接口的边缘 TTL（秒）：浏览器每次回源验证，边缘缓存 60 秒 */
+export const PUBLIC_API_S_MAXAGE = 60;
+
+/** 公开接口的 CDN 缓存头（下发值；边缘实际 TTL 由 server/plugins/cache-control.ts 统一改写） */
+export const PUBLIC_CACHE_CONTROL = `public, max-age=0, s-maxage=${PUBLIC_API_S_MAXAGE}`;
 
 /**
  * 走 CDN 边缘缓存的页面（nuxt.config 的 routeRules 与响应头插件共用）。

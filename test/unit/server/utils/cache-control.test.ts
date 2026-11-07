@@ -1,5 +1,5 @@
 // 边缘缓存头的计算：304 走不到 beforeResponse，必须按路径给出该路径真正的 TTL，
-// 否则会把边缘 TTL 顶回源站的长 TTL（内容 6 小时不更新）。
+// 否则会把边缘 TTL 顶回源站的长 TTL。
 import { describe, expect, test } from "bun:test";
 
 import { siteConfig } from "~~/site.config";
@@ -9,7 +9,7 @@ describe("边缘缓存头", () => {
   test("页面：列表页短 TTL、内容页长 TTL", () => {
     expect(pageCacheControl("/")).toContain(`s-maxage=${siteConfig.build.listPageCacheSeconds}`);
     expect(pageCacheControl("/category/note")).toContain(`s-maxage=${siteConfig.build.listPageCacheSeconds}`);
-    expect(pageCacheControl("/content/note/1024")).toContain(`s-maxage=${siteConfig.build.pageCacheSeconds}`);
+    expect(pageCacheControl("/content/note/1024")).toContain(`s-maxage=${siteConfig.build.edgeCacheSeconds}`);
     // /map 内嵌访客分布等易变聚合 → 与列表页同档（短 TTL）
     expect(pageCacheControl("/map")).toContain(`s-maxage=${siteConfig.build.listPageCacheSeconds}`);
   });
@@ -21,7 +21,7 @@ describe("边缘缓存头", () => {
 
   test("304：按路径给 TTL（列表页短、内容页长）", () => {
     expect(cacheControlFor304("/")).toContain(`s-maxage=${siteConfig.build.listPageCacheSeconds}`);
-    expect(cacheControlFor304("/content/note/1024")).toContain(`s-maxage=${siteConfig.build.pageCacheSeconds}`);
+    expect(cacheControlFor304("/content/note/1024")).toContain(`s-maxage=${siteConfig.build.edgeCacheSeconds}`);
     expect(cacheControlFor304("/api/home-data")).toBe(apiCacheControl());
   });
 
