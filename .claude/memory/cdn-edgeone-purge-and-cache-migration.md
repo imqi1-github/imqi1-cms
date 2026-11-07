@@ -263,3 +263,35 @@ curl -sS -X POST https://imqi1.com/mcp -H "Accept: application/json, text/event-
 **⚠️ 安全**：`/www/wwwroot/glass/132_start.sh` 里**明文写了全部生产密钥**（MCP_OPS_TOKEN、EDGEONE_SECRET_ID/KEY、微信 AppID/Secret、LOGIN_SECRET…），且权限是 `-rwxrwxrwx`（**任何用户可读**）。任何能 SSH 进来的人都能拿到全部生产凭据。建议：① `chmod 600` + owner 改 root；② 密钥迁到 root-only 的环境文件；③ **本次排查中这些值已出现在对话记录里 → 建议轮换**。
 
 **EdgeOne 默认缓存会缓存 `/mcp`**（它不在 `/api/*` 的 no-store 规则下）⇒ 实测 `EO-Cache-Status: MISS`（因 SSE 响应不被缓存），但若将来 /mcp 返回可缓存的 JSON，就会被缓存 30 分钟。建议给 `/mcp` 显式加 no-store。
+
+---
+
+## 2026-11-07 MCP 端点「总是报错」的根因（gzip 请求体）
+
+**症状**：每次 MCP 连接先发一个 `POST /mcp` → **400**，然后才有 200/202；每次都产生一条 monitor 错误 + 一封错误通知邮件。
+
+**根因链**（本地生产构建复现 + 堆栈佐证）：
+1. **AI 客户端（Claude Code 等）用 gzip/br 压缩 JSON-RPC 请求体**；
+2. Node 只自动解压**响应**体，**不解压请求体** ⇒ `readRawBody` 拿到的是压缩字节；
+3. `eventToWebRequest` 把 `Content-Encoding: gzip` 原样复制给 SDK 的 `Request`，body 却是压缩字节 ⇒
+   SDK `JSON.parse` 失败 ⇒ **400「Parse error: Invalid JSON」**；
+4. 该 400 响应被 `writeWebResponse` 用 `res.end()` 写出 ⇒ **headersSent = true**；
+5. `server/plugins/cache-control.ts` 的 **beforeResponse 钩子在 handler 之后跑** ⇒ 看到状态码 ≥ 400 ⇒
+   `setResponseHeader(event,"cache-control","no-store")` ⇒ **ERR_HTTP_HEADERS_SENT**
+   （"Cannot set headers after they are sent to the client"）⇒ 请求变 500 + 错误通知邮件。
+
+**修法**：
+- `server/routes/mcp.post.ts`：按 `content-encoding` 解压请求体（gzip/deflate/br，`node:zlib`）后再交给 SDK；
+  转发给 SDK 的头剔除 `content-length` / `content-encoding` / `transfer-encoding` / `connection`
+  （长度由 fetch 自算，别把描述原始请求体的头带过去）。
+- `server/plugins/cache-control.ts`：beforeResponse 开头 `if (event.node.res.headersSent) return;`
+  ⇒ **通用修复**：任何「handler 主动写出的 ≥400 响应」都不会再炸（不止 MCP）。
+
+**验证**：本地 gzip body 400→200；生产 gzip initialize 200；Node 日志 `Cannot set headers` 计数 0。
+
+⚠️ **教训（两条通用）**：
+- **Nitro 的 `nitroApp.hooks.hook("beforeResponse")` 是在 handler 之后跑的**，不是 middleware ⇒
+  handler 自己 `res.end()` 写出的响应，`headersSent` 已是 true ⇒ 任何在里面设 header 的代码都会抛。
+  ⇒ 在 beforeResponse 类钩子里设 header 前，**必须先判 `headersSent`**。
+- **转发请求体给 fetch/SDK 时要剔掉 body 相关的头**（content-length / content-encoding / transfer-encoding），
+  否则长度或编码语义对不上 ⇒ 解析失败。Node 不解压**请求**体（只解响应体）。
