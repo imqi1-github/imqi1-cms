@@ -63,6 +63,16 @@ async function writeWebResponse(event: H3Event, res: Response): Promise<void> {
   // h3 的 setResponseStatus / setResponseHeader 必须先于 body 写出
   event.node.res.statusCode = res.status;
   res.headers.forEach((value, key) => {
+    // 响应已发出时再设 header 会抛 ERR_HTTP_HEADERS_SENT
+    // （Node: "Cannot set headers after they are sent to the client"）→ 整个请求变 500，
+    // 还会触发错误通知邮件。跳过并留痕，别让整个请求崩掉。
+    if (event.node.res.headersSent) {
+      console.warn(
+        `[mcp] 响应已发送，跳过 header「${key}」`,
+        new Error("mcp-response-already-sent").stack,
+      );
+      return;
+    }
     // setHeader 已是 string|number|string[] 的单参版本
     event.node.res.setHeader(key, value);
   });

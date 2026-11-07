@@ -43,6 +43,8 @@ export async function reportError(input: ErrorReportInput): Promise<ErrorReportR
     来源: input.source,
     级别: input.level,
     消息: input.message.slice(0, 200),
+    // 堆栈必须落盘：只记消息的话，排查「谁在响应发出后又设 header」这类问题毫无线索
+    堆栈: input.stack ? input.stack.split("\n").slice(0, 6).join(" ⏐ ").slice(0, 900) : undefined,
     路径: input.url ?? undefined,
     IP: input.ip ?? undefined,
   });
