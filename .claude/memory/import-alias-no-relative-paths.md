@@ -16,6 +16,6 @@
 - **`test/helpers/bun-preload.ts` 注入的 `import "..."` 会被拼进被测测试文件源码**，解析基准是被测文件所在目录、不是 bun-preload.ts 目录。别名在注入上下文里可用，但必须指向真实存在的文件：`#test/unit/app/composables/setup-composable-globals`（桩文件在 `test/unit/app/composables/` 下，不在 `test/helpers/`）。
 - 测试里读源码用**根相对**路径 `readFileSync("app/composables/x.ts")`（cwd = 项目根，与其它读源码的测试一致），不要 `resolve(__dirname, "../../..")`。
 - **搜 `../..` 会命中一堆非 import 的假阳性**，都是预期保留的：`session-store*.test.ts` / `attachment-file.test.ts` / `uploads.test.ts`（路径穿越**攻击载荷**）、`server/utils/session-store.ts` 与 `scripts/file-server.ts` 的防御注释、`SECURITY.md`、`.claude/memory/*`。别再动它们。`./` 同目录 import（aplayer lib、`app/components/ui/*` 桶文件）不在规则范围内。
-- **改完必跑三件套**：`bunx eslint .`（import/order 会因分组变化报错，改动后可 `bunx eslint --fix <dir>`）+ `bunx nuxi typecheck`（与改动前 error 数逐条对比，仓库存量 844 条不在本轮范围）+ 受影响测试文件。
+- **改完必跑三件套**：`bunx eslint .`（import/order 会因分组变化报错，改动后可 `bunx eslint --fix <dir>`）+ `bunx nuxi typecheck`（**当前仓库存量 0 error、exit 0**，改动后应仍是 0；早期记的「844 条存量」已清零）+ 受影响测试文件。
 
 相关：[[bun-mock-module-leak-zz-late-layout]]（同文件里记了 `test/` 别名与 composable 桩的注入机制）。

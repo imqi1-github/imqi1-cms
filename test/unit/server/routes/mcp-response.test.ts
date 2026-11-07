@@ -10,9 +10,9 @@
  */
 import { describe, expect, test } from "bun:test";
 import "#test/helpers/nitro-globals";
+import type { H3Event } from "h3";
 
 import { writeWebResponse } from "#server/routes/mcp.post";
-import type { H3Event } from "h3";
 
 /** 造一个最小可用的 node res 桩：记录 header、记录是否已结束 */
 function fakeEvent(): { event: H3Event; headers: Record<string, string>; ended: () => boolean } {
