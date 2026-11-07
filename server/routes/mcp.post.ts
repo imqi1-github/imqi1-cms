@@ -95,8 +95,12 @@ async function eventToWebRequest(event: H3Event, raw?: Buffer): Promise<Request>
   return new Request(url.toString(), init);
 }
 
-/** 把 Web Response 转回 h3 event：写 headers + status + body */
-async function writeWebResponse(event: H3Event, res: Response): Promise<void> {
+/**
+ * 把 Web Response 转回 h3 event：写 headers + status + body。
+ *
+ * 导出供单测直接驱动（不经过 SDK 与数据库）。
+ */
+export async function writeWebResponse(event: H3Event, res: Response): Promise<void> {
   // h3 的 setResponseStatus / setResponseHeader 必须先于 body 写出
   event.node.res.statusCode = res.status;
   res.headers.forEach((value, key) => {
@@ -113,6 +117,12 @@ async function writeWebResponse(event: H3Event, res: Response): Promise<void> {
     // setHeader 已是 string|number|string[] 的单参版本
     event.node.res.setHeader(key, value);
   });
+  // 显式 no-store：不依赖 SDK 顺带发的 no-cache。
+  // 边缘策略是「跟随源站」（DefaultCacheStrategy:off）⇒ 源站说不缓存，边缘就不缓存。
+  // 万一 SDK 换了实现、将来返回 JSON、或控制台被改成「强制 TTL」，这个头是最后一道保险。
+  if (!event.node.res.headersSent) {
+    event.node.res.setHeader("cache-control", "no-store");
+  }
   if (res.body) {
     const buf = Buffer.from(await res.arrayBuffer());
     event.node.res.end(buf);
