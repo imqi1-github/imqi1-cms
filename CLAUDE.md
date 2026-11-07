@@ -15,7 +15,7 @@ Nuxt 4 前端（`app/`）+ Nitro API（`server/`）+ uni-app 小程序（`mini/`
 - 数据库：`bun run prisma:generate` / `prisma:studio`；初始化 `bun run db:init`
 - 运维：`bun run upload:cos` / `upload:server` / `compress:livephoto` / `clear:redis` / `reset:password`
 
-**⚠️ lint/type-check 根目录没有脚本。** 校验 Nuxt 改动：先 `pwd` 确认在项目根，再 `bunx eslint .` 或 `bunx nuxi typecheck`（根 vue-tsc 不走 .nuxt/tsconfig 会漏报）。小程序校验：`bun run mini:lint` / `mini:type-check`。
+**校验 Nuxt 改动**：先 `pwd` 确认在项目根，再 `bun run lint` / `bun run typecheck`（= `bunx nuxi typecheck`，根 vue-tsc 不走 .nuxt/tsconfig 会漏报）/ `bun run tailwindcss:lint`；`bun run check` 一次跑完三项。小程序校验：`bun run mini:lint` / `mini:type-check`。
 
 ## 目录结构
 - `app/` — Nuxt 前端：`pages/`（路由）、`components/`、`composables/`、`types/apis`（~ 导入）、`shiki`、`router.options.ts`

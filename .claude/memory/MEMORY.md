@@ -1,7 +1,7 @@
 # Memory Index
 
 - [后台编辑器自动保存+CSRF防丢](admin-editor-autosave-csrf.md) — 自动保存统一走 useEditorAutosave（Ctrl+S / 2s 空闲自动存）；CSRF token 1h 过期是长编辑保存 403 主因 ⇒ 每次保存前调 /api/csrf/token 刷新；401/403 落 localStorage 备份并提示重登
-- [每次改动跑 lint 三件套](post-change-lint-chain.md) — 用户强原则：每次改动后必跑 `bunx eslint .` + `bunx nuxi typecheck` + `bun run tailwindcss:lint`（三件套并列，不是提交前才跑）
+- [每次改动跑 lint 三件套](post-change-lint-chain.md) — 用户强原则：每次改动后必跑 `bun run lint` + `bun run typecheck` + `bun run tailwindcss:lint`（`bun run check` 一键跑；三件套并列，不是提交前才跑）
 - [死代码扫描:自动导入前缀盲区](dead-code-scan-autolimport-prefix.md) — 组件可能被自动导入的目录前缀/`Lazy` 前缀引用（`<AdminTravelCoordinatePicker>`、`<LazyContextMenu>`），只看无前缀名会误判活组件为死；eslint 抓不到，用全局 grep 或 knip
 - [markdown 行内链接域名图标](markdown-link-chip-display.md) — 已知域名的行内链接在文本前插空 span 图标（CSS mask + currentColor）；扩展 LINK_CHIP_DOMAINS 须具体子域排父域前（mp.weixin.qq.com 会错配成 tencent）
 - [Nuxt SSR/API 双 bundle 单例坑](nuxt-ssr-api-bundle-singleton-memory-session.md) — server util 的模块级单例被 app/nitro 两 bundle 各内联一份 ⇒ memory session 互不可见（/admin 进页 302 跳登录又自动回）；修复 = 单例挂 globalThis；file/database 走共享存储不受影响
@@ -11,7 +11,7 @@
 - [页面过渡可见性靠 Suspense](page-transition-pjax-origin.md) — 渐出由 router.beforeEach 启动、page:start 为 no-op；旧页渐出仍依赖新页顶层 await 挂起 Suspense（同步页要 await useFadeOutOnNavigate）；位移 transform 与首页/地图等全屏固定页冲突 ⇒ 这些页全程 opacity-only，稳态 transform 必须 none
 - [SFC onMounted 裸 await 编译坑](sfc-onmounted-await-gotcha.md) — SFC 的 onMounted(async) 体内裸 await 会让 nuxt build 报 Unexpected reserved word 'await'；用 async IIFE / async 回调包裹
 - [DB 迁移历史与本地脱节](db-migration-disconnected.md) — 无 prisma/migrations 目录，靠 db push / 原始 SQL 同步；禁用 migrate dev/reset（会 reset 丢数据）；init-db.sql 只管空库初始化，结构变更由站主手动 ALTER
-- [ESLint 严格模式已落地](eslint-adopted-strict.md) — @nuxt/eslint flat config + stylistic（无 Prettier）；根无 lint 脚本，校验用 `bunx eslint .`（小程序 mini:lint）；刻意保持 error 驱动，别降级为 warn
+- [ESLint 严格模式已落地](eslint-adopted-strict.md) — @nuxt/eslint flat config + stylistic（无 Prettier）；根有 `lint`/`lint:fix`（`bun run lint`，忽略 mini/）；刻意保持 error 驱动，别降级为 warn
 - [滚动监听首帧须延后到 onMounted](scroll-listener-hydration-onmounted.md) — 读 window.scrollY 写状态的 composable，首次同步执行必须放 onMounted（水合后）；setup 同步赋值在 scroll restoration 下触发 hydration class mismatch
 - [小程序实况照片点击播放](mini-live-photo-click-play.md) — mini 端 Motion Photo：拉整包扫 ftyp 切 MP4，`<video>` 覆盖静态图；H5 用 blob / 小程序 writeFile 临时文件，用 IS_H5 + 运行时 if 分流（勿双 return）
 - [小程序评论独立开关](mini-comment-feature-switch.md) — `features.miniComment` 是构建期开关，独立于后台 commentEnabled；false 时 comments.get 返空、comments.post 返 403；miniApi 只控制小程序 API 是否打包
@@ -78,7 +78,7 @@
 - [久未触碰文件非必然 bug](stale-config-files-not-always-bug.md) — 「长期没改」不等于 bug ⇒ 先跑 tailwindcss:lint / 查 tsconfig alias 兜底 / 实际 fs 检查；用户对 lint exit 0 有强要求，无证据的改动只增技术债
 - [MCP 运维工具组](mcp-ops-tools.md) — /mcp 加 5 个运维工具，未配 MCP_OPS_TOKEN 整组不注册；clear_cache 是唯一非 readOnly；get_cache_info 统计真实 Redis 键前缀（rl: 是内部前缀）
 - [/link-audit 友链订阅合规审查](link-audit-skill.md) — 只走百度内容审核；结论映射为不合规0.90/疑似0.65；处置走 admin API 才失效 ISR 缓存；密钥只放 .env.local
-- [页面缓存三层结构与 EdgeOne 边缘失效](cdn-edgeone-purge-and-cache-migration.md) — 边缘/源站/短期三层；双档 TTL（内容页 21600、列表页 15）；写库失效链 + scope 展示面；EdgeOne API 形态与 TC3 签名；nginx 须透传 Cache-Control
+- [页面缓存三层结构与 EdgeOne 边缘失效](cdn-edgeone-purge-and-cache-migration.md) — 边缘/源站/短期三层；边缘/源站两档 TTL（边缘 内容页 3600、列表页 15；源站 21600）；写库失效链 + scope 展示面；EdgeOne API 形态与 TC3 签名；nginx 须透传 Cache-Control
 
 - [getSiteSettings 走 findMany 不是 findUnique](get-site-settings-uses-findmany-not-findunique.md) — 测它或用 siteUrl 的端点时 fake 必须注册 informations.findMany 返数组；漏注册会静默走 defaults 兜底
 - [init-db 显式 cid 不推进 SERIAL](init-db-explicit-cid-serial-pg-p2002.md) — PG 显式值插入不调 nextval ⇒ 测试里 create 不带 cid 会撞 P2002；resetDb 后要 setval 或让表空

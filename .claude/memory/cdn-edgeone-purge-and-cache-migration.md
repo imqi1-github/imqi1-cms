@@ -13,13 +13,14 @@ metadata:
 
 | 层 | 实现位置 | 键/载体 | TTL |
 |---|---|---|---|
-| 边缘层 | EdgeOne 控制台（规则=**跟随源站 Cache-Control**） | 边缘缓存条目 | 内容页 `build.pageCacheSeconds`=21600（6h）／列表页 `build.listPageCacheSeconds`=15／公开 API 60 |
-| 源站层 | Nitro routeRules `cache`（`nuxt.config.ts` 的 `pageCacheRules`） | Redis 驱动 `nitro:routes:_:<frag>.<hash>.json` 或文件驱动 `.nitro/cache/nitro/routes/_/<frag>.<hash>.json` | 同上（内容页 6h、列表页 15s） |
+| 边缘层 | EdgeOne 控制台（规则=**跟随源站 Cache-Control**） | 边缘缓存条目 | 内容页 `build.edgeCacheSeconds`=3600（1h）／列表页 `build.listPageCacheSeconds`=15／公开 API 60 |
+| 源站层 | Nitro routeRules `cache`（`nuxt.config.ts` 的 `pageCacheRules`） | Redis 驱动 `nitro:routes:_:<frag>.<hash>.json` 或文件驱动 `.nitro/cache/nitro/routes/_/<frag>.<hash>.json` | 内容页 `build.pageCacheSeconds`=21600（6h） |
 | 短期缓存/计数 | `server/utils/cache/store.ts`（Redis 优先 → 进程内内存回落） | `search:` / `custom:footprint` / `likes:` / `error:notify:` / `rl:` / `login:` | 各 API 自定 |
 
 - 源站层**两种驱动都在**（Redis 开→`base:"redis"`；关→`base:"cache"`→文件驱动）。详见 [[nitro-source-cache-layer]]。
 - 短期缓存使用者：搜索结果（`server/api/search.get.ts`）、访客分布聚合（`server/api/footprint.get.ts`，键 `custom:footprint`，TTL 10 分钟）、点赞限速、错误通知去重；限流在 `server/utils/rate-limit.ts` / `login-rate-limit.ts`（Redis 优先、异常回落内存）。
 - **TTL 档位单一来源**：`shared/cache-routes.ts` 的 `isListPageRoute()` / `isCdnCachedPage()`，nuxt.config 与运行时响应头共用（别各写一套）。
+- **边缘 TTL 与源站 TTL 刻意分开**（2026-11-07）：边缘到期回源验证时命中源站缓存 → 只回 304（ETag），不重渲染 ⇒ 边缘 TTL 可以远小于源站 TTL。改边缘 TTL 不增加源站渲染量；只降源站 TTL 才会加重渲染。
 - 响应头最终由 `server/plugins/cache-control.ts` 的 `beforeResponse` 决定：routeRules 的 `headers` 会被 Nitro 缓存处理器写死的 `max-age=<源站 TTL>` 覆盖，**只有 beforeResponse 能改回来**。页面 `public, max-age=0, s-maxage=<档位>`；公开 API `max-age=0, s-maxage=60`；**所有 4xx/5xx 一律 `no-store`**（边缘「默认缓存」会把无 Cache-Control 的错误响应缓存半小时）。
 - 304 走不到 beforeResponse（h3 在 event.handled 时跳过）→ 由 `server/middleware/cache-304.ts` 在 `writeHead` 里按路径改写成该路径真正的边缘 TTL。
 
@@ -27,7 +28,8 @@ metadata:
 
 `server/utils/content-cache.ts` 的 `invalidateContentCaches()`，被所有写库接口调用：
 
-1. **清源站缓存**（`server/utils/source-cache.ts` 的 `clearSourceCache`，**驱动无关**，Redis/文件都能精确失效）→ 含 `api*` 键（否则边缘回源拿到旧 JSON）。
+1. **清源站缓存**（`server/utils/source-cache.ts` 的 `clearSourceCache`，**驱动无关**，Redis/文件都能精确失效）→ 含 `api*` 与 `search*` 键（否则边缘回源拿到旧 JSON / 旧搜索结果）。
+1b. **清搜索短缓存**（`search:*` 前缀，2026-11-07 加）——搜索结果是 contents/metas/comments 的派生视图，不清则改完要等 `searchCacheExpire`（默认 5 分钟）才搜得到。
 2. **排边缘刷新**（`scheduleCdnPurge`，`PURGE_DEBOUNCE_MS` = **2 秒**，与编辑器自动保存间隔对齐）→ 防抖窗口内合并成一次提交 → `flushCdnPurge` → `purgeCdnUrls`（精确 URL）／`purgeCdnRoutes`（目录前缀）。
 
 > **铁律：边缘刷了哪条，源站就得清哪条。** 否则边缘回源时源站命中旧缓存回 304 → 旧内容复活。
@@ -86,7 +88,7 @@ metadata:
 ## 十、已知边界与雷区
 
 - `/search` **不进边缘**（`no-store`）；源站缓存**只在配了 Redis 时挂**（`nuxt.config.ts` 的 `/search` 规则）→ 无 Redis 时每次搜索都实打实查库 + SSR。
-- **额度耗尽时内容页挂满 6 小时 TTL**（列表页 15s 照常更新）；源站缓存已清（数据是新的），只是边缘手里那份旧 HTML 还在。
+- **额度耗尽时内容页挂满 1 小时边缘 TTL**（列表页 15s 照常更新）；源站缓存已清（数据是新的），只是边缘手里那份旧 HTML 还在。
 - ⚠️ **不要用整站刷新做兜底**：整站刷新 + 启动清空源站缓存 ⇒ 全站回源全量渲染（单页 ~411ms，156 篇连续渲染）⇒ 3.9GB 内存下曾把进程打死 → 5 分钟 502。
 - 边缘是否命中看响应头 **`EO-Cache-Status`**（HIT/MISS/RefreshHit）与 **`Age`**（持续增长 = 命中缓存；改控制台规则后必须实测 Age 是否复位，否则源站的 TTL 白改）。
 

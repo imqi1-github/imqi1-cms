@@ -39,7 +39,7 @@ metadata:
 | 源站页面/API 缓存（routeRules `cache`） | redis 驱动 | 文件驱动 `.nitro/cache` | ❌ 都不影响（两种驱动都在） |
 | 短期缓存（搜索/足迹聚合/点赞/错误去重） | Redis | 进程内内存（`server/utils/cache/memory-store.ts`，上限 1 万条、随进程重启清零） | ❌ TTL 相同 |
 | 限流 / 登录锁定 | Redis 共享（跨进程、跨重启） | 进程内（每进程一份、重启清零） | ⚠️ 单实例无差别；多副本时被稀释 N 倍 |
-| `/search` 页的源站缓存 | 有（30 分钟） | **没有**（每次实查库 + SSR） | ⚠️ 结果相同，只是慢 |
+| `/search` 页的源站缓存 | 有（5 分钟） | **没有**（每次实查库 + SSR） | ⚠️ 结果相同，只是慢 |
 | 启动清缓存 | `redis.flushdb()`（清**整个 db0**） | `useStorage("cache").clear()` | ⚠️ 同库的其他数据会被一起清掉 |
 | 会话存储 | 与 Redis 无关（`sessionStoreType` = file / database） | 同 | ❌ |
 

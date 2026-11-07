@@ -1,45 +1,39 @@
 ---
 name: post-change-lint-chain
-description: 每次代码改动后必跑 eslint + nuxi typecheck + tailwindcss:lint 三件套,无需等提交前
+description: 每次代码改动后必跑 lint + typecheck + tailwindcss:lint 三件套（根目录有 bun run check 一键跑），无需等提交前
 metadata:
   type: feedback
-  originSessionId: 2ce53c45-c3ae-4342-882e-3e5525896d2c
 ---
 
-**用户强原则(2026-09-04 锁定):每次代码改动后必跑 lint 三件套——不是只在提交前。**
+**用户强原则（2026-09-04 锁定）：每次代码改动后必跑 lint 三件套——不是只在提交前。**
 
 ## 三件套
 
 ```bash
-bunx eslint .                          # 1) JS/TS/Vue 模板规范(.vue/.ts 改动后)
-bunx nuxi typecheck                    # 2) 端到端类型(类型/接口改动后,根 .nuxt/tsconfig.json)
-bun run tailwindcss:lint               # 3) Tailwind 类名规范(任何时候都跑)
+bun run lint             # ESLint（scripts/lint.ts，--max-warnings=0，忽略 mini/）
+bun run typecheck        # bunx nuxi typecheck（走 .nuxt/tsconfig.json）
+bun run tailwindcss:lint # Tailwind 类名规范
+bun run check            # 上面三项串行一次跑完
 ```
 
 ## 触发时机
 
-- 「**每次代码改动后**」= 改完即跑,不攒到 commit 前
-- 三件套是**同时跑**,不是顺序;tailwindcss:lint 与 eslint/typecheck 并列,不是「跟 commit 绑定的额外一道」
-- 改 docs/comments/纯 markdown 可省 typecheck 与 eslint,但 tailwindcss:lint 仍建议跑(快、几十秒)
+- 「每次代码改动后」= 改完即跑，不攒到 commit 前；三件套是并列的三道，不是「跟 commit 绑定的额外一道」。
+- 只改 docs/注释/纯 markdown 可省 typecheck 与 eslint，tailwindcss:lint 仍可跑（快）。
+- 改 `mini/` 用 `bun run mini:lint` / `bun run mini:type-check`（CWD 别残留在 mini/）。
 
 ## 命令细节
 
-- 根目录必须（CLAUDE.md 硬性约定）:根 `package.json` **没有** `lint`/`type-check` 脚本（只在 `mini/`），所以只能用 `bunx`;bash CWD 易残留在 mini/ 致验错项目,先 `pwd` 确认
-- `bunx eslint .` ≠ `bun run lint` —— 在根跑 `bun run lint` 会 "Script not found"
-- `bunx nuxi typecheck` 走 `.nuxt/tsconfig.json`,**根 vue-tsc 不走它会漏报**（实测漏掉 Prisma `schema.nodes.xxx` 的 `NodeType|undefined` 非空检查、`@update:model-value` 的 emit payload 类型、`editor.storage as {...}` 断言重叠等,误判 0 错误）
-- 验证 mini 用 `cd mini && bun run lint`（mini 是 uni-app 不是 Nuxt,它自己的 vue-tsc 仍适用）
-- `bun run tailwindcss:lint` 跑 scripts/tailwindcss-lint.ts,扫 CSS 指令 / 类名冲突 / canonical 建议
+- 根 `package.json` 已有 `lint` / `lint:fix` / `typecheck` / `check`，`bun run lint` 即可，等价于 `bunx eslint . --max-warnings=0`。
+- `bun run typecheck` = `bunx nuxi typecheck`；**根 `vue-tsc` 不走 `.nuxt/tsconfig.json` 会漏报**（曾漏掉 Prisma 可空字段、emit payload 类型等），别用裸 vue-tsc 代替。
+- 任何一项 exit ≠ 0 即未通过；修完再跑，不要 `--no-verify` 绕过。
 
-## 退出判定
+## 何时必须全跑
 
-任何一项 exit ≠ 0 即视为未通过;修完再跑下一项,不要 `git commit --no-verify` 绕过。
+- 改 .vue → lint + tailwindcss:lint
+- 改 .ts（类型/接口/server api/composable）→ lint + typecheck
+- 改 schema.prisma → typecheck（会联动 prisma generate）
+- 改 CSS / Tailwind 配置 → tailwindcss:lint
+- 后端纯逻辑（无类型签名变动）→ 至少 lint
 
-## 何时必须三件套全跑
-
-- 改 .vue(组件/页面/布局) → eslint + tailwindcss:lint 必跑
-- 改 .ts 类型/接口/composable/server api → eslint + typecheck 必跑
-- 改 schema.prisma → typecheck 必跑(prisma generate 联动)
-- 改 CSS / Tailwind 配置 → tailwindcss:lint 必跑
-- 后端纯逻辑(无类型签名变动) → 至少跑 eslint
-
-相关:[[eslint-adopted-strict]]
+相关：[[eslint-adopted-strict]]
