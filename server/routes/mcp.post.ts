@@ -16,6 +16,8 @@
  *     唯一例外是 MCP_OPS_TOKEN 门禁的运维工具组（详见 server/utils/mcp-tools.ts）：
  *     除 clear_cache（清缓存、自动重建）外其余运维工具仍只读，且未配令牌时不注册。
  */
+import { brotliDecompressSync, gunzipSync, inflateSync } from "node:zlib";
+
 import { legacyStatelessFallback } from "@modelcontextprotocol/server";
 import type { H3Event } from "h3";
 import { getRequestURL, readRawBody } from "h3";
@@ -28,11 +30,46 @@ import { getClientIp } from "#server/utils/client-ip";
 const MCP_RATE_LIMIT = 60;
 const MCP_RATE_WINDOW_SEC = 60;
 
+/**
+ * 转发给 SDK 的头要剔除 body 相关的几个。
+ *
+ * content-length / transfer-encoding 描述的是**原始请求体**，转成新的 Request 后长度可能不同；
+ * content-encoding 更是只对压缩态有意义 —— SDK 那边拿到的是解压后的字节（见 decodeRequestBody），
+ * 原样带过去会让它以为 body 还是压缩的。
+ */
+const SKIP_REQUEST_HEADERS = new Set([
+  "content-length",
+  "content-encoding",
+  "transfer-encoding",
+  "connection",
+]);
+
+/**
+ * 解压请求体。
+ *
+ * AI 客户端（Claude Code 等）会用 gzip/br 压缩 JSON-RPC 请求体；Node 不会自动解压**请求**体
+ * （只解响应体）⇒ 不解压的话 SDK 拿到的是压缩字节 → JSON 解析失败 → 400
+ * 「Parse error: Invalid JSON」⇒ 每次 MCP 连接都先失败一次。
+ */
+function decodeRequestBody(raw: Buffer, contentEncoding: string | undefined): Buffer {
+  const encoding = (contentEncoding ?? "").trim().toLowerCase();
+  if (!encoding || encoding === "identity") return raw;
+  try {
+    if (encoding === "gzip" || encoding === "x-gzip") return gunzipSync(raw);
+    if (encoding === "deflate") return inflateSync(raw);
+    if (encoding === "br") return brotliDecompressSync(raw);
+  } catch (error) {
+    console.error("[mcp] 请求体解压失败（按原样交给 SDK）:", error);
+  }
+  return raw;
+}
+
 /** 把 h3 event 的 headers 转成 Web Headers */
 function toWebHeaders(event: H3Event): Headers {
   const headers = new Headers();
   const nodeHeaders = event.node.req.headers;
   for (const key of Object.keys(nodeHeaders)) {
+    if (SKIP_REQUEST_HEADERS.has(key.toLowerCase())) continue;
     const value = nodeHeaders[key];
     if (value === undefined) continue;
     if (Array.isArray(value)) {
@@ -139,7 +176,10 @@ export default defineEventHandler(async event => {
     if (raw && raw.length > MAX_BODY_BYTES) {
       throw createError({ statusCode: 413, message: "MCP 请求体过大" });
     }
-    webReq = await eventToWebRequest(event, raw ?? undefined);
+    // 请求体可能是压缩态（AI 客户端会用 gzip/br）→ 先解压，否则 SDK 解析不了 JSON
+    const contentEncoding = event.node.req.headers["content-encoding"];
+    const decoded = raw ? decodeRequestBody(raw, Array.isArray(contentEncoding) ? contentEncoding[0] : contentEncoding) : undefined;
+    webReq = await eventToWebRequest(event, decoded);
   } catch (error) {
     // 413 已是预期响应，原样抛；其余构造失败才包装 400
     if (error instanceof Error && "statusCode" in error && (error as { statusCode?: number }).statusCode === 413) {

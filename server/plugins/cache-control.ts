@@ -20,6 +20,10 @@ export default defineNitroPlugin((nitroApp) => {
     // 开发环境不下发边缘缓存头（与 routeRules 的 isProduction 门控一致）
     if (process.env.NODE_ENV !== "production") return;
 
+    // 响应已经写出时不能再设 header（Node: ERR_HTTP_HEADERS_SENT）→ 会把请求变成 500
+    // 并触发错误通知邮件。handler 主动写出的 4xx/5xx（如 MCP 端点的 406/400）就会走到这里。
+    if (event.node.res.headersSent) return;
+
     const path = getRequestPath(event);
     // 错误响应一律 no-store（不限路径）：边缘「默认缓存」开启时，无 Cache-Control 的 4xx/5xx 会被缓存半小时
     if (getResponseStatus(event) >= 400) {
