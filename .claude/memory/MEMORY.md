@@ -86,3 +86,4 @@
 - [Prisma adapter 的 transitive deps 要显式兜底](pg-driver-adapter-explicit-deps.md) — @prisma/adapter-pg 的 postgres-array 等可能被 prune 漏装而生产崩 ⇒ 把必带包显式列进根 dependencies，升级后复查
 - [schema 归属指纹](schema-fingerprint-attribution.md) — prisma/schema.prisma 首行是 SHA-256 前缀的归属证据；结构性改动必须刷新（算法在文件里），刻意不留脚本
 - [server-only 热修只改单个 chunk](hotfix-targeted-chunk-upload.md) — chunk 导入别名每次 build 都变；build hash 烘焙进 server 端，不能只传 .output/server；node --check 不解析导入，守卫要前置
+- [教程以文档站为权威](docs-site-is-authoritative-for-tutorials.md) — 教程正文写 X:/imqi1-docs 的 content/**/*.mdx（路由=文件路径）；README 只做速览+链接，不复述步骤；写完核实文件未被并发写入覆盖
