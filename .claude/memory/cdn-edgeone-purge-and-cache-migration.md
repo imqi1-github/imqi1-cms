@@ -295,3 +295,42 @@ curl -sS -X POST https://imqi1.com/mcp -H "Accept: application/json, text/event-
   ⇒ 在 beforeResponse 类钩子里设 header 前，**必须先判 `headersSent`**。
 - **转发请求体给 fetch/SDK 时要剔掉 body 相关的头**（content-length / content-encoding / transfer-encoding），
   否则长度或编码语义对不上 ⇒ 解析失败。Node 不解压**请求**体（只解响应体）。
+
+---
+
+## 2026-11-07 Redis 开关的无缝性（开启 Redis 会不会破坏边缘缓存方案）
+
+**结论：不会。** 边缘刷新（EdgeOne）走 HTTP API，**完全不碰存储** ⇒ 与 Redis 开关正交。
+真正会变的是**源站缓存的键形态**与**短期缓存的后端**：
+
+| 路径 | Redis 开 | Redis 关 | 影响边缘方案？ |
+|---|---|---|---|
+| 源站页面/API 缓存（routeRules `cache.base`） | redis 驱动 `nitro:routes:_:<frag>.<hash>.json` | fs 驱动 `nitro/routes/_/<frag>.<hash>.json` | ❌ 不影响 |
+| 启动清缓存（`cache-reset.ts`） | `redis.flushdb()`（**清整库**） | `useStorage("cache").clear()` | ⚠️ flushdb 会连带清限流/登录锁计数（无害） |
+| 短期缓存（搜索/足迹） | Redis | 进程内内存 | ⚠️ 多副本下不同（Redis 更正确） |
+| 限流 / 登录锁定 | Redis（共享） | 进程内内存（每副本一份） | ⚠️ 同上 |
+
+⇒ **精确失效刻意不依赖「完整键名」**：只用「路径片段（前缀）+ 键后缀（`endsWith`）」两种与形态无关的匹配
+⇒ 两种驱动的键形态都被 `test/unit/server/utils/source-cache-drivers.test.ts` 锁住。
+⚠️ **`redis.enabled` 是构建期常量**（`site.config.ts` → `shared/redis-config.ts` → 烘进 runtimeConfig）⇒
+**开 Redis 必须重新构建 + 重新部署**，不是运行时开关。但因为失效逻辑驱动无关，这次「开关切换」对
+「边缘缓存 + 时效性」**没有任何行为变化**，只是短期缓存与限流从进程内存换成了 Redis（多副本下更正确）。
+
+**顺带**：`/mcp` 显式下发 `Cache-Control: no-store`（不依赖 SDK 顺带发的 `no-cache`）——
+边缘策略是「跟随源站」，源站说不缓存边缘就不缓存；SDK 换实现、将来返回 JSON、控制台改成「强制 TTL」
+这三种情况下这个头是最后一道保险。
+
+---
+
+## ⚠️ 部署重启窗口的可用性（2026-11-07 实测发现，与 Redis 无关）
+
+生产 nginx 访问日志 `/www/wwwlogs/132.log` 里 11-07 00:12~00:17 有 **9 个 502**
+（`connect() failed (111: Connection refused)` ⇒ Node 进程不在监听 3000），**持续约 5 分钟**。
+时间点正好落在「部署完成 → 边缘整站刷新 → 全站回源」之后 ⇒ 疑似**渲染风暴**：
+`cache-reset.ts` 启动时清空源站缓存 + `cache-reset.ts` 因 buildHash 变化提交**整站刷新**
+⇒ 边缘全站标记过期 + 源站缓存空 ⇒ 156 篇文章同时渲染 ⇒ 内存峰值 ⇒ 进程被杀 ⇒ 守护拉起。
+⚠️ 内存总量只有 3.9GB。
+
+⇒ **这条路径正是我之前建议的「额度耗尽时用整站刷新兜底」** ⇒ 该建议有风险，需要复核。
+⇒ 可考虑：① 启动时**不清**源站缓存（旧 HTML 引用旧 buildHash 的静态资源，只要 COS 上旧目录还在就没事）；
+② 部署后的整站刷新改成**手动**或**延后**；③ 回源加并发限制。
