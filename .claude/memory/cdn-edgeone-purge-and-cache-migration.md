@@ -238,3 +238,28 @@ metadata:
 **note 进日志（已修）**：`runCdnPurge` 的日志原来不含 `note` ⇒ 「额度不足，N 个目标未提交」这类关键信息只存在于返回值里，日志看不到 ⇒ 现在日志带 `备注` 字段。
 
 **「额度耗尽时内容页挂 6 小时」的准确口径**：受影响的是**文章详情页**（边缘 TTL 6h）；列表页 TTL 15s 照常更新。源站缓存**已经被清了**（新数据在那儿），问题只在「边缘手里那份旧 HTML 还在」⇒ 任何兜底都必须在边缘侧动手：整站刷新走**独立的额度池**（`purge_all` 10 次/天），URL 池耗尽时仍可用 ⇒ 人工一次整站刷新即可立刻恢复（代价：全站回源重渲染一次 ≈ 156×411ms ≈ 64s）。
+
+---
+
+## 2026-11-07 生产日志排查（MCP 端点的偶发错误）
+
+**用 MCP 读生产日志**（令牌在服务器进程环境里，别在本地 .env；MCP 端点 `https://imqi1.com/mcp` 需带 `Accept: application/json, text/event-stream`，否则 406）：
+```bash
+# 在服务器上取令牌 → 直连 MCP 端点，令牌不回显
+TOKEN=$(ssh ... 'tr "\0" "\n" < /proc/<pid>/environ | grep "^MCP_OPS_TOKEN=" | cut -d= -f2-')
+curl -sS -X POST https://imqi1.com/mcp -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_recent_logs","arguments":{"token":"'"$TOKEN"'","category":"monitor"}}}' | sed -n 's/^data: //p'
+```
+
+**排查到的三类东西**：
+1. **结构化日志（logs/<类别>/<日期>.log）近 4 天 ERROR/WARN 全是 0** —— 「报的错」不在这里。真正的错误在 **nginx 访问日志 `/www/wwwlogs/132.log`**（130 万行、**不轮转**）与 **`/www/wwwlogs/132.error.log`**（nginx 的 upstream 错误）+ **`/www/wwwlogs/nodejs/132.log`**（Node 的 stdout/stderr，宝塔 Node 项目的 nohup 输出）。
+2. **11-05 的 41 条 monitor 错误全是已修的旧问题**：Nuxt payload 缓存的 `EISDIR`/`ENOTDIR`（unstorage 在 `?` 处截断 → 空键 → fs 驱动 open 目录；已用 `cache:nuxt:payload → memory` 驱动修掉）、`SASL ... client password must be a string`（DB_PASSWORD 没注入）、`EADDRINUSE :3000`（重复启动）、以及重启窗口连带的 `获取首页数据失败`/`生成 RSS 失败`。
+3. **11-06/11-07 剩下的唯一错误**：`/mcp` 端点报 `Cannot set headers after they are sent to the client`（ERR_HTTP_HEADERS_SENT）—— **响应本身是成功的**（客户端拿到正常结果），错误发生在**响应发出之后** ⇒ 某个环节在 `res.headersSent` 之后又调 setHeader。**低频偶发**（两天 3 次），本地生产构建复现不了（直连 Node、无论成功/失败路径、加不加 nginx 的 `Connection: upgrade` 头都复现不了）⇒ 根因未定位。
+   处置：`server/routes/mcp.post.ts` 的 `writeWebResponse` 加 `headersSent` 保护（跳过并 `console.warn` + 栈，不再让整个请求变 500、不再触发错误通知邮件）。
+   ⚠️ 顺带发现 **错误日志没有堆栈**（`reportError` 拿到了 `stack` 但 `log.monitor` 没写）⇒ 排查这类问题毫无线索，已补上（截断 6 行、单行）。
+
+**nginx 的 `proxy_set_header Connection "upgrade"` + `Upgrade $http_upgrade`（空）对所有请求生效**（含 /mcp）—— Node 收到「声明 upgrade 却无 Upgrade 头」的畸形头。目前没造成问题，但值得知道。
+
+**⚠️ 安全**：`/www/wwwroot/glass/132_start.sh` 里**明文写了全部生产密钥**（MCP_OPS_TOKEN、EDGEONE_SECRET_ID/KEY、微信 AppID/Secret、LOGIN_SECRET…），且权限是 `-rwxrwxrwx`（**任何用户可读**）。任何能 SSH 进来的人都能拿到全部生产凭据。建议：① `chmod 600` + owner 改 root；② 密钥迁到 root-only 的环境文件；③ **本次排查中这些值已出现在对话记录里 → 建议轮换**。
+
+**EdgeOne 默认缓存会缓存 `/mcp`**（它不在 `/api/*` 的 no-store 规则下）⇒ 实测 `EO-Cache-Status: MISS`（因 SSE 响应不被缓存），但若将来 /mcp 返回可缓存的 JSON，就会被缓存 30 分钟。建议给 `/mcp` 显式加 no-store。
