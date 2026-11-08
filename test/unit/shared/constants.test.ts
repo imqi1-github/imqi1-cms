@@ -21,10 +21,10 @@ import {
   DEFAULT_COMMENT_MAX_LEVEL,
   DEFAULT_COMMENT_PAGE_SIZE,
   DEFAULT_FEED_CACHE_INTERVAL,
-  DEFAULT_SEARCH_CACHE_EXPIRE,
   DEFAULT_SESSION_STORE_TYPE,
   DEFAULT_SMTP_PORT,
   DEFAULT_UPLOAD_LOCATION,
+  FOOTPRINT_CACHE_TTL,
   LINKS_CACHE_ROUTES,
   LIKES_CACHE_ROUTES,
   MAX_ATTACHMENT_BYTES,
@@ -35,6 +35,7 @@ import {
   PUBLIC_CACHE_CONTROL,
   PUBLIC_CACHE_CONTROL_SHORT,
   PUBLIC_LIMIT_MAX,
+  SEARCH_CACHE_TTL,
   SEARCH_RESULT_TAKE,
   SUBSCRIBE_CACHE_ROUTES,
   TAG_CACHE_ROUTES,
@@ -125,9 +126,8 @@ describe("站点设置默认值(三张默认值表共用)", () => {
     expect(DEFAULT_COMMENT_INTERVAL).toBe(60);
   });
 
-  test("订阅源缓存 / 搜索缓存 / SMTP / 上传位置 / 会话存储", () => {
+  test("订阅源缓存 / SMTP / 上传位置 / 会话存储", () => {
     expect(DEFAULT_FEED_CACHE_INTERVAL).toBe(8);
-    expect(DEFAULT_SEARCH_CACHE_EXPIRE).toBe(300);
     expect(DEFAULT_SMTP_PORT).toBe(465);
     expect(DEFAULT_UPLOAD_LOCATION).toBe("local");
     expect(DEFAULT_SESSION_STORE_TYPE).toBe("memory");
@@ -153,6 +153,10 @@ describe("长度与大小上限", () => {
     expect(SEARCH_RESULT_TAKE).toBe(50);
     expect(ADMIN_DASHBOARD_TAKE).toBe(5);
     expect(UNBOUNDED_TAKE_FALLBACK).toBe(2000);
+  });
+
+  test("搜索缓存 TTL 与访客分布缓存一致(始终开启,不再可配)", () => {
+    expect(SEARCH_CACHE_TTL).toBe(FOOTPRINT_CACHE_TTL);
   });
 });
 

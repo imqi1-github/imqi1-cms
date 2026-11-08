@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AdminSettings } from "~/types/apis/admin/settings";
-import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, DEFAULT_SEARCH_CACHE_EXPIRE, CSRF_TOKEN_ENDPOINT } from "#shared/constants";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, CSRF_TOKEN_ENDPOINT } from "#shared/constants";
 
 const loading = ref(true);
 const activeTab = ref("basic");
@@ -56,8 +56,6 @@ const settings = ref<AdminSettings>({
   sessionStoreType: DEFAULT_SESSION_STORE_TYPE,
   messageContentId: "",
   linkAutoApprove: false,
-  searchCacheEnabled: false,
-  searchCacheExpire: DEFAULT_SEARCH_CACHE_EXPIRE,
 });
 
 const avatarServices = [
@@ -269,8 +267,6 @@ const defaultSettings: AdminSettings = {
   sessionStoreType: DEFAULT_SESSION_STORE_TYPE,
   messageContentId: "",
   linkAutoApprove: false,
-  searchCacheEnabled: false,
-  searchCacheExpire: DEFAULT_SEARCH_CACHE_EXPIRE,
 };
 
 // 加载设置
@@ -1068,55 +1064,6 @@ onMounted(() => {
               <div v-if="settings.emailPushType === 'none'" class="p-8 bg-muted/30 rounded-lg text-center">
                 <Icon name="lucide:mail-x" class="size-12 text-muted-foreground/50 mx-auto mb-4" />
                 <p class="text-muted-foreground">未启用邮件推送功能，系统将不发送任何通知邮件</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- 搜索优化配置 Card -->
-          <Card>
-            <CardHeader>
-              <CardTitle>搜索优化</CardTitle>
-              <CardDescription>配置搜索功能缓存，提升搜索性能</CardDescription>
-            </CardHeader>
-            <CardContent class="space-y-6">
-              <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <div class="space-y-0.5">
-                    <Label for="searchCacheEnabled">启用搜索缓存</Label>
-                    <p class="text-sm text-muted-foreground">是否将热门搜索结果缓存起来（优先 Redis，未配置时走进程内内存）</p>
-                  </div>
-                  <Switch id="searchCacheEnabled" v-model="settings.searchCacheEnabled" />
-                </div>
-
-                <div v-if="settings.searchCacheEnabled" class="space-y-2">
-                  <Label for="searchCacheExpire">缓存过期时间（秒）</Label>
-                  <Input
-                    id="searchCacheExpire"
-                    v-model.number="settings.searchCacheExpire"
-                    type="number"
-                    min="60"
-                    max="3600"
-                    placeholder="请填写缓存秒数，范围 60-3600，建议 300"
-                  />
-                  <p class="text-xs text-muted-foreground">
-                    热门搜索结果的缓存时间，建议 300 秒（5分钟）
-                  </p>
-                </div>
-
-                <div class="p-4 bg-muted/30 rounded-lg space-y-3">
-                  <div class="flex items-start gap-3">
-                    <Icon name="lucide:lightbulb" class="size-5 text-blue-500 mt-0.5" />
-                    <div class="space-y-2 text-sm">
-                      <p class="font-medium">搜索缓存说明：</p>
-                      <ul class="list-disc list-inside space-y-1 text-muted-foreground">
-                        <li>启用后，热门搜索关键词的结果将被缓存</li>
-                        <li>缓存命中时响应速度可提升 80-90%</li>
-                        <li>首次搜索后，相同关键词将直接返回缓存结果</li>
-                        <li>未配置 Redis 时自动改用进程内内存缓存（重启清零）</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>

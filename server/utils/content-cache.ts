@@ -92,7 +92,7 @@ export async function invalidateContentCaches(opts: InvalidateContentCachesOptio
   if (opts.countOnly) await clearFootprintCache();
 
   // 搜索结果是 contents / metas / comments 的派生视图（三个 type 各一份短缓存）：
-  // 写库后不清，改完文章或评论要等 searchCacheExpire（默认 5 分钟）才搜得到。
+  // 写库后清掉 search:* 缓存；TTL（与访客分布一致）只是无人写库时的最长陈旧时间。
   await clearSearchCache();
 
   scheduleCdnPurge({ ...opts, routes: scopeRoutes, edgeDirectories: scopeDirs }, rows, listPagePaths);

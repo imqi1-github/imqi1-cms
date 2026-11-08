@@ -286,9 +286,7 @@ INSERT INTO "informations" ("key", "value") VALUES
   ('cosImageSuffix', ''),
   ('sessionStoreType', 'memory'),
   ('messageContentId', ''),
-  ('linkAutoApprove', 'false'),
-  ('searchCacheEnabled', 'false'),
-  ('searchCacheExpire', '300');
+  ('linkAutoApprove', 'false');
 
 -- ============================================================
 -- 四、示例数据（仅在空库上有效；已有数据的库会因主键冲突直接报错）

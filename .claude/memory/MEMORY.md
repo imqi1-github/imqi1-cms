@@ -78,7 +78,7 @@
 - [久未触碰文件非必然 bug](stale-config-files-not-always-bug.md) — 「长期没改」不等于 bug ⇒ 先跑 tailwindcss:lint / 查 tsconfig alias 兜底 / 实际 fs 检查；用户对 lint exit 0 有强要求，无证据的改动只增技术债
 - [MCP 运维工具组](mcp-ops-tools.md) — /mcp 加 5 个运维工具，未配 MCP_OPS_TOKEN 整组不注册；clear_cache 是唯一非 readOnly；get_cache_info 统计真实 Redis 键前缀（rl: 是内部前缀）
 - [/link-audit 友链订阅合规审查](link-audit-skill.md) — 只走百度内容审核；结论映射为不合规0.90/疑似0.65；处置走 admin API 才失效 ISR 缓存；密钥只放 .env.local
-- [页面缓存三层结构与 EdgeOne 边缘失效](cdn-edgeone-purge-and-cache-migration.md) — 边缘/源站/短期三层；边缘/源站两档 TTL（边缘 内容页 3600、列表页 15；源站 21600）；写库失效链 + scope 展示面；EdgeOne API 形态与 TC3 签名；nginx 须透传 Cache-Control
+- [页面缓存三层结构与 EdgeOne 边缘失效](cdn-edgeone-purge-and-cache-migration.md) — 边缘/源站/短期三层；边缘/源站两档 TTL（边缘 内容页 3600、列表页 15；源站 21600）；写库失效链 + scope 展示面；搜索缓存恒开 TTL=足迹缓存；EdgeOne API 形态与 TC3 签名；nginx 须透传 Cache-Control
 
 - [getSiteSettings 走 findMany 不是 findUnique](get-site-settings-uses-findmany-not-findunique.md) — 测它或用 siteUrl 的端点时 fake 必须注册 informations.findMany 返数组；漏注册会静默走 defaults 兜底
 - [init-db 显式 cid 不推进 SERIAL](init-db-explicit-cid-serial-pg-p2002.md) — PG 显式值插入不调 nextval ⇒ 测试里 create 不带 cid 会撞 P2002；resetDb 后要 setval 或让表空

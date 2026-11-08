@@ -13,7 +13,6 @@
 import { describe, expect, mock, test } from "bun:test";
 
 import { CSRF_TOKEN, callAdmin, loginSessionCookie } from "#test/helpers/admin";
-import { DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
@@ -56,11 +55,6 @@ function makeGetEvent(url = "/api/search?q=test") {
 
 describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", () => {
   test("search.get:redis.get 抛错 → fallback DB 查询,响应 200 不外泄 ECONNRESET", async () => {
-    // 启用 searchCache 让 redis.get 路径被执行
-    sharedFake.on("informations", "findMany", async () => [
-      { key: "searchCacheEnabled", value: "true" },
-      { key: "searchCacheExpire", value: String(DEFAULT_SEARCH_CACHE_EXPIRE) },
-    ]);
     sharedFake.on("contents", "findMany", async () => []);
     sharedFake.on("subscribes", "findMany", async () => []);
     sharedFake.on("links", "findMany", async () => []);
@@ -104,7 +98,6 @@ describe("Redis 断开 → handler 应 fallback 不外泄 Redis 内部错误", (
   });
 
   test("search.get:redis.setex 抛错 → catch 兜底,响应 200", async () => {
-    sharedFake.on("informations", "findMany", async () => []);
     sharedFake.on("contents", "findMany", async () => [
       { cid: 1, title: "T", slug: "t", desc: null, content: "x", create_time: new Date(), _count: { likes: 0 }, contentrelations: [], status: 1 },
     ]);

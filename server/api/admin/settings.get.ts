@@ -1,5 +1,5 @@
 import { getUser } from "#server/lib/auth";
-import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE } from "#shared/constants";
 import { prisma } from "#server/utils/prisma";
 import { siteConfig } from "~~/site.config";
 
@@ -64,8 +64,6 @@ export default defineEventHandler(async event => {
       sessionStoreType: DEFAULT_SESSION_STORE_TYPE,
       messageContentId: "",
       linkAutoApprove: false,
-      searchCacheEnabled: false,
-      searchCacheExpire: DEFAULT_SEARCH_CACHE_EXPIRE,
     };
 
     const settings: Record<string, string | number | boolean> = { ...defaults };

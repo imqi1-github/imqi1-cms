@@ -4,11 +4,10 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import { makeAuthEvent } from "#test/helpers/auth-fakes";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
-import { DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 
 mockSharedPrisma();
 
-// redis 假件:可控 cacheEnabled 路径(searchCacheEnabled=true 时走缓存读写)
+// redis 假件:搜索缓存始终开启，这里只需可控缓存读写
 const cacheStore = new Map<string, string>();
 let redisEnabled = true;
 mock.module("#server/utils/redis", () => ({
@@ -106,9 +105,7 @@ describe("search/订阅文章分支(type=subscribepost)", () => {
 });
 
 describe("search/缓存分支", () => {
-  test("cacheEnabled=true:首次回源并写缓存,二次命中缓存", async () => {
-    settingsMap.set("searchCacheEnabled", "true");
-    settingsMap.set("searchCacheExpire", String(DEFAULT_SEARCH_CACHE_EXPIRE));
+  test("始终缓存:首次回源并写缓存,二次命中缓存", async () => {
     // 实现仅在「有结果」时写缓存
     commentRows = [{ coid: 1, name: "甲", mail: null, content: "c", create_time: new Date(), content_ref: { cid: 10, title: "t", slug: "s", status: 1, contentrelations: [] } }];
 
@@ -124,7 +121,6 @@ describe("search/缓存分支", () => {
   });
 
   test("写缓存抛错不影响返回(缓存是 best-effort)", async () => {
-    settingsMap.set("searchCacheEnabled", "true");
     commentRows = [{ coid: 1, name: "甲", mail: null, content: "c", create_time: new Date(), content_ref: { cid: 10, title: "t", slug: "s", status: 1, contentrelations: [] } }];
     cacheStore.set("__throw", "1"); // 让 setex 抛错的开关
     const r = await call("?q=throwcache&type=comment");

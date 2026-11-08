@@ -58,8 +58,6 @@ export const DEFAULT_UPLOAD_LOCATION = "local";
 export const DEFAULT_SMTP_PORT = 465;
 /** 会话存储方式：memory | redis | file */
 export const DEFAULT_SESSION_STORE_TYPE = "memory";
-/** 搜索缓存过期时间（秒） */
-export const DEFAULT_SEARCH_CACHE_EXPIRE = 300;
 
 // ==================== 长度与大小上限 ====================
 
@@ -199,6 +197,13 @@ export const FOOTPRINT_CACHE_KEY = "custom:footprint";
  * 这条 TTL 就是访客分布的新鲜度上限（边缘 TTL 再短也不会更新得更早）。
  */
 export const FOOTPRINT_CACHE_TTL = 600;
+
+/** 搜索结果缓存 TTL（秒）：与访客分布聚合缓存同值
+ *
+ * 搜索结果同样是内容的派生视图（contents / metas / comments 的投影），
+ * 与访客分布同级：写库后缓存即被清掉，这条 TTL 只是「无人写库时」的最长陈旧时间。
+ */
+export const SEARCH_CACHE_TTL = FOOTPRINT_CACHE_TTL;
 
 // ==================== User-Agent ====================
 

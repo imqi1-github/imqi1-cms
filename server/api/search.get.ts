@@ -1,5 +1,5 @@
 import { prisma, isPrismaNotFoundError } from "#server/utils/prisma";
-import { SEARCH_RESULT_TAKE } from "#shared/constants";
+import { SEARCH_RESULT_TAKE, SEARCH_CACHE_TTL } from "#shared/constants";
 import { cacheGet, cacheSetex } from "#server/utils/cache/store";
 import { getCommentAvatarService, commentAvatarUrl } from "#server/utils/comment-avatar";
 import { SearchQuerySchema } from "#server/utils/schemas";
@@ -38,39 +38,6 @@ function sanitizeSearchKeyword(keyword: string): string {
   sanitized = sanitized.replace(/\s+/g, " ");
 
   return sanitized;
-}
-
-// 获取搜索设置
-async function getSearchSettings() {
-  try {
-    const settings = await prisma.informations.findMany({
-      where: {
-        key: {
-          in: ["searchCacheEnabled", "searchCacheExpire"],
-        },
-      },
-    });
-
-    const settingsMap = settings.reduce(
-      (acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-
-    return {
-      cacheEnabled: settingsMap["searchCacheEnabled"] === "true",
-      cacheExpire: Number(settingsMap["searchCacheExpire"]) || 300,
-    };
-  } catch (error) {
-    console.error(error);
-    // 如果获取设置失败，返回默认值（禁用缓存）
-    return {
-      cacheEnabled: false,
-      cacheExpire: 300,
-    };
-  }
 }
 
 // 提取关键词上下文并高亮
@@ -441,27 +408,22 @@ export default defineTypedApiHandler(
         };
       }
 
-      // 获取搜索设置
-      const searchSettings = await getSearchSettings();
+      // ========== 搜索结果缓存（始终开启，Redis 优先，未配置时用进程内内存） ==========
+      const cacheKey = `search:${q}:${type}`;
 
-      // ========== 搜索结果缓存（Redis 优先，未启用时用进程内内存） ==========
-      if (searchSettings.cacheEnabled) {
-        const cacheKey = `search:${q}:${type}`;
-
-        try {
-          // 尝试从缓存获取
-          const cached = await cacheGet(cacheKey);
-          if (cached) {
-            return {
-              code: 200,
-              message: "搜索成功（来自缓存）",
-              data: JSON.parse(cached) as typeof responseData,
-            };
-          }
-        } catch (error) {
-          console.error(error);
-          // 缓存失败时继续执行数据库查询
+      try {
+        // 尝试从缓存获取
+        const cached = await cacheGet(cacheKey);
+        if (cached) {
+          return {
+            code: 200,
+            message: "搜索成功（来自缓存）",
+            data: JSON.parse(cached) as typeof responseData,
+          };
         }
+      } catch (error) {
+        console.error(error);
+        // 缓存失败时继续执行数据库查询
       }
 
       // ========== 数据库搜索(按类型分支)+ single-flight 防 cache stampede ==========
@@ -486,10 +448,9 @@ export default defineTypedApiHandler(
         try {
           responseData = await p;
           // ========== 缓存搜索结果 ==========
-          if (searchSettings.cacheEnabled && responseData.results.length > 0) {
+          if (responseData.results.length > 0) {
             try {
-              const cacheKey = `search:${q}:${type}`;
-              await cacheSetex(cacheKey, searchSettings.cacheExpire, JSON.stringify(responseData));
+              await cacheSetex(cacheKey, SEARCH_CACHE_TTL, JSON.stringify(responseData));
             } catch (error) {
               console.error(error);
             }

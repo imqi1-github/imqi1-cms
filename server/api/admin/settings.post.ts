@@ -1,5 +1,5 @@
 import { getUser } from "#server/lib/auth";
-import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE, DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
+import { DEFAULT_COMMENT_AVATAR_SERVICE, DEFAULT_COMMENT_PAGE_SIZE, DEFAULT_COMMENT_MAX_LEVEL, DEFAULT_COMMENT_INTERVAL, DEFAULT_FEED_CACHE_INTERVAL, CONTENT_PAGE_SIZE_DEFAULT, DEFAULT_SMTP_PORT, DEFAULT_UPLOAD_LOCATION, DEFAULT_SESSION_STORE_TYPE } from "#shared/constants";
 import { validateCsrfToken } from "#server/utils/csrf";
 import { prisma } from "#server/utils/prisma";
 import { validateSettingsData } from "#server/utils/validation";
@@ -94,8 +94,6 @@ export default defineEventHandler(async event => {
       { key: "sessionStoreType", value: settingsData.sessionStoreType ?? DEFAULT_SESSION_STORE_TYPE },
       { key: "messageContentId", value: settingsData.messageContentId ?? "" },
       { key: "linkAutoApprove", value: String(settingsData.linkAutoApprove ?? false) },
-      { key: "searchCacheEnabled", value: String(settingsData.searchCacheEnabled ?? false) },
-      { key: "searchCacheExpire", value: String(settingsData.searchCacheExpire ?? DEFAULT_SEARCH_CACHE_EXPIRE) },
     ];
 
     // 整批 upsert 包事务：中途失败整体回滚，避免保存半套不一致设置

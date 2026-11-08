@@ -50,6 +50,4 @@ export interface AdminSettings {
 	sessionStoreType: string;
 	messageContentId: string;
 	linkAutoApprove: boolean;
-	searchCacheEnabled: boolean;
-	searchCacheExpire: number;
 }

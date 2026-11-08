@@ -9,7 +9,6 @@
  */
 import { describe, expect, mock, test } from "bun:test";
 
-import { DEFAULT_SEARCH_CACHE_EXPIRE } from "#shared/constants";
 import { mockSharedPrisma, sharedFake } from "#test/helpers/fake-prisma";
 
 mockSharedPrisma();
@@ -51,10 +50,6 @@ function event(url = "/api/search?q=hot") {
 }
 
 function enableCacheAndContents(queryBuilder: (q: string) => { cid: number; title: string; slug: string; desc: null; content: string; create_time: Date; contentrelations: never[]; status: 1 }[]) {
-  sharedFake.on("informations", "findMany", async () => [
-    { key: "searchCacheEnabled", value: "true" },
-    { key: "searchCacheExpire", value: String(DEFAULT_SEARCH_CACHE_EXPIRE) },
-  ]);
   sharedFake.on("subscribes", "findMany", async () => []);
   sharedFake.on("links", "findMany", async () => []);
   sharedFake.on("subscribeposts", "findMany", async () => []);
