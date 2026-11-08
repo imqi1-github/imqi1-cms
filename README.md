@@ -33,7 +33,7 @@ bun run dev              # http://localhost:3000
 
 - 克隆时漏了小程序子模块：`git submodule update --init --recursive`
 - 默认管理员 `admin` / `123456`
-- 生产环境部署见文档站：[快速部署](https://docs.qi1.website/quick-deploy) · [通过源码部署](https://docs.qi1.website/deployment/nodejs) · [Docker 部署](https://docs.qi1.website/deployment/docker)
+- 生产环境部署见文档站：[快速部署](https://docs.qi1.website/quick-deploy) · [通过源码部署](https://docs.qi1.website/deployment/nodejs) · [Docker 部署](https://docs.qi1.website/deployment/docker) · [EdgeOne 边缘缓存](https://docs.qi1.website/deployment/edgeone)
 
 ## 参与贡献
 
