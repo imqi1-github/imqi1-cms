@@ -47,8 +47,8 @@ const SCOPE_ROUTES: Record<ContentScope, string[]> = {
  *     真实 Redis 键是 `nitro:routes:_:<pathFrag>.<hash>.json`（见 [[nitro-route-cache-key-colon]]）。
  *     页面键与公开 API 键都在这一组，写库时一起删掉。
  *   - 边缘缓存：按路由展开成**精确 URL** 后刷新（URL 池 1000/天）；只有 `/content/**` 等
- *     通配无法展开时才退回目录刷新（目录池仅 50/天）。提交前做 2 秒防抖，
- *     编辑器自动保存的连续写库只会合并成一次刷新。
+ *     通配无法展开时才退回目录刷新（目录池仅 50/天）。提交前做 0.5 秒防抖，
+ *     短时间内的连续写库只会合并成一次刷新。
  *
  * 注意：invalidation 是 best-effort，调用方应自行 `.catch()`，不要让缓存层抖动影响写库本身。
  */
@@ -177,12 +177,14 @@ const API_URLS_BY_ROUTE: Record<string, string[]> = {
 };
 
 /**
- * 边缘刷新防抖：编辑器 2 秒自动保存会连续写库，合并成一次提交。
+ * 边缘刷新防抖：把短时间内的连续写库合并成一次提交。
  *
- * 2 秒 = 与自动保存的空闲间隔对齐：停止输入 → 2 秒后存一次 → 再 2 秒后提交刷新，
- * 改完约 2~4 秒可见（额度已按展示面精确化，省下来的正好换这个时效）。
+ * 原本是 2 秒，因为编辑器自动保存会连续写库（自动保存每 2 秒一次）。
+ * **自动保存现在不走这条链**（`autosave.patch.ts` 只写 content + update_time，不调
+ * invalidateContentCaches），会触发刷新的只剩手动保存这种低频动作 ⇒ 防抖不再需要
+ * 2 秒，缩到 0.5 秒（仍能合并连点两次保存），把这段纯延迟砍掉。
  */
-const PURGE_DEBOUNCE_MS = 2_000;
+const PURGE_DEBOUNCE_MS = 500;
 
 /**
  * 分页变体无限的列表路由族（/category/**、/tag/**）。
@@ -204,7 +206,7 @@ const pendingEdgeDirectories = new Set<string>();
 const pendingScopes = new Set<ContentScope>();
 let pendingEdgeRoutesGiven = false;
 // 「本窗口内到目前为止全是纯计数变更」：初始 true（空窗口），出现任意内容类变更即置 false。
-// 不能只置 true 不置 false —— 评论和文章保存落在同一个 2 秒窗口时，文章页 URL 会被误跳过。
+// 不能只置 true 不置 false —— 评论和文章保存落在同一个防抖窗口时，文章页 URL 会被误跳过。
 let pendingCountOnly = true;
 
 /** 累积本次变更并重置防抖计时器（不 await：刷新异步执行，失败不影响写库） */

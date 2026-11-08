@@ -84,8 +84,8 @@ const { exactKeySuffix } = await import("#server/utils/source-cache");
 /** 用生产实现构造源站缓存键（测试与生产同源，避免各写一套） */
 const keyOf = (url: string) => `nitro:routes:_:${exactKeySuffix(url)}`;
 
-/** 防抖 2 秒；测试里等它过去（留出余量） */
-const wait = () => new Promise(resolve => setTimeout(resolve, 2_300));
+/** 防抖 0.5 秒；测试里等它过去（留出余量） */
+const wait = () => new Promise(resolve => setTimeout(resolve, 800));
 
 beforeEach(() => {
   purgedUrls.length = 0;

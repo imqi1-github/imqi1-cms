@@ -30,7 +30,7 @@ metadata:
 
 1. **清源站缓存**（`server/utils/source-cache.ts` 的 `clearSourceCache`，**驱动无关**，Redis/文件都能精确失效）→ 含 `api*` 与 `search*` 键（否则边缘回源拿到旧 JSON / 旧搜索结果）。
 1b. **清搜索短缓存**（`search:*` 前缀，2026-11-07 加）——搜索结果是 contents/metas/comments 的派生视图，不清则改完要等 `searchCacheExpire`（默认 5 分钟）才搜得到。
-2. **排边缘刷新**（`scheduleCdnPurge`，`PURGE_DEBOUNCE_MS` = **2 秒**，与编辑器自动保存间隔对齐）→ 防抖窗口内合并成一次提交 → `flushCdnPurge` → `purgeCdnUrls`（精确 URL）／`purgeCdnRoutes`（目录前缀）。
+2. **排边缘刷新**（`scheduleCdnPurge`，`PURGE_DEBOUNCE_MS` = **0.5 秒**）→ 防抖窗口内合并成一次提交 → `flushCdnPurge` → `purgeCdnUrls`（精确 URL）／`purgeCdnRoutes`（目录前缀）。**原为 2 秒，理由是「编辑器自动保存会连续写库」——自动保存（`autosave.patch.ts`）根本不调 invalidateContentCaches，该理由已失效 ⇒ 缩到 0.5 秒（2026-11-08）**。
 
 > **铁律：边缘刷了哪条，源站就得清哪条。** 否则边缘回源时源站命中旧缓存回 304 → 旧内容复活。
 

@@ -46,7 +46,7 @@ export function isCdnDisabledByEnv(): boolean {
 /**
  * 写库后自动刷新边缘缓存：默认开启，CDN_AUTO_PURGE=0 关闭。
  *
- * 刷新前做了 2 秒防抖 + 精确 URL 展开，一次编辑会话只消耗少量 URL 额度；
+ * 刷新前做了 0.5 秒防抖 + 精确 URL 展开，一次编辑会话只消耗少量 URL 额度；
  * 后台手动刷新与 MCP 的 target=cdn 不受此开关限制（那是明确的人工动作）。
  */
 export function isAutoPurgeEnabled(): boolean {
