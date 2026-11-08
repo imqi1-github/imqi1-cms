@@ -1,7 +1,7 @@
 // 列表/统计页识别：决定「边缘 TTL 短 + 写库时不刷边缘」的页面范围。
 import { describe, expect, test } from "bun:test";
 
-import { canonicalSearch, isListPageRoute, significantQueryParams } from "#shared/cache-routes";
+import { canonicalSearch, isBrowserRevalidateApi, isListPageRoute, isSearchPageRoute, significantQueryParams } from "#shared/cache-routes";
 
 describe("isListPageRoute", () => {
   test("列表/统计页：内嵌评论数等聚合数据，边缘 TTL 短", () => {
@@ -37,6 +37,24 @@ describe("isListPageRoute", () => {
   });
 });
 
+describe("搜索页档（结果随查询词变化，边缘 TTL 单独一档）", () => {
+  test("只有搜索页命中这一档", () => {
+    expect(isSearchPageRoute("/search")).toBe(true);
+    expect(isSearchPageRoute("/search?q=x")).toBe(true);
+    expect(isSearchPageRoute("/content/note/1")).toBe(false);
+    expect(isSearchPageRoute("/")).toBe(false);
+    expect(isSearchPageRoute("/map")).toBe(false);
+  });
+
+  test("搜索页不属于列表页档（TTL 档位不重叠）", () => {
+    expect(isListPageRoute("/search")).toBe(false);
+  });
+
+  test("搜索接口进边缘缓存（浏览器每次回源验证）", () => {
+    expect(isBrowserRevalidateApi("/api/search")).toBe(true);
+  });
+});
+
 describe("显著查询参数（影响 SSR 输出的参数）", () => {
   test("登记了会改变 SSR 输出的参数", () => {
     expect(significantQueryParams("/category/note")).toEqual(["page"]);
@@ -44,6 +62,8 @@ describe("显著查询参数（影响 SSR 输出的参数）", () => {
     expect(significantQueryParams("/map")).toEqual(["view", "place"]);
     expect(significantQueryParams("/subscribes")).toEqual(["source"]);
     expect(significantQueryParams("/changelogs")).toEqual(["type"]);
+    // 搜索页：q 决定结果、type 决定类别，漏登记会让所有查询共用一个缓存键
+    expect(significantQueryParams("/search")).toEqual(["q", "type"]);
     expect(significantQueryParams("/about")).toEqual([]);
   });
 
@@ -52,6 +72,9 @@ describe("显著查询参数（影响 SSR 输出的参数）", () => {
     expect(canonicalSearch("/category/note", { page: "2" })).toBe("?page=2");
     expect(canonicalSearch("/about", { utm: "x" })).toBe("");
     expect(canonicalSearch("/subscribes", { source: "3" })).toBe("?source=3");
+    // 搜索页：推广参数剥掉，q/type 保留（剥掉 q 会让所有查询共用一个缓存键）
+    expect(canonicalSearch("/search", { q: "测试", type: "comment", utm: "x" })).toBe("?q=%E6%B5%8B%E8%AF%95&type=comment");
+    expect(canonicalSearch("/search", { utm: "x" })).toBe("");
   });
 
   test("缺省值的参数不写入查询串", () => {

@@ -61,6 +61,8 @@ export const siteConfig = defineSiteConfig({
     pageCacheSeconds: 21600,
     edgeCacheSeconds: 3600,
     listPageCacheSeconds: 15,
+    // 搜索页的边缘 TTL：结果随查询词变化，写库后无法按 q 枚举失效，只能靠 TTL 收敛
+    searchCacheSeconds: 60,
     redis: {
       enabled: false,
       host: "127.0.0.1",

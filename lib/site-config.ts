@@ -80,6 +80,13 @@ export interface SiteBuildConfig {
    * 把 EdgeOne 刷新额度留给内容页。源站缓存仍按 pageCacheSeconds（长）。
    */
   listPageCacheSeconds: number;
+  /**
+   * 搜索页的边缘 TTL（秒）。
+   *
+   * 搜索结果由查询词决定，边缘缓存键含完整 URL（q 进键）⇒ 写库后无法枚举所有 q 精确失效，
+   * 只能靠这个短 TTL 收敛。源站缓存另算（只在启用 Redis 时挂，见 nuxt.config 的 "/search"）。
+   */
+  searchCacheSeconds: number;
 }
 
 /**

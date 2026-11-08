@@ -26,6 +26,15 @@ const CARD_SCOPE_ROUTES = ["/", "/archiving", "/sitemap", "/sitemap.xml"];
  */
 const OWN_CONTENT_ROUTES = ["/subscribes", "/changelogs", "/links", "/messages", "/agreement"];
 
+/**
+ * 只能靠 TTL 收敛、无法精确失效的页面。
+ *
+ * 搜索页的边缘/源站缓存键含完整 URL（q 进键）⇒ 写库后无法枚举所有 q 去失效，
+ * 只能靠短 TTL 收敛（build.searchCacheSeconds）。这里登记它是为了让 CI 守卫看见它，
+ * 而不是声称它被精确失效。
+ */
+const TTL_CONVERGED_ROUTES = ["/search"];
+
 describe("展示面覆盖", () => {
   test("渲染文章卡片字段的页面都在已登记的展示面里", () => {
     const misses: string[] = [];
@@ -43,6 +52,8 @@ describe("展示面覆盖", () => {
       if (CARD_SCOPE_ROUTES.includes(route)) continue;
       // 显示的是自己的内容（订阅文章/日志/友链/独立页）→ 各有自己的失效路由
       if (OWN_CONTENT_ROUTES.includes(route)) continue;
+      // 只能靠 TTL 收敛的页面（搜索页：缓存键含 q，无法枚举失效）
+      if (TTL_CONVERGED_ROUTES.includes(route)) continue;
       misses.push(`${file}（路由 ${route}）渲染了文章卡片字段但不在任何已登记展示面里`);
     }
     expect(misses).toEqual([]);
@@ -61,6 +72,8 @@ describe("展示面覆盖", () => {
       // 首页/归档/关于/站点地图各自的计数字段不同，逐一核对
       const known = ["/", "/archiving", "/about", "/sitemap"];
       if (known.includes(route)) continue;
+      // 只能靠 TTL 收敛的页面（搜索页：结果里的点赞数跟着 q 进缓存键，无法枚举失效）
+      if (TTL_CONVERGED_ROUTES.includes(route)) continue;
       misses.push(`${file}（路由 ${route}）显示了计数但未登记到计数类失效路由`);
     }
     expect(misses).toEqual([]);

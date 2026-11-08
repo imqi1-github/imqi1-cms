@@ -7,14 +7,19 @@
 
 import { siteConfig } from "~~/site.config";
 import { PUBLIC_API_S_MAXAGE } from "#shared/constants";
-import { isBrowserRevalidateApi, isCdnCachedPage, isListPageRoute } from "#shared/cache-routes";
+import { isBrowserRevalidateApi, isCdnCachedPage, isListPageRoute, isSearchPageRoute } from "#shared/cache-routes";
 
 const PAGE_S_MAXAGE = siteConfig.build.edgeCacheSeconds;
 const LIST_S_MAXAGE = siteConfig.build.listPageCacheSeconds;
+const SEARCH_S_MAXAGE = siteConfig.build.searchCacheSeconds;
 
-/** 页面的边缘缓存头：列表页短 TTL、内容页长 TTL */
+/** 页面的边缘缓存头：列表页短 TTL、搜索页中档、内容页长 TTL */
 export function pageCacheControl(path: string): string {
-  const sMaxage = isListPageRoute(path) ? LIST_S_MAXAGE : PAGE_S_MAXAGE;
+  const sMaxage = isListPageRoute(path)
+    ? LIST_S_MAXAGE
+    : isSearchPageRoute(path)
+      ? SEARCH_S_MAXAGE
+      : PAGE_S_MAXAGE;
   return `public, max-age=0, s-maxage=${sMaxage}`;
 }
 

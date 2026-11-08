@@ -57,4 +57,23 @@ describe("nuxt.config 的页面缓存规则", () => {
       expect(config.slice(idx, idx + 220)).toContain('"Cache-Control": "no-store"');
     }
   });
+
+  test("搜索页的源站缓存只用 Redis：文件驱动无 TTL，而 q 是自由输入 ⇒ 键空间无界", () => {
+    const idx = config.indexOf('"/search"');
+    expect(idx, "routeRules 缺少 /search").toBeGreaterThan(-1);
+    const block = config.slice(idx, idx + 600);
+    expect(block).toContain('base: "redis"');
+    expect(block, "搜索页不能回落文件驱动（无 TTL + 键空间无界）").not.toContain('base: "cache"');
+  });
+
+  test("搜索页进边缘缓存但 TTL 单独一档（写库后无法按 q 枚举失效，只能靠 TTL 收敛）", () => {
+    const idx = config.indexOf('"/search"');
+    const block = config.slice(idx, idx + 600);
+    expect(block).toContain("siteConfig.build.searchCacheSeconds");
+    expect(block, "搜索页不能下发 no-store（那会绕开边缘缓存）").not.toContain('"Cache-Control": "no-store"');
+  });
+
+  test("搜索接口不再 no-store（结果页改客户端拉，接口要能进边缘缓存）", () => {
+    expect(config).not.toMatch(/"\/api\/search":\s*\{[^}]*no-store/);
+  });
 });

@@ -58,7 +58,7 @@
 - [图片灯箱 = 自研 top-layer dialog](image-lightbox-top-layer-dialog.md) — 渲染进原生 dialog+showModal；trigger 契约 data-lightbox（改名须四处一致）；启动清源站缓存保证旧 ISR 不残留
 - [site.config.ts 的值只写事实不做适配](site-config-values-stay-bare.md) — 静态资源写裸路径，CDN 前缀归消费点（publicAsset 运行期 / publicCdnAsset 构建期）；别加回已删的 _assetPrefix
 - [重复常量统一进 shared/constants.ts](shared-constants-single-source.md) — 同一值出现 ≥2 处就进 shared/constants.ts（需显式 import）；含分页/默认值/上限/缓存头/9 组 ISR 失效路由集合
-- [Nitro 源站缓存层：键形态与精确失效](nitro-source-cache-layer.md) — node-server 只认 routeRules.cache、裸 isr 是死键；Redis 键冒号/文件键斜杠；精确失效用路径片段前缀+键后缀（驱动无关）；golden vector 测试锁算法
+- [Nitro 源站缓存层：键形态与精确失效](nitro-source-cache-layer.md) — node-server 只认 routeRules.cache、裸 isr 是死键；Redis 键冒号/文件键斜杠；精确失效用路径片段前缀+键后缀（驱动无关）；golden vector 测试锁算法；缓存处理器会盖掉 Cache-Control、文件驱动无 TTL（键空间无界只能 Redis）
 - [import 一律走别名,禁写相对路径](import-alias-no-relative-paths.md) — 用户强原则：全仓 import 用 `#shared`/`#server`/`#test`/`~` 别名；两处必须保留 `../`（shared/redis-config.ts 与 scripts/update-sw-cdn.ts 的 `../site.config`，别名在 jiti 加载路径上不解析）；扫相对 import 要匹配两种引号且把 `~/../` 一起搜
 
 - [bun mock.module 全进程泄漏 → 集成测试放 test/zz-late/](bun-mock-module-leak-zz-late-layout.md) — mock.module 无法撤销且按文件字典序向后污染 ⇒ mock server 工具模块的集成测试放 test/zz-late/api/；mock 与真实现同文件也不行（会连真实 import 一起替换 ⇒ 断言静默通过）⇒ 拆两文件

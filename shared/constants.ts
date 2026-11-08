@@ -122,7 +122,18 @@ export const CDN_CACHED_ROUTES = [
   "/map",
   "/links",
   "/messages",
+  "/search",
 ];
+
+/**
+ * 搜索页：结果随查询词变化，与其它页面有两处不同，规则单独走（见 nuxt.config 的 "/search"）。
+ *
+ * - 边缘缓存键含完整 URL（q 进键）⇒ 写库后无法枚举所有 q 精确失效，只能靠 TTL 收敛
+ *   （build.searchCacheSeconds，比内容页短得多）。
+ * - 源站缓存只在配了 Redis 时挂：文件驱动不支持 TTL，而 q 是自由输入 ⇒ 键空间无界，
+ *   挂文件驱动会无限增长磁盘。
+ */
+export const SEARCH_PAGE_ROUTES = ["/search"];
 
 /**
  * 列表/统计页：内嵌评论数、文章数等「会随评论/文章变动」的聚合数据。
@@ -179,6 +190,8 @@ export const BROWSER_REVALIDATE_API_ROUTES = [
   "/api/home-data",
   "/api/likes/counts",
   "/api/footprint",
+  // 搜索结果：边缘按 q 分键缓存（浏览器每次回源验证），源站侧另有 10 分钟的结果缓存
+  "/api/search",
 ];
 
 /** 相关文章接口按 cid 动态取，单独按前缀匹配 */

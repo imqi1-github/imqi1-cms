@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { visualizer } from "rollup-plugin-visualizer";
 
 import { siteConfig } from "./site.config";
-import { CDN_CACHED_ROUTES, PUBLIC_STATIC_API_ROUTES } from "./shared/constants";
+import { CDN_CACHED_ROUTES, PUBLIC_STATIC_API_ROUTES, SEARCH_PAGE_ROUTES } from "./shared/constants";
 import { isListPageRoutePattern } from "./shared/cache-routes";
 import { getRedisConfig } from "./shared/redis-config";
 
@@ -57,24 +57,27 @@ const LIST_PAGE_SECONDS = siteConfig.build.listPageCacheSeconds;
 // 源站缓存保持长（pageCacheSeconds）：写库时删掉对应缓存键，下次回源即重新渲染，
 // 源站渲染频率不变；边缘 TTL 短只是让边缘更频繁地来问一次（命中源站缓存，很便宜）。
 const pageCacheRules = Object.fromEntries(
-  CDN_CACHED_ROUTES.map(path => {
-    // 档位判定与运行时的响应头插件走同一份实现（shared/cache-routes），
-    // 否则两套逻辑分叉时同一页面会被下发不同 TTL
-    const edgeMaxAge = isListPageRoutePattern(path) ? LIST_PAGE_SECONDS : EDGE_CACHE_SECONDS;
-    return [
-      path,
-      {
-        // 源站缓存层：配了 Redis 用 Redis，没配就用文件缓存（.nitro/cache）——都不需要额外组件。
-        // 开发环境不挂缓存（改了数据要立刻能看到），与 server/utils/cache/store.ts 的口径一致。
-        ...(isProduction
-          ? redisConfig
-            ? { isr: PAGE_CACHE_SECONDS, cache: { maxAge: PAGE_CACHE_SECONDS, base: "redis" } }
-            : { cache: { maxAge: PAGE_CACHE_SECONDS, base: "cache" } }
-          : {}),
-        ...(isProduction ? { headers: { "Cache-Control": `public, max-age=0, s-maxage=${edgeMaxAge}` } } : {}),
-      },
-    ];
-  }),
+  CDN_CACHED_ROUTES
+    // 搜索页有单独的规则（源站缓存只在 Redis 开启时挂），不走这里
+    .filter(path => !SEARCH_PAGE_ROUTES.includes(path))
+    .map(path => {
+      // 档位判定与运行时的响应头插件走同一份实现（shared/cache-routes），
+      // 否则两套逻辑分叉时同一页面会被下发不同 TTL
+      const edgeMaxAge = isListPageRoutePattern(path) ? LIST_PAGE_SECONDS : EDGE_CACHE_SECONDS;
+      return [
+        path,
+        {
+          // 源站缓存层：配了 Redis 用 Redis，没配就用文件缓存（.nitro/cache）——都不需要额外组件。
+          // 开发环境不挂缓存（改了数据要立刻能看到），与 server/utils/cache/store.ts 的口径一致。
+          ...(isProduction
+            ? redisConfig
+              ? { isr: PAGE_CACHE_SECONDS, cache: { maxAge: PAGE_CACHE_SECONDS, base: "redis" } }
+              : { cache: { maxAge: PAGE_CACHE_SECONDS, base: "cache" } }
+            : {}),
+          ...(isProduction ? { headers: { "Cache-Control": `public, max-age=0, s-maxage=${edgeMaxAge}` } } : {}),
+        },
+      ];
+    }),
 );
 
 export default defineNuxtConfig({
@@ -624,13 +627,23 @@ export default defineNuxtConfig({
       : {}),
     ...pageCacheRules,
 
-    // 搜索页：SSR 结果随查询词变化，只在源站缓存（配了 Redis 才有），不进 CDN 边缘缓存
-    // TTL 对齐站内搜索的短缓存（默认 5 分钟）：写库也会清掉这类键，这里只是兜底上界
+    // 搜索页：结果随查询词变化，规则与其它页面不同（见 shared/constants 的 SEARCH_PAGE_ROUTES）
+    //
+    // - 边缘缓存：缓存键含完整 URL（q 进键）⇒ 每个关键词一份。写库后无法枚举 q 精确失效，
+    //   只能靠短 TTL 收敛（build.searchCacheSeconds，默认 60 秒）。
+    //   实际下发的头由 server/plugins/cache-control.ts 统一改写（这里只是兜底值）。
+    // - 源站缓存：**只在配了 Redis 时挂**。文件驱动（.nitro/cache）不支持 TTL，
+    //   而 q 是自由输入 ⇒ 键空间无界 ⇒ 挂文件驱动会无限增长磁盘。
+    //   TTL 对齐站内搜索的短缓存（默认 5 分钟）：写库也会清掉这类键，这里只是兜底上界。
     "/search": {
-      ...(redisConfig
-        ? { isr: SEARCH_PAGE_CACHE_SECONDS, cache: { maxAge: SEARCH_PAGE_CACHE_SECONDS, base: "redis" } }
+      ...(isProduction
+        ? {
+            ...(redisConfig
+              ? { cache: { maxAge: SEARCH_PAGE_CACHE_SECONDS, base: "redis" } }
+              : {}),
+            headers: { "Cache-Control": `public, max-age=0, s-maxage=${siteConfig.build.searchCacheSeconds}` },
+          }
         : {}),
-      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },
 
     // Feed（RSS）：5 分钟缓存，防订阅器轮询每次全表扫 content 大字段；
@@ -691,11 +704,8 @@ export default defineNuxtConfig({
     },
 
     // 动态/与访客相关的接口：源站显式 no-store，不依赖边缘控制台规则兜底
-    // （/api/contents/likes/** 的 liked 按访客指纹算；/api/comments 实时；/api/search 按查询词；/api/check-link 实时探测）
+    // （/api/contents/likes/** 的 liked 按访客指纹算；/api/comments 实时；/api/check-link 实时探测）
     "/api/comments": {
-      ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
-    },
-    "/api/search": {
       ...(isProduction ? { headers: { "Cache-Control": "no-store" } } : {}),
     },
     "/api/check-link": {

@@ -3,6 +3,7 @@ import {
   BROWSER_REVALIDATE_API_ROUTES,
   CDN_CACHED_ROUTES,
   LIST_PAGE_ROUTES,
+  SEARCH_PAGE_ROUTES,
 } from "./constants";
 
 /**
@@ -66,6 +67,17 @@ export function isListPageRoutePattern(route: string): boolean {
 }
 
 /**
+ * 是否是搜索页（结果随查询词变化，边缘 TTL 单独一档）。
+ *
+ * 搜索页不能按内容页那一档（1 小时）：结果由 q 决定，写库后无法枚举 q 精确失效，
+ * 只能靠短 TTL 收敛（见 shared/constants 的 SEARCH_PAGE_ROUTES）。
+ */
+export function isSearchPageRoute(path: string): boolean {
+  const sample = routeSamplePath(pathname(path));
+  return SEARCH_PAGE_ROUTES.some(route => matchesRoutePattern(sample, route));
+}
+
+/**
  * 各路由族里**会改变 SSR 输出**的查询参数（其余可安全剥掉）。
  *
  * 漏登记的参数 = 源站缓存串页：例：/map 的 place 决定标题，剥掉后
@@ -77,6 +89,9 @@ export const SIGNIFICANT_QUERY_PARAMS: Record<string, string[]> = {
   "/map": ["view", "place"],
   "/subscribes": ["source"],
   "/changelogs": ["type"],
+  // 搜索页：q 决定结果、type 决定搜索类别，两者都影响 SSR 输出，必须保留；
+  // 漏登记会被 cache-key / cache-canonical 中间件剥掉 ⇒ 所有查询共用一个缓存键。
+  "/search": ["q", "type"],
 };
 
 /** 该路径下需要保留的查询参数名 */

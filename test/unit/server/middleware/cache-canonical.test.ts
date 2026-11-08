@@ -83,9 +83,23 @@ describe("cache-canonical:推广参数规范化", () => {
     expect(headers.location).toBeUndefined();
   });
 
-  test("非缓存页面不动（搜索页结果随查询词变）", () => {
+  test("搜索页：推广参数剥掉、q 与 type 保留（q 剥掉会串页）", () => {
     process.env.NODE_ENV = "production";
     const { event, headers } = makeEvent("/search?q=abc&utm_source=x");
+    handler(event);
+    expect(headers.location).toBe("/search?q=abc");
+  });
+
+  test("搜索页的 type 保留（切搜索类别会换结果）", () => {
+    process.env.NODE_ENV = "production";
+    const { event, headers } = makeEvent("/search?q=abc&type=comment&utm_source=x");
+    handler(event);
+    expect(headers.location).toBe("/search?q=abc&type=comment");
+  });
+
+  test("非缓存页面不动", () => {
+    process.env.NODE_ENV = "production";
+    const { event, headers } = makeEvent("/api/home-data?x=1");
     handler(event);
     expect(headers.location).toBeUndefined();
   });
