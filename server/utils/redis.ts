@@ -5,7 +5,7 @@ import type { RedisConfig } from "#shared/redis-config";
 // 搜索缓存用的 Redis 连接。
 // 配置在构建期烘焙进 runtimeConfig（nuxt.config.ts 取自 site.config.ts 的 build.redis，
 // 见 shared/redis-config.ts），仅生产生效、开发环境恒不启用，运行时不读 REDIS_* 环境变量
-//（但 NUXT_REDIS_* / NITRO_REDIS_* 仍能覆盖烘焙值，见 docker/README.md「运行时覆盖」）；
+//（但 NUXT_REDIS_* / NITRO_REDIS_* 仍能覆盖烘焙值，见文档站 /deployment/docker「运行时覆盖」）；
 // 未配置时 runtimeConfig.redis 已被 nuxt.config 兜成 host 为空的零对象，
 // 这里以 redisConfig.host 为空判定为关闭，搜索缓存自动关闭（页面整页缓存由
 // nitro storage/routeRules 决定，未配置 Redis 时不启用）。

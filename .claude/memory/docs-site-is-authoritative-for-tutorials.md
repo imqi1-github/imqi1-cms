@@ -14,5 +14,5 @@ metadata:
 - 写教程 → 文档站仓库 `X:/imqi1-docs`，正文放 `content/**/*.mdx`；**路由 = 文件路径**（`content/basics/config.mdx` → `/basics/config`），加页后对照 `src/generated/content-manifest.json` 的 `route` 列表核对链接，别凭印象写路径。
 - 根 README 只留链接，不复述步骤。
 - 已迁走的旧章节：开发/生产环境搭建、Docker 部署、EdgeOne CDN 接入、`site.config.ts` 全表、package.json 全表、小程序详解、更新日志导入格式、实况照片压缩、IP 查询、故障排查表、宝塔装 PostgreSQL。
-- `docker/README.md` 已改为「只留源码强相关细节（两套版本、build-arg、运行时覆盖、数据卷/会话），步骤类内容指向文档站 `/deployment/docker`」，别再把完整部署教程写回仓库。
+- `docker/README.md` 已缩成**纯指针**（连两套版本的说明都没有），全部内容在文档站 `/deployment/docker`（两套版本选择、build-arg、运行时覆盖、数据卷与会话、运维命令）。仓库里不再写任何部署文档 —— 根 README 与 docker/README 同此口径。
 - ⚠️ 本条记忆写完后被并发写入覆盖过一次（仓库 `.claude/memory/` 少了新文件、索引行也被抹掉，用户级镜像那侧还在）——**写完务必 `ls` + `git status` 核实在**，被覆盖就重写。
